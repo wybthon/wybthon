@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Web Framework</title>
+  <script type="text/javascript"
+          src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+  async function loadPython() {
+    await loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"});
+    pyodide.loadPackage(['numpy']).then(() => {
+      pyodide.runPython(`
+            # Here, import your framework and run your component
+            from wybthon import HelloWorldComponent
+            HelloWorldComponent()
+        `);
+    });
+  }
+
+  window.onload = loadPython;
+</script>
+</body>
+</html>
