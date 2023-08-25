@@ -8,7 +8,7 @@ class Element:
     def set_text(self, text: str) -> None:
         self.element.textContent = text
 
-    def append_to(self, parent: 'Element') -> None:
+    def append_to(self, parent: "Element") -> None:
         parent.element.appendChild(self.element)
 
 
@@ -22,12 +22,11 @@ class BaseComponent:
         self.render()
 
     def render(self) -> None:
-        raise NotImplementedError(
-            "render method should be implemented by subclasses")
+        raise NotImplementedError("render method should be implemented by subclasses")
 
 
 class HelloWorldComponent(BaseComponent):
     def render(self) -> None:
-        el = Element('h1')
-        el.set_text('Hello, World!')
+        el = Element("h1")
+        el.set_text("Hello, World!")
         el.append_to(BodyElement())
