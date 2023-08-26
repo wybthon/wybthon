@@ -10,17 +10,26 @@
 <body>
 <script type="text/javascript">
   async function loadPython() {
-    await loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"});
+    console.log("loadPython called");
+
+    const pyodide = await loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"});
+
+    // Fetch the wybthon.py file and load its content into Pyodide
+    const response = await fetch('wybthon.py');
+    const wybthonCode = await response.text();
+    console.log("Fetched wybthon.py:", wybthonCode);
+    pyodide.runPython(wybthonCode);
+
     pyodide.loadPackage(['numpy']).then(() => {
-      pyodide.runPython(`
-            # Here, import your framework and run your component
-            from wybthon import HelloWorldComponent
-            HelloWorldComponent()
-        `);
+      pyodide.runPython(`HelloWorldComponent()`);
     });
   }
 
-  window.onload = loadPython;
+  // Comment out the window.onload line for now.
+  // window.onload = loadPython;
+
+  // Instead, manually call the function after a delay.
+  setTimeout(loadPython, 5000);  // Wait for 5 seconds before calling
 </script>
 </body>
 </html>
