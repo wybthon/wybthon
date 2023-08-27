@@ -19,4 +19,6 @@
 # testing, debugging, or serving files temporarily. When you run `python -m
 # http.server`, it starts an HTTP server on port 8000 (by default) that serves
 # files from the current directory.
+#
+# Start at http://localhost:8000/.
 python -m http.server

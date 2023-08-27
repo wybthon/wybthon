@@ -25,7 +25,7 @@ class BaseComponent(ABC):
         pass
 
 
-class HelloWorldComponent(BaseComponent):
+class AppComponent(BaseComponent):
     def render(self) -> None:
         el = Element("h1")
         el.set_text("Hello, world!")
