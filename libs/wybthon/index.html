@@ -23,7 +23,7 @@
     pyodide.loadPackage(['numpy']).then(() => {
       // pyodide.runPython('AppComponent()');
       // pyodide.runPython('AppComponent(children=[ChildComponent(), ChildComponent()])');
-      pyodide.runPython('main()');
+      pyodide.runPythonAsync('await main()')
     });
   }
 

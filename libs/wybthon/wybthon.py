@@ -1,4 +1,4 @@
-from js import document
+from js import document, fetch
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -21,18 +21,23 @@ class Element:
     def append_to(self, parent: "Element") -> None:
         parent.element.appendChild(self.element)
 
+    async def load_html(self, url: str) -> None:
+        response = await fetch(url)
+        html_content = await response.text()
+        self.element.innerHTML = html_content
+
 
 class BaseComponent(ABC):
     def __init__(self, children: Optional[List["BaseComponent"]] = None) -> None:
         self.children = children or []
 
     @abstractmethod
-    def render(self) -> Element:
+    async def render(self) -> Element:
         pass
 
-    def render_children(self, parent: Element) -> None:
+    async def render_children(self, parent: Element) -> None:
         for child in self.children:
-            child_element = child.render()
+            child_element = await child.render()  # Await the async render method
             parent.element.appendChild(child_element.element)
 
 
@@ -42,7 +47,7 @@ class BaseComponent(ABC):
 
 
 class AppComponent(BaseComponent):
-    def render(self) -> Element:
+    async def render(self) -> Element:
         el = Element("div")  # Create a div as the root container for the app
 
         # Render self content
@@ -51,7 +56,7 @@ class AppComponent(BaseComponent):
         el.element.appendChild(header.element)
 
         # Render children components
-        self.render_children(el)
+        await self.render_children(el)
 
         # Append the app root to the body
         el.append_to(Element("body", existing=True))
@@ -59,14 +64,17 @@ class AppComponent(BaseComponent):
 
 
 class ChildComponent(BaseComponent):
-    def render(self) -> Element:
-        el = Element("p")
-        el.set_text("I am a child component!")
+    async def render(self) -> Element:
+        el = Element("div")
+        await el.load_html("child_component.html")
+        # Example of how to adjust the HTML template within Python below
+        # dynamic_text = Element("span", existing=True)
+        # dynamic_text.set_text("dynamic content")
         return el
 
 
-def main():
+async def main():
     child1 = ChildComponent()
     child2 = ChildComponent()
     app = AppComponent(children=[child1, child2])
-    app.render()
+    await app.render()
