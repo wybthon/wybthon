@@ -21,7 +21,9 @@
     pyodide.runPython(wybthonCode);
 
     pyodide.loadPackage(['numpy']).then(() => {
-      pyodide.runPython('AppComponent()');
+      // pyodide.runPython('AppComponent()');
+      // pyodide.runPython('AppComponent(children=[ChildComponent(), ChildComponent()])');
+      pyodide.runPython('main()');
     });
   }
 
