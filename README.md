@@ -7,21 +7,20 @@
 ```plaintext
 .
 ├── README.md
-├── apps
-├── libs
-│   └── wybthon
-│       ├── index.html
-│       ├── start_web_server.sh
-│       └── wybthon.py
-└── requirements.txt
+├── pyproject.toml
+├── src/
+│   └── wybthon/
+│       └── __init__.py
+└── examples/
+    └── demo/
+        ├── index.html
+        ├── bootstrap.js
+        ├── demo.py
+        └── child_component.html
 ```
 
-- **apps/**: Directory for future web applications built with Wybthon.
-- **libs/wybthon/**: Core library files for Wybthon.
-    - `index.html`: Example HTML file that loads the Wybthon framework using Pyodide.
-    - `start_web_server.sh`: Script to start a simple web server for development.
-    - `wybthon.py`: Initial implementation of Wybthon, including base classes and a simple component example.
-- **requirements.txt**: Placeholder for future dependencies.
+- **src/wybthon/**: Core library package.
+- **examples/**: Demo running in the browser via Pyodide.
 
 ## Getting Started
 
@@ -33,12 +32,12 @@ To run the example application:
     cd wybthon
     ```
 
-2. **Start the development server**:
+2. **Start a simple web server** from the repo root:
     ```sh
-    sh libs/wybthon/start_web_server.sh
+    python -m http.server
     ```
 
-3. **Open your browser** and navigate to `http://localhost:8000` to see the "Hello, world!" message rendered by the `AppComponent`.
+3. **Open your browser** to `http://localhost:8000/examples/demo/index.html`.
 
 ## Future Plans
 
@@ -46,4 +45,3 @@ To run the example application:
 - Create a component lifecycle similar to other frameworks.
 - Publish Wybthon as a PIP package.
 - Expand the project to support more complex web applications.
-

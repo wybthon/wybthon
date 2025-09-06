@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wybthon"
+version = "0.0.1"
+description = "Client-side Python SPA framework via Pyodide"
+authors = [
+  { name = "Owen Carey" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: WebAssembly",
+  "Framework :: AsyncIO",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/owenthcarey/wybthon"
+Repository = "https://github.com/owenthcarey/wybthon"
+
+[tool.setuptools.packages.find]
+where = ["src"]
