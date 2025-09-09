@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Optional, Set, TypeVar, List
+from typing import Any, Callable, Generic, Optional, Set, TypeVar, List, Awaitable
 
 
 T = TypeVar("T")
@@ -25,10 +25,21 @@ def _schedule_flush() -> None:
 
         queueMicrotask(create_once_callable(lambda: _flush()))
     except Exception:  # pragma: no cover
-        from js import setTimeout  # type: ignore
-        from pyodide.ffi import create_once_callable  # type: ignore
+        # Try Pyodide setTimeout, else Python threading/asyncio fallback
+        try:
+            from js import setTimeout  # type: ignore
+            from pyodide.ffi import create_once_callable  # type: ignore
 
-        setTimeout(create_once_callable(lambda: _flush()), 0)
+            setTimeout(create_once_callable(lambda: _flush()), 0)
+        except Exception:
+            # Pure-Python fallback for non-browser environments
+            try:
+                import threading
+
+                threading.Timer(0, _flush).start()
+            except Exception:
+                # Last resort: run synchronously (can re-entrantly flush)
+                _flush()
 
 
 def _flush() -> None:
@@ -161,3 +172,117 @@ class _Batch:
 
 def batch() -> _Batch:
     return _Batch()
+
+
+# -------------------- Async resource utility --------------------
+R = TypeVar("R")
+
+
+class Resource(Generic[R]):
+    """Async resource wrapper with Signals for data, error, and loading.
+
+    Use `reload()` to (re)fetch, `cancel()` to cancel the in-flight request.
+    """
+
+    def __init__(self, fetcher: Callable[..., Awaitable[R]]) -> None:
+        # Lazily import to avoid import cycles at module import time
+        import asyncio  # local import for Pyodide compatibility
+        import inspect
+
+        self._asyncio = asyncio
+        self._inspect = inspect
+        self._fetcher: Callable[..., Awaitable[R]] = fetcher
+        self._task: Optional[asyncio.Task] = None  # type: ignore[name-defined]
+        self._abort_controller: Any = None
+        self._version: int = 0
+
+        self.data: Signal[Optional[R]] = Signal(None)
+        self.error: Signal[Optional[Any]] = Signal(None)
+        self.loading: Signal[bool] = Signal(False)
+
+        # Kick off initial load
+        self.reload()
+
+    def _make_abort_controller(self) -> Any:
+        try:
+            from js import AbortController  # type: ignore
+
+            # In Pyodide, construct with .new()
+            return AbortController.new()
+        except Exception:
+            return None
+
+    async def _run(self, current_version: int, controller: Any) -> None:
+        try:
+            # If fetcher accepts a 'signal' kwarg, pass it; otherwise call without
+            if self._inspect.signature(self._fetcher).parameters.get("signal") is not None:
+                coro = self._fetcher(signal=getattr(controller, "signal", None))
+            else:
+                coro = self._fetcher()
+
+            # Await the result (support both awaitable and plain values defensively)
+            if self._inspect.isawaitable(coro):
+                result = await coro  # type: ignore[misc]
+            else:
+                result = coro  # type: ignore[assignment]
+
+            # Only commit if still latest
+            if current_version == self._version:
+                self.error.set(None)
+                self.data.set(result)
+                self.loading.set(False)
+        except Exception as e:
+            # Ignore results if outdated
+            if current_version != self._version:
+                return
+            self.error.set(e)
+            self.loading.set(False)
+
+    def reload(self) -> None:
+        # Cancel any existing task and start a new one
+        self.cancel()
+        self._version += 1
+        self.loading.set(True)
+        # Keep last good data; reset error on new attempt
+        self.error.set(None)
+
+        controller = self._make_abort_controller()
+        self._abort_controller = controller
+
+        async def runner() -> None:
+            await self._run(self._version, controller)
+
+        try:
+            self._task = self._asyncio.create_task(runner())
+        except Exception:
+            # As a fallback, run synchronously (Pyodide will still interleave)
+            # This should rarely happen but keeps API usable.
+            self._asyncio.get_event_loop().create_task(runner())
+
+    def cancel(self) -> None:
+        # Invalidate current version so any late results are ignored
+        self._version += 1
+        # Abort JS fetch if possible
+        try:
+            if self._abort_controller is not None:
+                self._abort_controller.abort()
+        except Exception:
+            pass
+        self._abort_controller = None
+        # Cancel Python task if any
+        try:
+            if self._task is not None:
+                self._task.cancel()
+        except Exception:
+            pass
+        self._task = None
+
+
+def use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]:
+    """Create an async Resource with loading/error states and cancellation.
+
+    The provided `fetcher` should be an async function returning the data value.
+    If it accepts a `signal` keyword argument, an AbortSignal will be passed for
+    cancellation support when available.
+    """
+    return Resource(fetcher)

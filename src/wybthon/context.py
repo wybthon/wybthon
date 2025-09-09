@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from .component import Component
+# Avoid importing browser/DOM-dependent Component in non-browser/test environments
+try:  # pragma: no cover - import guard behavior varies by environment
+    from .component import Component as _Component  # type: ignore
+except Exception:  # pragma: no cover
+    _Component = None  # type: ignore
 
 
 _next_context_id = 0
@@ -44,7 +48,7 @@ def pop_provider_value() -> None:
         _context_stack.pop()
 
 
-class Provider(Component):
+class Provider(_Component if _Component is not None else object):  # type: ignore[misc]
     """Context provider component.
 
     Props:

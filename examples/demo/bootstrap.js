@@ -10,7 +10,7 @@ async function bootstrap() {
 
     // Load the library modules from src into Pyodide's filesystem so `import wybthon` works.
     try { pyodide.FS.mkdir("/wybthon"); } catch {}
-    const files = ["__init__.py", "dom.py", "component.py", "vdom.py", "reactivity.py", "events.py", "context.py", "router.py"];
+    const files = ["__init__.py", "dom.py", "component.py", "vdom.py", "reactivity.py", "events.py", "context.py", "router.py", "forms.py", "dev.py"];
     const cacheBust = Date.now();
     for (const f of files) {
       const resp = await fetch(`../../src/wybthon/${f}?v=${cacheBust}`);
@@ -41,3 +41,12 @@ if (document.readyState === "loading") {
 } else {
   bootstrap();
 }
+
+// HMR-lite: connect to dev server SSE for reloads
+try {
+  const es = new EventSource("/__sse");
+  es.addEventListener("reload", () => {
+    try { console.log("Reload event received; reloading page"); } catch {}
+    location.reload();
+  });
+} catch {}

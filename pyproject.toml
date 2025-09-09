@@ -10,18 +10,30 @@ authors = [
   { name = "Owen Carey" }
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
   "Environment :: WebAssembly",
   "Framework :: AsyncIO",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 dependencies = []
+
+[project.optional-dependencies]
+docs = [
+  "mkdocs>=1.5",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.24",
+]
+
+[project.scripts]
+wyb = "wybthon.dev:main"
 
 [project.urls]
 Homepage = "https://github.com/owenthcarey/wybthon"
@@ -29,3 +41,13 @@ Repository = "https://github.com/owenthcarey/wybthon"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.black]
+line-length = 120
+target-version = ['py39']

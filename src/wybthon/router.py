@@ -26,8 +26,13 @@ def _on_popstate(_evt) -> None:
     current_path.set(_current_url())
 
 
+_popstate_proxy = None
+
 try:
-    window.addEventListener("popstate", create_proxy(_on_popstate))
+    # Keep a reference to the proxy to prevent GC and event loop invalid state errors
+    if _popstate_proxy is None:
+        _popstate_proxy = create_proxy(_on_popstate)
+        window.addEventListener("popstate", _popstate_proxy)
 except Exception:
     pass
 

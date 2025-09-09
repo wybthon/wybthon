@@ -1,0 +1,22 @@
+site_name: Wybthon
+site_description: Client-side Python SPA framework via Pyodide
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Examples: examples.md
+  - API Reference: api.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            docstring_style: google
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true

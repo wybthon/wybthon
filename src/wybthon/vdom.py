@@ -6,7 +6,7 @@ from js import document
 
 from .dom import Element
 from .component import Component
-from .reactivity import effect, Computation
+from .reactivity import effect, Computation, signal
 from .context import Provider, push_provider_value, pop_provider_value
 from .events import set_handler, remove_all_for
 
@@ -25,6 +25,37 @@ class VNode:
     component_instance: Optional[Component] = None
     subtree: Optional["VNode"] = None
     render_effect: Optional[Computation] = None
+
+
+class ErrorBoundary(Component):
+    """Component that catches errors in its subtree and renders a fallback."""
+
+    def __init__(self, props: Dict[str, Any]) -> None:
+        super().__init__(props)
+        self._error = signal(None)
+
+    def render(self):  # type: ignore[override]
+        err = self._error.get()
+        if err is not None:
+            fb = self.props.get("fallback")
+            if callable(fb):
+                try:
+                    vnode = fb(err)
+                except Exception:
+                    vnode = _to_text_vnode("Error rendering fallback")
+            else:
+                vnode = fb if isinstance(fb, VNode) else _to_text_vnode(str(fb) if fb is not None else "Something went wrong.")
+            if not isinstance(vnode, VNode):
+                vnode = _to_text_vnode(vnode)
+            return vnode
+        children = self.props.get("children", [])
+        if not isinstance(children, list):
+            children = [children]
+        return h("div", {}, *children)
+
+    # Public API to reset the boundary
+    def reset(self) -> None:
+        self._error.set(None)
 
 
 def _to_text_vnode(value: Any) -> VNode:
@@ -115,19 +146,40 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
                             pop_provider_value()
                     else:
                         next_sub = instance.render()
+
+                    if not isinstance(next_sub, VNode):
+                        next_sub = _to_text_vnode(next_sub)
+                    prev_sub = vnode.subtree
+                    vnode.subtree = next_sub
+                    if prev_sub is None:
+                        mounted_el = _mount(next_sub, container, anchor)
+                        vnode.el = mounted_el
+                    else:
+                        _patch(prev_sub, next_sub, container)
+                        vnode.el = next_sub.el
                 except Exception as e:
-                    print("Component render error:", e)
-                    raise
-                if not isinstance(next_sub, VNode):
-                    next_sub = _to_text_vnode(next_sub)
-                prev_sub = vnode.subtree
-                vnode.subtree = next_sub
-                if prev_sub is None:
-                    mounted_el = _mount(next_sub, container, anchor)
-                    vnode.el = mounted_el
-                else:
-                    _patch(prev_sub, next_sub, container)
-                    vnode.el = next_sub.el
+                    if isinstance(instance, ErrorBoundary):
+                        try:
+                            instance._error.set(e)
+                        except Exception:
+                            pass
+                        try:
+                            fb_sub = instance.render()
+                            if not isinstance(fb_sub, VNode):
+                                fb_sub = _to_text_vnode(fb_sub)
+                        except Exception:
+                            fb_sub = _to_text_vnode("Error in fallback")
+                        prev_sub = vnode.subtree
+                        vnode.subtree = fb_sub
+                        if prev_sub is None or getattr(prev_sub, "el", None) is None:
+                            mounted_el = _mount(fb_sub, container, anchor)
+                            vnode.el = mounted_el
+                        else:
+                            _patch(prev_sub, fb_sub, container)
+                            vnode.el = fb_sub.el
+                    else:
+                        print("Component render error:", e)
+                        raise
 
             vnode.render_effect = effect(run_render)
         else:
@@ -230,20 +282,42 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
             prev_props = getattr(instance, "props", {})
             instance.props = new.props
             new.component_instance = instance
-            next_sub = instance.render()
-            if not isinstance(next_sub, VNode):
-                next_sub = _to_text_vnode(next_sub)
-            prev_sub = old.subtree
-            new.subtree = next_sub
-            if prev_sub is None:
-                _mount(next_sub, container)
-            else:
-                _patch(prev_sub, next_sub, container)
             try:
-                instance.on_update(prev_props)  # type: ignore[arg-type]
-            except Exception:
-                pass
-            return
+                next_sub = instance.render()
+                if not isinstance(next_sub, VNode):
+                    next_sub = _to_text_vnode(next_sub)
+                prev_sub = old.subtree
+                new.subtree = next_sub
+                if prev_sub is None:
+                    _mount(next_sub, container)
+                else:
+                    _patch(prev_sub, next_sub, container)
+                try:
+                    instance.on_update(prev_props)  # type: ignore[arg-type]
+                except Exception:
+                    pass
+                return
+            except Exception as e:
+                if isinstance(instance, ErrorBoundary):
+                    try:
+                        instance._error.set(e)
+                    except Exception:
+                        pass
+                    try:
+                        fb_sub = instance.render()
+                        if not isinstance(fb_sub, VNode):
+                            fb_sub = _to_text_vnode(fb_sub)
+                    except Exception:
+                        fb_sub = _to_text_vnode("Error in fallback")
+                    prev_sub = old.subtree
+                    new.subtree = fb_sub
+                    if prev_sub is None or getattr(prev_sub, "el", None) is None:
+                        _mount(fb_sub, container)
+                    else:
+                        _patch(prev_sub, fb_sub, container)
+                    return
+                print("Component render error:", e)
+                raise
         else:
             # Function component
             next_sub = new.tag(new.props)  # type: ignore[misc]
@@ -306,9 +380,8 @@ def _patch_children(old: VNode, new: VNode) -> None:
         if idx not in used_old_indices:
             _unmount(oc)
 
-    for ch in new_children:
-        if ch.el is not None:
-            parent.element.appendChild(ch.el.element)
+    # Avoid re-appending children after patch to preserve DOM focus and caret positions.
+    # Nodes are already in the DOM when matched; newly mounted nodes were appended.
 
 
 def _is_event_prop(name: str) -> bool:
@@ -348,6 +421,16 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
                 if isinstance(old_val, dict):
                     for dk in old_val.keys():
                         el.remove_attr(f"data-{dk}")
+            elif name == "value":
+                try:
+                    el.element.value = ""
+                except Exception:
+                    el.remove_attr("value")
+            elif name == "checked":
+                try:
+                    el.element.checked = False
+                except Exception:
+                    el.remove_attr("checked")
             else:
                 el.remove_attr(name)
 
@@ -391,6 +474,24 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
                         el.remove_attr(f"data-{dk}")
             for dk, dv in new_val.items():
                 el.set_attr(f"data-{dk}", dv)
+            continue
+
+        # Controlled form properties: prefer DOM properties over attributes
+        if name == "value":
+            try:
+                el.element.value = "" if new_val is None else str(new_val)
+            except Exception:
+                el.set_attr("value", "" if new_val is None else str(new_val))
+            continue
+
+        if name == "checked":
+            try:
+                el.element.checked = bool(new_val)
+            except Exception:
+                if new_val:
+                    el.set_attr("checked", "checked")
+                else:
+                    el.remove_attr("checked")
             continue
 
         el.set_attr(name, new_val)
