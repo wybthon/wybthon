@@ -346,42 +346,60 @@ def _patch_children(old: VNode, new: VNode) -> None:
     new_children = _normalize_children(new.children)
     new.children = new_children
 
+    # 1) Match new children to old children (by key first, then by type for unkeyed)
     old_key_to_index: Dict[Union[str, int], int] = {}
     for i, ch in enumerate(old_children):
         if ch.key is not None:
             old_key_to_index[ch.key] = i
 
-    used_old_indices: set = set()
+    old_available: List[bool] = [True] * len(old_children)
+    matched_old_indices: List[int] = [-1] * len(new_children)
 
-    for new_child in new_children:
-        match_index: Optional[int] = None
+    for i, new_child in enumerate(new_children):
         if new_child.key is not None and new_child.key in old_key_to_index:
-            match_index = old_key_to_index[new_child.key]
+            idx = old_key_to_index[new_child.key]
+            matched_old_indices[i] = idx
+            old_available[idx] = False
         else:
-            for idx, oc in enumerate(old_children):
-                if idx in used_old_indices:
+            # Fallback: match first still-available old child of same type and without key
+            for j, oc in enumerate(old_children):
+                if not old_available[j]:
                     continue
                 if oc.key is None and _same_type(oc, new_child):
-                    match_index = idx
+                    matched_old_indices[i] = j
+                    old_available[j] = False
                     break
 
-        if match_index is not None:
-            used_old_indices.add(match_index)
-            # Ensure the matched old child has its el; if not, mount fresh
-            matched_old = old_children[match_index]
-            if matched_old.el is None:
-                _mount(new_child, parent)
-            else:
-                _patch(matched_old, new_child, parent)
+    # 2) Reorder/mount using a right-to-left pass to leverage a stable anchor
+    next_anchor_node = None  # DOM node (not Element) to insert before
+    for i in range(len(new_children) - 1, -1, -1):
+        new_child = new_children[i]
+        old_idx = matched_old_indices[i]
+        if old_idx != -1:
+            matched_old = old_children[old_idx]
+            # Patch to update props/subtrees and ensure el is set
+            _patch(matched_old, new_child, parent)
+            new_el = new_child.el
+            if new_el is not None:
+                try:
+                    # Move only if necessary
+                    if new_el.element.nextSibling is not next_anchor_node:
+                        parent.element.insertBefore(new_el.element, next_anchor_node)
+                except Exception:
+                    pass
+                next_anchor_node = new_el.element
         else:
-            _mount(new_child, parent)
+            # Brand new node; mount at the computed anchor
+            try:
+                mounted_el = _mount(new_child, parent, next_anchor_node)
+                next_anchor_node = mounted_el.element
+            except Exception:
+                pass
 
-    for idx, oc in enumerate(old_children):
-        if idx not in used_old_indices:
+    # 3) Unmount any old children that were not matched
+    for j, oc in enumerate(old_children):
+        if old_available[j]:
             _unmount(oc)
-
-    # Avoid re-appending children after patch to preserve DOM focus and caret positions.
-    # Nodes are already in the DOM when matched; newly mounted nodes were appended.
 
 
 def _is_event_prop(name: str) -> bool:
