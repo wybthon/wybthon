@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wybthon"
-version = "0.0.1"
+version = "0.1.0"
 description = "Client-side Python SPA framework via Pyodide"
 authors = [
   { name = "Owen Carey" }
 ]
 readme = "README.md"
 requires-python = ">=3.9"
+license = { file = "LICENSE" }
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
@@ -19,6 +20,8 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Environment :: WebAssembly",
   "Framework :: AsyncIO",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
@@ -36,11 +39,16 @@ docs = [
 wyb = "wybthon.dev:main"
 
 [project.urls]
-Homepage = "https://github.com/owenthcarey/wybthon"
-Repository = "https://github.com/owenthcarey/wybthon"
+Homepage = "https://github.com/wybthon/wybthon"
+Repository = "https://github.com/wybthon/wybthon"
+Issues = "https://github.com/wybthon/wybthon/issues"
+Changelog = "https://github.com/wybthon/wybthon/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools]
+license-files = ["LICENSE*"]
 
 [tool.ruff]
 target-version = "py39"

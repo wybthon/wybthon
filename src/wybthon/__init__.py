@@ -1,4 +1,5 @@
 import importlib
+__version__ = "0.1.0"
 
 # Detect Pyodide/browser environment where `js` module exists
 _IN_BROWSER = False

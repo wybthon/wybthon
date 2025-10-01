@@ -8,7 +8,7 @@ Development uses Python ≥ 3.10.
 
 ```bash
 # clone
-git clone https://github.com/owenthcarey/wybthon.git
+git clone https://github.com/wybthon/wybthon.git
 cd wybthon
 
 # install package (editable) and dev tooling
