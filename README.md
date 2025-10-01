@@ -22,20 +22,44 @@ import wybthon as wy
 ```plaintext
 .
 ├── README.md
+├── LICENSE
 ├── pyproject.toml
+├── requirements.txt
 ├── src/
 │   └── wybthon/
-│       └── __init__.py
-└── examples/
-    └── demo/
-        ├── index.html
-        ├── bootstrap.js
-        ├── demo.py
-        └── child_component.html
+│       ├── __init__.py
+│       ├── component.py
+│       ├── context.py
+│       ├── dev.py
+│       ├── dom.py
+│       ├── events.py
+│       ├── forms.py
+│       ├── reactivity.py
+│       ├── router.py
+│       └── vdom.py
+├── docs/
+│   ├── index.md
+│   ├── getting-started.md
+│   ├── api.md
+│   └── examples.md
+├── examples/
+│   └── demo/
+│       ├── index.html
+│       ├── bootstrap.js
+│       ├── demo.py
+│       └── child_component.html
+└── tests/
+    ├── test_context.py
+    ├── test_dev.py
+    ├── test_forms.py
+    ├── test_reactivity.py
+    └── test_validators.py
 ```
 
-- **src/wybthon/**: Core library package.
+- **src/wybthon/**: Core library package modules.
+- **docs/**: Documentation sources for MkDocs.
 - **examples/**: Demo running in the browser via Pyodide.
+- **tests/**: Unit tests.
 
 ## Getting Started
 
@@ -53,10 +77,3 @@ To run the example application:
     ```
 
 3. **Open your browser** to `http://localhost:8000/examples/demo/index.html`.
-
-## Future Plans
-
-- Add composability and state management.
-- Create a component lifecycle similar to other frameworks.
-- Publish Wybthon as a PIP package.
-- Expand the project to support more complex web applications.
