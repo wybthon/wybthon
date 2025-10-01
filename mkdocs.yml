@@ -16,6 +16,10 @@ plugins:
           options:
             show_source: false
             docstring_style: google
+  - social:
+      cards_layout_options:
+        background_color: "#ffffff"
+        color: "#111827"
 markdown_extensions:
   - admonition
   - codehilite

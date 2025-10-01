@@ -28,7 +28,7 @@ dependencies = []
 [project.optional-dependencies]
 docs = [
   "mkdocs>=1.5",
-  "mkdocs-material>=9.5",
+  "mkdocs-material[imaging]>=9.5",
   "mkdocstrings[python]>=0.24",
 ]
 
