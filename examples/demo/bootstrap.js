@@ -1,4 +1,4 @@
-// Demo bootstrap: loads Pyodide and runs the demo app using the packaged library API.
+// Demo bootstrap: loads Pyodide, mounts the Wybthon library, then loads the demo app package and runs app.main().
 
 const PYODIDE_VERSION = "0.25.1";
 const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -19,17 +19,54 @@ async function bootstrap() {
     }
     await pyodide.runPythonAsync("import sys; sys.path.insert(0, '/')");
 
-    // Debug: list files to ensure events.py is present
+    // Mount the demo app package under /app
+    const ensureDir = (p) => { try { pyodide.FS.mkdir(p); } catch {} };
+    ensureDir("/app");
+    ensureDir("/app/components");
+    ensureDir("/app/contexts");
+    ensureDir("/app/about");
+    ensureDir("/app/fetch");
+    ensureDir("/app/forms");
+    ensureDir("/app/errors");
+
+    const appFiles = [
+      "app/__init__.py",
+      "app/layout.py",
+      "app/routes.py",
+      "app/main.py",
+      "app/page.py",
+      "app/components/__init__.py",
+      "app/components/hello.py",
+      "app/components/counter.py",
+      "app/components/theme_label.py",
+      "app/components/nav.py",
+      "app/contexts/__init__.py",
+      "app/contexts/theme.py",
+      "app/about/__init__.py",
+      "app/about/page.py",
+      "app/fetch/__init__.py",
+      "app/fetch/page.py",
+      "app/forms/__init__.py",
+      "app/forms/page.py",
+      "app/errors/__init__.py",
+      "app/errors/page.py",
+    ];
+    for (const f of appFiles) {
+      const resp = await fetch(`./${f}?v=${cacheBust}`);
+      const txt = await resp.text();
+      pyodide.FS.writeFile(`/${f}`, new TextEncoder().encode(txt));
+    }
+
+    // Optional debug listings
     try {
-      const listing = await pyodide.runPythonAsync("import os; os.listdir('/wybthon')");
-      console.log("/wybthon contents:", listing);
+      const listingLib = await pyodide.runPythonAsync("import os; os.listdir('/wybthon')");
+      console.log("/wybthon contents:", listingLib);
+      const listingApp = await pyodide.runPythonAsync("import os; os.listdir('/app')");
+      console.log("/app contents:", listingApp);
     } catch {}
 
-    // Load the demo Python module from examples (contains the example components + main)
-    const response = await fetch("./demo.py");
-    const code = await response.text();
-    pyodide.runPython(code);
-
+    // Import and run the app entrypoint
+    await pyodide.runPythonAsync("from app.main import main; import asyncio; asyncio.get_event_loop();");
     await pyodide.runPythonAsync("await main()");
   } catch (err) {
     console.error("Failed to bootstrap Wybthon demo:", err);
