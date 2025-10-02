@@ -1,0 +1,11 @@
+:root{
+  --md-primary-fg-color:#03abe9;
+  --md-primary-fg-color--light:#56caf2;
+  --md-primary-fg-color--dark:#0286b6;
+  --md-accent-fg-color:#f8e048;
+  --md-accent-fg-color--transparent:rgba(248,224,72,.1);
+}
+
+/* Hide the bottom footer bar entirely */
+.md-footer{display:none}
+.md-main__inner{margin-bottom:0}
