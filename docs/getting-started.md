@@ -1,13 +1,49 @@
 # Getting Started
 
-1. Clone the repo and open `examples/demo/index.html` in a local server.
-2. Use the dev server for auto-reload:
+Follow these steps to run the demo and start hacking on Wybthon.
+
+## Prerequisites
+
+- Python 3.9+
+- A modern browser
+
+## Run the demo (no install)
 
 ```bash
-# Install (optional for CLI)
+python -m http.server
+# Then open http://localhost:8000/examples/demo/index.html
+```
+
+The demo loads Pyodide, mounts the library from `src/wybthon/`, then runs the app under `examples/demo/app/`.
+
+## Dev server with auto-reload
+
+Install the package locally (for the `wyb` CLI), then start the dev server:
+
+```bash
 pip install .
-# Run dev server at repo root
 wyb dev --dir .
 ```
 
-3. Explore the demo components and routes.
+Flags:
+
+- `--host` (default `127.0.0.1`)
+- `--port` (default `8000`, auto-increments on conflict)
+- `--watch` (defaults to `src` and `examples`)
+
+The dev server exposes an SSE endpoint (`/__sse`) that the demo listens to for reload events.
+
+## Install from PyPI (experimental)
+
+```bash
+pip install wybthon
+```
+
+In Pyodide via `micropip`:
+
+```python
+import micropip
+await micropip.install("wybthon")
+```
+
+> TODO: Provide a minimal component example here once the authoring flow is finalized (function vs class components, recommended structure).

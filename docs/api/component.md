@@ -1,0 +1,3 @@
+### wybthon.component
+
+::: wybthon.component

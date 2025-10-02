@@ -106,6 +106,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
 - Other scopes:
   - `examples` – example(s) under `examples/`
   - `deps` – dependency updates and version pins (e.g., `requirements.txt`)
+  - `mkdocs` – documentation site (MkDocs/Material) configuration and content under `docs/`
   - `pyproject` – `pyproject.toml` packaging/build metadata
   - `repo` – repository metadata and top-level files (e.g., `README.md`, `CONTRIBUTING.md`, `LICENSE`, `.gitignore`)
   - `tests` – unit/integration tests under `tests/` (if/when present)

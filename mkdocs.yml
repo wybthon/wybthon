@@ -4,11 +4,61 @@ site_url: https://docs.wybthon.com/
 repo_url: https://github.com/wybthon/wybthon
 theme:
   name: material
+  features:
+    - navigation.sections
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+extra:
+  generator: false
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Examples: examples.md
-  - API Reference: api.md
+  - Concepts:
+    - Components: concepts/components.md
+    - Virtual DOM: concepts/vdom.md
+    - Reactivity: concepts/reactivity.md
+    - Router: concepts/router.md
+    - Context: concepts/context.md
+    - Events: concepts/events.md
+    - Forms: concepts/forms.md
+    - DOM Interop: concepts/dom.md
+    - Error Boundaries: concepts/error-boundaries.md
+  - Guides:
+    - Dev Server: guides/dev-server.md
+    - Demo App: guides/demo-app.md
+    - Pyodide: guides/pyodide.md
+    - Deployment: guides/deployment.md
+    - Testing: guides/testing.md
+    - Performance: guides/performance.md
+    - Typing: guides/typing.md
+  - Examples:
+    - Overview: examples.md
+    - Counter: examples/counter.md
+    - Async Fetch: examples/fetch.md
+    - Forms: examples/forms.md
+    - Error Boundary: examples/errors.md
+    - Router: examples/router.md
+  - API Reference:
+    - Package: api/wybthon.md
+    - component: api/component.md
+    - dom: api/dom.md
+    - events: api/events.md
+    - context: api/context.md
+    - reactivity: api/reactivity.md
+    - router: api/router.md
+    - vdom: api/vdom.md
+    - forms: api/forms.md
+  - Meta:
+    - Contributing: meta/contributing.md
+    - FAQ: meta/faq.md
+    - Troubleshooting: meta/troubleshooting.md
+    - Roadmap: meta/roadmap.md
+    - Changelog: meta/changelog.md
 plugins:
   - search
   - mkdocstrings:
@@ -19,8 +69,10 @@ plugins:
             docstring_style: google
   - social:
       cards_layout_options:
-        background_color: "#ffffff"
-        color: "#111827"
+        background_color: "#03abe9"
+        color: "#f8e048"
+extra_css:
+  - styles/brand.css
 markdown_extensions:
   - admonition
   - codehilite
