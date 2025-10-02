@@ -2,7 +2,6 @@ from typing import Callable, Dict, Optional
 
 from .dom import Element
 
-
 _NODE_ID_ATTR = "data-wybid"
 _next_id = 0
 _handlers: Dict[str, Dict[str, Callable]] = {}
@@ -61,8 +60,8 @@ class DomEvent:
 def _ensure_root_listener(event_type: str) -> None:
     if event_type in _listeners:
         return
-    from js import document  # type: ignore
-    from pyodide.ffi import create_proxy  # type: ignore
+    from js import document
+    from pyodide.ffi import create_proxy
 
     def dispatcher(js_event) -> None:
         try:

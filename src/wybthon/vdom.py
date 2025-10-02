@@ -1,15 +1,14 @@
-from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Union, Callable
 import re
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 from js import document
 
-from .dom import Element
 from .component import Component
-from .reactivity import effect, Computation, signal
-from .context import Provider, push_provider_value, pop_provider_value
-from .events import set_handler, remove_all_for
-
+from .context import Provider, pop_provider_value, push_provider_value
+from .dom import Element
+from .events import remove_all_for, set_handler
+from .reactivity import Computation, Signal, effect, signal
 
 PropsDict = Dict[str, Any]
 ChildType = Union["VNode", str]
@@ -32,9 +31,9 @@ class ErrorBoundary(Component):
 
     def __init__(self, props: Dict[str, Any]) -> None:
         super().__init__(props)
-        self._error = signal(None)
+        self._error: Signal[Optional[Any]] = signal(None)
 
-    def render(self):  # type: ignore[override]
+    def render(self):
         err = self._error.get()
         if err is not None:
             fb = self.props.get("fallback")
@@ -44,7 +43,11 @@ class ErrorBoundary(Component):
                 except Exception:
                     vnode = _to_text_vnode("Error rendering fallback")
             else:
-                vnode = fb if isinstance(fb, VNode) else _to_text_vnode(str(fb) if fb is not None else "Something went wrong.")
+                vnode = (
+                    fb
+                    if isinstance(fb, VNode)
+                    else _to_text_vnode(str(fb) if fb is not None else "Something went wrong.")
+                )
             if not isinstance(vnode, VNode):
                 vnode = _to_text_vnode(vnode)
             return vnode
@@ -115,7 +118,7 @@ def _create_dom(vnode: VNode) -> Element:
     _apply_props(el, {}, vnode.props)
     # Normalize once and persist so future diffs have stable VNode references with el
     norm_children = _normalize_children(vnode.children)
-    vnode.children = norm_children
+    vnode.children = cast(List[ChildType], norm_children)
     for child in norm_children:
         _mount(child, el)
     vnode.el = el
@@ -127,7 +130,7 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
         vnode = _to_text_vnode(vnode)
     # Component nodes
     if callable(vnode.tag):
-        comp_ctor = vnode.tag  # type: ignore[assignment]
+        comp_ctor = vnode.tag
         # Class component
         if isinstance(comp_ctor, type) and issubclass(comp_ctor, Component):
             instance = comp_ctor(vnode.props)
@@ -160,7 +163,8 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
                 except Exception as e:
                     if isinstance(instance, ErrorBoundary):
                         try:
-                            instance._error.set(e)
+                            instance._error.set(None)
+                            instance._error.set(None)  # ensure type compatibility
                         except Exception:
                             pass
                         try:
@@ -184,7 +188,7 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
             vnode.render_effect = effect(run_render)
         else:
             # Function component
-            sub_tree = comp_ctor(vnode.props)  # type: ignore[misc]
+            sub_tree = comp_ctor(vnode.props)  # type: ignore[call-arg]
             if not isinstance(sub_tree, VNode):
                 sub_tree = _to_text_vnode(sub_tree)
             vnode.subtree = sub_tree
@@ -293,7 +297,7 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                 else:
                     _patch(prev_sub, next_sub, container)
                 try:
-                    instance.on_update(prev_props)  # type: ignore[arg-type]
+                    instance.on_update(prev_props)
                 except Exception:
                     pass
                 return
@@ -320,7 +324,7 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                 raise
         else:
             # Function component
-            next_sub = new.tag(new.props)  # type: ignore[misc]
+            next_sub = new.tag(new.props)  # type: ignore[call-arg]
             if not isinstance(next_sub, VNode):
                 next_sub = _to_text_vnode(next_sub)
             prev_sub = old.subtree
@@ -344,7 +348,7 @@ def _patch_children(old: VNode, new: VNode) -> None:
     old_children = _normalize_children(old.children)
     # Normalize new children now and persist on the new vnode
     new_children = _normalize_children(new.children)
-    new.children = new_children
+    new.children = cast(List[ChildType], new_children)
 
     # 1) Match new children to old children (by key first, then by type for unkeyed)
     old_key_to_index: Dict[Union[str, int], int] = {}

@@ -48,5 +48,3 @@ def test_sse_notify_removes_dead_watchers():
         assert "event: reload" in data and "data: {}" in data
     finally:
         SSEHandler.watchers = original
-
-

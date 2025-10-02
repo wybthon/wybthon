@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Optional, Set, TypeVar, List, Awaitable
-
+from collections.abc import Awaitable as AbcAwaitable
+from typing import Any, Awaitable, Callable, Generic, List, Optional, Set, TypeVar, Union, cast
 
 T = TypeVar("T")
 
@@ -20,15 +20,15 @@ def _schedule_flush() -> None:
 
     # Try microtask scheduling; fall back to setTimeout(0)
     try:
-        from js import queueMicrotask  # type: ignore
-        from pyodide.ffi import create_once_callable  # type: ignore
+        from js import queueMicrotask
+        from pyodide.ffi import create_once_callable
 
         queueMicrotask(create_once_callable(lambda: _flush()))
     except Exception:  # pragma: no cover
         # Try Pyodide setTimeout, else Python threading/asyncio fallback
         try:
-            from js import setTimeout  # type: ignore
-            from pyodide.ffi import create_once_callable  # type: ignore
+            from js import setTimeout
+            from pyodide.ffi import create_once_callable
 
             setTimeout(create_once_callable(lambda: _flush()), 0)
         except Exception:
@@ -128,7 +128,8 @@ def signal(value: T) -> Signal[T]:
 
 class _Computed(Generic[T]):
     def __init__(self, fn: Callable[[], T]) -> None:
-        self._value_signal: Signal[T] = Signal(None)  # type: ignore[arg-type]
+        # Initialize with a dummy value; immediately computed below
+        self._value_signal: Signal[T] = Signal(cast(T, None))
 
         def runner() -> None:
             self._value_signal.set(fn())
@@ -178,21 +179,24 @@ def batch() -> _Batch:
 R = TypeVar("R")
 
 
+FetchFn = Callable[..., Union[Awaitable[R], R]]
+
+
 class Resource(Generic[R]):
     """Async resource wrapper with Signals for data, error, and loading.
 
     Use `reload()` to (re)fetch, `cancel()` to cancel the in-flight request.
     """
 
-    def __init__(self, fetcher: Callable[..., Awaitable[R]]) -> None:
+    def __init__(self, fetcher: FetchFn) -> None:
         # Lazily import to avoid import cycles at module import time
         import asyncio  # local import for Pyodide compatibility
         import inspect
 
         self._asyncio = asyncio
         self._inspect = inspect
-        self._fetcher: Callable[..., Awaitable[R]] = fetcher
-        self._task: Optional[asyncio.Task] = None  # type: ignore[name-defined]
+        self._fetcher: FetchFn = fetcher
+        self._task: Optional[asyncio.Task[Any]] = None
         self._abort_controller: Any = None
         self._version: int = 0
 
@@ -205,7 +209,7 @@ class Resource(Generic[R]):
 
     def _make_abort_controller(self) -> Any:
         try:
-            from js import AbortController  # type: ignore
+            from js import AbortController
 
             # In Pyodide, construct with .new()
             return AbortController.new()
@@ -216,15 +220,15 @@ class Resource(Generic[R]):
         try:
             # If fetcher accepts a 'signal' kwarg, pass it; otherwise call without
             if self._inspect.signature(self._fetcher).parameters.get("signal") is not None:
-                coro = self._fetcher(signal=getattr(controller, "signal", None))
+                coro_or_val = self._fetcher(signal=getattr(controller, "signal", None))
             else:
-                coro = self._fetcher()
+                coro_or_val = self._fetcher()
 
-            # Await the result (support both awaitable and plain values defensively)
-            if self._inspect.isawaitable(coro):
-                result = await coro  # type: ignore[misc]
+            # Await the result if needed (support both awaitable and plain values)
+            if isinstance(coro_or_val, AbcAwaitable):
+                result = await coro_or_val
             else:
-                result = coro  # type: ignore[assignment]
+                result = cast(R, coro_or_val)
 
             # Only commit if still latest
             if current_version == self._version:

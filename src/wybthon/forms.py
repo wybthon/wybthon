@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
-from .reactivity import signal, Signal
-
+from .reactivity import Signal, signal
 
 # ----------------- Validation primitives -----------------
 
@@ -69,6 +68,7 @@ def validate(value: Any, validators: List[Validator]) -> Optional[str]:
 
 # ----------------- Form state -----------------
 
+
 @dataclass
 class FieldState:
     value: Signal[Any]
@@ -84,6 +84,7 @@ def form_state(initial: Dict[str, Any]) -> Dict[str, FieldState]:
 
 
 # ----------------- Binding helpers -----------------
+
 
 def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None) -> Dict[str, Any]:
     validators = validators or []

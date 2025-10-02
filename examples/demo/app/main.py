@@ -1,9 +1,9 @@
-from wybthon import h, render, Element, Router
-from app.routes import create_routes
-from app.layout import Layout
 from app.components.counter import Counter
 from app.components.hello import Hello
 from app.components.theme_label import ThemeLabel
+from app.layout import Layout
+from app.routes import create_routes
+from wybthon import Element, Router, h, render
 
 
 async def main():

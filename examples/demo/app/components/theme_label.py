@@ -1,5 +1,5 @@
-from wybthon import h, use_context
 from app.contexts.theme import Theme
+from wybthon import h, use_context
 
 
 def ThemeLabel(_props):

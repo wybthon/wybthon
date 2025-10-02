@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import argparse
 import http.server
-import io
-import json
 import os
 import socketserver
-import sys
 import threading
 import time
 from pathlib import Path
@@ -67,7 +64,9 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
             yield p
 
 
-def serve(directory: str, host: str = "127.0.0.1", port: int = 8000, watch: Iterable[str] = ("src", "examples")) -> None:
+def serve(
+    directory: str, host: str = "127.0.0.1", port: int = 8000, watch: Iterable[str] = ("src", "examples")
+) -> None:
     os.chdir(directory)
     SSEHandler.root = Path(directory)
     handler_cls = SSEHandler
@@ -136,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
     pdev.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]), help="Root dir to serve")
     pdev.add_argument("--host", default="127.0.0.1")
     pdev.add_argument("--port", type=int, default=8000)
-    pdev.add_argument("--watch", nargs="*", default=["src", "examples"]) 
+    pdev.add_argument("--watch", nargs="*", default=["src", "examples"])
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":

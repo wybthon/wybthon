@@ -1,9 +1,9 @@
-from wybthon import Route
-from app.page import Page as HomePage
 from app.about.page import Page as AboutPage
+from app.errors.page import Page as ErrorsPage
 from app.fetch.page import FetchPage
 from app.forms.page import FormsPage
-from app.errors.page import Page as ErrorsPage
+from app.page import Page as HomePage
+from wybthon import Route
 
 
 def create_routes():

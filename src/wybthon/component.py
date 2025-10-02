@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 from .dom import Element
 

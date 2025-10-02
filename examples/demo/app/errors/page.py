@@ -1,4 +1,4 @@
-from wybthon import h, ErrorBoundary
+from wybthon import ErrorBoundary, h
 
 
 def Page(_props):
@@ -8,8 +8,10 @@ def Page(_props):
     return h(
         ErrorBoundary,
         {"fallback": lambda err: h("div", {"style": {"color": "crimson"}}, f"Caught error: {err}")},
-        h("div", {},
-          h("p", {}, "This component will throw:"),
-          h(Bug, {}),
+        h(
+            "div",
+            {},
+            h("p", {}, "This component will throw:"),
+            h(Bug, {}),
         ),
     )

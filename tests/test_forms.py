@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from wybthon import form_state, bind_text, bind_checkbox, bind_select
+from wybthon import bind_checkbox, bind_select, bind_text, form_state
 
 
 class DummyTarget:

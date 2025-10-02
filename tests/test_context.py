@@ -1,4 +1,4 @@
-from wybthon.context import create_context, use_context, push_provider_value, pop_provider_value
+from wybthon.context import create_context, pop_provider_value, push_provider_value, use_context
 
 
 def test_context_stack_basic():
@@ -17,5 +17,3 @@ def test_context_stack_basic():
     finally:
         pop_provider_value()
     assert use_context(Theme) == "light"
-
-

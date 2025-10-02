@@ -1,4 +1,19 @@
 import importlib
+
+from .forms import (
+    bind_checkbox,
+    bind_select,
+    bind_text,
+    email,
+    form_state,
+    max_length,
+    min_length,
+    on_submit,
+    required,
+    validate,
+)
+from .reactivity import batch, computed, effect, on_effect_cleanup, signal, use_resource
+
 __version__ = "0.1.0"
 
 # Detect Pyodide/browser environment where `js` module exists
@@ -9,28 +24,14 @@ try:
 except Exception:
     _IN_BROWSER = False
 
-from .reactivity import signal, computed, effect, batch, on_effect_cleanup, use_resource
-from .forms import (
-    bind_text,
-    bind_checkbox,
-    bind_select,
-    form_state,
-    validate,
-    required,
-    min_length,
-    max_length,
-    email,
-    on_submit,
-)
-
 if _IN_BROWSER:
     # Import browser/VDOM-related modules only when running under Pyodide
     from .component import BaseComponent, Component
-    from .context import Context, create_context, use_context, Provider
+    from .context import Context, Provider, create_context, use_context
     from .dom import Element, Ref
-    from .vdom import VNode, h, render, ErrorBoundary
     from .events import DomEvent
-    from .router import Router, Route, Link, navigate, current_path
+    from .router import Link, Route, Router, current_path, navigate
+    from .vdom import ErrorBoundary, VNode, h, render
 
     __all__ = [
         "Element",

@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from js import window
-from pyodide.ffi import create_proxy  # type: ignore
+from pyodide.ffi import create_proxy
 
-from .reactivity import signal
 from .component import Component
-from .vdom import VNode, h
 from .events import DomEvent
+from .reactivity import signal
+from .vdom import VNode, h
 
 
 def _current_url() -> str:
@@ -65,7 +65,7 @@ def _parse_query(search: str) -> Dict[str, str]:
 
 def _decode(s: str) -> str:
     try:
-        from js import decodeURIComponent  # type: ignore
+        from js import decodeURIComponent
 
         return str(decodeURIComponent(s))
     except Exception:
@@ -129,7 +129,7 @@ def _resolve(routes: List[Route], pathname: str) -> Optional[Tuple[Route, Dict[s
 
 
 class Router(Component):
-    def render(self) -> VNode:  # type: ignore[override]
+    def render(self) -> VNode:
         routes: List[Route] = self.props.get("routes", [])
         path = current_path.get()
         if "?" in path:
@@ -150,7 +150,7 @@ class Router(Component):
         props = {**self.props, **info}
         # Function component
         if callable(comp) and not isinstance(comp, type):
-            return comp(props)  # type: ignore[misc]
+            return comp(props)
         # Class component
         return h(comp, props)
 
@@ -162,7 +162,12 @@ def Link(props: Dict[str, Any]) -> VNode:
         try:
             js_evt = evt._js_event
             # Allow new-tab and modified clicks to pass through
-            if getattr(js_evt, "metaKey", False) or getattr(js_evt, "ctrlKey", False) or getattr(js_evt, "shiftKey", False) or getattr(js_evt, "button", 0) != 0:
+            if (
+                getattr(js_evt, "metaKey", False)
+                or getattr(js_evt, "ctrlKey", False)
+                or getattr(js_evt, "shiftKey", False)
+                or getattr(js_evt, "button", 0) != 0
+            ):
                 return
         except Exception:
             pass

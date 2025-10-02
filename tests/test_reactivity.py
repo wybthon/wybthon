@@ -1,6 +1,6 @@
 import time
 
-from wybthon import signal, computed, effect, batch
+from wybthon import batch, computed, effect, signal
 
 
 def test_signal_and_effect():
@@ -45,5 +45,3 @@ def test_batch_coalesces():
     time.sleep(0.05)
     # Only the final value should be observed after batch
     assert seen[-1] == 3
-
-

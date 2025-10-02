@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Avoid importing browser/DOM-dependent Component in non-browser/test environments
 try:  # pragma: no cover - import guard behavior varies by environment
-    from .component import Component as _Component  # type: ignore
+    from .component import Component as _Component
 except Exception:  # pragma: no cover
     _Component = None  # type: ignore
 
@@ -57,7 +57,7 @@ class Provider(_Component if _Component is not None else object):  # type: ignor
       - children: VNode or list of VNodes
     """
 
-    def render(self):  # type: ignore[override]
+    def render(self):
         # Provider render is a simple passthrough; the VDOM is responsible for
         # pushing/popping the provided value around this component's subtree.
         children = self.props.get("children")

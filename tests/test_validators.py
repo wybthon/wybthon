@@ -1,4 +1,4 @@
-from wybthon import validate, required, min_length, max_length, email
+from wybthon import email, max_length, min_length, required, validate
 
 
 def test_required():
@@ -15,5 +15,3 @@ def test_min_max_length():
 def test_email_validator():
     assert validate("test@example.com", [email()]) is None
     assert validate("not-an-email", [email()]) is not None
-
-

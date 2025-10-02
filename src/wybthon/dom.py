@@ -1,4 +1,5 @@
 from typing import Any, Callable, Dict, List, Optional, Union
+
 from js import document, fetch
 
 
@@ -90,9 +91,10 @@ class Element:
     # --------------- Events ---------------
     def on(self, event_type: str, handler: Callable[[Any], Any], *, options: Optional[Dict[str, Any]] = None) -> None:
         try:
-            from pyodide.ffi import create_proxy  # type: ignore
+            from pyodide.ffi import create_proxy
         except Exception:  # pragma: no cover
-            def create_proxy(fn: Callable[[Any], Any]) -> Any:  # type: ignore
+
+            def create_proxy(fn: Callable[[Any], Any]) -> Any:
                 return fn
 
         proxy = create_proxy(handler)

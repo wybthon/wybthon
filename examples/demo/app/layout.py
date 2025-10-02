@@ -1,6 +1,6 @@
-from wybthon import h, Provider
-from app.contexts.theme import Theme
 from app.components.nav import Nav
+from app.contexts.theme import Theme
+from wybthon import Provider, h
 
 
 def Layout(props):

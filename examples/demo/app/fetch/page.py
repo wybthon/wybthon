@@ -35,8 +35,10 @@ class FetchPage(Component):
             pass
 
     def render(self):
-        status_text = "Loading..." if self.res.loading.get() else (
-            str(self.res.error.get()) if self.res.error.get() else self.res.data.get() or "No data"
+        status_text = (
+            "Loading..."
+            if self.res.loading.get()
+            else (str(self.res.error.get()) if self.res.error.get() else self.res.data.get() or "No data")
         )
         return h(
             "div",
