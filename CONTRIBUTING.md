@@ -222,8 +222,18 @@ Co-authored-by: Name <email>
 
 ## Versioning and releases
 
-- The version is tracked in `pyproject.toml` (`project.version`). Use SemVer.
-- Releases: maintainers tag versions and publish when ready. Automation (CI/PyPI) may be added later.
+- The version is tracked in `pyproject.toml` (`project.version`) and mirrored in `src/wybthon/__init__.py` as `__version__`. Use SemVer.
+- Workflow (single `main` branch):
+  - Contributors: branch off `main` and open PRs targeting `main`.
+  - Maintainer (release): open a "Prepare release vX.Y.Z" PR from a short-lived branch → `main`, bump versions in both files, merge. (This can also be a single direct commit on `main`.)
+  - Tag on `main`: `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push --tags`.
+  - Automation: a GitHub Action publishes the package to PyPI when a `v*.*.*` tag is pushed (Trusted Publisher). For the first release, enable PyPI Trusted Publishing for this repo or do a one-time manual `twine upload dist/*`.
+- Tag format: always prefix with `v` (e.g., `v0.1.0`).
+- Release checklist:
+  - Bump `pyproject.toml` and `src/wybthon/__init__.py` versions.
+  - Build and verify: `python -m build && twine check dist/*`.
+  - Create the annotated tag on `main` and push.
+  - Draft the GitHub Release and include notes.
 
 ### Branching rules
 
