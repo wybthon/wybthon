@@ -34,6 +34,18 @@ docs = [
   "mkdocs-material[imaging]>=9.5",
   "mkdocstrings[python]>=0.24",
 ]
+dev = [
+  "black>=24.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pytest>=8.0",
+]
+ci = [
+  "black>=24.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pytest>=8.0",
+]
 
 [project.scripts]
 wyb = "wybthon.dev:main"
