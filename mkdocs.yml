@@ -1,6 +1,7 @@
 site_name: Wybthon
 site_description: Client-side Python SPA framework via Pyodide
 site_url: https://docs.wybthon.com/
+repo_url: https://github.com/wybthon/wybthon
 theme:
   name: material
 nav:
