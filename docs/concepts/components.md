@@ -19,9 +19,11 @@ from wybthon import Component, h
 
 class Counter(Component):
     def render(self):
-        return h("div", {}, "TODO: counter example here")
+        return h("div", {}, "Counter here")
 ```
 
 Lifecycle hooks for class components: `on_mount`, `on_update(prev_props)`, `on_unmount`.
 
-> TODO: Add guidance on state ownership, passing children, and composition patterns.
+See the guide for recommended patterns around props, state, children, cleanup, and context:
+
+- Guide: [Authoring Patterns](../guides/authoring-patterns.md)

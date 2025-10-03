@@ -47,3 +47,44 @@ await micropip.install("wybthon")
 ```
 
 > TODO: Provide a minimal component example here once the authoring flow is finalized (function vs class components, recommended structure).
+
+## Minimal component example
+
+Function component:
+
+```python
+from wybthon import h, render, Element
+
+def Hello(props):
+    name = props.get("name", "world")
+    return h("h2", {}, f"Hello, {name}!")
+
+tree = h(Hello, {"name": "Python"})
+container = Element("body", existing=True)
+render(tree, container)
+```
+
+Class component with state:
+
+```python
+from wybthon import Component, h, signal, render, Element
+
+class Counter(Component):
+    def __init__(self, props):
+        super().__init__(props)
+        self.count = signal(0)
+
+    def render(self):
+        return h(
+            "div",
+            {},
+            h("p", {}, f"Count: {self.count.get()}"),
+            h("button", {"on_click": lambda e: self.count.set(self.count.get() + 1)}, "Increment"),
+        )
+
+tree = h(Counter, {})
+container = Element("body", existing=True)
+render(tree, container)
+```
+
+See: [Authoring Patterns](guides/authoring-patterns.md)
