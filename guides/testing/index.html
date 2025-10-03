@@ -666,6 +666,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authoring Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pyodide/" class="md-nav__link">
         
   
@@ -763,6 +786,30 @@
       Testing
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pyodide-smoke-test-playwright" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyodide smoke test (Playwright)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit tests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1469,6 +1516,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pyodide-smoke-test-playwright" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyodide smoke test (Playwright)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit tests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1498,9 +1569,25 @@
 <li>Unit test pure modules (e.g., <code>reactivity</code>) in CPython</li>
 <li>For browser-dependent code, use Pyodide in a headless browser or test via demo pages</li>
 </ul>
-<blockquote>
-<p>TODO: Provide an example pytest for <code>signal</code>/<code>computed</code> and a minimal browser E2E harness.</p>
-</blockquote>
+<h4 id="pyodide-smoke-test-playwright">Pyodide smoke test (Playwright)<a class="headerlink" href="#pyodide-smoke-test-playwright" title="Permanent link">&para;</a></h4>
+<p>We include a minimal Playwright-based smoke test that loads the demo app in a headless Chromium instance with Pyodide, then asserts that key UI elements render.</p>
+<ul>
+<li>Location: <code>tests/e2e/test_pyodide_smoke.py</code></li>
+<li>What it does: starts a simple HTTP server at the repo root, navigates to <code>examples/demo/index.html</code>, and waits for the demo title and <code>Hello, Python!</code> component to appear.</li>
+</ul>
+<p>Run locally:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+python<span class="w"> </span>-m<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
+pytest<span class="w"> </span>-q<span class="w"> </span>-m<span class="w"> </span>e2e<span class="w"> </span>tests/e2e/test_pyodide_smoke.py
+</code></pre></div>
+
+<p>Notes:</p>
+<ul>
+<li>The demo bootstrap fetches directly from <code>src/wybthon</code> and <code>examples/demo/app</code> so serving the repo root is required.</li>
+<li>The test uses generous timeouts (up to 120s) since Pyodide initialization can take time in CI.</li>
+</ul>
+<h4 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h4>
+<p>For Python-only logic (e.g., <code>reactivity</code>, <code>forms</code> helpers), write regular <code>pytest</code> tests under <code>tests/</code>.</p>
 
 
 

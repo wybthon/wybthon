@@ -530,6 +530,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#domevent" class="md-nav__link">
+    <span class="md-ellipsis">
+      DomEvent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delegation-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Delegation model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-and-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming and normalization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -696,6 +729,29 @@
   
   <span class="md-ellipsis">
     Demo App
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authoring Patterns
     
   </span>
   
@@ -1469,6 +1525,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#domevent" class="md-nav__link">
+    <span class="md-ellipsis">
+      DomEvent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delegation-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Delegation model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-and-normalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming and normalization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1501,9 +1590,36 @@
 </code></pre></div>
 
 <p>Supported prop names: <code>on_click</code>, <code>on_input</code>, <code>on_change</code>, etc. Both <code>on_foo</code> and <code>onFoo</code> styles are supported; they normalize to DOM event names.</p>
-<blockquote>
-<p>TODO: Document <code>DomEvent</code> shape and <code>prevent_default</code>/<code>stop_propagation</code>.</p>
-</blockquote>
+<h4 id="domevent">DomEvent<a class="headerlink" href="#domevent" title="Permanent link">&para;</a></h4>
+<p>Handlers receive a <code>DomEvent</code> object that wraps the browser event and provides a small, Python-friendly surface:</p>
+<ul>
+<li><code>type</code>: the event type string (e.g., <code>"click"</code>, <code>"input"</code>).</li>
+<li><code>target</code>: an <code>Element</code> for the original event target node (or <code>None</code>). Access the underlying DOM node via <code>target.element</code>.</li>
+<li><code>current_target</code>: an <code>Element</code> for the node whose handler is currently running during delegated bubbling. This is set for you before your handler is called.</li>
+<li><code>prevent_default()</code>: calls <code>preventDefault()</code> on the underlying JS event, if available. Safe to call in non-browser tests.</li>
+<li><code>stop_propagation()</code>: stops delegated propagation within Wybthon’s dispatcher for this event. It also attempts to call the underlying JS <code>stopPropagation()</code> when available.</li>
+</ul>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Form</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_submit</span><span class="p">(</span><span class="n">evt</span><span class="p">):</span>
+        <span class="n">evt</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;submitted from&quot;</span><span class="p">,</span> <span class="n">evt</span><span class="o">.</span><span class="n">current_target</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;form&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_submit&quot;</span><span class="p">:</span> <span class="n">on_submit</span><span class="p">},</span>
+             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;on_input&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="p">)}),</span>
+             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;submit&quot;</span><span class="p">},</span> <span class="s2">&quot;Go&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<h4 id="delegation-model">Delegation model<a class="headerlink" href="#delegation-model" title="Permanent link">&para;</a></h4>
+<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon’s dispatcher. Handlers are automatically removed when nodes unmount.</p>
+<h4 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>on_click</code> → <code>"click"</code></li>
+<li><code>onInput</code>/<code>on_input</code> → <code>"input"</code></li>
+<li>Any prop starting with <code>on_</code> or <code>on</code> is treated as an event handler; non-callable values are ignored.</li>
+</ul>
 
 
 

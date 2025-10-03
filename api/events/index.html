@@ -664,6 +664,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authoring Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/pyodide/" class="md-nav__link">
         
   
@@ -1511,6 +1534,12 @@
   <h1>events</h1>
 
 <h3 id="wybthonevents">wybthon.events<a class="headerlink" href="#wybthonevents" title="Permanent link">&para;</a></h3>
+<p>Wybthon’s event system provides delegated event handling and a thin <code>DomEvent</code> wrapper.</p>
+<ul>
+<li><code>DomEvent</code>: wrapper with <code>type</code>, <code>target</code> (<code>Element|None</code>), <code>current_target</code> (<code>Element|None</code>), <code>prevent_default()</code>, <code>stop_propagation()</code>.</li>
+<li>Handlers can be attached via props like <code>on_click</code>, <code>on_input</code>, or <code>onChange</code>. Names are normalized to DOM event types.</li>
+<li>Delegation is automatic and handlers are cleaned up on unmount.</li>
+</ul>
 
 
 <div class="doc doc-object doc-module">

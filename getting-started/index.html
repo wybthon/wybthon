@@ -381,6 +381,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#minimal-component-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimal component example
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -725,6 +734,29 @@
   
   <span class="md-ellipsis">
     Demo App
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authoring Patterns
     
   </span>
   
@@ -1529,6 +1561,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#minimal-component-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimal component example
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1586,6 +1627,41 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <blockquote>
 <p>TODO: Provide a minimal component example here once the authoring flow is finalized (function vs class components, recommended structure).</p>
 </blockquote>
+<h2 id="minimal-component-example">Minimal component example<a class="headerlink" href="#minimal-component-example" title="Permanent link">&para;</a></h2>
+<p>Function component:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">render</span><span class="p">,</span> <span class="n">Element</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;world&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h2&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+<span class="n">tree</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Hello</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Python&quot;</span><span class="p">})</span>
+<span class="n">container</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="n">existing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">render</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Class component with state:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">render</span><span class="p">,</span> <span class="n">Element</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
+            <span class="s2">&quot;div&quot;</span><span class="p">,</span>
+            <span class="p">{},</span>
+            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span> <span class="s2">&quot;Increment&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<span class="n">tree</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{})</span>
+<span class="n">container</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="n">existing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">render</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span>
+</code></pre></div>
+
+<p>See: <a href="../guides/authoring-patterns/">Authoring Patterns</a></p>
 
 
 

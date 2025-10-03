@@ -461,6 +461,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Reactivity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scheduling-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduling semantics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disposal
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resources-and-cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resources and cancellation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -696,6 +729,29 @@
   
   <span class="md-ellipsis">
     Demo App
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authoring Patterns
     
   </span>
   
@@ -1469,6 +1525,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Reactivity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scheduling-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduling semantics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disposal
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resources-and-cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resources and cancellation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1513,9 +1602,13 @@
 <li><code>batch()</code> → batch updates and schedule once</li>
 <li><code>use_resource(fetcher)</code> → async data with loading/error signals</li>
 </ul>
-<blockquote>
-<p>TODO: Explain microtask scheduling in Pyodide and fallbacks; cancellation semantics for <code>use_resource</code>.</p>
-</blockquote>
+<h4 id="scheduling-semantics">Scheduling semantics<a class="headerlink" href="#scheduling-semantics" title="Permanent link">&para;</a></h4>
+<p>Effects are scheduled on a microtask in Pyodide via <code>queueMicrotask</code> when available, with fallbacks to <code>setTimeout(0)</code> and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.</p>
+<p><code>batch()</code> coalesces multiple <code>set()</code> operations into a single flush at the end of the batch.</p>
+<h4 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h4>
+<p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_effect_cleanup</code> are executed during disposal.</p>
+<h4 id="resources-and-cancellation">Resources and cancellation<a class="headerlink" href="#resources-and-cancellation" title="Permanent link">&para;</a></h4>
+<p><code>use_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
 
 
 
