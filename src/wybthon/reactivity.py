@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Generic, List, Optional, Set, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Deque, Generic, List, Optional, Set, TypeVar, Union, cast
 
 T = TypeVar("T")
 
 
 _current_computation: Optional["Computation"] = None
-_pending: Set["Computation"] = set()
+# Deterministic FIFO pending queue and membership set
+_pending_queue: Deque["Computation"] = deque()
+_pending_set: Set["Computation"] = set()
 _flush_scheduled: bool = False
 _batch_depth: int = 0
 
@@ -45,11 +48,17 @@ def _schedule_flush() -> None:
 def _flush() -> None:
     global _flush_scheduled
     _flush_scheduled = False
-    # Snapshot and clear to allow re-scheduling during runs
-    pending = list(_pending)
-    _pending.clear()
-    for comp in pending:
-        comp.run()
+    # Process only the items that were queued at the time the flush was scheduled.
+    # Any computations scheduled during this flush will run in the next microtask.
+    initial_count = len(_pending_queue)
+    for _ in range(initial_count):
+        comp = _pending_queue.popleft()
+        if comp not in _pending_set:
+            # Was removed or already processed
+            continue
+        _pending_set.discard(comp)
+        if not getattr(comp, "_is_disposed", False):
+            comp.run()
 
 
 class Computation:
@@ -64,14 +73,14 @@ class Computation:
             return
         if signal not in self._deps:
             self._deps.add(signal)
-            signal._subscribers.add(self)
+            signal._add_subscriber(self)
 
     def run(self) -> None:
         if self._is_disposed:
             return
         # Clear old subscriptions
         for s in list(self._deps):
-            s._subscribers.discard(self)
+            s._remove_subscriber(self)
         self._deps.clear()
         global _current_computation
         prev = _current_computation
@@ -84,7 +93,9 @@ class Computation:
     def schedule(self) -> None:
         if self._is_disposed:
             return
-        _pending.add(self)
+        if self not in _pending_set:
+            _pending_set.add(self)
+            _pending_queue.append(self)
         if _batch_depth == 0:
             _schedule_flush()
 
@@ -93,8 +104,11 @@ class Computation:
             return
         self._is_disposed = True
         for s in list(self._deps):
-            s._subscribers.discard(self)
+            s._remove_subscriber(self)
         self._deps.clear()
+        # Remove from pending queue membership; the actual deque node will be skipped on flush
+        if self in _pending_set:
+            _pending_set.discard(self)
         while self._on_dispose:
             fn = self._on_dispose.pop()
             try:
@@ -106,7 +120,22 @@ class Computation:
 class Signal(Generic[T]):
     def __init__(self, value: T) -> None:
         self._value: T = value
-        self._subscribers: Set[Computation] = set()
+        # Maintain deterministic subscription order
+        self._subscribers: List[Computation] = []
+        self._subscriber_set: Set[Computation] = set()
+
+    def _add_subscriber(self, comp: "Computation") -> None:
+        if comp not in self._subscriber_set:
+            self._subscriber_set.add(comp)
+            self._subscribers.append(comp)
+
+    def _remove_subscriber(self, comp: "Computation") -> None:
+        if comp in self._subscriber_set:
+            self._subscriber_set.discard(comp)
+            try:
+                self._subscribers.remove(comp)
+            except ValueError:
+                pass
 
     def get(self) -> T:
         if _current_computation is not None:
@@ -167,7 +196,7 @@ class _Batch:
     def __exit__(self, exc_type, exc, tb) -> None:
         global _batch_depth
         _batch_depth -= 1
-        if _batch_depth == 0 and _pending:
+        if _batch_depth == 0 and _pending_set:
             _schedule_flush()
 
 
@@ -280,6 +309,11 @@ class Resource(Generic[R]):
         except Exception:
             pass
         self._task = None
+        # Reflect cancellation in loading state
+        try:
+            self.loading.set(False)
+        except Exception:
+            pass
 
 
 def use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]:

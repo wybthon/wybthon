@@ -468,7 +468,9 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
 
         if name in ("class", "className"):
             class_str: str
-            if isinstance(new_val, str):
+            if new_val is None:
+                class_str = ""
+            elif isinstance(new_val, str):
                 class_str = new_val
             elif isinstance(new_val, (list, tuple)):
                 class_str = " ".join(str(x) for x in new_val if x)
@@ -477,25 +479,37 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
             el.set_attr("class", class_str)
             continue
 
-        if name == "style" and isinstance(new_val, dict):
+        if name == "style":
             style_obj = el.element.style
             old_styles = old_props.get("style") if isinstance(old_props.get("style"), dict) else {}
-            if isinstance(old_styles, dict):
-                for sk in old_styles.keys():
-                    if sk not in new_val:
+            if isinstance(new_val, dict):
+                if isinstance(old_styles, dict):
+                    for sk in old_styles.keys():
+                        if sk not in new_val:
+                            style_obj.removeProperty(_to_kebab(sk))
+                for sk, sv in new_val.items():
+                    style_obj.setProperty(_to_kebab(sk), str(sv))
+            else:
+                # Clear previous styles when style is None or non-dict
+                if isinstance(old_styles, dict):
+                    for sk in old_styles.keys():
                         style_obj.removeProperty(_to_kebab(sk))
-            for sk, sv in new_val.items():
-                style_obj.setProperty(_to_kebab(sk), str(sv))
             continue
 
-        if name == "dataset" and isinstance(new_val, dict):
+        if name == "dataset":
             old_ds = old_props.get("dataset") if isinstance(old_props.get("dataset"), dict) else {}
-            if isinstance(old_ds, dict):
-                for dk in old_ds.keys():
-                    if dk not in new_val:
+            if isinstance(new_val, dict):
+                if isinstance(old_ds, dict):
+                    for dk in old_ds.keys():
+                        if dk not in new_val:
+                            el.remove_attr(f"data-{dk}")
+                for dk, dv in new_val.items():
+                    el.set_attr(f"data-{dk}", dv)
+            else:
+                # Clear previous dataset when dataset is None or non-dict
+                if isinstance(old_ds, dict):
+                    for dk in old_ds.keys():
                         el.remove_attr(f"data-{dk}")
-            for dk, dv in new_val.items():
-                el.set_attr(f"data-{dk}", dv)
             continue
 
         # Controlled form properties: prefer DOM properties over attributes
