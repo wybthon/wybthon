@@ -121,3 +121,22 @@ This roadmap should be reflected as GitHub milestones and issues. Each release s
 - Alignment with this roadmap
   - Pre-1.0 allows API evolution and cleanup.
   - 1.0.0 introduces an API freeze; no breaking changes in minor or patch releases.
+
+#### Release branching strategy (major versions)
+
+- Maintenance branch
+  - After `v1.0.0`, create a long-lived `1.x` (or `release/1.x`) branch.
+  - Ship all `v1.y.z` releases from this branch (e.g., `v1.2.0`, `v1.3.0`).
+- Next-major development
+  - Option A: set `main` to v2 development after cutting `1.x`.
+  - Option B: keep `main` on v1.x and develop v2 on a long-lived `next`/`v2` branch; merge into `main` when releasing `v2.0.0`.
+- Parallel work
+  - Target v1.x PRs to `1.x`; target v2 PRs to `main` (or `next`).
+  - Forward-merge or cherry-pick from `1.x` → `main` regularly to carry fixes/improvements forward.
+- Versioning and tags
+  - Tag v1 releases on `1.x` (e.g., `v1.3.0`).
+  - Tag v2 pre-releases/releases on `main`/`next` (e.g., `v2.0.0rc1`, `v2.0.0`).
+- Breaking-change notation
+  - Use Conventional Commits with `!` or a `BREAKING CHANGE:` footer and include migration notes.
+- Patch policy
+  - Keep one maintenance line per major (e.g., `1.x`) and apply patches only to the latest minor of that line (e.g., `1.5.x`); older minors are not patched.
