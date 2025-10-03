@@ -1397,6 +1397,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prioritized-implementation-tasks-top-to-bottom" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prioritized implementation tasks (top to bottom)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioned-milestones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Versioned milestones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-and-longer-term-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes and longer-term research
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-versioning-semver-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Semantic Versioning (SemVer) policy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1469,6 +1511,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prioritized-implementation-tasks-top-to-bottom" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prioritized implementation tasks (top to bottom)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioned-milestones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Versioned milestones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-and-longer-term-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes and longer-term research
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-versioning-semver-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Semantic Versioning (SemVer) policy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1493,20 +1577,154 @@
   <h1>Roadmap</h1>
 
 <h3 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Short term</li>
-<li>Stabilize reactivity scheduling and resource cancellation</li>
-<li>Document component authoring patterns</li>
-<li>Medium term</li>
-<li>Nested routing and code-splitting examples</li>
-<li>Better error boundary ergonomics</li>
-<li>Long term</li>
-<li>SSR story (research)</li>
-<li>CLI scaffolding for apps (research)</li>
-</ul>
+<p>Wybthon v0.1.0 is published. Below is a prioritized implementation plan to evolve Wybthon into a practical CSR/SPA framework running client-side Python via Pyodide. This plan includes a numbered list of top tasks and versioned milestones up to v1.0.0.</p>
+<h4 id="prioritized-implementation-tasks-top-to-bottom">Prioritized implementation tasks (top to bottom)<a class="headerlink" href="#prioritized-implementation-tasks-top-to-bottom" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Stabilize reactivity scheduling and effect/resource lifecycle</li>
+<li>Make microtask scheduling deterministic in Pyodide; ensure <code>_schedule_flush()</code> is robust and test-covered.</li>
+<li>Guarantee <code>Computation.dispose()</code> consistently unsubscribes and cancels pending runs.</li>
+<li>Resource cancellation: ensure <code>Resource.cancel()</code> reliably aborts JS fetches and Python tasks; add race tests.</li>
+<li>Document component authoring patterns (function vs class)</li>
+<li>Authoritative guidance on using <code>signal</code>, <code>computed</code>, <code>effect</code> inside class and function components.</li>
+<li>Patterns for state ownership, passing <code>children</code>, cleanup via <code>on_cleanup</code> and effect disposal.</li>
+<li>Router: nested routes, wildcards, and route info</li>
+<li>Implement nested route resolution using <code>Route.children</code> with params/queries threaded through.</li>
+<li>Wildcard routes, 404 handling, and base path support.</li>
+<li>Add <code>Link</code> active state styling and <code>navigate</code> options.</li>
+<li>Code splitting and lazy routes (Pyodide-safe)</li>
+<li>Provide <code>lazy()</code> utility for deferred component loading via <code>importlib</code>/<code>micropip</code> in Pyodide.</li>
+<li>Example: split demo routes; preloading hooks.</li>
+<li>Error boundaries ergonomics and loading fallbacks</li>
+<li>Improve <code>ErrorBoundary</code> reset behavior; document guarantees and limitations.</li>
+<li>Introduce <code>Suspense</code>-like helper for <code>use_resource</code> loading fallbacks.</li>
+<li>DOM/VDOM diffing correctness and performance pass</li>
+<li>Strengthen keyed diffing for reorders; add benchmarks for list ops and text updates.</li>
+<li>Ensure <code>_apply_props</code> covers edge-case removals for <code>style</code>, <code>dataset</code>, <code>value</code>, <code>checked</code>.</li>
+<li>Events: ergonomics and normalization</li>
+<li>Finalize <code>DomEvent</code> docs (<code>prevent_default</code>, <code>stop_propagation</code>, <code>current_target</code>).</li>
+<li>Normalize <code>on_foo</code>/<code>onFoo</code> mapping with tests; ensure delegation cleanup on unmount.</li>
+<li>Forms: bindings and validation completeness</li>
+<li>Ship and document <code>bind_checkbox</code>, <code>bind_select</code>, <code>on_submit</code> end-to-end; add form-level validation helpers.</li>
+<li>Accessibility guidance and examples.</li>
+<li>Dev server quality-of-life</li>
+<li>Auto-open, configurable static roots, logging, and error overlay for Python exceptions in Pyodide.</li>
+<li>Cache-busting and content hashing for example demos.</li>
+<li>Testing matrix and CI</li>
+<li>Unit tests for router resolution (params, wildcards, nested), VDOM diffing, events delegation, and resources.</li>
+<li>Pyodide-in-browser smoke tests via Playwright or Pyodide headless.</li>
+<li>Public API hardening and typing</li>
+<li>Tighten <code>__all__</code> surface, finalize names, improve type hints, and add <code>typing</code> docs.</li>
+<li>CLI scaffolding (research → MVP)</li>
+<li><code>wyb new</code> to scaffold a Pyodide app with router, components, and dev server config.</li>
+<li>Templates for basic SPA and demo.</li>
+</ol>
 <blockquote>
-<p>TODO: Convert this into GitHub milestones.</p>
+<p>These tasks map directly into the versioned milestones below.</p>
 </blockquote>
+<h4 id="versioned-milestones">Versioned milestones<a class="headerlink" href="#versioned-milestones" title="Permanent link">&para;</a></h4>
+<ul>
+<li>v0.1.1 (Stability and docs)</li>
+<li>(1) Reactivity flush determinism; resource cancellation tests; minor bug fixes in <code>_apply_props</code>.</li>
+<li>(2) Initial authoring patterns guide with examples (function + class components).</li>
+<li>(7) Document events and <code>DomEvent</code> shape; add basic event tests.</li>
+<li>
+<p>(10) CI for unit tests on Python-side; begin Pyodide test harness setup.</p>
+</li>
+<li>
+<p>v0.2.0 (Routing foundations)</p>
+</li>
+<li>(3) Nested routing with <code>Route.children</code>, wildcard routes, 404 handling, base path.</li>
+<li>(3) <code>Link</code> active class and <code>navigate(replace=True)</code> examples.</li>
+<li>(10) Router unit tests covering params, nested, wildcard.</li>
+<li>
+<p>Docs: concepts + examples for router, including migration notes.</p>
+</li>
+<li>
+<p>v0.3.0 (Lazy loading and code splitting)</p>
+</li>
+<li>(4) <code>lazy()</code>/<code>load_component()</code> utilities compatible with Pyodide; preload APIs.</li>
+<li>(4) Demo: split <code>examples/demo</code> routes; document caveats with Pyodide module loading.</li>
+<li>
+<p>(5) Optional <code>Suspense</code>-like helper for resource loading fallbacks.</p>
+</li>
+<li>
+<p>v0.4.0 (Error handling and UX)</p>
+</li>
+<li>(5) ErrorBoundary reset API clarified; fallback ergonomics improved; docs and examples.</li>
+<li>(7) Event delegation cleanup guarantees on unmount with tests.</li>
+<li>
+<p>(8) Form submit patterns with validation aggregates and accessibility tips.</p>
+</li>
+<li>
+<p>v0.5.0 (VDOM performance and correctness)</p>
+</li>
+<li>(6) Keyed children reorder correctness and micro-benchmarks.</li>
+<li>(6) Prop application edge cases (style/dataset/value/checked) covered with tests.</li>
+<li>
+<p>(10) Add VDOM diffing tests for text node fast-path and reorders.</p>
+</li>
+<li>
+<p>v0.6.0 (Dev server DX)</p>
+</li>
+<li>(9) Auto-open, static mount configuration, error overlay in browser for Python exceptions.</li>
+<li>(9) Cache busting for demo assets, configurable host/port messages.</li>
+<li>
+<p>Docs: dev server advanced usage and troubleshooting.</p>
+</li>
+<li>
+<p>v0.7.0 (API hardening and typing)</p>
+</li>
+<li>(11) Finalize public API surface via <code>__all__</code> and docs; strengthen type hints.</li>
+<li>(2) Complete component authoring patterns (state, children composition, cleanup) with larger examples.</li>
+<li>
+<p>(10) Expand CI: mypy, formatting, and coverage gates.</p>
+</li>
+<li>
+<p>v0.8.0 (Ecosystem and forms)</p>
+</li>
+<li>(8) Form-level validation helpers, schema integration option, more bindings examples.</li>
+<li>(7) Event docs: comprehensive list and cross-browser notes for Pyodide.</li>
+<li>
+<p>(10) Add forms and events test suites.</p>
+</li>
+<li>
+<p>v0.9.0 (Code splitting + router integration)</p>
+</li>
+<li>(4) Route-level code splitting patterns with preloading and error/timeout fallbacks.</li>
+<li>(3) Router devtools-friendly logging and navigation hooks.</li>
+<li>
+<p>Docs: performance guide and code splitting best practices under Pyodide constraints.</p>
+</li>
+<li>
+<p>v1.0.0 (Stable SPA release)</p>
+</li>
+<li>API freeze across <code>reactivity</code>, <code>vdom</code>, <code>router</code>, <code>forms</code>, <code>context</code>, <code>events</code>.</li>
+<li>Documentation complete: getting started, concepts, API reference, guides (typing, testing, deployment, performance), and a full demo app.</li>
+<li>Test suite: router/vdom/events/resources/forms; basic browser automation for Pyodide; CI passing.</li>
+<li>(12) CLI scaffolding MVP (<code>wyb new</code>) shipped, marked experimental but supported.</li>
+<li>Post-1.0 roadmap prepared (SSR story research, ecosystem integrations).</li>
+</ul>
+<h4 id="notes-and-longer-term-research">Notes and longer-term research<a class="headerlink" href="#notes-and-longer-term-research" title="Permanent link">&para;</a></h4>
+<ul>
+<li>SSR story (research): feasibility of server-rendered HTML with client handoff in Pyodide contexts.</li>
+<li>CLI scaffolding expansions: templates, generators, and plug-ins.</li>
+</ul>
+<p>This roadmap should be reflected as GitHub milestones and issues. Each release should include a changelog entry in <code>docs/meta/changelog.md</code> and a PyPI release with pinned version.</p>
+<h4 id="semantic-versioning-semver-policy">Semantic Versioning (SemVer) policy<a class="headerlink" href="#semantic-versioning-semver-policy" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Pre-1.0.0 (0.x.y)</li>
+<li>Minor releases (0.MINOR) may include breaking changes.</li>
+<li>Patch releases (0.MINOR.PATCH) are limited to backward-compatible fixes.</li>
+<li>All breaking changes must be documented in the changelog.</li>
+<li>From 1.0.0 onwards</li>
+<li>PATCH: backward-compatible bug fixes only.</li>
+<li>MINOR: backward-compatible features and additions only.</li>
+<li>MAJOR: any breaking change (API removals/renames, behavior changes, type/signature changes).</li>
+<li>APIs may be explicitly marked “experimental” to exempt them from stability guarantees until stabilization.</li>
+<li>Alignment with this roadmap</li>
+<li>Pre-1.0 allows API evolution and cleanup.</li>
+<li>1.0.0 introduces an API freeze; no breaking changes in minor or patch releases.</li>
+</ul>
 
 
 
