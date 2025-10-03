@@ -1436,6 +1436,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#release-branching-strategy-major-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Release branching strategy (major versions)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1545,6 +1554,15 @@
   <a href="#semantic-versioning-semver-policy" class="md-nav__link">
     <span class="md-ellipsis">
       Semantic Versioning (SemVer) policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#release-branching-strategy-major-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Release branching strategy (major versions)
     </span>
   </a>
   
@@ -1724,6 +1742,25 @@
 <li>Alignment with this roadmap</li>
 <li>Pre-1.0 allows API evolution and cleanup.</li>
 <li>1.0.0 introduces an API freeze; no breaking changes in minor or patch releases.</li>
+</ul>
+<h4 id="release-branching-strategy-major-versions">Release branching strategy (major versions)<a class="headerlink" href="#release-branching-strategy-major-versions" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Maintenance branch</li>
+<li>After <code>v1.0.0</code>, create a long-lived <code>1.x</code> (or <code>release/1.x</code>) branch.</li>
+<li>Ship all <code>v1.y.z</code> releases from this branch (e.g., <code>v1.2.0</code>, <code>v1.3.0</code>).</li>
+<li>Next-major development</li>
+<li>Option A: set <code>main</code> to v2 development after cutting <code>1.x</code>.</li>
+<li>Option B: keep <code>main</code> on v1.x and develop v2 on a long-lived <code>next</code>/<code>v2</code> branch; merge into <code>main</code> when releasing <code>v2.0.0</code>.</li>
+<li>Parallel work</li>
+<li>Target v1.x PRs to <code>1.x</code>; target v2 PRs to <code>main</code> (or <code>next</code>).</li>
+<li>Forward-merge or cherry-pick from <code>1.x</code> → <code>main</code> regularly to carry fixes/improvements forward.</li>
+<li>Versioning and tags</li>
+<li>Tag v1 releases on <code>1.x</code> (e.g., <code>v1.3.0</code>).</li>
+<li>Tag v2 pre-releases/releases on <code>main</code>/<code>next</code> (e.g., <code>v2.0.0rc1</code>, <code>v2.0.0</code>).</li>
+<li>Breaking-change notation</li>
+<li>Use Conventional Commits with <code>!</code> or a <code>BREAKING CHANGE:</code> footer and include migration notes.</li>
+<li>Patch policy</li>
+<li>Keep one maintenance line per major (e.g., <code>1.x</code>) and apply patches only to the latest minor of that line (e.g., <code>1.5.x</code>); older minors are not patched.</li>
 </ul>
 
 
