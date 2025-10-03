@@ -39,12 +39,14 @@ dev = [
   "ruff>=0.5",
   "mypy>=1.10",
   "pytest>=8.0",
+  "pytest-playwright>=0.5.0",
 ]
 ci = [
   "black>=24.0",
   "ruff>=0.5",
   "mypy>=1.10",
   "pytest>=8.0",
+  "pytest-playwright>=0.5.0",
 ]
 
 [project.scripts]
