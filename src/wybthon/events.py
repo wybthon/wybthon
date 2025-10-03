@@ -1,6 +1,15 @@
 from typing import Callable, Dict, Optional
 
-from .dom import Element
+# Allow importing this module outside the browser (no js/pyodide) by
+# providing a minimal Element stub if importing from wybthon.dom fails.
+try:
+    from .dom import Element
+except Exception:  # pragma: no cover - exercised in non-browser tests
+
+    class Element:  # type: ignore
+        def __init__(self, tag: Optional[str] = None, existing: bool = False, node=None) -> None:
+            self.element = node
+
 
 _NODE_ID_ATTR = "data-wybid"
 _next_id = 0
