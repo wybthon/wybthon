@@ -287,9 +287,20 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
             instance.props = new.props
             new.component_instance = instance
             try:
-                next_sub = instance.render()
-                if not isinstance(next_sub, VNode):
-                    next_sub = _to_text_vnode(next_sub)
+                # Special-case Provider to ensure context push/pop and VNode children wrapper
+                if isinstance(instance, Provider):
+                    ctx = instance.props.get("context")
+                    value = instance.props.get("value")
+                    children = instance.props.get("children", [])
+                    push_provider_value(ctx, value)
+                    try:
+                        next_sub = h("div", {}, *children)
+                    finally:
+                        pop_provider_value()
+                else:
+                    next_sub = instance.render()
+                    if not isinstance(next_sub, VNode):
+                        next_sub = _to_text_vnode(next_sub)
                 prev_sub = old.subtree
                 new.subtree = next_sub
                 if prev_sub is None:
@@ -324,15 +335,15 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                 raise
         else:
             # Function component
-            next_sub = new.tag(new.props)  # type: ignore[call-arg]
-            if not isinstance(next_sub, VNode):
-                next_sub = _to_text_vnode(next_sub)
+            func_sub = new.tag(new.props)  # type: ignore[call-arg]
+            if not isinstance(func_sub, VNode):
+                func_sub = _to_text_vnode(func_sub)
             prev_sub = old.subtree
-            new.subtree = next_sub
+            new.subtree = func_sub
             if prev_sub is None:
-                _mount(next_sub, container)
+                _mount(func_sub, container)
             else:
-                _patch(prev_sub, next_sub, container)
+                _patch(prev_sub, func_sub, container)
             return
 
     # Element nodes

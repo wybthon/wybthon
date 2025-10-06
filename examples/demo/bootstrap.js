@@ -10,7 +10,19 @@ async function bootstrap() {
 
     // Load the library modules from src into Pyodide's filesystem so `import wybthon` works.
     try { pyodide.FS.mkdir("/wybthon"); } catch {}
-    const files = ["__init__.py", "dom.py", "component.py", "vdom.py", "reactivity.py", "events.py", "context.py", "router.py", "forms.py", "dev.py"];
+    const files = [
+      "__init__.py",
+      "dom.py",
+      "component.py",
+      "vdom.py",
+      "reactivity.py",
+      "events.py",
+      "context.py",
+      "router.py",
+      "router_core.py",
+      "forms.py",
+      "dev.py",
+    ];
     const cacheBust = Date.now();
     for (const f of files) {
       const resp = await fetch(`../../src/wybthon/${f}?v=${cacheBust}`);
@@ -25,6 +37,8 @@ async function bootstrap() {
     ensureDir("/app/components");
     ensureDir("/app/contexts");
     ensureDir("/app/about");
+    ensureDir("/app/about/team");
+    ensureDir("/app/docs");
     ensureDir("/app/fetch");
     ensureDir("/app/forms");
     ensureDir("/app/errors");
@@ -35,6 +49,7 @@ async function bootstrap() {
       "app/routes.py",
       "app/main.py",
       "app/page.py",
+      "app/not_found.py",
       "app/components/__init__.py",
       "app/components/hello.py",
       "app/components/counter.py",
@@ -44,6 +59,10 @@ async function bootstrap() {
       "app/contexts/theme.py",
       "app/about/__init__.py",
       "app/about/page.py",
+      "app/about/team/__init__.py",
+      "app/about/team/page.py",
+      "app/docs/__init__.py",
+      "app/docs/page.py",
       "app/fetch/__init__.py",
       "app/fetch/page.py",
       "app/forms/__init__.py",
