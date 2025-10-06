@@ -523,6 +523,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#active-links-and-replace-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Active links and replace navigation
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1573,6 +1582,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#active-links-and-replace-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Active links and replace navigation
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1616,7 +1634,7 @@
 
 <ul>
 <li><code>navigate(path, replace=False)</code> updates history and <code>current_path</code></li>
-<li><code>Link</code> intercepts clicks for SPA navigation</li>
+<li><code>Link</code> intercepts clicks for SPA navigation and applies an active class when matched</li>
 </ul>
 <h4 id="dynamic-params-and-queries">Dynamic params and queries<a class="headerlink" href="#dynamic-params-and-queries" title="Permanent link">&para;</a></h4>
 <div class="codehilite"><pre><span></span><code><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/users/:id&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">UserPage</span><span class="p">)</span>
@@ -1645,6 +1663,21 @@
 <div class="codehilite"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="s2">&quot;/app&quot;</span><span class="p">})</span>
 <span class="c1"># Link respects base path; Link({&quot;to&quot;: &quot;/about&quot;}) → href &quot;/app/about&quot;</span>
 </code></pre></div>
+
+<h4 id="active-links-and-replace-navigation">Active links and replace navigation<a class="headerlink" href="#active-links-and-replace-navigation" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># `Link` adds `class=&quot;active&quot;` when the current path matches its href.</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">},</span> <span class="s2">&quot;About&quot;</span><span class="p">)</span>
+<span class="c1"># Customize class name and avoid pushing history with replace</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;is-active&quot;</span><span class="p">,</span> <span class="s2">&quot;replace&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="s2">&quot;About (replace)&quot;</span><span class="p">)</span>
+
+<span class="c1"># Imperative navigation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">navigate</span>
+<span class="n">navigate</span><span class="p">(</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Migration notes:
+- Prior versions did not include <code>Link</code> active styling. If you previously computed active state manually, you can remove that logic and rely on <code>Link</code>'s built-in active class.
+- Use the new <code>replace=True</code> option on both <code>Link</code> and <code>navigate()</code> when you want to update the URL without adding a history entry (e.g., tab switches).</p>
 
 
 

@@ -1534,6 +1534,18 @@
 <span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">})</span>
 </code></pre></div>
 
+<p>Active links and replace navigation:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Adds class=&quot;active&quot; when matched</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;About&quot;</span><span class="p">]})</span>
+
+<span class="c1"># Custom active class and replace behavior</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;is-active&quot;</span><span class="p">,</span> <span class="s2">&quot;replace&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;About&quot;</span><span class="p">]})</span>
+
+<span class="c1"># Imperative navigation with replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">navigate</span>
+<span class="n">navigate</span><span class="p">(</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
 <p>Dynamic params and queries:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/users/:userId&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">User</span><span class="p">)</span>
 <span class="c1"># /users/123?tab=info → props[&quot;params&quot;][&quot;userId&quot;] == &quot;123&quot;, props[&quot;query&quot;][&quot;tab&quot;] == &quot;info&quot;</span>
