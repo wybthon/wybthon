@@ -17,7 +17,7 @@ app = h(Router, {"routes": routes})
 ```
 
 - `navigate(path, replace=False)` updates history and `current_path`
-- `Link` intercepts clicks for SPA navigation
+- `Link` intercepts clicks for SPA navigation and applies an active class when matched
 
 #### Dynamic params and queries
 
@@ -54,3 +54,20 @@ app = h(Router, {"routes": routes, "not_found": NotFound})  # optional custom 40
 app = h(Router, {"routes": routes, "base_path": "/app"})
 # Link respects base path; Link({"to": "/about"}) → href "/app/about"
 ```
+
+#### Active links and replace navigation
+
+```python
+# `Link` adds `class="active"` when the current path matches its href.
+h(Link, {"to": "/about", "class": "nav-link"}, "About")
+# Customize class name and avoid pushing history with replace
+h(Link, {"to": "/about", "class_active": "is-active", "replace": True}, "About (replace)")
+
+# Imperative navigation
+from wybthon.router import navigate
+navigate("/about", replace=True)
+```
+
+Migration notes:
+- Prior versions did not include `Link` active styling. If you previously computed active state manually, you can remove that logic and rely on `Link`'s built-in active class.
+- Use the new `replace=True` option on both `Link` and `navigate()` when you want to update the URL without adding a history entry (e.g., tab switches).

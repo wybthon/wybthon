@@ -20,6 +20,20 @@ routes = [
 app = h(Router, {"routes": routes})
 ```
 
+Active links and replace navigation:
+
+```python
+# Adds class="active" when matched
+h(Link, {"to": "/about", "children": ["About"]})
+
+# Custom active class and replace behavior
+h(Link, {"to": "/about", "class_active": "is-active", "replace": True, "children": ["About"]})
+
+# Imperative navigation with replace
+from wybthon.router import navigate
+navigate("/about", replace=True)
+```
+
 Dynamic params and queries:
 
 ```python

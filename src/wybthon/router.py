@@ -179,6 +179,8 @@ class Router(Component):
 
 def Link(props: Dict[str, Any]) -> VNode:
     to = props.get("to", "/")
+    replace = bool(props.get("replace", False))
+    class_active = props.get("class_active", "active")
     # Use explicit base_path prop if provided, otherwise read from context
     base_path: str = props.get("base_path") or use_context(BasePath) or ""
 
@@ -213,9 +215,34 @@ def Link(props: Dict[str, Any]) -> VNode:
             pass
         evt.prevent_default()
         href = _with_base(to)
-        navigate(href)
+        navigate(href, replace=replace)
 
-    attrs = {"href": _with_base(to), "on_click": handle_click}
+    # Compute active state by comparing normalized paths (ignore search/hash)
+    try:
+        current = current_path.get()
+    except Exception:
+        current = "/"
+    href_no_search = _with_base(to)
+    if "?" in current:
+        current_no_search = current.split("?", 1)[0]
+    else:
+        current_no_search = current
+
+    is_active = current_no_search == href_no_search
+
+    # Merge class names with active class when active
+    existing_class = props.get("class") or props.get("className")
+    classes: List[str] = []
+    if isinstance(existing_class, str) and existing_class.strip():
+        classes.append(existing_class)
+    elif isinstance(existing_class, (list, tuple)):
+        classes.extend(str(x) for x in existing_class if x)
+    if is_active and class_active:
+        classes.append(str(class_active))
+
+    attrs = {"href": href_no_search, "on_click": handle_click}
+    if classes:
+        attrs["class"] = " ".join(classes)
     children = props.get("children", [])
     if not isinstance(children, list):
         children = [children]
