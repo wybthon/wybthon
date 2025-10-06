@@ -2,6 +2,7 @@ from app.components.counter import Counter
 from app.components.hello import Hello
 from app.components.theme_label import ThemeLabel
 from app.layout import Layout
+from app.not_found import NotFound
 from app.routes import create_routes
 from wybthon import Element, Router, h, render
 
@@ -12,7 +13,7 @@ async def main():
     tree = h(
         Layout,
         {},
-        h(Router, {"routes": routes}),
+        h(Router, {"routes": routes, "not_found": NotFound}),
         h(ThemeLabel, {}),
         h(Counter, {}),
         h(Hello, {"name": "Python"}),

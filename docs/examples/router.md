@@ -20,4 +20,20 @@ routes = [
 app = h(Router, {"routes": routes})
 ```
 
-> TODO: Add dynamic params and query parsing example.
+Dynamic params and queries:
+
+```python
+Route(path="/users/:userId", component=User)
+# /users/123?tab=info → props["params"]["userId"] == "123", props["query"]["tab"] == "info"
+```
+
+Nested and wildcard routes:
+
+```python
+routes = [
+    Route(path="/about", component=About, children=[Route(path="team", component=Team)]),
+    Route(path="/docs/*", component=Docs),
+]
+
+app = h(Router, {"routes": routes, "not_found": NotFound})
+```

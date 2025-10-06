@@ -7,8 +7,10 @@ from js import window
 from pyodide.ffi import create_proxy
 
 from .component import Component
+from .context import Provider, create_context, use_context
 from .events import DomEvent
 from .reactivity import signal
+from .router_core import resolve as _resolve_core
 from .vdom import VNode, h
 
 
@@ -94,8 +96,6 @@ def _compile(path: str) -> Tuple[str, List[str]]:
         else:
             regex_parts.append(_escape_re(p))
     regex = r"^/" + "/".join(x for x in regex_parts if x)
-    if path.endswith("/*"):
-        regex += r"(?:/.*)?"
     regex += r"$"
     return regex, names
 
@@ -119,18 +119,30 @@ def _match(pathname: str, route: Route) -> Optional[Tuple[Dict[str, str], Route]
     return params, route
 
 
-def _resolve(routes: List[Route], pathname: str) -> Optional[Tuple[Route, Dict[str, Any]]]:
-    for r in routes:
-        m = _match(pathname, r)
-        if m is not None:
-            params, route = m
-            return route, {"params": params}
-    return None
+def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optional[Tuple[Route, Dict[str, Any]]]:
+    try:
+        res = _resolve_core(routes, pathname, base_path)
+        if res is None:
+            return None
+        route, info = res
+        return route, info
+    except Exception:
+        # Fallback to flat matching of top-level routes only
+        for r in routes:
+            m = _match(pathname, r)
+            if m is not None:
+                params, route = m
+                return route, {"params": params}
+        return None
+
+
+BasePath = create_context("")
 
 
 class Router(Component):
     def render(self) -> VNode:
         routes: List[Route] = self.props.get("routes", [])
+        base_path: str = self.props.get("base_path", "")
         path = current_path.get()
         if "?" in path:
             pathname, search = path.split("?", 1)
@@ -139,8 +151,16 @@ class Router(Component):
             pathname, search = path, ""
         query = _parse_query(search)
 
-        resolved = _resolve(routes, pathname)
+        resolved = _resolve(routes, pathname, base_path)
         if resolved is None:
+            not_found = self.props.get("not_found")
+            if callable(not_found) and not isinstance(not_found, type):
+                vnode = not_found({"query": query, "params": {}})
+                if not isinstance(vnode, VNode):
+                    vnode = h("div", {}, vnode)
+                return vnode
+            if isinstance(not_found, type):
+                return h(not_found, {**self.props, "query": query, "params": {}})
             return h("div", {}, "Not Found")
 
         matched_route, info = resolved
@@ -148,15 +168,35 @@ class Router(Component):
 
         comp = matched_route.component
         props = {**self.props, **info}
-        # Function component
+        # Function component vs class component
         if callable(comp) and not isinstance(comp, type):
-            return comp(props)
-        # Class component
-        return h(comp, props)
+            sub = comp(props)
+            if not isinstance(sub, VNode):
+                sub = h("div", {}, sub)
+            return h(Provider, {"context": BasePath, "value": base_path}, sub)
+        return h(Provider, {"context": BasePath, "value": base_path}, h(comp, props))
 
 
 def Link(props: Dict[str, Any]) -> VNode:
     to = props.get("to", "/")
+    # Use explicit base_path prop if provided, otherwise read from context
+    base_path: str = props.get("base_path") or use_context(BasePath) or ""
+
+    def _with_base(target: str) -> str:
+        if not isinstance(target, str):
+            return "/"
+        if target.startswith("http://") or target.startswith("https://") or target.startswith("#"):
+            return target
+        if not base_path:
+            return target
+        if target.startswith("/"):
+            if base_path == "/":
+                return target
+            return (base_path.rstrip("/") or "/") + target
+        # relative path; join with base
+        if base_path == "/":
+            return "/" + target.strip("/")
+        return (base_path.rstrip("/") or "") + "/" + target.strip("/")
 
     def handle_click(evt: DomEvent) -> None:
         try:
@@ -172,9 +212,10 @@ def Link(props: Dict[str, Any]) -> VNode:
         except Exception:
             pass
         evt.prevent_default()
-        navigate(to)
+        href = _with_base(to)
+        navigate(href)
 
-    attrs = {"href": to, "on_click": handle_click}
+    attrs = {"href": _with_base(to), "on_click": handle_click}
     children = props.get("children", [])
     if not isinstance(children, list):
         children = [children]
