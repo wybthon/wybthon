@@ -4,6 +4,7 @@ from wybthon import Provider, h
 
 
 def Layout(props):
+    base_path = props.get("base_path", "")
     children = props.get("children", [])
     if not isinstance(children, list):
         children = [children]
@@ -11,6 +12,6 @@ def Layout(props):
         "div",
         {"id": "app"},
         h("h1", {}, "Wybthon VDOM Demo"),
-        h(Nav, {}),
+        h(Nav, {"base_path": base_path}),
         h(Provider, {"context": Theme, "value": "dark"}, children),
     )

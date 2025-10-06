@@ -1,28 +1,37 @@
 from wybthon import Link, h
 
 
-def Nav(_props):
+def Nav(props):
+    base_path = props.get("base_path")
     return h(
         "nav",
         {"class": "nav"},
-        h(Link, {"to": "/", "class": "nav-link", "class_active": "active"}, "Home"),
+        h(Link, {"to": "/", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Home"),
         " | ",
-        h(Link, {"to": "/about", "class": "nav-link", "class_active": "active"}, "About"),
+        h(Link, {"to": "/about", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "About"),
         " (",
-        h(Link, {"to": "/about/team", "class": "nav-link", "class_active": "active"}, "Team"),
+        h(Link, {"to": "/about/team", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Team"),
         ")",
         " | ",
-        h(Link, {"to": "/fetch", "class": "nav-link", "class_active": "active"}, "Fetch"),
+        h(Link, {"to": "/fetch", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Fetch"),
         " | ",
-        h(Link, {"to": "/forms", "class": "nav-link", "class_active": "active"}, "Forms"),
+        h(Link, {"to": "/forms", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Forms"),
         " | ",
-        h(Link, {"to": "/errors", "class": "nav-link", "class_active": "active"}, "Errors"),
+        h(Link, {"to": "/errors", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Errors"),
         " | ",
-        h(Link, {"to": "/docs", "class": "nav-link", "class_active": "active"}, "Docs"),
+        h(Link, {"to": "/docs", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Docs"),
         " (",
-        h(Link, {"to": "/docs/guide/intro", "class": "nav-link", "class_active": "active"}, "guide/intro"),
+        h(
+            Link,
+            {"to": "/docs/guide/intro", "base_path": base_path, "class": "nav-link", "class_active": "active"},
+            "guide/intro",
+        ),
         ")",
         " | ",
         # Example of replace navigation (won't add history entry when clicked)
-        h(Link, {"to": "/about", "replace": True, "class": "nav-link", "class_active": "active"}, "About (replace)"),
+        h(
+            Link,
+            {"to": "/about", "base_path": base_path, "replace": True, "class": "nav-link", "class_active": "active"},
+            "About (replace)",
+        ),
     )
