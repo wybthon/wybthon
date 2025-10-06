@@ -1534,9 +1534,19 @@
 <span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">})</span>
 </code></pre></div>
 
-<blockquote>
-<p>TODO: Add dynamic params and query parsing example.</p>
-</blockquote>
+<p>Dynamic params and queries:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/users/:userId&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">User</span><span class="p">)</span>
+<span class="c1"># /users/123?tab=info → props[&quot;params&quot;][&quot;userId&quot;] == &quot;123&quot;, props[&quot;query&quot;][&quot;tab&quot;] == &quot;info&quot;</span>
+</code></pre></div>
+
+<p>Nested and wildcard routes:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">About</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;team&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Team</span><span class="p">)]),</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/docs/*&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Docs</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">,</span> <span class="s2">&quot;not_found&quot;</span><span class="p">:</span> <span class="n">NotFound</span><span class="p">})</span>
+</code></pre></div>
 
 
 

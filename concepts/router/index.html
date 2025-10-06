@@ -484,6 +484,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Router">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-params-and-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic params and queries
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nested-routes-with-routechildren" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nested routes with Route.children
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wildcards-and-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wildcards and 404
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base path
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1534,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Router">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-params-and-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic params and queries
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nested-routes-with-routechildren" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nested routes with Route.children
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wildcards-and-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wildcards and 404
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base path
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1534,9 +1618,33 @@
 <li><code>navigate(path, replace=False)</code> updates history and <code>current_path</code></li>
 <li><code>Link</code> intercepts clicks for SPA navigation</li>
 </ul>
-<blockquote>
-<p>TODO: Document nested routes and wildcard matching.</p>
-</blockquote>
+<h4 id="dynamic-params-and-queries">Dynamic params and queries<a class="headerlink" href="#dynamic-params-and-queries" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/users/:id&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">UserPage</span><span class="p">)</span>
+<span class="c1"># /users/42?tab=activity → props[&quot;params&quot;][&quot;id&quot;] == &quot;42&quot;, props[&quot;query&quot;][&quot;tab&quot;] == &quot;activity&quot;</span>
+</code></pre></div>
+
+<h4 id="nested-routes-with-routechildren">Nested routes with <code>Route.children</code><a class="headerlink" href="#nested-routes-with-routechildren" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Route</span><span class="p">(</span>
+        <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span>
+        <span class="n">component</span><span class="o">=</span><span class="n">About</span><span class="p">,</span>
+        <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;team&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Team</span><span class="p">),</span>  <span class="c1"># matches /about/team</span>
+        <span class="p">],</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h4 id="wildcards-and-404">Wildcards and 404<a class="headerlink" href="#wildcards-and-404" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/docs/*&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Docs</span><span class="p">)</span>  <span class="c1"># params[&quot;wildcard&quot;] contains the trailing path or &quot;&quot;</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">,</span> <span class="s2">&quot;not_found&quot;</span><span class="p">:</span> <span class="n">NotFound</span><span class="p">})</span>  <span class="c1"># optional custom 404</span>
+</code></pre></div>
+
+<h4 id="base-path">Base path<a class="headerlink" href="#base-path" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Router</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;routes&quot;</span><span class="p">:</span> <span class="n">routes</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="s2">&quot;/app&quot;</span><span class="p">})</span>
+<span class="c1"># Link respects base path; Link({&quot;to&quot;: &quot;/about&quot;}) → href &quot;/app/about&quot;</span>
+</code></pre></div>
 
 
 

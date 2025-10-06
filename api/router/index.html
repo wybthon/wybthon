@@ -1241,6 +1241,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="router">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      API
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1510,6 +1525,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="router">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      API
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1569,7 +1599,18 @@
 
     </div>
 
-</div>
+</div><h4 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>class Route(path: str, component, children: Optional[List[Route]] = None)</code></li>
+<li><code>class Router(routes: List[Route], base_path: str = "", not_found: Optional[Component|function] = None)</code></li>
+<li><code>function Link({to: str, children, base_path?: str})</code></li>
+<li><code>function navigate(path: str, replace: bool = False)</code></li>
+<li><code>signal current_path</code> – reactive signal with current <code>path + search</code></li>
+</ul>
+<p>Notes:
+- Wildcard path segment <code>*</code> captures the rest of the path into <code>params["wildcard"]</code>.
+- Trailing <code>/*</code> also matches the base segment; e.g. <code>/docs/*</code> matches <code>/docs</code> and <code>/docs/guide</code>.
+- Nested routes use <code>children</code> and resolve to the most specific match.</p>
 
 
 
