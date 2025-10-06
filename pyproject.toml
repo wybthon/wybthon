@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wybthon"
-version = "0.1.1"
+version = "0.2.0"
 description = "Client-side Python SPA framework via Pyodide"
 authors = [
   { name = "Owen Carey" }

@@ -1,5 +1,3 @@
 ### Changelog
 
-See `pyproject.toml` for the current version. For release notes, see the GitHub Releases.
-
-> TODO: Sync with `CHANGELOG.md` once maintained.
+See the GitHub Releases for full changelog: https://github.com/wybthon/wybthon/releases
