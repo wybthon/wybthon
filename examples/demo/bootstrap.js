@@ -21,6 +21,7 @@ async function bootstrap() {
       "router.py",
       "router_core.py",
       "forms.py",
+      "lazy.py",
       "dev.py",
     ];
     const cacheBust = Date.now();

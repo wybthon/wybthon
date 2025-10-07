@@ -68,6 +68,40 @@ from wybthon.router import navigate
 navigate("/about", replace=True)
 ```
 
+#### Lazy routes and preloading
+
+Lazily load route components to reduce initial load time. Use `load_component` for direct module paths or `lazy` for a small loader function. Both are Pyodide-compatible.
+
+```python
+from wybthon import load_component, lazy
+from wybthon.router import Route
+
+# Load a component from a module that exports Page(props)
+Docs = load_component("examples.demo.app.docs.page", "Page")
+
+# Or define a loader function returning (module_path, optional_attr)
+def AboutLazy():
+    return ("examples.demo.app.about.page", "Page")
+
+routes = [
+    Route(path="/docs/*", component=Docs),
+    Route(path="/about", component=lazy(AboutLazy)),
+]
+```
+
+Preload components ahead of time (e.g., on hover) to hide load time:
+
+```python
+from wybthon import preload_component
+
+def on_hover_about(_evt):
+    preload_component("examples.demo.app.about.page", "Page")
+```
+
+Notes for Pyodide:
+- Ensure the module is available in the Pyodide filesystem or installed via `micropip`. Static bundling is recommended for demo apps.
+- Dynamic imports are synchronous from Python’s perspective but may involve underlying network fetches when using `micropip`. Use `preload_component` to warm caches before navigation.
+
 Migration notes:
 - Prior versions did not include `Link` active styling. If you previously computed active state manually, you can remove that logic and rely on `Link`'s built-in active class.
 - Use the new `replace=True` option on both `Link` and `navigate()` when you want to update the URL without adding a history entry (e.g., tab switches).

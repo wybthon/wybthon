@@ -34,6 +34,27 @@ from wybthon.router import navigate
 navigate("/about", replace=True)
 ```
 
+#### Lazy routes
+
+```python
+from wybthon import load_component, lazy, preload_component
+from wybthon.router import Router, Route
+
+Docs = load_component("examples.demo.app.docs.page", "Page")
+
+def TeamLazy():
+    return ("examples.demo.app.about.team.page", "Page")
+
+routes = [
+    Route(path="/docs/*", component=Docs),
+    Route(path="/about/team", component=lazy(TeamLazy)),
+]
+
+# Preload on some user intent (e.g., hover)
+def on_hover_team(_evt):
+    preload_component("examples.demo.app.about.team.page", "Page")
+```
+
 Dynamic params and queries:
 
 ```python

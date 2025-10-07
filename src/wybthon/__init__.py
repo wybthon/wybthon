@@ -30,6 +30,7 @@ if _IN_BROWSER:
     from .context import Context, Provider, create_context, use_context
     from .dom import Element, Ref
     from .events import DomEvent
+    from .lazy import lazy, load_component, preload_component
     from .router import Link, Route, Router, current_path, navigate
     from .vdom import ErrorBoundary, VNode, h, render
 
@@ -68,6 +69,9 @@ if _IN_BROWSER:
         "max_length",
         "email",
         "on_submit",
+        "lazy",
+        "load_component",
+        "preload_component",
     ]
 else:
     # Minimal Python-only surface for tooling/CLI usage (no browser modules)
@@ -88,4 +92,7 @@ else:
         "max_length",
         "email",
         "on_submit",
+        "lazy",
+        "load_component",
+        "preload_component",
     ]

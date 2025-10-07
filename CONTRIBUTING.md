@@ -101,6 +101,10 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `router` – routing, paths, and navigation helpers
   - `vdom` – virtual DOM and renderer
   - `reactivity` – signals, computed, effect, batching
+  - `forms` – form state, validators, and bindings
+  - `lazy` – lazy loading and preloading utilities
+  - `router_core` – core route resolution helpers
+  - `dev` – dev server and hot-reload (SSE)
   - `package` – `src/wybthon/__init__.py` exports and package boundary
 
 - Other scopes:
