@@ -1,6 +1,6 @@
 ### wybthon (package)
 
-:::: wybthon
+::: wybthon
 
 #### Notable exports
 
