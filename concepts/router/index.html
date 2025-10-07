@@ -532,6 +532,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#lazy-routes-and-preloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy routes and preloading
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1591,6 +1600,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#lazy-routes-and-preloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy routes and preloading
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1675,6 +1693,34 @@
 <span class="n">navigate</span><span class="p">(</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
+<h4 id="lazy-routes-and-preloading">Lazy routes and preloading<a class="headerlink" href="#lazy-routes-and-preloading" title="Permanent link">&para;</a></h4>
+<p>Lazily load route components to reduce initial load time. Use <code>load_component</code> for direct module paths or <code>lazy</code> for a small loader function. Both are Pyodide-compatible.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_component</span><span class="p">,</span> <span class="n">lazy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span>
+
+<span class="c1"># Load a component from a module that exports Page(props)</span>
+<span class="n">Docs</span> <span class="o">=</span> <span class="n">load_component</span><span class="p">(</span><span class="s2">&quot;examples.demo.app.docs.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+
+<span class="c1"># Or define a loader function returning (module_path, optional_attr)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">AboutLazy</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;examples.demo.app.about.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+
+<span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/docs/*&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Docs</span><span class="p">),</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">lazy</span><span class="p">(</span><span class="n">AboutLazy</span><span class="p">)),</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>Preload components ahead of time (e.g., on hover) to hide load time:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">preload_component</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_hover_about</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
+    <span class="n">preload_component</span><span class="p">(</span><span class="s2">&quot;examples.demo.app.about.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Notes for Pyodide:
+- Ensure the module is available in the Pyodide filesystem or installed via <code>micropip</code>. Static bundling is recommended for demo apps.
+- Dynamic imports are synchronous from Python’s perspective but may involve underlying network fetches when using <code>micropip</code>. Use <code>preload_component</code> to warm caches before navigation.</p>
 <p>Migration notes:
 - Prior versions did not include <code>Link</code> active styling. If you previously computed active state manually, you can remove that logic and rely on <code>Link</code>'s built-in active class.
 - Use the new <code>replace=True</code> option on both <code>Link</code> and <code>navigate()</code> when you want to update the URL without adding a history entry (e.g., tab switches).</p>

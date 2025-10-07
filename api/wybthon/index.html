@@ -1166,11 +1166,44 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.load_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_component
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.preload_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      preload_component
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.use_resource" class="md-nav__link">
     <span class="md-ellipsis">
       use_resource
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="use_resource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notable-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notable exports
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1642,11 +1675,44 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.load_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_component
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.preload_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      preload_component
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.use_resource" class="md-nav__link">
     <span class="md-ellipsis">
       use_resource
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="use_resource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notable-exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notable exports
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1911,6 +1977,48 @@ Lifecycle hooks:
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.load_component" class="doc doc-heading">
+            <code class=" language-python"><span class="n">load_component</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.load_component" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Dynamically import a module (optionally attribute) and return a function component factory.</p>
+<p>The returned function component will render a small loader until the module
+is imported. On success it will render the loaded component with the same
+props. On error, it renders a minimal error text.</p>
+<p>This utility is Pyodide-friendly: it uses Python's import system, which
+is compatible with packages pre-bundled or fetched via micropip. Use
+<code>preload_component</code> to warm the cache.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.preload_component" class="doc doc-heading">
+            <code class=" language-python"><span class="n">preload_component</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.preload_component" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Eagerly import a component to warm caches before navigation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.use_resource" class="doc doc-heading">
             <code class=" language-python"><span class="n">use_resource</span><span class="p">(</span><span class="n">fetcher</span><span class="p">)</span></code>
 
@@ -1935,7 +2043,12 @@ cancellation support when available.</p>
 
     </div>
 
-</div>
+</div><h4 id="notable-exports">Notable exports<a class="headerlink" href="#notable-exports" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>lazy(loader)</code> – create a lazily-loaded component from a <code>(module_path, attr?)</code> loader</li>
+<li><code>load_component(module_path, attr=None)</code> – load a component function/class from a module</li>
+<li><code>preload_component(module_path, attr=None)</code> – eagerly import a module to warm cache</li>
+</ul>
 
 
 
