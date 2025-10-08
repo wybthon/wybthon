@@ -1,6 +1,6 @@
 ### wybthon.vdom
 
-:::: wybthon.vdom
+::: wybthon.vdom
 
 #### Suspense
 
