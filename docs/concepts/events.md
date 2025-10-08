@@ -38,7 +38,12 @@ def Form(props):
 
 #### Delegation model
 
-Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers that were registered on matching virtual nodes. `stop_propagation()` prevents further bubbling within Wybthon’s dispatcher. Handlers are automatically removed when nodes unmount.
+Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers that were registered on matching virtual nodes. `stop_propagation()` prevents further bubbling within Wybthon’s dispatcher.
+
+Cleanup guarantees:
+
+- When a node is unmounted, all of its event handlers are removed from the delegation map.
+- When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to `None`), the document-level listener for that event type is automatically removed.
 
 #### Naming and normalization
 

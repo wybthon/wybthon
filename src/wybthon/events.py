@@ -15,6 +15,8 @@ _NODE_ID_ATTR = "data-wybid"
 _next_id = 0
 _handlers: Dict[str, Dict[str, Callable]] = {}
 _listeners: Dict[str, object] = {}
+# Track number of active handlers per event type across all nodes
+_event_counts: Dict[str, int] = {}
 
 
 def _get_or_assign_id(node) -> str:
@@ -103,19 +105,65 @@ def _ensure_root_listener(event_type: str) -> None:
     _listeners[event_type] = proxy
 
 
+def _teardown_root_listener(event_type: str) -> None:
+    # Best-effort removal; safe in non-browser contexts
+    try:
+        if event_type in _listeners:
+            try:
+                from js import document  # type: ignore
+            except Exception:
+                document = None  # type: ignore
+            proxy = _listeners.pop(event_type, None)
+            if document is not None and proxy is not None:
+                try:
+                    document.removeEventListener(event_type, proxy)  # type: ignore
+                except Exception:
+                    pass
+    except Exception:
+        # Never raise from teardown
+        pass
+
+
+def _increment_event_count(event_type: str) -> None:
+    _event_counts[event_type] = _event_counts.get(event_type, 0) + 1
+
+
+def _decrement_event_count(event_type: str) -> None:
+    current = _event_counts.get(event_type, 0)
+    if current <= 1:
+        if event_type in _event_counts:
+            del _event_counts[event_type]
+        _teardown_root_listener(event_type)
+    else:
+        _event_counts[event_type] = current - 1
+
+
 def set_handler(el: Element, event_prop_name: str, handler: Optional[Callable]) -> None:
     event_type = _event_prop_to_type(event_prop_name)
-    _ensure_root_listener(event_type)
     wid = _get_or_assign_id(el.element)
     mapping = _handlers.get(wid)
     if mapping is None:
         mapping = {}
         _handlers[wid] = mapping
+
+    had_previous = event_type in mapping
+
+    # Removing handler
     if handler is None:
-        if event_type in mapping:
+        if had_previous:
             del mapping[event_type]
-    else:
-        mapping[event_type] = handler
+            _decrement_event_count(event_type)
+            # Optional: prune empty per-node mapping
+            if not mapping:
+                _handlers.pop(wid, None)
+        return
+
+    # Adding or updating handler
+    if not had_previous:
+        # First handler for this event type on this node
+        _increment_event_count(event_type)
+        _ensure_root_listener(event_type)
+    mapping[event_type] = handler
 
 
 def remove_all_for(el: Element) -> None:
@@ -124,4 +172,8 @@ def remove_all_for(el: Element) -> None:
     except Exception:
         wid = None
     if wid is not None:
-        _handlers.pop(wid, None)
+        mapping = _handlers.pop(wid, None)
+        if isinstance(mapping, dict):
+            # Decrement counts for all event types previously registered on this node
+            for evt_type in list(mapping.keys()):
+                _decrement_event_count(evt_type)
