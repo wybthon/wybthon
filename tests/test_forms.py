@@ -1,6 +1,16 @@
 from types import SimpleNamespace
 
-from wybthon import bind_checkbox, bind_select, bind_text, form_state
+from wybthon import (
+    a11y_control_attrs,
+    bind_checkbox,
+    bind_select,
+    bind_text,
+    email,
+    form_state,
+    on_submit_validated,
+    required,
+    validate_form,
+)
 
 
 class DummyTarget:
@@ -54,3 +64,48 @@ def test_bind_select_updates_value():
     bind["on_change"](evt)
 
     assert field.value.get() == "b"
+
+
+def test_validate_form_and_a11y_attrs():
+    form = form_state({"name": "", "email": ""})
+    rules = {"name": [required()], "email": [email()]}
+
+    # Initially, name is empty => required error; email empty => no error due to optional email
+    is_valid, errors = validate_form(form, rules)
+    assert is_valid is False
+    assert errors["name"] is not None
+    assert errors["email"] is None
+
+    # a11y control reflects error state
+    name_attrs = a11y_control_attrs(form["name"], described_by_id="name-err")
+    assert name_attrs.get("aria-invalid") == "true"
+
+    # Fix the name, then the form should be valid
+    form["name"].value.set("Alice")
+    is_valid2, errors2 = validate_form(form, rules)
+    assert is_valid2 is True
+    assert errors2["name"] is None
+
+
+def test_on_submit_validated_calls_handler_only_when_valid():
+    # Arrange form and rules
+    form = form_state({"name": ""})
+    rules = {"name": [required()]}
+    called = {"count": 0}
+
+    def handler(_form):
+        called["count"] += 1
+
+    submit = on_submit_validated(rules, handler, form)
+
+    # Event with prevent_default no-op
+    evt = DummyEvent(value=None)
+
+    # Invalid initially
+    submit(evt)
+    assert called["count"] == 0
+
+    # Make valid and submit again
+    form["name"].value.set("Ok")
+    submit(evt)
+    assert called["count"] == 1

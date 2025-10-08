@@ -110,13 +110,13 @@ def _teardown_root_listener(event_type: str) -> None:
     try:
         if event_type in _listeners:
             try:
-                from js import document  # type: ignore
+                from js import document
             except Exception:
-                document = None  # type: ignore
+                document = None
             proxy = _listeners.pop(event_type, None)
             if document is not None and proxy is not None:
                 try:
-                    document.removeEventListener(event_type, proxy)  # type: ignore
+                    document.removeEventListener(event_type, proxy)
                 except Exception:
                     pass
     except Exception:
