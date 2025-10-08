@@ -1,6 +1,6 @@
 ### Roadmap
 
-Wybthon v0.1.0 is published. Below is a prioritized implementation plan to evolve Wybthon into a practical CSR/SPA framework running client-side Python via Pyodide. This plan includes a numbered list of top tasks and versioned milestones up to v1.0.0.
+Wybthon v0.3.0 is published. Below is a prioritized implementation plan to evolve Wybthon into a practical CSR/SPA framework running client-side Python via Pyodide. This plan includes a numbered list of top tasks and versioned milestones up to v1.0.0.
 
 #### Prioritized implementation tasks (top to bottom)
 
