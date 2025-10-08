@@ -55,3 +55,7 @@ def test_demo_bootstraps_pyodide(page, http_server_base_url):
 
     # Wait for the Hello component to render with its expected text
     page.wait_for_selector("h2.hello:has-text('Hello, Python!')", timeout=120_000)
+
+    # Navigate to a lazy route and verify content appears
+    page.click("a.nav-link:has-text('Team')")
+    page.wait_for_selector("text=About Team", timeout=120_000)

@@ -1,11 +1,20 @@
-from app.about.page import Page as AboutPage
-from app.about.team.page import Page as TeamPage
-from app.docs.page import Page as DocsPage
 from app.errors.page import Page as ErrorsPage
 from app.fetch.page import FetchPage
 from app.forms.page import FormsPage
 from app.page import Page as HomePage
-from wybthon import Route
+from wybthon import Route, lazy, load_component
+
+
+def _AboutLazy():
+    return ("app.about.page", "Page")
+
+
+def _TeamLazy():
+    return ("app.about.team.page", "Page")
+
+
+# Example of eager dynamic loader (resolves at route creation time)
+Docs = load_component("app.docs.page", "Page")
 
 
 def create_routes():
@@ -13,13 +22,13 @@ def create_routes():
         Route(path="/", component=lambda p: HomePage(p)),
         Route(
             path="/about",
-            component=lambda p: AboutPage(p),
+            component=lazy(_AboutLazy),
             children=[
-                Route(path="team", component=lambda p: TeamPage(p)),
+                Route(path="team", component=lazy(_TeamLazy)),
             ],
         ),
         Route(path="/fetch", component=FetchPage),
         Route(path="/forms", component=FormsPage),
         Route(path="/errors", component=lambda p: ErrorsPage(p)),
-        Route(path="/docs/*", component=lambda p: DocsPage(p)),
+        Route(path="/docs/*", component=Docs),
     ]

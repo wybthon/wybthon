@@ -1,8 +1,16 @@
-from wybthon import Link, h
+from wybthon import Link, h, preload_component
 
 
 def Nav(props):
     base_path = props.get("base_path")
+
+    # Hint: Preload team route on nav hover to improve perceived navigation time
+    def on_hover_team(_evt):
+        try:
+            preload_component("app.about.team.page", "Page")
+        except Exception:
+            pass
+
     return h(
         "nav",
         {"class": "nav"},
@@ -10,7 +18,17 @@ def Nav(props):
         " | ",
         h(Link, {"to": "/about", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "About"),
         " (",
-        h(Link, {"to": "/about/team", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Team"),
+        h(
+            Link,
+            {
+                "to": "/about/team",
+                "base_path": base_path,
+                "class": "nav-link",
+                "class_active": "active",
+                "on_mouseenter": on_hover_team,
+            },
+            "Team",
+        ),
         ")",
         " | ",
         h(Link, {"to": "/fetch", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Fetch"),
