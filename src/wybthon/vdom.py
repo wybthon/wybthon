@@ -32,14 +32,39 @@ class ErrorBoundary(Component):
     def __init__(self, props: Dict[str, Any]) -> None:
         super().__init__(props)
         self._error: Signal[Optional[Any]] = signal(None)
+        # Track a token derived from `reset_keys`/`reset_key` to auto-clear error when it changes
+        self._last_reset_token: str = ""
 
     def render(self):
-        err = self._error.get()
+        # Auto-reset when reset_keys/reset_key token changes
+        try:
+            rk = self.props.get("reset_keys") if "reset_keys" in self.props else self.props.get("reset_key")
+            if isinstance(rk, (list, tuple)):
+                token = repr(tuple(rk))
+            else:
+                token = repr(rk)
+        except Exception:
+            token = ""
+
+        current_err = self._error.get()
+        if token != self._last_reset_token and current_err is not None:
+            try:
+                self._error.set(None)
+                current_err = None
+            except Exception:
+                pass
+        self._last_reset_token = token
+
+        err = current_err
         if err is not None:
             fb = self.props.get("fallback")
             if callable(fb):
                 try:
-                    vnode = fb(err)
+                    # Prefer calling with (error, reset) for ergonomics; fall back to (error)
+                    try:
+                        vnode = fb(err, self.reset)
+                    except TypeError:
+                        vnode = fb(err)
                 except Exception:
                     vnode = _to_text_vnode("Error rendering fallback")
             else:
@@ -236,8 +261,14 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
                 except Exception as e:
                     if isinstance(instance, ErrorBoundary):
                         try:
-                            instance._error.set(None)
-                            instance._error.set(None)  # ensure type compatibility
+                            instance._error.set(e)
+                        except Exception:
+                            pass
+                        # Notify via on_error callback if provided
+                        try:
+                            handler = instance.props.get("on_error")
+                            if callable(handler):
+                                handler(e)
                         except Exception:
                             pass
                         try:
@@ -389,6 +420,13 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                 if isinstance(instance, ErrorBoundary):
                     try:
                         instance._error.set(e)
+                    except Exception:
+                        pass
+                    # Notify via on_error callback if provided
+                    try:
+                        handler = instance.props.get("on_error")
+                        if callable(handler):
+                            handler(e)
                     except Exception:
                         pass
                     try:
