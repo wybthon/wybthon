@@ -695,6 +695,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Demo App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#routing-and-lazy-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Routing and lazy loading
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-of-eager-dynamic-loader-resolves-at-route-creation-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example of eager dynamic loader (resolves at route creation time)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example of eager dynamic loader (resolves at route creation time)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#suspense-for-loading-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspense for loading UI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1531,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Demo App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#routing-and-lazy-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Routing and lazy loading
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-of-eager-dynamic-loader-resolves-at-route-creation-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example of eager dynamic loader (resolves at route creation time)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example of eager dynamic loader (resolves at route creation time)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#suspense-for-loading-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspense for loading UI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1513,8 +1591,6 @@
   
 
 
-  <h1>Demo App</h1>
-
 <h3 id="demo-app">Demo App<a class="headerlink" href="#demo-app" title="Permanent link">&para;</a></h3>
 <p>The demo is served from <code>examples/demo/</code>.</p>
 <ul>
@@ -1522,9 +1598,107 @@
 <li><code>bootstrap.js</code> loads Pyodide, mounts the library from <code>src/wybthon/</code>, and copies demo files under <code>/app</code> inside Pyodide FS, then calls <code>app.main.main()</code></li>
 </ul>
 <p>Folders under <code>examples/demo/app/</code> mirror routes and components.</p>
-<blockquote>
-<p>TODO: Describe each demo page and how routing is wired in <code>app/routes.py</code>.</p>
-</blockquote>
+<h4 id="routing-and-lazy-loading">Routing and lazy loading<a class="headerlink" href="#routing-and-lazy-loading" title="Permanent link">&para;</a></h4>
+<p>Routes are defined in <code>examples/demo/app/routes.py</code>. The demo showcases lazy loading using <code>load_component()</code> and <code>lazy()</code>:</p>
+<p>```12:36:examples/demo/app/routes.py
+from app.errors.page import Page as ErrorsPage
+from app.fetch.page import FetchPage
+from app.forms.page import FormsPage
+from app.page import Page as HomePage
+from wybthon import Route, lazy, load_component</p>
+<p>def _AboutLazy():
+    return ("app.about.page", "Page")</p>
+<p>def _TeamLazy():
+    return ("app.about.team.page", "Page")</p>
+<h1 id="example-of-eager-dynamic-loader-resolves-at-route-creation-time">Example of eager dynamic loader (resolves at route creation time)<a class="headerlink" href="#example-of-eager-dynamic-loader-resolves-at-route-creation-time" title="Permanent link">&para;</a></h1>
+<p>Docs = load_component("app.docs.page", "Page")</p>
+<p>def create_routes():
+    return [
+        Route(path="/", component=lambda p: HomePage(p)),
+        Route(
+            path="/about",
+            component=lazy(_AboutLazy),
+            children=[
+                Route(path="team", component=lazy(_TeamLazy)),
+            ],
+        ),
+        Route(path="/fetch", component=FetchPage),
+        Route(path="/forms", component=FormsPage),
+        Route(path="/errors", component=lambda p: ErrorsPage(p)),
+        Route(path="/docs/*", component=Docs),
+    ]</p>
+<div class="codehilite"><pre><span></span><code><span class="n">We</span> <span class="n">also</span> <span class="n">preload</span> <span class="n">the</span> <span class="n">Team</span> <span class="n">route</span> <span class="n">when</span> <span class="n">the</span> <span class="n">user</span> <span class="n">hovers</span> <span class="n">the</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">nav</span> <span class="k">for</span> <span class="n">a</span> <span class="n">snappier</span> <span class="n">transition</span><span class="p">:</span>
+
+<span class="err">```</span><span class="mi">1</span><span class="p">:</span><span class="mi">40</span><span class="p">:</span><span class="n">examples</span><span class="o">/</span><span class="n">demo</span><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">components</span><span class="o">/</span><span class="n">nav</span><span class="o">.</span><span class="n">py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">preload_component</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Nav</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">base_path</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;base_path&quot;</span><span class="p">)</span>
+    <span class="c1"># Hint: Preload team route on nav hover to improve perceived navigation time</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_hover_team</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">preload_component</span><span class="p">(</span><span class="s2">&quot;app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
+        <span class="s2">&quot;nav&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav&quot;</span><span class="p">},</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;Home&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;About&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; (&quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span>
+            <span class="n">Link</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about/team&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span>
+                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;on_mouseenter&quot;</span><span class="p">:</span> <span class="n">on_hover_team</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;Team&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/fetch&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;Fetch&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/forms&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;Forms&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/errors&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;Errors&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/docs&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span> <span class="s2">&quot;Docs&quot;</span><span class="p">),</span>
+        <span class="s2">&quot; (&quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span>
+            <span class="n">Link</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/docs/guide/intro&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;guide/intro&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; | &quot;</span><span class="p">,</span>
+        <span class="n">h</span><span class="p">(</span>
+            <span class="n">Link</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="s2">&quot;/about&quot;</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span> <span class="s2">&quot;replace&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span> <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;About (replace)&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<h4 id="suspense-for-loading-ui">Suspense for loading UI<a class="headerlink" href="#suspense-for-loading-ui" title="Permanent link">&para;</a></h4>
+<p>The Fetch page uses <code>Suspense</code> to show a fallback while its <code>use_resource</code> is loading and keeps the previous content on reloads:</p>
+<p>```1:80:examples/demo/app/fetch/page.py
+from wybthon import Component, Suspense, h, use_resource</p>
+<p>class FetchPage(Component):
+    # ... see source for full example ...
+    def render(self):
+        return h(
+            "div",
+            {},
+            h("h3", {}, "Async Fetch Demo"),
+            h(Suspense, {"resource": self.res, "fallback": h("p", {}, "Loading..."), "keep_previous": True}, ...),
+        )
+```</p>
+<p>This mirrors how you'd code-split larger apps and warm the import cache based on intent.</p>
 
 
 

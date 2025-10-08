@@ -483,9 +483,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resources-and-cancellation" class="md-nav__link">
+  <a href="#resources-cancellation-and-suspense" class="md-nav__link">
     <span class="md-ellipsis">
-      Resources and cancellation
+      Resources, cancellation, and Suspense
     </span>
   </a>
   
@@ -1547,9 +1547,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resources-and-cancellation" class="md-nav__link">
+  <a href="#resources-cancellation-and-suspense" class="md-nav__link">
     <span class="md-ellipsis">
-      Resources and cancellation
+      Resources, cancellation, and Suspense
     </span>
   </a>
   
@@ -1607,8 +1607,27 @@
 <p><code>batch()</code> coalesces multiple <code>set()</code> operations into a single flush at the end of the batch.</p>
 <h4 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h4>
 <p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_effect_cleanup</code> are executed during disposal.</p>
-<h4 id="resources-and-cancellation">Resources and cancellation<a class="headerlink" href="#resources-and-cancellation" title="Permanent link">&para;</a></h4>
+<h4 id="resources-cancellation-and-suspense">Resources, cancellation, and Suspense<a class="headerlink" href="#resources-cancellation-and-suspense" title="Permanent link">&para;</a></h4>
 <p><code>use_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
+<p>To render a loading UI declaratively, wrap UI with <code>Suspense</code> and pass a <code>resource</code> (or <code>resources=[...]</code>) and a <code>fallback</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_resource</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># ... fetch user ...</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">}</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
+
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
+    <span class="n">Suspense</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">,</span> <span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading user...&quot;</span><span class="p">)},</span>
+    <span class="n">h</span><span class="p">(</span><span class="s2">&quot;pre&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">())),</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li>Pass <code>keep_previous=True</code> to keep previously rendered children visible during subsequent reloads while still showing new data once ready.</li>
+</ul>
 
 
 

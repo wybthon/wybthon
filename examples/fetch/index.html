@@ -1517,26 +1517,26 @@
 
 <h3 id="async-fetch">Async Fetch<a class="headerlink" href="#async-fetch" title="Permanent link">&para;</a></h3>
 <p>Fetch data with <code>use_resource</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.reactivity</span><span class="w"> </span><span class="kn">import</span> <span class="n">use_resource</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.reactivity</span><span class="w"> </span><span class="kn">import</span> <span class="n">use_resource</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">():</span>
-    <span class="c1"># TODO: sample fetch using js.fetch</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># e.g., using js.fetch with AbortSignal</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;hello&quot;</span><span class="p">}</span>
 
 <span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">load_data</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">View</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">loading</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading...&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Content</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;pre&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">()))</span>
-</code></pre></div>
 
-<blockquote>
-<p>TODO: Add AbortSignal usage and retry UI.</p>
-</blockquote>
+<span class="n">View</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">props</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span>
+    <span class="n">Suspense</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">,</span> <span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading...&quot;</span><span class="p">),</span> <span class="s2">&quot;keep_previous&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="n">Content</span><span class="p">({}),</span>
+<span class="p">)</span>
+</code></pre></div>
 
 
 

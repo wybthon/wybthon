@@ -1580,10 +1580,10 @@
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_component</span><span class="p">,</span> <span class="n">lazy</span><span class="p">,</span> <span class="n">preload_component</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Router</span><span class="p">,</span> <span class="n">Route</span>
 
-<span class="n">Docs</span> <span class="o">=</span> <span class="n">load_component</span><span class="p">(</span><span class="s2">&quot;examples.demo.app.docs.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+<span class="n">Docs</span> <span class="o">=</span> <span class="n">load_component</span><span class="p">(</span><span class="s2">&quot;app.docs.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">TeamLazy</span><span class="p">():</span>
-    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;examples.demo.app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
 
 <span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/docs/*&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Docs</span><span class="p">),</span>
@@ -1592,7 +1592,7 @@
 
 <span class="c1"># Preload on some user intent (e.g., hover)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">on_hover_team</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
-    <span class="n">preload_component</span><span class="p">(</span><span class="s2">&quot;examples.demo.app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
+    <span class="n">preload_component</span><span class="p">(</span><span class="s2">&quot;app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Dynamic params and queries:</p>

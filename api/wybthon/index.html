@@ -1166,6 +1166,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.Suspense" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspense
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.load_component" class="md-nav__link">
     <span class="md-ellipsis">
       load_component
@@ -1675,6 +1684,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.Suspense" class="md-nav__link">
+    <span class="md-ellipsis">
+      Suspense
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.load_component" class="md-nav__link">
     <span class="md-ellipsis">
       load_component
@@ -1973,6 +1991,63 @@ Lifecycle hooks:
 
 </div>
 
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="wybthon.Suspense" class="doc doc-heading">
+            <code>Suspense</code>
+
+
+<a href="#wybthon.Suspense" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Component (wybthon.component.Component)" href="../component/#wybthon.component.Component">Component</a></code></p>
+
+
+        <p>Render a fallback while one or more resources are loading.</p>
+
+
+<details class="props" open>
+  <summary>Props</summary>
+  <ul>
+<li>resources | resource: Resource or list of Resources (objects exposing <code>.loading.get()</code>)</li>
+<li>fallback: VNode | str | callable returning VNode/str</li>
+<li>keep_previous: bool (default False) – when True, keep children visible after first
+  successful load even if a subsequent reload is in-flight.</li>
+</ul>
+</details>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -2048,6 +2123,7 @@ cancellation support when available.</p>
 <li><code>lazy(loader)</code> – create a lazily-loaded component from a <code>(module_path, attr?)</code> loader</li>
 <li><code>load_component(module_path, attr=None)</code> – load a component function/class from a module</li>
 <li><code>preload_component(module_path, attr=None)</code> – eagerly import a module to warm cache</li>
+<li><code>Suspense</code> – component that renders <code>fallback</code> while provided <code>resource(s)</code> are loading; accepts <code>keep_previous</code></li>
 </ul>
 
 
