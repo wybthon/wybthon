@@ -65,6 +65,79 @@ def _to_text_vnode(value: Any) -> VNode:
     return VNode(tag="_text", props={"nodeValue": "" if value is None else str(value)}, children=[])
 
 
+class Suspense(Component):
+    """Render a fallback while one or more resources are loading.
+
+    Props:
+      - resources | resource: Resource or list of Resources (objects exposing `.loading.get()`)
+      - fallback: VNode | str | callable returning VNode/str
+      - keep_previous: bool (default False) – when True, keep children visible after first
+        successful load even if a subsequent reload is in-flight.
+    """
+
+    def __init__(self, props: Dict[str, Any]) -> None:
+        super().__init__(props)
+        self._has_completed_once: bool = False
+
+    def _normalize_resources(self) -> List[Any]:
+        res = self.props.get("resources")
+        if res is None and "resource" in self.props:
+            res = [self.props.get("resource")]
+        if res is None:
+            return []
+        if not isinstance(res, list):
+            res = [res]
+        return [r for r in res if r is not None]
+
+    def _is_loading(self, resources: List[Any]) -> bool:
+        # Read loading signals to subscribe the render effect to future changes
+        for r in resources:
+            try:
+                loading_sig = getattr(r, "loading", None)
+                if loading_sig is None:
+                    continue
+                if callable(getattr(loading_sig, "get", None)) and loading_sig.get():
+                    return True
+            except Exception:
+                # Ignore malformed resource-like objects
+                continue
+        return False
+
+    def _render_children(self) -> VNode:
+        children = self.props.get("children", [])
+        if not isinstance(children, list):
+            children = [children]
+        return h("div", {}, *children)
+
+    def _render_fallback(self) -> VNode:
+        fb = self.props.get("fallback")
+        vnode: Any
+        if callable(fb):
+            try:
+                vnode = fb()
+            except Exception:
+                vnode = _to_text_vnode("Loading...")
+        else:
+            vnode = fb if isinstance(fb, VNode) else _to_text_vnode("" if fb is None else str(fb))
+        if not isinstance(vnode, VNode):
+            vnode = _to_text_vnode(vnode)
+        return vnode
+
+    def render(self):
+        resources = self._normalize_resources()
+        if not resources:
+            return self._render_children()
+        keep_previous = bool(self.props.get("keep_previous", False))
+        is_loading = self._is_loading(resources)
+        if is_loading:
+            if keep_previous and self._has_completed_once:
+                return self._render_children()
+            return self._render_fallback()
+        # Mark that at least one successful completion happened
+        self._has_completed_once = True
+        return self._render_children()
+
+
 def _flatten_children(items: Iterable[Any]) -> List[Any]:
     out: List[Any] = []
     for item in items:

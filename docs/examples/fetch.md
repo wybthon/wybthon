@@ -3,21 +3,23 @@
 Fetch data with `use_resource`.
 
 ```python
+from wybthon import Suspense, h
 from wybthon.reactivity import use_resource
-from wybthon import h
 
-async def load_data():
-    # TODO: sample fetch using js.fetch
+async def load_data(signal=None):
+    # e.g., using js.fetch with AbortSignal
     return {"message": "hello"}
 
 res = use_resource(load_data)
 
-def View(props):
-    if res.loading.get():
-        return h("div", {}, "Loading...")
+def Content(props):
     if res.error.get():
         return h("div", {}, f"Error: {res.error.get()}")
     return h("pre", {}, str(res.data.get()))
-```
 
-> TODO: Add AbortSignal usage and retry UI.
+View = lambda props: h(
+    Suspense,
+    {"resource": res, "fallback": h("div", {}, "Loading..."), "keep_previous": True},
+    Content({}),
+)
+```

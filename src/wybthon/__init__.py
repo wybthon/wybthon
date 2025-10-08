@@ -32,7 +32,7 @@ if _IN_BROWSER:
     from .events import DomEvent
     from .lazy import lazy, load_component, preload_component
     from .router import Link, Route, Router, current_path, navigate
-    from .vdom import ErrorBoundary, VNode, h, render
+    from .vdom import ErrorBoundary, Suspense, VNode, h, render
 
     __all__ = [
         "Element",
@@ -43,6 +43,7 @@ if _IN_BROWSER:
         "h",
         "render",
         "ErrorBoundary",
+        "Suspense",
         "signal",
         "computed",
         "effect",

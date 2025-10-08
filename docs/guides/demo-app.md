@@ -105,4 +105,22 @@ def Nav(props):
     )
 ```
 
+#### Suspense for loading UI
+
+The Fetch page uses `Suspense` to show a fallback while its `use_resource` is loading and keeps the previous content on reloads:
+
+```1:80:examples/demo/app/fetch/page.py
+from wybthon import Component, Suspense, h, use_resource
+
+class FetchPage(Component):
+    # ... see source for full example ...
+    def render(self):
+        return h(
+            "div",
+            {},
+            h("h3", {}, "Async Fetch Demo"),
+            h(Suspense, {"resource": self.res, "fallback": h("p", {}, "Loading..."), "keep_previous": True}, ...),
+        )
+```
+
 This mirrors how you'd code-split larger apps and warm the import cache based on intent.
