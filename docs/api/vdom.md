@@ -9,6 +9,21 @@
 - Reorders are applied with minimal DOM moves using a right-to-left pass with a moving anchor.
 - Unmatched old nodes are unmounted; unmatched new nodes are mounted at the correct anchor.
 
+#### Text nodes (fast-path)
+
+- When both the old and new nodes are text, the same DOM text node is reused and only `nodeValue` is updated.
+- Lists of plain text children are reconciled efficiently; typically the framework updates text in-place and minimizes DOM moves.
+- Example:
+
+```python
+from wybthon.vdom import h, render
+from wybthon.dom import Element
+
+root = Element(node=document.createElement("div"))
+render(h("div", {}, "hello"), root)
+render(h("div", {}, "world"), root)  # updates the same text node
+```
+
 #### Suspense
 
 `Suspense` renders a `fallback` while one or more resources are loading.
