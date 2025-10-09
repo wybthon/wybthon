@@ -1286,6 +1286,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#keyed-children-and-diffing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keyed children and diffing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#suspense" class="md-nav__link">
     <span class="md-ellipsis">
       Suspense
@@ -1574,6 +1583,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#keyed-children-and-diffing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keyed children and diffing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#suspense" class="md-nav__link">
     <span class="md-ellipsis">
       Suspense
@@ -1757,7 +1775,14 @@
 
     </div>
 
-</div><h4 id="suspense">Suspense<a class="headerlink" href="#suspense" title="Permanent link">&para;</a></h4>
+</div><h4 id="keyed-children-and-diffing">Keyed children and diffing<a class="headerlink" href="#keyed-children-and-diffing" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>h(tag, {"key": key}, ...)</code> assigns a stable identity to a child.</li>
+<li>During reconciliation, children are matched by key first, then by type for unkeyed nodes.</li>
+<li>Reorders are applied with minimal DOM moves using a right-to-left pass with a moving anchor.</li>
+<li>Unmatched old nodes are unmounted; unmatched new nodes are mounted at the correct anchor.</li>
+</ul>
+<h4 id="suspense">Suspense<a class="headerlink" href="#suspense" title="Permanent link">&para;</a></h4>
 <p><code>Suspense</code> renders a <code>fallback</code> while one or more resources are loading.</p>
 <ul>
 <li>Props:</li>

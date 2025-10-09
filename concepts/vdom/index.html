@@ -1530,9 +1530,12 @@
 </code></pre></div>
 
 <p>Rendering is done with <code>vdom.render(view, container)</code>.</p>
-<blockquote>
-<p>TODO: Document keyed diffing, normalization rules, and error boundaries interaction.</p>
-</blockquote>
+<p>Keyed diffing</p>
+<ul>
+<li>Provide <code>key</code> on children of dynamic lists: <code>h("li", {"key": item.id}, ...)</code>.</li>
+<li>Keys allow Wybthon to match, reorder, insert, and remove children with minimal DOM changes while preserving element identity and state.</li>
+<li>The reconciler first matches children by key, then falls back to type-matching for unkeyed nodes.</li>
+</ul>
 
 
 
