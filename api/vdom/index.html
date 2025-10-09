@@ -1312,6 +1312,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#prop-semantics-style-dataset-value-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prop semantics (style, dataset, value, checked)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1609,6 +1618,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#prop-semantics-style-dataset-value-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prop semantics (style, dataset, value, checked)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1811,6 +1829,27 @@
 </li>
 <li>If the fallback callable throws, a simple text node "Error rendering fallback" is shown.</li>
 <li>When not in an error state, the boundary renders its <code>children</code> wrapped in a <code>div</code>.</li>
+</ul>
+<h4 id="prop-semantics-style-dataset-value-checked">Prop semantics (style, dataset, value, checked)<a class="headerlink" href="#prop-semantics-style-dataset-value-checked" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>style</code>: pass a dict of CSS properties using camelCase keys. Keys are converted to kebab-case and applied via <code>style.setProperty</code>. On updates, keys that are absent in the new dict are removed with <code>style.removeProperty</code>. Passing <code>None</code> or a non-dict clears previously set style keys.</li>
+</ul>
+<p><code>python
+  h("div", {"style": {"backgroundColor": "red", "fontSize": 14}})
+  # → sets background-color: red; font-size: 14</code></p>
+<ul>
+<li><code>dataset</code>: pass a dict; entries map to <code>data-*</code> attributes. On updates, keys not present are removed. Passing <code>None</code> or a non-dict clears previously set <code>data-*</code> attributes.</li>
+</ul>
+<p><code>python
+  h("div", {"dataset": {"id": "x", "role": "button"}})
+  # → sets data-id="x" data-role="button"</code></p>
+<ul>
+<li>
+<p><code>value</code>: for form controls, the DOM <code>value</code> property is set (falling back to the <code>value</code> attribute if needed). <code>None</code> becomes <code>""</code>. Removing the <code>value</code> prop resets it to <code>""</code>.</p>
+</li>
+<li>
+<p><code>checked</code>: for checkboxes/radios, the DOM <code>checked</code> property is set when available (falling back to the <code>checked</code> attribute). Removing the <code>checked</code> prop clears it to <code>False</code>.</p>
+</li>
 </ul>
 
 

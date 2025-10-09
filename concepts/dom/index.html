@@ -576,6 +576,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DOM Interop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#styles-and-dataset-via-vdom" class="md-nav__link">
+    <span class="md-ellipsis">
+      Styles and dataset via VDOM
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1507,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="DOM Interop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#styles-and-dataset-via-vdom" class="md-nav__link">
+    <span class="md-ellipsis">
+      Styles and dataset via VDOM
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1528,6 +1558,11 @@
 <blockquote>
 <p>TODO: Explain refs and how VDOM uses <code>Element</code> under the hood.</p>
 </blockquote>
+<h4 id="styles-and-dataset-via-vdom">Styles and dataset via VDOM<a class="headerlink" href="#styles-and-dataset-via-vdom" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Use the <code>style</code> prop with a dict of camelCase keys; the VDOM converts to kebab-case and calls <code>style.setProperty</code>. Missing keys on update are removed. Passing <code>None</code> clears previous styles.</li>
+<li>Use the <code>dataset</code> prop with a dict; entries render as <code>data-*</code> attributes. Missing keys on update are removed. Passing <code>None</code> clears previous dataset entries.</li>
+</ul>
 
 
 
