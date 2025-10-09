@@ -1613,7 +1613,12 @@
 </code></pre></div>
 
 <h4 id="delegation-model">Delegation model<a class="headerlink" href="#delegation-model" title="Permanent link">&para;</a></h4>
-<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon’s dispatcher. Handlers are automatically removed when nodes unmount.</p>
+<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon’s dispatcher.</p>
+<p>Cleanup guarantees:</p>
+<ul>
+<li>When a node is unmounted, all of its event handlers are removed from the delegation map.</li>
+<li>When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to <code>None</code>), the document-level listener for that event type is automatically removed.</li>
+</ul>
 <h4 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h4>
 <ul>
 <li><code>on_click</code> → <code>"click"</code></li>

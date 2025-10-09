@@ -599,6 +599,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Error Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto-reset-with-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-reset with keys
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on_error-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      on_error hook
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1525,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Error Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto-reset-with-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-reset with keys
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on_error-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      on_error hook
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1516,19 +1582,60 @@
   <h1>Error Boundaries</h1>
 
 <h3 id="error-boundaries">Error Boundaries<a class="headerlink" href="#error-boundaries" title="Permanent link">&para;</a></h3>
-<p><code>ErrorBoundary</code> catches errors thrown during render of its subtree and renders a fallback.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vdom</span><span class="w"> </span><span class="kn">import</span> <span class="n">ErrorBoundary</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<p><code>ErrorBoundary</code> catches errors thrown during render of its subtree and renders a fallback. You can reset the boundary imperatively or by changing a <code>reset_key(s)</code> prop.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ErrorBoundary</span><span class="p">,</span> <span class="n">h</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">fallback</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">},</span> <span class="sa">f</span><span class="s2">&quot;Oops: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Failing</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;boom&quot;</span><span class="p">)</span>
 
-<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">fallback</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;TODO: child&quot;</span><span class="p">]})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fallback</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
+    <span class="c1"># reset is provided for convenience; you can also use reset_key(s)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">},</span>
+             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Oops: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">reset</span><span class="p">()},</span> <span class="s2">&quot;Try again&quot;</span><span class="p">))</span>
+
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">fallback</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Failing</span><span class="p">,</span> <span class="p">{}))</span>
 </code></pre></div>
 
-<blockquote>
-<p>TODO: Document reset behavior and limitations.</p>
-</blockquote>
+<h4 id="auto-reset-with-keys">Auto-reset with keys<a class="headerlink" href="#auto-reset-with-keys" title="Permanent link">&para;</a></h4>
+<p>When a <code>reset_key</code> (single) or <code>reset_keys</code> (list/tuple) value changes, the boundary clears its error and re-renders children on the next render.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ErrorBoundary</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span>
+
+<span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">c</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;odd!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
+    <span class="s2">&quot;div&quot;</span><span class="p">,</span>
+    <span class="p">{},</span>
+    <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Err: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)},</span> <span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{})),</span>
+    <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span> <span class="s2">&quot;+1&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Or couple the boundary to a key so it resets when `count` changes:</span>
+<span class="n">view_keyed</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
+    <span class="n">ErrorBoundary</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Err: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="s2">&quot;reset_key&quot;</span><span class="p">:</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()},</span>
+    <span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{}),</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h4 id="on_error-hook">on_error hook<a class="headerlink" href="#on_error-hook" title="Permanent link">&para;</a></h4>
+<p>Provide <code>on_error</code> to observe errors when they are captured by the boundary:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_error</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Captured:&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="s2">&quot;Oops&quot;</span><span class="p">,</span> <span class="s2">&quot;on_error&quot;</span><span class="p">:</span> <span class="n">on_error</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Failing</span><span class="p">,</span> <span class="p">{}))</span>
+</code></pre></div>
+
+<h4 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Only errors thrown during render of the child subtree are caught. Errors in event handlers or async tasks should be handled separately.</li>
+</ul>
 
 
 

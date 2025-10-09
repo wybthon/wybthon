@@ -1294,6 +1294,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#errorboundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      ErrorBoundary
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1573,6 +1582,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#errorboundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      ErrorBoundary
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1746,6 +1764,28 @@
 <li><code>resource</code> or <code>resources=[...]</code></li>
 <li><code>fallback</code> – VNode/str/callable</li>
 <li><code>keep_previous=False</code> – keep children visible during subsequent reloads</li>
+</ul>
+<h4 id="errorboundary">ErrorBoundary<a class="headerlink" href="#errorboundary" title="Permanent link">&para;</a></h4>
+<p><code>ErrorBoundary</code> catches render errors from its subtree and renders a <code>fallback</code>.</p>
+<ul>
+<li>Props:</li>
+<li><code>fallback</code> – VNode/str/callable. When callable, it is invoked as <code>fallback(error, reset)</code>; if the callable only accepts one argument, it is invoked as <code>fallback(error)</code>.</li>
+<li><code>on_error</code> – optional callback called with the thrown error when the boundary captures it.</li>
+<li><code>reset_key</code> – any value; when this value changes, the boundary automatically resets (clears the error) on the next render.</li>
+<li>
+<p><code>reset_keys</code> – list/tuple of values; when the tuple of values changes, the boundary automatically resets.</p>
+</li>
+<li>
+<p>Methods:</p>
+</li>
+<li>
+<p><code>reset()</code> – imperative method to clear the current error and attempt re-rendering children.</p>
+</li>
+<li>
+<p>Notes:</p>
+</li>
+<li>If the fallback callable throws, a simple text node "Error rendering fallback" is shown.</li>
+<li>When not in an error state, the boundary renders its <code>children</code> wrapped in a <code>div</code>.</li>
 </ul>
 
 

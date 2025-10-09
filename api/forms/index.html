@@ -1289,6 +1289,51 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.a11y_control_attrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      a11y_control_attrs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.error_message_attrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      error_message_attrs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.on_submit_validated" class="md-nav__link">
+    <span class="md-ellipsis">
+      on_submit_validated
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.validate_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_field
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.validate_form" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_form
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1512,6 +1557,51 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.a11y_control_attrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      a11y_control_attrs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.error_message_attrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      error_message_attrs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.on_submit_validated" class="md-nav__link">
+    <span class="md-ellipsis">
+      on_submit_validated
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.validate_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_field
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.forms.validate_form" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_form
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1563,13 +1653,119 @@
 
 
 
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.forms.a11y_control_attrs" class="doc doc-heading">
+            <code class=" language-python"><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.a11y_control_attrs" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return ARIA attributes for an input/select control bound to the field.</p>
+<ul>
+<li>aria-invalid is set to "true" when there's an error, else "false".</li>
+<li>aria-describedby includes the provided error element id when an error exists.</li>
+</ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.forms.error_message_attrs" class="doc doc-heading">
+            <code class=" language-python"><span class="n">error_message_attrs</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.error_message_attrs" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return attributes for an error message container.</p>
+<p>Use with a live region to announce validation errors to assistive tech.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.forms.on_submit_validated" class="doc doc-heading">
+            <code class=" language-python"><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">handler</span><span class="p">,</span> <span class="n">form</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.on_submit_validated" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Submit handler that validates the whole form before invoking handler.</p>
+<p>Prevents the default submit, validates via <code>validate_form</code>, and calls <code>handler(form)</code>
+only when the form is valid.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.forms.validate_field" class="doc doc-heading">
+            <code class=" language-python"><span class="n">validate_field</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.validate_field" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate a single field and update its error/touched signals.</p>
+<p>Returns the error message if any, else None.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.forms.validate_form" class="doc doc-heading">
+            <code class=" language-python"><span class="n">validate_form</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="n">rules</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.validate_form" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate all fields in a form against a rules map.</p>
+<p>Mutates each field's <code>touched</code> and <code>error</code> signals. Returns (is_valid, errors_map).</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
 
     </div>
 
-</div>
+</div><p>Additional helpers introduced:</p>
+<ul>
+<li>validate_field</li>
+<li>validate_form</li>
+<li>on_submit_validated</li>
+<li>a11y_control_attrs</li>
+<li>error_message_attrs</li>
+</ul>
 
 
 

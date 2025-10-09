@@ -1516,22 +1516,73 @@
   <h1>Forms</h1>
 
 <h3 id="forms">Forms<a class="headerlink" href="#forms" title="Permanent link">&para;</a></h3>
-<p>Form state helpers and validators.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">form_state</span><span class="p">,</span> <span class="n">bind_text</span><span class="p">,</span> <span class="n">required</span><span class="p">,</span> <span class="n">min_length</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<p>Form state helpers, validators, aggregated validation, and accessibility patterns.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">h</span><span class="p">,</span>
+    <span class="n">form_state</span><span class="p">,</span>
+    <span class="n">bind_text</span><span class="p">,</span>
+    <span class="n">bind_checkbox</span><span class="p">,</span>
+    <span class="n">bind_select</span><span class="p">,</span>
+    <span class="n">required</span><span class="p">,</span>
+    <span class="n">min_length</span><span class="p">,</span>
+    <span class="n">email</span><span class="p">,</span>
+    <span class="n">validate_form</span><span class="p">,</span>
+    <span class="n">on_submit_validated</span><span class="p">,</span>
+    <span class="n">a11y_control_attrs</span><span class="p">,</span>
+    <span class="n">error_message_attrs</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;agree&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;agree&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;choice&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">})</span>
+
+<span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">)],</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">email</span><span class="p">()],</span>
+    <span class="c1"># &quot;choice&quot;: [required()],  # optional demo rule</span>
+<span class="p">}</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">View</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">email</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;form&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_submit&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">)},</span>
-             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">3</span><span class="p">)])}),</span>
-             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">email</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+    <span class="n">email_field</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span>
+    <span class="n">agree</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;agree&quot;</span><span class="p">]</span>
+    <span class="n">choice</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;choice&quot;</span><span class="p">]</span>
+
+    <span class="n">name_bind</span> <span class="o">=</span> <span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
+    <span class="n">email_bind</span> <span class="o">=</span> <span class="n">bind_text</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">email</span><span class="p">()])</span>
+    <span class="n">agree_bind</span> <span class="o">=</span> <span class="n">bind_checkbox</span><span class="p">(</span><span class="n">agree</span><span class="p">)</span>
+    <span class="n">choice_bind</span> <span class="o">=</span> <span class="n">bind_select</span><span class="p">(</span><span class="n">choice</span><span class="p">)</span>
+
+    <span class="n">on_submit</span> <span class="o">=</span> <span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;submit ok&quot;</span><span class="p">),</span> <span class="n">fields</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
+        <span class="s2">&quot;form&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;on_submit&quot;</span><span class="p">:</span> <span class="n">on_submit</span><span class="p">},</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;for&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">},</span> <span class="s2">&quot;Name&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">name_bind</span><span class="p">,</span> <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">&quot;name-err&quot;</span><span class="p">)}),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;name-err&quot;</span><span class="p">)},</span> <span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;for&quot;</span><span class="p">:</span> <span class="s2">&quot;email&quot;</span><span class="p">},</span> <span class="s2">&quot;Email&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">email_bind</span><span class="p">,</span> <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">&quot;email-err&quot;</span><span class="p">)}),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;email-err&quot;</span><span class="p">)},</span> <span class="n">email_field</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;checkbox&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">agree_bind</span><span class="p">}),</span> <span class="s2">&quot; Agree&quot;</span><span class="p">),</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;for&quot;</span><span class="p">:</span> <span class="s2">&quot;choice&quot;</span><span class="p">},</span> <span class="s2">&quot;Choice&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;choice&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">choice_bind</span><span class="p">},</span>
+          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;option&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">},</span> <span class="s2">&quot;--&quot;</span><span class="p">),</span>
+          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;option&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;a&quot;</span><span class="p">},</span> <span class="s2">&quot;A&quot;</span><span class="p">),</span>
+          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;option&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;b&quot;</span><span class="p">},</span> <span class="s2">&quot;B&quot;</span><span class="p">)),</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;submit&quot;</span><span class="p">},</span> <span class="s2">&quot;Submit&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
 </code></pre></div>
 
-<blockquote>
-<p>TODO: Add checkbox/select bindings and <code>on_submit</code> example with validation.</p>
-</blockquote>
+<p>Notes:
+- Use <code>validate_form</code> to aggregate errors and mark fields as touched. It returns <code>(is_valid, errors_map)</code>.
+- Use <code>on_submit_validated(rules, handler, form)</code> to guard submission until the form is valid.
+- For accessibility:
+  - Set <code>for</code> on <code>label</code> to match the input <code>id</code>.
+  - Add <code>aria-invalid</code> and <code>aria-describedby</code> via <code>a11y_control_attrs</code>.
+  - Render error containers with <code>role="alert"</code>/<code>aria-live="polite"</code> using <code>error_message_attrs</code>.</p>
 
 
 

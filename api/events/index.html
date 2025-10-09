@@ -1538,7 +1538,7 @@
 <ul>
 <li><code>DomEvent</code>: wrapper with <code>type</code>, <code>target</code> (<code>Element|None</code>), <code>current_target</code> (<code>Element|None</code>), <code>prevent_default()</code>, <code>stop_propagation()</code>.</li>
 <li>Handlers can be attached via props like <code>on_click</code>, <code>on_input</code>, or <code>onChange</code>. Names are normalized to DOM event types.</li>
-<li>Delegation is automatic and handlers are cleaned up on unmount.</li>
+<li>Delegation is automatic and handlers are cleaned up on unmount. Document-level delegated listeners are installed on first use per event type and are automatically removed when no handlers remain for that type (e.g., after unmount/diff removes all handlers).</li>
 </ul>
 
 
