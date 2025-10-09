@@ -71,7 +71,7 @@ plugins:
   - social:
       cards_layout_options:
         background_color: "#03abe9"
-        color: "#f8e048"
+        color: "#ffffff"
 extra_css:
   - styles/brand.css
 markdown_extensions:
