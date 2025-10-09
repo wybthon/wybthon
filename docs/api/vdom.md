@@ -2,6 +2,13 @@
 
 ::: wybthon.vdom
 
+#### Keyed children and diffing
+
+- `h(tag, {"key": key}, ...)` assigns a stable identity to a child.
+- During reconciliation, children are matched by key first, then by type for unkeyed nodes.
+- Reorders are applied with minimal DOM moves using a right-to-left pass with a moving anchor.
+- Unmatched old nodes are unmounted; unmatched new nodes are mounted at the correct anchor.
+
 #### Suspense
 
 `Suspense` renders a `fallback` while one or more resources are loading.

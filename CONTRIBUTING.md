@@ -113,6 +113,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `mkdocs` – documentation site (MkDocs/Material) configuration and content under `docs/`
   - `pyproject` – `pyproject.toml` packaging/build metadata
   - `repo` – repository metadata and top-level files (e.g., `README.md`, `CONTRIBUTING.md`, `LICENSE`, `.gitignore`)
+  - `bench` – micro-benchmarks and performance scripts under `bench/`
   - `tests` – unit/integration tests under `tests/` (if/when present)
   - `workflows` – CI pipelines under `.github/workflows/` (if/when present)
 

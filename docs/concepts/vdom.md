@@ -16,4 +16,8 @@ view = h("div", {"class": "app"},
 
 Rendering is done with `vdom.render(view, container)`.
 
-> TODO: Document keyed diffing, normalization rules, and error boundaries interaction.
+Keyed diffing
+
+- Provide `key` on children of dynamic lists: `h("li", {"key": item.id}, ...)`.
+- Keys allow Wybthon to match, reorder, insert, and remove children with minimal DOM changes while preserving element identity and state.
+- The reconciler first matches children by key, then falls back to type-matching for unkeyed nodes.

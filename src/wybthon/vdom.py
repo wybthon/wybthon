@@ -1,4 +1,5 @@
 import re
+from bisect import bisect_left
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
@@ -478,53 +479,77 @@ def _patch_children(old: VNode, new: VNode) -> None:
         if ch.key is not None:
             old_key_to_index[ch.key] = i
 
-    old_available: List[bool] = [True] * len(old_children)
-    matched_old_indices: List[int] = [-1] * len(new_children)
+    used_old: List[bool] = [False] * len(old_children)
+    sources: List[int] = [-1] * len(new_children)
 
     for i, new_child in enumerate(new_children):
         if new_child.key is not None and new_child.key in old_key_to_index:
             idx = old_key_to_index[new_child.key]
-            matched_old_indices[i] = idx
-            old_available[idx] = False
+            sources[i] = idx
+            used_old[idx] = True
+            # Patch existing matched nodes to sync props/children
+            _patch(old_children[idx], new_child, parent)
         else:
             # Fallback: match first still-available old child of same type and without key
             for j, oc in enumerate(old_children):
-                if not old_available[j]:
+                if used_old[j]:
                     continue
                 if oc.key is None and _same_type(oc, new_child):
-                    matched_old_indices[i] = j
-                    old_available[j] = False
+                    sources[i] = j
+                    used_old[j] = True
+                    _patch(oc, new_child, parent)
                     break
 
-    # 2) Reorder/mount using a right-to-left pass to leverage a stable anchor
-    next_anchor_node = None  # DOM node (not Element) to insert before
-    for i in range(len(new_children) - 1, -1, -1):
-        new_child = new_children[i]
-        old_idx = matched_old_indices[i]
-        if old_idx != -1:
-            matched_old = old_children[old_idx]
-            # Patch to update props/subtrees and ensure el is set
-            _patch(matched_old, new_child, parent)
-            new_el = new_child.el
-            if new_el is not None:
-                try:
-                    # Move only if necessary
-                    if new_el.element.nextSibling is not next_anchor_node:
-                        parent.element.insertBefore(new_el.element, next_anchor_node)
-                except Exception:
-                    pass
-                next_anchor_node = new_el.element
+    # 2) Compute LIS over the matched old indices to minimize moves
+    n = len(new_children)
+    tails: List[int] = []
+    tails_idx: List[int] = []
+    prev_idx: List[int] = [-1] * n
+    for i in range(n):
+        s = sources[i]
+        if s == -1:
+            continue
+        pos = bisect_left(tails, s)
+        if pos == len(tails):
+            tails.append(s)
+            tails_idx.append(i)
         else:
-            # Brand new node; mount at the computed anchor
+            tails[pos] = s
+            tails_idx[pos] = i
+        prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
+
+    lis_set = set()
+    k = tails_idx[-1] if tails_idx else -1
+    while k != -1:
+        lis_set.add(k)
+        k = prev_idx[k]
+
+    # 3) Walk from right to left to move existing nodes and mount new ones
+    next_anchor_node = None  # DOM node to insert before
+    for i in range(n - 1, -1, -1):
+        new_child = new_children[i]
+        s = sources[i]
+        if s == -1:
+            # Brand new node; mount before the current anchor
             try:
                 mounted_el = _mount(new_child, parent, next_anchor_node)
                 next_anchor_node = mounted_el.element
             except Exception:
                 pass
+        else:
+            new_el = new_child.el
+            if new_el is not None:
+                try:
+                    # Move only if this index is not in LIS (i.e., out of order)
+                    if i not in lis_set:
+                        parent.element.insertBefore(new_el.element, next_anchor_node)
+                except Exception:
+                    pass
+                next_anchor_node = new_el.element
 
-    # 3) Unmount any old children that were not matched
+    # 4) Unmount any old children that were not matched at all
     for j, oc in enumerate(old_children):
-        if old_available[j]:
+        if not used_old[j]:
             _unmount(oc)
 
 
