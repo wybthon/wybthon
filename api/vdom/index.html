@@ -1295,6 +1295,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#text-nodes-fast-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Text nodes (fast-path)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#suspense" class="md-nav__link">
     <span class="md-ellipsis">
       Suspense
@@ -1601,6 +1610,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#text-nodes-fast-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Text nodes (fast-path)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#suspense" class="md-nav__link">
     <span class="md-ellipsis">
       Suspense
@@ -1800,6 +1818,20 @@
 <li>Reorders are applied with minimal DOM moves using a right-to-left pass with a moving anchor.</li>
 <li>Unmatched old nodes are unmounted; unmatched new nodes are mounted at the correct anchor.</li>
 </ul>
+<h4 id="text-nodes-fast-path">Text nodes (fast-path)<a class="headerlink" href="#text-nodes-fast-path" title="Permanent link">&para;</a></h4>
+<ul>
+<li>When both the old and new nodes are text, the same DOM text node is reused and only <code>nodeValue</code> is updated.</li>
+<li>Lists of plain text children are reconciled efficiently; typically the framework updates text in-place and minimizes DOM moves.</li>
+<li>Example:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.vdom</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">render</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.dom</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="n">node</span><span class="o">=</span><span class="n">document</span><span class="o">.</span><span class="n">createElement</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">))</span>
+<span class="n">render</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;hello&quot;</span><span class="p">),</span> <span class="n">root</span><span class="p">)</span>
+<span class="n">render</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;world&quot;</span><span class="p">),</span> <span class="n">root</span><span class="p">)</span>  <span class="c1"># updates the same text node</span>
+</code></pre></div>
+
 <h4 id="suspense">Suspense<a class="headerlink" href="#suspense" title="Permanent link">&para;</a></h4>
 <p><code>Suspense</code> renders a <code>fallback</code> while one or more resources are loading.</p>
 <ul>
