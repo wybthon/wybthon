@@ -1518,7 +1518,8 @@
 <h3 id="dev-server">Dev Server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h3>
 <p>Run a static server with auto-reload over SSE.</p>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>.
-wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>examples
+wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>examples<span class="w"> </span>--open<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--mount<span class="w"> </span>/<span class="o">=</span>.<span class="w"> </span>--mount<span class="w"> </span>/examples<span class="o">=</span>examples<span class="w"> </span>--mount<span class="w"> </span>/src<span class="o">=</span>src
 </code></pre></div>
 
 <p>Behavior:</p>
@@ -1526,10 +1527,20 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <li>Watches <code>--watch</code> directories for file mtime changes</li>
 <li>Notifies browser via <code>/__sse</code> events; demo subscribes and reloads the page</li>
 <li>Binds to the requested port or the next available up to +20</li>
+<li>Serves additional static directories using <code>--mount /prefix=path</code> (repeatable)</li>
+<li>Optionally opens the browser with <code>--open</code> and <code>--open-path /examples/demo/</code></li>
 </ul>
-<blockquote>
-<p>TODO: Document using a custom handler or mounting additional static paths.</p>
-</blockquote>
+<p>Options:</p>
+<ul>
+<li><code>--mount /prefix=path</code>: mount filesystem <code>path</code> at the given URL prefix. The longest-prefix match wins.</li>
+<li><code>--open</code>: open the default browser to the server URL after it starts.</li>
+<li><code>--open-path</code>: append this path when opening the browser, e.g. <code>/examples/demo/</code>.</li>
+</ul>
+<p>Error overlay (development only):</p>
+<ul>
+<li>The demo <code>bootstrap.js</code> now shows a lightweight in-browser overlay when a Python exception or JS error occurs during app startup. It also listens for unhandled promise rejections.</li>
+<li>The overlay is dismissed via the "Dismiss" button and will be replaced on subsequent errors.</li>
+</ul>
 
 
 
