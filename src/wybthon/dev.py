@@ -6,13 +6,16 @@ import os
 import socketserver
 import threading
 import time
+import webbrowser
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlsplit
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
     watchers = []  # type: ignore[var-annotated]
     root: Path = Path.cwd()
+    mounts: list[tuple[str, Path]] = []
 
     def do_GET(self):  # noqa: N802
         if self.path == "/__sse":
@@ -36,6 +39,10 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
                     pass
             return
         return super().do_GET()
+
+    # Map request path to filesystem path honoring mounts, falling back to root
+    def translate_path(self, path: str) -> str:  # noqa: D401 - behavior explained in doc above
+        return str(translate_request_path(path, self.root, self.mounts))
 
     @classmethod
     def notify_reload(cls) -> None:
@@ -64,12 +71,77 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
             yield p
 
 
+def _sanitize_segments(path: str) -> list[str]:
+    # Strip query/fragment and split; drop unsafe segments
+    p = urlsplit(path).path
+    parts = [seg for seg in p.split("/") if seg not in ("", ".", "..")]
+    return parts
+
+
+def translate_request_path(path: str, root: Path, mounts: list[tuple[str, Path]]) -> Path:
+    """Translate a URL path to a filesystem path using mounts, with fallback to root.
+
+    Longest-prefix match wins. Prevents directory traversal by dropping dangerous segments.
+    """
+    # Sort mounts by longest prefix to ensure the most specific mount wins
+    sorted_mounts = sorted(mounts or [], key=lambda m: len(m[0]), reverse=True)
+    request_path = urlsplit(path).path
+    for prefix, base in sorted_mounts:
+        if prefix == "/":
+            continue  # handled as fallback below
+        if request_path == prefix or request_path.startswith(prefix + "/"):
+            rel = request_path[len(prefix) :]
+            segments = _sanitize_segments(rel)
+            fp = base
+            for seg in segments:
+                fp = fp / seg
+            return fp
+    # Fallback to root
+    segments = _sanitize_segments(request_path)
+    fp = root
+    for seg in segments:
+        fp = fp / seg
+    return fp
+
+
+def parse_mounts(mount_args: Iterable[str], base_dir: Path) -> list[tuple[str, Path]]:
+    """Parse --mount arguments of the form "/prefix=path".
+
+    - Prefix must start with "/"; if omitted, it will be added
+    - Paths are resolved relative to base_dir if not absolute
+    - Duplicate prefixes are allowed; last one wins via order (we keep all, sorted later)
+    """
+    mounts: list[tuple[str, Path]] = []
+    for raw in mount_args:
+        if "=" not in raw:
+            # Treat as root mount
+            prefix, raw_path = "/", raw
+        else:
+            prefix, raw_path = raw.split("=", 1)
+        prefix = prefix.strip() or "/"
+        if not prefix.startswith("/"):
+            prefix = "/" + prefix
+        path = Path(raw_path.strip())
+        if not path.is_absolute():
+            path = (base_dir / path).resolve()
+        mounts.append((prefix, path))
+    return mounts
+
+
 def serve(
-    directory: str, host: str = "127.0.0.1", port: int = 8000, watch: Iterable[str] = ("src", "examples")
+    directory: str,
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    watch: Iterable[str] = ("src", "examples"),
+    mounts: Iterable[str] | None = None,
+    open_browser: bool = False,
+    open_path: str | None = None,
 ) -> None:
     os.chdir(directory)
     SSEHandler.root = Path(directory)
     handler_cls = SSEHandler
+    # Configure static mounts
+    handler_cls.mounts = parse_mounts(mounts or [], Path(directory))
 
     class ReuseTCPServer(socketserver.TCPServer):
         allow_reuse_address = True
@@ -116,7 +188,28 @@ def serve(
     if httpd is None:
         raise last_err if last_err is not None else OSError("Failed to bind server")
 
-    print(f"Serving {directory} at http://{host}:{bound_port}")
+    url = f"http://{host}:{bound_port}"
+    print(f"Serving {directory} at {url}")
+
+    # Optionally open a browser tab
+    if open_browser:
+        # Heuristic default path if not provided
+        selected_path = open_path
+        base = Path(directory)
+        try:
+            if not selected_path:
+                if (base / "index.html").exists():
+                    selected_path = "/"
+                elif (base / "examples" / "demo" / "index.html").exists():
+                    selected_path = "/examples/demo/"
+                else:
+                    selected_path = "/"
+        except Exception:
+            selected_path = selected_path or "/"
+        try:
+            webbrowser.open(url + (selected_path or "/"))
+        except Exception:
+            pass
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -136,10 +229,26 @@ def main(argv: list[str] | None = None) -> int:
     pdev.add_argument("--host", default="127.0.0.1")
     pdev.add_argument("--port", type=int, default=8000)
     pdev.add_argument("--watch", nargs="*", default=["src", "examples"])
+    pdev.add_argument(
+        "--mount",
+        action="append",
+        default=[],
+        help="Mount additional static paths as /prefix=path. Can be repeated.",
+    )
+    pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
+    pdev.add_argument("--open-path", default=None, help="Path to open (e.g. /examples/demo/)")
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":
-        serve(args.dir, host=args.host, port=args.port, watch=args.watch)
+        serve(
+            args.dir,
+            host=args.host,
+            port=args.port,
+            watch=args.watch,
+            mounts=args.mount,
+            open_browser=args.open,
+            open_path=args.open_path,
+        )
         return 0
     parser.print_help()
     return 1
