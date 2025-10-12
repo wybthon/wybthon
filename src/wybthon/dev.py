@@ -17,6 +17,14 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
     root: Path = Path.cwd()
     mounts: list[tuple[str, Path]] = []
 
+    def end_headers(self) -> None:  # noqa: D401 - ensure dev assets are never cached
+        # Add aggressive no-store headers to avoid stale assets during development
+        # This applies to all responses (including directory listings and static files).
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
     def do_GET(self):  # noqa: N802
         if self.path == "/__sse":
             self.send_response(200)
@@ -189,7 +197,27 @@ def serve(
         raise last_err if last_err is not None else OSError("Failed to bind server")
 
     url = f"http://{host}:{bound_port}"
-    print(f"Serving {directory} at {url}")
+    print("\nWybthon Dev Server")
+    print("===================")
+    print(f"Directory: {Path(directory).resolve()}")
+    print(f"Host:      {host}")
+    print(f"Port:      {bound_port}")
+    if port and bound_port != port:
+        print(f"(requested port {port} was busy; using {bound_port})")
+    # Show mounts and watch list for quick visibility
+    if handler_cls.mounts:
+        print("Mounts:")
+        for prefix, pth in handler_cls.mounts:
+            print(f"  {prefix} -> {pth}")
+    else:
+        print(f"Mounts:\n  / -> {Path(directory).resolve()}")
+    if watch:
+        try:
+            watch_list = ", ".join(str(Path(w)) for w in watch)
+        except Exception:
+            watch_list = ", ".join(map(str, watch))
+        print(f"Watching: {watch_list}")
+    print(f"\nServing at: {url}")
 
     # Optionally open a browser tab
     if open_browser:
