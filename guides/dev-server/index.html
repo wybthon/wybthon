@@ -672,6 +672,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Dev Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1516,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Dev Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1537,6 +1585,118 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <li><code>--open</code>: open the default browser to the server URL after it starts.</li>
 <li><code>--open-path</code>: append this path when opening the browser, e.g. <code>/examples/demo/</code>.</li>
 </ul>
+<h4 id="advanced-usage">Advanced usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Multiple mounts and base URLs</li>
+<li>The server maps URL prefixes to filesystem directories. The longest-prefix match wins.</li>
+<li>
+<p>Example: serve repo root at <code>/</code>, demo at <code>/examples</code>, and source at <code>/src</code>:</p>
+<p><code>bash
+wyb dev --dir . \
+  --mount /=. \
+  --mount /examples=examples \
+  --mount /src=src \
+  --open --open-path /examples/demo/</code></p>
+</li>
+<li>
+<p>Host/port selection and fallbacks</p>
+</li>
+<li>Defaults: <code>--host 127.0.0.1</code>, <code>--port 8000</code>.</li>
+<li>If the requested port is busy, the server tries the next 20 ports and prints which one was selected.</li>
+<li>
+<p>To expose on your LAN or containers, use <code>--host 0.0.0.0</code> and open via your machine IP.</p>
+</li>
+<li>
+<p>Auto-open behavior</p>
+</li>
+<li><code>--open</code> launches your default browser to the server URL.</li>
+<li>
+<p>If <code>--open-path</code> is omitted, the server heuristically opens <code>/</code> if <code>index.html</code> exists under <code>--dir</code>, otherwise <code>/examples/demo/</code> if present, otherwise <code>/</code>.</p>
+</li>
+<li>
+<p>Watching and reload delay</p>
+</li>
+<li><code>--watch</code> accepts a list of directories; defaults to <code>src examples</code>.</li>
+<li>File change detection is based on mtimes and checks ~every 0.5s. Expect a ~0.5–1.5s full page reload.</li>
+<li>
+<p>To disable auto-reload entirely, pass <code>--watch</code> with no values:</p>
+<p><code>bash
+wyb dev --dir . --watch --mount /=.</code></p>
+</li>
+<li>
+<p>SSE endpoint for reloads</p>
+</li>
+<li>The dev server exposes <code>GET /__sse</code> which streams <code>reload</code> events. The demo subscribes and calls <code>location.reload()</code>.</li>
+<li>
+<p>Integrate into your own app with a minimal client:</p>
+<p><code>js
+const es = new EventSource("/__sse");
+es.addEventListener("reload", () =&gt; location.reload());</code></p>
+</li>
+<li>
+<p>Cache busting in development</p>
+</li>
+<li>All responses include <code>Cache-Control: no-store, max-age=0</code>.</li>
+<li>
+<p>For ES modules, also append a timestamp query param to avoid module graph caching by the browser:</p>
+<p><code>html
+&lt;script type="module"&gt;
+  import(`./bootstrap.js?v=${Date.now()}`);
+&lt;/script&gt;</code></p>
+</li>
+<li>
+<p>Path safety and traversal</p>
+</li>
+<li>The server sanitizes paths (<code>.</code>, <code>..</code>) before mapping to the filesystem; use mounts instead of relative escapes.</li>
+<li>
+<p>For a base-path style setup, mount your app under a prefix (e.g., <code>--mount /app=dist</code>) and open <code>--open-path /app/</code>.</p>
+</li>
+<li>
+<p>Not for production</p>
+</li>
+<li>This server is built on Python's <code>http.server</code> and is intended for development only.</li>
+</ul>
+<h4 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Auto-reload not firing</li>
+<li>Confirm the dev server is running and <code>GET /__sse</code> shows an open EventSource connection in your browser's Network panel.</li>
+<li>Ensure your changed files live under the <code>--watch</code> directories; add or adjust entries accordingly.</li>
+<li>
+<p>Behind proxies: make sure <code>/__sse</code> is passed through unbuffered (e.g., Nginx <code>proxy_buffering off;</code> and <code>X-Accel-Buffering: no</code>).</p>
+</li>
+<li>
+<p>Stale assets</p>
+</li>
+<li>
+<p>Verify <code>Cache-Control: no-store</code> on responses. For modules, include a <code>?v=${Date.now()}</code> cache-buster as shown above.</p>
+</li>
+<li>
+<p>Port is already in use</p>
+</li>
+<li>The server will pick the next free port and print a notice. If you need the exact port, stop the conflicting process.</li>
+<li>
+<p>macOS example: <code>lsof -i :8000</code> then <code>kill -9 &lt;PID&gt;</code>.</p>
+</li>
+<li>
+<p>Browser did not open</p>
+</li>
+<li><code>--open</code> relies on the system default browser; some headless or remote setups may block it.</li>
+<li>
+<p>Provide an explicit <code>--open-path</code> or copy the printed URL into your browser manually.</p>
+</li>
+<li>
+<p>Mounts not serving as expected</p>
+</li>
+<li>Prefixes must start with <code>/</code> (added automatically if omitted). Paths are resolved relative to <code>--dir</code> when not absolute.</li>
+<li>
+<p>When multiple mounts could match, the longest URL prefix wins. Check the startup "Mounts:" list to verify mapping.</p>
+</li>
+<li>
+<p>Exposing on the network</p>
+</li>
+<li>Use <code>--host 0.0.0.0</code> and ensure firewalls allow inbound traffic to the selected port.</li>
+</ul>
+<p>See also: the general troubleshooting page under Meta → Troubleshooting.</p>
 <p>Cache busting (development):</p>
 <ul>
 <li>The server sends <code>Cache-Control: no-store</code> for all static responses to avoid stale assets during development.</li>
