@@ -151,7 +151,10 @@ def serve(
     # Configure static mounts
     handler_cls.mounts = parse_mounts(mounts or [], Path(directory))
 
-    class ReuseTCPServer(socketserver.TCPServer):
+    class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        # Handle each request in a separate thread so long-lived SSE connections
+        # do not block concurrent static file requests during development.
+        daemon_threads = True
         allow_reuse_address = True
 
     def watcher() -> None:
@@ -187,7 +190,7 @@ def serve(
     last_err = None
     for p in candidates:
         try:
-            httpd = ReuseTCPServer((host, p), handler_cls)
+            httpd = ThreadingReuseTCPServer((host, p), handler_cls)
             bound_port = httpd.server_address[1]
             break
         except OSError as e:
