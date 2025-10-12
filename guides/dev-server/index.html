@@ -1529,6 +1529,7 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <li>Binds to the requested port or the next available up to +20</li>
 <li>Serves additional static directories using <code>--mount /prefix=path</code> (repeatable)</li>
 <li>Optionally opens the browser with <code>--open</code> and <code>--open-path /examples/demo/</code></li>
+<li>Prints the resolved host/port, selected port (if your requested one was busy), active mounts, and watched paths at startup</li>
 </ul>
 <p>Options:</p>
 <ul>
@@ -1536,6 +1537,17 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <li><code>--open</code>: open the default browser to the server URL after it starts.</li>
 <li><code>--open-path</code>: append this path when opening the browser, e.g. <code>/examples/demo/</code>.</li>
 </ul>
+<p>Cache busting (development):</p>
+<ul>
+<li>The server sends <code>Cache-Control: no-store</code> for all static responses to avoid stale assets during development.</li>
+<li>The demo HTML dynamically imports <code>bootstrap.js</code> with a timestamp query param to ensure the module itself is refreshed:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;module&quot;</span><span class="p">&gt;</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">();</span>
+  import(`./bootstrap.js?v=${v}`);
+\/script&gt;
+</code></pre></div>
+
 <p>Error overlay (development only):</p>
 <ul>
 <li>The demo <code>bootstrap.js</code> now shows a lightweight in-browser overlay when a Python exception or JS error occurs during app startup. It also listens for unhandled promise rejections.</li>
