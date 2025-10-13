@@ -6,6 +6,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 from .reactivity import Signal, effect, signal
 from .vdom import VNode, h
 
+__all__ = ["lazy", "load_component", "preload_component"]
+
 LoadFn = Callable[[], Union[Awaitable[Any], Any]]
 
 

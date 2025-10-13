@@ -2,6 +2,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from js import document, fetch
 
+__all__ = ["Element", "Ref"]
+
 
 class Element:
     def __init__(self, tag: Optional[str] = None, existing: bool = False, node: Any = None) -> None:

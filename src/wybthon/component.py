@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from .vdom import VNode
 
 from .dom import Element
+
+__all__ = ["BaseComponent", "Component"]
 
 
 class BaseComponent(ABC):
@@ -32,7 +39,7 @@ class Component:
         self.props = props
         self._cleanups: List[Callable[[], Any]] = []
 
-    def render(self):  # -> VNode (annotated in runtime to avoid cycle)
+    def render(self) -> "VNode":
         raise NotImplementedError
 
     # Lifecycle hooks

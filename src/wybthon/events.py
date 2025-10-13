@@ -11,6 +11,9 @@ except Exception:  # pragma: no cover - exercised in non-browser tests
             self.element = node
 
 
+__all__ = ["DomEvent"]
+
+
 _NODE_ID_ATTR = "data-wybid"
 _next_id = 0
 _handlers: Dict[str, Dict[str, Callable]] = {}

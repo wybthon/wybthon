@@ -2,6 +2,14 @@
 
 ::: wybthon.vdom
 
+#### Public API
+
+- `VNode`
+- `h(tag, props=None, *children) -> VNode`
+- `render(vnode, container) -> Element`
+- `ErrorBoundary` component
+- `Suspense` component
+
 #### Keyed children and diffing
 
 - `h(tag, {"key": key}, ...)` assigns a stable identity to a child.
@@ -66,6 +74,6 @@ render(h("div", {}, "world"), root)  # updates the same text node
   # → sets data-id="x" data-role="button"
   ```
 
-- `value`: for form controls, the DOM `value` property is set (falling back to the `value` attribute if needed). `None` becomes `""`. Removing the `value` prop resets it to `""`.
+- `value`: for form controls, the DOM `value` property is set (falling back to the `value` attribute if needed). `None` becomes "". Removing the `value` prop resets it to "".
 
 - `checked`: for checkboxes/radios, the DOM `checked` property is set when available (falling back to the `checked` attribute). Removing the `checked` prop clears it to `False`.

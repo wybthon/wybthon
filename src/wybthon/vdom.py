@@ -11,6 +11,14 @@ from .dom import Element
 from .events import remove_all_for, set_handler
 from .reactivity import Computation, Signal, effect, signal
 
+__all__ = [
+    "VNode",
+    "h",
+    "render",
+    "ErrorBoundary",
+    "Suspense",
+]
+
 PropsDict = Dict[str, Any]
 ChildType = Union["VNode", str]
 
