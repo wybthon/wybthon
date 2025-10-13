@@ -1286,6 +1286,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public API
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keyed-children-and-diffing" class="md-nav__link">
     <span class="md-ellipsis">
       Keyed children and diffing
@@ -1601,6 +1610,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public API
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keyed-children-and-diffing" class="md-nav__link">
     <span class="md-ellipsis">
       Keyed children and diffing
@@ -1811,7 +1829,15 @@
 
     </div>
 
-</div><h4 id="keyed-children-and-diffing">Keyed children and diffing<a class="headerlink" href="#keyed-children-and-diffing" title="Permanent link">&para;</a></h4>
+</div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>VNode</code></li>
+<li><code>h(tag, props=None, *children) -&gt; VNode</code></li>
+<li><code>render(vnode, container) -&gt; Element</code></li>
+<li><code>ErrorBoundary</code> component</li>
+<li><code>Suspense</code> component</li>
+</ul>
+<h4 id="keyed-children-and-diffing">Keyed children and diffing<a class="headerlink" href="#keyed-children-and-diffing" title="Permanent link">&para;</a></h4>
 <ul>
 <li><code>h(tag, {"key": key}, ...)</code> assigns a stable identity to a child.</li>
 <li>During reconciliation, children are matched by key first, then by type for unkeyed nodes.</li>
@@ -1877,7 +1903,7 @@
   # → sets data-id="x" data-role="button"</code></p>
 <ul>
 <li>
-<p><code>value</code>: for form controls, the DOM <code>value</code> property is set (falling back to the <code>value</code> attribute if needed). <code>None</code> becomes <code>""</code>. Removing the <code>value</code> prop resets it to <code>""</code>.</p>
+<p><code>value</code>: for form controls, the DOM <code>value</code> property is set (falling back to the <code>value</code> attribute if needed). <code>None</code> becomes "". Removing the <code>value</code> prop resets it to "".</p>
 </li>
 <li>
 <p><code>checked</code>: for checkboxes/radios, the DOM <code>checked</code> property is set when available (falling back to the <code>checked</code> attribute). Removing the <code>checked</code> prop clears it to <code>False</code>.</p>

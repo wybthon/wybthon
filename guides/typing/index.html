@@ -833,6 +833,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Typing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mypy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      mypy configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1492,6 +1516,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Typing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mypy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      mypy configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1519,13 +1567,70 @@
 <p>The codebase uses type hints and aims for clarity over cleverness.</p>
 <p>Guidelines:</p>
 <ul>
-<li>Prefer precise types on public APIs; avoid <code>Any</code></li>
-<li>Use <code>Optional[...]</code> where values can be absent</li>
-<li>In Pyodide/browser interop, tolerate <code>Any</code> at boundaries but narrow types internally</li>
+<li>Prefer precise types on public APIs; avoid <code>Any</code>.</li>
+<li>Use <code>Optional[...]</code> where values can be absent.</li>
+<li>In Pyodide/browser interop, tolerate <code>Any</code> at boundaries but narrow types internally.</li>
 </ul>
-<blockquote>
-<p>TODO: Add mypy config notes and examples from <code>reactivity.py</code> and <code>router.py</code>.</p>
-</blockquote>
+<h4 id="mypy-configuration">mypy configuration<a class="headerlink" href="#mypy-configuration" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Config is in <code>mypy.ini</code> targeting Python 3.9. Browser shims (e.g., <code>js</code>, <code>pyodide</code>) are marked as <code>ignore_missing_imports</code>.</li>
+<li>Run mypy against <code>src</code>, <code>tests</code>, <code>examples</code>, <code>bench</code> per config.</li>
+</ul>
+<h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Reactivity API</li>
+<li><code>signal(value) -&gt; Signal[T]</code></li>
+<li><code>computed(fn: Callable[[], T]) -&gt; _Computed[T]</code></li>
+<li><code>effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
+<li><code>use_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">use_resource</span>
+
+<span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">double</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">double</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># subscribes</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>      <span class="c1"># Computation</span>
+<span class="n">c</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>          <span class="c1"># stop updates</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_user</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">}</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">fetch_user</span><span class="p">))</span>
+</code></pre></div>
+
+<ul>
+<li>Component typing</li>
+<li><code>Component.render(self) -&gt; VNode</code></li>
+<li>Function components: <code>def MyComp(props: Dict[str, Any]) -&gt; VNode</code></li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">VNode</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Hello</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;world&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">HelloFn</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;world&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li>Router types</li>
+<li><code>Route(path: str, component: Union[Callable[[Dict[str, Any]], VNode], type])</code></li>
+<li><code>navigate(path: str, replace: bool = False) -&gt; None</code></li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">h</span>
+
+<span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_props</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Home&quot;</span><span class="p">)),</span>
+<span class="p">]</span>
+</code></pre></div>
 
 
 

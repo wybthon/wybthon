@@ -1236,6 +1236,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="use_resource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public API
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1546,6 +1561,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="use_resource">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public API
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1674,7 +1704,16 @@ cancellation support when available.</p>
 
     </div>
 
-</div>
+</div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>signal(value) -&gt; Signal[T]</code></li>
+<li><code>computed(fn) -&gt; _Computed[T]</code> with <code>.get()</code> and <code>.dispose()</code></li>
+<li><code>effect(fn) -&gt; Computation</code> (returns a handle; call <code>.dispose()</code> to stop)</li>
+<li><code>on_effect_cleanup(comp, fn)</code></li>
+<li><code>batch() -&gt; context manager</code></li>
+<li><code>Resource(fetcher)</code> and <code>use_resource(fetcher) -&gt; Resource</code></li>
+</ul>
+<p>Type hints are provided for all public functions and classes. Prefer retrieving values via <code>.get()</code> on signals and computed values to subscribe computations.</p>
 
 
 

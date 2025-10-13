@@ -1248,9 +1248,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#notable-exports" class="md-nav__link">
+  <a href="#public-api-top-level-imports" class="md-nav__link">
     <span class="md-ellipsis">
-      Notable exports
+      Public API (top-level imports)
     </span>
   </a>
   
@@ -1811,9 +1811,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#notable-exports" class="md-nav__link">
+  <a href="#public-api-top-level-imports" class="md-nav__link">
     <span class="md-ellipsis">
-      Notable exports
+      Public API (top-level imports)
     </span>
   </a>
   
@@ -2307,13 +2307,33 @@ cancellation support when available.</p>
 
     </div>
 
-</div><h4 id="notable-exports">Notable exports<a class="headerlink" href="#notable-exports" title="Permanent link">&para;</a></h4>
+</div><h4 id="public-api-top-level-imports">Public API (top-level imports)<a class="headerlink" href="#public-api-top-level-imports" title="Permanent link">&para;</a></h4>
 <ul>
-<li><code>lazy(loader)</code> – create a lazily-loaded component from a <code>(module_path, attr?)</code> loader</li>
-<li><code>load_component(module_path, attr=None)</code> – load a component function/class from a module</li>
-<li><code>preload_component(module_path, attr=None)</code> – eagerly import a module to warm cache</li>
-<li><code>Suspense</code> – component that renders <code>fallback</code> while provided <code>resource(s)</code> are loading; accepts <code>keep_previous</code></li>
+<li>Core rendering</li>
+<li><code>Element</code>, <code>Ref</code></li>
+<li><code>VNode</code>, <code>h</code>, <code>render</code></li>
+<li>Components</li>
+<li><code>Component</code>, <code>ErrorBoundary</code>, <code>Suspense</code></li>
+<li>Reactivity</li>
+<li><code>signal</code>, <code>computed</code>, <code>effect</code>, <code>batch</code>, <code>on_effect_cleanup</code></li>
+<li><code>Resource</code>, <code>use_resource</code></li>
+<li>Context</li>
+<li><code>Context</code>, <code>create_context</code>, <code>use_context</code>, <code>Provider</code></li>
+<li>Router</li>
+<li><code>Route</code>, <code>Router</code>, <code>Link</code>, <code>navigate</code>, <code>current_path</code></li>
+<li>Forms</li>
+<li>State and validation: <code>FieldState</code>, <code>form_state</code>, <code>validate</code>, <code>validate_field</code>, <code>validate_form</code></li>
+<li>Validators: <code>required</code>, <code>min_length</code>, <code>max_length</code>, <code>email</code></li>
+<li>Bindings and submit helpers: <code>bind_text</code>, <code>bind_checkbox</code>, <code>bind_select</code>, <code>on_submit</code>, <code>on_submit_validated</code></li>
+<li>A11y helpers: <code>a11y_control_attrs</code>, <code>error_message_attrs</code></li>
+<li>Events</li>
+<li><code>DomEvent</code></li>
+<li>Lazy loading</li>
+<li><code>lazy</code>, <code>load_component</code>, <code>preload_component</code></li>
 </ul>
+<blockquote>
+<p>Note: DOM/VDOM-related symbols (e.g., <code>Element</code>, <code>h</code>, <code>render</code>, <code>Component</code>, router) require a Pyodide/browser environment. In non-browser contexts, only reactivity, forms, and lazy utilities are available.</p>
+</blockquote>
 
 
 
