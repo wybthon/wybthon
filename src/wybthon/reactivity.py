@@ -4,6 +4,18 @@ from collections import deque
 from collections.abc import Awaitable as AbcAwaitable
 from typing import Any, Awaitable, Callable, Deque, Generic, List, Optional, Set, TypeVar, Union, cast
 
+__all__ = [
+    "Signal",
+    "Computation",
+    "signal",
+    "computed",
+    "effect",
+    "on_effect_cleanup",
+    "batch",
+    "Resource",
+    "use_resource",
+]
+
 T = TypeVar("T")
 
 
@@ -324,16 +336,3 @@ def use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]:
     cancellation support when available.
     """
     return Resource(fetcher)
-
-
-__all__ = [
-    "Signal",
-    "Computation",
-    "signal",
-    "computed",
-    "effect",
-    "on_effect_cleanup",
-    "batch",
-    "Resource",
-    "use_resource",
-]
