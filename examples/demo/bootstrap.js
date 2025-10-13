@@ -112,6 +112,7 @@ async function bootstrap() {
     ensureDir("/app/fetch");
     ensureDir("/app/forms");
     ensureDir("/app/errors");
+    ensureDir("/app/patterns");
 
     const appFiles = [
       "app/__init__.py",
@@ -125,6 +126,9 @@ async function bootstrap() {
       "app/components/counter.py",
       "app/components/theme_label.py",
       "app/components/nav.py",
+      "app/components/card.py",
+      "app/components/names_list.py",
+      "app/components/timer.py",
       "app/contexts/__init__.py",
       "app/contexts/theme.py",
       "app/about/__init__.py",
@@ -139,6 +143,8 @@ async function bootstrap() {
       "app/forms/page.py",
       "app/errors/__init__.py",
       "app/errors/page.py",
+      "app/patterns/__init__.py",
+      "app/patterns/page.py",
     ];
     for (const f of appFiles) {
       const resp = await fetch(`./${f}?v=${cacheBust}`);

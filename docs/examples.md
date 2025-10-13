@@ -7,6 +7,7 @@ Walk through focused examples mirroring the demo app pages.
 - Forms: `examples/forms.md`
 - Error Boundary: `examples/errors.md`
 - Router: `examples/router.md`
+ - Authoring Patterns: `examples/authoring-patterns.md`
 
 > Tip: Run `python -m http.server` and open the demo at `/examples/demo/index.html` to see these in action.
 

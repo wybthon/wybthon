@@ -24,6 +24,7 @@ class Counter(Component):
 
 Lifecycle hooks for class components: `on_mount`, `on_update(prev_props)`, `on_unmount`.
 
-See the guide for recommended patterns around props, state, children, cleanup, and context:
+See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:
 
 - Guide: [Authoring Patterns](../guides/authoring-patterns.md)
+- Example: [Authoring Patterns Example](../examples/authoring-patterns.md)

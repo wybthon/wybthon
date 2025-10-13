@@ -37,6 +37,8 @@ def Nav(props):
         " | ",
         h(Link, {"to": "/errors", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Errors"),
         " | ",
+        h(Link, {"to": "/patterns", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Patterns"),
+        " | ",
         h(Link, {"to": "/docs", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Docs"),
         " (",
         h(
