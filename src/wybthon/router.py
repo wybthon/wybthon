@@ -245,6 +245,14 @@ def Link(props: Dict[str, Any]) -> VNode:
     attrs = {"href": href_no_search, "on_click": handle_click}
     if classes:
         attrs["class"] = " ".join(classes)
+
+    # Forward additional props (including event handlers) to the anchor element,
+    # excluding Link-specific control props and class/className (already handled).
+    _reserved = {"to", "replace", "class_active", "base_path", "children", "class", "className", "href", "on_click"}
+    for k, v in props.items():
+        if k in _reserved:
+            continue
+        attrs[k] = v
     children = props.get("children", [])
     if not isinstance(children, list):
         children = [children]

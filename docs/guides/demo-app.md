@@ -76,7 +76,8 @@ def Nav(props):
                 "base_path": base_path,
                 "class": "nav-link",
                 "class_active": "active",
-                "on_mouseenter": on_hover_team,
+                # Use a bubbling event so delegated handlers work
+                "on_mouseover": on_hover_team,
             },
             "Team",
         ),

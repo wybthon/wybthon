@@ -47,6 +47,46 @@ Cleanup guarantees:
 
 #### Naming and normalization
 
-- `on_click` → `"click"`
-- `onInput`/`on_input` → `"input"`
+- `on_click` → "click"
+- `onInput`/`on_input` → "input"
+- `onClick`/`onclick` → "click"
 - Any prop starting with `on_` or `on` is treated as an event handler; non-callable values are ignored.
+
+#### Event types that work best with delegation
+
+Prefer events that bubble:
+
+- Mouse: `click`, `dblclick`, `mousedown`, `mouseup`, `mousemove`, `mouseover`, `mouseout`, `contextmenu`, `wheel`
+- Keyboard: `keydown`, `keyup` (avoid deprecated `keypress`)
+- Input and form: `input`, `change`, `submit`, `reset`
+- Pointer: `pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointercancel`
+
+Non-bubbling alternatives:
+
+- Use `focusin`/`focusout` instead of `focus`/`blur`.
+- Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave`.
+
+When you need non-bubbling events or special options (e.g., `passive: False`), attach directly via `Ref` + `Element.on`:
+
+```python
+from wybthon import Component, h, Ref
+
+class HoverDemo(Component):
+    def __init__(self, props):
+        super().__init__(props)
+        self.ref = Ref()
+
+    def on_mount(self):
+        if self.ref.current is not None:
+            # Example for a non-delegated listener
+            self.ref.current.on("mouseenter", lambda e: print("entered"))
+
+    def render(self):
+        return h("div", {"ref": self.ref, "class": "box"}, "Hover me")
+```
+
+#### Pyodide cross-browser notes
+
+- Delegation depends on bubbling to `document`. For non-bubbling types, use alternatives or `Element.on`.
+- Chrome/Edge may treat `touchstart`/`touchmove` on `document` as passive, so `preventDefault()` may be ignored. Use a direct listener with `options={"passive": False}` if you need to prevent scrolling.
+- `keypress` is deprecated; prefer `keydown`/`keyup`.
