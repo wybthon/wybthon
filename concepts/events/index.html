@@ -560,6 +560,24 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#event-types-that-work-best-with-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Event types that work best with delegation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyodide-cross-browser-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyodide cross-browser notes
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1555,6 +1573,24 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#event-types-that-work-best-with-delegation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Event types that work best with delegation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyodide-cross-browser-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyodide cross-browser notes
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1621,9 +1657,46 @@
 </ul>
 <h4 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h4>
 <ul>
-<li><code>on_click</code> → <code>"click"</code></li>
-<li><code>onInput</code>/<code>on_input</code> → <code>"input"</code></li>
+<li><code>on_click</code> → "click"</li>
+<li><code>onInput</code>/<code>on_input</code> → "input"</li>
+<li><code>onClick</code>/<code>onclick</code> → "click"</li>
 <li>Any prop starting with <code>on_</code> or <code>on</code> is treated as an event handler; non-callable values are ignored.</li>
+</ul>
+<h4 id="event-types-that-work-best-with-delegation">Event types that work best with delegation<a class="headerlink" href="#event-types-that-work-best-with-delegation" title="Permanent link">&para;</a></h4>
+<p>Prefer events that bubble:</p>
+<ul>
+<li>Mouse: <code>click</code>, <code>dblclick</code>, <code>mousedown</code>, <code>mouseup</code>, <code>mousemove</code>, <code>mouseover</code>, <code>mouseout</code>, <code>contextmenu</code>, <code>wheel</code></li>
+<li>Keyboard: <code>keydown</code>, <code>keyup</code> (avoid deprecated <code>keypress</code>)</li>
+<li>Input and form: <code>input</code>, <code>change</code>, <code>submit</code>, <code>reset</code></li>
+<li>Pointer: <code>pointerdown</code>, <code>pointerup</code>, <code>pointermove</code>, <code>pointerover</code>, <code>pointerout</code>, <code>pointercancel</code></li>
+</ul>
+<p>Non-bubbling alternatives:</p>
+<ul>
+<li>Use <code>focusin</code>/<code>focusout</code> instead of <code>focus</code>/<code>blur</code>.</li>
+<li>Use <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code>.</li>
+</ul>
+<p>When you need non-bubbling events or special options (e.g., <code>passive: False</code>), attach directly via <code>Ref</code> + <code>Element.on</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">Ref</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HoverDemo</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Example for a non-delegated listener</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;mouseenter&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;entered&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;box&quot;</span><span class="p">},</span> <span class="s2">&quot;Hover me&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="pyodide-cross-browser-notes">Pyodide cross-browser notes<a class="headerlink" href="#pyodide-cross-browser-notes" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Delegation depends on bubbling to <code>document</code>. For non-bubbling types, use alternatives or <code>Element.on</code>.</li>
+<li>Chrome/Edge may treat <code>touchstart</code>/<code>touchmove</code> on <code>document</code> as passive, so <code>preventDefault()</code> may be ignored. Use a direct listener with <code>options={"passive": False}</code> if you need to prevent scrolling.</li>
+<li><code>keypress</code> is deprecated; prefer <code>keydown</code>/<code>keyup</code>.</li>
 </ul>
 
 

@@ -1655,7 +1655,8 @@ from wybthon import Route, lazy, load_component</p>
                 <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="n">base_path</span><span class="p">,</span>
                 <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;nav-link&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;class_active&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;on_mouseenter&quot;</span><span class="p">:</span> <span class="n">on_hover_team</span><span class="p">,</span>
+                <span class="c1"># Use a bubbling event so delegated handlers work</span>
+                <span class="s2">&quot;on_mouseover&quot;</span><span class="p">:</span> <span class="n">on_hover_team</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="s2">&quot;Team&quot;</span><span class="p">,</span>
         <span class="p">),</span>
