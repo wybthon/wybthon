@@ -42,7 +42,7 @@ pip install -e ".[dev]"
 - Run tests with coverage:
 
 ```bash
-pytest -q --cov=src/wybthon --cov-branch --cov-report=term-missing
+pytest -q --cov=wybthon --cov-branch --cov-report=term-missing
 ```
 
 In CI, coverage is generated as XML and the build fails if coverage drops below the configured threshold.

@@ -45,9 +45,9 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -q --cov=src/wybthon --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=45
+          pytest -q --cov=wybthon --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=45
       - name: Upload coverage to artifacts
-        if: always()
+        if: ${{ always() && matrix.python-version == '3.11' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml
