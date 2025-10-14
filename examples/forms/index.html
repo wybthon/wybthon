@@ -1530,7 +1530,8 @@
 <span class="p">)</span>
 
 <span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;subscribe&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
-<span class="n">rules</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">)]}</span>
+<span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;min_length&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}</span>
+<span class="n">rules</span> <span class="o">=</span> <span class="n">rules_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">View</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
     <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
@@ -1551,7 +1552,8 @@
 
 <p>Tips:
 - Call <code>on_submit_validated</code> to block submission until fields validate.
-- Use <code>a11y_control_attrs</code> and <code>error_message_attrs</code> to wire up errors for assistive tech.</p>
+- Use <code>a11y_control_attrs</code> and <code>error_message_attrs</code> to wire up errors for assistive tech.
+ - Use <code>rules_from_schema</code> for a minimal schema-driven approach; or pass <code>validators</code> directly to <code>bind_text</code> for finer control.</p>
 
 
 

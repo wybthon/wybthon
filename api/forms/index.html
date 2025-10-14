@@ -1317,6 +1317,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.forms.rules_from_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      rules_from_schema
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.forms.validate_field" class="md-nav__link">
     <span class="md-ellipsis">
       validate_field
@@ -1331,6 +1340,21 @@
       validate_form
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="validate_form">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema-based-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schema-based rules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1585,6 +1609,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.forms.rules_from_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      rules_from_schema
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.forms.validate_field" class="md-nav__link">
     <span class="md-ellipsis">
       validate_field
@@ -1599,6 +1632,21 @@
       validate_form
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="validate_form">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema-based-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schema-based rules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1717,6 +1765,37 @@ only when the form is valid.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.forms.rules_from_schema" class="doc doc-heading">
+            <code class=" language-python"><span class="n">rules_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span></code>
+
+<a href="#wybthon.forms.rules_from_schema" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Build a validators map from a simple, lightweight schema.</p>
+<p>Supported keys per field:
+- required: bool or str (if str, used as custom message)
+- min_length: int (optional custom message via min_length_message)
+- max_length: int (optional custom message via max_length_message)
+- email: bool or str (if str, used as custom message)</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>{
+    "name": {"required": True, "min_length": 2},
+    "email": {"email": True},
+}</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.forms.validate_field" class="doc doc-heading">
             <code class=" language-python"><span class="n">validate_field</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
@@ -1763,9 +1842,26 @@ only when the form is valid.</p>
 <li>validate_field</li>
 <li>validate_form</li>
 <li>on_submit_validated</li>
+<li>rules_from_schema</li>
 <li>a11y_control_attrs</li>
 <li>error_message_attrs</li>
 </ul>
+<h4 id="schema-based-rules">Schema-based rules<a class="headerlink" href="#schema-based-rules" title="Permanent link">&para;</a></h4>
+<p><code>rules_from_schema(schema: Dict[str, Dict[str, Any]]) -&gt; Dict[str, List[Validator]]</code></p>
+<p>Build a validators map from a lightweight schema. Supported per-field keys:</p>
+<ul>
+<li><code>required</code>: bool or str (custom message)</li>
+<li><code>min_length</code>: int (optional <code>min_length_message</code>)</li>
+<li><code>max_length</code>: int (optional <code>max_length_message</code>)</li>
+<li><code>email</code>: bool or str (custom message)</li>
+</ul>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">schema</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;min_length&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<span class="p">}</span>
+<span class="n">rules</span> <span class="o">=</span> <span class="n">rules_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+</code></pre></div>
 
 
 
