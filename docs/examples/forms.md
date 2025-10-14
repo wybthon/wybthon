@@ -16,7 +16,8 @@ from wybthon import (
 )
 
 fields = form_state({"name": "", "subscribe": False})
-rules = {"name": [required(), min_length(2)]}
+schema = {"name": {"required": True, "min_length": 2}}
+rules = rules_from_schema(schema)
 
 def View(props):
     name = fields["name"]
@@ -38,3 +39,4 @@ def View(props):
 Tips:
 - Call `on_submit_validated` to block submission until fields validate.
 - Use `a11y_control_attrs` and `error_message_attrs` to wire up errors for assistive tech.
+ - Use `rules_from_schema` for a minimal schema-driven approach; or pass `validators` directly to `bind_text` for finer control.

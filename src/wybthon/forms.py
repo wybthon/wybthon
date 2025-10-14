@@ -14,6 +14,7 @@ __all__ = [
     "bind_select",
     "on_submit",
     "on_submit_validated",
+    "rules_from_schema",
     "validate",
     "validate_field",
     "validate_form",
@@ -235,6 +236,54 @@ def on_submit_validated(
             handler(form)
 
     return _onsubmit
+
+
+def rules_from_schema(schema: Dict[str, Dict[str, Any]]) -> Dict[str, List[Validator]]:
+    """Build a validators map from a simple, lightweight schema.
+
+    Supported keys per field:
+    - required: bool or str (if str, used as custom message)
+    - min_length: int (optional custom message via min_length_message)
+    - max_length: int (optional custom message via max_length_message)
+    - email: bool or str (if str, used as custom message)
+
+    Example:
+        {
+            "name": {"required": True, "min_length": 2},
+            "email": {"email": True},
+        }
+    """
+    rules: Dict[str, List[Validator]] = {}
+    for field_name, spec in schema.items():
+        vlist: List[Validator] = []
+
+        req = spec.get("required")
+        if req:
+            msg = req if isinstance(req, str) else "This field is required"
+            vlist.append(required(msg))
+
+        if "min_length" in spec and spec.get("min_length") is not None:
+            try:
+                n = int(spec.get("min_length"))
+            except Exception:
+                n = 0
+            vlist.append(min_length(n, spec.get("min_length_message")))
+
+        if "max_length" in spec and spec.get("max_length") is not None:
+            try:
+                n2 = int(spec.get("max_length"))
+            except Exception:
+                n2 = 0
+            vlist.append(max_length(n2, spec.get("max_length_message")))
+
+        em = spec.get("email")
+        if em:
+            msg2 = em if isinstance(em, str) else "Invalid email address"
+            vlist.append(email(msg2))
+
+        rules[field_name] = vlist
+
+    return rules
 
 
 def a11y_control_attrs(field: FieldState, *, described_by_id: Optional[str] = None) -> Dict[str, Any]:

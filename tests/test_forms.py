@@ -9,6 +9,7 @@ from wybthon import (
     form_state,
     on_submit_validated,
     required,
+    rules_from_schema,
     validate_form,
 )
 
@@ -109,3 +110,26 @@ def test_on_submit_validated_calls_handler_only_when_valid():
     form["name"].value.set("Ok")
     submit(evt)
     assert called["count"] == 1
+
+
+def test_rules_from_schema_builds_rules_and_validates():
+    form = form_state({"name": "", "email": ""})
+    schema = {
+        "name": {"required": True, "min_length": 2},
+        "email": {"email": True},
+    }
+    rules = rules_from_schema(schema)
+
+    # initial: name invalid, email empty but allowed by email validator
+    is_valid, errors = validate_form(form, rules)
+    assert is_valid is False
+    assert errors["name"] is not None
+    assert errors["email"] is None
+
+    # fill values and revalidate
+    form["name"].value.set("Al")
+    form["email"].value.set("user@example.com")
+    is_valid2, errors2 = validate_form(form, rules)
+    assert is_valid2 is True
+    assert errors2["name"] is None
+    assert errors2["email"] is None
