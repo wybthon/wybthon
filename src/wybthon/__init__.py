@@ -20,7 +20,7 @@ from .forms import (
 )
 from .reactivity import Resource, batch, computed, effect, on_effect_cleanup, signal, use_resource
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 # Detect Pyodide/browser environment where `js` module exists
 _IN_BROWSER = False
