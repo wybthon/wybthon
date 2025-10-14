@@ -1,6 +1,7 @@
 import importlib
 
 from .forms import (
+    FieldState,
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
@@ -17,7 +18,7 @@ from .forms import (
     validate_field,
     validate_form,
 )
-from .reactivity import batch, computed, effect, on_effect_cleanup, signal, use_resource
+from .reactivity import Resource, batch, computed, effect, on_effect_cleanup, signal, use_resource
 
 __version__ = "0.6.0"
 
@@ -55,6 +56,7 @@ if _IN_BROWSER:
         "batch",
         "on_effect_cleanup",
         "use_resource",
+        "Resource",
         "DomEvent",
         "Context",
         "create_context",
@@ -69,6 +71,7 @@ if _IN_BROWSER:
         "bind_checkbox",
         "bind_select",
         "form_state",
+        "FieldState",
         "validate",
         "validate_field",
         "validate_form",
@@ -93,10 +96,12 @@ else:
         "batch",
         "on_effect_cleanup",
         "use_resource",
+        "Resource",
         "bind_text",
         "bind_checkbox",
         "bind_select",
         "form_state",
+        "FieldState",
         "validate",
         "validate_field",
         "validate_form",
