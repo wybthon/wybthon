@@ -45,7 +45,13 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -q
+          pytest -q --cov=src/wybthon --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=45
+      - name: Upload coverage to artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
 
   e2e-pyodide-smoke:
     name: E2E Pyodide Smoke

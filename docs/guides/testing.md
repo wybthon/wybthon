@@ -28,3 +28,21 @@ Notes:
 #### Unit tests
 
 For Python-only logic (e.g., `reactivity`, `forms` helpers), write regular `pytest` tests under `tests/`.
+
+#### Coverage
+
+We use `pytest-cov` for coverage and enforce a minimum in CI.
+
+- Install locally:
+
+```bash
+pip install -e ".[dev]"
+```
+
+- Run tests with coverage:
+
+```bash
+pytest -q --cov=src/wybthon --cov-branch --cov-report=term-missing
+```
+
+In CI, coverage is generated as XML and the build fails if coverage drops below the configured threshold.
