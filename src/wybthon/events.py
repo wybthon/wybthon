@@ -1,3 +1,4 @@
+"""Event delegation utilities for VDOM event handling in the browser."""
 from typing import Callable, Dict, Optional
 
 # Allow importing this module outside the browser (no js/pyodide) by
@@ -7,6 +8,7 @@ try:
 except Exception:  # pragma: no cover - exercised in non-browser tests
 
     class Element:  # type: ignore
+        """Minimal Element stub used in non-browser/test environments."""
         def __init__(self, tag: Optional[str] = None, existing: bool = False, node=None) -> None:
             self.element = node
 
@@ -23,6 +25,7 @@ _event_counts: Dict[str, int] = {}
 
 
 def _get_or_assign_id(node) -> str:
+    """Return a stable id for a DOM node, assigning one if missing."""
     wid = None
     try:
         wid = node.getAttribute(_NODE_ID_ATTR)
@@ -41,6 +44,7 @@ def _get_or_assign_id(node) -> str:
 
 
 def _event_prop_to_type(name: str) -> str:
+    """Normalize prop names like on_click/onClick to a plain event type."""
     if name.startswith("on_"):
         return name[3:]
     if name.startswith("on"):
@@ -49,6 +53,7 @@ def _event_prop_to_type(name: str) -> str:
 
 
 class DomEvent:
+    """Thin wrapper around a JS event with convenience helpers."""
     def __init__(self, js_event) -> None:
         self._js_event = js_event
         self.type = getattr(js_event, "type", None)
@@ -58,12 +63,14 @@ class DomEvent:
         self._stopped = False
 
     def prevent_default(self) -> None:
+        """Prevent the default browser action for this event, if possible."""
         try:
             self._js_event.preventDefault()
         except Exception:
             pass
 
     def stop_propagation(self) -> None:
+        """Stop propagation through the delegated listener chain."""
         self._stopped = True
         try:
             self._js_event.stopPropagation()
@@ -72,6 +79,7 @@ class DomEvent:
 
 
 def _ensure_root_listener(event_type: str) -> None:
+    """Install a single delegated root listener for the given event type."""
     if event_type in _listeners:
         return
     from js import document
@@ -109,6 +117,7 @@ def _ensure_root_listener(event_type: str) -> None:
 
 
 def _teardown_root_listener(event_type: str) -> None:
+    """Remove the delegated root listener if it is currently installed."""
     # Best-effort removal; safe in non-browser contexts
     try:
         if event_type in _listeners:
@@ -128,10 +137,12 @@ def _teardown_root_listener(event_type: str) -> None:
 
 
 def _increment_event_count(event_type: str) -> None:
+    """Increment global active-handler count for an event type."""
     _event_counts[event_type] = _event_counts.get(event_type, 0) + 1
 
 
 def _decrement_event_count(event_type: str) -> None:
+    """Decrement count and teardown root listener when the last handler is removed."""
     current = _event_counts.get(event_type, 0)
     if current <= 1:
         if event_type in _event_counts:
@@ -142,6 +153,7 @@ def _decrement_event_count(event_type: str) -> None:
 
 
 def set_handler(el: Element, event_prop_name: str, handler: Optional[Callable]) -> None:
+    """Attach/update/remove a handler for a given event property on an element."""
     event_type = _event_prop_to_type(event_prop_name)
     wid = _get_or_assign_id(el.element)
     mapping = _handlers.get(wid)
@@ -170,6 +182,7 @@ def set_handler(el: Element, event_prop_name: str, handler: Optional[Callable]) 
 
 
 def remove_all_for(el: Element) -> None:
+    """Remove all delegated handlers associated with the element's id."""
     try:
         wid = el.element.getAttribute(_NODE_ID_ATTR)
     except Exception:

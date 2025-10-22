@@ -1,3 +1,8 @@
+"""Top-level Wybthon package API and browser/runtime detection.
+
+This module exposes the public surface area for both browser (Pyodide) and
+non-browser environments, importing DOM/VDOM features only when available.
+"""
 import importlib
 
 from .forms import (

@@ -1,3 +1,4 @@
+"""Virtual DOM primitives, diffing, and rendering to real DOM elements."""
 import re
 from bisect import bisect_left
 from dataclasses import dataclass, field
@@ -25,6 +26,7 @@ ChildType = Union["VNode", str]
 
 @dataclass
 class VNode:
+    """Virtual node representing an element, text, or component subtree."""
     tag: Optional[Union[str, Callable[..., Any]]]
     props: PropsDict = field(default_factory=dict)
     children: List[ChildType] = field(default_factory=list)
@@ -92,10 +94,12 @@ class ErrorBoundary(Component):
 
     # Public API to reset the boundary
     def reset(self) -> None:
+        """Clear the current error and re-render children."""
         self._error.set(None)
 
 
 def _to_text_vnode(value: Any) -> VNode:
+    """Convert arbitrary value to a text VNode."""
     return VNode(tag="_text", props={"nodeValue": "" if value is None else str(value)}, children=[])
 
 
@@ -114,6 +118,7 @@ class Suspense(Component):
         self._has_completed_once: bool = False
 
     def _normalize_resources(self) -> List[Any]:
+        """Normalize the resources prop(s) to a flat list."""
         res = self.props.get("resources")
         if res is None and "resource" in self.props:
             res = [self.props.get("resource")]
@@ -124,6 +129,7 @@ class Suspense(Component):
         return [r for r in res if r is not None]
 
     def _is_loading(self, resources: List[Any]) -> bool:
+        """Return True if any resource reports loading=True."""
         # Read loading signals to subscribe the render effect to future changes
         for r in resources:
             try:
@@ -138,12 +144,14 @@ class Suspense(Component):
         return False
 
     def _render_children(self) -> VNode:
+        """Render and return the children inside a div container."""
         children = self.props.get("children", [])
         if not isinstance(children, list):
             children = [children]
         return h("div", {}, *children)
 
     def _render_fallback(self) -> VNode:
+        """Render the fallback content as a VNode."""
         fb = self.props.get("fallback")
         vnode: Any
         if callable(fb):
@@ -173,6 +181,7 @@ class Suspense(Component):
 
 
 def _flatten_children(items: Iterable[Any]) -> List[Any]:
+    """Flatten nested child lists into a single list while dropping Nones."""
     out: List[Any] = []
     for item in items:
         if item is None:
@@ -185,6 +194,7 @@ def _flatten_children(items: Iterable[Any]) -> List[Any]:
 
 
 def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] = None, *children: Any) -> VNode:
+    """Create a VNode from a tag, props, and children (component-aware)."""
     props = props or {}
     key = props.get("key") if "key" in props else None
     flat_children = _flatten_children(children)
@@ -202,6 +212,7 @@ _container_registry: Dict[int, VNode] = {}
 
 
 def render(vnode: VNode, container: Union[Element, str]) -> Element:
+    """Render a VNode tree into a container `Element` or CSS selector."""
     if isinstance(container, str):
         container_el = Element(container, existing=True)
     else:
@@ -213,6 +224,7 @@ def render(vnode: VNode, container: Union[Element, str]) -> Element:
 
 
 def _create_dom(vnode: VNode) -> Element:
+    """Create a real DOM element for an element/text VNode and its subtree."""
     if vnode.tag == "_text":
         node = document.createTextNode(vnode.props.get("nodeValue", ""))
         el = Element(node=node)
@@ -233,6 +245,7 @@ def _create_dom(vnode: VNode) -> Element:
 
 
 def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> Element:
+    """Mount a VNode (or string) into the container, returning its element."""
     if not isinstance(vnode, VNode):
         vnode = _to_text_vnode(vnode)
     # Component nodes
@@ -323,6 +336,7 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
 
 
 def _unmount(vnode: VNode) -> None:
+    """Unmount a VNode and dispose associated resources and effects."""
     if vnode.el is None:
         return
     try:
@@ -352,6 +366,7 @@ def _unmount(vnode: VNode) -> None:
 
 
 def _normalize_children(children: List[ChildType]) -> List[VNode]:
+    """Normalize mixed children into a list of VNodes (converting strings)."""
     out: List[VNode] = []
     for ch in children:
         if isinstance(ch, VNode):
@@ -362,10 +377,12 @@ def _normalize_children(children: List[ChildType]) -> List[VNode]:
 
 
 def _same_type(a: VNode, b: VNode) -> bool:
+    """Return True when both VNodes represent the same tag/component type."""
     return a.tag == b.tag
 
 
 def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
+    """Patch `old` into `new` by mutating DOM as needed within the container."""
     if old is None:
         _mount(new, container)
         return
@@ -472,6 +489,7 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
 
 
 def _patch_children(old: VNode, new: VNode) -> None:
+    """Diff and apply changes for a node's children using key-aware reordering."""
     parent = new.el
     assert parent is not None
 
@@ -562,10 +580,12 @@ def _patch_children(old: VNode, new: VNode) -> None:
 
 
 def _is_event_prop(name: str) -> bool:
+    """Return True if a prop name is an event handler prop like on_click."""
     return name.startswith("on_") or name.startswith("on")
 
 
 def _event_name_from_prop(name: str) -> str:
+    """Map on_click/onClick style props to a DOM event name."""
     if name.startswith("on_"):
         return name[3:]
     if name.startswith("on"):
@@ -577,10 +597,12 @@ CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 
 
 def _to_kebab(name: str) -> str:
+    """Convert camelCase style property names to kebab-case."""
     return CAMEL_TO_KEBAB.sub("-", name).lower()
 
 
 def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None:
+    """Apply prop diffs to a concrete DOM element, including events and styles."""
     for name, old_val in list(old_props.items()):
         if name == "key":
             continue

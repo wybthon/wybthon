@@ -1,3 +1,4 @@
+"""Simple threaded dev server with live-reload via Server-Sent Events (SSE)."""
 from __future__ import annotations
 
 import argparse
@@ -13,6 +14,7 @@ from urllib.parse import urlsplit
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
+    """HTTP handler that serves files and a /__sse endpoint for reload events."""
     watchers = []  # type: ignore[var-annotated]
     root: Path = Path.cwd()
     mounts: list[tuple[str, Path]] = []
@@ -54,6 +56,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
 
     @classmethod
     def notify_reload(cls) -> None:
+        """Notify connected SSE clients to reload by sending a reload event."""
         dead: list = []
         for w in list(cls.watchers):
             try:
@@ -70,6 +73,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
+    """Yield all files under the provided paths, descending into directories."""
     for p in paths:
         if p.is_dir():
             for root, _dirs, files in os.walk(p):
@@ -80,6 +84,7 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
 
 
 def _sanitize_segments(path: str) -> list[str]:
+    """Split path and drop empty/dot-dot segments to prevent traversal."""
     # Strip query/fragment and split; drop unsafe segments
     p = urlsplit(path).path
     parts = [seg for seg in p.split("/") if seg not in ("", ".", "..")]
@@ -145,6 +150,7 @@ def serve(
     open_browser: bool = False,
     open_path: str | None = None,
 ) -> None:
+    """Run a static dev server with auto-reload for the given directory."""
     os.chdir(directory)
     SSEHandler.root = Path(directory)
     handler_cls = SSEHandler
@@ -253,6 +259,7 @@ def serve(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point for the `wyb` development server."""
     parser = argparse.ArgumentParser(prog="wyb", description="Wybthon dev server")
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")

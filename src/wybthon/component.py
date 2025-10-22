@@ -1,3 +1,4 @@
+"""Component base classes for class-based VDOM components."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -12,14 +13,16 @@ __all__ = ["BaseComponent", "Component"]
 
 
 class BaseComponent(ABC):
+    """Async component base that renders to a concrete DOM `Element`."""
     def __init__(self, children: Optional[List["BaseComponent"]] = None) -> None:
         self.children = children or []
 
     @abstractmethod
     async def render(self) -> Element:
-        pass
+        """Render this component and return its root `Element`."""
 
     async def render_children(self, parent: Element) -> None:
+        """Render and append all child components to the given parent element."""
         for child in self.children:
             child_element = await child.render()
             parent.element.appendChild(child_element.element)
@@ -57,12 +60,14 @@ class Component:
 
     # --------------- Cleanup management ---------------
     def add_cleanup(self, fn: Callable[[], Any]) -> None:
+        """Register a cleanup callback to run on unmount."""
         self._cleanups.append(fn)
 
     # Alias for ergonomics
     on_cleanup = add_cleanup
 
     def _run_cleanups(self) -> None:
+        """Run and clear all registered cleanup callbacks safely."""
         while self._cleanups:
             fn = self._cleanups.pop()
             try:

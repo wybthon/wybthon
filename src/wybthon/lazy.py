@@ -1,3 +1,4 @@
+"""Helpers for lazy-loading components with simple loading/error states."""
 from __future__ import annotations
 
 import importlib
@@ -12,6 +13,7 @@ LoadFn = Callable[[], Union[Awaitable[Any], Any]]
 
 
 def _resolve_attr(mod: Any, attr: Optional[str]) -> Any:
+    """Pick an exported component by name or by convention from a module."""
     if not attr:
         # Prefer `Page` then `default` then first callable/class in module
         for candidate in ("Page", "default"):

@@ -1,3 +1,4 @@
+"""Client-side router components and navigation helpers for Pyodide apps."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ __all__ = ["Route", "Router", "Link", "navigate", "current_path"]
 
 
 def _current_url() -> str:
+    """Return current pathname+search from the window, or "/" on failure."""
     try:
         return str(window.location.pathname) + str(window.location.search)
     except Exception:
@@ -27,6 +29,7 @@ current_path = signal(_current_url())
 
 
 def _on_popstate(_evt) -> None:
+    """Window popstate handler that updates the current_path signal."""
     current_path.set(_current_url())
 
 
@@ -42,6 +45,7 @@ except Exception:
 
 
 def navigate(path: str, *, replace: bool = False) -> None:
+    """Programmatically change the current path and update `current_path`."""
     try:
         if replace:
             window.history.replaceState(None, "", path)
@@ -53,6 +57,7 @@ def navigate(path: str, *, replace: bool = False) -> None:
 
 
 def _parse_query(search: str) -> Dict[str, str]:
+    """Parse a query string like "?a=1&b=2" into a dict."""
     if not search or not search.startswith("?"):
         return {}
     out: Dict[str, str] = {}
@@ -68,6 +73,7 @@ def _parse_query(search: str) -> Dict[str, str]:
 
 
 def _decode(s: str) -> str:
+    """Decode a URL-encoded component if available, else return as-is."""
     try:
         from js import decodeURIComponent
 
@@ -78,12 +84,14 @@ def _decode(s: str) -> str:
 
 @dataclass
 class Route:
+    """Declarative route definition mapping a path to a component."""
     path: str
     component: Union[Callable[[Dict[str, Any]], VNode], type]
     children: Optional[List["Route"]] = None
 
 
 def _compile(path: str) -> Tuple[str, List[str]]:
+    """Compile a route path into a regex and list of param names."""
     # Convert patterns like "/users/:id" to regex "^/users/([^/]+)$"
     parts = path.strip("/").split("/") if path != "/" else [""]
     names: List[str] = []
@@ -103,12 +111,14 @@ def _compile(path: str) -> Tuple[str, List[str]]:
 
 
 def _escape_re(s: str) -> str:
+    """Escape literal path segments for regex use."""
     import re as _re
 
     return _re.escape(s)
 
 
 def _match(pathname: str, route: Route) -> Optional[Tuple[Dict[str, str], Route]]:
+    """Match a pathname against a route's pattern and return params on success."""
     import re
 
     regex, names = _compile(route.path)
@@ -122,6 +132,7 @@ def _match(pathname: str, route: Route) -> Optional[Tuple[Dict[str, str], Route]
 
 
 def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optional[Tuple[Route, Dict[str, Any]]]:
+    """Resolve the current route using core resolution with a safe fallback."""
     try:
         res = _resolve_core(routes, pathname, base_path)
         if res is None:
@@ -143,6 +154,7 @@ BasePath = create_context("")
 
 class Router(Component):
     def render(self) -> VNode:
+        """Render the matched route's component or a not-found view."""
         routes: List[Route] = self.props.get("routes", [])
         base_path: str = self.props.get("base_path", "")
         path = current_path.get()
@@ -180,6 +192,7 @@ class Router(Component):
 
 
 def Link(props: Dict[str, Any]) -> VNode:
+    """Anchor element component that navigates via history API without reloads."""
     to = props.get("to", "/")
     replace = bool(props.get("replace", False))
     class_active = props.get("class_active", "active")

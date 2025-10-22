@@ -1,3 +1,4 @@
+"""Form state, validation helpers, and a11y attribute utilities."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ Validator = Callable[[Any], Optional[str]]
 
 
 def required(message: str = "This field is required") -> Validator:
+    """Validate that a value is present and non-empty."""
     def _v(value: Any) -> Optional[str]:
         if value is None:
             return message
@@ -43,6 +45,7 @@ def required(message: str = "This field is required") -> Validator:
 
 
 def min_length(n: int, message: Optional[str] = None) -> Validator:
+    """Validate that stringified value length is at least `n`."""
     msg = message or f"Minimum length is {n}"
 
     def _v(value: Any) -> Optional[str]:
@@ -55,6 +58,7 @@ def min_length(n: int, message: Optional[str] = None) -> Validator:
 
 
 def max_length(n: int, message: Optional[str] = None) -> Validator:
+    """Validate that stringified value length is at most `n`."""
     msg = message or f"Maximum length is {n}"
 
     def _v(value: Any) -> Optional[str]:
@@ -67,6 +71,7 @@ def max_length(n: int, message: Optional[str] = None) -> Validator:
 
 
 def email(message: str = "Invalid email address") -> Validator:
+    """Validate a basic email address format (lightweight regex)."""
     import re
 
     pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -80,6 +85,7 @@ def email(message: str = "Invalid email address") -> Validator:
 
 
 def validate(value: Any, validators: List[Validator]) -> Optional[str]:
+    """Return first validation error or None when all validators pass."""
     for v in validators:
         msg = v(value)
         if msg:
@@ -92,12 +98,14 @@ def validate(value: Any, validators: List[Validator]) -> Optional[str]:
 
 @dataclass
 class FieldState:
+    """Signals representing a field's value, error message, and touched state."""
     value: Signal[Any]
     error: Signal[Optional[str]]
     touched: Signal[bool]
 
 
 def form_state(initial: Dict[str, Any]) -> Dict[str, FieldState]:
+    """Create a form state map from initial values using Signals."""
     state: Dict[str, FieldState] = {}
     for name, val in initial.items():
         state[name] = FieldState(value=signal(val), error=signal(None), touched=signal(False))
@@ -108,6 +116,7 @@ def form_state(initial: Dict[str, Any]) -> Dict[str, FieldState]:
 
 
 def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None) -> Dict[str, Any]:
+    """Bind a text input to a field with validation on input events."""
     validators = validators or []
 
     def on_input(evt) -> None:  # DomEvent
@@ -127,6 +136,7 @@ def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None
 
 
 def bind_checkbox(field: FieldState) -> Dict[str, Any]:
+    """Bind a checkbox input to a boolean field."""
     def on_change(evt) -> None:  # DomEvent
         try:
             target = evt.target.element
@@ -144,6 +154,7 @@ def bind_checkbox(field: FieldState) -> Dict[str, Any]:
 
 
 def bind_select(field: FieldState) -> Dict[str, Any]:
+    """Bind a select element to a field, updating value on change."""
     def on_change(evt) -> None:  # DomEvent
         try:
             target = evt.target.element
@@ -161,6 +172,7 @@ def bind_select(field: FieldState) -> Dict[str, Any]:
 
 
 def on_submit(handler: Callable[[Dict[str, FieldState]], Any], form: Dict[str, FieldState]) -> Callable[[Any], Any]:
+    """Create a submit handler that prevents default and calls the handler."""
     def _onsubmit(evt) -> None:
         try:
             evt.prevent_default()
