@@ -1,4 +1,5 @@
 """Virtual DOM primitives, diffing, and rendering to real DOM elements."""
+
 import re
 from bisect import bisect_left
 from dataclasses import dataclass, field
@@ -27,6 +28,7 @@ ChildType = Union["VNode", str]
 @dataclass
 class VNode:
     """Virtual node representing an element, text, or component subtree."""
+
     tag: Optional[Union[str, Callable[..., Any]]]
     props: PropsDict = field(default_factory=dict)
     children: List[ChildType] = field(default_factory=list)

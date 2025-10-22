@@ -1,4 +1,5 @@
 """Lightweight DOM wrapper utilities for Pyodide/browser environments."""
+
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from js import document, fetch
@@ -8,6 +9,7 @@ __all__ = ["Element", "Ref"]
 
 class Element:
     """Thin wrapper around a DOM node with convenience methods."""
+
     def __init__(self, tag: Optional[str] = None, existing: bool = False, node: Any = None) -> None:
         self._event_listeners: List[Dict[str, Any]] = []
         if node is not None:
@@ -176,5 +178,6 @@ class Element:
 
 class Ref:
     """Mutable container holding a reference to an `Element`."""
+
     def __init__(self) -> None:
         self.current: Optional[Element] = None

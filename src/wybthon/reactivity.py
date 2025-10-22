@@ -1,4 +1,5 @@
 """Signal-based reactive primitives and async Resource helper."""
+
 from __future__ import annotations
 
 from collections import deque
@@ -76,6 +77,7 @@ def _flush() -> None:
 
 class Computation:
     """Reactive computation that tracks Signals and re-runs when they change."""
+
     def __init__(self, fn: Callable[[], Any]) -> None:
         self._fn = fn
         self._deps: Set[Signal[Any]] = set()
@@ -133,6 +135,7 @@ class Computation:
 
 class Signal(Generic[T]):
     """Mutable container that notifies subscribed computations on changes."""
+
     def __init__(self, value: T) -> None:
         self._value: T = value
         # Maintain deterministic subscription order
@@ -173,6 +176,7 @@ def signal(value: T) -> Signal[T]:
 
 class _Computed(Generic[T]):
     """Read-only signal computed from other signals."""
+
     def __init__(self, fn: Callable[[], T]) -> None:
         # Initialize with a dummy value; immediately computed below
         self._value_signal: Signal[T] = Signal(cast(T, None))
@@ -210,6 +214,7 @@ def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
 
 class _Batch:
     """Context manager to batch signal updates into a single flush."""
+
     def __enter__(self) -> None:
         global _batch_depth
         _batch_depth += 1

@@ -1,4 +1,5 @@
 """Helpers for lazy-loading components with simple loading/error states."""
+
 from __future__ import annotations
 
 import importlib

@@ -1,4 +1,5 @@
 """Client-side router components and navigation helpers for Pyodide apps."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -85,6 +86,7 @@ def _decode(s: str) -> str:
 @dataclass
 class Route:
     """Declarative route definition mapping a path to a component."""
+
     path: str
     component: Union[Callable[[Dict[str, Any]], VNode], type]
     children: Optional[List["Route"]] = None

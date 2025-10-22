@@ -1,4 +1,5 @@
 """Component base classes for class-based VDOM components."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -14,6 +15,7 @@ __all__ = ["BaseComponent", "Component"]
 
 class BaseComponent(ABC):
     """Async component base that renders to a concrete DOM `Element`."""
+
     def __init__(self, children: Optional[List["BaseComponent"]] = None) -> None:
         self.children = children or []
 

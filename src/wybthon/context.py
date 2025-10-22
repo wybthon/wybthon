@@ -1,4 +1,5 @@
 """Tiny context system for passing values through the component tree."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ _context_stack: List[Dict[int, Any]] = []
 @dataclass(frozen=True)
 class Context:
     """Opaque context identifier and default value container."""
+
     id: int
     default: Any
 

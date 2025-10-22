@@ -1,4 +1,5 @@
 """Core, browser-agnostic path matching and route resolution helpers."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 @dataclass
 class RouteSpec:
     """Minimal route spec used for pure-Python resolution in tests/tools."""
+
     path: str
     children: Optional[List["RouteSpec"]] = None
 

@@ -1,4 +1,5 @@
 """Form state, validation helpers, and a11y attribute utilities."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -34,6 +35,7 @@ Validator = Callable[[Any], Optional[str]]
 
 def required(message: str = "This field is required") -> Validator:
     """Validate that a value is present and non-empty."""
+
     def _v(value: Any) -> Optional[str]:
         if value is None:
             return message
@@ -99,6 +101,7 @@ def validate(value: Any, validators: List[Validator]) -> Optional[str]:
 @dataclass
 class FieldState:
     """Signals representing a field's value, error message, and touched state."""
+
     value: Signal[Any]
     error: Signal[Optional[str]]
     touched: Signal[bool]
@@ -137,6 +140,7 @@ def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None
 
 def bind_checkbox(field: FieldState) -> Dict[str, Any]:
     """Bind a checkbox input to a boolean field."""
+
     def on_change(evt) -> None:  # DomEvent
         try:
             target = evt.target.element
@@ -155,6 +159,7 @@ def bind_checkbox(field: FieldState) -> Dict[str, Any]:
 
 def bind_select(field: FieldState) -> Dict[str, Any]:
     """Bind a select element to a field, updating value on change."""
+
     def on_change(evt) -> None:  # DomEvent
         try:
             target = evt.target.element
@@ -173,6 +178,7 @@ def bind_select(field: FieldState) -> Dict[str, Any]:
 
 def on_submit(handler: Callable[[Dict[str, FieldState]], Any], form: Dict[str, FieldState]) -> Callable[[Any], Any]:
     """Create a submit handler that prevents default and calls the handler."""
+
     def _onsubmit(evt) -> None:
         try:
             evt.prevent_default()

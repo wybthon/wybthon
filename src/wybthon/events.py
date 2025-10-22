@@ -1,4 +1,5 @@
 """Event delegation utilities for VDOM event handling in the browser."""
+
 from typing import Callable, Dict, Optional
 
 # Allow importing this module outside the browser (no js/pyodide) by
@@ -9,6 +10,7 @@ except Exception:  # pragma: no cover - exercised in non-browser tests
 
     class Element:  # type: ignore
         """Minimal Element stub used in non-browser/test environments."""
+
         def __init__(self, tag: Optional[str] = None, existing: bool = False, node=None) -> None:
             self.element = node
 
@@ -54,6 +56,7 @@ def _event_prop_to_type(name: str) -> str:
 
 class DomEvent:
     """Thin wrapper around a JS event with convenience helpers."""
+
     def __init__(self, js_event) -> None:
         self._js_event = js_event
         self.type = getattr(js_event, "type", None)

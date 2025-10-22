@@ -1,4 +1,5 @@
 """Simple threaded dev server with live-reload via Server-Sent Events (SSE)."""
+
 from __future__ import annotations
 
 import argparse
@@ -15,6 +16,7 @@ from urllib.parse import urlsplit
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
     """HTTP handler that serves files and a /__sse endpoint for reload events."""
+
     watchers = []  # type: ignore[var-annotated]
     root: Path = Path.cwd()
     mounts: list[tuple[str, Path]] = []
