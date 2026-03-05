@@ -118,6 +118,64 @@ handle_click = use_callback(lambda e: set_count(count + 1), [count])
 
 ---
 
+#### `use_reducer`
+
+Manage complex state with a reducer function.  Returns `(state, dispatch)`.
+
+```python
+from wybthon import h, use_reducer
+
+def reducer(state, action):
+    if action["type"] == "increment":
+        return {**state, "count": state["count"] + 1}
+    if action["type"] == "decrement":
+        return {**state, "count": state["count"] - 1}
+    if action["type"] == "reset":
+        return {"count": 0}
+    return state
+
+def Counter(props):
+    state, dispatch = use_reducer(reducer, {"count": 0})
+    return h("div", {},
+        h("p", {}, f"Count: {state['count']}"),
+        h("button", {"on_click": lambda e: dispatch({"type": "increment"})}, "+1"),
+        h("button", {"on_click": lambda e: dispatch({"type": "decrement"})}, "-1"),
+        h("button", {"on_click": lambda e: dispatch({"type": "reset"})}, "Reset"),
+    )
+```
+
+An optional `init` function lazily computes the initial state:
+
+```python
+state, dispatch = use_reducer(reducer, initial_arg, init=lambda arg: {"count": arg})
+```
+
+---
+
+#### `use_layout_effect`
+
+Same API as `use_effect` but fires **synchronously** after all DOM
+mutations, before the browser repaints.  Use this for DOM measurements
+and synchronous visual updates.
+
+```python
+from wybthon import use_layout_effect, use_ref, use_state
+
+def MeasuredBox(props):
+    ref = use_ref(None)
+    width, set_width = use_state(0)
+
+    def measure():
+        if ref.current is not None:
+            set_width(ref.current.element.offsetWidth)
+
+    use_layout_effect(measure, [])
+
+    return h("div", {"ref": ref}, f"Width: {width}px")
+```
+
+---
+
 #### Hooks vs. class components
 
 | | Function + hooks | Class component |

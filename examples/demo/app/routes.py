@@ -3,6 +3,7 @@ from app.fetch.page import FetchPage
 from app.forms.page import FormsPage
 from app.page import Page as HomePage
 from app.patterns.page import Page as PatternsPage
+from app.primitives.page import Page as PrimitivesPage
 from wybthon import Route, lazy, load_component
 
 
@@ -32,5 +33,6 @@ def create_routes():
         Route(path="/forms", component=FormsPage),
         Route(path="/errors", component=lambda p: ErrorsPage(p)),
         Route(path="/patterns", component=lambda p: PatternsPage(p)),
+        Route(path="/primitives", component=lambda p: PrimitivesPage(p)),
         Route(path="/docs/*", component=Docs),
     ]

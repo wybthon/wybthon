@@ -20,9 +20,11 @@ from .reactivity import Signal, signal
 __all__ = [
     "use_state",
     "use_effect",
+    "use_layout_effect",
     "use_memo",
     "use_ref",
     "use_callback",
+    "use_reducer",
     "HookRef",
 ]
 
@@ -52,6 +54,8 @@ class _HooksContext:
         "cursor",
         "effect_queue",
         "effect_cursor",
+        "layout_effect_queue",
+        "layout_effect_cursor",
         "_is_mounting",
         "_props",
         "_component_fn",
@@ -62,12 +66,34 @@ class _HooksContext:
         self.cursor: int = 0
         self.effect_queue: List[dict] = []
         self.effect_cursor: int = 0
+        self.layout_effect_queue: List[dict] = []
+        self.layout_effect_cursor: int = 0
         self._is_mounting: bool = True
         self._props: dict = {}
         self._component_fn: Any = None
 
+    def _run_pending_layout_effects(self) -> None:
+        """Execute layout effects synchronously after DOM mutation."""
+        for eff in self.layout_effect_queue:
+            pending_fn = eff.get("pending")
+            if pending_fn is None:
+                continue
+            old_cleanup = eff.get("cleanup")
+            if callable(old_cleanup):
+                try:
+                    old_cleanup()
+                except Exception:
+                    pass
+            try:
+                result = pending_fn()
+                eff["cleanup"] = result if callable(result) else None
+            except Exception:
+                eff["cleanup"] = None
+            eff["pending"] = None
+
     def _run_pending_effects(self) -> None:
         """Execute effects that were scheduled during the render pass."""
+        self._run_pending_layout_effects()
         for eff in self.effect_queue:
             pending_fn = eff.get("pending")
             if pending_fn is None:
@@ -87,6 +113,14 @@ class _HooksContext:
 
     def _cleanup_all(self) -> None:
         """Run every effect cleanup (called on unmount)."""
+        for eff in self.layout_effect_queue:
+            cleanup = eff.get("cleanup")
+            if callable(cleanup):
+                try:
+                    cleanup()
+                except Exception:
+                    pass
+        self.layout_effect_queue.clear()
         for eff in self.effect_queue:
             cleanup = eff.get("cleanup")
             if callable(cleanup):
@@ -226,3 +260,68 @@ def use_ref(initial: Any = None) -> HookRef:
 def use_callback(fn: Callable, deps: List[Any]) -> Callable:
     """Memoize a callback, returning the same reference until *deps* change."""
     return use_memo(lambda: fn, deps)
+
+
+def use_reducer(
+    reducer: Callable[[Any, Any], Any],
+    initial_state: Any,
+    init: Optional[Callable[[Any], Any]] = None,
+) -> Tuple[Any, Callable[[Any], None]]:
+    """Manage state with a reducer function.
+
+    Returns ``(state, dispatch)``.  Call ``dispatch(action)`` to run
+    ``reducer(current_state, action)`` and update the component.
+
+    The optional *init* function lazily computes the initial state as
+    ``init(initial_state)`` on the first render.
+    """
+    ctx = _get_hooks_ctx()
+    idx = ctx.cursor
+    ctx.cursor += 1
+
+    if idx >= len(ctx.states):
+        val = init(initial_state) if init is not None else initial_state
+        sig: Signal[Any] = signal(val)
+
+        def dispatch(action: Any) -> None:
+            sig.set(reducer(sig._value, action))
+
+        ctx.states.append((sig, dispatch, reducer))
+
+    sig_stored, dispatch_stored, _ = ctx.states[idx]
+    return sig_stored.get(), dispatch_stored
+
+
+def use_layout_effect(
+    fn: Callable[[], Optional[Callable[[], Any]]],
+    deps: Optional[List[Any]] = None,
+) -> None:
+    """Register an effect that fires synchronously after DOM mutations.
+
+    Same API as ``use_effect`` but guaranteed to run before the browser
+    repaints.  Use for DOM measurements and synchronous visual updates.
+
+    * ``deps=None`` — run after **every** render.
+    * ``deps=[]``   — run only on **mount**.
+    * ``deps=[a,b]`` — run when *a* or *b* changes.
+
+    *fn* may return a cleanup callable.
+    """
+    ctx = _get_hooks_ctx()
+    idx = ctx.layout_effect_cursor
+    ctx.layout_effect_cursor += 1
+
+    if idx >= len(ctx.layout_effect_queue):
+        ctx.layout_effect_queue.append(
+            {"deps": list(deps) if deps is not None else None, "cleanup": None, "pending": fn}
+        )
+        return
+
+    prev = ctx.layout_effect_queue[idx]
+    prev_deps = prev.get("deps")
+    new_deps = list(deps) if deps is not None else None
+
+    if not _deps_changed(prev_deps, new_deps):
+        return
+
+    ctx.layout_effect_queue[idx] = {"deps": new_deps, "cleanup": prev.get("cleanup"), "pending": fn}

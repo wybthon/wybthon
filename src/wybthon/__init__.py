@@ -25,7 +25,7 @@ from .forms import (
     validate_field,
     validate_form,
 )
-from .hooks import HookRef, use_callback, use_effect, use_memo, use_ref, use_state
+from .hooks import HookRef, use_callback, use_effect, use_layout_effect, use_memo, use_reducer, use_ref, use_state
 from .reactivity import Resource, batch, computed, effect, on_effect_cleanup, signal, use_resource
 
 __version__ = "0.10.0"
@@ -40,7 +40,7 @@ except Exception:
 
 if _IN_BROWSER:
     # Import browser/VDOM-related modules only when running under Pyodide
-    from .component import Component
+    from .component import Component, forward_ref
     from .context import Context, Provider, create_context, use_context
     from .dom import Element, Ref
     from .events import DomEvent
@@ -102,7 +102,7 @@ if _IN_BROWSER:
     )
     from .lazy import lazy, load_component, preload_component
     from .router import Link, Route, Router, current_path, navigate
-    from .vdom import ErrorBoundary, Fragment, Suspense, VNode, h, render
+    from .vdom import ErrorBoundary, Fragment, Suspense, VNode, create_portal, h, memo, render
 
     __all__ = [
         # DOM
@@ -110,6 +110,7 @@ if _IN_BROWSER:
         "Ref",
         # Components
         "Component",
+        "forward_ref",
         # VDOM
         "VNode",
         "h",
@@ -117,6 +118,8 @@ if _IN_BROWSER:
         "render",
         "ErrorBoundary",
         "Suspense",
+        "memo",
+        "create_portal",
         # Reactivity
         "signal",
         "computed",
@@ -128,9 +131,11 @@ if _IN_BROWSER:
         # Hooks
         "use_state",
         "use_effect",
+        "use_layout_effect",
         "use_memo",
         "use_ref",
         "use_callback",
+        "use_reducer",
         "HookRef",
         # Events
         "DomEvent",
@@ -235,9 +240,11 @@ else:
         "Resource",
         "use_state",
         "use_effect",
+        "use_layout_effect",
         "use_memo",
         "use_ref",
         "use_callback",
+        "use_reducer",
         "HookRef",
         "bind_text",
         "bind_checkbox",

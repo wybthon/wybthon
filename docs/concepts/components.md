@@ -70,6 +70,66 @@ def PageContent(props):
     )
 ```
 
+#### `memo`
+
+Wrap a function component with `memo` to skip re-renders when its props
+have not changed (shallow identity comparison by default):
+
+```python
+from wybthon import memo, h
+
+def ExpensiveList(props):
+    items = props.get("items", [])
+    return h("ul", {}, *[h("li", {}, str(i)) for i in items])
+
+MemoList = memo(ExpensiveList)
+```
+
+Pass a custom comparison function for deeper control:
+
+```python
+MemoList = memo(ExpensiveList, are_props_equal=lambda old, new: old["items"] == new["items"])
+```
+
+#### `forward_ref`
+
+Use `forward_ref` to create a component that can receive a `ref` prop
+and forward it to a child element:
+
+```python
+from wybthon import forward_ref, h
+
+def _render(props, ref):
+    return h("input", {"type": "text", "ref": ref, "class": "fancy-input"})
+
+FancyInput = forward_ref(_render)
+
+# Usage: h(FancyInput, {"ref": my_ref})
+```
+
+The wrapped function receives `(props, ref)` instead of `(props,)`.
+When no `ref` is provided, `ref` is `None`.
+
+#### `create_portal`
+
+Use `create_portal` to render children into a DOM node outside the
+parent component's hierarchy — ideal for modals, tooltips, and overlays:
+
+```python
+from wybthon import create_portal, h, Element
+
+def Modal(props):
+    return h("div", {},
+        h("p", {}, "Page content"),
+        create_portal(
+            h("div", {"class": "modal"}, "I appear in #modal-root!"),
+            "#modal-root",
+        ),
+    )
+```
+
+The second argument is an `Element` or a CSS selector string.
+
 Both styles are fully supported. For new code, **function components with hooks** are recommended for their conciseness and composability.
 
 See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:

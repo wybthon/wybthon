@@ -21,6 +21,8 @@ __all__ = [
     "render",
     "ErrorBoundary",
     "Suspense",
+    "memo",
+    "create_portal",
 ]
 
 PropsDict = Dict[str, Any]
@@ -203,9 +205,10 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
     props = props or {}
     key = props.get("key") if "key" in props else None
     flat_children = _flatten_children(children)
-    # For component nodes, pass children via props
+    # For component nodes, pass children via props (omit when empty to
+    # preserve identity-based comparisons used by memo).
     if callable(tag):
-        if "children" not in props:
+        if "children" not in props and flat_children:
             props["children"] = list(flat_children)
         vnode_children: List[ChildType] = []
     else:
@@ -234,6 +237,35 @@ def Fragment(*args: Any) -> VNode:
     else:
         children = list(args)
     return h("span", {"style": {"display": "contents"}}, *children)
+
+
+def memo(
+    component: Callable[..., Any],
+    are_props_equal: Optional[Callable[[PropsDict, PropsDict], bool]] = None,
+) -> Callable[..., Any]:
+    """Memoize a function component to skip re-renders when props are unchanged.
+
+    By default uses shallow identity comparison (``is``) on each prop value.
+    Pass a custom ``are_props_equal(old_props, new_props) -> bool`` for
+    deeper comparison logic.
+    """
+
+    def _default_compare(old_props: PropsDict, new_props: PropsDict) -> bool:
+        if set(old_props.keys()) != set(new_props.keys()):
+            return False
+        return all(old_props[k] is new_props[k] for k in old_props)
+
+    compare = are_props_equal if are_props_equal is not None else _default_compare
+
+    def MemoWrapper(props: PropsDict) -> Any:
+        return component(props)
+
+    MemoWrapper._wyb_memo = True  # type: ignore[attr-defined]
+    MemoWrapper._wyb_memo_compare = compare  # type: ignore[attr-defined]
+    MemoWrapper._wyb_wrapped = component  # type: ignore[attr-defined]
+    MemoWrapper.__name__ = f"memo({getattr(component, '__name__', 'Component')})"
+    MemoWrapper.__qualname__ = MemoWrapper.__name__
+    return MemoWrapper
 
 
 _container_registry: Dict[int, VNode] = {}
@@ -269,6 +301,7 @@ def _create_dom(vnode: VNode) -> Element:
     for child in norm_children:
         _mount(child, el)
     vnode.el = el
+    _attach_ref(vnode.props, el)
     return el
 
 
@@ -350,6 +383,7 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
             def run_fn_render(_vnode=vnode, _container=container, _anchor=anchor, _hooks_ctx=hooks_ctx):
                 _hooks_ctx.cursor = 0
                 _hooks_ctx.effect_cursor = 0
+                _hooks_ctx.layout_effect_cursor = 0
                 _push_hooks_ctx(_hooks_ctx)
                 try:
                     sub_tree = _hooks_ctx._component_fn(_hooks_ctx._props)
@@ -391,8 +425,8 @@ def _unmount(vnode: VNode) -> None:
     """Unmount a VNode and dispose associated resources and effects."""
     if vnode.el is None:
         return
+    _detach_ref(vnode.props)
     try:
-        # Remove delegated handlers tracking for this node
         remove_all_for(vnode.el)
         vnode.el.cleanup()
     except Exception:
@@ -531,12 +565,22 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
             # Function component — transfer hooks state and re-render
             hooks_ctx = old.hooks_ctx
             if hooks_ctx is not None:
+                # memo: skip re-render when props are unchanged
+                if getattr(new.tag, "_wyb_memo", False):
+                    compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
+                    if compare_fn is not None and compare_fn(hooks_ctx._props, new.props):
+                        new.hooks_ctx = hooks_ctx
+                        new.render_effect = old.render_effect
+                        new.subtree = old.subtree
+                        return
+
                 hooks_ctx._props = new.props
                 new.hooks_ctx = hooks_ctx
                 new.render_effect = old.render_effect
 
                 hooks_ctx.cursor = 0
                 hooks_ctx.effect_cursor = 0
+                hooks_ctx.layout_effect_cursor = 0
                 _push_hooks_ctx(hooks_ctx)
                 try:
                     func_sub = new.tag(new.props)  # type: ignore[call-arg]
@@ -566,6 +610,7 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
 
     # Element nodes
     _apply_props(new.el, old.props, new.props)
+    _attach_ref(new.props, new.el)
     _patch_children(old, new)
 
 
@@ -684,10 +729,24 @@ def _to_kebab(name: str) -> str:
     return CAMEL_TO_KEBAB.sub("-", name).lower()
 
 
+def _attach_ref(props: PropsDict, el: Element) -> None:
+    """Set *ref.current* to *el* if a ``ref`` prop is present."""
+    ref = props.get("ref")
+    if ref is not None and hasattr(ref, "current"):
+        ref.current = el
+
+
+def _detach_ref(props: PropsDict) -> None:
+    """Clear *ref.current* if a ``ref`` prop is present."""
+    ref = props.get("ref")
+    if ref is not None and hasattr(ref, "current"):
+        ref.current = None
+
+
 def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None:
     """Apply prop diffs to a concrete DOM element, including events and styles."""
     for name, old_val in list(old_props.items()):
-        if name == "key":
+        if name in ("key", "ref"):
             continue
         if name not in new_props:
             if _is_event_prop(name):
@@ -717,7 +776,7 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
                 el.remove_attr(name)
 
     for name, new_val in new_props.items():
-        if name == "key":
+        if name in ("key", "ref"):
             continue
         if _is_event_prop(name):
             old_handler = old_props.get(name)
@@ -791,3 +850,64 @@ def _apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> Non
             continue
 
         el.set_attr(name, new_val)
+
+
+# ---------------------------------------------------------------------------
+# Portal
+# ---------------------------------------------------------------------------
+
+
+class _PortalComponent(Component):
+    """Internal component that mounts its children into a separate DOM container."""
+
+    def __init__(self, props: Dict[str, Any]) -> None:
+        super().__init__(props)
+        self._portal_tree: Optional[VNode] = None
+        self._portal_container: Optional[Element] = None
+
+    def render(self) -> VNode:
+        return _to_text_vnode("")
+
+    def on_mount(self) -> None:
+        self._do_portal_render()
+
+    def on_update(self, prev_props: Dict[str, Any]) -> None:
+        self._do_portal_render()
+
+    def _do_portal_render(self) -> None:
+        container = self.props.get("_portal_container")
+        if isinstance(container, str):
+            container = Element(container, existing=True)
+        self._portal_container = container
+
+        children = self.props.get("children", [])
+        if not isinstance(children, list):
+            children = [children]
+        new_tree = Fragment(*children)
+
+        old_tree = self._portal_tree
+        self._portal_tree = new_tree
+
+        if old_tree is None:
+            _mount(new_tree, container)
+        else:
+            _patch(old_tree, new_tree, container)
+
+    def on_unmount(self) -> None:
+        if self._portal_tree is not None:
+            _unmount(self._portal_tree)
+            self._portal_tree = None
+
+
+def create_portal(children: Union[VNode, List[VNode]], container: Union[Element, str]) -> VNode:
+    """Render children into a different DOM container.
+
+    Returns a VNode that, when mounted, renders *children* into *container*
+    instead of the parent component's DOM node.  Useful for modals, tooltips,
+    and overlays that need to break out of their parent's DOM hierarchy.
+
+    *container* may be an ``Element`` or a CSS selector string.
+    """
+    if not isinstance(children, list):
+        children = [children]
+    return h(_PortalComponent, {"children": children, "_portal_container": container})

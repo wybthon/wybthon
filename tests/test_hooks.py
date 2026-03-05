@@ -626,3 +626,114 @@ def test_function_component_reads_signal_reactively():
         assert "updated" in _collect_texts(root.element)
     finally:
         _restore(saved)
+
+
+# --------------------------------------------------------------------------- #
+# use_layout_effect
+# --------------------------------------------------------------------------- #
+
+
+def test_use_layout_effect_runs_on_mount():
+    saved = _install_stubs()
+    try:
+        vdom, hooks, dom = _reload_modules()
+
+        log = []
+
+        def MyComp(props):
+            hooks.use_layout_effect(lambda: log.append("layout_mounted"), [])
+            return vdom.h("p", {}, "hello")
+
+        root = dom.Element(node=_Node(tag="div"))
+        vdom.render(vdom.h(MyComp, {}), root)
+
+        assert "layout_mounted" in log
+    finally:
+        _restore(saved)
+
+
+def test_use_layout_effect_runs_before_regular_effects():
+    saved = _install_stubs()
+    try:
+        vdom, hooks, dom = _reload_modules()
+
+        order = []
+
+        def MyComp(props):
+            hooks.use_effect(lambda: order.append("effect"), [])
+            hooks.use_layout_effect(lambda: order.append("layout_effect"), [])
+            return vdom.h("p", {}, "hello")
+
+        root = dom.Element(node=_Node(tag="div"))
+        vdom.render(vdom.h(MyComp, {}), root)
+
+        assert order.index("layout_effect") < order.index("effect")
+    finally:
+        _restore(saved)
+
+
+def test_use_layout_effect_cleanup_on_unmount():
+    saved = _install_stubs()
+    try:
+        vdom, hooks, dom = _reload_modules()
+
+        log = []
+
+        def MyComp(props):
+            def setup():
+                log.append("layout_setup")
+                return lambda: log.append("layout_cleanup")
+
+            hooks.use_layout_effect(setup, [])
+            return vdom.h("p", {}, "hello")
+
+        root = dom.Element(node=_Node(tag="div"))
+        tree = vdom.h(MyComp, {})
+        vdom.render(tree, root)
+        assert "layout_setup" in log
+        assert "layout_cleanup" not in log
+
+        vdom._unmount(tree)
+        assert "layout_cleanup" in log
+    finally:
+        _restore(saved)
+
+
+def test_use_layout_effect_deps_control_rerun():
+    saved = _install_stubs()
+    try:
+        vdom, hooks, dom = _reload_modules()
+
+        effect_log = []
+        setter_ref = [None]
+
+        def MyComp(props):
+            count, set_count = hooks.use_state(0)
+            setter_ref[0] = set_count
+            hooks.use_layout_effect(lambda: effect_log.append(count), [count])
+            return vdom.h("p", {}, f"{count}")
+
+        root = dom.Element(node=_Node(tag="div"))
+        vdom.render(vdom.h(MyComp, {}), root)
+        assert effect_log == [0]
+
+        setter_ref[0](1)
+        time.sleep(0.05)
+        assert effect_log == [0, 1]
+
+        # Same value → no re-render → no layout effect
+        setter_ref[0](1)
+        time.sleep(0.05)
+        assert effect_log == [0, 1]
+    finally:
+        _restore(saved)
+
+
+def test_use_layout_effect_error_outside_component():
+    """use_layout_effect raises RuntimeError when called outside a component."""
+    import pytest
+
+    from wybthon.hooks import use_layout_effect
+
+    with pytest.raises(RuntimeError, match="Hooks can only be called inside"):
+        use_layout_effect(lambda: None)

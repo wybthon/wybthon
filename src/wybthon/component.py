@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List
 if TYPE_CHECKING:
     from .vdom import VNode
 
-__all__ = ["Component"]
+__all__ = ["Component", "forward_ref"]
 
 
 class Component:
@@ -57,3 +57,27 @@ class Component:
             except Exception:
                 # Swallow cleanup errors to avoid breaking render pipeline
                 pass
+
+
+def forward_ref(render_fn: Callable[..., Any]) -> Callable[..., "VNode"]:
+    """Create a component that forwards a ``ref`` prop to a child element.
+
+    The wrapped function receives ``(props, ref)`` instead of ``(props,)``,
+    where *ref* is the value of the ``ref`` prop (or ``None``).
+
+    Example::
+
+        FancyInput = forward_ref(lambda props, ref: input_(
+            type="text", ref=ref, class_name="fancy", **props,
+        ))
+    """
+
+    def ForwardRefWrapper(props: Dict[str, Any]) -> "VNode":
+        ref = props.get("ref")
+        inner_props = {k: v for k, v in props.items() if k != "ref"}
+        return render_fn(inner_props, ref)
+
+    ForwardRefWrapper._wyb_forward_ref = True  # type: ignore[attr-defined]
+    ForwardRefWrapper.__name__ = f"forward_ref({getattr(render_fn, '__name__', 'Component')})"
+    ForwardRefWrapper.__qualname__ = ForwardRefWrapper.__name__
+    return ForwardRefWrapper

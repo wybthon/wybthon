@@ -28,6 +28,8 @@ def Nav(props):
         " | ",
         h(Link, {**link_props, "to": "/patterns"}, "Patterns"),
         " | ",
+        h(Link, {**link_props, "to": "/primitives"}, "Primitives"),
+        " | ",
         h(Link, {**link_props, "to": "/docs"}, "Docs"),
         " (",
         h(Link, {**link_props, "to": "/docs/guide/intro"}, "guide/intro"),

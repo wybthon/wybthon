@@ -9,6 +9,8 @@
 - `render(vnode, container) -> Element`
 - `ErrorBoundary` component
 - `Suspense` component
+- `memo(component, are_props_equal=None)` — memoize a function component
+- `create_portal(children, container)` — render children into a different DOM container
 
 #### Keyed children and diffing
 
@@ -77,3 +79,33 @@ render(h("div", {}, "world"), root)  # updates the same text node
 - `value`: for form controls, the DOM `value` property is set (falling back to the `value` attribute if needed). `None` becomes "". Removing the `value` prop resets it to "".
 
 - `checked`: for checkboxes/radios, the DOM `checked` property is set when available (falling back to the `checked` attribute). Removing the `checked` prop clears it to `False`.
+
+#### memo
+
+`memo(component, are_props_equal=None)` wraps a function component to skip re-renders when props are unchanged.
+
+- By default, uses shallow identity comparison (`is`) on each prop value.
+- Pass a custom `are_props_equal(old_props, new_props) -> bool` for deeper comparison.
+
+```python
+from wybthon import memo
+
+def ExpensiveList(props):
+    # ... render a large list ...
+    pass
+
+MemoList = memo(ExpensiveList)
+```
+
+#### create_portal
+
+`create_portal(children, container)` renders children into a different DOM container.
+
+- *children*: a single VNode or a list of VNodes.
+- *container*: an `Element` or CSS selector string.
+
+```python
+from wybthon import create_portal, h
+
+portal = create_portal(h("div", {}, "Modal content"), "#modal-root")
+```
