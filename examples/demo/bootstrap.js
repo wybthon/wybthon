@@ -92,6 +92,7 @@ async function bootstrap() {
       "forms.py",
       "lazy.py",
       "dev.py",
+      "hooks.py",
     ];
     const cacheBust = Date.now();
     for (const f of files) {

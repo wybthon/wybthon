@@ -20,6 +20,7 @@ nav:
   - Getting Started: getting-started.md
   - Concepts:
     - Components: concepts/components.md
+    - Hooks: concepts/hooks.md
     - Virtual DOM: concepts/vdom.md
     - Reactivity: concepts/reactivity.md
     - Router: concepts/router.md
@@ -53,6 +54,7 @@ nav:
     - reactivity: api/reactivity.md
     - router: api/router.md
     - vdom: api/vdom.md
+    - hooks: api/hooks.md
     - forms: api/forms.md
   - Meta:
     - Contributing: meta/contributing.md

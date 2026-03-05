@@ -1,29 +1,17 @@
-from wybthon import Component, h, signal
+from wybthon import h, use_effect, use_state
 
 
-class Counter(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.count = signal(0)
+def Counter(props):
+    count, set_count = use_state(0)
 
-        def inc(_evt):
-            try:
-                self.count.set(self.count.get() + 1)
-            except Exception:
-                pass
+    def on_mount():
+        print("Counter mounted with initial count:", count)
 
-        self._inc = inc
+    use_effect(on_mount, [])
 
-    def on_mount(self):
-        try:
-            print("Counter mounted with initial count:", self.count.get())
-        except Exception:
-            pass
-
-    def render(self):
-        return h(
-            "div",
-            {"class": "counter"},
-            h("p", {}, f"Count: {self.count.get()}"),
-            h("button", {"on_click": getattr(self, "_inc", lambda e: None)}, "Increment"),
-        )
+    return h(
+        "div",
+        {"class": "counter"},
+        h("p", {}, f"Count: {count}"),
+        h("button", {"on_click": lambda e: set_count(lambda c: c + 1)}, "Increment"),
+    )

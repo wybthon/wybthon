@@ -1,6 +1,24 @@
 ### Counter
 
-Demonstrates state updates with `signal` inside a class component.
+#### Function component with hooks (recommended)
+
+```python
+from wybthon import h, use_state, use_effect
+
+def Counter(props):
+    count, set_count = use_state(0)
+
+    def on_mount():
+        print("Counter mounted with initial count:", count)
+    use_effect(on_mount, [])
+
+    return h("div", {},
+        h("p", {}, f"Count: {count}"),
+        h("button", {"on_click": lambda e: set_count(lambda c: c + 1)}, "Increment"),
+    )
+```
+
+#### Class component variant
 
 ```python
 from wybthon import Component, h, signal
@@ -16,16 +34,4 @@ class Counter(Component):
                  h("button", {"on_click": lambda e: self.count.set(self.count.get() + 1)}, "Increment"))
 ```
 
-Function component variant (stateless presentation wrapping a class instance is recommended for state, but for simple counters you can inline):
-
-```python
-from wybthon import h
-
-def CounterFn(props):
-    # This example demonstrates a presentational wrapper around the class version.
-    # Prefer class components for stateful logic.
-    from app.components.counter import Counter as CounterClass
-    return h(CounterClass, props)
-```
-
-See also: [Authoring Patterns](../guides/authoring-patterns.md)
+See also: [Hooks](../concepts/hooks.md) · [Authoring Patterns](../guides/authoring-patterns.md)

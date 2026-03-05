@@ -95,17 +95,18 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
 
 - Module/directory scopes:
   - `component` – component model and base classes
+  - `context` – context creation, providers, and consumption
+  - `dev` – dev server and hot-reload (SSE)
   - `dom` – DOM interop and element helpers
   - `events` – DOM events and event utilities
-  - `context` – context creation, providers, and consumption
-  - `router` – routing, paths, and navigation helpers
-  - `vdom` – virtual DOM and renderer
-  - `reactivity` – signals, computed, effect, batching
   - `forms` – form state, validators, and bindings
+  - `hooks` – React-style hooks for function components
   - `lazy` – lazy loading and preloading utilities
-  - `router_core` – core route resolution helpers
-  - `dev` – dev server and hot-reload (SSE)
   - `package` – `src/wybthon/__init__.py` exports and package boundary
+  - `reactivity` – signals, computed, effect, batching
+  - `router` – routing, paths, and navigation helpers
+  - `router_core` – core route resolution helpers
+  - `vdom` – virtual DOM and renderer
 
 - Other scopes:
   - `examples` – example(s) under `examples/`

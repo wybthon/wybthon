@@ -11,6 +11,7 @@ from .component import Component
 from .context import Provider, pop_provider_value, push_provider_value
 from .dom import Element
 from .events import remove_all_for, set_handler
+from .hooks import _HooksContext, _pop_hooks_ctx, _push_hooks_ctx
 from .reactivity import Computation, Signal, effect, signal
 
 __all__ = [
@@ -37,6 +38,7 @@ class VNode:
     component_instance: Optional[Component] = None
     subtree: Optional["VNode"] = None
     render_effect: Optional[Computation] = None
+    hooks_ctx: Optional[Any] = None
 
 
 class ErrorBoundary(Component):
@@ -315,13 +317,37 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
 
             vnode.render_effect = effect(run_render)
         else:
-            # Function component
-            sub_tree = comp_ctor(vnode.props)  # type: ignore[call-arg]
-            if not isinstance(sub_tree, VNode):
-                sub_tree = _to_text_vnode(sub_tree)
-            vnode.subtree = sub_tree
-            mounted = _mount(sub_tree, container, anchor)
-            vnode.el = mounted
+            # Function component — wrapped in effect for reactivity + hooks
+            hooks_ctx = _HooksContext()
+            hooks_ctx._component_fn = comp_ctor
+            hooks_ctx._props = vnode.props
+            vnode.hooks_ctx = hooks_ctx
+
+            def run_fn_render(_vnode=vnode, _container=container, _anchor=anchor, _hooks_ctx=hooks_ctx):
+                _hooks_ctx.cursor = 0
+                _hooks_ctx.effect_cursor = 0
+                _push_hooks_ctx(_hooks_ctx)
+                try:
+                    sub_tree = _hooks_ctx._component_fn(_hooks_ctx._props)
+                    if not isinstance(sub_tree, VNode):
+                        sub_tree = _to_text_vnode(sub_tree)
+                    prev_sub = _vnode.subtree
+                    _vnode.subtree = sub_tree
+                    if prev_sub is None:
+                        mounted_el = _mount(sub_tree, _container, _anchor)
+                        _vnode.el = mounted_el
+                    else:
+                        _patch(prev_sub, sub_tree, _container)
+                        _vnode.el = sub_tree.el
+                except Exception as e:
+                    print("Function component render error:", e)
+                    raise
+                finally:
+                    _pop_hooks_ctx()
+                _hooks_ctx._run_pending_effects()
+                _hooks_ctx._is_mounting = False
+
+            vnode.render_effect = effect(run_fn_render)
         if vnode.component_instance is not None:
             try:
                 vnode.component_instance.on_mount()
@@ -351,6 +377,11 @@ def _unmount(vnode: VNode) -> None:
         try:
             vnode.component_instance._run_cleanups()
             vnode.component_instance.on_unmount()
+        except Exception:
+            pass
+    if vnode.hooks_ctx is not None:
+        try:
+            vnode.hooks_ctx._cleanup_all()
         except Exception:
             pass
     if vnode.render_effect is not None:
@@ -473,16 +504,40 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                 print("Component render error:", e)
                 raise
         else:
-            # Function component
-            func_sub = new.tag(new.props)  # type: ignore[call-arg]
-            if not isinstance(func_sub, VNode):
-                func_sub = _to_text_vnode(func_sub)
-            prev_sub = old.subtree
-            new.subtree = func_sub
-            if prev_sub is None:
-                _mount(func_sub, container)
+            # Function component — transfer hooks state and re-render
+            hooks_ctx = old.hooks_ctx
+            if hooks_ctx is not None:
+                hooks_ctx._props = new.props
+                new.hooks_ctx = hooks_ctx
+                new.render_effect = old.render_effect
+
+                hooks_ctx.cursor = 0
+                hooks_ctx.effect_cursor = 0
+                _push_hooks_ctx(hooks_ctx)
+                try:
+                    func_sub = new.tag(new.props)  # type: ignore[call-arg]
+                    if not isinstance(func_sub, VNode):
+                        func_sub = _to_text_vnode(func_sub)
+                finally:
+                    _pop_hooks_ctx()
+
+                prev_sub = old.subtree
+                new.subtree = func_sub
+                if prev_sub is None:
+                    _mount(func_sub, container)
+                else:
+                    _patch(prev_sub, func_sub, container)
+                hooks_ctx._run_pending_effects()
             else:
-                _patch(prev_sub, func_sub, container)
+                func_sub = new.tag(new.props)  # type: ignore[call-arg]
+                if not isinstance(func_sub, VNode):
+                    func_sub = _to_text_vnode(func_sub)
+                prev_sub = old.subtree
+                new.subtree = func_sub
+                if prev_sub is None:
+                    _mount(func_sub, container)
+                else:
+                    _patch(prev_sub, func_sub, container)
             return
 
     # Element nodes

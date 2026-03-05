@@ -1,20 +1,15 @@
-from wybthon import Component, h, signal
+from wybthon import h, use_effect, use_state
 
 
-class Timer(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.seconds = signal(0)
+def Timer(props):
+    seconds, set_seconds = use_state(0)
 
-        # Create a JS interval and clean it up on unmount
+    def setup_interval():
         try:
             from js import clearInterval, setInterval
             from pyodide.ffi import create_proxy
 
-            def tick():
-                self.seconds.set(self.seconds.get() + 1)
-
-            tick_proxy = create_proxy(lambda: tick())
+            tick_proxy = create_proxy(lambda: set_seconds(lambda s: s + 1))
             interval_id = setInterval(tick_proxy, 1000)
 
             def cleanup():
@@ -27,10 +22,10 @@ class Timer(Component):
                 except Exception:
                     pass
 
-            self.on_cleanup(cleanup)
+            return cleanup
         except Exception:
-            # Non-browser or setup failure: no interval, still renders static value
-            pass
+            return None
 
-    def render(self):
-        return h("div", {"class": "timer"}, f"Seconds: {self.seconds.get()}")
+    use_effect(setup_interval, [])
+
+    return h("div", {"class": "timer"}, f"Seconds: {seconds}")
