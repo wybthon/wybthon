@@ -28,7 +28,7 @@ from .forms import (
 from .hooks import HookRef, use_callback, use_effect, use_memo, use_ref, use_state
 from .reactivity import Resource, batch, computed, effect, on_effect_cleanup, signal, use_resource
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 # Detect Pyodide/browser environment where `js` module exists
 _IN_BROWSER = False
