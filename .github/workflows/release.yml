@@ -65,6 +65,12 @@ jobs:
           VER="${TAG#v}"
           # Extract the section between this version's header and the next
           awk "/^## v${VER//./\\.} /{found=1; next} /^## v[0-9]/{if(found) exit} found" CHANGELOG.md > /tmp/release_notes.md
+          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            REPO="${{ github.repository }}"
+            printf '\n---\n\n**Detailed Changes**: [%s...%s](https://github.com/%s/compare/%s...%s)\n' \
+              "$PREV_TAG" "$TAG" "$REPO" "$PREV_TAG" "$TAG" >> /tmp/release_notes.md
+          fi
 
       - name: Create GitHub Release
         if: steps.release.outputs.released == 'true'
