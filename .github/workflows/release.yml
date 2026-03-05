@@ -3,28 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
-  release:
-    types: [published]
   workflow_dispatch:
-
-# ┌─────────────────────────────────────────────────────────────────┐
-# │ DRAFT_RELEASE                                                   │
-# │                                                                 │
-# │  "true"  → GitHub Releases are created as drafts; review them   │
-# │            on GitHub, then click "Publish" to trigger PyPI.     │
-# │  "false" → GitHub Releases are published immediately, which     │
-# │            automatically triggers the PyPI publish job.         │
-# │                                                                 │
-# │ Flip to "false" once you are comfortable with the pipeline.     │
-# └─────────────────────────────────────────────────────────────────┘
-env:
-  DRAFT_RELEASE: "true"
 
 jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    if: github.event_name != 'release'
     concurrency:
       group: release
       cancel-in-progress: false
@@ -51,71 +35,13 @@ jobs:
         uses: python-semantic-release/python-semantic-release@v9
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          vcs_release: "false"
 
       - name: Build package
         if: steps.release.outputs.released == 'true'
-        run: python -m build
-
-      - name: Extract changelog for this release
-        if: steps.release.outputs.released == 'true'
-        id: changelog
-        run: |
-          TAG="${{ steps.release.outputs.tag }}"
-          VER="${TAG#v}"
-          # Extract the section between this version's header and the next
-          awk "/^## v${VER//./\\.} /{found=1; next} /^## v[0-9]/{if(found) exit} found" CHANGELOG.md > /tmp/release_notes.md
-          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | sed -n '2p')
-          if [ -n "$PREV_TAG" ]; then
-            REPO="${{ github.repository }}"
-            printf '\n---\n\n**Detailed Changes**: [%s...%s](https://github.com/%s/compare/%s...%s)\n' \
-              "$PREV_TAG" "$TAG" "$REPO" "$PREV_TAG" "$TAG" >> /tmp/release_notes.md
-          fi
-
-      - name: Create GitHub Release
-        if: steps.release.outputs.released == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "$DRAFT_RELEASE" = "true" ]; then
-            DRAFT_FLAG="--draft"
-          fi
-          gh release create "${{ steps.release.outputs.tag }}" \
-            ${DRAFT_FLAG:-} \
-            --title "${{ steps.release.outputs.tag }}" \
-            --notes-file /tmp/release_notes.md \
-            dist/*
-
-      - name: Publish to PyPI (non-draft)
-        if: steps.release.outputs.released == 'true' && env.DRAFT_RELEASE != 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          skip-existing: true
-
-  pypi-publish:
-    name: Publish to PyPI
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
-    permissions:
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.release.tag_name }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install build tools
-        run: python -m pip install -U pip build
-
-      - name: Build package
         run: python -m build
 
       - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
