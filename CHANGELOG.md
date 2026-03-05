@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.10.0 (2026-03-05)
+
+### Continuous Integration
+
+- **workflows**: Append detailed changes link to release notes
+  ([`8ce7e28`](https://github.com/wybthon/wybthon/commit/8ce7e28be9e14d0770c59b0114bd882620ab0361))
+
+- **workflows**: Fix duplicate release, and use changelog for release notes
+  ([`2cbdaa7`](https://github.com/wybthon/wybthon/commit/2cbdaa7db3c50368ece3a94ed3a2f51d14098e8a))
+
+- **workflows**: Simplify release pipeline to use python-semantic-release defaults
+  ([`da1dfee`](https://github.com/wybthon/wybthon/commit/da1dfee68cc2bb28670d0d6cf71c58b59514300e))
+
+### Features
+
+- **html**: Add Pythonic element helpers and Fragment; remove BaseComponent
+  ([`5ce94d5`](https://github.com/wybthon/wybthon/commit/5ce94d54b7846a9a8b1297e1cadd2f001b416083))
+
+
 ## v0.9.0 (2026-03-05)
 
 ### Continuous Integration
