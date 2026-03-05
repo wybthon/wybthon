@@ -1298,45 +1298,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BaseComponent
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BaseComponent">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent.render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent.render_children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render_children
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.Component" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1861,6 +1822,17 @@
     <span class="md-ellipsis">
       
         VNode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.Fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fragment
       
     </span>
   </a>
@@ -2530,6 +2502,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../html/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    html
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2751,45 +2751,6 @@
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BaseComponent
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BaseComponent">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent.render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.BaseComponent.render_children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render_children
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3325,6 +3286,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.Fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.Link" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3780,99 +3752,6 @@ non-browser environments, importing DOM/VDOM features only when available.</p>
 
 
 
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="wybthon.BaseComponent" class="doc doc-heading">
-            <code>BaseComponent</code>
-
-
-<a href="#wybthon.BaseComponent" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="abc.ABC">ABC</span></code></p>
-
-
-
-        <p>Async component base that renders to a concrete DOM <code>Element</code>.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.BaseComponent.render" class="doc doc-heading">
-            <code class=" language-python"><span class="n">render</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#wybthon.BaseComponent.render" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Render this component and return its root <code>Element</code>.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.BaseComponent.render_children" class="doc doc-heading">
-            <code class=" language-python"><span class="n">render_children</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#wybthon.BaseComponent.render_children" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Render and append all child components to the given parent element.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
 
 <div class="doc doc-object doc-class">
 
@@ -5139,6 +5018,33 @@ Lifecycle hooks:
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.Fragment" class="doc doc-heading">
+            <code class=" language-python"><span class="n">Fragment</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></code>
+
+<a href="#wybthon.Fragment" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Group multiple children without adding a visible wrapper to the DOM.</p>
+<p>Uses a <code>&lt;span style="display:contents"&gt;</code> so the wrapper is invisible to
+CSS layout while keeping the VDOM diffing algorithm simple.</p>
+<p>Can be called directly::</p>
+<div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
+</code></pre></div>
+
+<p>Or used as a component tag via <code>h()</code>::</p>
+<div class="codehilite"><pre><span></span><code>h(Fragment, {}, child1, child2)
+</code></pre></div>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
