@@ -58,7 +58,6 @@ nav:
     - Contributing: meta/contributing.md
     - FAQ: meta/faq.md
     - Troubleshooting: meta/troubleshooting.md
-    - Roadmap: meta/roadmap.md
     - Changelog: meta/changelog.md
 plugins:
   - search
