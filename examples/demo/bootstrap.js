@@ -90,6 +90,7 @@ async function bootstrap() {
       "router.py",
       "router_core.py",
       "forms.py",
+      "html.py",
       "lazy.py",
       "dev.py",
       "hooks.py",

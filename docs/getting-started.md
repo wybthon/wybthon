@@ -46,20 +46,35 @@ import micropip
 await micropip.install("wybthon")
 ```
 
-> TODO: Provide a minimal component example here once the authoring flow is finalized (function vs class components, recommended structure).
-
 ## Minimal component example
 
-Function component:
+Function component with HTML helpers (recommended):
 
 ```python
-from wybthon import h, render, Element
+from wybthon import Element, h, h2, render
 
 def Hello(props):
     name = props.get("name", "world")
-    return h("h2", {}, f"Hello, {name}!")
+    return h2(f"Hello, {name}!")
 
 tree = h(Hello, {"name": "Python"})
+container = Element("body", existing=True)
+render(tree, container)
+```
+
+Function component with state:
+
+```python
+from wybthon import Element, button, div, h, p, render, use_state
+
+def Counter(props):
+    count, set_count = use_state(0)
+    return div(
+        p(f"Count: {count}"),
+        button("Increment", on_click=lambda e: set_count(count + 1)),
+    )
+
+tree = h(Counter, {})
 container = Element("body", existing=True)
 render(tree, container)
 ```
@@ -67,7 +82,7 @@ render(tree, container)
 Class component with state:
 
 ```python
-from wybthon import Component, h, signal, render, Element
+from wybthon import Component, Element, button, div, h, p, render, signal
 
 class Counter(Component):
     def __init__(self, props):
@@ -75,11 +90,9 @@ class Counter(Component):
         self.count = signal(0)
 
     def render(self):
-        return h(
-            "div",
-            {},
-            h("p", {}, f"Count: {self.count.get()}"),
-            h("button", {"on_click": lambda e: self.count.set(self.count.get() + 1)}, "Increment"),
+        return div(
+            p(f"Count: {self.count.get()}"),
+            button("Increment", on_click=lambda e: self.count.set(self.count.get() + 1)),
         )
 
 tree = h(Counter, {})

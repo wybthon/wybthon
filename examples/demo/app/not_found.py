@@ -1,5 +1,5 @@
-from wybthon import h
+from wybthon import div
 
 
 def NotFound(_props):
-    return h("div", {"style": {"color": "#a00"}}, "404 - Not Found")
+    return div("404 - Not Found", style={"color": "#a00"})

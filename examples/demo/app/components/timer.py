@@ -1,4 +1,4 @@
-from wybthon import h, use_effect, use_state
+from wybthon import div, use_effect, use_state
 
 
 def Timer(props):
@@ -28,4 +28,4 @@ def Timer(props):
 
     use_effect(setup_interval, [])
 
-    return h("div", {"class": "timer"}, f"Seconds: {seconds}")
+    return div(f"Seconds: {seconds}", class_name="timer")

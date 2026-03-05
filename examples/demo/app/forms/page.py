@@ -4,13 +4,22 @@ from wybthon import (
     bind_checkbox,
     bind_select,
     bind_text,
+    button,
+    div,
     email,
     error_message_attrs,
+    form,
     form_state,
-    h,
+    h3,
+    input_,
+    label,
     min_length,
     on_submit_validated,
+    option,
+    p,
     required,
+    select,
+    span,
 )
 
 
@@ -26,12 +35,9 @@ class FormsPage(Component):
             }
         )
 
-        # Validation rules for submit gating
         self._rules = {
             "name": [required(), min_length(2)],
             "email": [email()],
-            # Example: make choice required in demo
-            # "choice": [required()],
         }
 
         def submit_handler(_form):
@@ -43,7 +49,6 @@ class FormsPage(Component):
                 f"choice={self.form['choice'].value.get()}"
             )
 
-        # Only invoke handler when form validates
         self._on_submit = on_submit_validated(self._rules, submit_handler, self.form)
 
     def render(self):
@@ -59,78 +64,58 @@ class FormsPage(Component):
 
         result_text = getattr(self, "_result", "")
 
-        # Accessibility: link controls to their error messages
         name_err_id = "name-error"
         email_err_id = "email-error"
 
-        return h(
-            "div",
-            {},
-            h("h3", {}, "Forms Demo"),
-            h(
-                "form",
-                {"on_submit": getattr(self, "_on_submit", lambda e: None)},
-                h(
-                    "div",
-                    {},
-                    h("label", {"for": "name-input"}, "Name: "),
-                    h(
-                        "input",
-                        {
-                            "id": "name-input",
-                            "type": "text",
-                            **name_bind,
-                            **a11y_control_attrs(name_field, described_by_id=name_err_id),
-                        },
+        return div(
+            h3("Forms Demo"),
+            form(
+                div(
+                    label("Name: ", html_for="name-input"),
+                    input_(
+                        id="name-input",
+                        type="text",
+                        **name_bind,
+                        **a11y_control_attrs(name_field, described_by_id=name_err_id),
                     ),
-                    h(
-                        "span",
-                        {"style": {"color": "red"}, **error_message_attrs(id=name_err_id)},
+                    span(
                         name_field.error.get() or "",
+                        style={"color": "red"},
+                        **error_message_attrs(id=name_err_id),
                     ),
                 ),
-                h(
-                    "div",
-                    {},
-                    h("label", {"for": "email-input"}, "Email: "),
-                    h(
-                        "input",
-                        {
-                            "id": "email-input",
-                            "type": "email",
-                            **email_bind,
-                            **a11y_control_attrs(email_field, described_by_id=email_err_id),
-                        },
+                div(
+                    label("Email: ", html_for="email-input"),
+                    input_(
+                        id="email-input",
+                        type="email",
+                        **email_bind,
+                        **a11y_control_attrs(email_field, described_by_id=email_err_id),
                     ),
-                    h(
-                        "span",
-                        {"style": {"color": "red"}, **error_message_attrs(id=email_err_id)},
+                    span(
                         email_field.error.get() or "",
+                        style={"color": "red"},
+                        **error_message_attrs(id=email_err_id),
                     ),
                 ),
-                h(
-                    "div",
-                    {},
-                    h(
-                        "label",
-                        {},
-                        h("input", {"type": "checkbox", **sub_bind}),
+                div(
+                    label(
+                        input_(type="checkbox", **sub_bind),
                         " Subscribe to newsletter",
                     ),
                 ),
-                h(
-                    "div",
-                    {},
-                    h("label", {"for": "choice-select"}, "Choice: "),
-                    h(
-                        "select",
-                        {"id": "choice-select", **choice_bind},
-                        h("option", {"value": ""}, "--"),
-                        h("option", {"value": "a"}, "Option A"),
-                        h("option", {"value": "b"}, "Option B"),
+                div(
+                    label("Choice: ", html_for="choice-select"),
+                    select(
+                        option("--", value=""),
+                        option("Option A", value="a"),
+                        option("Option B", value="b"),
+                        id="choice-select",
+                        **choice_bind,
                     ),
                 ),
-                h("button", {"type": "submit"}, "Submit"),
+                button("Submit", type="submit"),
+                on_submit=getattr(self, "_on_submit", lambda e: None),
             ),
-            h("p", {}, result_text),
+            p(result_text),
         )

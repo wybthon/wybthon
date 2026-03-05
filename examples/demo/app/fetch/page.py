@@ -1,4 +1,4 @@
-from wybthon import Component, Suspense, h, use_resource
+from wybthon import Component, Suspense, button, div, h, h3, p, use_resource
 
 
 class FetchPage(Component):
@@ -36,19 +36,16 @@ class FetchPage(Component):
 
     def render(self):
         def content(_props):
-            # Only renders when not loading (or kept via Suspense keep_previous)
             text = str(self.res.error.get()) if self.res.error.get() else self.res.data.get() or "No data"
-            return h("p", {}, text)
+            return p(text)
 
-        return h(
-            "div",
-            {},
-            h("h3", {}, "Async Fetch Demo"),
+        return div(
+            h3("Async Fetch Demo"),
             h(
                 Suspense,
-                {"resource": self.res, "fallback": h("p", {}, "Loading..."), "keep_previous": True},
+                {"resource": self.res, "fallback": p("Loading..."), "keep_previous": True},
                 content({}),
             ),
-            h("button", {"on_click": getattr(self, "_on_reload", lambda e: None)}, "Reload"),
-            h("button", {"on_click": getattr(self, "_on_cancel", lambda e: None)}, "Cancel"),
+            button("Reload", on_click=getattr(self, "_on_reload", lambda e: None)),
+            button("Cancel", on_click=getattr(self, "_on_cancel", lambda e: None)),
         )

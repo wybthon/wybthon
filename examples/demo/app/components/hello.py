@@ -1,6 +1,6 @@
-from wybthon import h
+from wybthon import h2
 
 
 def Hello(props):
     name = props.get("name", "world")
-    return h("h2", {"class": "hello"}, f"Hello, {name}!")
+    return h2(f"Hello, {name}!", class_name="hello")

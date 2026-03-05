@@ -1,5 +1,5 @@
-from wybthon import h
+from wybthon import div, p
 
 
 def Page(_props):
-    return h("div", {}, h("p", {}, "About"))
+    return div(p("About"))

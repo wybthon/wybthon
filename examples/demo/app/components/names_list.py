@@ -1,4 +1,4 @@
-from wybthon import Component, computed, h, signal
+from wybthon import Component, button, computed, div, li, p, signal, ul
 
 
 class NamesList(Component):
@@ -18,17 +18,13 @@ class NamesList(Component):
         self._clear = clear
 
     def render(self):
-        items = [h("li", {}, n) for n in self.names.get()]
-        return h(
-            "div",
-            {},
-            h("p", {}, f"Total: {len(self.names.get())} | Starts with A: {self.starts_with_a.get()}"),
-            h(
-                "div",
-                {},
-                h("button", {"on_click": getattr(self, "_add_ada", lambda e: None)}, "+ Ada"),
-                h("button", {"on_click": getattr(self, "_add_alan", lambda e: None)}, "+ Alan"),
-                h("button", {"on_click": getattr(self, "_clear", lambda e: None)}, "Clear"),
+        items = [li(n) for n in self.names.get()]
+        return div(
+            p(f"Total: {len(self.names.get())} | Starts with A: {self.starts_with_a.get()}"),
+            div(
+                button("+ Ada", on_click=getattr(self, "_add_ada", lambda e: None)),
+                button("+ Alan", on_click=getattr(self, "_add_alan", lambda e: None)),
+                button("Clear", on_click=getattr(self, "_clear", lambda e: None)),
             ),
-            h("ul", {}, items),
+            ul(items),
         )

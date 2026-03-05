@@ -101,6 +101,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `events` – DOM events and event utilities
   - `forms` – form state, validators, and bindings
   - `hooks` – React-style hooks for function components
+  - `html` – Pythonic HTML element helpers and Fragment
   - `lazy` – lazy loading and preloading utilities
   - `package` – `src/wybthon/__init__.py` exports and package boundary
   - `reactivity` – signals, computed, effect, batching

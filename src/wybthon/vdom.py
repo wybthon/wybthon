@@ -17,6 +17,7 @@ from .reactivity import Computation, Signal, effect, signal
 __all__ = [
     "VNode",
     "h",
+    "Fragment",
     "render",
     "ErrorBoundary",
     "Suspense",
@@ -94,7 +95,7 @@ class ErrorBoundary(Component):
         children = self.props.get("children", [])
         if not isinstance(children, list):
             children = [children]
-        return h("div", {}, *children)
+        return Fragment(*children)
 
     # Public API to reset the boundary
     def reset(self) -> None:
@@ -148,11 +149,11 @@ class Suspense(Component):
         return False
 
     def _render_children(self) -> VNode:
-        """Render and return the children inside a div container."""
+        """Render and return the children inside a Fragment container."""
         children = self.props.get("children", [])
         if not isinstance(children, list):
             children = [children]
-        return h("div", {}, *children)
+        return Fragment(*children)
 
     def _render_fallback(self) -> VNode:
         """Render the fallback content as a VNode."""
@@ -212,6 +213,29 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
     return VNode(tag=tag, props=props, children=vnode_children, key=key)
 
 
+def Fragment(*args: Any) -> VNode:
+    """Group multiple children without adding a visible wrapper to the DOM.
+
+    Uses a ``<span style="display:contents">`` so the wrapper is invisible to
+    CSS layout while keeping the VDOM diffing algorithm simple.
+
+    Can be called directly::
+
+        Fragment(child1, child2)
+
+    Or used as a component tag via ``h()``::
+
+        h(Fragment, {}, child1, child2)
+    """
+    children: list
+    if len(args) == 1 and isinstance(args[0], dict) and "children" in args[0]:
+        kids = args[0].get("children", [])
+        children = kids if isinstance(kids, list) else [kids]
+    else:
+        children = list(args)
+    return h("span", {"style": {"display": "contents"}}, *children)
+
+
 _container_registry: Dict[int, VNode] = {}
 
 
@@ -268,7 +292,7 @@ def _mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> 
                         children = instance.props.get("children", [])
                         push_provider_value(ctx, value)
                         try:
-                            next_sub = h("div", {}, *children)
+                            next_sub = Fragment(*children) if isinstance(children, list) else Fragment(children)
                         finally:
                             pop_provider_value()
                     else:
@@ -457,7 +481,7 @@ def _patch(old: Optional[VNode], new: VNode, container: Element) -> None:
                     children = instance.props.get("children", [])
                     push_provider_value(ctx, value)
                     try:
-                        next_sub = h("div", {}, *children)
+                        next_sub = Fragment(*children) if isinstance(children, list) else Fragment(children)
                     finally:
                         pop_provider_value()
                 else:
@@ -637,8 +661,10 @@ def _patch_children(old: VNode, new: VNode) -> None:
 
 
 def _is_event_prop(name: str) -> bool:
-    """Return True if a prop name is an event handler prop like on_click."""
-    return name.startswith("on_") or name.startswith("on")
+    """Return True if a prop name is an event handler prop like on_click or onClick."""
+    if name.startswith("on_"):
+        return True
+    return len(name) > 2 and name.startswith("on") and name[2].isupper()
 
 
 def _event_name_from_prop(name: str) -> str:

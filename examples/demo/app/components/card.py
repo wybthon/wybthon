@@ -1,4 +1,4 @@
-from wybthon import h
+from wybthon import h3, section
 
 
 def Card(props):
@@ -6,4 +6,4 @@ def Card(props):
     children = props.get("children", [])
     if not isinstance(children, list):
         children = [children]
-    return h("section", {"class": "card"}, h("h3", {}, title), children)
+    return section(h3(title), children, class_name="card")
