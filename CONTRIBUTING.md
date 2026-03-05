@@ -216,6 +216,7 @@ Co-authored-by: Name <email>
 
 ## Pull request checklist
 
+- PR title: Conventional Commits format (CI-enforced by `pr-lint.yml`).
 - Format: `black src examples` passes.
 - Tests: added/updated if applicable; all pass.
 - Docs: update `README.md` and examples if behavior changes.
@@ -228,18 +229,17 @@ Co-authored-by: Name <email>
 
 ## Versioning and releases
 
-- The version is tracked in `pyproject.toml` (`project.version`) and mirrored in `src/wybthon/__init__.py` as `__version__`. Use SemVer.
-- Workflow (single `main` branch):
-  - Contributors: branch off `main` and open PRs targeting `main`.
-  - Maintainer (release): open a "Prepare release vX.Y.Z" PR from a short-lived branch → `main`, bump versions in both files, merge. (This can also be a single direct commit on `main`.)
-  - Tag on `main`: `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push --tags`.
-  - Automation: a GitHub Action publishes the package to PyPI when a `v*.*.*` tag is pushed (Trusted Publisher). For the first release, enable PyPI Trusted Publishing for this repo or do a one-time manual `twine upload dist/*`.
-- Tag format: always prefix with `v` (e.g., `v0.1.0`).
-- Release checklist:
-  - Bump `pyproject.toml` and `src/wybthon/__init__.py` versions.
-  - Build and verify: `python -m build && twine check dist/*`.
-  - Create the annotated tag on `main` and push.
-  - Draft the GitHub Release and include notes.
+- The version is tracked in `pyproject.toml` (`project.version`) and mirrored in `src/wybthon/__init__.py` as `__version__`. Both files are updated automatically by [python-semantic-release](https://python-semantic-release.readthedocs.io/).
+- **Automated release pipeline** (on every merge to `main`):
+  1. `python-semantic-release` scans Conventional Commit messages since the last tag.
+  2. It determines the next SemVer bump: `feat` → **minor**, `fix`/`perf` → **patch**, `BREAKING CHANGE` → **major** (minor while version < 1.0).
+  3. Version files are updated, `CHANGELOG.md` is generated, and a tagged release commit (`chore(release): vX.Y.Z`) is pushed.
+  4. A GitHub Release is created with auto-generated release notes and the built sdist/wheel attached.
+  5. When drafts are disabled, the package is also published to PyPI via Trusted Publishing.
+- **Draft / published toggle**: the `DRAFT_RELEASE` variable at the top of `.github/workflows/release.yml` controls release mode. Set to `"true"` (the default) for draft GitHub Releases with PyPI publishing skipped; flip to `"false"` to publish releases and upload to PyPI immediately.
+- Commit types that trigger a release: `feat` (minor), `fix` and `perf` (patch), `BREAKING CHANGE` (major). All other types (`build`, `chore`, `ci`, `docs`, `refactor`, `revert`, `style`, `test`) are recorded in the changelog but do **not** trigger a release on their own.
+- Tag format: `v`-prefixed (e.g., `v0.9.0`).
+- Manual version bumps are no longer needed — just merge PRs with valid Conventional Commit titles. For ad-hoc runs, use the workflow's **Run workflow** button (`workflow_dispatch`).
 
 ### Branching rules
 
@@ -278,7 +278,10 @@ hotfix/dom-event-delegation
 
 ### CI
 
-- If/when CI is added, PRs should run formatter/lint/tests and a build check.
+- **CI** (`ci.yml`): runs formatter, linter, type checker, and tests on every push and PR.
+- **PR Lint** (`pr-lint.yml`): validates the PR title against Conventional Commits format (protects squash merges) and checks individual commit messages via commitlint (protects rebase merges). Recommended: add the **PR title** job as a required status check in branch-protection settings.
+- **Release** (`release.yml`): runs on merge to `main`; computes version, generates changelog, tags, creates GitHub Release, and (when `DRAFT_RELEASE` is `"false"`) publishes to PyPI.
+- **Docs** (`docs.yml`): deploys documentation to GitHub Pages on push to `main`.
 
 ## Security and provenance
 
