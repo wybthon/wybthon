@@ -397,6 +397,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../concepts/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../concepts/vdom/" class="md-nav__link">
         
   
@@ -1057,6 +1085,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Counter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#function-component-with-hooks-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function component with hooks (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#class-component-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class component variant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1470,6 +1526,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/forms/" class="md-nav__link">
         
   
@@ -1702,6 +1786,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Counter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#function-component-with-hooks-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function component with hooks (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#class-component-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class component variant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1727,7 +1839,23 @@
   <h1>Counter</h1>
 
 <h3 id="counter">Counter<a class="headerlink" href="#counter" title="Permanent link">&para;</a></h3>
-<p>Demonstrates state updates with <code>signal</code> inside a class component.</p>
+<h4 id="function-component-with-hooks-recommended">Function component with hooks (recommended)<a class="headerlink" href="#function-component-with-hooks-recommended" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_state</span><span class="p">,</span> <span class="n">use_effect</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Counter mounted with initial count:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+    <span class="n">use_effect</span><span class="p">(</span><span class="n">on_mount</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span> <span class="s2">&quot;Increment&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<h4 id="class-component-variant">Class component variant<a class="headerlink" href="#class-component-variant" title="Permanent link">&para;</a></h4>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
@@ -1741,17 +1869,7 @@
                  <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span> <span class="s2">&quot;Increment&quot;</span><span class="p">))</span>
 </code></pre></div>
 
-<p>Function component variant (stateless presentation wrapping a class instance is recommended for state, but for simple counters you can inline):</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">CounterFn</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="c1"># This example demonstrates a presentational wrapper around the class version.</span>
-    <span class="c1"># Prefer class components for stateful logic.</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">app.components.counter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span> <span class="k">as</span> <span class="n">CounterClass</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="n">CounterClass</span><span class="p">,</span> <span class="n">props</span><span class="p">)</span>
-</code></pre></div>
-
-<p>See also: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></p>
+<p>See also: <a href="../../concepts/hooks/">Hooks</a> · <a href="../../guides/authoring-patterns/">Authoring Patterns</a></p>
 
 
 

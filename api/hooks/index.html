@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.wybthon.com/concepts/vdom/">
+        <link rel="canonical" href="https://docs.wybthon.com/api/hooks/">
       
       
-        <link rel="prev" href="../hooks/">
+        <link rel="prev" href="../vdom/">
       
       
-        <link rel="next" href="../reactivity/">
+        <link rel="next" href="../forms/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Virtual DOM - Wybthon</title>
+        <title>hooks - Wybthon</title>
       
     
     
@@ -65,17 +65,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Virtual DOM - Wybthon" />
+<meta property="og:title" content="hooks - Wybthon" />
 <meta property="og:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="og:image" content="https://docs.wybthon.com/assets/images/social/concepts/vdom.png" />
+<meta property="og:image" content="https://docs.wybthon.com/assets/images/social/api/hooks.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.wybthon.com/concepts/vdom/" />
+<meta property="og:url" content="https://docs.wybthon.com/api/hooks/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Virtual DOM - Wybthon" />
+<meta property="twitter:title" content="hooks - Wybthon" />
 <meta property="twitter:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="twitter:image" content="https://docs.wybthon.com/assets/images/social/concepts/vdom.png" />
+<meta property="twitter:image" content="https://docs.wybthon.com/assets/images/social/api/hooks.png" />
 </head>
   
   
@@ -95,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#virtual-dom" class="md-skip">
+        <a href="#hooks" class="md-skip">
           Skip to content
         </a>
       
@@ -131,7 +131,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Virtual DOM
+              hooks
             
           </span>
         </div>
@@ -314,8 +314,6 @@
       
   
   
-    
-  
   
   
     
@@ -328,11 +326,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -353,7 +351,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -371,7 +369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../components/" class="md-nav__link">
+      <a href="../../concepts/components/" class="md-nav__link">
         
   
   
@@ -399,7 +397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
+      <a href="../../concepts/hooks/" class="md-nav__link">
         
   
   
@@ -424,35 +422,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Virtual DOM
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../concepts/vdom/" class="md-nav__link">
         
   
   
@@ -468,35 +441,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#virtual-dom" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Virtual DOM
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -509,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reactivity/" class="md-nav__link">
+      <a href="../../concepts/reactivity/" class="md-nav__link">
         
   
   
@@ -537,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../router/" class="md-nav__link">
+      <a href="../../concepts/router/" class="md-nav__link">
         
   
   
@@ -565,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../context/" class="md-nav__link">
+      <a href="../../concepts/context/" class="md-nav__link">
         
   
   
@@ -593,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../events/" class="md-nav__link">
+      <a href="../../concepts/events/" class="md-nav__link">
         
   
   
@@ -621,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../forms/" class="md-nav__link">
+      <a href="../../concepts/forms/" class="md-nav__link">
         
   
   
@@ -649,7 +593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dom/" class="md-nav__link">
+      <a href="../../concepts/dom/" class="md-nav__link">
         
   
   
@@ -677,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../error-boundaries/" class="md-nav__link">
+      <a href="../../concepts/error-boundaries/" class="md-nav__link">
         
   
   
@@ -1219,8 +1163,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -1231,11 +1177,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
@@ -1256,7 +1202,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1274,7 +1220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/wybthon/" class="md-nav__link">
+      <a href="../wybthon/" class="md-nav__link">
         
   
   
@@ -1302,7 +1248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/component/" class="md-nav__link">
+      <a href="../component/" class="md-nav__link">
         
   
   
@@ -1330,7 +1276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/dom/" class="md-nav__link">
+      <a href="../dom/" class="md-nav__link">
         
   
   
@@ -1358,7 +1304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/events/" class="md-nav__link">
+      <a href="../events/" class="md-nav__link">
         
   
   
@@ -1386,7 +1332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/context/" class="md-nav__link">
+      <a href="../context/" class="md-nav__link">
         
   
   
@@ -1414,7 +1360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/reactivity/" class="md-nav__link">
+      <a href="../reactivity/" class="md-nav__link">
         
   
   
@@ -1442,7 +1388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router/" class="md-nav__link">
+      <a href="../router/" class="md-nav__link">
         
   
   
@@ -1470,7 +1416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/vdom/" class="md-nav__link">
+      <a href="../vdom/" class="md-nav__link">
         
   
   
@@ -1495,10 +1441,35 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../api/hooks/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    hooks
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1514,6 +1485,112 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.HookRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HookRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_callback
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1526,7 +1603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/forms/" class="md-nav__link">
+      <a href="../forms/" class="md-nav__link">
         
   
   
@@ -1750,10 +1827,87 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#virtual-dom" class="md-nav__link">
+  <a href="#hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Virtual DOM
+        hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.HookRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HookRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_callback
       
     </span>
   </a>
@@ -1780,29 +1934,206 @@
   
 
 
-  <h1>Virtual DOM</h1>
+  <h1>hooks</h1>
 
-<h3 id="virtual-dom">Virtual DOM<a class="headerlink" href="#virtual-dom" title="Permanent link">&para;</a></h3>
-<p>The VDOM is represented by <code>VNode</code> and created via <code>h(tag, props, *children)</code>.</p>
-<ul>
-<li><code>tag</code>: string (DOM node) or callable (component)</li>
-<li><code>props</code>: attributes, event handlers, and special props like <code>key</code></li>
-<li><code>children</code>: strings or <code>VNode</code>s</li>
-</ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<h3 id="hooks">hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h3>
 
-<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;app&quot;</span><span class="p">},</span>
-          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h1&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Hello&quot;</span><span class="p">),</span>
-          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Welcome&quot;</span><span class="p">))</span>
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="wybthon.hooks"></a>
+    <div class="doc doc-contents first">
+
+        <p>React-style hooks for function components.</p>
+<p>Hooks let function components hold state, run side effects, and memoize
+values without converting to class components.  They work by maintaining
+a per-component-instance list of hook slots, accessed by call order.</p>
+<p><strong>Rules of hooks</strong> (same as React):</p>
+<ol>
+<li>Only call hooks at the top level of a function component.</li>
+<li>Do not call hooks inside loops, conditions, or nested functions.</li>
+<li>Do not call hooks outside of a function component's render.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="wybthon.hooks.HookRef" class="doc doc-heading">
+            <code>HookRef</code>
+
+
+<a href="#wybthon.hooks.HookRef" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Generic">Generic</span>[<span title="wybthon.hooks.T">T</span>]</code></p>
+
+
+
+        <p>Mutable container returned by <code>use_ref</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_state" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_state" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Declare component-local state.</p>
+<p>Returns <code>(current_value, setter)</code>.  The setter accepts a plain value
+<strong>or</strong> an updater function::</p>
+<div class="codehilite"><pre><span></span><code>count, set_count = use_state(0)
+set_count(5)                   # set directly
+set_count(lambda prev: prev+1) # updater
 </code></pre></div>
 
-<p>Rendering is done with <code>vdom.render(view, container)</code>.</p>
-<p>Keyed diffing</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_effect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_effect</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_effect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Register a side-effect that runs after render.</p>
 <ul>
-<li>Provide <code>key</code> on children of dynamic lists: <code>h("li", {"key": item.id}, ...)</code>.</li>
-<li>Keys allow Wybthon to match, reorder, insert, and remove children with minimal DOM changes while preserving element identity and state.</li>
-<li>The reconciler first matches children by key, then falls back to type-matching for unkeyed nodes.</li>
+<li><code>deps=None</code> — run after <strong>every</strong> render.</li>
+<li><code>deps=[]</code>   — run only on <strong>mount</strong> (cleanup runs on unmount).</li>
+<li><code>deps=[a,b]</code> — run when <em>a</em> or <em>b</em> changes.</li>
 </ul>
+<p><em>fn</em> may return a cleanup callable.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_memo" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_memo" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Memoize a computed value, recomputing only when <em>deps</em> change.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_ref" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_ref</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_ref" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a mutable ref object that persists across renders.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_callback" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_callback</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_callback" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Memoize a callback, returning the same reference until <em>deps</em> change.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 

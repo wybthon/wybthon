@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.wybthon.com/concepts/vdom/">
+        <link rel="canonical" href="https://docs.wybthon.com/concepts/hooks/">
       
       
-        <link rel="prev" href="../hooks/">
+        <link rel="prev" href="../components/">
       
       
-        <link rel="next" href="../reactivity/">
+        <link rel="next" href="../vdom/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Virtual DOM - Wybthon</title>
+        <title>Hooks - Wybthon</title>
       
     
     
@@ -65,17 +65,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Virtual DOM - Wybthon" />
+<meta property="og:title" content="Hooks - Wybthon" />
 <meta property="og:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="og:image" content="https://docs.wybthon.com/assets/images/social/concepts/vdom.png" />
+<meta property="og:image" content="https://docs.wybthon.com/assets/images/social/concepts/hooks.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://docs.wybthon.com/concepts/vdom/" />
+<meta property="og:url" content="https://docs.wybthon.com/concepts/hooks/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Virtual DOM - Wybthon" />
+<meta property="twitter:title" content="Hooks - Wybthon" />
 <meta property="twitter:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="twitter:image" content="https://docs.wybthon.com/assets/images/social/concepts/vdom.png" />
+<meta property="twitter:image" content="https://docs.wybthon.com/assets/images/social/concepts/hooks.png" />
 </head>
   
   
@@ -95,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#virtual-dom" class="md-skip">
+        <a href="#hooks" class="md-skip">
           Skip to content
         </a>
       
@@ -131,7 +131,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Virtual DOM
+              Hooks
             
           </span>
         </div>
@@ -396,34 +396,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Hooks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -441,7 +413,7 @@
   <span class="md-ellipsis">
     
   
-    Virtual DOM
+    Hooks
   
 
     
@@ -459,7 +431,7 @@
   <span class="md-ellipsis">
     
   
-    Virtual DOM
+    Hooks
   
 
     
@@ -483,13 +455,96 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#virtual-dom" class="md-nav__link">
+  <a href="#hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Virtual DOM
+        Hooks
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rules-of-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules of hooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hooks-vs-class-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks vs. class components
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -497,6 +552,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vdom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual DOM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1750,13 +1833,96 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#virtual-dom" class="md-nav__link">
+  <a href="#hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Virtual DOM
+        Hooks
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rules-of-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules of hooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hooks-vs-class-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks vs. class components
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1780,29 +1946,150 @@
   
 
 
-  <h1>Virtual DOM</h1>
+  <h1>Hooks</h1>
 
-<h3 id="virtual-dom">Virtual DOM<a class="headerlink" href="#virtual-dom" title="Permanent link">&para;</a></h3>
-<p>The VDOM is represented by <code>VNode</code> and created via <code>h(tag, props, *children)</code>.</p>
-<ul>
-<li><code>tag</code>: string (DOM node) or callable (component)</li>
-<li><code>props</code>: attributes, event handlers, and special props like <code>key</code></li>
-<li><code>children</code>: strings or <code>VNode</code>s</li>
-</ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<h3 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h3>
+<p>Hooks let function components hold state, run side effects, and memoize
+values — no class required.  If you have used React hooks, the API will
+feel immediately familiar.</p>
+<h4 id="rules-of-hooks">Rules of hooks<a class="headerlink" href="#rules-of-hooks" title="Permanent link">&para;</a></h4>
+<ol>
+<li><strong>Call hooks at the top level</strong> of your function component.</li>
+<li><strong>Do not</strong> call hooks inside loops, conditions, or nested functions.</li>
+<li><strong>Do not</strong> call hooks outside a function component's render.</li>
+</ol>
+<p>These rules exist because hooks rely on a stable call order to map each
+hook call to its stored state slot.</p>
+<hr />
+<h4 id="use_state"><code>use_state</code><a class="headerlink" href="#use_state" title="Permanent link">&para;</a></h4>
+<p>Declare a piece of component-local state.  Returns <code>(value, setter)</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_state</span>
 
-<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;app&quot;</span><span class="p">},</span>
-          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h1&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Hello&quot;</span><span class="p">),</span>
-          <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Welcome&quot;</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span> <span class="s2">&quot;+1&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
 </code></pre></div>
 
-<p>Rendering is done with <code>vdom.render(view, container)</code>.</p>
-<p>Keyed diffing</p>
-<ul>
-<li>Provide <code>key</code> on children of dynamic lists: <code>h("li", {"key": item.id}, ...)</code>.</li>
-<li>Keys allow Wybthon to match, reorder, insert, and remove children with minimal DOM changes while preserving element identity and state.</li>
-<li>The reconciler first matches children by key, then falls back to type-matching for unkeyed nodes.</li>
-</ul>
+<p>The setter accepts a plain value <strong>or</strong> an updater function that receives
+the previous value:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">set_count</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>                  <span class="c1"># set directly</span>
+<span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">prev</span><span class="p">:</span> <span class="n">prev</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># updater</span>
+</code></pre></div>
+
+<p>You can also pass a callable as the initial value; it will be invoked once
+on the first render (lazy initialization):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">val</span><span class="p">,</span> <span class="n">set_val</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">expensive_default</span><span class="p">())</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_effect"><code>use_effect</code><a class="headerlink" href="#use_effect" title="Permanent link">&para;</a></h4>
+<p>Register a side-effect that runs <strong>after</strong> the component renders.</p>
+<table>
+<thead>
+<tr>
+<th><code>deps</code> argument</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>None</code> (default)</td>
+<td>Runs after <strong>every</strong> render</td>
+</tr>
+<tr>
+<td><code>[]</code></td>
+<td>Runs only on <strong>mount</strong></td>
+</tr>
+<tr>
+<td><code>[a, b]</code></td>
+<td>Runs when <code>a</code> or <code>b</code> changes</td>
+</tr>
+</tbody>
+</table>
+<p>Return a cleanup function from the effect to run before the next
+execution or on unmount:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_state</span><span class="p">,</span> <span class="n">use_effect</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">seconds</span><span class="p">,</span> <span class="n">set_seconds</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">setInterval</span><span class="p">,</span> <span class="n">clearInterval</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pyodide.ffi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_proxy</span>
+
+        <span class="n">proxy</span> <span class="o">=</span> <span class="n">create_proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_seconds</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">tid</span> <span class="o">=</span> <span class="n">setInterval</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
+            <span class="n">clearInterval</span><span class="p">(</span><span class="n">tid</span><span class="p">)</span>
+            <span class="n">proxy</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cleanup</span>
+
+    <span class="n">use_effect</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="p">[])</span>  <span class="c1"># mount-only</span>
+
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Elapsed: </span><span class="si">{</span><span class="n">seconds</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_memo"><code>use_memo</code><a class="headerlink" href="#use_memo" title="Permanent link">&para;</a></h4>
+<p>Memoize an expensive computation.  Re-computes only when <code>deps</code> change.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">filtered</span> <span class="o">=</span> <span class="n">use_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">active</span><span class="p">],</span> <span class="p">[</span><span class="n">items</span><span class="p">])</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_ref"><code>use_ref</code><a class="headerlink" href="#use_ref" title="Permanent link">&para;</a></h4>
+<p>Create a mutable container that persists across renders without causing
+re-renders when mutated.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">ref</span> <span class="o">=</span> <span class="n">use_ref</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="c1"># ref.current can be read/written freely</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_callback"><code>use_callback</code><a class="headerlink" href="#use_callback" title="Permanent link">&para;</a></h4>
+<p>Memoize a callback so child components receiving it as a prop can skip
+unnecessary re-renders.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">handle_click</span> <span class="o">=</span> <span class="n">use_callback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="n">count</span><span class="p">])</span>
+</code></pre></div>
+
+<hr />
+<h4 id="hooks-vs-class-components">Hooks vs. class components<a class="headerlink" href="#hooks-vs-class-components" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Function + hooks</th>
+<th>Class component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>State</td>
+<td><code>use_state</code></td>
+<td><code>self.count = signal(0)</code></td>
+</tr>
+<tr>
+<td>Side effects</td>
+<td><code>use_effect</code></td>
+<td><code>on_mount</code> / <code>on_cleanup</code></td>
+</tr>
+<tr>
+<td>Memoization</td>
+<td><code>use_memo</code></td>
+<td>manual</td>
+</tr>
+<tr>
+<td>Refs</td>
+<td><code>use_ref</code></td>
+<td>instance attributes</td>
+</tr>
+</tbody>
+</table>
+<p>Both styles are fully supported; choose whichever fits your situation.
+For new code, <strong>hooks are recommended</strong> because they are more concise
+and composable.</p>
 
 
 
