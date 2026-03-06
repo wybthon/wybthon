@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.11.0 (2026-03-06)
+
+### Features
+
+- **vdom,component,hooks**: Add core React primitives
+  ([`fd8d4bb`](https://github.com/wybthon/wybthon/commit/fd8d4bbd52664b75ccac8ab9dd5fcd910cb5464b))
+
+
 ## v0.10.0 (2026-03-05)
 
 ### Continuous Integration
