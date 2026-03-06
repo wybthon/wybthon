@@ -533,6 +533,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#hooks-vs-class-components" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1939,6 +1961,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#hooks-vs-class-components" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2080,6 +2124,54 @@ re-renders when mutated.</p>
 <p>Memoize a callback so child components receiving it as a prop can skip
 unnecessary re-renders.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">handle_click</span> <span class="o">=</span> <span class="n">use_callback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="n">count</span><span class="p">])</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_reducer"><code>use_reducer</code><a class="headerlink" href="#use_reducer" title="Permanent link">&para;</a></h4>
+<p>Manage complex state with a reducer function.  Returns <code>(state, dispatch)</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_reducer</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">reducer</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">action</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;increment&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">state</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">action</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;decrement&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">state</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">action</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;reset&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">state</span><span class="p">,</span> <span class="n">dispatch</span> <span class="o">=</span> <span class="n">use_reducer</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">dispatch</span><span class="p">({</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;increment&quot;</span><span class="p">})},</span> <span class="s2">&quot;+1&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">dispatch</span><span class="p">({</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;decrement&quot;</span><span class="p">})},</span> <span class="s2">&quot;-1&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">dispatch</span><span class="p">({</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;reset&quot;</span><span class="p">})},</span> <span class="s2">&quot;Reset&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>An optional <code>init</code> function lazily computes the initial state:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">state</span><span class="p">,</span> <span class="n">dispatch</span> <span class="o">=</span> <span class="n">use_reducer</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="n">initial_arg</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="k">lambda</span> <span class="n">arg</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="n">arg</span><span class="p">})</span>
+</code></pre></div>
+
+<hr />
+<h4 id="use_layout_effect"><code>use_layout_effect</code><a class="headerlink" href="#use_layout_effect" title="Permanent link">&para;</a></h4>
+<p>Same API as <code>use_effect</code> but fires <strong>synchronously</strong> after all DOM
+mutations, before the browser repaints.  Use this for DOM measurements
+and synchronous visual updates.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">use_layout_effect</span><span class="p">,</span> <span class="n">use_ref</span><span class="p">,</span> <span class="n">use_state</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">MeasuredBox</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">use_ref</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">width</span><span class="p">,</span> <span class="n">set_width</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">measure</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">set_width</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">offsetWidth</span><span class="p">)</span>
+
+    <span class="n">use_layout_effect</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span> <span class="sa">f</span><span class="s2">&quot;Width: </span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">px&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />

@@ -1555,10 +1555,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.vdom.create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.vdom.h" class="md-nav__link">
     <span class="md-ellipsis">
       
         h
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.vdom.memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
       
     </span>
   </a>
@@ -1637,6 +1659,28 @@
     <span class="md-ellipsis">
       
         Prop semantics (style, dataset, value, checked)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
       
     </span>
   </a>
@@ -2027,10 +2071,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.vdom.create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.vdom.h" class="md-nav__link">
     <span class="md-ellipsis">
       
         h
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.vdom.memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
       
     </span>
   </a>
@@ -2109,6 +2175,28 @@
     <span class="md-ellipsis">
       
         Prop semantics (style, dataset, value, checked)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
       
     </span>
   </a>
@@ -2378,6 +2466,28 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.vdom.create_portal" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_portal</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span></code>
+
+<a href="#wybthon.vdom.create_portal" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Render children into a different DOM container.</p>
+<p>Returns a VNode that, when mounted, renders <em>children</em> into <em>container</em>
+instead of the parent component's DOM node.  Useful for modals, tooltips,
+and overlays that need to break out of their parent's DOM hierarchy.</p>
+<p><em>container</em> may be an <code>Element</code> or a CSS selector string.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.vdom.h" class="doc doc-heading">
             <code class=" language-python"><span class="n">h</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">children</span><span class="p">)</span></code>
 
@@ -2387,6 +2497,27 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
     <div class="doc doc-contents ">
 
         <p>Create a VNode from a tag, props, and children (component-aware).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.vdom.memo" class="doc doc-heading">
+            <code class=" language-python"><span class="n">memo</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">are_props_equal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.vdom.memo" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Memoize a function component to skip re-renders when props are unchanged.</p>
+<p>By default uses shallow identity comparison (<code>is</code>) on each prop value.
+Pass a custom <code>are_props_equal(old_props, new_props) -&gt; bool</code> for
+deeper comparison logic.</p>
 
 
     </div>
@@ -2424,6 +2555,8 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <li><code>render(vnode, container) -&gt; Element</code></li>
 <li><code>ErrorBoundary</code> component</li>
 <li><code>Suspense</code> component</li>
+<li><code>memo(component, are_props_equal=None)</code> — memoize a function component</li>
+<li><code>create_portal(children, container)</code> — render children into a different DOM container</li>
 </ul>
 <h4 id="keyed-children-and-diffing">Keyed children and diffing<a class="headerlink" href="#keyed-children-and-diffing" title="Permanent link">&para;</a></h4>
 <ul>
@@ -2497,6 +2630,31 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <p><code>checked</code>: for checkboxes/radios, the DOM <code>checked</code> property is set when available (falling back to the <code>checked</code> attribute). Removing the <code>checked</code> prop clears it to <code>False</code>.</p>
 </li>
 </ul>
+<h4 id="memo">memo<a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
+<p><code>memo(component, are_props_equal=None)</code> wraps a function component to skip re-renders when props are unchanged.</p>
+<ul>
+<li>By default, uses shallow identity comparison (<code>is</code>) on each prop value.</li>
+<li>Pass a custom <code>are_props_equal(old_props, new_props) -&gt; bool</code> for deeper comparison.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">memo</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="c1"># ... render a large list ...</span>
+    <span class="k">pass</span>
+
+<span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="create_portal">create_portal<a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
+<p><code>create_portal(children, container)</code> renders children into a different DOM container.</p>
+<ul>
+<li><em>children</em>: a single VNode or a list of VNodes.</li>
+<li><em>container</em>: an <code>Element</code> or CSS selector string.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span>
+
+<span class="n">portal</span> <span class="o">=</span> <span class="n">create_portal</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Modal content&quot;</span><span class="p">),</span> <span class="s2">&quot;#modal-root&quot;</span><span class="p">)</span>
+</code></pre></div>
 
 
 

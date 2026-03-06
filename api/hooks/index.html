@@ -1555,6 +1555,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.hooks.use_memo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1581,6 +1592,17 @@
     <span class="md-ellipsis">
       
         use_callback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
       
     </span>
   </a>
@@ -1910,6 +1932,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.hooks.use_memo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1936,6 +1969,17 @@
     <span class="md-ellipsis">
       
         use_callback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.hooks.use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
       
     </span>
   </a>
@@ -2104,6 +2148,32 @@ set_count(lambda prev: prev+1) # updater
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.hooks.use_layout_effect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_layout_effect</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_layout_effect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Register an effect that fires synchronously after DOM mutations.</p>
+<p>Same API as <code>use_effect</code> but guaranteed to run before the browser
+repaints.  Use for DOM measurements and synchronous visual updates.</p>
+<ul>
+<li><code>deps=None</code> — run after <strong>every</strong> render.</li>
+<li><code>deps=[]</code>   — run only on <strong>mount</strong>.</li>
+<li><code>deps=[a,b]</code> — run when <em>a</em> or <em>b</em> changes.</li>
+</ul>
+<p><em>fn</em> may return a cleanup callable.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.hooks.use_memo" class="doc doc-heading">
             <code class=" language-python"><span class="n">use_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span></code>
 
@@ -2149,6 +2219,28 @@ set_count(lambda prev: prev+1) # updater
     <div class="doc doc-contents ">
 
         <p>Memoize a callback, returning the same reference until <em>deps</em> change.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.hooks.use_reducer" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_reducer</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.hooks.use_reducer" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Manage state with a reducer function.</p>
+<p>Returns <code>(state, dispatch)</code>.  Call <code>dispatch(action)</code> to run
+<code>reducer(current_state, action)</code> and update the component.</p>
+<p>The optional <em>init</em> function lazily computes the initial state as
+<code>init(initial_state)</code> on the first render.</p>
 
 
     </div>

@@ -1928,6 +1928,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.effect" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1972,6 +1983,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.h" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1998,6 +2020,17 @@
     <span class="md-ellipsis">
       
         max_length
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
       
     </span>
   </a>
@@ -2148,10 +2181,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.use_memo" class="md-nav__link">
     <span class="md-ellipsis">
       
         use_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
       
     </span>
   </a>
@@ -3385,6 +3440,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.effect" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3429,6 +3495,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.h" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3455,6 +3532,17 @@
     <span class="md-ellipsis">
       
         max_length
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
       
     </span>
   </a>
@@ -3605,10 +3693,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.use_layout_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_layout_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.use_memo" class="md-nav__link">
     <span class="md-ellipsis">
       
         use_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.use_reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_reducer
       
     </span>
   </a>
@@ -5197,6 +5307,28 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.create_portal" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_portal</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span></code>
+
+<a href="#wybthon.create_portal" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Render children into a different DOM container.</p>
+<p>Returns a VNode that, when mounted, renders <em>children</em> into <em>container</em>
+instead of the parent component's DOM node.  Useful for modals, tooltips,
+and overlays that need to break out of their parent's DOM hierarchy.</p>
+<p><em>container</em> may be an <code>Element</code> or a CSS selector string.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.effect" class="doc doc-heading">
             <code class=" language-python"><span class="n">effect</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
 
@@ -5270,6 +5402,31 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.forward_ref" class="doc doc-heading">
+            <code class=" language-python"><span class="n">forward_ref</span><span class="p">(</span><span class="n">render_fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.forward_ref" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a component that forwards a <code>ref</code> prop to a child element.</p>
+<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
+where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</code>).</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">FancyInput</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">forward_ref</span><span class="p">(</span><span class="nx">lambda</span><span class="w"> </span><span class="nx">props</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">:</span><span class="w"> </span><span class="nx">input_</span><span class="p">(</span>
+<span class="w">    </span><span class="k">type</span><span class="p">=</span><span class="s">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">=</span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">class_name</span><span class="p">=</span><span class="s">&quot;fancy&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">**</span><span class="nx">props</span><span class="p">,</span>
+<span class="p">))</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.h" class="doc doc-heading">
             <code class=" language-python"><span class="n">h</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">children</span><span class="p">)</span></code>
 
@@ -5321,6 +5478,27 @@ is compatible with packages pre-bundled or fetched via micropip. Use
     <div class="doc doc-contents ">
 
         <p>Validate that stringified value length is at most <code>n</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.memo" class="doc doc-heading">
+            <code class=" language-python"><span class="n">memo</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">are_props_equal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.memo" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Memoize a function component to skip re-renders when props are unchanged.</p>
+<p>By default uses shallow identity comparison (<code>is</code>) on each prop value.
+Pass a custom <code>are_props_equal(old_props, new_props) -&gt; bool</code> for
+deeper comparison logic.</p>
 
 
     </div>
@@ -5585,6 +5763,32 @@ only when the form is valid.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.use_layout_effect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_layout_effect</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.use_layout_effect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Register an effect that fires synchronously after DOM mutations.</p>
+<p>Same API as <code>use_effect</code> but guaranteed to run before the browser
+repaints.  Use for DOM measurements and synchronous visual updates.</p>
+<ul>
+<li><code>deps=None</code> — run after <strong>every</strong> render.</li>
+<li><code>deps=[]</code>   — run only on <strong>mount</strong>.</li>
+<li><code>deps=[a,b]</code> — run when <em>a</em> or <em>b</em> changes.</li>
+</ul>
+<p><em>fn</em> may return a cleanup callable.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.use_memo" class="doc doc-heading">
             <code class=" language-python"><span class="n">use_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span></code>
 
@@ -5594,6 +5798,28 @@ only when the form is valid.</p>
     <div class="doc doc-contents ">
 
         <p>Memoize a computed value, recomputing only when <em>deps</em> change.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.use_reducer" class="doc doc-heading">
+            <code class=" language-python"><span class="n">use_reducer</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.use_reducer" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Manage state with a reducer function.</p>
+<p>Returns <code>(state, dispatch)</code>.  Call <code>dispatch(action)</code> to run
+<code>reducer(current_state, action)</code> and update the component.</p>
+<p>The optional <em>init</em> function lazily computes the initial state as
+<code>init(initial_state)</code> on the first render.</p>
 
 
     </div>

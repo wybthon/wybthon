@@ -1386,6 +1386,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.component.forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="forward_ref">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1932,6 +1960,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.component.forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="forward_ref">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2109,13 +2165,47 @@ Lifecycle hooks:
 </div>
 
 
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.component.forward_ref" class="doc doc-heading">
+            <code class=" language-python"><span class="n">forward_ref</span><span class="p">(</span><span class="n">render_fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.component.forward_ref" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a component that forwards a <code>ref</code> prop to a child element.</p>
+<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
+where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</code>).</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">FancyInput</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">forward_ref</span><span class="p">(</span><span class="nx">lambda</span><span class="w"> </span><span class="nx">props</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">:</span><span class="w"> </span><span class="nx">input_</span><span class="p">(</span>
+<span class="w">    </span><span class="k">type</span><span class="p">=</span><span class="s">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">=</span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">class_name</span><span class="p">=</span><span class="s">&quot;fancy&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">**</span><span class="nx">props</span><span class="p">,</span>
+<span class="p">))</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
 
     </div>
 
-</div>
+</div><h4 id="forward_ref">forward_ref<a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
+<p><code>forward_ref(render_fn)</code> creates a component that receives a <code>ref</code> prop and forwards it to a child element.</p>
+<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward_ref</span><span class="p">,</span> <span class="n">h</span>
+
+<span class="n">FancyInput</span> <span class="o">=</span> <span class="n">forward_ref</span><span class="p">(</span><span class="k">lambda</span> <span class="n">props</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="o">**</span><span class="n">props</span><span class="p">}))</span>
+
+<span class="c1"># Usage</span>
+<span class="n">h</span><span class="p">(</span><span class="n">FancyInput</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">my_ref</span><span class="p">,</span> <span class="s2">&quot;placeholder&quot;</span><span class="p">:</span> <span class="s2">&quot;Type here...&quot;</span><span class="p">})</span>
+</code></pre></div>
 
 
 

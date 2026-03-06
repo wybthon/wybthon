@@ -471,6 +471,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1861,6 +1894,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        memo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forward_ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_portal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1943,6 +2009,53 @@
     <span class="p">)</span>
 </code></pre></div>
 
+<h4 id="memo"><code>memo</code><a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
+<p>Wrap a function component with <code>memo</code> to skip re-renders when its props
+have not changed (shallow identity comparison by default):</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">memo</span><span class="p">,</span> <span class="n">h</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;items&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">])</span>
+
+<span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Pass a custom comparison function for deeper control:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">,</span> <span class="n">are_props_equal</span><span class="o">=</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">old</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">new</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<h4 id="forward_ref"><code>forward_ref</code><a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
+<p>Use <code>forward_ref</code> to create a component that can receive a <code>ref</code> prop
+and forward it to a child element:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward_ref</span><span class="p">,</span> <span class="n">h</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_render</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="n">ref</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;fancy-input&quot;</span><span class="p">})</span>
+
+<span class="n">FancyInput</span> <span class="o">=</span> <span class="n">forward_ref</span><span class="p">(</span><span class="n">_render</span><span class="p">)</span>
+
+<span class="c1"># Usage: h(FancyInput, {&quot;ref&quot;: my_ref})</span>
+</code></pre></div>
+
+<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>.
+When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
+<h4 id="create_portal"><code>create_portal</code><a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
+<p>Use <code>create_portal</code> to render children into a DOM node outside the
+parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">Element</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Page content&quot;</span><span class="p">),</span>
+        <span class="n">create_portal</span><span class="p">(</span>
+            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;modal&quot;</span><span class="p">},</span> <span class="s2">&quot;I appear in #modal-root!&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;#modal-root&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>The second argument is an <code>Element</code> or a CSS selector string.</p>
 <p>Both styles are fully supported. For new code, <strong>function components with hooks</strong> are recommended for their conciseness and composability.</p>
 <p>See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:</p>
 <ul>
