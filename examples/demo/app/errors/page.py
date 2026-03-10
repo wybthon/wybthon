@@ -1,7 +1,8 @@
-from wybthon import ErrorBoundary, button, div, h, p, signal
+from wybthon import ErrorBoundary, button, component, div, h, p, signal
 
 
-def Page(_props):
+@component
+def Page():
     def Bug(_props):
         raise RuntimeError("Boom")
 

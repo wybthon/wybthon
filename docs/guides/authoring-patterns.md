@@ -1,8 +1,64 @@
 ### Authoring Patterns
 
-This guide shows how to author components in Wybthon using both function and class styles. It focuses on props, state with `signal`/`computed`/`effect`, children composition, cleanup, and context.
+This guide shows how to author components in Wybthon using the `@component` decorator, traditional function components, and class components. It focuses on props, state with `signal`/`computed`/`effect`, children composition, cleanup, and context.
 
-#### Function components
+#### `@component` decorator (recommended)
+
+The `@component` decorator lets you define props as keyword arguments,
+making components self-documenting and type-safe:
+
+```python
+from wybthon import component, h2
+
+@component
+def Hello(name: str = "world", greeting: str = "Hello"):
+    return h2(f"{greeting}, {name}!")
+```
+
+- Props become regular Python parameters with defaults and type annotations.
+- Missing props use the default value from the signature.
+- Extra props not in the signature are ignored.
+
+Children handling with `@component`:
+
+```python
+from wybthon import component, h3, section
+
+@component
+def Card(title: str = "", children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return section(h3(title), *kids, class_name="card")
+```
+
+Direct calls return VNodes for composition without `h()`:
+
+```python
+Card("child text", title="My Card")  # positional args become children
+Counter(initial=5)                   # keyword args become props
+```
+
+Stateful component with hooks:
+
+```python
+from wybthon import button, component, div, p, use_state, use_effect
+
+@component
+def Counter(initial: int = 0):
+    count, set_count = use_state(initial)
+
+    def on_mount():
+        print(f"Counter mounted with count: {count}")
+
+    use_effect(on_mount, [])
+
+    return div(
+        p(f"Count: {count}"),
+        button("+1", on_click=lambda e: set_count(lambda c: c + 1)),
+        class_name="counter",
+    )
+```
+
+#### Traditional function components
 
 Use plain Python callables that receive a `props` dict and return a VNode via `h(...)`.
 
@@ -26,8 +82,6 @@ def Card(props):
     return h("section", {"class": "card"}, h("h3", {}, title), children)
 ```
 
-Side effects and subscriptions are typically modeled in class components (see below). Function components are best for presentational/stateless pieces.
-
 #### Class components
 
 Subclass `Component` to encapsulate state and lifecycles.
@@ -45,9 +99,7 @@ class Counter(Component):
 
         self._inc = inc
 
-        # Example: reactive side effect
         comp = effect(lambda: print("count:", self.count.get()))
-        # Ensure cleanup on unmount
         on_effect_cleanup(comp, lambda: print("effect disposed"))
         self.on_cleanup(lambda: comp.dispose())
 
@@ -67,11 +119,28 @@ class Counter(Component):
 
 #### Props and defaults
 
-Prefer `props.get("key", default)` when reading optional values. For required props, consider simple guards at the top of `render`.
+With `@component`, props and defaults are built into the function signature:
+
+```python
+@component
+def Avatar(src: str = "", alt: str = "avatar", size: int = 48):
+    return img(src=src, alt=alt, width=str(size), height=str(size))
+```
+
+With traditional functions, prefer `props.get("key", default)` when reading optional values. For required props, consider simple guards at the top of `render`.
 
 #### Passing and using children
 
-The VDOM passes children via `props["children"]` for component tags. Normalize to a list when rendering:
+With `@component`, children come via the `children` parameter:
+
+```python
+@component
+def Layout(children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return div(*kids, class_name="layout")
+```
+
+With traditional functions, the VDOM passes children via `props["children"]` for component tags. Normalize to a list when rendering:
 
 ```python
 def Layout(props):
@@ -86,55 +155,53 @@ def Layout(props):
 Provide values with `Provider` and read with `use_context`.
 
 ```python
-from wybthon import Provider, h, use_context
+from wybthon import Provider, component, h, use_context
 from wybthon.context import create_context
 
 Theme = create_context("light")
 
-def ThemeLabel(_props):
+@component
+def ThemeLabel():
     return h("span", {}, f"Theme: {use_context(Theme)}")
 
-def Layout(props):
-    children = props.get("children", [])
-    return h("div", {}, h(Provider, {"context": Theme, "value": "dark"}, children))
+@component
+def Layout(children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return h("div", {}, h(Provider, {"context": Theme, "value": "dark"}, kids))
 ```
 
-#### Choosing between function and class
+#### Choosing between styles
 
-- Use **function components** for pure UI composition without local reactive state or lifecycle needs.
-- Use **class components** when you need reactive state, effects, cleanup, or lifecycle hooks.
+- Use **`@component` with hooks** for most components — concise, type-safe, composable.
+- Use **traditional function components** for simple wrappers or when migrating existing code.
+- Use **class components** when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.
 
-Both interoperate seamlessly and can be composed together.
+All three styles interoperate seamlessly and can be composed together.
 
 #### Patterns checklist
 
-- Read props defensively with defaults.
+- Use `@component` for new function components with typed props.
+- Accept `children` and pass them through when building layout components.
 - Store signals on `self` in class components; avoid re-creating them during `render`.
 - Use `effect` for side-effects; dispose in `on_cleanup`.
-- Accept `children` and pass them through when building layout components.
 - Keep events simple and avoid catching errors unless you can handle them.
 
 #### Larger examples
 
-The following end-to-end snippets demonstrate common authoring patterns with state, children composition, and cleanup.
-
-1) Composition via children (function component)
+1) Composition via children (`@component`)
 
 ```python
-from wybthon import h
+from wybthon import component, h, h3, p, section
 
-def Card(props):
-    title = props.get("title", "")
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return h("section", {"class": "card"}, h("h3", {}, title), children)
+@component
+def Card(title: str = "", children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return section(h3(title), *kids, class_name="card")
 
-def Page(_props):
-    return h(
-        "div",
-        {},
-        h(Card, {"title": "Composition"}, h("p", {}, "Card body via children")),
+@component
+def Page():
+    return div(
+        Card(p("Card body via children"), title="Composition"),
     )
 ```
 
@@ -176,64 +243,42 @@ class NamesList(Component):
         )
 ```
 
-3) Cleanup and lifecycles (class component with `on_cleanup`)
+3) Cleanup and lifecycles (`@component` with hooks)
 
 ```python
-from wybthon import Component, h, signal
+from wybthon import component, div, use_effect, use_state
 
-class Timer(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.seconds = signal(0)
+@component
+def Timer():
+    seconds, set_seconds = use_state(0)
 
-        # Create a JS interval and clean it up on unmount
-        try:
-            from js import setInterval, clearInterval
-            from pyodide.ffi import create_proxy
+    def setup():
+        from js import setInterval, clearInterval
+        from pyodide.ffi import create_proxy
 
-            def tick():
-                self.seconds.set(self.seconds.get() + 1)
+        proxy = create_proxy(lambda: set_seconds(lambda s: s + 1))
+        tid = setInterval(proxy, 1000)
 
-            tick_proxy = create_proxy(lambda: tick())
-            interval_id = setInterval(tick_proxy, 1000)
+        def cleanup():
+            clearInterval(tid)
+            proxy.destroy()
+        return cleanup
 
-            def cleanup():
-                try:
-                    clearInterval(interval_id)
-                except Exception:
-                    pass
-                try:
-                    tick_proxy.destroy()
-                except Exception:
-                    pass
+    use_effect(setup, [])
 
-            self.on_cleanup(cleanup)
-        except Exception:
-            # Non-browser or setup failure: no interval, still renders static value
-            pass
-
-    def render(self):
-        return h("div", {"class": "timer"}, f"Seconds: {self.seconds.get()}")
+    return div(f"Seconds: {seconds}", class_name="timer")
 ```
 
 Putting it together:
 
 ```python
-from wybthon import h
+from wybthon import component, div, h
 
-def Card(props):
-    title = props.get("title", "")
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return h("section", {"class": "card"}, h("h3", {}, title), children)
-
-def Page(_props):
-    return h(
-        "div",
-        {},
-        h(Card, {"title": "State & Derived"}, h(NamesList, {})),
-        h(Card, {"title": "Cleanup"}, h(Timer, {})),
+@component
+def Page():
+    return div(
+        Card(h(NamesList, {}), title="State & Derived"),
+        Card(h(Timer, {}), title="Cleanup"),
     )
 ```
 

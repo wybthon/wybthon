@@ -1,5 +1,6 @@
 from wybthon import (
     button,
+    component,
     create_portal,
     div,
     h,
@@ -22,15 +23,17 @@ from wybthon import (
 _child_render_count = [0]
 
 
-def _ExpensiveChild(props):
+@component
+def _ExpensiveChild(label=None):
     _child_render_count[0] += 1
-    return p(f"Child rendered {_child_render_count[0]} time(s). label={props.get('label')}")
+    return p(f"Child rendered {_child_render_count[0]} time(s). label={label}")
 
 
 MemoChild = memo(_ExpensiveChild)
 
 
-def MemoDemo(props):
+@component
+def MemoDemo():
     count, set_count = use_state(0)
     return div(
         h3("memo – Memoized Component"),
@@ -55,7 +58,8 @@ def _todo_reducer(state, action):
     return state
 
 
-def ReducerDemo(props):
+@component
+def ReducerDemo():
     state, dispatch = use_reducer(_todo_reducer, {"items": [], "next_id": 1})
     return div(
         h3("use_reducer – Todo List"),
@@ -72,7 +76,8 @@ def ReducerDemo(props):
 # ---------------------------------------------------------------------------
 
 
-def LayoutEffectDemo(props):
+@component
+def LayoutEffectDemo():
     message, set_message = use_state("(measuring...)")
 
     def measure():
@@ -91,7 +96,8 @@ def LayoutEffectDemo(props):
 # ---------------------------------------------------------------------------
 
 
-def PortalDemo(props):
+@component
+def PortalDemo():
     show, set_show = use_state(False)
     ref = use_ref(None)
 
@@ -121,7 +127,8 @@ def PortalDemo(props):
 # ---------------------------------------------------------------------------
 
 
-def Page(_props):
+@component
+def Page():
     return div(
         h2("New Primitives"),
         h(MemoDemo, {}),

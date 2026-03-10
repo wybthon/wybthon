@@ -1,7 +1,8 @@
-from wybthon import div, use_effect, use_state
+from wybthon import component, div, use_effect, use_state
 
 
-def Timer(props):
+@component
+def Timer():
     seconds, set_seconds = use_state(0)
 
     def setup_interval():

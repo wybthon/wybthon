@@ -1,5 +1,6 @@
-from wybthon import div
+from wybthon import component, div
 
 
-def NotFound(_props):
+@component
+def NotFound():
     return div("404 - Not Found", style={"color": "#a00"})

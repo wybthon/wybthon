@@ -1,8 +1,9 @@
-from wybthon import div, h3, p
+from wybthon import component, div, h3, p
 
 
-def Page(props):
-    params = props.get("params", {})
+@component
+def Page(params=None):
+    params = params or {}
     wildcard = params.get("wildcard", "")
     return div(
         h3("Docs"),

@@ -15,7 +15,6 @@ def _TeamLazy():
     return ("app.about.team.page", "Page")
 
 
-# Example of eager dynamic loader (resolves at route creation time)
 Docs = load_component("app.docs.page", "Page")
 
 

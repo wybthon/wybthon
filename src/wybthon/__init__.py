@@ -6,6 +6,7 @@ non-browser environments, importing DOM/VDOM features only when available.
 
 import importlib
 
+from .component import component
 from .forms import (
     FieldState,
     a11y_control_attrs,
@@ -110,6 +111,7 @@ if _IN_BROWSER:
         "Ref",
         # Components
         "Component",
+        "component",
         "forward_ref",
         # VDOM
         "VNode",
@@ -231,6 +233,7 @@ if _IN_BROWSER:
 else:
     # Minimal Python-only surface for tooling/CLI usage (no browser modules)
     __all__ = [
+        "component",
         "signal",
         "computed",
         "effect",

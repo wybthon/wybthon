@@ -20,12 +20,13 @@ hook call to its stored state slot.
 Declare a piece of component-local state.  Returns `(value, setter)`.
 
 ```python
-from wybthon import h, use_state
+from wybthon import component, div, p, use_state
 
-def Counter(props):
-    count, set_count = use_state(0)
-    return h("div", {},
-        h("p", {}, f"Count: {count}"),
+@component
+def Counter(initial: int = 0):
+    count, set_count = use_state(initial)
+    return div(
+        p(f"Count: {count}"),
         h("button", {"on_click": lambda e: set_count(count + 1)}, "+1"),
     )
 ```
@@ -61,9 +62,10 @@ Return a cleanup function from the effect to run before the next
 execution or on unmount:
 
 ```python
-from wybthon import h, use_state, use_effect
+from wybthon import component, use_state, use_effect
 
-def Timer(props):
+@component
+def Timer():
     seconds, set_seconds = use_state(0)
 
     def setup():
@@ -123,7 +125,7 @@ handle_click = use_callback(lambda e: set_count(count + 1), [count])
 Manage complex state with a reducer function.  Returns `(state, dispatch)`.
 
 ```python
-from wybthon import h, use_reducer
+from wybthon import component, h, use_reducer
 
 def reducer(state, action):
     if action["type"] == "increment":
@@ -134,7 +136,8 @@ def reducer(state, action):
         return {"count": 0}
     return state
 
-def Counter(props):
+@component
+def Counter():
     state, dispatch = use_reducer(reducer, {"count": 0})
     return h("div", {},
         h("p", {}, f"Count: {state['count']}"),
@@ -159,9 +162,10 @@ mutations, before the browser repaints.  Use this for DOM measurements
 and synchronous visual updates.
 
 ```python
-from wybthon import use_layout_effect, use_ref, use_state
+from wybthon import component, use_layout_effect, use_ref, use_state
 
-def MeasuredBox(props):
+@component
+def MeasuredBox():
     ref = use_ref(None)
     width, set_width = use_state(0)
 
@@ -178,7 +182,7 @@ def MeasuredBox(props):
 
 #### Hooks vs. class components
 
-| | Function + hooks | Class component |
+| | `@component` + hooks | Class component |
 |---|---|---|
 | State | `use_state` | `self.count = signal(0)` |
 | Side effects | `use_effect` | `on_mount` / `on_cleanup` |
@@ -186,5 +190,5 @@ def MeasuredBox(props):
 | Refs | `use_ref` | instance attributes |
 
 Both styles are fully supported; choose whichever fits your situation.
-For new code, **hooks are recommended** because they are more concise
-and composable.
+For new code, **`@component` with hooks is recommended** because it is
+more concise, composable, and type-safe.

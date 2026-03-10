@@ -1,9 +1,8 @@
-from wybthon import Link, h, nav, preload_component
+from wybthon import Link, component, h, nav, preload_component
 
 
-def Nav(props):
-    base_path = props.get("base_path")
-
+@component
+def Nav(base_path=None):
     def on_hover_team(_evt):
         try:
             preload_component("app.about.team.page", "Page")

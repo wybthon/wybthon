@@ -1,5 +1,6 @@
-from wybthon import div, p
+from wybthon import component, div, p
 
 
-def Page(_props):
+@component
+def Page():
     return div(p("About"))

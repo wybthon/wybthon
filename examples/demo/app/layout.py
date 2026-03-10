@@ -1,16 +1,14 @@
 from app.components.nav import Nav
 from app.contexts.theme import Theme
-from wybthon import Provider, div, h, h1
+from wybthon import Provider, component, div, h, h1
 
 
-def Layout(props):
-    base_path = props.get("base_path", "")
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
+@component
+def Layout(base_path="", children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
     return div(
         h1("Wybthon VDOM Demo"),
         h(Nav, {"base_path": base_path}),
-        h(Provider, {"context": Theme, "value": "dark"}, children),
+        h(Provider, {"context": Theme, "value": "dark"}, kids),
         id="app",
     )

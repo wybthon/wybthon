@@ -1,13 +1,15 @@
-"""Component base class for class-based VDOM components."""
+"""Component base class and ``@component`` decorator for VDOM components."""
 
 from __future__ import annotations
 
+import inspect
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 if TYPE_CHECKING:
     from .vdom import VNode
 
-__all__ = ["Component", "forward_ref"]
+__all__ = ["Component", "component", "forward_ref"]
 
 
 class Component:
@@ -57,6 +59,69 @@ class Component:
             except Exception:
                 # Swallow cleanup errors to avoid breaking render pipeline
                 pass
+
+
+def component(fn: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator that enables Pythonic keyword-argument props for function components.
+
+    Instead of the traditional React-style props dict::
+
+        def Counter(props):
+            count, set_count = use_state(props.get("initial", 0))
+            label = props.get("label", "Count")
+            return div(p(f"{label}: {count}"))
+
+    you can write::
+
+        @component
+        def Counter(initial: int = 0, label: str = "Count"):
+            count, set_count = use_state(initial)
+            return div(p(f"{label}: {count}"))
+
+    The decorator inspects the function signature and automatically extracts
+    matching props as keyword arguments.  Default values from the signature
+    are used when a prop is not provided.
+
+    **Children** are available via a ``children`` parameter::
+
+        @component
+        def Card(title: str = "", children=None):
+            return section(h3(title), *(children or []))
+
+    **Direct calls** with keyword arguments return a ``VNode``, so you can
+    compose components without ``h()``::
+
+        Counter(initial=5, label="Score")
+        Card("child1", "child2", title="My Card")
+
+    The component still works with ``h()`` as usual::
+
+        h(Counter, {"initial": 5, "label": "Score"})
+    """
+    sig = inspect.signature(fn)
+    params = sig.parameters
+
+    @wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # VDOM engine path: called with a single props dict
+        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
+            props = args[0]
+            fn_kwargs: Dict[str, Any] = {}
+            for name in params:
+                if name in props:
+                    fn_kwargs[name] = props[name]
+            return fn(**fn_kwargs)
+
+        # Direct call: positional args are children, keyword args are props
+        from .vdom import h  # noqa: F811 — lazy import avoids circular dependency
+
+        all_props: Dict[str, Any] = dict(kwargs)
+        if args:
+            all_props["children"] = list(args)
+        return h(wrapper, all_props)
+
+    wrapper._wyb_component = True  # type: ignore[attr-defined]
+    return wrapper
 
 
 def forward_ref(render_fn: Callable[..., Any]) -> Callable[..., "VNode"]:

@@ -1,9 +1,7 @@
-from wybthon import h3, section
+from wybthon import component, h3, section
 
 
-def Card(props):
-    title = props.get("title", "")
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return section(h3(title), children, class_name="card")
+@component
+def Card(title: str = "", children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return section(h3(title), *kids, class_name="card")

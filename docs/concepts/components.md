@@ -2,9 +2,69 @@
 
 Wybthon supports both function and class components.
 
-#### Function components (recommended)
+#### Function components with `@component` (recommended)
 
-Use the HTML element helpers for a clean, Pythonic syntax:
+The `@component` decorator lets you define components using Pythonic keyword
+arguments instead of a raw props dict:
+
+```python
+from wybthon import component, div, h2
+
+@component
+def Hello(name: str = "world"):
+    return h2(f"Hello, {name}!", class_name="greeting")
+```
+
+Props become regular Python parameters with type annotations and defaults.
+This makes components self-documenting and enables static type checking.
+
+Stateful components work naturally with hooks:
+
+```python
+from wybthon import button, component, div, p, use_state
+
+@component
+def Counter(initial: int = 0, label: str = "Count"):
+    count, set_count = use_state(initial)
+    return div(
+        p(f"{label}: {count}"),
+        button("+1", on_click=lambda e: set_count(lambda c: c + 1)),
+    )
+```
+
+**Children** are received via a `children` parameter:
+
+```python
+from wybthon import component, h3, section
+
+@component
+def Card(title: str = "", children=None):
+    kids = children if isinstance(children, list) else ([children] if children else [])
+    return section(h3(title), *kids, class_name="card")
+```
+
+**Direct calls** with keyword args return a `VNode`, so you can compose
+components without `h()`:
+
+```python
+Counter(initial=5, label="Score")
+Card("child1", "child2", title="My Card")   # positional args become children
+```
+
+The component still works with `h()` as usual:
+
+```python
+from wybthon import h
+
+h(Counter, {"initial": 5, "label": "Score"})
+```
+
+See: [Hooks](hooks.md) for the full hooks API.
+
+#### Traditional function components
+
+You can still define components the traditional way with a `props` dict.
+This style is fully supported and does not require a decorator:
 
 ```python
 from wybthon import div, h2
@@ -14,31 +74,7 @@ def Hello(props):
     return h2(f"Hello, {name}!", class_name="greeting")
 ```
 
-Function components can hold state and run side effects using **hooks**:
-
-```python
-from wybthon import button, div, p, use_state
-
-def Counter(props):
-    count, set_count = use_state(0)
-    return div(
-        p(f"Count: {count}"),
-        button("+1", on_click=lambda e: set_count(count + 1)),
-    )
-```
-
 The HTML helpers accept **children as positional arguments** and **props as keyword arguments**. Use `class_name` instead of `class` (reserved word in Python) and `html_for` instead of `for`.
-
-You can still use `h()` for components or when you need the lower-level API:
-
-```python
-from wybthon import h
-
-h(Counter, {"initial": 5})           # render a component
-h("div", {"class": "box"}, "Hello")  # render an element (h() still works)
-```
-
-See: [Hooks](hooks.md) for the full hooks API.
 
 #### Class components
 
@@ -63,7 +99,8 @@ Use `Fragment` to group children without adding a visible wrapper element:
 ```python
 from wybthon import Fragment, h1, p
 
-def PageContent(props):
+@component
+def PageContent():
     return Fragment(
         h1("Title"),
         p("Body text here."),
@@ -76,10 +113,11 @@ Wrap a function component with `memo` to skip re-renders when its props
 have not changed (shallow identity comparison by default):
 
 ```python
-from wybthon import memo, h
+from wybthon import component, memo, h
 
-def ExpensiveList(props):
-    items = props.get("items", [])
+@component
+def ExpensiveList(items=None):
+    items = items or []
     return h("ul", {}, *[h("li", {}, str(i)) for i in items])
 
 MemoList = memo(ExpensiveList)
@@ -116,9 +154,10 @@ Use `create_portal` to render children into a DOM node outside the
 parent component's hierarchy — ideal for modals, tooltips, and overlays:
 
 ```python
-from wybthon import create_portal, h, Element
+from wybthon import component, create_portal, h
 
-def Modal(props):
+@component
+def Modal():
     return h("div", {},
         h("p", {}, "Page content"),
         create_portal(
@@ -130,7 +169,7 @@ def Modal(props):
 
 The second argument is an `Element` or a CSS selector string.
 
-Both styles are fully supported. For new code, **function components with hooks** are recommended for their conciseness and composability.
+Both function and class styles are fully supported. For new code, **`@component` decorated functions with hooks** are recommended for their conciseness, type safety, and composability.
 
 See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:
 

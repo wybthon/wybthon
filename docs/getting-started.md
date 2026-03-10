@@ -48,7 +48,39 @@ await micropip.install("wybthon")
 
 ## Minimal component example
 
-Function component with HTML helpers (recommended):
+Using the `@component` decorator (recommended):
+
+```python
+from wybthon import Element, component, h, h2, render
+
+@component
+def Hello(name: str = "world"):
+    return h2(f"Hello, {name}!")
+
+tree = Hello(name="Python")
+container = Element("body", existing=True)
+render(tree, container)
+```
+
+Stateful component with hooks:
+
+```python
+from wybthon import Element, button, component, div, h, p, render, use_state
+
+@component
+def Counter(initial: int = 0):
+    count, set_count = use_state(initial)
+    return div(
+        p(f"Count: {count}"),
+        button("Increment", on_click=lambda e: set_count(count + 1)),
+    )
+
+tree = h(Counter, {"initial": 5})
+container = Element("body", existing=True)
+render(tree, container)
+```
+
+Traditional function component (also supported):
 
 ```python
 from wybthon import Element, h, h2, render
@@ -58,23 +90,6 @@ def Hello(props):
     return h2(f"Hello, {name}!")
 
 tree = h(Hello, {"name": "Python"})
-container = Element("body", existing=True)
-render(tree, container)
-```
-
-Function component with state:
-
-```python
-from wybthon import Element, button, div, h, p, render, use_state
-
-def Counter(props):
-    count, set_count = use_state(0)
-    return div(
-        p(f"Count: {count}"),
-        button("Increment", on_click=lambda e: set_count(count + 1)),
-    )
-
-tree = h(Counter, {})
 container = Element("body", existing=True)
 render(tree, container)
 ```

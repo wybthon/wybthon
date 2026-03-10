@@ -1,6 +1,7 @@
 from app.contexts.theme import Theme
-from wybthon import p, use_context
+from wybthon import component, p, use_context
 
 
-def ThemeLabel(_props):
+@component
+def ThemeLabel():
     return p(f"Theme: {use_context(Theme)}")

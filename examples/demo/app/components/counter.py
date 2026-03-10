@@ -1,8 +1,9 @@
-from wybthon import button, div, p, use_effect, use_state
+from wybthon import button, component, div, p, use_effect, use_state
 
 
-def Counter(props):
-    count, set_count = use_state(0)
+@component
+def Counter(initial: int = 0):
+    count, set_count = use_state(initial)
 
     def on_mount():
         print("Counter mounted with initial count:", count)
