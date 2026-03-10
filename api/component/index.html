@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -1387,6 +1387,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.component.component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.component.forward_ref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1397,6 +1408,17 @@
   
     <nav class="md-nav" aria-label="forward_ref">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @component
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#forward_ref" class="md-nav__link">
@@ -1961,6 +1983,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.component.component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.component.forward_ref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1971,6 +2004,17 @@
   
     <nav class="md-nav" aria-label="forward_ref">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @component
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#forward_ref" class="md-nav__link">
@@ -2020,7 +2064,7 @@
 <a id="wybthon.component"></a>
     <div class="doc doc-contents first">
 
-        <p>Component base class for class-based VDOM components.</p>
+        <p>Component base class and <code>@component</code> decorator for VDOM components.</p>
 
 
 
@@ -2168,6 +2212,56 @@ Lifecycle hooks:
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.component.component" class="doc doc-heading">
+            <code class=" language-python"><span class="n">component</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.component.component" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Decorator that enables Pythonic keyword-argument props for function components.</p>
+<p>Instead of the traditional React-style props dict::</p>
+<div class="codehilite"><pre><span></span><code>def Counter<span class="p">(</span>props<span class="p">):</span>
+    count<span class="p">,</span> <span class="ss">set_count</span> <span class="o">=</span> use_state<span class="p">(</span>props<span class="o">.</span>get<span class="p">(</span><span class="s2">&quot;initial&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="ss">label</span> <span class="o">=</span> props<span class="o">.</span>get<span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="s2">&quot;Count&quot;</span><span class="p">)</span>
+    return div<span class="p">(</span>p<span class="p">(</span>f<span class="s2">&quot;{label}: {count}&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>you can write::</p>
+<div class="codehilite"><pre><span></span><code><span class="p">@</span>component
+def Counter<span class="p">(</span>initial<span class="p">:</span> <span class="ss">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> label<span class="p">:</span> <span class="ss">str</span> <span class="o">=</span> <span class="s2">&quot;Count&quot;</span><span class="p">):</span>
+    count<span class="p">,</span> <span class="ss">set_count</span> <span class="o">=</span> use_state<span class="p">(</span>initial<span class="p">)</span>
+    return div<span class="p">(</span>p<span class="p">(</span>f<span class="s2">&quot;{label}: {count}&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>The decorator inspects the function signature and automatically extracts
+matching props as keyword arguments.  Default values from the signature
+are used when a prop is not provided.</p>
+<p><strong>Children</strong> are available via a <code>children</code> parameter::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Card</span><span class="p">(</span><span class="nl">title</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">children</span><span class="o">=</span><span class="k">None</span><span class="p">)</span><span class="err">:</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="n">children</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="err">[]</span><span class="p">))</span>
+</code></pre></div>
+
+<p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>, so you can
+compose components without <code>h()</code>::</p>
+<div class="codehilite"><pre><span></span><code>Counter(initial=5, label=&quot;Score&quot;)
+Card(&quot;child1&quot;, &quot;child2&quot;, title=&quot;My Card&quot;)
+</code></pre></div>
+
+<p>The component still works with <code>h()</code> as usual::</p>
+<div class="codehilite"><pre><span></span><code>h(Counter, {&quot;initial&quot;: 5, &quot;label&quot;: &quot;Score&quot;})
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.component.forward_ref" class="doc doc-heading">
             <code class=" language-python"><span class="n">forward_ref</span><span class="p">(</span><span class="n">render_fn</span><span class="p">)</span></code>
 
@@ -2196,7 +2290,36 @@ where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</cod
 
     </div>
 
-</div><h4 id="forward_ref">forward_ref<a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
+</div><h4 id="component"><code>@component</code><a class="headerlink" href="#component" title="Permanent link">&para;</a></h4>
+<p>Decorator that enables Pythonic keyword-argument props for function components.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Count&quot;</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>The decorator inspects the function signature and automatically extracts
+matching props as keyword arguments when the VDOM engine calls the component.
+Default values from the signature are used when a prop is not provided.</p>
+<p><strong>Children</strong> are available via a <code>children</code> parameter:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The component still works with <code>h()</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Score&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+<h4 id="forward_ref">forward_ref<a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
 <p><code>forward_ref(render_fn)</code> creates a component that receives a <code>ref</code> prop and forwards it to a child element.</p>
 <p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">forward_ref</span><span class="p">,</span> <span class="n">h</span>

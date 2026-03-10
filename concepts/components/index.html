@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -439,10 +439,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components-recommended" class="md-nav__link">
+  <a href="#function-components-with-component-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components (recommended)
+        Function components with @component (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traditional-function-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traditional function components
       
     </span>
   </a>
@@ -1862,10 +1873,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components-recommended" class="md-nav__link">
+  <a href="#function-components-with-component-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components (recommended)
+        Function components with @component (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traditional-function-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traditional function components
       
     </span>
   </a>
@@ -1956,8 +1978,55 @@
 
 <h3 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h3>
 <p>Wybthon supports both function and class components.</p>
-<h4 id="function-components-recommended">Function components (recommended)<a class="headerlink" href="#function-components-recommended" title="Permanent link">&para;</a></h4>
-<p>Use the HTML element helpers for a clean, Pythonic syntax:</p>
+<h4 id="function-components-with-component-recommended">Function components with <code>@component</code> (recommended)<a class="headerlink" href="#function-components-with-component-recommended" title="Permanent link">&para;</a></h4>
+<p>The <code>@component</code> decorator lets you define components using Pythonic keyword
+arguments instead of a raw props dict:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h2</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Props become regular Python parameters with type annotations and defaults.
+This makes components self-documenting and enables static type checking.</p>
+<p>Stateful components work naturally with hooks:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Count&quot;</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Children</strong> are received via a <code>children</code> parameter:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Direct calls</strong> with keyword args return a <code>VNode</code>, so you can compose
+components without <code>h()</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Score&quot;</span><span class="p">)</span>
+<span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>   <span class="c1"># positional args become children</span>
+</code></pre></div>
+
+<p>The component still works with <code>h()</code> as usual:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+
+<span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Score&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+<p>See: <a href="../hooks/">Hooks</a> for the full hooks API.</p>
+<h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
+<p>You can still define components the traditional way with a <code>props</code> dict.
+This style is fully supported and does not require a decorator:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">h2</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
@@ -1965,26 +2034,7 @@
     <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>Function components can hold state and run side effects using <strong>hooks</strong>:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-    <span class="p">)</span>
-</code></pre></div>
-
 <p>The HTML helpers accept <strong>children as positional arguments</strong> and <strong>props as keyword arguments</strong>. Use <code>class_name</code> instead of <code>class</code> (reserved word in Python) and <code>html_for</code> instead of <code>for</code>.</p>
-<p>You can still use <code>h()</code> for components or when you need the lower-level API:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
-
-<span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>           <span class="c1"># render a component</span>
-<span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;box&quot;</span><span class="p">},</span> <span class="s2">&quot;Hello&quot;</span><span class="p">)</span>  <span class="c1"># render an element (h() still works)</span>
-</code></pre></div>
-
-<p>See: <a href="../hooks/">Hooks</a> for the full hooks API.</p>
 <h4 id="class-components">Class components<a class="headerlink" href="#class-components" title="Permanent link">&para;</a></h4>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">signal</span>
 
@@ -2002,7 +2052,8 @@
 <p>Use <code>Fragment</code> to group children without adding a visible wrapper element:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">PageContent</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">PageContent</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">Fragment</span><span class="p">(</span>
         <span class="n">h1</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">),</span>
         <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Body text here.&quot;</span><span class="p">),</span>
@@ -2012,10 +2063,11 @@
 <h4 id="memo"><code>memo</code><a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
 <p>Wrap a function component with <code>memo</code> to skip re-renders when its props
 have not changed (shallow identity comparison by default):</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">memo</span><span class="p">,</span> <span class="n">h</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">memo</span><span class="p">,</span> <span class="n">h</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">items</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;items&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">items</span> <span class="ow">or</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">])</span>
 
 <span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
@@ -2043,9 +2095,10 @@ When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
 <h4 id="create_portal"><code>create_portal</code><a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
 <p>Use <code>create_portal</code> to render children into a DOM node outside the
 parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">Element</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
         <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Page content&quot;</span><span class="p">),</span>
         <span class="n">create_portal</span><span class="p">(</span>
@@ -2056,7 +2109,7 @@ parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
 </code></pre></div>
 
 <p>The second argument is an <code>Element</code> or a CSS selector string.</p>
-<p>Both styles are fully supported. For new code, <strong>function components with hooks</strong> are recommended for their conciseness and composability.</p>
+<p>Both function and class styles are fully supported. For new code, <strong><code>@component</code> decorated functions with hooks</strong> are recommended for their conciseness, type safety, and composability.</p>
 <p>See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:</p>
 <ul>
 <li>Guide: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></li>

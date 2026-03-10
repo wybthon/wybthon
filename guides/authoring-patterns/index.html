@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -834,10 +834,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components" class="md-nav__link">
+  <a href="#component-decorator-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components
+        @component decorator (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traditional-function-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traditional function components
       
     </span>
   </a>
@@ -889,10 +900,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#choosing-between-function-and-class" class="md-nav__link">
+  <a href="#choosing-between-styles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing between function and class
+        Choosing between styles
       
     </span>
   </a>
@@ -1884,10 +1895,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components" class="md-nav__link">
+  <a href="#component-decorator-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components
+        @component decorator (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traditional-function-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traditional function components
       
     </span>
   </a>
@@ -1939,10 +1961,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#choosing-between-function-and-class" class="md-nav__link">
+  <a href="#choosing-between-styles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing between function and class
+        Choosing between styles
       
     </span>
   </a>
@@ -1999,8 +2021,56 @@
   <h1>Authoring Patterns</h1>
 
 <h3 id="authoring-patterns">Authoring Patterns<a class="headerlink" href="#authoring-patterns" title="Permanent link">&para;</a></h3>
-<p>This guide shows how to author components in Wybthon using both function and class styles. It focuses on props, state with <code>signal</code>/<code>computed</code>/<code>effect</code>, children composition, cleanup, and context.</p>
-<h4 id="function-components">Function components<a class="headerlink" href="#function-components" title="Permanent link">&para;</a></h4>
+<p>This guide shows how to author components in Wybthon using the <code>@component</code> decorator, traditional function components, and class components. It focuses on props, state with <code>signal</code>/<code>computed</code>/<code>effect</code>, children composition, cleanup, and context.</p>
+<h4 id="component-decorator-recommended"><code>@component</code> decorator (recommended)<a class="headerlink" href="#component-decorator-recommended" title="Permanent link">&para;</a></h4>
+<p>The <code>@component</code> decorator lets you define props as keyword arguments,
+making components self-documenting and type-safe:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">,</span> <span class="n">greeting</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Hello&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">greeting</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li>Props become regular Python parameters with defaults and type annotations.</li>
+<li>Missing props use the default value from the signature.</li>
+<li>Extra props not in the signature are ignored.</li>
+</ul>
+<p>Children handling with <code>@component</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Direct calls return VNodes for composition without <code>h()</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child text&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>  <span class="c1"># positional args become children</span>
+<span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                   <span class="c1"># keyword args become props</span>
+</code></pre></div>
+
+<p>Stateful component with hooks:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span><span class="p">,</span> <span class="n">use_effect</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counter mounted with count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">use_effect</span><span class="p">(</span><span class="n">on_mount</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
 <p>Use plain Python callables that receive a <code>props</code> dict and return a VNode via <code>h(...)</code>.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 
@@ -2020,7 +2090,6 @@
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h3&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">title</span><span class="p">),</span> <span class="n">children</span><span class="p">)</span>
 </code></pre></div>
 
-<p>Side effects and subscriptions are typically modeled in class components (see below). Function components are best for presentational/stateless pieces.</p>
 <h4 id="class-components">Class components<a class="headerlink" href="#class-components" title="Permanent link">&para;</a></h4>
 <p>Subclass <code>Component</code> to encapsulate state and lifecycles.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">on_effect_cleanup</span>
@@ -2035,9 +2104,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_inc</span> <span class="o">=</span> <span class="n">inc</span>
 
-        <span class="c1"># Example: reactive side effect</span>
         <span class="n">comp</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()))</span>
-        <span class="c1"># Ensure cleanup on unmount</span>
         <span class="n">on_effect_cleanup</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;effect disposed&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">on_cleanup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">comp</span><span class="o">.</span><span class="n">dispose</span><span class="p">())</span>
 
@@ -2057,9 +2124,22 @@
 <li>Updates: <code>on_update(prev_props)</code> fires after a prop change and diff is applied.</li>
 </ul>
 <h4 id="props-and-defaults">Props and defaults<a class="headerlink" href="#props-and-defaults" title="Permanent link">&para;</a></h4>
-<p>Prefer <code>props.get("key", default)</code> when reading optional values. For required props, consider simple guards at the top of <code>render</code>.</p>
+<p>With <code>@component</code>, props and defaults are built into the function signature:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Avatar</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;avatar&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">48</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">img</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="n">alt</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">),</span> <span class="n">height</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
+</code></pre></div>
+
+<p>With traditional functions, prefer <code>props.get("key", default)</code> when reading optional values. For required props, consider simple guards at the top of <code>render</code>.</p>
 <h4 id="passing-and-using-children">Passing and using children<a class="headerlink" href="#passing-and-using-children" title="Permanent link">&para;</a></h4>
-<p>The VDOM passes children via <code>props["children"]</code> for component tags. Normalize to a list when rendering:</p>
+<p>With <code>@component</code>, children come via the <code>children</code> parameter:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;layout&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>With traditional functions, the VDOM passes children via <code>props["children"]</code> for component tags. Normalize to a list when rendering:</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
     <span class="n">children</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">,</span> <span class="p">[])</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
@@ -2069,50 +2149,49 @@
 
 <h4 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h4>
 <p>Provide values with <code>Provider</code> and read with <code>use_context</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provider</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_context</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provider</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_context</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_context</span>
 
 <span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">ThemeLabel</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ThemeLabel</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Theme: </span><span class="si">{</span><span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">children</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">},</span> <span class="n">children</span><span class="p">))</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">},</span> <span class="n">kids</span><span class="p">))</span>
 </code></pre></div>
 
-<h4 id="choosing-between-function-and-class">Choosing between function and class<a class="headerlink" href="#choosing-between-function-and-class" title="Permanent link">&para;</a></h4>
+<h4 id="choosing-between-styles">Choosing between styles<a class="headerlink" href="#choosing-between-styles" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Use <strong>function components</strong> for pure UI composition without local reactive state or lifecycle needs.</li>
-<li>Use <strong>class components</strong> when you need reactive state, effects, cleanup, or lifecycle hooks.</li>
+<li>Use <strong><code>@component</code> with hooks</strong> for most components — concise, type-safe, composable.</li>
+<li>Use <strong>traditional function components</strong> for simple wrappers or when migrating existing code.</li>
+<li>Use <strong>class components</strong> when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.</li>
 </ul>
-<p>Both interoperate seamlessly and can be composed together.</p>
+<p>All three styles interoperate seamlessly and can be composed together.</p>
 <h4 id="patterns-checklist">Patterns checklist<a class="headerlink" href="#patterns-checklist" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Read props defensively with defaults.</li>
+<li>Use <code>@component</code> for new function components with typed props.</li>
+<li>Accept <code>children</code> and pass them through when building layout components.</li>
 <li>Store signals on <code>self</code> in class components; avoid re-creating them during <code>render</code>.</li>
 <li>Use <code>effect</code> for side-effects; dispose in <code>on_cleanup</code>.</li>
-<li>Accept <code>children</code> and pass them through when building layout components.</li>
 <li>Keep events simple and avoid catching errors unless you can handle them.</li>
 </ul>
 <h4 id="larger-examples">Larger examples<a class="headerlink" href="#larger-examples" title="Permanent link">&para;</a></h4>
-<p>The following end-to-end snippets demonstrate common authoring patterns with state, children composition, and cleanup.</p>
-<p>1) Composition via children (function component)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<p>1) Composition via children (<code>@component</code>)</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">section</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">children</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">children</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h3&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">title</span><span class="p">),</span> <span class="n">children</span><span class="p">)</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
-        <span class="s2">&quot;div&quot;</span><span class="p">,</span>
-        <span class="p">{},</span>
-        <span class="n">h</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Composition&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Card body via children&quot;</span><span class="p">)),</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">Card</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Card body via children&quot;</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Composition&quot;</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
 
@@ -2152,60 +2231,38 @@
         <span class="p">)</span>
 </code></pre></div>
 
-<p>3) Cleanup and lifecycles (class component with <code>on_cleanup</code>)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span>
+<p>3) Cleanup and lifecycles (<code>@component</code> with hooks)</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">use_effect</span><span class="p">,</span> <span class="n">use_state</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">Timer</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">seconds</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">():</span>
+    <span class="n">seconds</span><span class="p">,</span> <span class="n">set_seconds</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-        <span class="c1"># Create a JS interval and clean it up on unmount</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">setInterval</span><span class="p">,</span> <span class="n">clearInterval</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">pyodide.ffi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_proxy</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">setInterval</span><span class="p">,</span> <span class="n">clearInterval</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pyodide.ffi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_proxy</span>
 
-            <span class="k">def</span><span class="w"> </span><span class="nf">tick</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">proxy</span> <span class="o">=</span> <span class="n">create_proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_seconds</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">tid</span> <span class="o">=</span> <span class="n">setInterval</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
 
-            <span class="n">tick_proxy</span> <span class="o">=</span> <span class="n">create_proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tick</span><span class="p">())</span>
-            <span class="n">interval_id</span> <span class="o">=</span> <span class="n">setInterval</span><span class="p">(</span><span class="n">tick_proxy</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
+            <span class="n">clearInterval</span><span class="p">(</span><span class="n">tid</span><span class="p">)</span>
+            <span class="n">proxy</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cleanup</span>
 
-            <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">clearInterval</span><span class="p">(</span><span class="n">interval_id</span><span class="p">)</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="k">pass</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">tick_proxy</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="k">pass</span>
+    <span class="n">use_effect</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="p">[])</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">on_cleanup</span><span class="p">(</span><span class="n">cleanup</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="c1"># Non-browser or setup failure: no interval, still renders static value</span>
-            <span class="k">pass</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;timer&quot;</span><span class="p">},</span> <span class="sa">f</span><span class="s2">&quot;Seconds: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Seconds: </span><span class="si">{</span><span class="n">seconds</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;timer&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Putting it together:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">children</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">children</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h3&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">title</span><span class="p">),</span> <span class="n">children</span><span class="p">)</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
-        <span class="s2">&quot;div&quot;</span><span class="p">,</span>
-        <span class="p">{},</span>
-        <span class="n">h</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;State &amp; Derived&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">NamesList</span><span class="p">,</span> <span class="p">{})),</span>
-        <span class="n">h</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Cleanup&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Timer</span><span class="p">,</span> <span class="p">{})),</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">Card</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="n">NamesList</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;State &amp; Derived&quot;</span><span class="p">),</span>
+        <span class="n">Card</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="n">Timer</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Cleanup&quot;</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
 
