@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.12.0 (2026-03-10)
+
+### Features
+
+- **component**: Add @component decorator for Pythonic kwarg props
+  ([`ad84570`](https://github.com/wybthon/wybthon/commit/ad84570f873a7e0de83c90be6342201361c2f04b))
+
+
 ## v0.11.0 (2026-03-06)
 
 ### Features
