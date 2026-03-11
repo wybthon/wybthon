@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.13.0 (2026-03-11)
+
+### Features
+
+- **vdom**: Split monolithic vdom.py into focused sub-modules with dev-mode error reporting
+  ([`dd1f152`](https://github.com/wybthon/wybthon/commit/dd1f152b43ad31adb625077d0950eca0cc6091bb))
+
+
 ## v0.12.0 (2026-03-10)
 
 ### Features
