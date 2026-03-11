@@ -36,6 +36,6 @@ def Timer():
     on_cleanup(stop)
 
     def render():
-        return div(f"Seconds: {seconds()}", class_name="timer")
+        return div(f"Elapsed: {seconds()}s", class_name="timer")
 
     return render

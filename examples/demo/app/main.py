@@ -1,8 +1,5 @@
-from js import window
+from js import document, window
 
-from app.components.counter import Counter
-from app.components.hello import Hello
-from app.components.theme_label import ThemeLabel
 from app.layout import Layout
 from app.not_found import NotFound
 from app.routes import create_routes
@@ -20,10 +17,14 @@ async def main():
         Layout,
         {"base_path": base_path},
         h(Router, {"routes": routes, "not_found": NotFound, "base_path": base_path}),
-        h(ThemeLabel, {}),
-        h(Counter, {}),
-        h(Hello, {"name": "Python"}),
     )
 
     container = Element("body", existing=True)
     render(tree, container)
+
+    try:
+        loading = document.getElementById("loading")
+        if loading:
+            loading.remove()
+    except Exception:
+        pass

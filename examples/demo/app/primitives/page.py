@@ -8,16 +8,11 @@ from wybthon import (
     h,
     h2,
     h3,
-    hr,
     memo,
     on_mount,
     p,
     span,
 )
-
-# ---------------------------------------------------------------------------
-# 1) memo – skips re-renders when props are unchanged
-# ---------------------------------------------------------------------------
 
 _child_render_count = [0]
 
@@ -37,19 +32,18 @@ def MemoDemo():
 
     def render():
         return div(
-            h3("memo – Memoized Component"),
+            h3("memo - Memoized Component"),
             p(f"Parent render count trigger: {count()}"),
             button("Re-render parent", on_click=lambda e: set_count(count() + 1)),
             h(MemoChild, {"label": "stable"}),
-            p("(Child only renders once because its 'label' prop never changes.)", style={"color": "#888"}),
+            p(
+                "Child only renders once because its 'label' prop never changes.",
+                style={"color": "var(--text-3)", "fontSize": "0.85rem"},
+            ),
+            class_name="demo-section",
         )
 
     return render
-
-
-# ---------------------------------------------------------------------------
-# 2) signal-based todo list (replaces use_reducer)
-# ---------------------------------------------------------------------------
 
 
 @component
@@ -68,18 +62,15 @@ def TodoDemo():
         return div(
             h3("Signal-based Todo List"),
             p(f"Items: {len(items())}"),
-            button("Add item", on_click=add_item),
-            " ",
-            button("Clear all", on_click=clear_items),
-            div(*[p(f"• {item}") for item in items()]),
+            div(
+                button("Add item", on_click=add_item),
+                button("Clear all", on_click=clear_items),
+            ),
+            div(*[p(f"  {item}") for item in items()]),
+            class_name="demo-section",
         )
 
     return render
-
-
-# ---------------------------------------------------------------------------
-# 3) on_mount – synchronous mount callback
-# ---------------------------------------------------------------------------
 
 
 @component
@@ -92,14 +83,10 @@ def MountDemo():
         return div(
             h3("on_mount"),
             p(message()),
+            class_name="demo-section",
         )
 
     return render
-
-
-# ---------------------------------------------------------------------------
-# 4) create_portal – render into a different container
-# ---------------------------------------------------------------------------
 
 
 @component
@@ -112,13 +99,13 @@ def PortalDemo():
 
         portal_content = div(
             div(
-                p("This content is rendered via create_portal into the portal target below."),
+                p("This content is rendered via create_portal into the target below."),
                 button("Close", on_click=lambda e: set_show(False)),
                 style={
                     "padding": "12px",
-                    "background": "#e0f0ff",
-                    "border": "1px solid #0090d9",
-                    "borderRadius": "6px",
+                    "background": "var(--primary-light)",
+                    "border": "1px solid var(--primary)",
+                    "borderRadius": "var(--radius)",
                 },
             ),
         )
@@ -126,31 +113,43 @@ def PortalDemo():
         return div(
             h3("create_portal"),
             button("Toggle portal", on_click=lambda e: set_show(not show())),
-            p("Portal target container:", style={"marginTop": "8px", "color": "#888"}),
+            p(
+                "Portal target container:",
+                style={"marginTop": "8px", "color": "var(--text-3)"},
+            ),
             h(
                 "div",
-                {"ref": ref, "style": {"minHeight": "40px", "border": "1px dashed #ccc", "padding": "8px"}},
+                {
+                    "ref": ref,
+                    "style": {
+                        "minHeight": "40px",
+                        "border": "1px dashed var(--border-2)",
+                        "borderRadius": "var(--radius)",
+                        "padding": "8px",
+                        "marginTop": "4px",
+                    },
+                },
             ),
-            create_portal(portal_content, target_el) if (show() and target_el is not None) else span(""),
+            create_portal(portal_content, target_el)
+            if (show() and target_el is not None)
+            else span(""),
+            class_name="demo-section",
         )
 
     return render
 
 
-# ---------------------------------------------------------------------------
-# Page
-# ---------------------------------------------------------------------------
-
-
 @component
 def Page():
     return div(
-        h2("Primitives & Patterns"),
+        div(
+            h2("Primitives"),
+            p("Core reactive primitives: memo, signals, on_mount, and create_portal."),
+            class_name="page-header",
+        ),
         h(MemoDemo, {}),
-        hr(),
         h(TodoDemo, {}),
-        hr(),
         h(MountDemo, {}),
-        hr(),
         h(PortalDemo, {}),
+        class_name="page",
     )

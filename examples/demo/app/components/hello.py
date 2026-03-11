@@ -1,6 +1,6 @@
-from wybthon import component, h2
+from wybthon import component, p
 
 
 @component
 def Hello(name: str = "world"):
-    return h2(f"Hello, {name}!", class_name="hello")
+    return p(f"Hello, {name}!", class_name="hello")
