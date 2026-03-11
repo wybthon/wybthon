@@ -397,14 +397,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/hooks/" class="md-nav__link">
+      <a href="../../concepts/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Hooks
+    Primitives
   
 
     
@@ -1493,6 +1493,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_signal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.effect" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1504,10 +1537,43 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.on_effect_cleanup" class="md-nav__link">
     <span class="md-ellipsis">
       
         on_effect_cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_mount
       
     </span>
   </a>
@@ -1625,14 +1691,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
+      <a href="../primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    hooks
+    primitives
   
 
     
@@ -1982,6 +2048,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_memo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_memo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_signal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.effect" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1993,10 +2092,43 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.on_effect_cleanup" class="md-nav__link">
     <span class="md-ellipsis">
       
         on_effect_cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_mount
       
     </span>
   </a>
@@ -2278,6 +2410,79 @@
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.reactivity.create_effect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_effect</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.create_effect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create an auto-tracking reactive effect.</p>
+<p>The effect runs immediately and re-runs whenever any signal read
+inside <em>fn</em> changes.  <code>on_cleanup</code> may be called inside <em>fn</em> to
+register per-run cleanup (runs before re-execution and on disposal).</p>
+<p>Inside a component, the effect is automatically disposed on unmount.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.create_memo" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.create_memo" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create an auto-tracking computed value.  Returns a <em>getter</em> function.</p>
+<p>Re-computes only when signals read inside <em>fn</em> change.  Inside a
+component, the underlying computation is disposed on unmount.</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code>doubled = create_memo(lambda: count() * 2)
+print(doubled())  # reactive read
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.create_signal" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.create_signal" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a reactive signal.  Returns <code>(getter, setter)</code>.</p>
+<p>Works inside or outside components.  Inside a stateful component the
+signal is captured by the render function's closure and persists
+naturally (no cursor system needed).</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span><span class="w">          </span><span class="c1"># 0</span>
+<span class="n">set_count</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span><span class="w">          </span><span class="c1"># 5</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.reactivity.effect" class="doc doc-heading">
             <code class=" language-python"><span class="n">effect</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
 
@@ -2296,6 +2501,50 @@
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.reactivity.get_props" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get_props</span><span class="p">()</span></code>
+
+<a href="#wybthon.reactivity.get_props" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return a reactive getter for the current component's props.</p>
+<p>Useful in stateful components that need to react to parent prop changes::</p>
+<div class="codehilite"><pre><span></span><code>props = get_props()
+create_effect(lambda: print(&quot;query changed:&quot;, props()[&quot;query&quot;]))
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.on_cleanup" class="doc doc-heading">
+            <code class=" language-python"><span class="n">on_cleanup</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.on_cleanup" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Register a cleanup callback.</p>
+<ul>
+<li>Inside <code>create_effect</code>: runs before each re-execution and on disposal.</li>
+<li>Inside a component's setup phase: runs when the component unmounts.</li>
+</ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.reactivity.on_effect_cleanup" class="doc doc-heading">
             <code class=" language-python"><span class="n">on_effect_cleanup</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span></code>
 
@@ -2305,6 +2554,26 @@
     <div class="doc doc-contents ">
 
         <p>Register a cleanup callback to run when a computation is disposed.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.on_mount" class="doc doc-heading">
+            <code class=" language-python"><span class="n">on_mount</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.on_mount" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Register a callback to run once after the component mounts.</p>
+<p>Must be called during a component's setup phase (the body of a
+<code>@component</code> function, before the <code>return</code>).</p>
 
 
     </div>

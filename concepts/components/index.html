@@ -16,7 +16,7 @@
         <link rel="prev" href="../../getting-started/">
       
       
-        <link rel="next" href="../hooks/">
+        <link rel="next" href="../primitives/">
       
       
         
@@ -536,14 +536,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../hooks/" class="md-nav__link">
+      <a href="../primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Hooks
+    Primitives
   
 
     
@@ -1581,14 +1581,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/hooks/" class="md-nav__link">
+      <a href="../../api/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    hooks
+    primitives
   
 
     
@@ -1990,16 +1990,27 @@ arguments instead of a raw props dict:</p>
 
 <p>Props become regular Python parameters with type annotations and defaults.
 This makes components self-documenting and enables static type checking.</p>
-<p>Stateful components work naturally with hooks:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span>
+<p><strong>Stateless</strong> components return a <code>VNode</code> directly and re-render when the
+parent passes new props:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Stateful</strong> components create signals during setup and return a <em>render
+function</em>.  Setup runs once; the render function re-runs when signals change:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Count&quot;</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-    <span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
 <p><strong>Children</strong> are received via a <code>children</code> parameter:</p>
@@ -2013,17 +2024,17 @@ This makes components self-documenting and enables static type checking.</p>
 
 <p><strong>Direct calls</strong> with keyword args return a <code>VNode</code>, so you can compose
 components without <code>h()</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Score&quot;</span><span class="p">)</span>
+<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>   <span class="c1"># positional args become children</span>
 </code></pre></div>
 
 <p>The component still works with <code>h()</code> as usual:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 
-<span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Score&quot;</span><span class="p">})</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
 </code></pre></div>
 
-<p>See: <a href="../hooks/">Hooks</a> for the full hooks API.</p>
+<p>See: <a href="../primitives/">Primitives</a> for the full signals-first API.</p>
 <h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
 <p>You can still define components the traditional way with a <code>props</code> dict.
 This style is fully supported and does not require a decorator:</p>
@@ -2109,8 +2120,8 @@ parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
 </code></pre></div>
 
 <p>The second argument is an <code>Element</code> or a CSS selector string.</p>
-<p>Both function and class styles are fully supported. For new code, <strong><code>@component</code> decorated functions with hooks</strong> are recommended for their conciseness, type safety, and composability.</p>
-<p>See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:</p>
+<p>Both function and class styles are fully supported. For new code, <strong><code>@component</code> with signals-first primitives</strong> is recommended for conciseness, type safety, and composability.</p>
+<p>See the guide for recommended patterns around props, state, children, cleanup, and context:</p>
 <ul>
 <li>Guide: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></li>
 <li>Example: <a href="../../examples/authoring-patterns/">Authoring Patterns Example</a></li>

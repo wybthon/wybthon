@@ -397,14 +397,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/hooks/" class="md-nav__link">
+      <a href="../../concepts/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Hooks
+    Primitives
   
 
     
@@ -1089,10 +1089,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#component-with-hooks-recommended" class="md-nav__link">
+  <a href="#component-with-signals-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        @component with hooks (recommended)
+        @component with signals (recommended)
       
     </span>
   </a>
@@ -1100,10 +1100,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#traditional-function-component-with-hooks" class="md-nav__link">
+  <a href="#traditional-function-component" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Traditional function component with hooks
+        Traditional function component
       
     </span>
   </a>
@@ -1537,14 +1537,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/hooks/" class="md-nav__link">
+      <a href="../../api/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    hooks
+    primitives
   
 
     
@@ -1829,10 +1829,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#component-with-hooks-recommended" class="md-nav__link">
+  <a href="#component-with-signals-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        @component with hooks (recommended)
+        @component with signals (recommended)
       
     </span>
   </a>
@@ -1840,10 +1840,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#traditional-function-component-with-hooks" class="md-nav__link">
+  <a href="#traditional-function-component" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Traditional function component with hooks
+        Traditional function component
       
     </span>
   </a>
@@ -1889,37 +1889,33 @@
   <h1>Counter</h1>
 
 <h3 id="counter">Counter<a class="headerlink" href="#counter" title="Permanent link">&para;</a></h3>
-<h4 id="component-with-hooks-recommended"><code>@component</code> with hooks (recommended)<a class="headerlink" href="#component-with-hooks-recommended" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_effect</span><span class="p">,</span> <span class="n">use_state</span>
+<h4 id="component-with-signals-recommended"><code>@component</code> with signals (recommended)<a class="headerlink" href="#component-with-signals-recommended" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Counter mounted with initial count:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
-    <span class="n">use_effect</span><span class="p">(</span><span class="n">on_mount</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">on_mount</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Counter mounted with initial count:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
 
-    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-        <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
-<h4 id="traditional-function-component-with-hooks">Traditional function component with hooks<a class="headerlink" href="#traditional-function-component-with-hooks" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_effect</span><span class="p">,</span> <span class="n">use_state</span>
+<h4 id="traditional-function-component">Traditional function component<a class="headerlink" href="#traditional-function-component" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">button</span>
+
+<span class="n">counter_signal</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Counter mounted with initial count:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
-    <span class="n">use_effect</span><span class="p">(</span><span class="n">on_mount</span><span class="p">,</span> <span class="p">[])</span>
-
     <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">counter_signal</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">counter_signal</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">counter_signal</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
         <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -1940,7 +1936,7 @@
         <span class="p">)</span>
 </code></pre></div>
 
-<p>See also: <a href="../../concepts/hooks/">Hooks</a> · <a href="../../guides/authoring-patterns/">Authoring Patterns</a></p>
+<p>See also: <a href="../../concepts/primitives/">Primitives</a> · <a href="../../guides/authoring-patterns/">Authoring Patterns</a></p>
 
 
 

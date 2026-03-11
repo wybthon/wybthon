@@ -397,14 +397,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/hooks/" class="md-nav__link">
+      <a href="../../concepts/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Hooks
+    Primitives
   
 
     
@@ -1603,14 +1603,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/hooks/" class="md-nav__link">
+      <a href="../../api/primitives/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    hooks
+    primitives
   
 
     
@@ -2021,7 +2021,7 @@
   <h1>Authoring Patterns</h1>
 
 <h3 id="authoring-patterns">Authoring Patterns<a class="headerlink" href="#authoring-patterns" title="Permanent link">&para;</a></h3>
-<p>This guide shows how to author components in Wybthon using the <code>@component</code> decorator, traditional function components, and class components. It focuses on props, state with <code>signal</code>/<code>computed</code>/<code>effect</code>, children composition, cleanup, and context.</p>
+<p>This guide shows how to author components in Wybthon using the <code>@component</code> decorator, traditional function components, and class components. It focuses on props, state with <code>create_signal</code>/<code>create_effect</code>/<code>create_memo</code>, children composition, cleanup, and context.</p>
 <h4 id="component-decorator-recommended"><code>@component</code> decorator (recommended)<a class="headerlink" href="#component-decorator-recommended" title="Permanent link">&para;</a></h4>
 <p>The <code>@component</code> decorator lets you define props as keyword arguments,
 making components self-documenting and type-safe:</p>
@@ -2051,23 +2051,22 @@ making components self-documenting and type-safe:</p>
 <span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                   <span class="c1"># keyword args become props</span>
 </code></pre></div>
 
-<p>Stateful component with hooks:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_state</span><span class="p">,</span> <span class="n">use_effect</span>
+<p>Stateful component with signals:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counter mounted with count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">on_mount</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counter mounted with count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
 
-    <span class="n">use_effect</span><span class="p">(</span><span class="n">on_mount</span><span class="p">,</span> <span class="p">[])</span>
-
-    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-        <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
 <h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
@@ -2166,7 +2165,7 @@ making components self-documenting and type-safe:</p>
 
 <h4 id="choosing-between-styles">Choosing between styles<a class="headerlink" href="#choosing-between-styles" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Use <strong><code>@component</code> with hooks</strong> for most components — concise, type-safe, composable.</li>
+<li>Use <strong><code>@component</code> with signals</strong> for most components — concise, type-safe, composable.</li>
 <li>Use <strong>traditional function components</strong> for simple wrappers or when migrating existing code.</li>
 <li>Use <strong>class components</strong> when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.</li>
 </ul>
@@ -2176,7 +2175,7 @@ making components self-documenting and type-safe:</p>
 <li>Use <code>@component</code> for new function components with typed props.</li>
 <li>Accept <code>children</code> and pass them through when building layout components.</li>
 <li>Store signals on <code>self</code> in class components; avoid re-creating them during <code>render</code>.</li>
-<li>Use <code>effect</code> for side-effects; dispose in <code>on_cleanup</code>.</li>
+<li>Use <code>create_effect</code> for side-effects; clean up with <code>on_cleanup</code>.</li>
 <li>Keep events simple and avoid catching errors unless you can handle them.</li>
 </ul>
 <h4 id="larger-examples">Larger examples<a class="headerlink" href="#larger-examples" title="Permanent link">&para;</a></h4>
@@ -2231,28 +2230,27 @@ making components self-documenting and type-safe:</p>
         <span class="p">)</span>
 </code></pre></div>
 
-<p>3) Cleanup and lifecycles (<code>@component</code> with hooks)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">use_effect</span><span class="p">,</span> <span class="n">use_state</span>
+<p>3) Cleanup and lifecycles (<code>@component</code> with signals)</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_cleanup</span><span class="p">,</span> <span class="n">on_mount</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">():</span>
-    <span class="n">seconds</span><span class="p">,</span> <span class="n">set_seconds</span> <span class="o">=</span> <span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">seconds</span><span class="p">,</span> <span class="n">set_seconds</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">():</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">setInterval</span><span class="p">,</span> <span class="n">clearInterval</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">pyodide.ffi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_proxy</span>
 
-        <span class="n">proxy</span> <span class="o">=</span> <span class="n">create_proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_seconds</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">proxy</span> <span class="o">=</span> <span class="n">create_proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_seconds</span><span class="p">(</span><span class="n">seconds</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
         <span class="n">tid</span> <span class="o">=</span> <span class="n">setInterval</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
-            <span class="n">clearInterval</span><span class="p">(</span><span class="n">tid</span><span class="p">)</span>
-            <span class="n">proxy</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">cleanup</span>
+        <span class="n">on_cleanup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">clearInterval</span><span class="p">(</span><span class="n">tid</span><span class="p">),</span> <span class="n">proxy</span><span class="o">.</span><span class="n">destroy</span><span class="p">()))</span>
 
-    <span class="n">use_effect</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">on_mount</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Seconds: </span><span class="si">{</span><span class="n">seconds</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;timer&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Seconds: </span><span class="si">{</span><span class="n">seconds</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;timer&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
 <p>Putting it together:</p>
