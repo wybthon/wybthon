@@ -8,8 +8,9 @@
 [![License: MIT](https://img.shields.io/pypi/l/wybthon)](LICENSE)
 [![Docs Site](https://img.shields.io/website?url=https%3A%2F%2Fdocs.wybthon.com&label=docs)](https://docs.wybthon.com/)
 
-Wybthon is a Python-first, client-side UI framework for building interactive web
-apps in the browser (via Pyodide). It combines a React-style component model with
-context, fine-grained reactivity, a virtual DOM, routing, forms, events, and lazy
-loading, so you can write modern frontends entirely in Python, no JavaScript required.
+Wybthon is a Python-first, client-side SPA framework for building interactive web
+apps in the browser (via Pyodide). It uses a **signals-first** reactive model
+(inspired by SolidJS) with fine-grained reactivity, a virtual DOM, context,
+routing, forms, events, and lazy loading — so you can write modern frontends
+entirely in Python, no JavaScript required.
 For guides, API reference, and examples, see the [docs](https://docs.wybthon.com/).

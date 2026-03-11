@@ -62,18 +62,23 @@ container = Element("body", existing=True)
 render(tree, container)
 ```
 
-Stateful component with hooks:
+Stateful component with signals:
 
 ```python
-from wybthon import Element, button, component, div, h, p, render, use_state
+from wybthon import Element, button, component, create_signal, div, h, on_mount, p, render
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = use_state(initial)
-    return div(
-        p(f"Count: {count}"),
-        button("Increment", on_click=lambda e: set_count(count + 1)),
-    )
+    count, set_count = create_signal(initial)
+
+    on_mount(lambda: print("Counter mounted"))
+
+    def render_fn():
+        return div(
+            p(f"Count: {count()}"),
+            button("Increment", on_click=lambda e: set_count(count() + 1)),
+        )
+    return render_fn
 
 tree = h(Counter, {"initial": 5})
 container = Element("body", existing=True)

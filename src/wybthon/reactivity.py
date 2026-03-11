@@ -16,6 +16,13 @@ __all__ = [
     "batch",
     "Resource",
     "use_resource",
+    # Signals-first component primitives
+    "create_signal",
+    "create_effect",
+    "create_memo",
+    "on_mount",
+    "on_cleanup",
+    "get_props",
 ]
 
 T = TypeVar("T")
@@ -351,3 +358,200 @@ def use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]:
     cancellation support when available.
     """
     return Resource(fetcher)
+
+
+# -------------------- Component context & signals-first primitives --------------------
+
+
+class _CleanupOwner:
+    """Base for objects that can own ``on_cleanup`` callbacks."""
+
+    __slots__ = ("_cleanups",)
+
+    def __init__(self) -> None:
+        self._cleanups: List[Callable[[], Any]] = []
+
+    def _run_cleanups(self) -> None:
+        while self._cleanups:
+            fn = self._cleanups.pop()
+            try:
+                fn()
+            except Exception:
+                pass
+
+
+class _ComponentContext(_CleanupOwner):
+    """Per-component-instance context for the signals-first model.
+
+    Tracks lifecycle callbacks, child effects, the optional render function,
+    and a reactive props signal for stateful components.
+    """
+
+    __slots__ = (
+        "_mount_callbacks",
+        "_effects",
+        "_render_fn",
+        "_props",
+        "_props_signal",
+        "_vnode",
+    )
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._mount_callbacks: List[Callable[[], Any]] = []
+        self._effects: List[Computation] = []
+        self._render_fn: Optional[Callable[[], Any]] = None
+        self._props: dict = {}
+        self._props_signal: Optional[Signal[Any]] = None
+        self._vnode: Any = None
+
+    def _run_mount_callbacks(self) -> None:
+        for fn in self._mount_callbacks:
+            try:
+                fn()
+            except Exception:
+                pass
+        self._mount_callbacks.clear()
+
+    def _dispose_effects(self) -> None:
+        for comp in self._effects:
+            try:
+                comp.dispose()
+            except Exception:
+                pass
+        self._effects.clear()
+
+
+class _EffectScope(_CleanupOwner):
+    """Per-effect cleanup scope used inside ``create_effect`` callbacks."""
+
+    __slots__ = ()
+
+
+_owner_stack: List[Any] = []
+_component_ctx_stack: List[_ComponentContext] = []
+
+
+def _push_component_ctx(ctx: _ComponentContext) -> None:
+    _component_ctx_stack.append(ctx)
+    _owner_stack.append(ctx)
+
+
+def _pop_component_ctx() -> None:
+    if _component_ctx_stack:
+        _component_ctx_stack.pop()
+    if _owner_stack:
+        _owner_stack.pop()
+
+
+def _get_component_ctx() -> Optional[_ComponentContext]:
+    return _component_ctx_stack[-1] if _component_ctx_stack else None
+
+
+# ---- Public primitives ----
+
+
+def create_signal(value: T) -> tuple:
+    """Create a reactive signal.  Returns ``(getter, setter)``.
+
+    Works inside or outside components.  Inside a stateful component the
+    signal is captured by the render function's closure and persists
+    naturally (no cursor system needed).
+
+    Example::
+
+        count, set_count = create_signal(0)
+        print(count())          # 0
+        set_count(5)
+        print(count())          # 5
+    """
+    sig: Signal[Any] = Signal(value)
+    return sig.get, sig.set
+
+
+def create_effect(fn: Callable[[], Any]) -> Computation:
+    """Create an auto-tracking reactive effect.
+
+    The effect runs immediately and re-runs whenever any signal read
+    inside *fn* changes.  ``on_cleanup`` may be called inside *fn* to
+    register per-run cleanup (runs before re-execution and on disposal).
+
+    Inside a component, the effect is automatically disposed on unmount.
+    """
+    ctx = _get_component_ctx()
+    scope = _EffectScope()
+
+    def wrapped() -> None:
+        scope._run_cleanups()
+        _owner_stack.append(scope)
+        try:
+            fn()
+        finally:
+            if _owner_stack and _owner_stack[-1] is scope:
+                _owner_stack.pop()
+
+    comp = Computation(wrapped)
+    comp._on_dispose.append(scope._run_cleanups)
+    comp.run()
+
+    if ctx is not None:
+        ctx._effects.append(comp)
+    return comp
+
+
+def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
+    """Create an auto-tracking computed value.  Returns a *getter* function.
+
+    Re-computes only when signals read inside *fn* change.  Inside a
+    component, the underlying computation is disposed on unmount.
+
+    Example::
+
+        doubled = create_memo(lambda: count() * 2)
+        print(doubled())  # reactive read
+    """
+    c = _Computed(fn)
+    ctx = _get_component_ctx()
+    if ctx is not None:
+        ctx._effects.append(c._comp)
+    return c.get
+
+
+def on_mount(fn: Callable[[], Any]) -> None:
+    """Register a callback to run once after the component mounts.
+
+    Must be called during a component's setup phase (the body of a
+    ``@component`` function, before the ``return``).
+    """
+    ctx = _get_component_ctx()
+    if ctx is None:
+        raise RuntimeError("on_mount() can only be called inside a component's setup phase")
+    ctx._mount_callbacks.append(fn)
+
+
+def on_cleanup(fn: Callable[[], Any]) -> None:
+    """Register a cleanup callback.
+
+    - Inside ``create_effect``: runs before each re-execution and on disposal.
+    - Inside a component's setup phase: runs when the component unmounts.
+    """
+    if _owner_stack:
+        _owner_stack[-1]._cleanups.append(fn)
+    else:
+        raise RuntimeError("on_cleanup() must be called inside a component or create_effect()")
+
+
+def get_props() -> Callable[[], dict]:
+    """Return a reactive getter for the current component's props.
+
+    Useful in stateful components that need to react to parent prop changes::
+
+        props = get_props()
+        create_effect(lambda: print("query changed:", props()["query"]))
+    """
+    ctx = _get_component_ctx()
+    if ctx is None:
+        raise RuntimeError("get_props() can only be called inside a component")
+    if ctx._props_signal is None:
+        ctx._props_signal = Signal(ctx._props)
+    return ctx._props_signal.get

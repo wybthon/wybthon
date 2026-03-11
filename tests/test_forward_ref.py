@@ -3,6 +3,13 @@
 import wybthon as _wybthon_pkg  # noqa: F401
 
 
+class SimpleRef:
+    """Minimal ref container for testing."""
+
+    def __init__(self, initial=None):
+        self.current = initial
+
+
 def test_forward_ref_renders_normally(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
@@ -17,7 +24,7 @@ def test_forward_ref_renders_normally(wyb, root_element):
 
 
 def test_forward_ref_passes_ref(wyb, root_element):
-    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     captured_ref = [None]
 
@@ -26,7 +33,7 @@ def test_forward_ref_passes_ref(wyb, root_element):
         return vdom.h("input", {"type": "text"})
 
     FancyInput = comp_mod.forward_ref(_render)
-    my_ref = hooks.HookRef(None)
+    my_ref = SimpleRef(None)
     vdom.render(vdom.h(FancyInput, {"ref": my_ref}), root_element)
 
     assert captured_ref[0] is my_ref

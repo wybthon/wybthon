@@ -89,7 +89,6 @@ async function bootstrap() {
       "error_boundary.py",
       "events.py",
       "forms.py",
-      "hooks.py",
       "html.py",
       "lazy.py",
       "portal.py",

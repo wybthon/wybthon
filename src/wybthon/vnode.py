@@ -48,7 +48,7 @@ class VNode:
     component_instance: Optional[Component] = None
     subtree: Optional[VNode] = None
     render_effect: Optional[Computation] = None
-    hooks_ctx: Optional[Any] = None
+    component_ctx: Optional[Any] = None
 
 
 def to_text_vnode(value: Any) -> VNode:

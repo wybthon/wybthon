@@ -18,18 +18,31 @@ def Hello(name: str = "world"):
 Props become regular Python parameters with type annotations and defaults.
 This makes components self-documenting and enables static type checking.
 
-Stateful components work naturally with hooks:
+**Stateless** components return a `VNode` directly and re-render when the
+parent passes new props:
 
 ```python
-from wybthon import button, component, div, p, use_state
+@component
+def Greeting(name: str = "world"):
+    return p(f"Hello, {name}!")
+```
+
+**Stateful** components create signals during setup and return a *render
+function*.  Setup runs once; the render function re-runs when signals change:
+
+```python
+from wybthon import button, component, create_signal, div, p
 
 @component
-def Counter(initial: int = 0, label: str = "Count"):
-    count, set_count = use_state(initial)
-    return div(
-        p(f"{label}: {count}"),
-        button("+1", on_click=lambda e: set_count(lambda c: c + 1)),
-    )
+def Counter(initial: int = 0):
+    count, set_count = create_signal(initial)
+
+    def render():
+        return div(
+            p(f"Count: {count()}"),
+            button("+1", on_click=lambda e: set_count(count() + 1)),
+        )
+    return render
 ```
 
 **Children** are received via a `children` parameter:
@@ -47,7 +60,7 @@ def Card(title: str = "", children=None):
 components without `h()`:
 
 ```python
-Counter(initial=5, label="Score")
+Counter(initial=5)
 Card("child1", "child2", title="My Card")   # positional args become children
 ```
 
@@ -56,10 +69,10 @@ The component still works with `h()` as usual:
 ```python
 from wybthon import h
 
-h(Counter, {"initial": 5, "label": "Score"})
+h(Counter, {"initial": 5})
 ```
 
-See: [Hooks](hooks.md) for the full hooks API.
+See: [Primitives](primitives.md) for the full signals-first API.
 
 #### Traditional function components
 
@@ -169,9 +182,9 @@ def Modal():
 
 The second argument is an `Element` or a CSS selector string.
 
-Both function and class styles are fully supported. For new code, **`@component` decorated functions with hooks** are recommended for their conciseness, type safety, and composability.
+Both function and class styles are fully supported. For new code, **`@component` with signals-first primitives** is recommended for conciseness, type safety, and composability.
 
-See the guide for recommended patterns around props, state, children, cleanup, and context, and a runnable example page:
+See the guide for recommended patterns around props, state, children, cleanup, and context:
 
 - Guide: [Authoring Patterns](../guides/authoring-patterns.md)
 - Example: [Authoring Patterns Example](../examples/authoring-patterns.md)

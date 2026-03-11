@@ -2,7 +2,7 @@
 
 Provides in-memory DOM stub classes and pytest fixtures that install fake
 ``js`` / ``pyodide`` modules into ``sys.modules``, making it possible to
-test the VDOM reconciler, hooks, components, and other browser-dependent
+test the VDOM reconciler, signals, components, and other browser-dependent
 modules without a real browser environment.
 """
 
@@ -183,15 +183,21 @@ def restore_modules(saved):
 def reload_wybthon_modules():
     """Reload all browser-dependent wybthon submodules against current stubs.
 
-    Returns a dict with keys ``vdom``, ``hooks``, ``dom``, ``component``,
-    ``events``, ``context``, ``reactivity`` pointing to the freshly reloaded
-    module objects.
+    Returns a dict with keys ``vdom``, ``dom``, ``component``, ``events``,
+    ``context``, ``reactivity`` pointing to the freshly reloaded module objects.
     """
     mods = {}
-    for name in ("dom", "events", "component", "context", "reactivity", "hooks", "vdom"):
+    # Only reload modules that import from ``js`` at the top level.
+    # Other modules are loaded once and shared, which keeps ``isinstance``
+    # checks consistent (e.g. _PortalComponent inherits the same Component
+    # class that the reconciler imports).
+    for name in ("dom", "events", "reconciler", "vdom"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
+    # Also expose non-reloaded modules so tests can access them.
+    for name in ("component", "context", "reactivity", "props", "vnode"):
+        mods[name] = importlib.import_module(f"wybthon.{name}")
     return mods
 
 
@@ -247,8 +253,8 @@ def browser_stubs():
 def wyb(browser_stubs):
     """Install browser stubs, reload wybthon modules, and yield a namespace.
 
-    The yielded dict has keys: ``vdom``, ``hooks``, ``dom``, ``component``,
-    ``events``, ``context``, ``reactivity``.
+    The yielded dict has keys: ``vdom``, ``dom``, ``component``, ``events``,
+    ``context``, ``reactivity``, ``props``, ``reconciler``.
     """
     return reload_wybthon_modules()
 

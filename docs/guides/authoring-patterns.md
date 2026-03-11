@@ -1,6 +1,6 @@
 ### Authoring Patterns
 
-This guide shows how to author components in Wybthon using the `@component` decorator, traditional function components, and class components. It focuses on props, state with `signal`/`computed`/`effect`, children composition, cleanup, and context.
+This guide shows how to author components in Wybthon using the `@component` decorator, traditional function components, and class components. It focuses on props, state with `create_signal`/`create_effect`/`create_memo`, children composition, cleanup, and context.
 
 #### `@component` decorator (recommended)
 
@@ -37,25 +37,24 @@ Card("child text", title="My Card")  # positional args become children
 Counter(initial=5)                   # keyword args become props
 ```
 
-Stateful component with hooks:
+Stateful component with signals:
 
 ```python
-from wybthon import button, component, div, p, use_state, use_effect
+from wybthon import button, component, create_signal, div, on_mount, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = use_state(initial)
+    count, set_count = create_signal(initial)
 
-    def on_mount():
-        print(f"Counter mounted with count: {count}")
+    on_mount(lambda: print(f"Counter mounted with count: {count()}"))
 
-    use_effect(on_mount, [])
-
-    return div(
-        p(f"Count: {count}"),
-        button("+1", on_click=lambda e: set_count(lambda c: c + 1)),
-        class_name="counter",
-    )
+    def render():
+        return div(
+            p(f"Count: {count()}"),
+            button("+1", on_click=lambda e: set_count(count() + 1)),
+            class_name="counter",
+        )
+    return render
 ```
 
 #### Traditional function components
@@ -172,7 +171,7 @@ def Layout(children=None):
 
 #### Choosing between styles
 
-- Use **`@component` with hooks** for most components — concise, type-safe, composable.
+- Use **`@component` with signals** for most components — concise, type-safe, composable.
 - Use **traditional function components** for simple wrappers or when migrating existing code.
 - Use **class components** when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.
 
@@ -183,7 +182,7 @@ All three styles interoperate seamlessly and can be composed together.
 - Use `@component` for new function components with typed props.
 - Accept `children` and pass them through when building layout components.
 - Store signals on `self` in class components; avoid re-creating them during `render`.
-- Use `effect` for side-effects; dispose in `on_cleanup`.
+- Use `create_effect` for side-effects; clean up with `on_cleanup`.
 - Keep events simple and avoid catching errors unless you can handle them.
 
 #### Larger examples
@@ -243,30 +242,29 @@ class NamesList(Component):
         )
 ```
 
-3) Cleanup and lifecycles (`@component` with hooks)
+3) Cleanup and lifecycles (`@component` with signals)
 
 ```python
-from wybthon import component, div, use_effect, use_state
+from wybthon import component, create_signal, div, on_cleanup, on_mount
 
 @component
 def Timer():
-    seconds, set_seconds = use_state(0)
+    seconds, set_seconds = create_signal(0)
 
-    def setup():
+    def start():
         from js import setInterval, clearInterval
         from pyodide.ffi import create_proxy
 
-        proxy = create_proxy(lambda: set_seconds(lambda s: s + 1))
+        proxy = create_proxy(lambda: set_seconds(seconds() + 1))
         tid = setInterval(proxy, 1000)
 
-        def cleanup():
-            clearInterval(tid)
-            proxy.destroy()
-        return cleanup
+        on_cleanup(lambda: (clearInterval(tid), proxy.destroy()))
 
-    use_effect(setup, [])
+    on_mount(start)
 
-    return div(f"Seconds: {seconds}", class_name="timer")
+    def render():
+        return div(f"Seconds: {seconds()}", class_name="timer")
+    return render
 ```
 
 Putting it together:

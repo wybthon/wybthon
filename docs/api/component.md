@@ -6,18 +6,28 @@
 
 Decorator that enables Pythonic keyword-argument props for function components.
 
+**Stateless** — return a `VNode` directly:
+
 ```python
-from wybthon import component, div, p, use_state
+from wybthon import component, p
 
 @component
-def Counter(initial: int = 0, label: str = "Count"):
-    count, set_count = use_state(initial)
-    return div(p(f"{label}: {count}"))
+def Greeting(name: str = "world"):
+    return p(f"Hello, {name}!")
 ```
 
-The decorator inspects the function signature and automatically extracts
-matching props as keyword arguments when the VDOM engine calls the component.
-Default values from the signature are used when a prop is not provided.
+**Stateful** — create signals and return a render function:
+
+```python
+from wybthon import component, create_signal, div, p
+
+@component
+def Counter(initial: int = 0):
+    count, set_count = create_signal(initial)
+    def render():
+        return div(p(f"Count: {count()}"))
+    return render
+```
 
 **Children** are available via a `children` parameter:
 
@@ -38,7 +48,7 @@ Card("child1", "child2", title="My Card")
 The component still works with `h()`:
 
 ```python
-h(Counter, {"initial": 5, "label": "Score"})
+h(Counter, {"initial": 5})
 ```
 
 #### forward_ref

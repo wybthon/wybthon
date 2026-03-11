@@ -2,7 +2,7 @@
 
 This module implements the VDOM diffing algorithm that translates virtual node
 trees into real DOM mutations.  It handles element nodes, text nodes, class
-components, and function components (with hooks and reactive effects).
+components, and function components (with the signals-first reactive model).
 
 Key functions:
   - ``render(vnode, container)`` -- top-level entry point
@@ -24,9 +24,13 @@ from .context import Provider, pop_provider_value, push_provider_value
 from .dom import Element
 from .error_boundary import ErrorBoundary
 from .events import remove_all_for
-from .hooks import _HooksContext, _pop_hooks_ctx, _push_hooks_ctx
 from .props import apply_props, attach_ref, detach_ref
-from .reactivity import effect
+from .reactivity import (
+    _ComponentContext,
+    _pop_component_ctx,
+    _push_component_ctx,
+    effect,
+)
 from .vnode import ChildType, Fragment, VNode, normalize_children, to_text_vnode
 
 __all__ = ["render", "mount", "unmount", "patch"]
@@ -136,43 +140,80 @@ def _mount_class_component(vnode: VNode, comp_ctor: type, container: Element, an
 
 
 def _mount_function_component(vnode: VNode, comp_fn: Callable, container: Element, anchor: Any) -> Element:
-    """Mount a function component with hooks support."""
-    hooks_ctx = _HooksContext()
-    hooks_ctx._component_fn = comp_fn
-    hooks_ctx._props = vnode.props
-    vnode.hooks_ctx = hooks_ctx
+    """Mount a function component using the signals-first model.
 
-    def run_fn_render(
-        _vnode: VNode = vnode,
+    The component function is called once (setup phase).  If it returns a
+    *callable*, that callable is treated as the render function and wrapped
+    in a reactive ``effect`` so it re-runs when signals change (stateful).
+    If it returns a ``VNode`` directly, the component is treated as
+    stateless and the entire function is re-called on signal changes.
+    """
+    ctx = _ComponentContext()
+    ctx._props = vnode.props
+    ctx._vnode = vnode
+    vnode.component_ctx = ctx
+
+    setup_done: List[bool] = [False]
+
+    def run_component(
+        _ctx: _ComponentContext = ctx,
+        _comp_fn: Callable = comp_fn,
         _container: Element = container,
         _anchor: Any = anchor,
-        _hooks_ctx: _HooksContext = hooks_ctx,
     ) -> None:
-        _hooks_ctx.cursor = 0
-        _hooks_ctx.effect_cursor = 0
-        _hooks_ctx.layout_effect_cursor = 0
-        _push_hooks_ctx(_hooks_ctx)
-        try:
-            sub_tree = _hooks_ctx._component_fn(_hooks_ctx._props)
+        cur_vnode = _ctx._vnode
+
+        if not setup_done[0]:
+            # ── first run: setup + initial render ──
+            _push_component_ctx(_ctx)
+            try:
+                result = _comp_fn(_ctx._props)
+            finally:
+                _pop_component_ctx()
+
+            if callable(result) and not isinstance(result, VNode):
+                _ctx._render_fn = result
+                sub_tree = result()
+            else:
+                sub_tree = result
+
             if not isinstance(sub_tree, VNode):
                 sub_tree = to_text_vnode(sub_tree)
-            prev_sub = _vnode.subtree
-            _vnode.subtree = sub_tree
+
+            cur_vnode.subtree = sub_tree
+            mounted_el = mount(sub_tree, _container, _anchor)
+            cur_vnode.el = mounted_el
+            setup_done[0] = True
+        else:
+            # ── subsequent runs: re-render (signal change) ──
+            if _ctx._render_fn is not None:
+                sub_tree = _ctx._render_fn()
+            else:
+                _push_component_ctx(_ctx)
+                try:
+                    sub_tree = _comp_fn(_ctx._props)
+                finally:
+                    _pop_component_ctx()
+
+            if not isinstance(sub_tree, VNode):
+                sub_tree = to_text_vnode(sub_tree)
+
+            prev_sub = cur_vnode.subtree
+            cur_vnode.subtree = sub_tree
             if prev_sub is None:
                 mounted_el = mount(sub_tree, _container, _anchor)
-                _vnode.el = mounted_el
+                cur_vnode.el = mounted_el
             else:
                 patch(prev_sub, sub_tree, _container)
-                _vnode.el = sub_tree.el
-        except Exception as e:
-            log_error(f"Render failed in function component {component_name(comp_fn)}", e)
-            raise
-        finally:
-            _pop_hooks_ctx()
-        _hooks_ctx._run_pending_effects()
-        _hooks_ctx._is_mounting = False
+                cur_vnode.el = sub_tree.el
 
-    vnode.render_effect = effect(run_fn_render)
+    try:
+        vnode.render_effect = effect(run_component)
+    except Exception as e:
+        log_error(f"Render failed in function component {component_name(comp_fn)}", e)
+        raise
+
+    ctx._run_mount_callbacks()
     return vnode.el
 
 
@@ -194,11 +235,12 @@ def unmount(vnode: VNode) -> None:
         except Exception as e:
             log_error(f"on_unmount() failed in {component_name(type(vnode.component_instance))}", e)
 
-    if vnode.hooks_ctx is not None:
+    if vnode.component_ctx is not None:
         try:
-            vnode.hooks_ctx._cleanup_all()
+            vnode.component_ctx._run_cleanups()
+            vnode.component_ctx._dispose_effects()
         except Exception as e:
-            log_error(f"Hook cleanup failed in {component_name(vnode.tag)}", e)
+            log_error(f"Component context cleanup failed in {component_name(vnode.tag)}", e)
 
     if vnode.render_effect is not None:
         try:
@@ -297,52 +339,80 @@ def _patch_class_component(old: VNode, new: VNode, container: Element) -> None:
 
 
 def _patch_function_component(old: VNode, new: VNode, container: Element) -> None:
-    """Patch a function component by re-running with updated props."""
-    hooks_ctx = old.hooks_ctx
-    if hooks_ctx is not None:
-        if getattr(new.tag, "_wyb_memo", False):
-            compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
-            if compare_fn is not None and compare_fn(hooks_ctx._props, new.props):
-                new.hooks_ctx = hooks_ctx
-                new.render_effect = old.render_effect
-                new.subtree = old.subtree
-                return
+    """Patch a function component using the signals-first model.
 
-        hooks_ctx._props = new.props
-        new.hooks_ctx = hooks_ctx
+    *Stateful* (has a render function): transfer the component context
+    and render effect.  The render effect re-runs automatically when its
+    signal dependencies change.  If a reactive props signal exists,
+    update it so prop-dependent code can react.
+
+    *Stateless* (returns VNode directly): re-call the component function
+    with the new props and diff the resulting subtree.
+    """
+    ctx = old.component_ctx
+
+    # ── memo check (applies to both stateful and stateless) ──
+    if getattr(new.tag, "_wyb_memo", False):
+        compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
+        old_props = ctx._props if ctx is not None else {}
+        if compare_fn is not None and compare_fn(old_props, new.props):
+            new.component_ctx = ctx
+            new.render_effect = old.render_effect
+            new.subtree = old.subtree
+            new.el = old.el
+            if ctx is not None:
+                ctx._vnode = new
+            return
+
+    if ctx is not None and ctx._render_fn is not None:
+        # ── STATEFUL: don't re-run setup ──
+        ctx._props = new.props
+        if ctx._props_signal is not None:
+            ctx._props_signal.set(new.props)
+        ctx._vnode = new
+
+        new.component_ctx = ctx
         new.render_effect = old.render_effect
+        new.subtree = old.subtree
+        new.el = old.el
+        return
 
-        hooks_ctx.cursor = 0
-        hooks_ctx.effect_cursor = 0
-        hooks_ctx.layout_effect_cursor = 0
-        _push_hooks_ctx(hooks_ctx)
+    # ── STATELESS: re-call component with new props ──
+    if ctx is not None:
+        ctx._props = new.props
+        ctx._vnode = new
+        new.component_ctx = ctx
+        new.render_effect = old.render_effect
+        new.subtree = old.subtree
+        new.el = old.el
+
+        _push_component_ctx(ctx)
         try:
-            func_sub = new.tag(new.props)  # type: ignore[operator]
-            if not isinstance(func_sub, VNode):
-                func_sub = to_text_vnode(func_sub)
-        except Exception as e:
-            log_error(f"Render failed in function component {component_name(new.tag)}", e)
-            raise
+            result = new.tag(new.props)  # type: ignore[operator]
         finally:
-            _pop_hooks_ctx()
+            _pop_component_ctx()
+
+        if not isinstance(result, VNode):
+            result = to_text_vnode(result)
 
         prev_sub = old.subtree
-        new.subtree = func_sub
+        new.subtree = result
         if prev_sub is None:
-            mount(func_sub, container)
+            mount(result, container)
         else:
-            patch(prev_sub, func_sub, container)
-        hooks_ctx._run_pending_effects()
+            patch(prev_sub, result, container)
+        new.el = result.el
     else:
-        func_sub = new.tag(new.props)  # type: ignore[operator]
-        if not isinstance(func_sub, VNode):
-            func_sub = to_text_vnode(func_sub)
+        result = new.tag(new.props)  # type: ignore[operator]
+        if not isinstance(result, VNode):
+            result = to_text_vnode(result)
         prev_sub = old.subtree
-        new.subtree = func_sub
+        new.subtree = result
         if prev_sub is None:
-            mount(func_sub, container)
+            mount(result, container)
         else:
-            patch(prev_sub, func_sub, container)
+            patch(prev_sub, result, container)
+        new.el = result.el
 
 
 def _handle_render_error(

@@ -27,7 +27,7 @@ def test_memo_renders_initially(wyb, root_element):
 def test_memo_skips_rerender_same_props(wyb, root_element):
     """When parent re-renders but passes the same prop references, memo skips."""
     vdom = wyb["vdom"]
-    hooks = wyb["hooks"]
+    reactivity = wyb["reactivity"]
 
     child_renders = [0]
     parent_setter = [None]
@@ -40,9 +40,14 @@ def test_memo_skips_rerender_same_props(wyb, root_element):
     MemoChild = vdom.memo(Child)
 
     def Parent(props):
-        count, set_count = hooks.use_state(0)
+        count, set_count = reactivity.create_signal(0)
         parent_setter[0] = set_count
-        return vdom.h("div", {}, vdom.h("p", {}, str(count)), vdom.h(MemoChild, {"label": stable_value}))
+
+        def render():
+            _ = count()
+            return vdom.h("div", {}, vdom.h("p", {}, str(count())), vdom.h(MemoChild, {"label": stable_value}))
+
+        return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -50,13 +55,12 @@ def test_memo_skips_rerender_same_props(wyb, root_element):
     parent_setter[0](1)
     time.sleep(0.05)
 
-    # Parent re-rendered but memo child should NOT have re-rendered
     assert child_renders[0] == 1
 
 
 def test_memo_rerenders_on_changed_props(wyb, root_element):
     vdom = wyb["vdom"]
-    hooks = wyb["hooks"]
+    reactivity = wyb["reactivity"]
 
     child_renders = [0]
     parent_setter = [None]
@@ -68,9 +72,13 @@ def test_memo_rerenders_on_changed_props(wyb, root_element):
     MemoChild = vdom.memo(Child)
 
     def Parent(props):
-        count, set_count = hooks.use_state(0)
+        count, set_count = reactivity.create_signal(0)
         parent_setter[0] = set_count
-        return vdom.h("div", {}, vdom.h(MemoChild, {"count": count}))
+
+        def render():
+            return vdom.h("div", {}, vdom.h(MemoChild, {"count": count()}))
+
+        return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -79,7 +87,6 @@ def test_memo_rerenders_on_changed_props(wyb, root_element):
     parent_setter[0](1)
     time.sleep(0.05)
 
-    # Props changed, memo child SHOULD re-render
     assert child_renders[0] == 2
     assert "count=1" in collect_texts(root_element.element)
 
@@ -87,7 +94,7 @@ def test_memo_rerenders_on_changed_props(wyb, root_element):
 def test_memo_custom_comparison(wyb, root_element):
     """Custom are_props_equal can control when re-renders happen."""
     vdom = wyb["vdom"]
-    hooks = wyb["hooks"]
+    reactivity = wyb["reactivity"]
 
     child_renders = [0]
     parent_setter = [None]
@@ -96,13 +103,16 @@ def test_memo_custom_comparison(wyb, root_element):
         child_renders[0] += 1
         return vdom.h("span", {}, f"v={props.get('value')}")
 
-    # Custom comparator ignores all differences
     MemoChild = vdom.memo(Child, are_props_equal=lambda old, new: True)
 
     def Parent(props):
-        count, set_count = hooks.use_state(0)
+        count, set_count = reactivity.create_signal(0)
         parent_setter[0] = set_count
-        return vdom.h("div", {}, vdom.h(MemoChild, {"value": count}))
+
+        def render():
+            return vdom.h("div", {}, vdom.h(MemoChild, {"value": count()}))
+
+        return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -110,21 +120,24 @@ def test_memo_custom_comparison(wyb, root_element):
     parent_setter[0](1)
     time.sleep(0.05)
 
-    # Custom comparator always returns True, so child should NOT re-render
     assert child_renders[0] == 1
 
 
-def test_memo_with_hooks(wyb, root_element):
-    """Memo components should still work with hooks when they do re-render."""
+def test_memo_with_signals(wyb, root_element):
+    """Memo components work with signals when they re-render."""
     vdom = wyb["vdom"]
-    hooks = wyb["hooks"]
+    reactivity = wyb["reactivity"]
 
     child_setter = [None]
 
     def Child(props):
-        local, set_local = hooks.use_state(0)
+        local, set_local = reactivity.create_signal(0)
         child_setter[0] = set_local
-        return vdom.h("span", {}, f"local={local}")
+
+        def render():
+            return vdom.h("span", {}, f"local={local()}")
+
+        return render
 
     MemoChild = vdom.memo(Child)
 

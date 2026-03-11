@@ -64,23 +64,22 @@ class Component:
 def component(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator that enables Pythonic keyword-argument props for function components.
 
-    Instead of the traditional React-style props dict::
-
-        def Counter(props):
-            count, set_count = use_state(props.get("initial", 0))
-            label = props.get("label", "Count")
-            return div(p(f"{label}: {count}"))
-
-    you can write::
+    **Stateless** – return a ``VNode`` directly (re-called on prop changes)::
 
         @component
-        def Counter(initial: int = 0, label: str = "Count"):
-            count, set_count = use_state(initial)
-            return div(p(f"{label}: {count}"))
+        def Greeting(name: str = "world"):
+            return p(f"Hello, {name}!")
 
-    The decorator inspects the function signature and automatically extracts
-    matching props as keyword arguments.  Default values from the signature
-    are used when a prop is not provided.
+    **Stateful** – create signals during setup and return a *render function*
+    (setup runs once, render re-runs when signals change)::
+
+        @component
+        def Counter(initial: int = 0):
+            count, set_count = create_signal(initial)
+            def render():
+                return div(p(f"Count: {count()}"),
+                           button("+", on_click=lambda e: set_count(count() + 1)))
+            return render
 
     **Children** are available via a ``children`` parameter::
 
@@ -91,12 +90,12 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
     **Direct calls** with keyword arguments return a ``VNode``, so you can
     compose components without ``h()``::
 
-        Counter(initial=5, label="Score")
+        Counter(initial=5)
         Card("child1", "child2", title="My Card")
 
     The component still works with ``h()`` as usual::
 
-        h(Counter, {"initial": 5, "label": "Score"})
+        h(Counter, {"initial": 5})
     """
     sig = inspect.signature(fn)
     params = sig.parameters

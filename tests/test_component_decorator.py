@@ -194,19 +194,24 @@ def test_component_direct_call_with_children(wyb, root_element):
     assert "child two" in texts
 
 
-def test_component_with_use_state(wyb, root_element):
-    """@component works with use_state hooks."""
-    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
+def test_component_with_create_signal(wyb, root_element):
+    """@component works with create_signal (stateful pattern)."""
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     setter_ref = [None]
     render_log = []
 
     @comp_mod.component
     def Counter(initial: int = 0):
-        count, set_count = hooks.use_state(initial)
+        count, set_count = reactivity.create_signal(initial)
         setter_ref[0] = set_count
-        render_log.append(count)
-        return vdom.h("p", {}, f"Count: {count}")
+
+        def render():
+            val = count()
+            render_log.append(val)
+            return vdom.h("p", {}, f"Count: {val}")
+
+        return render
 
     vdom.render(vdom.h(Counter, {"initial": 10}), root_element)
 
@@ -220,25 +225,29 @@ def test_component_with_use_state(wyb, root_element):
     assert "Count: 20" in collect_texts(root_element.element)
 
 
-def test_component_with_use_effect(wyb, root_element):
-    """@component works with use_effect hooks."""
-    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
+def test_component_with_create_effect(wyb, root_element):
+    """@component works with create_effect."""
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     log = []
 
     @comp_mod.component
     def EffectComp():
-        hooks.use_effect(lambda: log.append("mounted"), [])
-        return vdom.h("p", {}, "hello")
+        reactivity.create_effect(lambda: log.append("effect"))
+
+        def render():
+            return vdom.h("p", {}, "hello")
+
+        return render
 
     vdom.render(vdom.h(EffectComp, {}), root_element)
 
-    assert "mounted" in log
+    assert "effect" in log
 
 
 def test_component_with_memo(wyb, root_element):
     """@component works when wrapped with memo()."""
-    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     child_renders = [0]
     parent_setter = [None]
@@ -252,9 +261,14 @@ def test_component_with_memo(wyb, root_element):
     MemoChild = vdom.memo(Child)
 
     def Parent(props):
-        count, set_count = hooks.use_state(0)
+        count, set_count = reactivity.create_signal(0)
         parent_setter[0] = set_count
-        return vdom.h("div", {}, vdom.h("p", {}, str(count)), vdom.h(MemoChild, {"label": stable_label}))
+
+        def render():
+            _ = count()
+            return vdom.h("div", {}, vdom.h("p", {}, str(count())), vdom.h(MemoChild, {"label": stable_label}))
+
+        return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -298,8 +312,8 @@ def test_component_nested(wyb, root_element):
 
 
 def test_component_re_renders_on_prop_change(wyb, root_element):
-    """@component re-renders when parent passes new props."""
-    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
+    """Stateless @component re-renders when parent passes new props."""
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     child_renders = [0]
     parent_setter = [None]
@@ -310,9 +324,13 @@ def test_component_re_renders_on_prop_change(wyb, root_element):
         return vdom.h("span", {}, f"count={count}")
 
     def Parent(props):
-        val, set_val = hooks.use_state(0)
+        val, set_val = reactivity.create_signal(0)
         parent_setter[0] = set_val
-        return vdom.h("div", {}, vdom.h(Child, {"count": val}))
+
+        def render():
+            return vdom.h("div", {}, vdom.h(Child, {"count": val()}))
+
+        return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1

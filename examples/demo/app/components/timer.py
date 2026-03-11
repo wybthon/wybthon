@@ -1,32 +1,41 @@
-from wybthon import component, div, use_effect, use_state
+from wybthon import component, create_signal, div, on_cleanup, on_mount
 
 
 @component
 def Timer():
-    seconds, set_seconds = use_state(0)
+    seconds, set_seconds = create_signal(0)
 
-    def setup_interval():
+    tick_proxy = [None]
+    interval_id = [None]
+
+    def start():
         try:
-            from js import clearInterval, setInterval
+            from js import setInterval
             from pyodide.ffi import create_proxy
 
-            tick_proxy = create_proxy(lambda: set_seconds(lambda s: s + 1))
-            interval_id = setInterval(tick_proxy, 1000)
-
-            def cleanup():
-                try:
-                    clearInterval(interval_id)
-                except Exception:
-                    pass
-                try:
-                    tick_proxy.destroy()
-                except Exception:
-                    pass
-
-            return cleanup
+            tick_proxy[0] = create_proxy(lambda: set_seconds(seconds() + 1))
+            interval_id[0] = setInterval(tick_proxy[0], 1000)
         except Exception:
-            return None
+            pass
 
-    use_effect(setup_interval, [])
+    def stop():
+        try:
+            from js import clearInterval
 
-    return div(f"Seconds: {seconds}", class_name="timer")
+            if interval_id[0] is not None:
+                clearInterval(interval_id[0])
+        except Exception:
+            pass
+        try:
+            if tick_proxy[0] is not None:
+                tick_proxy[0].destroy()
+        except Exception:
+            pass
+
+    on_mount(start)
+    on_cleanup(stop)
+
+    def render():
+        return div(f"Seconds: {seconds()}", class_name="timer")
+
+    return render

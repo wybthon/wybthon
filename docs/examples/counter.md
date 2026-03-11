@@ -1,40 +1,36 @@
 ### Counter
 
-#### `@component` with hooks (recommended)
+#### `@component` with signals (recommended)
 
 ```python
-from wybthon import button, component, div, p, use_effect, use_state
+from wybthon import button, component, create_signal, div, on_mount, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = use_state(initial)
+    count, set_count = create_signal(initial)
 
-    def on_mount():
-        print("Counter mounted with initial count:", count)
-    use_effect(on_mount, [])
+    on_mount(lambda: print("Counter mounted with initial count:", count()))
 
-    return div(
-        p(f"Count: {count}"),
-        button("Increment", on_click=lambda e: set_count(lambda c: c + 1)),
-        class_name="counter",
-    )
+    def render():
+        return div(
+            p(f"Count: {count()}"),
+            button("Increment", on_click=lambda e: set_count(count() + 1)),
+            class_name="counter",
+        )
+    return render
 ```
 
-#### Traditional function component with hooks
+#### Traditional function component
 
 ```python
-from wybthon import button, div, p, use_effect, use_state
+from wybthon import signal, effect, div, p, button
+
+counter_signal = signal(0)
 
 def Counter(props):
-    count, set_count = use_state(0)
-
-    def on_mount():
-        print("Counter mounted with initial count:", count)
-    use_effect(on_mount, [])
-
     return div(
-        p(f"Count: {count}"),
-        button("Increment", on_click=lambda e: set_count(lambda c: c + 1)),
+        p(f"Count: {counter_signal.get()}"),
+        button("Increment", on_click=lambda e: counter_signal.set(counter_signal.get() + 1)),
         class_name="counter",
     )
 ```
@@ -57,4 +53,4 @@ class Counter(Component):
         )
 ```
 
-See also: [Hooks](../concepts/hooks.md) · [Authoring Patterns](../guides/authoring-patterns.md)
+See also: [Primitives](../concepts/primitives.md) · [Authoring Patterns](../guides/authoring-patterns.md)
