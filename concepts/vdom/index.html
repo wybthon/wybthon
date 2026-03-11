@@ -491,6 +491,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Virtual DOM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyed-diffing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyed diffing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error reporting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1786,6 +1825,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Virtual DOM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyed-diffing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyed diffing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error reporting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1824,13 +1902,30 @@
           <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Welcome&quot;</span><span class="p">))</span>
 </code></pre></div>
 
-<p>Rendering is done with <code>vdom.render(view, container)</code>.</p>
-<p>Keyed diffing</p>
+<p>Rendering is done with <code>render(view, container)</code>.</p>
+<h4 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h4>
+<p>The VDOM implementation is split into focused modules:</p>
+<ul>
+<li><strong><code>vnode</code></strong> — the <code>VNode</code> data structure, <code>h()</code>, <code>Fragment</code>, and <code>memo()</code> (browser-agnostic)</li>
+<li><strong><code>reconciler</code></strong> — the mount/patch/unmount diffing engine</li>
+<li><strong><code>props</code></strong> — DOM property application and diffing (styles, events, datasets)</li>
+<li><strong><code>error_boundary</code></strong> — the <code>ErrorBoundary</code> component</li>
+<li><strong><code>suspense</code></strong> — the <code>Suspense</code> component</li>
+<li><strong><code>portal</code></strong> — the <code>create_portal()</code> function</li>
+</ul>
+<p>All names are re-exported from <code>wybthon.vdom</code> for convenience, and the most
+common ones are available at the top-level <code>wybthon</code> package.</p>
+<h4 id="keyed-diffing">Keyed diffing<a class="headerlink" href="#keyed-diffing" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Provide <code>key</code> on children of dynamic lists: <code>h("li", {"key": item.id}, ...)</code>.</li>
 <li>Keys allow Wybthon to match, reorder, insert, and remove children with minimal DOM changes while preserving element identity and state.</li>
 <li>The reconciler first matches children by key, then falls back to type-matching for unkeyed nodes.</li>
 </ul>
+<h4 id="error-reporting">Error reporting<a class="headerlink" href="#error-reporting" title="Permanent link">&para;</a></h4>
+<p>In development mode (<code>DEV_MODE = True</code>, the default), rendering errors include
+the component name and a full traceback printed to stderr. This makes it easy
+to locate problems in component trees. Set <code>set_dev_mode(False)</code> for production
+to suppress verbose tracebacks.</p>
 
 
 

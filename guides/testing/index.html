@@ -1913,6 +1913,17 @@ pytest<span class="w"> </span>-q<span class="w"> </span>-m<span class="w"> </spa
 </ul>
 <h4 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h4>
 <p>For Python-only logic (e.g., <code>reactivity</code>, <code>forms</code> helpers), write regular <code>pytest</code> tests under <code>tests/</code>.</p>
+<p>Several core modules are browser-agnostic and can be tested without any
+stubs:</p>
+<ul>
+<li><code>wybthon.vnode</code> — VNode creation, <code>h()</code>, <code>Fragment</code>, <code>memo()</code></li>
+<li><code>wybthon.error_boundary</code> — ErrorBoundary component logic</li>
+<li><code>wybthon.suspense</code> — Suspense component logic</li>
+<li><code>wybthon._warnings</code> — dev-mode error reporting</li>
+</ul>
+<p>For browser-dependent modules (<code>reconciler</code>, <code>props</code>, <code>dom</code>, <code>events</code>), the
+existing test files use <code>_install_stubs()</code> to inject fake <code>js</code> and <code>pyodide</code>
+modules before reloading the Wybthon modules under test.</p>
 <h4 id="coverage">Coverage<a class="headerlink" href="#coverage" title="Permanent link">&para;</a></h4>
 <p>We use <code>pytest-cov</code> for coverage and enforce a minimum in CI.</p>
 <ul>

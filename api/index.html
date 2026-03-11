@@ -2113,6 +2113,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.ErrorBoundary.render" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        render
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.ErrorBoundary.reset" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2247,6 +2258,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Suspense">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.Suspense.render" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        render
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2438,6 +2466,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.is_dev_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_dev_mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.load_component" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2563,6 +2602,17 @@
     <span class="md-ellipsis">
       
         rules_from_schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.set_dev_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_dev_mode
       
     </span>
   </a>
@@ -3494,6 +3544,16 @@ Lifecycle hooks:
         <p>Component that catches errors in its subtree and renders a fallback.</p>
 
 
+<details class="props" open>
+  <summary>Props</summary>
+  <ul>
+<li>fallback: VNode | str | callable(error, reset) -&gt; VNode</li>
+<li>on_error: optional callback invoked with the caught exception</li>
+<li>reset_key / reset_keys: when this value changes the error is auto-cleared</li>
+<li>children: child VNodes to render when there is no error</li>
+</ul>
+</details>
+
 
 
 
@@ -3513,6 +3573,24 @@ Lifecycle hooks:
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.ErrorBoundary.render" class="doc doc-heading">
+            <code class=" language-python"><span class="n">render</span><span class="p">()</span></code>
+
+<a href="#wybthon.ErrorBoundary.render" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Render fallback when an error is stored, otherwise children.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -3947,8 +4025,9 @@ Lifecycle hooks:
   <ul>
 <li>resources | resource: Resource or list of Resources (objects exposing <code>.loading.get()</code>)</li>
 <li>fallback: VNode | str | callable returning VNode/str</li>
-<li>keep_previous: bool (default False) – when True, keep children visible after first
+<li>keep_previous: bool (default False) -- when True, keep children visible after first
   successful load even if a subsequent reload is in-flight.</li>
+<li>children: child VNodes to render when not loading</li>
 </ul>
 </details>
 
@@ -3971,6 +4050,24 @@ Lifecycle hooks:
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.Suspense.render" class="doc doc-heading">
+            <code class=" language-python"><span class="n">render</span><span class="p">()</span></code>
+
+<a href="#wybthon.Suspense.render" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Render fallback or children based on resource loading state.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -4347,6 +4444,24 @@ where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</cod
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.is_dev_mode" class="doc doc-heading">
+            <code class=" language-python"><span class="n">is_dev_mode</span><span class="p">()</span></code>
+
+<a href="#wybthon.is_dev_mode" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return whether development mode is currently active.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.load_component" class="doc doc-heading">
             <code class=" language-python"><span class="n">load_component</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
@@ -4579,6 +4694,24 @@ only when the form is valid.</p>
     "email": {"email": True},
 }</p>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.set_dev_mode" class="doc doc-heading">
+            <code class=" language-python"><span class="n">set_dev_mode</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span></code>
+
+<a href="#wybthon.set_dev_mode" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Enable or disable development mode warnings globally.</p>
+
 
     </div>
 
