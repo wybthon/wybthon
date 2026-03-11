@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.14.0 (2026-03-11)
+
+### Documentation
+
+- **repo**: Add missing module scopes to CONTRIBUTING.md
+  ([`0476a1a`](https://github.com/wybthon/wybthon/commit/0476a1ade1b1400d4df3989ca2153163fd85b8c1))
+
+### Features
+
+- **reactivity**: Replace hooks with signals-first primitives
+  ([`ef11d2f`](https://github.com/wybthon/wybthon/commit/ef11d2ffa3a0b611b9d104676cd86ead80a3af3c))
+
+### Refactoring
+
+- **tests**: Extract shared DOM stubs and fixtures into conftest.py
+  ([`7e3bba8`](https://github.com/wybthon/wybthon/commit/7e3bba89ca980634f632ac17cff10eade19c6164))
+
+
 ## v0.13.0 (2026-03-11)
 
 ### Features

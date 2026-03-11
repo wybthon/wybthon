@@ -43,7 +43,7 @@ from .reactivity import (
     use_resource,
 )
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
 
 # Detect Pyodide/browser environment where `js` module exists
 _IN_BROWSER = False
