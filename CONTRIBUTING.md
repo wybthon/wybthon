@@ -98,16 +98,23 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `context` – context creation, providers, and consumption
   - `dev` – dev server and hot-reload (SSE)
   - `dom` – DOM interop and element helpers
+  - `error_boundary` – error boundary component and fallback rendering
   - `events` – DOM events and event utilities
   - `forms` – form state, validators, and bindings
   - `hooks` – React-style hooks for function components
   - `html` – Pythonic HTML element helpers and Fragment
   - `lazy` – lazy loading and preloading utilities
   - `package` – `src/wybthon/__init__.py` exports and package boundary
+  - `portal` – portal rendering to out-of-tree DOM containers
+  - `props` – DOM property application, diffing, and controlled elements
   - `reactivity` – signals, computed, effect, batching
+  - `reconciler` – reconciliation engine for mounting, patching, and unmounting
   - `router` – routing, paths, and navigation helpers
   - `router_core` – core route resolution helpers
+  - `suspense` – suspense boundaries and async fallback UI
   - `vdom` – virtual DOM and renderer
+  - `vnode` – virtual node data structure and creation utilities
+  - `warnings` – development mode warnings and error reporting
 
 - Other scopes:
   - `examples` – example(s) under `examples/`
