@@ -1,186 +1,10 @@
 """Tests for the @component decorator."""
 
-import importlib
-import sys
 import time
-from types import ModuleType
+
+from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
-
-# ---------------------------------------------------------------------------
-# DOM stubs (same pattern as other test files)
-# ---------------------------------------------------------------------------
-
-
-class _ClassList:
-    def __init__(self):
-        self._set = set()
-
-    def add(self, name):
-        self._set.add(name)
-
-    def remove(self, name):
-        self._set.discard(name)
-
-    def contains(self, name):
-        return name in self._set
-
-
-class _Style:
-    def __init__(self):
-        self._props = {}
-
-    def setProperty(self, name, value):
-        self._props[name] = str(value)
-
-    def removeProperty(self, name):
-        self._props.pop(name, None)
-
-
-class _Node:
-    def __init__(self, tag=None, text=None):
-        self.tag = tag
-        self.nodeValue = text
-        self._is_text = text is not None
-        self.parentNode = None
-        self.childNodes = []
-        self.attributes = {}
-        self.classList = _ClassList()
-        self.style = _Style()
-        self.value = ""
-        self.checked = False
-
-    @property
-    def nextSibling(self):
-        if self.parentNode is None:
-            return None
-        try:
-            idx = self.parentNode.childNodes.index(self)
-        except ValueError:
-            return None
-        return self.parentNode.childNodes[idx + 1] if idx + 1 < len(self.parentNode.childNodes) else None
-
-    def appendChild(self, node):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        self.childNodes.append(node)
-        return node
-
-    def insertBefore(self, node, anchor):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        if anchor is None:
-            self.childNodes.append(node)
-            return node
-        try:
-            idx = self.childNodes.index(anchor)
-        except ValueError:
-            self.childNodes.append(node)
-            return node
-        self.childNodes.insert(idx, node)
-        return node
-
-    def removeChild(self, node):
-        try:
-            self.childNodes.remove(node)
-            node.parentNode = None
-        except ValueError:
-            pass
-        return node
-
-    def setAttribute(self, name, value):
-        self.attributes[name] = str(value)
-
-    def getAttribute(self, name):
-        return self.attributes.get(name)
-
-    def removeAttribute(self, name):
-        self.attributes.pop(name, None)
-
-
-class _Document:
-    def __init__(self):
-        self._listeners = {}
-
-    def createElement(self, tag):
-        return _Node(tag=tag)
-
-    def createTextNode(self, text):
-        return _Node(text=str(text))
-
-    def addEventListener(self, event_type, proxy):
-        self._listeners.setdefault(event_type, set()).add(proxy)
-
-    def removeEventListener(self, event_type, proxy):
-        s = self._listeners.get(event_type)
-        if s is not None and proxy in s:
-            s.remove(proxy)
-
-    def querySelector(self, sel):
-        return _Node(tag="div")
-
-    def querySelectorAll(self, sel):
-        return []
-
-
-def _install_stubs():
-    saved = {name: sys.modules.get(name) for name in ("js", "pyodide", "pyodide.ffi")}
-    js_mod = ModuleType("js")
-    js_mod.document = _Document()
-    js_mod.fetch = lambda url: None
-    sys.modules["js"] = js_mod
-
-    pyodide = ModuleType("pyodide")
-    ffi = ModuleType("pyodide.ffi")
-    ffi.create_proxy = lambda fn: fn
-    sys.modules["pyodide"] = pyodide
-    sys.modules["pyodide.ffi"] = ffi
-    setattr(pyodide, "ffi", ffi)
-    return saved
-
-
-def _restore(saved):
-    for name, mod in saved.items():
-        if mod is None:
-            sys.modules.pop(name, None)
-        else:
-            sys.modules[name] = mod
-
-
-def _reload_modules():
-    dom = importlib.import_module("wybthon.dom")
-    importlib.reload(dom)
-    events = importlib.import_module("wybthon.events")
-    importlib.reload(events)
-    comp_mod = importlib.import_module("wybthon.component")
-    importlib.reload(comp_mod)
-    context = importlib.import_module("wybthon.context")
-    importlib.reload(context)
-    reactivity = importlib.import_module("wybthon.reactivity")
-    importlib.reload(reactivity)
-    hooks = importlib.import_module("wybthon.hooks")
-    importlib.reload(hooks)
-    vdom = importlib.import_module("wybthon.vdom")
-    importlib.reload(vdom)
-    return vdom, hooks, dom, comp_mod
-
-
-def _collect_texts(node):
-    out = []
-    if getattr(node, "_is_text", False):
-        out.append(node.nodeValue)
-    for ch in getattr(node, "childNodes", []):
-        out.extend(_collect_texts(ch))
-    return out
-
 
 # ---------------------------------------------------------------------------
 # Tests — pure decorator behaviour (no browser stubs needed)
@@ -282,282 +106,223 @@ def test_component_children_param():
 # ---------------------------------------------------------------------------
 
 
-def test_component_renders_via_h():
+def test_component_renders_via_h(wyb, root_element):
     """@component function renders correctly when used with h()."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Greet(name: str = "world"):
-            return vdom.h("p", {}, f"Hello, {name}!")
+    @comp_mod.component
+    def Greet(name: str = "world"):
+        return vdom.h("p", {}, f"Hello, {name}!")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Greet, {"name": "Alice"}), root)
+    vdom.render(vdom.h(Greet, {"name": "Alice"}), root_element)
 
-        texts = _collect_texts(root.element)
-        assert "Hello, Alice!" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "Hello, Alice!" in texts
 
 
-def test_component_renders_with_defaults():
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+def test_component_renders_with_defaults(wyb, root_element):
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Greet(name: str = "world"):
-            return vdom.h("p", {}, f"Hello, {name}!")
+    @comp_mod.component
+    def Greet(name: str = "world"):
+        return vdom.h("p", {}, f"Hello, {name}!")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Greet, {}), root)
+    vdom.render(vdom.h(Greet, {}), root_element)
 
-        texts = _collect_texts(root.element)
-        assert "Hello, world!" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "Hello, world!" in texts
 
 
-def test_component_direct_call_returns_vnode():
+def test_component_direct_call_returns_vnode(wyb):
     """Calling a @component with kwargs directly returns a VNode."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Greet(name: str = "world"):
-            return vdom.h("p", {}, f"Hello, {name}!")
+    @comp_mod.component
+    def Greet(name: str = "world"):
+        return vdom.h("p", {}, f"Hello, {name}!")
 
-        result = Greet(name="Direct")
-        assert isinstance(result, vdom.VNode)
-        assert result.props.get("name") == "Direct"
-    finally:
-        _restore(saved)
+    result = Greet(name="Direct")
+    assert isinstance(result, vdom.VNode)
+    assert result.props.get("name") == "Direct"
 
 
-def test_component_direct_call_renders():
+def test_component_direct_call_renders(wyb, root_element):
     """A VNode from a direct call renders correctly."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Greet(name: str = "world"):
-            return vdom.h("p", {}, f"Hello, {name}!")
+    @comp_mod.component
+    def Greet(name: str = "world"):
+        return vdom.h("p", {}, f"Hello, {name}!")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vnode = Greet(name="Direct")
-        vdom.render(vnode, root)
+    vnode = Greet(name="Direct")
+    vdom.render(vnode, root_element)
 
-        texts = _collect_texts(root.element)
-        assert "Hello, Direct!" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "Hello, Direct!" in texts
 
 
-def test_component_direct_call_no_args():
+def test_component_direct_call_no_args(wyb, root_element):
     """Calling @component() with no args uses all defaults."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Greet(name: str = "world"):
-            return vdom.h("p", {}, f"Hello, {name}!")
+    @comp_mod.component
+    def Greet(name: str = "world"):
+        return vdom.h("p", {}, f"Hello, {name}!")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(Greet(), root)
+    vdom.render(Greet(), root_element)
 
-        texts = _collect_texts(root.element)
-        assert "Hello, world!" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "Hello, world!" in texts
 
 
-def test_component_direct_call_with_children():
+def test_component_direct_call_with_children(wyb, root_element):
     """Positional args in direct calls become children."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Wrapper(title: str = "", children=None):
-            kids = children if children else []
-            return vdom.h("div", {}, vdom.h("h3", {}, title), *kids)
+    @comp_mod.component
+    def Wrapper(title: str = "", children=None):
+        kids = children if children else []
+        return vdom.h("div", {}, vdom.h("h3", {}, title), *kids)
 
-        child1 = vdom.h("p", {}, "child one")
-        child2 = vdom.h("p", {}, "child two")
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(Wrapper(child1, child2, title="Card"), root)
+    child1 = vdom.h("p", {}, "child one")
+    child2 = vdom.h("p", {}, "child two")
+    vdom.render(Wrapper(child1, child2, title="Card"), root_element)
 
-        texts = _collect_texts(root.element)
-        assert "Card" in texts
-        assert "child one" in texts
-        assert "child two" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "Card" in texts
+    assert "child one" in texts
+    assert "child two" in texts
 
 
-def test_component_with_use_state():
+def test_component_with_use_state(wyb, root_element):
     """@component works with use_state hooks."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
 
-        setter_ref = [None]
-        render_log = []
+    setter_ref = [None]
+    render_log = []
 
-        @comp_mod.component
-        def Counter(initial: int = 0):
-            count, set_count = hooks.use_state(initial)
-            setter_ref[0] = set_count
-            render_log.append(count)
-            return vdom.h("p", {}, f"Count: {count}")
+    @comp_mod.component
+    def Counter(initial: int = 0):
+        count, set_count = hooks.use_state(initial)
+        setter_ref[0] = set_count
+        render_log.append(count)
+        return vdom.h("p", {}, f"Count: {count}")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Counter, {"initial": 10}), root)
+    vdom.render(vdom.h(Counter, {"initial": 10}), root_element)
 
-        assert render_log == [10]
-        assert "Count: 10" in _collect_texts(root.element)
+    assert render_log == [10]
+    assert "Count: 10" in collect_texts(root_element.element)
 
-        setter_ref[0](20)
-        time.sleep(0.05)
+    setter_ref[0](20)
+    time.sleep(0.05)
 
-        assert render_log[-1] == 20
-        assert "Count: 20" in _collect_texts(root.element)
-    finally:
-        _restore(saved)
+    assert render_log[-1] == 20
+    assert "Count: 20" in collect_texts(root_element.element)
 
 
-def test_component_with_use_effect():
+def test_component_with_use_effect(wyb, root_element):
     """@component works with use_effect hooks."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
 
-        log = []
+    log = []
 
-        @comp_mod.component
-        def EffectComp():
-            hooks.use_effect(lambda: log.append("mounted"), [])
-            return vdom.h("p", {}, "hello")
+    @comp_mod.component
+    def EffectComp():
+        hooks.use_effect(lambda: log.append("mounted"), [])
+        return vdom.h("p", {}, "hello")
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(EffectComp, {}), root)
+    vdom.render(vdom.h(EffectComp, {}), root_element)
 
-        assert "mounted" in log
-    finally:
-        _restore(saved)
+    assert "mounted" in log
 
 
-def test_component_with_memo():
+def test_component_with_memo(wyb, root_element):
     """@component works when wrapped with memo()."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
 
-        child_renders = [0]
-        parent_setter = [None]
-        stable_label = "stable"
+    child_renders = [0]
+    parent_setter = [None]
+    stable_label = "stable"
 
-        @comp_mod.component
-        def Child(label: str = ""):
-            child_renders[0] += 1
-            return vdom.h("span", {}, f"child:{label}")
+    @comp_mod.component
+    def Child(label: str = ""):
+        child_renders[0] += 1
+        return vdom.h("span", {}, f"child:{label}")
 
-        MemoChild = vdom.memo(Child)
+    MemoChild = vdom.memo(Child)
 
-        def Parent(props):
-            count, set_count = hooks.use_state(0)
-            parent_setter[0] = set_count
-            return vdom.h("div", {}, vdom.h("p", {}, str(count)), vdom.h(MemoChild, {"label": stable_label}))
+    def Parent(props):
+        count, set_count = hooks.use_state(0)
+        parent_setter[0] = set_count
+        return vdom.h("div", {}, vdom.h("p", {}, str(count)), vdom.h(MemoChild, {"label": stable_label}))
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Parent, {}), root)
-        assert child_renders[0] == 1
+    vdom.render(vdom.h(Parent, {}), root_element)
+    assert child_renders[0] == 1
 
-        parent_setter[0](1)
-        time.sleep(0.05)
+    parent_setter[0](1)
+    time.sleep(0.05)
 
-        assert child_renders[0] == 1
-    finally:
-        _restore(saved)
+    assert child_renders[0] == 1
 
 
-def test_component_no_params():
+def test_component_no_params(wyb, root_element):
     """@component with no parameters works correctly."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Divider():
-            return vdom.h("hr", {})
+    @comp_mod.component
+    def Divider():
+        return vdom.h("hr", {})
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Divider, {}), root)
+    vdom.render(vdom.h(Divider, {}), root_element)
 
-        assert root.element.childNodes[0].tag == "hr"
-    finally:
-        _restore(saved)
+    assert root_element.element.childNodes[0].tag == "hr"
 
 
-def test_component_nested():
+def test_component_nested(wyb, root_element):
     """Nested @component functions work correctly."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, comp_mod = wyb["vdom"], wyb["component"]
 
-        @comp_mod.component
-        def Inner(value: str = "inner"):
-            return vdom.h("span", {}, value)
+    @comp_mod.component
+    def Inner(value: str = "inner"):
+        return vdom.h("span", {}, value)
 
-        @comp_mod.component
-        def Outer(label: str = "outer"):
-            return vdom.h("div", {}, vdom.h("p", {}, label), vdom.h(Inner, {"value": "nested"}))
+    @comp_mod.component
+    def Outer(label: str = "outer"):
+        return vdom.h("div", {}, vdom.h("p", {}, label), vdom.h(Inner, {"value": "nested"}))
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Outer, {"label": "parent"}), root)
+    vdom.render(vdom.h(Outer, {"label": "parent"}), root_element)
 
-        texts = _collect_texts(root.element)
-        assert "parent" in texts
-        assert "nested" in texts
-    finally:
-        _restore(saved)
+    texts = collect_texts(root_element.element)
+    assert "parent" in texts
+    assert "nested" in texts
 
 
-def test_component_re_renders_on_prop_change():
+def test_component_re_renders_on_prop_change(wyb, root_element):
     """@component re-renders when parent passes new props."""
-    saved = _install_stubs()
-    try:
-        vdom, hooks, dom, comp_mod = _reload_modules()
+    vdom, hooks, comp_mod = wyb["vdom"], wyb["hooks"], wyb["component"]
 
-        child_renders = [0]
-        parent_setter = [None]
+    child_renders = [0]
+    parent_setter = [None]
 
-        @comp_mod.component
-        def Child(count: int = 0):
-            child_renders[0] += 1
-            return vdom.h("span", {}, f"count={count}")
+    @comp_mod.component
+    def Child(count: int = 0):
+        child_renders[0] += 1
+        return vdom.h("span", {}, f"count={count}")
 
-        def Parent(props):
-            val, set_val = hooks.use_state(0)
-            parent_setter[0] = set_val
-            return vdom.h("div", {}, vdom.h(Child, {"count": val}))
+    def Parent(props):
+        val, set_val = hooks.use_state(0)
+        parent_setter[0] = set_val
+        return vdom.h("div", {}, vdom.h(Child, {"count": val}))
 
-        root = dom.Element(node=_Node(tag="div"))
-        vdom.render(vdom.h(Parent, {}), root)
-        assert child_renders[0] == 1
-        assert "count=0" in _collect_texts(root.element)
+    vdom.render(vdom.h(Parent, {}), root_element)
+    assert child_renders[0] == 1
+    assert "count=0" in collect_texts(root_element.element)
 
-        parent_setter[0](5)
-        time.sleep(0.05)
+    parent_setter[0](5)
+    time.sleep(0.05)
 
-        assert child_renders[0] == 2
-        assert "count=5" in _collect_texts(root.element)
-    finally:
-        _restore(saved)
+    assert child_renders[0] == 2
+    assert "count=5" in collect_texts(root_element.element)
 
 
 def test_component_exported_from_package():
