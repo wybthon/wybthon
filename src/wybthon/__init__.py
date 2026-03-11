@@ -6,6 +6,7 @@ non-browser environments, importing DOM/VDOM features only when available.
 
 import importlib
 
+from ._warnings import DEV_MODE, is_dev_mode, set_dev_mode
 from .component import component
 from .forms import (
     FieldState,
@@ -44,6 +45,7 @@ if _IN_BROWSER:
     from .component import Component, forward_ref
     from .context import Context, Provider, create_context, use_context
     from .dom import Element, Ref
+    from .error_boundary import ErrorBoundary
     from .events import DomEvent
     from .html import (
         a,
@@ -102,8 +104,11 @@ if _IN_BROWSER:
         video,
     )
     from .lazy import lazy, load_component, preload_component
+    from .portal import create_portal
+    from .reconciler import render
     from .router import Link, Route, Router, current_path, navigate
-    from .vdom import ErrorBoundary, Fragment, Suspense, VNode, create_portal, h, memo, render
+    from .suspense import Suspense
+    from .vnode import Fragment, VNode, h, memo
 
     __all__ = [
         # DOM
@@ -174,6 +179,10 @@ if _IN_BROWSER:
         "lazy",
         "load_component",
         "preload_component",
+        # Dev mode
+        "DEV_MODE",
+        "set_dev_mode",
+        "is_dev_mode",
         # HTML element helpers
         "div",
         "span",
@@ -266,4 +275,7 @@ else:
         "rules_from_schema",
         "a11y_control_attrs",
         "error_message_attrs",
+        "DEV_MODE",
+        "set_dev_mode",
+        "is_dev_mode",
     ]

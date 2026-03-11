@@ -2,6 +2,26 @@
 
 ::: wybthon.vdom
 
+The VDOM system is implemented as a set of focused sub-modules. The
+`wybthon.vdom` module re-exports all public names for convenience:
+
+| Module                      | Responsibility                                       |
+|-----------------------------|------------------------------------------------------|
+| `wybthon.vnode`             | `VNode`, `h()`, `Fragment`, `memo()`                 |
+| `wybthon.reconciler`        | `render()`, `mount()`, `unmount()`, `patch()`        |
+| `wybthon.props`             | DOM prop application, style/event/dataset diffing    |
+| `wybthon.error_boundary`    | `ErrorBoundary` component                            |
+| `wybthon.suspense`          | `Suspense` component                                 |
+| `wybthon.portal`            | `create_portal()`                                    |
+
+You can import from either `wybthon.vdom` or the specific sub-module:
+
+```python
+from wybthon.vdom import h, render          # re-export hub
+from wybthon.vnode import h                 # direct import
+from wybthon.reconciler import render       # direct import
+```
+
 #### Public API
 
 - `VNode`
@@ -26,7 +46,7 @@
 - Example:
 
 ```python
-from wybthon.vdom import h, render
+from wybthon import h, render
 from wybthon.dom import Element
 
 root = Element(node=document.createElement("div"))
@@ -58,7 +78,7 @@ render(h("div", {}, "world"), root)  # updates the same text node
 
 - Notes:
   - If the fallback callable throws, a simple text node "Error rendering fallback" is shown.
-  - When not in an error state, the boundary renders its `children` wrapped in a `div`.
+  - When not in an error state, the boundary renders its `children` wrapped in a `Fragment`.
 
 #### Prop semantics (style, dataset, value, checked)
 
@@ -108,4 +128,16 @@ MemoList = memo(ExpensiveList)
 from wybthon import create_portal, h
 
 portal = create_portal(h("div", {}, "Modal content"), "#modal-root")
+```
+
+#### Development mode
+
+Wybthon includes a development mode (`DEV_MODE = True` by default) that provides
+clear error messages to stderr when something goes wrong during rendering, event
+handling, or lifecycle hooks. Errors include component names and tracebacks.
+
+```python
+from wybthon import set_dev_mode
+
+set_dev_mode(False)  # disable for production
 ```

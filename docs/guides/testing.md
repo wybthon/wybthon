@@ -29,6 +29,18 @@ Notes:
 
 For Python-only logic (e.g., `reactivity`, `forms` helpers), write regular `pytest` tests under `tests/`.
 
+Several core modules are browser-agnostic and can be tested without any
+stubs:
+
+- `wybthon.vnode` — VNode creation, `h()`, `Fragment`, `memo()`
+- `wybthon.error_boundary` — ErrorBoundary component logic
+- `wybthon.suspense` — Suspense component logic
+- `wybthon._warnings` — dev-mode error reporting
+
+For browser-dependent modules (`reconciler`, `props`, `dom`, `events`), the
+existing test files use `_install_stubs()` to inject fake `js` and `pyodide`
+modules before reloading the Wybthon modules under test.
+
 #### Coverage
 
 We use `pytest-cov` for coverage and enforce a minimum in CI.

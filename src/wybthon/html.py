@@ -19,7 +19,7 @@ Prop name mapping:
 
 from typing import Any, Callable
 
-from .vdom import Fragment, VNode, h
+from .vnode import Fragment, VNode, h
 
 __all__ = [
     "Fragment",

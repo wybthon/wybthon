@@ -25,5 +25,7 @@
   - `DomEvent`
 - Lazy loading
   - `lazy`, `load_component`, `preload_component`
+- Development mode
+  - `DEV_MODE`, `set_dev_mode`, `is_dev_mode`
 
 > Note: DOM/VDOM-related symbols (e.g., `Element`, `h`, `render`, `Component`, router) require a Pyodide/browser environment. In non-browser contexts, only reactivity, forms, and lazy utilities are available.

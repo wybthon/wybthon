@@ -13,7 +13,7 @@ from .context import Provider, create_context, use_context
 from .events import DomEvent
 from .reactivity import signal
 from .router_core import resolve as _resolve_core
-from .vdom import VNode, h
+from .vnode import VNode, h
 
 __all__ = ["Route", "Router", "Link", "navigate", "current_path"]
 
