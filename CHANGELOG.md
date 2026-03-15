@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.15.0 (2026-03-15)
+
+### Features
+
+- Unify on function components; add flow primitives and reactive utilities
+  ([`f657882`](https://github.com/wybthon/wybthon/commit/f6578825bc665b663b3caee7aa688546e22b09e7))
+
+### Refactoring
+
+- **examples**: Revamp demo app with modern UI and structured pages
+  ([`c895ceb`](https://github.com/wybthon/wybthon/commit/c895ceb7d2debf270ec637e3de9111cfcf9a59dd))
+
+
 ## v0.14.0 (2026-03-11)
 
 ### Documentation

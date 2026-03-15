@@ -49,7 +49,7 @@ from .reactivity import (
     use_resource,
 )
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 _IN_BROWSER = False
 try:
