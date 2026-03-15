@@ -25,13 +25,13 @@ def Page():
             h3("Route Configuration"),
             pre(
                 code(
-                    'Route(\n'
+                    "Route(\n"
                     '    path="/about",\n'
-                    '    component=lazy(_AboutLazy),\n'
-                    '    children=[\n'
+                    "    component=lazy(_AboutLazy),\n"
+                    "    children=[\n"
                     '        Route(path="team", component=lazy(_TeamLazy)),\n'
-                    '    ],\n'
-                    ')'
+                    "    ],\n"
+                    ")"
                 ),
                 class_name="code-block",
             ),

@@ -130,9 +130,7 @@ def PortalDemo():
                     },
                 },
             ),
-            create_portal(portal_content, target_el)
-            if (show() and target_el is not None)
-            else span(""),
+            create_portal(portal_content, target_el) if (show() and target_el is not None) else span(""),
             class_name="demo-section",
         )
 

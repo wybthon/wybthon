@@ -22,16 +22,13 @@ def Page(params=None):
                     "fontWeight": "600",
                 },
             ),
-            p(
-                "Try navigating to /docs/guide/intro or /docs/api/signals "
-                "to see the wildcard parameter change."
-            ),
+            p("Try navigating to /docs/guide/intro or /docs/api/signals " "to see the wildcard parameter change."),
             class_name="demo-section",
         ),
         div(
             h3("How It Works"),
             p(
-                'The route /docs/* captures everything after /docs/ as a '
+                "The route /docs/* captures everything after /docs/ as a "
                 '"wildcard" parameter, allowing flexible sub-path matching.'
             ),
             pre(

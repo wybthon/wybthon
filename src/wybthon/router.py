@@ -5,13 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from js import window
-from pyodide.ffi import create_proxy
-
-from .component import Component
 from .context import Provider, create_context, use_context
-from .events import DomEvent
-from .reactivity import signal
+from .reactivity import Signal, get_props, signal
 from .router_core import resolve as _resolve_core
 from .vnode import VNode, h
 
@@ -21,33 +16,44 @@ __all__ = ["Route", "Router", "Link", "navigate", "current_path"]
 def _current_url() -> str:
     """Return current pathname+search from the window, or "/" on failure."""
     try:
+        from js import window
+
         return str(window.location.pathname) + str(window.location.search)
     except Exception:
         return "/"
 
 
-current_path = signal(_current_url())
+current_path: Signal[str] = signal(_current_url())
+
+_popstate_proxy: Any = None
 
 
-def _on_popstate(_evt) -> None:
-    """Window popstate handler that updates the current_path signal."""
-    current_path.set(_current_url())
+def _install_popstate() -> None:
+    """Install the popstate listener (once) if running in a browser."""
+    global _popstate_proxy
+    if _popstate_proxy is not None:
+        return
+    try:
+        from js import window
+        from pyodide.ffi import create_proxy
 
+        def _on_popstate(_evt: Any) -> None:
+            current_path.set(_current_url())
 
-_popstate_proxy = None
-
-try:
-    # Keep a reference to the proxy to prevent GC and event loop invalid state errors
-    if _popstate_proxy is None:
         _popstate_proxy = create_proxy(_on_popstate)
         window.addEventListener("popstate", _popstate_proxy)
-except Exception:
-    pass
+    except Exception:
+        pass
+
+
+_install_popstate()
 
 
 def navigate(path: str, *, replace: bool = False) -> None:
     """Programmatically change the current path and update `current_path`."""
     try:
+        from js import window
+
         if replace:
             window.history.replaceState(None, "", path)
         else:
@@ -94,7 +100,6 @@ class Route:
 
 def _compile(path: str) -> Tuple[str, List[str]]:
     """Compile a route path into a regex and list of param names."""
-    # Convert patterns like "/users/:id" to regex "^/users/([^/]+)$"
     parts = path.strip("/").split("/") if path != "/" else [""]
     names: List[str] = []
     regex_parts: List[str] = []
@@ -142,7 +147,6 @@ def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optiona
         route, info = res
         return route, info
     except Exception:
-        # Fallback to flat matching of top-level routes only
         for r in routes:
             m = _match(pathname, r)
             if m is not None:
@@ -154,12 +158,22 @@ def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optiona
 BasePath = create_context("")
 
 
-class Router(Component):
-    def render(self) -> VNode:
-        """Render the matched route's component or a not-found view."""
-        routes: List[Route] = self.props.get("routes", [])
-        base_path: str = self.props.get("base_path", "")
+def Router(props: Dict[str, Any]) -> Any:
+    """Function component that renders the matched route's component.
+
+    Props:
+      - routes: List[Route]
+      - base_path: str
+      - not_found: component to render on 404
+    """
+    props_getter = get_props()
+
+    def render() -> VNode:
+        p = props_getter()
+        routes: List[Route] = p.get("routes", [])
+        base_path: str = p.get("base_path", "")
         path = current_path.get()
+
         if "?" in path:
             pathname, search = path.split("?", 1)
             search = "?" + search
@@ -169,36 +183,28 @@ class Router(Component):
 
         resolved = _resolve(routes, pathname, base_path)
         if resolved is None:
-            not_found = self.props.get("not_found")
-            if callable(not_found) and not isinstance(not_found, type):
-                vnode = not_found({"query": query, "params": {}})
-                if not isinstance(vnode, VNode):
-                    vnode = h("div", {}, vnode)
-                return vnode
-            if isinstance(not_found, type):
-                return h(not_found, {**self.props, "query": query, "params": {}})
+            not_found = p.get("not_found")
+            if not_found is not None:
+                return h(not_found, {"query": query, "params": {}})
             return h("div", {}, "Not Found")
 
         matched_route, info = resolved
         info["query"] = query
 
         comp = matched_route.component
-        props = {**self.props, **info}
-        # Function component vs class component
-        if callable(comp) and not isinstance(comp, type):
-            sub = comp(props)
-            if not isinstance(sub, VNode):
-                sub = h("div", {}, sub)
-            return h(Provider, {"context": BasePath, "value": base_path}, sub)
-        return h(Provider, {"context": BasePath, "value": base_path}, h(comp, props))
+        route_props = {**info}
+        return h(Provider, {"context": BasePath, "value": base_path}, h(comp, route_props))
+
+    return render
 
 
 def Link(props: Dict[str, Any]) -> VNode:
     """Anchor element component that navigates via history API without reloads."""
+    from .events import DomEvent
+
     to = props.get("to", "/")
     replace = bool(props.get("replace", False))
     class_active = props.get("class_active", "active")
-    # Use explicit base_path prop if provided, otherwise read from context
     base_path: str = props.get("base_path") or use_context(BasePath) or ""
 
     def _with_base(target: str) -> str:
@@ -212,7 +218,6 @@ def Link(props: Dict[str, Any]) -> VNode:
             if base_path == "/":
                 return target
             return (base_path.rstrip("/") or "/") + target
-        # relative path; join with base
         if base_path == "/":
             return "/" + target.strip("/")
         return (base_path.rstrip("/") or "") + "/" + target.strip("/")
@@ -220,7 +225,6 @@ def Link(props: Dict[str, Any]) -> VNode:
     def handle_click(evt: DomEvent) -> None:
         try:
             js_evt = evt._js_event
-            # Allow new-tab and modified clicks to pass through
             if (
                 getattr(js_evt, "metaKey", False)
                 or getattr(js_evt, "ctrlKey", False)
@@ -234,7 +238,6 @@ def Link(props: Dict[str, Any]) -> VNode:
         href = _with_base(to)
         navigate(href, replace=replace)
 
-    # Compute active state by comparing normalized paths (ignore search/hash)
     try:
         current = current_path.get()
     except Exception:
@@ -247,7 +250,6 @@ def Link(props: Dict[str, Any]) -> VNode:
 
     is_active = current_no_search == href_no_search
 
-    # Merge class names with active class when active
     existing_class = props.get("class") or props.get("className")
     classes: List[str] = []
     if isinstance(existing_class, str) and existing_class.strip():
@@ -257,12 +259,10 @@ def Link(props: Dict[str, Any]) -> VNode:
     if is_active and class_active:
         classes.append(str(class_active))
 
-    attrs = {"href": href_no_search, "on_click": handle_click}
+    attrs: Dict[str, Any] = {"href": href_no_search, "on_click": handle_click}
     if classes:
         attrs["class"] = " ".join(classes)
 
-    # Forward additional props (including event handlers) to the anchor element,
-    # excluding Link-specific control props and class/className (already handled).
     _reserved = {"to", "replace", "class_active", "base_path", "children", "class", "className", "href", "on_click"}
     for k, v in props.items():
         if k in _reserved:

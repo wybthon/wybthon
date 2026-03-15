@@ -1,30 +1,27 @@
-from wybthon import Component, button, computed, div, li, p, signal, ul
+from wybthon import button, component, create_memo, create_signal, div, li, p, ul
 
 
-class NamesList(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.names = signal([])
-        self.starts_with_a = computed(lambda: len([n for n in self.names.get() if str(n).lower().startswith("a")]))
+@component
+def NamesList():
+    names, set_names = create_signal([])
+    starts_with_a = create_memo(lambda: len([n for n in names() if str(n).lower().startswith("a")]))
 
-        def make_add(name):
-            return lambda _evt: self.names.set(self.names.get() + [name])
+    def add_name(name):
+        return lambda _evt: set_names(names() + [name])
 
-        def clear(_evt):
-            self.names.set([])
+    def clear(_evt):
+        set_names([])
 
-        self._add_ada = make_add("Ada")
-        self._add_alan = make_add("Alan")
-        self._clear = clear
-
-    def render(self):
-        items = [li(n) for n in self.names.get()]
+    def render():
+        items = [li(n) for n in names()]
         return div(
-            p(f"Total: {len(self.names.get())} | Starts with A: {self.starts_with_a.get()}"),
+            p(f"Total: {len(names())} | Starts with A: {starts_with_a()}"),
             div(
-                button("+ Ada", on_click=getattr(self, "_add_ada", lambda e: None)),
-                button("+ Alan", on_click=getattr(self, "_add_alan", lambda e: None)),
-                button("Clear", on_click=getattr(self, "_clear", lambda e: None)),
+                button("+ Ada", on_click=add_name("Ada")),
+                button("+ Alan", on_click=add_name("Alan")),
+                button("Clear", on_click=clear),
             ),
-            ul(items),
+            ul(*items),
         )
+
+    return render

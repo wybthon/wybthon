@@ -99,25 +99,4 @@ container = Element("body", existing=True)
 render(tree, container)
 ```
 
-Class component with state:
-
-```python
-from wybthon import Component, Element, button, div, h, p, render, signal
-
-class Counter(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.count = signal(0)
-
-    def render(self):
-        return div(
-            p(f"Count: {self.count.get()}"),
-            button("Increment", on_click=lambda e: self.count.set(self.count.get() + 1)),
-        )
-
-tree = h(Counter, {})
-container = Element("body", existing=True)
-render(tree, container)
-```
-
 See: [Authoring Patterns](guides/authoring-patterns.md)

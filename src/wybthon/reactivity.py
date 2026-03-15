@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Deque, Generic, List, Optional, Set, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Deque, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
 
 __all__ = [
     "Signal",
@@ -16,6 +16,7 @@ __all__ = [
     "batch",
     "Resource",
     "use_resource",
+    "create_resource",
     # Signals-first component primitives
     "create_signal",
     "create_effect",
@@ -23,6 +24,12 @@ __all__ = [
     "on_mount",
     "on_cleanup",
     "get_props",
+    # Reactive utilities
+    "untrack",
+    "on",
+    "create_root",
+    "merge_props",
+    "split_props",
 ]
 
 T = TypeVar("T")
@@ -238,6 +245,23 @@ def batch() -> _Batch:
     return _Batch()
 
 
+def untrack(fn: Callable[[], T]) -> T:
+    """Run *fn* without tracking any signal reads.
+
+    Useful inside effects when you need to read a signal without creating
+    a dependency::
+
+        create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
+    """
+    global _current_computation
+    prev = _current_computation
+    _current_computation = None
+    try:
+        return fn()
+    finally:
+        _current_computation = prev
+
+
 # -------------------- Async resource utility --------------------
 R = TypeVar("R")
 
@@ -249,16 +273,18 @@ class Resource(Generic[R]):
     """Async resource wrapper with Signals for data, error, and loading.
 
     Use `reload()` to (re)fetch, `cancel()` to cancel the in-flight request.
+    Optionally accepts a *source* getter; when the source signal changes the
+    resource automatically refetches.
     """
 
-    def __init__(self, fetcher: FetchFn) -> None:
-        # Lazily import to avoid import cycles at module import time
-        import asyncio  # local import for Pyodide compatibility
+    def __init__(self, fetcher: FetchFn, source: Optional[Callable[[], Any]] = None) -> None:
+        import asyncio
         import inspect
 
         self._asyncio = asyncio
         self._inspect = inspect
         self._fetcher: FetchFn = fetcher
+        self._source = source
         self._task: Optional[asyncio.Task[Any]] = None
         self._abort_controller: Any = None
         self._version: int = 0
@@ -267,8 +293,25 @@ class Resource(Generic[R]):
         self.error: Signal[Optional[Any]] = Signal(None)
         self.loading: Signal[bool] = Signal(False)
 
-        # Kick off initial load
         self.reload()
+
+        if source is not None:
+            self._source_effect: Optional[Computation] = None
+            self._setup_source_tracking()
+
+    def _setup_source_tracking(self) -> None:
+        """Watch the source signal and refetch when it changes."""
+        first_run = [True]
+
+        def watcher() -> None:
+            assert self._source is not None
+            self._source()
+            if first_run[0]:
+                first_run[0] = False
+                return
+            self.reload()
+
+        self._source_effect = effect(watcher)
 
     def _make_abort_controller(self) -> Any:
         try:
@@ -350,14 +393,28 @@ class Resource(Generic[R]):
             pass
 
 
-def use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]:
+def create_resource(
+    source_or_fetcher: Union[Callable[[], Any], Callable[..., Awaitable[R]]],
+    fetcher: Optional[Callable[..., Awaitable[R]]] = None,
+) -> Resource[R]:
     """Create an async Resource with loading/error states and cancellation.
 
-    The provided `fetcher` should be an async function returning the data value.
-    If it accepts a `signal` keyword argument, an AbortSignal will be passed for
-    cancellation support when available.
+    Can be called two ways:
+
+    - ``create_resource(fetcher)`` -- simple fetcher, no source signal.
+    - ``create_resource(source, fetcher)`` -- refetches automatically when
+      the *source* getter's return value changes.
+
+    The *fetcher* should be an async function returning the data value.
+    If it accepts a ``signal`` keyword argument, an AbortSignal will be
+    passed for cancellation support when available.
     """
-    return Resource(fetcher)
+    if fetcher is None:
+        return Resource(source_or_fetcher)
+    return Resource(fetcher, source=source_or_fetcher)
+
+
+use_resource = create_resource
 
 
 # -------------------- Component context & signals-first primitives --------------------
@@ -394,6 +451,7 @@ class _ComponentContext(_CleanupOwner):
         "_props",
         "_props_signal",
         "_vnode",
+        "_error_handler",
     )
 
     def __init__(self) -> None:
@@ -404,6 +462,7 @@ class _ComponentContext(_CleanupOwner):
         self._props: dict = {}
         self._props_signal: Optional[Signal[Any]] = None
         self._vnode: Any = None
+        self._error_handler: Optional[Callable[..., Any]] = None
 
     def _run_mount_callbacks(self) -> None:
         for fn in self._mount_callbacks:
@@ -555,3 +614,117 @@ def get_props() -> Callable[[], dict]:
     if ctx._props_signal is None:
         ctx._props_signal = Signal(ctx._props)
     return ctx._props_signal.get
+
+
+# ---- Additional reactive utilities ----
+
+
+def on(
+    deps: Union[Callable[[], Any], List[Callable[[], Any]]],
+    fn: Callable[..., Any],
+    defer: bool = False,
+) -> Computation:
+    """Create an effect with explicit dependencies.
+
+    *deps* is a single getter or a list of getters.  *fn* receives the
+    current value(s) as positional arguments.  Only the listed deps are
+    tracked; the body of *fn* is run inside ``untrack``.
+
+    When *defer* is ``True`` the effect skips the first execution
+    (useful for reacting only to changes, not the initial value).
+
+    Example::
+
+        on(count, lambda v: print("count is now", v))
+    """
+    dep_list: List[Callable[[], Any]] = deps if isinstance(deps, list) else [deps]
+    ran = [False]
+
+    def tracked() -> None:
+        values = [d() for d in dep_list]
+        if defer and not ran[0]:
+            ran[0] = True
+            return
+        ran[0] = True
+
+        def call_fn() -> None:
+            if len(values) == 1:
+                fn(values[0])
+            else:
+                fn(*values)
+
+        global _current_computation
+        prev = _current_computation
+        _current_computation = None
+        try:
+            call_fn()
+        finally:
+            _current_computation = prev
+
+    return create_effect(tracked)
+
+
+def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
+    """Run *fn* with an independent reactive root.
+
+    *fn* receives a ``dispose`` callback that tears down all effects
+    created inside the root::
+
+        result = create_root(lambda dispose: ...)
+    """
+    effects: List[Computation] = []
+    root_ctx = _ComponentContext()
+    _push_component_ctx(root_ctx)
+    try:
+
+        def dispose() -> None:
+            root_ctx._dispose_effects()
+            root_ctx._run_cleanups()
+
+        result = fn(dispose)
+        effects.extend(root_ctx._effects)
+        return result
+    finally:
+        _pop_component_ctx()
+
+
+def merge_props(*sources: dict) -> dict:
+    """Merge multiple prop dicts.  Later sources win on conflict.
+
+    Example::
+
+        defaults = {"size": "md", "variant": "solid"}
+        final = merge_props(defaults, props)
+    """
+    out: dict = {}
+    for src in sources:
+        if src:
+            out.update(src)
+    return out
+
+
+def split_props(
+    props: dict,
+    *key_groups: List[str],
+) -> Tuple[dict, ...]:
+    """Split a props dict into groups by key name, plus a rest dict.
+
+    Returns ``(group1, group2, ..., rest)`` where *rest* contains keys
+    not claimed by any group.
+
+    Example::
+
+        local, rest = split_props(props, ["class", "style"])
+    """
+    results: List[dict] = []
+    used: set = set()
+    for group in key_groups:
+        d: dict = {}
+        for key in group:
+            if key in props:
+                d[key] = props[key]
+                used.add(key)
+        results.append(d)
+    rest = {k: v for k, v in props.items() if k not in used}
+    results.append(rest)
+    return tuple(results)

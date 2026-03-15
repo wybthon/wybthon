@@ -1,6 +1,6 @@
 ### Components
 
-Wybthon supports both function and class components.
+Wybthon uses function components exclusively, following the SolidJS model.
 
 #### Function components with `@component` (recommended)
 
@@ -89,22 +89,6 @@ def Hello(props):
 
 The HTML helpers accept **children as positional arguments** and **props as keyword arguments**. Use `class_name` instead of `class` (reserved word in Python) and `html_for` instead of `for`.
 
-#### Class components
-
-```python
-from wybthon import Component, div, p, signal
-
-class Counter(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.count = signal(0)
-
-    def render(self):
-        return div(p(f"Count: {self.count.get()}"))
-```
-
-Lifecycle hooks for class components: `on_mount`, `on_update(prev_props)`, `on_unmount`.
-
 #### Fragment
 
 Use `Fragment` to group children without adding a visible wrapper element:
@@ -182,7 +166,28 @@ def Modal():
 
 The second argument is an `Element` or a CSS selector string.
 
-Both function and class styles are fully supported. For new code, **`@component` with signals-first primitives** is recommended for conciseness, type safety, and composability.
+#### Flow control
+
+Wybthon provides SolidJS-style flow control components for declarative
+rendering logic:
+
+```python
+from wybthon import Show, For, Switch, Match
+
+# Conditional rendering
+Show(is_logged_in(), p("Welcome!"), fallback=p("Please log in"))
+
+# List rendering (keyed)
+For(items(), lambda item, idx: li(item, key=idx()))
+
+# Multi-branch matching
+Switch(
+    Match(status() == "loading", p("Loading...")),
+    Match(status() == "error", p("Error!")),
+    Match(status() == "ready", p("Ready")),
+    fallback=p("Unknown"),
+)
+```
 
 See the guide for recommended patterns around props, state, children, cleanup, and context:
 

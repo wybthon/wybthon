@@ -69,20 +69,21 @@ Non-bubbling alternatives:
 When you need non-bubbling events or special options (e.g., `passive: False`), attach directly via `Ref` + `Element.on`:
 
 ```python
-from wybthon import Component, h, Ref
+from wybthon import component, div, on_mount, Ref
 
-class HoverDemo(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.ref = Ref()
+@component
+def HoverDemo():
+    ref = Ref()
 
-    def on_mount(self):
-        if self.ref.current is not None:
-            # Example for a non-delegated listener
-            self.ref.current.on("mouseenter", lambda e: print("entered"))
+    def setup():
+        if ref.current is not None:
+            ref.current.on("mouseenter", lambda e: print("entered"))
 
-    def render(self):
-        return h("div", {"ref": self.ref, "class": "box"}, "Hover me")
+    on_mount(setup)
+
+    def render():
+        return div("Hover me", ref=ref, class_name="box")
+    return render
 ```
 
 #### Pyodide cross-browser notes

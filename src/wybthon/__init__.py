@@ -7,7 +7,7 @@ non-browser environments, importing DOM/VDOM features only when available.
 import importlib
 
 from ._warnings import DEV_MODE, is_dev_mode, set_dev_mode
-from .component import component
+from .component import component, forward_ref
 from .forms import (
     FieldState,
     a11y_control_attrs,
@@ -33,19 +33,24 @@ from .reactivity import (
     computed,
     create_effect,
     create_memo,
+    create_resource,
+    create_root,
     create_signal,
     effect,
     get_props,
+    merge_props,
+    on,
     on_cleanup,
     on_effect_cleanup,
     on_mount,
     signal,
+    split_props,
+    untrack,
     use_resource,
 )
 
 __version__ = "0.14.0"
 
-# Detect Pyodide/browser environment where `js` module exists
 _IN_BROWSER = False
 try:
     importlib.import_module("js")
@@ -54,12 +59,11 @@ except Exception:
     _IN_BROWSER = False
 
 if _IN_BROWSER:
-    # Import browser/VDOM-related modules only when running under Pyodide
-    from .component import Component, forward_ref
     from .context import Context, Provider, create_context, use_context
     from .dom import Element, Ref
     from .error_boundary import ErrorBoundary
     from .events import DomEvent
+    from .flow import Dynamic, For, Index, Match, Show, Switch
     from .html import (
         a,
         article,
@@ -128,7 +132,6 @@ if _IN_BROWSER:
         "Element",
         "Ref",
         # Components
-        "Component",
         "component",
         "forward_ref",
         # VDOM
@@ -140,21 +143,27 @@ if _IN_BROWSER:
         "Suspense",
         "memo",
         "create_portal",
-        # Reactivity (low-level)
-        "signal",
-        "computed",
-        "effect",
-        "batch",
-        "on_effect_cleanup",
-        "use_resource",
-        "Resource",
-        # Signals-first primitives
+        # Reactivity
         "create_signal",
         "create_effect",
         "create_memo",
+        "create_resource",
+        "create_root",
+        "batch",
         "on_mount",
         "on_cleanup",
         "get_props",
+        "untrack",
+        "on",
+        "merge_props",
+        "split_props",
+        "Resource",
+        # Legacy aliases
+        "signal",
+        "computed",
+        "effect",
+        "on_effect_cleanup",
+        "use_resource",
         # Events
         "DomEvent",
         # Context
@@ -168,6 +177,13 @@ if _IN_BROWSER:
         "Link",
         "navigate",
         "current_path",
+        # Flow control
+        "Show",
+        "For",
+        "Index",
+        "Switch",
+        "Match",
+        "Dynamic",
         # Forms
         "bind_text",
         "bind_checkbox",
@@ -251,23 +267,45 @@ if _IN_BROWSER:
         "aside",
     ]
 else:
-    # Minimal Python-only surface for tooling/CLI usage (no browser modules)
+    from .context import Context, Provider, create_context, use_context
+    from .flow import Dynamic, For, Index, Match, Show, Switch
+
     __all__ = [
         "component",
-        "signal",
-        "computed",
-        "effect",
-        "batch",
-        "on_effect_cleanup",
-        "use_resource",
-        "Resource",
-        # Signals-first primitives
+        "forward_ref",
+        # Reactivity
         "create_signal",
         "create_effect",
         "create_memo",
+        "create_resource",
+        "create_root",
+        "batch",
         "on_mount",
         "on_cleanup",
         "get_props",
+        "untrack",
+        "on",
+        "merge_props",
+        "split_props",
+        "Resource",
+        # Legacy aliases
+        "signal",
+        "computed",
+        "effect",
+        "on_effect_cleanup",
+        "use_resource",
+        # Context
+        "Context",
+        "create_context",
+        "use_context",
+        "Provider",
+        # Flow control
+        "Show",
+        "For",
+        "Index",
+        "Switch",
+        "Match",
+        "Dynamic",
         # Forms
         "bind_text",
         "bind_checkbox",

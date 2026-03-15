@@ -35,22 +35,4 @@ def Counter(props):
     )
 ```
 
-#### Class component variant
-
-```python
-from wybthon import Component, button, div, p, signal
-
-class Counter(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.count = signal(0)
-
-    def render(self):
-        return div(
-            p(f"Count: {self.count.get()}"),
-            button("Increment", on_click=lambda e: self.count.set(self.count.get() + 1)),
-            class_name="counter",
-        )
-```
-
 See also: [Primitives](../concepts/primitives.md) · [Authoring Patterns](../guides/authoring-patterns.md)

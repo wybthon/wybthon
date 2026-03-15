@@ -53,9 +53,7 @@ def load_component(module_path: str, attr: Optional[str] = None) -> Callable[[Di
 
             # Wrap class components into h(class, props) and allow function components to pass through
             def as_vnode(props: Dict[str, Any]) -> VNode:
-                from .component import Component  # local import to avoid cycles
-
-                if isinstance(comp, type) and issubclass(comp, Component):
+                if isinstance(comp, type):
                     return h(comp, props)
                 sub = comp(props)
                 if isinstance(sub, VNode):

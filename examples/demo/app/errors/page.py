@@ -1,4 +1,4 @@
-from wybthon import ErrorBoundary, button, code, component, div, h, h2, h3, p, pre, signal
+from wybthon import ErrorBoundary, button, code, component, create_signal, div, h, h2, h3, p, pre
 
 
 @component
@@ -6,7 +6,7 @@ def Page():
     def Bug(_props):
         raise RuntimeError("Boom!")
 
-    key_sig = signal(0)
+    key_val, set_key_val = create_signal(0)
 
     def Fallback(err, reset):
         return div(
@@ -16,7 +16,7 @@ def Page():
         )
 
     def bump_key(_evt):
-        key_sig.set(key_sig.get() + 1)
+        set_key_val(key_val() + 1)
 
     return div(
         div(
@@ -27,21 +27,13 @@ def Page():
         div(
             h3("Automatic Error Catching"),
             p("The component below throws a RuntimeError. The ErrorBoundary catches it:"),
-            h(
-                ErrorBoundary,
-                {"fallback": Fallback},
-                div(h(Bug, {})),
-            ),
+            h(ErrorBoundary, {"fallback": Fallback}, div(h(Bug, {}))),
             class_name="demo-section",
         ),
         div(
             h3("Reset via Key Change"),
             p("This boundary re-renders its children when the reset key changes:"),
-            h(
-                ErrorBoundary,
-                {"fallback": Fallback, "reset_key": lambda: key_sig.get()},
-                div(h(Bug, {})),
-            ),
+            h(ErrorBoundary, {"fallback": Fallback, "reset_key": key_val}, div(h(Bug, {}))),
             button("Change Reset Key", on_click=bump_key),
             class_name="demo-section",
         ),
@@ -50,13 +42,9 @@ def Page():
             pre(
                 code(
                     "def Fallback(err, reset):\n"
-                    '    return div(p(f"Caught: {err}"),\n'
-                    '              button("Retry", on_click=lambda e: reset()))\n'
-                    "\n"
-                    "h(ErrorBoundary, {\n"
-                    '    "fallback": Fallback,\n'
-                    '    "reset_key": lambda: key_sig.get(),\n'
-                    "}, children)"
+                    "    ...\n"
+                    'h(ErrorBoundary, {"fallback": Fallback,\n'
+                    '    "reset_key": key_val}, children)'
                 ),
                 class_name="code-block",
             ),

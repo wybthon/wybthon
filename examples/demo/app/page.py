@@ -82,12 +82,11 @@ def Page():
             div(
                 _feature(
                     "Signals",
-                    "Fine-grained reactivity with create_signal, create_effect, "
-                    "and create_memo.",
+                    "Fine-grained reactivity with create_signal, create_effect, " "and create_memo.",
                 ),
                 _feature(
                     "Components",
-                    "Function and class components with the @component decorator.",
+                    "Function components with the @component decorator.",
                 ),
                 _feature(
                     "Virtual DOM",
@@ -95,8 +94,7 @@ def Page():
                 ),
                 _feature(
                     "Routing",
-                    "Client-side routing with nested routes, lazy loading, "
-                    "and wildcards.",
+                    "Client-side routing with nested routes, lazy loading, " "and wildcards.",
                 ),
                 _feature(
                     "Forms",
@@ -104,7 +102,7 @@ def Page():
                 ),
                 _feature(
                     "Async Resources",
-                    "Fetch data with use_resource and Suspense for loading states.",
+                    "Fetch data with create_resource and Suspense for loading states.",
                 ),
                 _feature(
                     "Context",

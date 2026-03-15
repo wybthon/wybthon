@@ -187,16 +187,11 @@ def reload_wybthon_modules():
     ``context``, ``reactivity`` pointing to the freshly reloaded module objects.
     """
     mods = {}
-    # Only reload modules that import from ``js`` at the top level.
-    # Other modules are loaded once and shared, which keeps ``isinstance``
-    # checks consistent (e.g. _PortalComponent inherits the same Component
-    # class that the reconciler imports).
     for name in ("dom", "events", "reconciler", "vdom"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
-    # Also expose non-reloaded modules so tests can access them.
-    for name in ("component", "context", "reactivity", "props", "vnode"):
+    for name in ("component", "context", "reactivity", "props", "vnode", "flow"):
         mods[name] = importlib.import_module(f"wybthon.{name}")
     return mods
 

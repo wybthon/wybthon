@@ -88,6 +88,7 @@ async function bootstrap() {
       "dom.py",
       "error_boundary.py",
       "events.py",
+      "flow.py",
       "forms.py",
       "html.py",
       "lazy.py",

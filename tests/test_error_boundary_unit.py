@@ -1,35 +1,40 @@
-"""Unit tests for ErrorBoundary component logic (no browser stubs needed)."""
+"""Unit tests for ErrorBoundary component logic."""
 
-from wybthon.error_boundary import ErrorBoundary
+from wybthon.error_boundary import _compute_reset_token, _render_fallback
 from wybthon.vnode import VNode, to_text_vnode
 
 
-def test_error_boundary_renders_children_when_no_error():
-    eb = ErrorBoundary({"children": [to_text_vnode("child")]})
-    result = eb.render()
-    assert isinstance(result, VNode)
+def test_compute_reset_token_none():
+    assert _compute_reset_token({}) == ""
 
 
-def test_error_boundary_renders_fallback_string_on_error():
-    eb = ErrorBoundary({"fallback": "oops", "children": []})
-    eb._error.set(RuntimeError("boom"))
-    result = eb.render()
+def test_compute_reset_token_single():
+    assert _compute_reset_token({"reset_key": "v1"}) == repr("v1")
+
+
+def test_compute_reset_token_list():
+    assert _compute_reset_token({"reset_keys": [1, 2]}) == repr((1, 2))
+
+
+def test_compute_reset_token_callable():
+    assert _compute_reset_token({"reset_key": lambda: 42}) == repr(42)
+
+
+def test_render_fallback_string():
+    result = _render_fallback(RuntimeError("boom"), {"fallback": "oops"}, lambda: None)
     assert isinstance(result, VNode)
     assert result.tag == "_text"
     assert result.props["nodeValue"] == "oops"
 
 
-def test_error_boundary_renders_fallback_vnode_on_error():
-    fallback_node = to_text_vnode("fallback content")
-    eb = ErrorBoundary({"fallback": fallback_node, "children": []})
-    eb._error.set(RuntimeError("boom"))
-    result = eb.render()
-    assert isinstance(result, VNode)
+def test_render_fallback_vnode():
+    fb = to_text_vnode("fallback content")
+    result = _render_fallback(RuntimeError("boom"), {"fallback": fb}, lambda: None)
     assert result.tag == "_text"
     assert result.props["nodeValue"] == "fallback content"
 
 
-def test_error_boundary_renders_callable_fallback():
+def test_render_fallback_callable():
     captured = {}
 
     def fallback_fn(error, reset):
@@ -37,72 +42,31 @@ def test_error_boundary_renders_callable_fallback():
         captured["reset"] = reset
         return to_text_vnode(f"Error: {error}")
 
-    eb = ErrorBoundary({"fallback": fallback_fn, "children": []})
-    eb._error.set(ValueError("bad"))
-    result = eb.render()
-    assert isinstance(result, VNode)
+    result = _render_fallback(ValueError("bad"), {"fallback": fallback_fn}, lambda: None)
     assert result.tag == "_text"
     assert "bad" in result.props["nodeValue"]
     assert "error" in captured
 
 
-def test_error_boundary_callable_fallback_without_reset():
+def test_render_fallback_callable_without_reset():
     def fallback_fn(error):
         return to_text_vnode(f"Error: {error}")
 
-    eb = ErrorBoundary({"fallback": fallback_fn, "children": []})
-    eb._error.set(ValueError("bad"))
-    result = eb.render()
-    assert isinstance(result, VNode)
+    result = _render_fallback(ValueError("bad"), {"fallback": fallback_fn}, lambda: None)
     assert result.tag == "_text"
     assert "bad" in result.props["nodeValue"]
 
 
-def test_error_boundary_reset_clears_error():
-    eb = ErrorBoundary({"fallback": "oops", "children": [to_text_vnode("child")]})
-    eb._error.set(RuntimeError("boom"))
-
-    assert eb._error.get() is not None
-    eb.reset()
-    assert eb._error.get() is None
-
-
-def test_error_boundary_reset_key_auto_clears():
-    eb = ErrorBoundary({"fallback": "oops", "children": [], "reset_key": "v1"})
-    eb._error.set(RuntimeError("boom"))
-    eb._last_reset_token = repr("v1")
-
-    eb.props["reset_key"] = "v2"
-    eb.render()
-    assert eb._error.get() is None
-
-
-def test_error_boundary_reset_keys_list():
-    eb = ErrorBoundary({"fallback": "oops", "children": [], "reset_keys": [1, 2]})
-    eb._error.set(RuntimeError("boom"))
-    eb._last_reset_token = repr((1, 2))
-
-    eb.props["reset_keys"] = [1, 3]
-    eb.render()
-    assert eb._error.get() is None
-
-
-def test_error_boundary_default_fallback_message():
-    eb = ErrorBoundary({"children": []})
-    eb._error.set(RuntimeError("boom"))
-    result = eb.render()
-    assert isinstance(result, VNode)
+def test_render_fallback_default():
+    result = _render_fallback(RuntimeError("boom"), {}, lambda: None)
     assert result.tag == "_text"
     assert result.props["nodeValue"] == "Something went wrong."
 
 
-def test_error_boundary_fallback_fn_that_raises():
+def test_render_fallback_callable_that_raises():
     def bad_fallback(error, reset):
         raise TypeError("fallback broken")
 
-    eb = ErrorBoundary({"fallback": bad_fallback, "children": []})
-    eb._error.set(RuntimeError("boom"))
-    result = eb.render()
-    assert isinstance(result, VNode)
+    result = _render_fallback(RuntimeError("boom"), {"fallback": bad_fallback}, lambda: None)
     assert result.tag == "_text"
     assert result.props["nodeValue"] == "Error rendering fallback"

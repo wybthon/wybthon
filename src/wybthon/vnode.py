@@ -21,7 +21,6 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .component import Component
     from .dom import Element
     from .reactivity import Computation
 
@@ -45,7 +44,6 @@ class VNode:
     children: List[ChildType] = field(default_factory=list)
     key: Optional[Union[str, int]] = None
     el: Optional[Element] = None
-    component_instance: Optional[Component] = None
     subtree: Optional[VNode] = None
     render_effect: Optional[Computation] = None
     component_ctx: Optional[Any] = None

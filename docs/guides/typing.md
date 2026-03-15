@@ -19,11 +19,11 @@ Guidelines:
   - `signal(value) -> Signal[T]`
   - `computed(fn: Callable[[], T]) -> _Computed[T]`
   - `effect(fn: Callable[[], Any]) -> Computation`
-  - `use_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`
+  - `create_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`
 
 ```python
 from typing import Awaitable
-from wybthon import signal, computed, effect, use_resource
+from wybthon import signal, computed, effect, create_resource
 
 count = signal(0)
 double = computed(lambda: count.get() * 2)
@@ -37,21 +37,15 @@ c.dispose()          # stop updates
 async def fetch_user() -> dict:
     return {"name": "Ada"}
 
-res = use_resource(cast(Callable[[], Awaitable[dict]], fetch_user))
+res = create_resource(cast(Callable[[], Awaitable[dict]], fetch_user))
 ```
 
 - Component typing
-  - `Component.render(self) -> VNode`
   - Function components: `def MyComp(props: Dict[str, Any]) -> VNode`
 
 ```python
 from typing import Any, Dict
-from wybthon import Component, h, VNode
-
-class Hello(Component):
-    def render(self) -> VNode:
-        name = self.props.get("name", "world")
-        return h("div", {}, f"Hello {name}")
+from wybthon import h, VNode
 
 def HelloFn(props: Dict[str, Any]) -> VNode:
     return h("div", {}, f"Hello {props.get('name', 'world')}")

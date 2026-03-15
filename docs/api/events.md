@@ -56,19 +56,21 @@ Because Wybthon uses document-level delegation, event types that do not bubble w
 Direct listeners example (when you need non-bubbling events or options like `passive`: False):
 
 ```python
-from wybthon import Component, h, Ref
+from wybthon import component, h, on_mount, Ref
 
-class Video(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.ref = Ref()
+@component
+def Video():
+    ref = Ref()
 
-    def on_mount(self):
-        if self.ref.current is not None:
-            self.ref.current.on("play", lambda e: print("playing"))
+    def setup():
+        if ref.current is not None:
+            ref.current.on("play", lambda e: print("playing"))
 
-    def render(self):
-        return h("video", {"ref": self.ref})
+    on_mount(setup)
+
+    def render():
+        return h("video", {"ref": ref})
+    return render
 ```
 
 #### Pyodide and cross-browser notes

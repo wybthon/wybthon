@@ -45,18 +45,12 @@ def Page():
                 ),
                 div(
                     h3("Components"),
-                    p(
-                        "Stateful components return a render function. Stateless "
-                        "components return VNodes directly."
-                    ),
+                    p("Stateful components return a render function. Stateless " "components return VNodes directly."),
                     class_name="concept-card",
                 ),
                 div(
                     h3("Context"),
-                    p(
-                        "Share values across the component tree without passing "
-                        "props through every level."
-                    ),
+                    p("Share values across the component tree without passing " "props through every level."),
                     class_name="concept-card",
                 ),
                 class_name="concept-grid",

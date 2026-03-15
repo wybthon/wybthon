@@ -1,8 +1,14 @@
-"""Unit tests for Suspense component logic (no browser stubs needed)."""
+"""Unit tests for Suspense component logic.
 
+These tests exercise the Suspense function component through the reconciler
+using browser stubs, since Suspense uses get_props() and create_signal()
+which require a component context.
+"""
+
+from conftest import collect_texts
+
+import wybthon as _wybthon_pkg  # noqa: F401
 from wybthon.reactivity import signal
-from wybthon.suspense import Suspense
-from wybthon.vnode import VNode, to_text_vnode
 
 
 class FakeResource:
@@ -12,80 +18,85 @@ class FakeResource:
         self.loading = signal(is_loading)
 
 
-def test_suspense_renders_children_when_no_resources():
-    s = Suspense({"children": [to_text_vnode("content")]})
-    result = s.render()
-    assert isinstance(result, VNode)
+def test_suspense_renders_children_when_no_resources(wyb, root_element):
+    vdom = wyb["vdom"]
+    vdom.render(
+        vdom.h(vdom.Suspense, {"children": [vdom.h("p", {}, "content")]}),
+        root_element,
+    )
+    assert "content" in collect_texts(root_element.element)
 
 
-def test_suspense_renders_fallback_when_loading():
+def test_suspense_renders_fallback_when_loading(wyb, root_element):
+    vdom = wyb["vdom"]
     res = FakeResource(is_loading=True)
-    s = Suspense({"resource": res, "fallback": "Loading...", "children": [to_text_vnode("content")]})
-    result = s.render()
-    assert result.tag == "_text"
-    assert result.props["nodeValue"] == "Loading..."
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resource": res, "fallback": "Loading...", "children": [vdom.h("p", {}, "data")]}),
+        root_element,
+    )
+    assert "Loading..." in collect_texts(root_element.element)
 
 
-def test_suspense_renders_children_when_loaded():
+def test_suspense_renders_children_when_loaded(wyb, root_element):
+    vdom = wyb["vdom"]
     res = FakeResource(is_loading=False)
-    s = Suspense({"resource": res, "children": [to_text_vnode("data")]})
-    result = s.render()
-    assert isinstance(result, VNode)
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resource": res, "children": [vdom.h("p", {}, "data")]}),
+        root_element,
+    )
+    assert "data" in collect_texts(root_element.element)
 
 
-def test_suspense_multiple_resources():
+def test_suspense_multiple_resources_any_loading(wyb, root_element):
+    vdom = wyb["vdom"]
     res1 = FakeResource(is_loading=False)
     res2 = FakeResource(is_loading=True)
-    s = Suspense({"resources": [res1, res2], "fallback": "Wait...", "children": []})
-    result = s.render()
-    assert result.props["nodeValue"] == "Wait..."
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resources": [res1, res2], "fallback": "Wait...", "children": []}),
+        root_element,
+    )
+    assert "Wait..." in collect_texts(root_element.element)
 
 
-def test_suspense_all_loaded():
+def test_suspense_all_loaded(wyb, root_element):
+    vdom = wyb["vdom"]
     res1 = FakeResource(is_loading=False)
     res2 = FakeResource(is_loading=False)
-    s = Suspense({"resources": [res1, res2], "children": [to_text_vnode("done")]})
-    result = s.render()
-    assert isinstance(result, VNode)
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resources": [res1, res2], "children": [vdom.h("p", {}, "done")]}),
+        root_element,
+    )
+    assert "done" in collect_texts(root_element.element)
 
 
-def test_suspense_callable_fallback():
+def test_suspense_callable_fallback(wyb, root_element):
+    vdom = wyb["vdom"]
+    from wybthon.vnode import to_text_vnode
+
     res = FakeResource(is_loading=True)
-
-    def fb():
-        return to_text_vnode("custom loading")
-
-    s = Suspense({"resource": res, "fallback": fb, "children": []})
-    result = s.render()
-    assert result.props["nodeValue"] == "custom loading"
-
-
-def test_suspense_keep_previous():
-    res = FakeResource(is_loading=False)
-    s = Suspense({"resource": res, "fallback": "Wait...", "keep_previous": True, "children": [to_text_vnode("data")]})
-
-    result = s.render()
-    assert s._has_completed_once is True
-
-    res.loading.set(True)
-    result = s.render()
-    assert isinstance(result, VNode)
+    fb = lambda: to_text_vnode("custom loading")  # noqa: E731
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resource": res, "fallback": fb, "children": []}),
+        root_element,
+    )
+    assert "custom loading" in collect_texts(root_element.element)
 
 
-def test_suspense_default_fallback():
-    res = FakeResource(is_loading=True)
-    s = Suspense({"resource": res, "children": []})
-    result = s.render()
-    assert result.tag == "_text"
+def test_suspense_none_resources_filtered(wyb, root_element):
+    vdom = wyb["vdom"]
+    vdom.render(
+        vdom.h(vdom.Suspense, {"resources": [None, None], "children": [vdom.h("p", {}, "ok")]}),
+        root_element,
+    )
+    assert "ok" in collect_texts(root_element.element)
 
 
-def test_suspense_none_resources_filtered():
-    s = Suspense({"resources": [None, None], "children": [to_text_vnode("ok")]})
-    result = s.render()
-    assert isinstance(result, VNode)
+def test_suspense_normalize_single_child(wyb, root_element):
+    vdom = wyb["vdom"]
+    from wybthon.vnode import to_text_vnode
 
-
-def test_suspense_normalize_single_child():
-    s = Suspense({"children": to_text_vnode("single")})
-    result = s.render()
-    assert isinstance(result, VNode)
+    vdom.render(
+        vdom.h(vdom.Suspense, {"children": to_text_vnode("single")}),
+        root_element,
+    )
+    assert "single" in collect_texts(root_element.element)

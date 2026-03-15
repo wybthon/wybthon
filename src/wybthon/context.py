@@ -5,14 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from .vnode import Fragment
+
 __all__ = ["Context", "create_context", "use_context", "Provider"]
-
-# Avoid importing browser/DOM-dependent Component in non-browser/test environments
-try:  # pragma: no cover - import guard behavior varies by environment
-    from .component import Component as _Component
-except Exception:  # pragma: no cover
-    _Component = None  # type: ignore
-
 
 _next_context_id = 0
 _context_stack: List[Dict[int, Any]] = []
@@ -59,18 +54,21 @@ def pop_provider_value() -> None:
         _context_stack.pop()
 
 
-class Provider(_Component if _Component is not None else object):  # type: ignore[misc]
-    """Context provider component.
+def Provider(props: Dict[str, Any]) -> Any:
+    """Context provider component (function component).
+
+    Renders its children transparently.  The reconciler handles pushing
+    and popping context values around this component's subtree mount.
 
     Props:
       - context: Context
       - value: Any
       - children: VNode or list of VNodes
     """
+    children = props.get("children", [])
+    if not isinstance(children, list):
+        children = [children]
+    return Fragment(*children)
 
-    def render(self):
-        """Render passthrough children; VDOM manages push/pop of context value."""
-        # Provider render is a simple passthrough; the VDOM is responsible for
-        # pushing/popping the provided value around this component's subtree.
-        children = self.props.get("children")
-        return children
+
+Provider._wyb_provider = True  # type: ignore[attr-defined]

@@ -1,57 +1,38 @@
-"""Suspense component for rendering fallback UI during async resource loading."""
+"""Suspense function component for rendering fallback UI during async loading."""
 
 from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .component import Component
+from .reactivity import create_signal, get_props
 from .vnode import Fragment, VNode, to_text_vnode
 
 __all__ = ["Suspense"]
 
 
-class Suspense(Component):
+def Suspense(props: Dict[str, Any]) -> Any:
     """Render a fallback while one or more resources are loading.
 
     Props:
-      - resources | resource: Resource or list of Resources (objects exposing ``.loading.get()``)
+      - resources | resource: Resource or list of Resources
       - fallback: VNode | str | callable returning VNode/str
-      - keep_previous: bool (default False) -- when True, keep children visible after first
-        successful load even if a subsequent reload is in-flight.
+      - keep_previous: bool (default False)
       - children: child VNodes to render when not loading
     """
+    has_completed, set_completed = create_signal(False)
+    props_getter = get_props()
 
-    def __init__(self, props: Dict[str, Any]) -> None:
-        super().__init__(props)
-        self._has_completed_once: bool = False
-
-    def render(self) -> VNode:
-        """Render fallback or children based on resource loading state."""
-        resources = self._normalize_resources()
-        if not resources:
-            return self._render_children()
-        keep_previous = bool(self.props.get("keep_previous", False))
-        is_loading = self._is_loading(resources)
-        if is_loading:
-            if keep_previous and self._has_completed_once:
-                return self._render_children()
-            return self._render_fallback()
-        self._has_completed_once = True
-        return self._render_children()
-
-    def _normalize_resources(self) -> List[Any]:
-        """Normalize the resources prop(s) to a flat list."""
-        res = self.props.get("resources")
-        if res is None and "resource" in self.props:
-            res = [self.props.get("resource")]
+    def _normalize_resources(p: Dict[str, Any]) -> List[Any]:
+        res = p.get("resources")
+        if res is None and "resource" in p:
+            res = [p.get("resource")]
         if res is None:
             return []
         if not isinstance(res, list):
             res = [res]
         return [r for r in res if r is not None]
 
-    def _is_loading(self, resources: List[Any]) -> bool:
-        """Return True if any resource reports loading=True."""
+    def _is_loading(resources: List[Any]) -> bool:
         for r in resources:
             try:
                 loading_sig = getattr(r, "loading", None)
@@ -63,16 +44,14 @@ class Suspense(Component):
                 continue
         return False
 
-    def _render_children(self) -> VNode:
-        """Render the children inside a Fragment container."""
-        children: List[Any] = self.props.get("children", [])
+    def _render_children(p: Dict[str, Any]) -> VNode:
+        children: List[Any] = p.get("children", [])
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)
 
-    def _render_fallback(self) -> VNode:
-        """Render the fallback content as a VNode."""
-        fb = self.props.get("fallback")
+    def _render_fallback(p: Dict[str, Any]) -> VNode:
+        fb = p.get("fallback")
         vnode: Any
         if callable(fb):
             try:
@@ -84,3 +63,20 @@ class Suspense(Component):
         if not isinstance(vnode, VNode):
             vnode = to_text_vnode(vnode)
         return vnode
+
+    def render() -> VNode:
+        p = props_getter()
+        resources = _normalize_resources(p)
+        if not resources:
+            return _render_children(p)
+        keep_previous = bool(p.get("keep_previous", False))
+        loading = _is_loading(resources)
+        if loading:
+            if keep_previous and has_completed():
+                return _render_children(p)
+            return _render_fallback(p)
+        if not has_completed():
+            set_completed(True)
+        return _render_children(p)
+
+    return render

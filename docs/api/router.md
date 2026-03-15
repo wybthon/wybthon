@@ -5,7 +5,7 @@
 #### API
 
 - `class Route(path: str, component, children: Optional[List[Route]] = None)`
-- `class Router(routes: List[Route], base_path: str = "", not_found: Optional[Component|function] = None)`
+- `class Router(routes: List[Route], base_path: str = "", not_found: Optional[Callable[[Dict], VNode]] = None)`
 - `function Link({to: str, children, base_path?: str, replace?: bool, class_active?: str})`
 - `function navigate(path: str, replace: bool = False)`
 - `signal current_path` – reactive signal with current `path + search`

@@ -1,6 +1,6 @@
 ### Authoring Patterns
 
-This guide shows how to author components in Wybthon using the `@component` decorator, traditional function components, and class components. It focuses on props, state with `create_signal`/`create_effect`/`create_memo`, children composition, cleanup, and context.
+This guide shows how to author components in Wybthon using the `@component` decorator and traditional function components. It focuses on props, state with `create_signal`/`create_effect`/`create_memo`, children composition, cleanup, and context.
 
 #### `@component` decorator (recommended)
 
@@ -81,41 +81,6 @@ def Card(props):
     return h("section", {"class": "card"}, h("h3", {}, title), children)
 ```
 
-#### Class components
-
-Subclass `Component` to encapsulate state and lifecycles.
-
-```python
-from wybthon import Component, h, signal, effect, on_effect_cleanup
-
-class Counter(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.count = signal(0)
-
-        def inc(_evt):
-            self.count.set(self.count.get() + 1)
-
-        self._inc = inc
-
-        comp = effect(lambda: print("count:", self.count.get()))
-        on_effect_cleanup(comp, lambda: print("effect disposed"))
-        self.on_cleanup(lambda: comp.dispose())
-
-    def render(self):
-        return h(
-            "div",
-            {"class": "counter"},
-            h("p", {}, f"Count: {self.count.get()}"),
-            h("button", {"on_click": getattr(self, "_inc", lambda e: None)}, "Increment"),
-        )
-```
-
-- State: store `signal` instances as attributes. Read with `.get()` during render.
-- Events: pass bound methods or closures via `on_click`, `on_input`, etc.
-- Cleanup: register teardown work with `on_cleanup(fn)` so it runs on unmount.
-- Updates: `on_update(prev_props)` fires after a prop change and diff is applied.
-
 #### Props and defaults
 
 With `@component`, props and defaults are built into the function signature:
@@ -173,15 +138,13 @@ def Layout(children=None):
 
 - Use **`@component` with signals** for most components — concise, type-safe, composable.
 - Use **traditional function components** for simple wrappers or when migrating existing code.
-- Use **class components** when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.
 
-All three styles interoperate seamlessly and can be composed together.
+Both styles interoperate seamlessly and can be composed together.
 
 #### Patterns checklist
 
 - Use `@component` for new function components with typed props.
 - Accept `children` and pass them through when building layout components.
-- Store signals on `self` in class components; avoid re-creating them during `render`.
 - Use `create_effect` for side-effects; clean up with `on_cleanup`.
 - Keep events simple and avoid catching errors unless you can handle them.
 
@@ -204,42 +167,36 @@ def Page():
     )
 ```
 
-2) State and derived values (class component with `signal` + `computed`)
+2) State and derived values (`@component` with `create_signal` + `create_memo`)
 
 ```python
-from wybthon import Component, h, signal, computed
+from wybthon import button, component, create_memo, create_signal, div, h, p, ul
 
-class NamesList(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.names = signal([])
-        self.starts_with_a = computed(
-            lambda: len([n for n in self.names.get() if str(n).lower().startswith("a")])
-        )
+@component
+def NamesList():
+    names, set_names = create_signal([])
+    starts_with_a = create_memo(
+        lambda: len([n for n in names() if str(n).lower().startswith("a")])
+    )
 
-        def make_add(name):
-            return lambda _evt: self.names.set(self.names.get() + [name])
+    def make_add(name):
+        return lambda _evt: set_names(names() + [name])
 
-        def clear(_evt):
-            self.names.set([])
+    def clear(_evt):
+        set_names([])
 
-        self._add_ada = make_add("Ada")
-        self._add_alan = make_add("Alan")
-        self._clear = clear
-
-    def render(self):
-        items = [h("li", {}, n) for n in self.names.get()]
-        return h(
-            "div",
-            {},
-            h("p", {}, f"Total: {len(self.names.get())} | Starts with A: {self.starts_with_a.get()}"),
-            h("div", {},
-              h("button", {"on_click": getattr(self, "_add_ada", lambda e: None)}, "+ Ada"),
-              h("button", {"on_click": getattr(self, "_add_alan", lambda e: None)}, "+ Alan"),
-              h("button", {"on_click": getattr(self, "_clear", lambda e: None)}, "Clear"),
+    def render():
+        items = [h("li", {}, n) for n in names()]
+        return div(
+            p(f"Total: {len(names())} | Starts with A: {starts_with_a()}"),
+            div(
+                button("+ Ada", on_click=make_add("Ada")),
+                button("+ Alan", on_click=make_add("Alan")),
+                button("Clear", on_click=clear),
             ),
-            h("ul", {}, items),
+            ul(*items),
         )
+    return render
 ```
 
 3) Cleanup and lifecycles (`@component` with signals)
@@ -275,8 +232,8 @@ from wybthon import component, div, h
 @component
 def Page():
     return div(
-        Card(h(NamesList, {}), title="State & Derived"),
-        Card(h(Timer, {}), title="Cleanup"),
+        h(Card, {"title": "State & Derived"}, h(NamesList, {})),
+        h(Card, {"title": "Cleanup"}, h(Timer, {})),
     )
 ```
 

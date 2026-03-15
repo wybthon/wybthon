@@ -8,9 +8,9 @@ Build interactive web apps in Python that execute entirely in the browser. Wybth
 
 ## Features
 
-- Virtual DOM renderer with function and class components
+- Virtual DOM renderer with function components
 - **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`
-- Low-level primitives: `signal`, `computed`, `effect`, `batch`, and `use_resource`
+- Low-level primitives: `signal`, `computed`, `effect`, `batch`, and `create_resource`
 - Router with path params, query parsing, and a `Link` component
 - Contexts and a `Provider` component
 - DOM helpers and event delegation

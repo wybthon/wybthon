@@ -8,10 +8,10 @@
   - `Element`, `Ref`
   - `VNode`, `h`, `render`
 - Components
-  - `Component`, `ErrorBoundary`, `Suspense`
+  - `ErrorBoundary`, `Suspense`
 - Reactivity
   - `signal`, `computed`, `effect`, `batch`, `on_effect_cleanup`
-  - `Resource`, `use_resource`
+  - `Resource`, `create_resource`
 - Context
   - `Context`, `create_context`, `use_context`, `Provider`
 - Router
@@ -28,4 +28,4 @@
 - Development mode
   - `DEV_MODE`, `set_dev_mode`, `is_dev_mode`
 
-> Note: DOM/VDOM-related symbols (e.g., `Element`, `h`, `render`, `Component`, router) require a Pyodide/browser environment. In non-browser contexts, only reactivity, forms, and lazy utilities are available.
+> Note: DOM/VDOM-related symbols (e.g., `Element`, `h`, `render`, router) require a Pyodide/browser environment. In non-browser contexts, only reactivity, forms, and lazy utilities are available.

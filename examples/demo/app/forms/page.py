@@ -1,11 +1,12 @@
 from wybthon import (
-    Component,
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
     bind_text,
     button,
     code,
+    component,
+    create_signal,
     div,
     email,
     error_message_attrs,
@@ -26,46 +27,47 @@ from wybthon import (
 )
 
 
-class FormsPage(Component):
-    def __init__(self, props):
-        super().__init__(props)
-        self.form = form_state(
-            {
-                "name": "",
-                "email": "",
-                "subscribe": False,
-                "choice": "",
-            }
+@component
+def FormsPage():
+    fs = form_state(
+        {
+            "name": "",
+            "email": "",
+            "subscribe": False,
+            "choice": "",
+        }
+    )
+
+    rules = {
+        "name": [required(), min_length(2)],
+        "email": [email()],
+    }
+
+    result, set_result = create_signal("")
+
+    def submit_handler(_form):
+        name = fs["name"].value.get()
+        email_val = fs["email"].value.get()
+        set_result(
+            f"Submitted: name={name}, email={email_val}, "
+            f"subscribe={fs['subscribe'].value.get()}, "
+            f"choice={fs['choice'].value.get()}"
         )
 
-        self._rules = {
-            "name": [required(), min_length(2)],
-            "email": [email()],
-        }
+    submit = on_submit_validated(rules, submit_handler, fs)
 
-        def submit_handler(_form):
-            name = self.form["name"].value.get()
-            email_val = self.form["email"].value.get()
-            self._result = (
-                f"Submitted: name={name}, email={email_val}, "
-                f"subscribe={self.form['subscribe'].value.get()}, "
-                f"choice={self.form['choice'].value.get()}"
-            )
-
-        self._on_submit = on_submit_validated(self._rules, submit_handler, self.form)
-
-    def render(self):
-        name_field = self.form["name"]
-        email_field = self.form["email"]
-        sub_field = self.form["subscribe"]
-        choice_field = self.form["choice"]
+    def render():
+        name_field = fs["name"]
+        email_field = fs["email"]
+        sub_field = fs["subscribe"]
+        choice_field = fs["choice"]
 
         name_bind = bind_text(name_field, validators=[required(), min_length(2)])
         email_bind = bind_text(email_field, validators=[email()])
         sub_bind = bind_checkbox(sub_field)
         choice_bind = bind_select(choice_field)
 
-        result_text = getattr(self, "_result", "")
+        result_text = result()
 
         name_err_id = "name-error"
         email_err_id = "email-error"
@@ -84,9 +86,7 @@ class FormsPage(Component):
                             id="name-input",
                             type="text",
                             **name_bind,
-                            **a11y_control_attrs(
-                                name_field, described_by_id=name_err_id
-                            ),
+                            **a11y_control_attrs(name_field, described_by_id=name_err_id),
                         ),
                         span(
                             name_field.error.get() or "",
@@ -101,9 +101,7 @@ class FormsPage(Component):
                             id="email-input",
                             type="email",
                             **email_bind,
-                            **a11y_control_attrs(
-                                email_field, described_by_id=email_err_id
-                            ),
+                            **a11y_control_attrs(email_field, described_by_id=email_err_id),
                         ),
                         span(
                             email_field.error.get() or "",
@@ -113,10 +111,7 @@ class FormsPage(Component):
                         class_name="form-group",
                     ),
                     div(
-                        label(
-                            input_(type="checkbox", **sub_bind),
-                            " Subscribe to newsletter",
-                        ),
+                        label(input_(type="checkbox", **sub_bind), " Subscribe to newsletter"),
                         class_name="form-group",
                     ),
                     div(
@@ -131,7 +126,7 @@ class FormsPage(Component):
                         class_name="form-group",
                     ),
                     button("Submit", type="submit"),
-                    on_submit=getattr(self, "_on_submit", lambda e: None),
+                    on_submit=submit,
                 ),
                 p(result_text) if result_text else span(""),
                 class_name="demo-section",
@@ -140,16 +135,8 @@ class FormsPage(Component):
                 h3("Validation Rules"),
                 pre(
                     code(
-                        "form = form_state({\n"
-                        '    "name": "", "email": "",\n'
-                        '    "subscribe": False, "choice": "",\n'
-                        "})\n"
-                        "\n"
-                        "rules = {\n"
-                        '    "name": [required(), min_length(2)],\n'
-                        '    "email": [email()],\n'
-                        "}\n"
-                        "\n"
+                        "form = form_state({...})\n"
+                        "rules = {...}\n"
                         "on_submit = on_submit_validated(rules, handler, form)"
                     ),
                     class_name="code-block",
@@ -158,3 +145,5 @@ class FormsPage(Component):
             ),
             class_name="page",
         )
+
+    return render

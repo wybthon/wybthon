@@ -1,8 +1,8 @@
 """Core reconciliation engine: mounting, patching, and unmounting VNode trees.
 
 This module implements the VDOM diffing algorithm that translates virtual node
-trees into real DOM mutations.  It handles element nodes, text nodes, class
-components, and function components (with the signals-first reactive model).
+trees into real DOM mutations.  All components are function components using
+the signals-first reactive model.
 
 Key functions:
   - ``render(vnode, container)`` -- top-level entry point
@@ -14,15 +14,13 @@ Key functions:
 from __future__ import annotations
 
 from bisect import bisect_left
-from typing import Any, Callable, Dict, List, Optional, Set, Union, cast
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 from js import document
 
 from ._warnings import component_name, log_error
-from .component import Component
-from .context import Provider, pop_provider_value, push_provider_value
+from .context import pop_provider_value, push_provider_value
 from .dom import Element
-from .error_boundary import ErrorBoundary
 from .events import remove_all_for
 from .props import apply_props, attach_ref, detach_ref
 from .reactivity import (
@@ -31,7 +29,7 @@ from .reactivity import (
     _push_component_ctx,
     effect,
 )
-from .vnode import ChildType, Fragment, VNode, normalize_children, to_text_vnode
+from .vnode import ChildType, VNode, normalize_children, to_text_vnode
 
 __all__ = ["render", "mount", "unmount", "patch"]
 
@@ -88,58 +86,6 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
 
 
 def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
-    """Mount a component VNode (class or function) into the container."""
-    comp_ctor = vnode.tag
-    assert callable(comp_ctor)
-
-    if isinstance(comp_ctor, type) and issubclass(comp_ctor, Component):
-        return _mount_class_component(vnode, comp_ctor, container, anchor)
-    return _mount_function_component(vnode, comp_ctor, container, anchor)
-
-
-def _mount_class_component(vnode: VNode, comp_ctor: type, container: Element, anchor: Any) -> Element:
-    """Mount a class-based component."""
-    instance = comp_ctor(vnode.props)
-    vnode.component_instance = instance
-
-    def run_render() -> None:
-        try:
-            if isinstance(instance, Provider):
-                ctx = instance.props.get("context")
-                value = instance.props.get("value")
-                children = instance.props.get("children", [])
-                push_provider_value(ctx, value)
-                try:
-                    next_sub = Fragment(*children) if isinstance(children, list) else Fragment(children)
-                finally:
-                    pop_provider_value()
-            else:
-                next_sub = instance.render()
-
-            if not isinstance(next_sub, VNode):
-                next_sub = to_text_vnode(next_sub)
-            prev_sub = vnode.subtree
-            vnode.subtree = next_sub
-            if prev_sub is None:
-                mounted_el = mount(next_sub, container, anchor)
-                vnode.el = mounted_el
-            else:
-                patch(prev_sub, next_sub, container)
-                vnode.el = next_sub.el
-        except Exception as e:
-            _handle_render_error(instance, vnode, e, container, anchor)
-
-    vnode.render_effect = effect(run_render)
-
-    if vnode.component_instance is not None:
-        try:
-            vnode.component_instance.on_mount()
-        except Exception as e:
-            log_error(f"on_mount() failed in {component_name(comp_ctor)}", e)
-    return vnode.el
-
-
-def _mount_function_component(vnode: VNode, comp_fn: Callable, container: Element, anchor: Any) -> Element:
     """Mount a function component using the signals-first model.
 
     The component function is called once (setup phase).  If it returns a
@@ -148,23 +94,27 @@ def _mount_function_component(vnode: VNode, comp_fn: Callable, container: Elemen
     If it returns a ``VNode`` directly, the component is treated as
     stateless and the entire function is re-called on signal changes.
     """
+    comp_fn = vnode.tag
+    assert callable(comp_fn)
+
     ctx = _ComponentContext()
     ctx._props = vnode.props
     ctx._vnode = vnode
     vnode.component_ctx = ctx
 
+    is_provider = getattr(comp_fn, "_wyb_provider", False)
     setup_done: List[bool] = [False]
 
     def run_component(
         _ctx: _ComponentContext = ctx,
-        _comp_fn: Callable = comp_fn,
+        _comp_fn: Any = comp_fn,
         _container: Element = container,
         _anchor: Any = anchor,
     ) -> None:
         cur_vnode = _ctx._vnode
 
         if not setup_done[0]:
-            # ── first run: setup + initial render ──
+            # -- first run: setup + initial render --
             _push_component_ctx(_ctx)
             try:
                 result = _comp_fn(_ctx._props)
@@ -181,11 +131,31 @@ def _mount_function_component(vnode: VNode, comp_fn: Callable, container: Elemen
                 sub_tree = to_text_vnode(sub_tree)
 
             cur_vnode.subtree = sub_tree
-            mounted_el = mount(sub_tree, _container, _anchor)
-            cur_vnode.el = mounted_el
+
+            if is_provider:
+                push_provider_value(_ctx._props.get("context"), _ctx._props.get("value"))
+
+            try:
+                mounted_el = mount(sub_tree, _container, _anchor)
+                cur_vnode.el = mounted_el
+            except Exception as e:
+                if is_provider:
+                    pop_provider_value()
+                if _ctx._error_handler is not None:
+                    _ctx._error_handler(e)
+                    placeholder = to_text_vnode("")
+                    cur_vnode.subtree = placeholder
+                    mounted_el = mount(placeholder, _container, _anchor)
+                    cur_vnode.el = mounted_el
+                else:
+                    raise
+            else:
+                if is_provider:
+                    pop_provider_value()
+
             setup_done[0] = True
         else:
-            # ── subsequent runs: re-render (signal change) ──
+            # -- subsequent runs: re-render (signal change) --
             if _ctx._render_fn is not None:
                 sub_tree = _ctx._render_fn()
             else:
@@ -200,12 +170,27 @@ def _mount_function_component(vnode: VNode, comp_fn: Callable, container: Elemen
 
             prev_sub = cur_vnode.subtree
             cur_vnode.subtree = sub_tree
-            if prev_sub is None:
-                mounted_el = mount(sub_tree, _container, _anchor)
-                cur_vnode.el = mounted_el
+
+            if is_provider:
+                push_provider_value(_ctx._props.get("context"), _ctx._props.get("value"))
+
+            try:
+                if prev_sub is None:
+                    mounted_el = mount(sub_tree, _container, _anchor)
+                    cur_vnode.el = mounted_el
+                else:
+                    patch(prev_sub, sub_tree, _container)
+                    cur_vnode.el = sub_tree.el
+            except Exception as e:
+                if is_provider:
+                    pop_provider_value()
+                if _ctx._error_handler is not None:
+                    _ctx._error_handler(e)
+                else:
+                    raise
             else:
-                patch(prev_sub, sub_tree, _container)
-                cur_vnode.el = sub_tree.el
+                if is_provider:
+                    pop_provider_value()
 
     try:
         vnode.render_effect = effect(run_component)
@@ -227,13 +212,6 @@ def unmount(vnode: VNode) -> None:
         vnode.el.cleanup()
     except Exception as e:
         log_error(f"Cleanup failed for {component_name(vnode.tag)}", e)
-
-    if vnode.component_instance is not None:
-        try:
-            vnode.component_instance._run_cleanups()
-            vnode.component_instance.on_unmount()
-        except Exception as e:
-            log_error(f"on_unmount() failed in {component_name(type(vnode.component_instance))}", e)
 
     if vnode.component_ctx is not None:
         try:
@@ -296,62 +274,11 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
 
 
 def _patch_component(old: VNode, new: VNode, container: Element) -> None:
-    """Patch a component VNode (class or function)."""
-    if isinstance(new.tag, type) and issubclass(new.tag, Component):
-        _patch_class_component(old, new, container)
-    else:
-        _patch_function_component(old, new, container)
-
-
-def _patch_class_component(old: VNode, new: VNode, container: Element) -> None:
-    """Patch a class-based component by updating props and re-rendering."""
-    instance = old.component_instance or new.tag(new.props)  # type: ignore[operator]
-    prev_props = getattr(instance, "props", {})
-    instance.props = new.props
-    new.component_instance = instance
-    try:
-        if isinstance(instance, Provider):
-            ctx = instance.props.get("context")
-            value = instance.props.get("value")
-            children = instance.props.get("children", [])
-            push_provider_value(ctx, value)
-            try:
-                next_sub = Fragment(*children) if isinstance(children, list) else Fragment(children)
-            finally:
-                pop_provider_value()
-        else:
-            next_sub = instance.render()
-            if not isinstance(next_sub, VNode):
-                next_sub = to_text_vnode(next_sub)
-        prev_sub = old.subtree
-        new.subtree = next_sub
-        if prev_sub is None:
-            mount(next_sub, container)
-        else:
-            patch(prev_sub, next_sub, container)
-        try:
-            instance.on_update(prev_props)
-        except Exception as e:
-            log_error(f"on_update() failed in {component_name(type(instance))}", e)
-        return
-    except Exception as e:
-        _handle_render_error(instance, new, e, container, None, old_subtree=old.subtree)
-
-
-def _patch_function_component(old: VNode, new: VNode, container: Element) -> None:
-    """Patch a function component using the signals-first model.
-
-    *Stateful* (has a render function): transfer the component context
-    and render effect.  The render effect re-runs automatically when its
-    signal dependencies change.  If a reactive props signal exists,
-    update it so prop-dependent code can react.
-
-    *Stateless* (returns VNode directly): re-call the component function
-    with the new props and diff the resulting subtree.
-    """
+    """Patch a function component using the signals-first model."""
     ctx = old.component_ctx
+    is_provider = getattr(new.tag, "_wyb_provider", False)
 
-    # ── memo check (applies to both stateful and stateless) ──
+    # -- memo check --
     if getattr(new.tag, "_wyb_memo", False):
         compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
         old_props = ctx._props if ctx is not None else {}
@@ -365,7 +292,7 @@ def _patch_function_component(old: VNode, new: VNode, container: Element) -> Non
             return
 
     if ctx is not None and ctx._render_fn is not None:
-        # ── STATEFUL: don't re-run setup ──
+        # -- STATEFUL: transfer context, update props signal --
         ctx._props = new.props
         if ctx._props_signal is not None:
             ctx._props_signal.set(new.props)
@@ -377,7 +304,7 @@ def _patch_function_component(old: VNode, new: VNode, container: Element) -> Non
         new.el = old.el
         return
 
-    # ── STATELESS: re-call component with new props ──
+    # -- STATELESS: re-call component with new props --
     if ctx is not None:
         ctx._props = new.props
         ctx._vnode = new
@@ -397,11 +324,25 @@ def _patch_function_component(old: VNode, new: VNode, container: Element) -> Non
 
         prev_sub = old.subtree
         new.subtree = result
-        if prev_sub is None:
-            mount(result, container)
+
+        if is_provider:
+            push_provider_value(new.props.get("context"), new.props.get("value"))
+        try:
+            if prev_sub is None:
+                mount(result, container)
+            else:
+                patch(prev_sub, result, container)
+            new.el = result.el
+        except Exception as e:
+            if is_provider:
+                pop_provider_value()
+            if ctx._error_handler is not None:
+                ctx._error_handler(e)
+            else:
+                raise
         else:
-            patch(prev_sub, result, container)
-        new.el = result.el
+            if is_provider:
+                pop_provider_value()
     else:
         result = new.tag(new.props)  # type: ignore[operator]
         if not isinstance(result, VNode):
@@ -413,43 +354,6 @@ def _patch_function_component(old: VNode, new: VNode, container: Element) -> Non
         else:
             patch(prev_sub, result, container)
         new.el = result.el
-
-
-def _handle_render_error(
-    instance: Component,
-    vnode: VNode,
-    error: Exception,
-    container: Element,
-    anchor: Any,
-    *,
-    old_subtree: Optional[VNode] = None,
-) -> None:
-    """Handle a render error, delegating to ErrorBoundary if applicable."""
-    if isinstance(instance, ErrorBoundary):
-        instance._error.set(error)
-        handler = instance.props.get("on_error")
-        if callable(handler):
-            try:
-                handler(error)
-            except Exception as cb_err:
-                log_error("on_error callback failed in ErrorBoundary", cb_err)
-        try:
-            fb_sub = instance.render()
-            if not isinstance(fb_sub, VNode):
-                fb_sub = to_text_vnode(fb_sub)
-        except Exception:
-            fb_sub = to_text_vnode("Error in fallback")
-        prev_sub = old_subtree or vnode.subtree
-        vnode.subtree = fb_sub
-        if prev_sub is None or getattr(prev_sub, "el", None) is None:
-            mount(fb_sub, container, anchor)
-            vnode.el = fb_sub.el
-        else:
-            patch(prev_sub, fb_sub, container)
-            vnode.el = fb_sub.el
-    else:
-        log_error(f"Render failed in {component_name(type(instance))}", error)
-        raise error
 
 
 def _patch_children(old: VNode, new: VNode) -> None:

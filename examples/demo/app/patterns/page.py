@@ -12,7 +12,7 @@ def Page():
             h2("Component Patterns"),
             p(
                 "Reusable patterns: Card wrapper, stateless components, "
-                "class components with signals, and lifecycle management."
+                "signal-based state, and lifecycle management."
             ),
             class_name="page-header",
         ),

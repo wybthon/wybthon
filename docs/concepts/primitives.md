@@ -139,15 +139,3 @@ def Search(query: str = ""):
     return render
 ```
 
----
-
-#### Primitives vs. class components
-
-| | `@component` + primitives | Class component |
-|---|---|---|
-| State | `create_signal` | `self.count = signal(0)` |
-| Side effects | `create_effect` / `on_mount` | `on_mount` / `on_cleanup` |
-| Computed | `create_memo` | `computed(lambda: ...)` |
-
-Both styles are fully supported; choose whichever fits your situation.
-For new code, **`@component` with signals-first primitives is recommended**.

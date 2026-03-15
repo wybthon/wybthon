@@ -1,7 +1,6 @@
 """Virtual DOM primitives, diffing, and rendering to real DOM elements.
 
-This module re-exports the public API from the focused sub-modules that
-were extracted from the original monolithic ``vdom.py``:
+This module re-exports the public API from the focused sub-modules:
 
 - :mod:`wybthon.vnode` -- ``VNode``, ``h``, ``Fragment``, ``memo``
 - :mod:`wybthon.reconciler` -- ``render``, ``mount``, ``unmount``, ``patch``
@@ -35,6 +34,5 @@ __all__ = [
     "patch",
 ]
 
-# Backward-compatible aliases for internal helpers that tests may reference.
 _is_event_prop = is_event_prop
 _unmount = unmount
