@@ -523,6 +523,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#signals-first-api-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signals-first API (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-utilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scheduling-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1829,6 +1851,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#signals-first-api-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signals-first API (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-utilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scheduling-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1907,23 +1951,81 @@
 <li><code>computed(fn)</code> → derived; dispose when not needed</li>
 <li><code>effect(fn)</code> → runs and re-runs on dependencies</li>
 <li><code>batch()</code> → batch updates and schedule once</li>
-<li><code>use_resource(fetcher)</code> → async data with loading/error signals</li>
+<li><code>create_resource(fetcher)</code> → async data with loading/error signals</li>
 </ul>
+<h4 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h4>
+<p>For use inside <code>@component</code> functions, prefer the signals-first API:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_memo</span>
+
+<span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">double</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count changed:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
+</code></pre></div>
+
+<h4 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h4>
+<p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads — useful for
+reading a signal inside an effect without creating a dependency:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">untrack</span>
+
+<span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;a changed:&quot;</span><span class="p">,</span> <span class="n">a</span><span class="p">(),</span> <span class="s2">&quot;b is:&quot;</span><span class="p">,</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
+</code></pre></div>
+
+<p><code>on(deps, fn, defer=False)</code> creates an effect with explicit dependency
+tracking.  The body of <code>fn</code> is automatically untracked:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">on</span>
+
+<span class="n">on</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count is now&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+<span class="n">on</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">va</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;a=</span><span class="si">{</span><span class="n">va</span><span class="si">}</span><span class="s2">, b=</span><span class="si">{</span><span class="n">vb</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">defer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>merge_props(*sources)</code> merges multiple prop dicts (later sources win):</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_props</span>
+
+<span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="s2">&quot;variant&quot;</span><span class="p">:</span> <span class="s2">&quot;solid&quot;</span><span class="p">}</span>
+<span class="n">final</span> <span class="o">=</span> <span class="n">merge_props</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="n">props</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>split_props(props, *key_groups)</code> splits a props dict by key name,
+returning <code>(group1, group2, ..., rest)</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_props</span>
+
+<span class="n">local</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">split_props</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;style&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<p><code>create_root(fn)</code> runs <code>fn</code> in an independent reactive scope:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_root</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">create_root</span><span class="p">(</span><span class="k">lambda</span> <span class="n">dispose</span><span class="p">:</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
 <h4 id="scheduling-semantics">Scheduling semantics<a class="headerlink" href="#scheduling-semantics" title="Permanent link">&para;</a></h4>
 <p>Effects are scheduled on a microtask in Pyodide via <code>queueMicrotask</code> when available, with fallbacks to <code>setTimeout(0)</code> and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.</p>
 <p><code>batch()</code> coalesces multiple <code>set()</code> operations into a single flush at the end of the batch.</p>
 <h4 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h4>
 <p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_effect_cleanup</code> are executed during disposal.</p>
 <h4 id="resources-cancellation-and-suspense">Resources, cancellation, and Suspense<a class="headerlink" href="#resources-cancellation-and-suspense" title="Permanent link">&para;</a></h4>
-<p><code>use_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
+<p><code>create_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
+<p>You can also pass a source signal to automatically refetch when it changes:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_resource</span><span class="p">,</span> <span class="n">create_signal</span>
+
+<span class="n">user_id</span><span class="p">,</span> <span class="n">set_user_id</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/api/users/</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">load_user</span><span class="p">)</span>
+<span class="c1"># Changing user_id will automatically refetch</span>
+</code></pre></div>
+
 <p>To render a loading UI declaratively, wrap UI with <code>Suspense</code> and pass a <code>resource</code> (or <code>resources=[...]</code>) and a <code>fallback</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">use_resource</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">create_resource</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="c1"># ... fetch user ...</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">}</span>
 
-<span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
 
 <span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
     <span class="n">Suspense</span><span class="p">,</span>

@@ -1993,18 +1993,21 @@ from wybthon import Route, lazy, load_component</p>
 </code></pre></div>
 
 <h4 id="suspense-for-loading-ui">Suspense for loading UI<a class="headerlink" href="#suspense-for-loading-ui" title="Permanent link">&para;</a></h4>
-<p>The Fetch page uses <code>Suspense</code> to show a fallback while its <code>use_resource</code> is loading and keeps the previous content on reloads:</p>
+<p>The Fetch page uses <code>Suspense</code> to show a fallback while its <code>create_resource</code> is loading and keeps the previous content on reloads:</p>
 <p>```1:80:examples/demo/app/fetch/page.py
-from wybthon import Component, Suspense, h, use_resource</p>
-<p>class FetchPage(Component):
+from wybthon import Suspense, component, create_resource, h</p>
+<p>@component
+def FetchPage():
+    res = create_resource(fetcher)
     # ... see source for full example ...
-    def render(self):
+    def render():
         return h(
             "div",
             {},
             h("h3", {}, "Async Fetch Demo"),
-            h(Suspense, {"resource": self.res, "fallback": h("p", {}, "Loading..."), "keep_previous": True}, ...),
+            h(Suspense, {"resource": res, "fallback": h("p", {}, "Loading..."), "keep_previous": True}, ...),
         )
+    return render
 ```</p>
 <p>This mirrors how you'd code-split larger apps and warm the import cache based on intent.</p>
 

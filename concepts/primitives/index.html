@@ -532,17 +532,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#primitives-vs-class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Primitives vs. class components
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1938,17 +1927,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#primitives-vs-class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Primitives vs. class components
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2086,37 +2064,6 @@ stateful components that need to react when a parent changes props:</p>
         <span class="k">return</span> <span class="o">...</span>
     <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
-
-<hr />
-<h4 id="primitives-vs-class-components">Primitives vs. class components<a class="headerlink" href="#primitives-vs-class-components" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th></th>
-<th><code>@component</code> + primitives</th>
-<th>Class component</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>State</td>
-<td><code>create_signal</code></td>
-<td><code>self.count = signal(0)</code></td>
-</tr>
-<tr>
-<td>Side effects</td>
-<td><code>create_effect</code> / <code>on_mount</code></td>
-<td><code>on_mount</code> / <code>on_cleanup</code></td>
-</tr>
-<tr>
-<td>Computed</td>
-<td><code>create_memo</code></td>
-<td><code>computed(lambda: ...)</code></td>
-</tr>
-</tbody>
-</table>
-<p>Both styles are fully supported; choose whichever fits your situation.
-For new code, <strong><code>@component</code> with signals-first primitives is recommended</strong>.</p>
 
 
 

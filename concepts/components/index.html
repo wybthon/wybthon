@@ -461,17 +461,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class components
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#fragment" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -509,6 +498,17 @@
     <span class="md-ellipsis">
       
         create_portal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flow-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow control
       
     </span>
   </a>
@@ -1895,17 +1895,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class components
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#fragment" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1949,6 +1938,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#flow-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow control
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1977,7 +1977,7 @@
   <h1>Components</h1>
 
 <h3 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h3>
-<p>Wybthon supports both function and class components.</p>
+<p>Wybthon uses function components exclusively, following the SolidJS model.</p>
 <h4 id="function-components-with-component-recommended">Function components with <code>@component</code> (recommended)<a class="headerlink" href="#function-components-with-component-recommended" title="Permanent link">&para;</a></h4>
 <p>The <code>@component</code> decorator lets you define components using Pythonic keyword
 arguments instead of a raw props dict:</p>
@@ -2046,19 +2046,6 @@ This style is fully supported and does not require a decorator:</p>
 </code></pre></div>
 
 <p>The HTML helpers accept <strong>children as positional arguments</strong> and <strong>props as keyword arguments</strong>. Use <code>class_name</code> instead of <code>class</code> (reserved word in Python) and <code>html_for</code> instead of <code>for</code>.</p>
-<h4 id="class-components">Class components<a class="headerlink" href="#class-components" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">signal</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-</code></pre></div>
-
-<p>Lifecycle hooks for class components: <code>on_mount</code>, <code>on_update(prev_props)</code>, <code>on_unmount</code>.</p>
 <h4 id="fragment">Fragment<a class="headerlink" href="#fragment" title="Permanent link">&para;</a></h4>
 <p>Use <code>Fragment</code> to group children without adding a visible wrapper element:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span>
@@ -2120,7 +2107,26 @@ parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
 </code></pre></div>
 
 <p>The second argument is an <code>Element</code> or a CSS selector string.</p>
-<p>Both function and class styles are fully supported. For new code, <strong><code>@component</code> with signals-first primitives</strong> is recommended for conciseness, type safety, and composability.</p>
+<h4 id="flow-control">Flow control<a class="headerlink" href="#flow-control" title="Permanent link">&para;</a></h4>
+<p>Wybthon provides SolidJS-style flow control components for declarative
+rendering logic:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
+
+<span class="c1"># Conditional rendering</span>
+<span class="n">Show</span><span class="p">(</span><span class="n">is_logged_in</span><span class="p">(),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
+
+<span class="c1"># List rendering (keyed)</span>
+<span class="n">For</span><span class="p">(</span><span class="n">items</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
+
+<span class="c1"># Multi-branch matching</span>
+<span class="n">Switch</span><span class="p">(</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;loading&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Error!&quot;</span><span class="p">)),</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
+    <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+
 <p>See the guide for recommended patterns around props, state, children, cleanup, and context:</p>
 <ul>
 <li>Guide: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></li>

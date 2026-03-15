@@ -1885,10 +1885,10 @@
 <li><code>signal(value) -&gt; Signal[T]</code></li>
 <li><code>computed(fn: Callable[[], T]) -&gt; _Computed[T]</code></li>
 <li><code>effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
-<li><code>use_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
+<li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">use_resource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">create_resource</span>
 
 <span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">double</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
@@ -1902,21 +1902,15 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_user</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">}</span>
 
-<span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">fetch_user</span><span class="p">))</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">fetch_user</span><span class="p">))</span>
 </code></pre></div>
 
 <ul>
 <li>Component typing</li>
-<li><code>Component.render(self) -&gt; VNode</code></li>
 <li>Function components: <code>def MyComp(props: Dict[str, Any]) -&gt; VNode</code></li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">VNode</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Hello</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;world&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">VNode</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">HelloFn</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;world&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>

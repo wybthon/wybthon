@@ -1991,20 +1991,21 @@
 <li>Use <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code>.</li>
 </ul>
 <p>When you need non-bubbling events or special options (e.g., <code>passive: False</code>), attach directly via <code>Ref</code> + <code>Element.on</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">Ref</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">Ref</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">HoverDemo</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">HoverDemo</span><span class="p">():</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_mount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Example for a non-delegated listener</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;mouseenter&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;entered&quot;</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;mouseenter&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;entered&quot;</span><span class="p">))</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;box&quot;</span><span class="p">},</span> <span class="s2">&quot;Hover me&quot;</span><span class="p">)</span>
+    <span class="n">on_mount</span><span class="p">(</span><span class="n">setup</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="s2">&quot;Hover me&quot;</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;box&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
 <h4 id="pyodide-cross-browser-notes">Pyodide cross-browser notes<a class="headerlink" href="#pyodide-cross-browser-notes" title="Permanent link">&para;</a></h4>

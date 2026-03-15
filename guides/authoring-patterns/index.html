@@ -856,17 +856,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class components
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#props-and-defaults" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1917,17 +1906,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#class-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class components
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#props-and-defaults" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2021,7 +1999,7 @@
   <h1>Authoring Patterns</h1>
 
 <h3 id="authoring-patterns">Authoring Patterns<a class="headerlink" href="#authoring-patterns" title="Permanent link">&para;</a></h3>
-<p>This guide shows how to author components in Wybthon using the <code>@component</code> decorator, traditional function components, and class components. It focuses on props, state with <code>create_signal</code>/<code>create_effect</code>/<code>create_memo</code>, children composition, cleanup, and context.</p>
+<p>This guide shows how to author components in Wybthon using the <code>@component</code> decorator and traditional function components. It focuses on props, state with <code>create_signal</code>/<code>create_effect</code>/<code>create_memo</code>, children composition, cleanup, and context.</p>
 <h4 id="component-decorator-recommended"><code>@component</code> decorator (recommended)<a class="headerlink" href="#component-decorator-recommended" title="Permanent link">&para;</a></h4>
 <p>The <code>@component</code> decorator lets you define props as keyword arguments,
 making components self-documenting and type-safe:</p>
@@ -2089,39 +2067,6 @@ making components self-documenting and type-safe:</p>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h3&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">title</span><span class="p">),</span> <span class="n">children</span><span class="p">)</span>
 </code></pre></div>
 
-<h4 id="class-components">Class components<a class="headerlink" href="#class-components" title="Permanent link">&para;</a></h4>
-<p>Subclass <code>Component</code> to encapsulate state and lifecycles.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">on_effect_cleanup</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">inc</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_inc</span> <span class="o">=</span> <span class="n">inc</span>
-
-        <span class="n">comp</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()))</span>
-        <span class="n">on_effect_cleanup</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;effect disposed&quot;</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">on_cleanup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">comp</span><span class="o">.</span><span class="n">dispose</span><span class="p">())</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
-            <span class="s2">&quot;div&quot;</span><span class="p">,</span>
-            <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;counter&quot;</span><span class="p">},</span>
-            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_inc&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="kc">None</span><span class="p">)},</span> <span class="s2">&quot;Increment&quot;</span><span class="p">),</span>
-        <span class="p">)</span>
-</code></pre></div>
-
-<ul>
-<li>State: store <code>signal</code> instances as attributes. Read with <code>.get()</code> during render.</li>
-<li>Events: pass bound methods or closures via <code>on_click</code>, <code>on_input</code>, etc.</li>
-<li>Cleanup: register teardown work with <code>on_cleanup(fn)</code> so it runs on unmount.</li>
-<li>Updates: <code>on_update(prev_props)</code> fires after a prop change and diff is applied.</li>
-</ul>
 <h4 id="props-and-defaults">Props and defaults<a class="headerlink" href="#props-and-defaults" title="Permanent link">&para;</a></h4>
 <p>With <code>@component</code>, props and defaults are built into the function signature:</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
@@ -2167,14 +2112,12 @@ making components self-documenting and type-safe:</p>
 <ul>
 <li>Use <strong><code>@component</code> with signals</strong> for most components — concise, type-safe, composable.</li>
 <li>Use <strong>traditional function components</strong> for simple wrappers or when migrating existing code.</li>
-<li>Use <strong>class components</strong> when you need reactive signals with fine-grained control, complex lifecycle management, or when porting patterns from React class components.</li>
 </ul>
-<p>All three styles interoperate seamlessly and can be composed together.</p>
+<p>Both styles interoperate seamlessly and can be composed together.</p>
 <h4 id="patterns-checklist">Patterns checklist<a class="headerlink" href="#patterns-checklist" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Use <code>@component</code> for new function components with typed props.</li>
 <li>Accept <code>children</code> and pass them through when building layout components.</li>
-<li>Store signals on <code>self</code> in class components; avoid re-creating them during <code>render</code>.</li>
 <li>Use <code>create_effect</code> for side-effects; clean up with <code>on_cleanup</code>.</li>
 <li>Keep events simple and avoid catching errors unless you can handle them.</li>
 </ul>
@@ -2194,40 +2137,34 @@ making components self-documenting and type-safe:</p>
     <span class="p">)</span>
 </code></pre></div>
 
-<p>2) State and derived values (class component with <code>signal</code> + <code>computed</code>)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span>
+<p>2) State and derived values (<code>@component</code> with <code>create_signal</code> + <code>create_memo</code>)</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">ul</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">NamesList</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">signal</span><span class="p">([])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">starts_with_a</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span>
-            <span class="k">lambda</span><span class="p">:</span> <span class="nb">len</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)])</span>
-        <span class="p">)</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">NamesList</span><span class="p">():</span>
+    <span class="n">names</span><span class="p">,</span> <span class="n">set_names</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
+    <span class="n">starts_with_a</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="nb">len</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">()</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)])</span>
+    <span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">make_add</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-            <span class="k">return</span> <span class="k">lambda</span> <span class="n">_evt</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_add</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">_evt</span><span class="p">:</span> <span class="n">set_names</span><span class="p">(</span><span class="n">names</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">name</span><span class="p">])</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">set</span><span class="p">([])</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
+        <span class="n">set_names</span><span class="p">([])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_ada</span> <span class="o">=</span> <span class="n">make_add</span><span class="p">(</span><span class="s2">&quot;Ada&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_alan</span> <span class="o">=</span> <span class="n">make_add</span><span class="p">(</span><span class="s2">&quot;Alan&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_clear</span> <span class="o">=</span> <span class="n">clear</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">()]</span>
-        <span class="k">return</span> <span class="n">h</span><span class="p">(</span>
-            <span class="s2">&quot;div&quot;</span><span class="p">,</span>
-            <span class="p">{},</span>
-            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">())</span><span class="si">}</span><span class="s2"> | Starts with A: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">starts_with_a</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
-              <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_add_ada&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="kc">None</span><span class="p">)},</span> <span class="s2">&quot;+ Ada&quot;</span><span class="p">),</span>
-              <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_add_alan&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="kc">None</span><span class="p">)},</span> <span class="s2">&quot;+ Alan&quot;</span><span class="p">),</span>
-              <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_clear&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="kc">None</span><span class="p">)},</span> <span class="s2">&quot;Clear&quot;</span><span class="p">),</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">())</span><span class="si">}</span><span class="s2"> | Starts with A: </span><span class="si">{</span><span class="n">starts_with_a</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">div</span><span class="p">(</span>
+                <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+ Ada&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">make_add</span><span class="p">(</span><span class="s2">&quot;Ada&quot;</span><span class="p">)),</span>
+                <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+ Alan&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">make_add</span><span class="p">(</span><span class="s2">&quot;Alan&quot;</span><span class="p">)),</span>
+                <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Clear&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">clear</span><span class="p">),</span>
             <span class="p">),</span>
-            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">items</span><span class="p">),</span>
+            <span class="n">ul</span><span class="p">(</span><span class="o">*</span><span class="n">items</span><span class="p">),</span>
         <span class="p">)</span>
+    <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
 <p>3) Cleanup and lifecycles (<code>@component</code> with signals)</p>
@@ -2259,8 +2196,8 @@ making components self-documenting and type-safe:</p>
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">Card</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="n">NamesList</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;State &amp; Derived&quot;</span><span class="p">),</span>
-        <span class="n">Card</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="n">Timer</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Cleanup&quot;</span><span class="p">),</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;State &amp; Derived&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">NamesList</span><span class="p">,</span> <span class="p">{})),</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Card</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Cleanup&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Timer</span><span class="p">,</span> <span class="p">{})),</span>
     <span class="p">)</span>
 </code></pre></div>
 

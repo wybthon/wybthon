@@ -1110,17 +1110,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#class-component-variant" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class component variant
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1850,17 +1839,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#class-component-variant" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Class component variant
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1918,22 +1896,6 @@
         <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">counter_signal</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">counter_signal</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
         <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-</code></pre></div>
-
-<h4 id="class-component-variant">Class component variant<a class="headerlink" href="#class-component-variant" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">signal</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-            <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
 </code></pre></div>
 
 <p>See also: <a href="../../concepts/primitives/">Primitives</a> · <a href="../../guides/authoring-patterns/">Authoring Patterns</a></p>

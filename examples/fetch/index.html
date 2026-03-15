@@ -1113,6 +1113,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Async Fetch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-source-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With source signal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1786,6 +1803,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Async Fetch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-source-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With source signal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1811,15 +1845,14 @@
   <h1>Async Fetch</h1>
 
 <h3 id="async-fetch">Async Fetch<a class="headerlink" href="#async-fetch" title="Permanent link">&para;</a></h3>
-<p>Fetch data with <code>use_resource</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.reactivity</span><span class="w"> </span><span class="kn">import</span> <span class="n">use_resource</span>
+<p>Fetch data with <code>create_resource</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">create_resource</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="c1"># e.g., using js.fetch with AbortSignal</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;hello&quot;</span><span class="p">}</span>
 
-<span class="n">res</span> <span class="o">=</span> <span class="n">use_resource</span><span class="p">(</span><span class="n">load_data</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">load_data</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">Content</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
@@ -1831,6 +1864,20 @@
     <span class="p">{</span><span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">,</span> <span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading...&quot;</span><span class="p">),</span> <span class="s2">&quot;keep_previous&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
     <span class="n">Content</span><span class="p">({}),</span>
 <span class="p">)</span>
+</code></pre></div>
+
+<h4 id="with-source-signal">With source signal<a class="headerlink" href="#with-source-signal" title="Permanent link">&para;</a></h4>
+<p>Automatically refetch when a source signal changes:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_resource</span><span class="p">,</span> <span class="n">create_signal</span>
+
+<span class="n">user_id</span><span class="p">,</span> <span class="n">set_user_id</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">js</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/api/users/</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="c1"># Changing user_id triggers a refetch</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">load_user</span><span class="p">)</span>
 </code></pre></div>
 
 

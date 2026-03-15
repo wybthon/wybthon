@@ -1326,67 +1326,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.component.Component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Component">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.add_cleanup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_cleanup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_mount" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_mount
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_unmount" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_unmount
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_update" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_update
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.component.component" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1922,67 +1861,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.component.Component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Component">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.add_cleanup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_cleanup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_mount" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_mount
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_unmount" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_unmount
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.component.Component.on_update" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        on_update
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.component.component" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2064,7 +1942,7 @@
 <a id="wybthon.component"></a>
     <div class="doc doc-contents first">
 
-        <p>Component base class and <code>@component</code> decorator for VDOM components.</p>
+        <p><code>@component</code> decorator and <code>forward_ref</code> for function components.</p>
 
 
 
@@ -2084,129 +1962,6 @@
 
 
 
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="wybthon.component.Component" class="doc doc-heading">
-            <code>Component</code>
-
-
-<a href="#wybthon.component.Component" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-
-
-        <p>Class component base for the VDOM renderer.</p>
-<p>Subclasses should implement <code>render(self) -&gt; VNode</code>.
-Lifecycle hooks:
-  - on_mount(self)
-  - on_update(self, prev_props: dict)
-  - on_unmount(self)</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.component.Component.add_cleanup" class="doc doc-heading">
-            <code class=" language-python"><span class="n">add_cleanup</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
-
-<a href="#wybthon.component.Component.add_cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Register a cleanup callback to run on unmount.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.component.Component.on_mount" class="doc doc-heading">
-            <code class=" language-python"><span class="n">on_mount</span><span class="p">()</span></code>
-
-<a href="#wybthon.component.Component.on_mount" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Called after the component is first mounted.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.component.Component.on_unmount" class="doc doc-heading">
-            <code class=" language-python"><span class="n">on_unmount</span><span class="p">()</span></code>
-
-<a href="#wybthon.component.Component.on_unmount" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Called before the component is removed from the DOM.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.component.Component.on_update" class="doc doc-heading">
-            <code class=" language-python"><span class="n">on_update</span><span class="p">(</span><span class="n">prev_props</span><span class="p">)</span></code>
-
-<a href="#wybthon.component.Component.on_update" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Called after props update and render diff applied.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
 
 
 <div class="doc doc-object doc-function">
@@ -2221,13 +1976,13 @@ Lifecycle hooks:
     <div class="doc doc-contents ">
 
         <p>Decorator that enables Pythonic keyword-argument props for function components.</p>
-<p><strong>Stateless</strong> – return a <code>VNode</code> directly (re-called on prop changes)::</p>
+<p><strong>Stateless</strong> -- return a <code>VNode</code> directly (re-called on prop changes)::</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
 <span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name}!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p><strong>Stateful</strong> – create signals during setup and return a <em>render function</em>
+<p><strong>Stateful</strong> -- create signals during setup and return a <em>render function</em>
 (setup runs once, render re-runs when signals change)::</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">component</span>
 <span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">):</span>

@@ -1981,25 +1981,6 @@ wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </sp
 <span class="n">render</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span>
 </code></pre></div>
 
-<p>Class component with state:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">Element</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">render</span><span class="p">,</span> <span class="n">signal</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-        <span class="p">)</span>
-
-<span class="n">tree</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{})</span>
-<span class="n">container</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="n">existing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">render</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">container</span><span class="p">)</span>
-</code></pre></div>
-
 <p>See: <a href="../guides/authoring-patterns/">Authoring Patterns</a></p>
 
 

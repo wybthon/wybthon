@@ -1477,38 +1477,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.router.Router" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Router
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Router">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.router.Router.render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.router.Link" class="md-nav__link">
     <span class="md-ellipsis">
       
         Link
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.router.Router" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Router
       
     </span>
   </a>
@@ -1900,38 +1883,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.router.Router" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Router
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Router">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.router.Router.render" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        render
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.router.Link" class="md-nav__link">
     <span class="md-ellipsis">
       
         Link
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.router.Router" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Router
       
     </span>
   </a>
@@ -2069,70 +2035,6 @@
 
 </div>
 
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="wybthon.router.Router" class="doc doc-heading">
-            <code>Router</code>
-
-
-<a href="#wybthon.router.Router" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="Component (wybthon.component.Component)" href="../component/#wybthon.component.Component">Component</a></code></p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.router.Router.render" class="doc doc-heading">
-            <code class=" language-python"><span class="n">render</span><span class="p">()</span></code>
-
-<a href="#wybthon.router.Router.render" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Render the matched route's component or a not-found view.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
 
 <div class="doc doc-object doc-function">
 
@@ -2147,6 +2049,33 @@
 
         <p>Anchor element component that navigates via history API without reloads.</p>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.router.Router" class="doc doc-heading">
+            <code class=" language-python"><span class="n">Router</span><span class="p">(</span><span class="n">props</span><span class="p">)</span></code>
+
+<a href="#wybthon.router.Router" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Function component that renders the matched route's component.</p>
+
+
+<details class="props" open>
+  <summary>Props</summary>
+  <ul>
+<li>routes: List[Route]</li>
+<li>base_path: str</li>
+<li>not_found: component to render on 404</li>
+</ul>
+</details>
 
     </div>
 
@@ -2179,7 +2108,7 @@
 </div><h4 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h4>
 <ul>
 <li><code>class Route(path: str, component, children: Optional[List[Route]] = None)</code></li>
-<li><code>class Router(routes: List[Route], base_path: str = "", not_found: Optional[Component|function] = None)</code></li>
+<li><code>class Router(routes: List[Route], base_path: str = "", not_found: Optional[Callable[[Dict], VNode]] = None)</code></li>
 <li><code>function Link({to: str, children, base_path?: str, replace?: bool, class_active?: str})</code></li>
 <li><code>function navigate(path: str, replace: bool = False)</code></li>
 <li><code>signal current_path</code> – reactive signal with current <code>path + search</code></li>
