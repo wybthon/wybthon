@@ -3,7 +3,7 @@ from js import document, window
 from app.layout import Layout
 from app.not_found import NotFound
 from app.routes import create_routes
-from wybthon import Element, Router, h, render
+from wybthon import Element, Router, current_path, h, render
 
 
 async def main():
@@ -12,6 +12,8 @@ async def main():
     if path.endswith(".html"):
         path = path.rsplit("/", 1)[0] or "/"
     base_path = "/" if path == "/" else path.rstrip("/")
+
+    current_path.set(base_path or "/")
 
     tree = h(
         Layout,

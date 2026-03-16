@@ -50,12 +50,12 @@ def test_demo_bootstraps_pyodide(page, http_server_base_url):
     """
     page.goto(f"{http_server_base_url}/examples/demo/index.html")
 
-    # Wait for the demo title to render
-    page.wait_for_selector("text=Wybthon VDOM Demo", timeout=120_000)
+    # Wait for the header brand to render (confirms Pyodide booted and app mounted)
+    page.wait_for_selector(".header-brand h1", timeout=120_000)
 
-    # Wait for the Hello component to render with its expected text
-    page.wait_for_selector("h2.hello:has-text('Hello, Python!')", timeout=120_000)
+    # Verify the home page hero section rendered
+    page.wait_for_selector("h2.hero-title", timeout=120_000)
 
-    # Navigate to a lazy route and verify content appears
-    page.click("a.nav-link:has-text('Team')")
-    page.wait_for_selector("text=About Team", timeout=120_000)
+    # Navigate to the About page (lazy-loaded) and verify content appears
+    page.click("a.nav-link:has-text('About')")
+    page.wait_for_selector("text=About Wybthon", timeout=120_000)
