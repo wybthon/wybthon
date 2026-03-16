@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Wybthon Benchmark Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  font-family: 'Sora', sans-serif;
+  color: #e2e8f0;
+  background: #050714;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139,92,246,0.10) 0%, transparent 50%),
+    #050714;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 1720px;
+  background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(15,15,35,0.95) 100%);
+  border: 1px solid rgba(99,102,241,0.20);
+  border-radius: 32px;
+  padding: 64px 80px 52px;
+  box-shadow:
+    0 0 80px rgba(99,102,241,0.06),
+    0 40px 80px rgba(0,0,0,0.4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 48px;
+}
+
+.header-left { max-width: 1100px; }
+
+.brand {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #818cf8;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 300;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.geo-mean-badge {
+  flex-shrink: 0;
+  margin-top: 8px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
+  border: 1px solid rgba(99,102,241,0.30);
+  border-radius: 20px;
+  padding: 24px 36px;
+}
+
+.geo-mean-badge .label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.geo-mean-badge .value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 42px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.geo-mean-badge .note {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 17px;
+}
+
+thead th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #64748b;
+  text-align: left;
+  padding: 0 32px 16px;
+  border-bottom: 1px solid rgba(99,102,241,0.15);
+}
+
+thead th:first-child { width: 40%; }
+thead th:nth-child(2) { width: 16%; text-align: right; }
+thead th:nth-child(3) { width: 16%; text-align: right; }
+thead th:nth-child(4) { text-align: right; }
+
+tbody tr:nth-child(odd) {
+  background: rgba(255,255,255,0.015);
+}
+
+tbody td {
+  padding: 18px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-weight: 400;
+}
+
+tbody td:first-child {
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+tbody td:nth-child(2),
+tbody td:nth-child(3) {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+tbody td:nth-child(2) {
+  color: #c4b5fd;
+}
+
+tbody td:nth-child(4) {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.bar-cell { width: 320px; }
+
+.bar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.bar {
+  height: 10px;
+  border-radius: 5px;
+  opacity: 0.85;
+}
+
+.s-green { color: #34d399; }
+.s-green .bar { background: linear-gradient(90deg, #059669, #34d399); }
+.s-yellow { color: #fbbf24; }
+.s-yellow .bar { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.s-orange { color: #fb923c; }
+.s-orange .bar { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.s-red { color: #f87171; }
+.s-red .bar { background: linear-gradient(90deg, #dc2626, #f87171); }
+.s-crimson { color: #ef4444; }
+.s-crimson .bar { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 48px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.footer-note {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.6;
+  max-width: 72%;
+}
+
+.footer-note em {
+  font-style: normal;
+  color: #64748b;
+}
+
+.footer-source {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #475569;
+  flex-shrink: 0;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="header-left">
+      <div class="brand">Wybthon Framework Benchmark</div>
+      <h1>How Fast Is Wybthon?</h1>
+      <div class="subtitle">
+        End-to-end browser performance (Python via Pyodide + real DOM) compared
+        to the fastest framework in each operation from the official js-framework-benchmark.
+      </div>
+    </div>
+    <div class="geo-mean-badge">
+      <div class="label">Geometric Mean</div>
+      <div class="value">38&times;</div>
+      <div class="note">Pyodide + real DOM</div>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Operation</th>
+        <th>Wybthon (ms)</th>
+        <th>Official Fastest (ms)</th>
+        <th class="bar-cell">Slowdown</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Create 1,000 Rows</td><td>399</td><td>22.0</td><td class="bar-cell s-green"><div class="bar-wrap"><span>18.1&times;</span><div class="bar" style="width:112px"></div></div></td></tr>
+      <tr><td>Replace All Rows</td><td>932</td><td>23.6</td><td class="bar-cell s-orange"><div class="bar-wrap"><span>39.5&times;</span><div class="bar" style="width:143px"></div></div></td></tr>
+      <tr><td>Partial Update (Every 10th Row)</td><td>280</td><td>9.3</td><td class="bar-cell s-yellow"><div class="bar-wrap"><span>30.1&times;</span><div class="bar" style="width:132px"></div></div></td></tr>
+      <tr><td>Select Row</td><td>366</td><td>2.1</td><td class="bar-cell s-crimson"><div class="bar-wrap"><span>174&times;</span><div class="bar" style="width:200px"></div></div></td></tr>
+      <tr><td>Swap Rows</td><td>340</td><td>11.1</td><td class="bar-cell s-yellow"><div class="bar-wrap"><span>30.6&times;</span><div class="bar" style="width:133px"></div></div></td></tr>
+      <tr><td>Remove Row</td><td>242</td><td>9.1</td><td class="bar-cell s-yellow"><div class="bar-wrap"><span>26.5&times;</span><div class="bar" style="width:127px"></div></div></td></tr>
+      <tr><td>Create 10,000 Rows</td><td>18,646</td><td>220</td><td class="bar-cell s-red"><div class="bar-wrap"><span>84.8&times;</span><div class="bar" style="width:172px"></div></div></td></tr>
+      <tr><td>Append 1,000 Rows to 1,000</td><td>1,221</td><td>24.7</td><td class="bar-cell s-orange"><div class="bar-wrap"><span>49.4&times;</span><div class="bar" style="width:151px"></div></div></td></tr>
+      <tr><td>Clear Rows</td><td>112</td><td>8.5</td><td class="bar-cell s-green"><div class="bar-wrap"><span>13.1&times;</span><div class="bar" style="width:100px"></div></div></td></tr>
+    </tbody>
+  </table>
+  <div class="footer">
+    <div class="footer-note">
+      Wybthon runs Python via Pyodide (WASM). Numbers above are <em>end-to-end browser measurements</em>,
+      including Python VDOM reconciliation, Pyodide bridge overhead, real DOM operations, and browser paint.
+      Median of 3 runs in Chrome.
+    </div>
+    <div class="footer-source">Source: krausest/js-framework-benchmark &middot; March 2026</div>
+  </div>
+</div>
+</body>
+</html>

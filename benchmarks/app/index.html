@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wybthon – js-framework-benchmark</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+  <style>
+    .jumbotron { margin-top: 10px; }
+    .preloadicon { display: none; }
+    .smallpad { padding: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container" id="main">
+    <div class="jumbotron">
+      <div class="row">
+        <div class="col-md-6">
+          <h1>Wybthon (keyed)</h1>
+        </div>
+        <div class="col-md-6">
+          <div class="row">
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="run">Create 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="runlots">Create 10,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="add">Append 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="update">Update every 10th row</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="clear">Clear</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="swaprows">Swap Rows</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="table-container"></div>
+    <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
+    <div id="bench-panel" style="display:none; margin-top:20px;">
+      <button type="button" class="btn btn-success btn-lg" id="run-bench-btn" onclick="runFullBenchmark()">
+        Run Full Benchmark
+      </button>
+      <pre id="bench-output" style="margin-top:10px; background:#222; color:#0f0; padding:12px; border-radius:6px; font-size:13px;"></pre>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
+  <script>
+    const WYBTHON_MODULES = [
+      '__init__.py', '_warnings.py', 'component.py', 'context.py',
+      'dev.py', 'dom.py', 'error_boundary.py', 'events.py',
+      'flow.py', 'forms.py', 'html.py', 'lazy.py',
+      'portal.py', 'props.py', 'reactivity.py', 'reconciler.py',
+      'router.py', 'router_core.py', 'suspense.py', 'vdom.py', 'vnode.py',
+    ];
+
+    async function main() {
+      const statusEl = document.createElement('p');
+      statusEl.textContent = 'Loading Pyodide...';
+      document.getElementById('table-container').appendChild(statusEl);
+
+      const pyodide = await loadPyodide();
+      statusEl.textContent = 'Loading Wybthon...';
+
+      pyodide.FS.mkdir('/lib/wybthon');
+      for (const mod of WYBTHON_MODULES) {
+        const resp = await fetch('../../src/wybthon/' + mod);
+        const text = await resp.text();
+        pyodide.FS.writeFile('/lib/wybthon/' + mod, text);
+      }
+      pyodide.runPython('import sys; sys.path.insert(0, "/lib")');
+
+      statusEl.textContent = 'Starting benchmark app...';
+      const appResp = await fetch('./main.py');
+      const appCode = await appResp.text();
+      await pyodide.runPythonAsync(appCode);
+
+      statusEl.remove();
+      window._pyodide = pyodide;
+      document.getElementById('bench-panel').style.display = 'block';
+      console.log('[BENCH] Ready');
+    }
+
+    main().catch(err => {
+      console.error('Wybthon benchmark failed to load:', err);
+      const el = document.getElementById('table-container');
+      el.innerHTML = '<p class="text-danger">Failed to load: ' + err.message + '</p>';
+    });
+
+    async function runFullBenchmark() {
+      const py = window._pyodide;
+      const out = document.getElementById('bench-output');
+      const btn = document.getElementById('run-bench-btn');
+      btn.disabled = true;
+      btn.textContent = 'Running...';
+      out.textContent = '';
+
+      function log(msg) {
+        out.textContent += msg + '\n';
+        console.log(msg);
+      }
+
+      function paint() {
+        return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 0))));
+      }
+
+      async function bench(name, code) {
+        await paint();
+        const t0 = performance.now();
+        py.runPython(code);
+        await paint();
+        const ms = performance.now() - t0;
+        log('[BENCH] ' + name + ': ' + ms.toFixed(1) + 'ms');
+        return ms;
+      }
+
+      async function setup(code) {
+        py.runPython(code);
+        await paint();
+      }
+
+      const results = {};
+
+      log('[BENCH] Starting full benchmark (3 iterations each)...');
+
+      const ops = [
+        { name: 'create_1k',   setup: 'clear()',                bench: 'run()' },
+        { name: 'replace_all', setup: null,                     bench: 'run()' },
+        { name: 'update_10th', setup: null,                     bench: 'update()' },
+        { name: 'select_row',  setup: null,                     bench: 'select(data[0]["id"])' },
+        { name: 'swap_rows',   setup: null,                     bench: 'swap_rows()' },
+        { name: 'remove_row',  setup: 'run()',                  bench: 'delete(data[0]["id"])' },
+        { name: 'create_10k',  setup: 'clear()',                bench: 'run_lots()' },
+        { name: 'append_1k',   setup: 'clear(); run()',         bench: 'add()' },
+        { name: 'clear_rows',  setup: 'run()',                  bench: 'clear()' },
+      ];
+
+      for (const op of ops) {
+        const times = [];
+        for (let i = 0; i < 3; i++) {
+          if (op.setup) await setup(op.setup);
+          const ms = await bench(op.name + ' [' + (i+1) + '/3]', op.bench);
+          times.push(ms);
+        }
+        times.sort((a,b) => a - b);
+        results[op.name] = parseFloat(times[1].toFixed(1));
+        log('[BENCH] ' + op.name + ' median: ' + times[1].toFixed(1) + 'ms');
+        log('');
+      }
+
+      log('[BENCH] === FINAL RESULTS (median of 3) ===');
+      for (const [k,v] of Object.entries(results)) {
+        log('[BENCH] ' + k + ': ' + v + 'ms');
+      }
+      log('[BENCH] RESULTS_JSON=' + JSON.stringify(results));
+
+      btn.textContent = 'Benchmark Complete';
+    }
+  </script>
+</body>
+</html>

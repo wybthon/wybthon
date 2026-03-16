@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Wybthon Framework Ranking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  font-family: 'Sora', sans-serif;
+  color: #e2e8f0;
+  background: #050714;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 70% 55% at 20% 110%, rgba(99,102,241,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% -5%, rgba(139,92,246,0.10) 0%, transparent 50%),
+    #050714;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 1720px;
+  background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(15,15,35,0.95) 100%);
+  border: 1px solid rgba(99,102,241,0.20);
+  border-radius: 32px;
+  padding: 56px 80px 48px;
+  box-shadow:
+    0 0 80px rgba(99,102,241,0.06),
+    0 40px 80px rgba(0,0,0,0.4);
+}
+
+.header { margin-bottom: 40px; }
+
+.brand {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 300;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 900px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 64px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #64748b;
+  text-align: left;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid rgba(99,102,241,0.15);
+}
+
+thead th:nth-child(2) { text-align: right; width: 80px; }
+thead th:nth-child(3) { width: 340px; }
+
+tbody td {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 15px;
+  font-weight: 400;
+  vertical-align: middle;
+}
+
+tbody td:first-child { font-weight: 500; color: #cbd5e1; }
+
+tbody td:nth-child(2) {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.bar-outer {
+  width: 100%; height: 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.bar-inner { height: 100%; border-radius: 7px; min-width: 3px; }
+
+.tier-fast .bar-inner { background: linear-gradient(90deg, #059669, #34d399); }
+.tier-good .bar-inner { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+.tier-mid .bar-inner { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.tier-slow .bar-inner { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.tier-vslow .bar-inner { background: linear-gradient(90deg, #dc2626, #f87171); }
+.tier-wybthon .bar-inner { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+
+.tier-fast td:nth-child(2) { color: #34d399; }
+.tier-good td:nth-child(2) { color: #2dd4bf; }
+.tier-mid td:nth-child(2) { color: #fbbf24; }
+.tier-slow td:nth-child(2) { color: #fb923c; }
+.tier-vslow td:nth-child(2) { color: #f87171; }
+
+.tier-wybthon td { background: rgba(124,58,237,0.08); }
+.tier-wybthon td:first-child { font-weight: 700; color: #c4b5fd; }
+.tier-wybthon td:nth-child(2) { color: #c4b5fd; font-weight: 700; }
+
+.rank-num {
+  display: inline-block; width: 26px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 500; color: #475569; margin-right: 4px;
+}
+
+.divider-row td { padding: 6px 16px; border-bottom: none; }
+
+.divider-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: #475569; padding: 4px 0;
+}
+
+.footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 48px; margin-top: 28px; padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.footer-note { font-size: 12px; color: #475569; line-height: 1.6; max-width: 72%; }
+.footer-note em { font-style: normal; color: #64748b; }
+.footer-source { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #475569; flex-shrink: 0; text-align: right; }
+
+.legend { display: flex; gap: 24px; margin-top: 6px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="brand">Wybthon Framework Benchmark</div>
+    <h1>Where Does Wybthon Rank?</h1>
+    <div class="subtitle">
+      Weighted geometric mean scores from krausest/js-framework-benchmark.
+      Lower is faster. Wybthon measured end-to-end in a real browser with Pyodide (WebAssembly).
+    </div>
+  </div>
+  <div class="grid">
+    <div class="col">
+      <table>
+        <thead><tr><th>Framework</th><th>Score</th><th>Relative Performance</th></tr></thead>
+        <tbody>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label">Fastest Tier</div></td></tr>
+          <tr class="tier-fast"><td><span class="rank-num">1.</span>Vanilla JS</td><td>1.03&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:3%"></div></div></td></tr>
+          <tr class="tier-fast"><td><span class="rank-num">2.</span>Solid</td><td>1.12&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:3.1%"></div></div></td></tr>
+          <tr class="tier-fast"><td><span class="rank-num">3.</span>Svelte</td><td>1.14&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:3.6%"></div></div></td></tr>
+          <tr class="tier-fast"><td><span class="rank-num">4.</span>Inferno</td><td>1.12&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:3.1%"></div></div></td></tr>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label">Good</div></td></tr>
+          <tr class="tier-good"><td><span class="rank-num">5.</span>Vue</td><td>1.28&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:6.8%"></div></div></td></tr>
+          <tr class="tier-good"><td><span class="rank-num">6.</span>Lit</td><td>1.29&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:7.0%"></div></div></td></tr>
+          <tr class="tier-good"><td><span class="rank-num">7.</span>Preact</td><td>1.32&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:7.6%"></div></div></td></tr>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label">Moderate</div></td></tr>
+          <tr class="tier-mid"><td><span class="rank-num">8.</span>React</td><td>1.56&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:12.2%"></div></div></td></tr>
+          <tr class="tier-mid"><td><span class="rank-num">9.</span>Angular</td><td>1.60&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:12.9%"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <table>
+        <thead><tr><th>Framework</th><th>Score</th><th>Relative Performance</th></tr></thead>
+        <tbody>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label">Slower</div></td></tr>
+          <tr class="tier-slow"><td><span class="rank-num">10.</span>Mithril</td><td>1.74&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:15.2%"></div></div></td></tr>
+          <tr class="tier-slow"><td><span class="rank-num">11.</span>Ember</td><td>2.32&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:23.1%"></div></div></td></tr>
+          <tr class="tier-slow"><td><span class="rank-num">12.</span>Knockout</td><td>2.44&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:24.5%"></div></div></td></tr>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label">Slow</div></td></tr>
+          <tr class="tier-vslow"><td><span class="rank-num">13.</span>Alpine</td><td>3.27&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:32.6%"></div></div></td></tr>
+          <tr class="tier-vslow"><td><span class="rank-num">14.</span>Qwik</td><td>3.48&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:34.3%"></div></div></td></tr>
+          <tr class="tier-vslow"><td><span class="rank-num">15.</span>Blazor WASM</td><td>5.01&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:44.3%"></div></div></td></tr>
+          <tr><td colspan="3" class="divider-row"><div class="divider-label" style="color:#7c3aed">Wybthon</div></td></tr>
+          <tr class="tier-wybthon"><td><span class="rank-num" style="color:#a78bfa">16.</span>Wybthon</td><td>38&times;</td><td><div class="bar-outer"><div class="bar-inner" style="width:100%"></div></div></td></tr>
+          <tr><td colspan="3" style="padding:8px 16px; border:none;">
+            <div style="font-size:11px; color:#64748b; line-height:1.6; margin-top:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace; color:#a78bfa;">38&times;</span> measured end-to-end in Chrome (Pyodide + real DOM).
+              <br>Median of 3 runs per operation, geometric mean across all 9 operations.
+            </div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer">
+    <div>
+      <div class="footer-note">
+        Rankings show selected representative frameworks from the official benchmark (160 total).
+        Wybthon runs CPython via Pyodide (WebAssembly), measured end-to-end in Chrome.
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Fastest</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>Good</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Moderate</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div>Slower</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div>Slow</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Wybthon</div>
+      </div>
+    </div>
+    <div class="footer-source">Source: krausest/js-framework-benchmark &middot; March 2026</div>
+  </div>
+</div>
+</body>
+</html>
