@@ -1985,7 +1985,7 @@ arguments instead of a raw props dict:</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Props become regular Python parameters with type annotations and defaults.
@@ -1994,7 +1994,7 @@ This makes components self-documenting and enables static type checking.</p>
 parent passes new props:</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Stateful</strong> components create signals during setup and return a <em>render
@@ -2003,7 +2003,7 @@ function</em>.  Setup runs once; the render function re-runs when signals change
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
@@ -2018,8 +2018,9 @@ function</em>.  Setup runs once; the render function re-runs when signals change
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">children</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">children</span><span class="p">]</span> <span class="k">if</span> <span class="n">children</span> <span class="k">else</span> <span class="p">[])</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Direct calls</strong> with keyword args return a <code>VNode</code>, so you can compose
@@ -2065,8 +2066,8 @@ have not changed (shallow identity comparison by default):</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">items</span> <span class="o">=</span> <span class="n">items</span> <span class="ow">or</span> <span class="p">[]</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span><span class="p">])</span>
+    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">its</span><span class="p">])</span>
 
 <span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
 </code></pre></div>

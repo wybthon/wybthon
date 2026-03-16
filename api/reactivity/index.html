@@ -1671,21 +1671,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#core-reactive-primitives" class="md-nav__link">
+  <a href="#signals-first-api-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core reactive primitives
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#signals-first-api-recommended-for-component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Signals-first API (recommended for @component)
+        Signals-first API (recommended)
       
     </span>
   </a>
@@ -2331,21 +2320,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#core-reactive-primitives" class="md-nav__link">
+  <a href="#signals-first-api-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core reactive primitives
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#signals-first-api-recommended-for-component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Signals-first API (recommended for @component)
+        Signals-first API (recommended)
       
     </span>
   </a>
@@ -2634,6 +2612,12 @@ resource automatically refetches.</p>
 <p>The effect runs immediately and re-runs whenever any signal read
 inside <em>fn</em> changes.  <code>on_cleanup</code> may be called inside <em>fn</em> to
 register per-run cleanup (runs before re-execution and on disposal).</p>
+<p>If <em>fn</em> accepts a positional parameter, the <strong>previous return value</strong>
+is passed on each re-execution (<code>None</code> on the first run), matching
+SolidJS <code>createEffect(prev =&gt; ...)</code>::</p>
+<div class="codehilite"><pre><span></span><code>create_effect(lambda prev: (print(&quot;was&quot;, prev), count())[1])
+</code></pre></div>
+
 <p>Inside a component, the effect is automatically disposed on unmount.</p>
 
 
@@ -2959,22 +2943,14 @@ a dependency::</p>
     </div>
 
 </div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
-<h5 id="core-reactive-primitives">Core reactive primitives<a class="headerlink" href="#core-reactive-primitives" title="Permanent link">&para;</a></h5>
-<ul>
-<li><code>signal(value) -&gt; Signal[T]</code></li>
-<li><code>computed(fn) -&gt; _Computed[T]</code> with <code>.get()</code> and <code>.dispose()</code></li>
-<li><code>effect(fn) -&gt; Computation</code> (returns a handle; call <code>.dispose()</code> to stop)</li>
-<li><code>on_effect_cleanup(comp, fn)</code></li>
-<li><code>batch() -&gt; context manager</code></li>
-</ul>
-<h5 id="signals-first-api-recommended-for-component">Signals-first API (recommended for <code>@component</code>)<a class="headerlink" href="#signals-first-api-recommended-for-component" title="Permanent link">&para;</a></h5>
+<h5 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h5>
 <ul>
 <li><code>create_signal(value) -&gt; (getter, setter)</code></li>
-<li><code>create_effect(fn) -&gt; Computation</code></li>
+<li><code>create_effect(fn) -&gt; Computation</code> — supports previous value: <code>create_effect(lambda prev: ...)</code></li>
 <li><code>create_memo(fn) -&gt; getter</code></li>
 <li><code>on_mount(fn)</code> — run after first render</li>
-<li><code>on_cleanup(fn)</code> — run on unmount</li>
-<li><code>get_props() -&gt; getter</code> — reactive props accessor</li>
+<li><code>on_cleanup(fn)</code> — run on unmount or before effect re-execution</li>
+<li><code>batch() -&gt; context manager</code></li>
 </ul>
 <h5 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h5>
 <ul>
@@ -2989,7 +2965,7 @@ a dependency::</p>
 <li><code>merge_props(*sources)</code> — merge prop dicts</li>
 <li><code>split_props(props, *key_groups)</code> — split props by key name</li>
 </ul>
-<p>Type hints are provided for all public functions and classes. Prefer retrieving values via <code>.get()</code> on signals and computed values to subscribe computations.</p>
+<p>Type hints are provided for all public functions and classes.</p>
 
 
 

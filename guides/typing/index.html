@@ -1882,22 +1882,22 @@
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Reactivity API</li>
-<li><code>signal(value) -&gt; Signal[T]</code></li>
-<li><code>computed(fn: Callable[[], T]) -&gt; _Computed[T]</code></li>
-<li><code>effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
+<li><code>create_signal(value: T) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code></li>
+<li><code>create_memo(fn: Callable[[], T]) -&gt; Callable[[], T]</code></li>
+<li><code>create_effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
 <li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">create_resource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_resource</span>
 
-<span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">double</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">double</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">_</span> <span class="o">=</span> <span class="n">double</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># subscribes</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">double</span><span class="p">()</span>  <span class="c1"># subscribes</span>
 
-<span class="n">c</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>      <span class="c1"># Computation</span>
-<span class="n">c</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>          <span class="c1"># stop updates</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">create_effect</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>  <span class="c1"># Computation</span>
+<span class="n">c</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>             <span class="c1"># stop updates</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_user</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">}</span>

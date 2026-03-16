@@ -523,17 +523,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#signals-first-api-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Signals-first API (recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#reactive-utilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1851,17 +1840,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#signals-first-api-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Signals-first API (recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#reactive-utilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1934,34 +1912,22 @@
 
 <h3 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h3>
 <p>Signals drive the render pipeline.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">computed</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span> <span class="n">batch</span>
-
-<span class="n">count</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">double</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;double:&quot;</span><span class="p">,</span> <span class="n">double</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
-
-<span class="n">eff</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
-<span class="n">count</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
-
-<ul>
-<li><code>signal(value)</code> → get/set</li>
-<li><code>computed(fn)</code> → derived; dispose when not needed</li>
-<li><code>effect(fn)</code> → runs and re-runs on dependencies</li>
-<li><code>batch()</code> → batch updates and schedule once</li>
-<li><code>create_resource(fetcher)</code> → async data with loading/error signals</li>
-</ul>
-<h4 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h4>
-<p>For use inside <code>@component</code> functions, prefer the signals-first API:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_memo</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">batch</span>
 
 <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">double</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count changed:&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
+
+<span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;double:&quot;</span><span class="p">,</span> <span class="n">double</span><span class="p">()))</span>
+<span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </code></pre></div>
 
+<ul>
+<li><code>create_signal(value)</code> → <code>(getter, setter)</code> tuple</li>
+<li><code>create_memo(fn)</code> → derived getter; re-computes only when deps change</li>
+<li><code>create_effect(fn)</code> → runs and re-runs on dependencies; supports previous value</li>
+<li><code>batch()</code> → batch updates and schedule once</li>
+<li><code>create_resource(fetcher)</code> → async data with loading/error signals</li>
+</ul>
 <h4 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h4>
 <p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads — useful for
 reading a signal inside an effect without creating a dependency:</p>
@@ -2000,9 +1966,9 @@ returning <code>(group1, group2, ..., rest)</code>:</p>
 
 <h4 id="scheduling-semantics">Scheduling semantics<a class="headerlink" href="#scheduling-semantics" title="Permanent link">&para;</a></h4>
 <p>Effects are scheduled on a microtask in Pyodide via <code>queueMicrotask</code> when available, with fallbacks to <code>setTimeout(0)</code> and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.</p>
-<p><code>batch()</code> coalesces multiple <code>set()</code> operations into a single flush at the end of the batch.</p>
+<p><code>batch()</code> coalesces multiple setter operations into a single flush at the end of the batch.</p>
 <h4 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h4>
-<p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_effect_cleanup</code> are executed during disposal.</p>
+<p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_cleanup</code> inside effects are executed during disposal.</p>
 <h4 id="resources-cancellation-and-suspense">Resources, cancellation, and Suspense<a class="headerlink" href="#resources-cancellation-and-suspense" title="Permanent link">&para;</a></h4>
 <p><code>create_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
 <p>You can also pass a source signal to automatically refetch when it changes:</p>

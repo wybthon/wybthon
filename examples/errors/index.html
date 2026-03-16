@@ -1812,7 +1812,7 @@
 
 <h3 id="error-boundary">Error Boundary<a class="headerlink" href="#error-boundary" title="Permanent link">&para;</a></h3>
 <p>Catch render errors and show a fallback. Reset via a button or key changes.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ErrorBoundary</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">signal</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ErrorBoundary</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">create_signal</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">Boom</span><span class="p">(</span><span class="n">_props</span><span class="p">):</span>
     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;boom&quot;</span><span class="p">)</span>
@@ -1825,8 +1825,8 @@
 <span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">Fallback</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Boom</span><span class="p">,</span> <span class="p">{}))</span>
 
 <span class="c1"># Auto-reset when key changes</span>
-<span class="n">key_sig</span> <span class="o">=</span> <span class="n">signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">view_keyed</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">Fallback</span><span class="p">,</span> <span class="s2">&quot;reset_key&quot;</span><span class="p">:</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">key_sig</span><span class="o">.</span><span class="n">get</span><span class="p">()},</span> <span class="n">h</span><span class="p">(</span><span class="n">Boom</span><span class="p">,</span> <span class="p">{}))</span>
+<span class="n">key</span><span class="p">,</span> <span class="n">set_key</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">view_keyed</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">ErrorBoundary</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">Fallback</span><span class="p">,</span> <span class="s2">&quot;reset_key&quot;</span><span class="p">:</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">key</span><span class="p">()},</span> <span class="n">h</span><span class="p">(</span><span class="n">Boom</span><span class="p">,</span> <span class="p">{}))</span>
 </code></pre></div>
 
 

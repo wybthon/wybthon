@@ -1323,6 +1323,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.component--reactive-prop-getters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive prop getters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1858,6 +1875,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.component--reactive-prop-getters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive prop getters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1943,6 +1977,24 @@
     <div class="doc doc-contents first">
 
         <p><code>@component</code> decorator and <code>forward_ref</code> for function components.</p>
+<p>The <code>@component</code> decorator converts each function parameter into a
+<strong>reactive getter</strong> backed by a Signal.  This means prop changes from a
+parent automatically propagate without boilerplate.  The component body
+always runs <strong>once</strong> (setup phase).  To produce dynamic output, return a
+<em>render function</em> that will be re-invoked whenever a tracked signal
+(including a prop getter) changes.</p>
+<h3 id="wybthon.component--reactive-prop-getters">Reactive prop getters<a class="headerlink" href="#wybthon.component--reactive-prop-getters" title="Permanent link">&para;</a></h3>
+<p>Each named parameter in the decorated function is replaced by a
+zero-argument <em>getter</em> function.  Call it to read the current value::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">render</span><span class="p">()</span><span class="err">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name()}!&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">render</span>
+</code></pre></div>
+
+<p>The getter is backed by a <code>Signal</code> that the reconciler updates
+whenever the parent provides new prop values.</p>
 
 
 
@@ -1975,32 +2027,37 @@
 
     <div class="doc doc-contents ">
 
-        <p>Decorator that enables Pythonic keyword-argument props for function components.</p>
-<p><strong>Stateless</strong> -- return a <code>VNode</code> directly (re-called on prop changes)::</p>
-<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
-<span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name}!&quot;</span><span class="p">)</span>
-</code></pre></div>
-
+        <p>Decorator that turns function parameters into reactive prop getters.</p>
 <p><strong>Stateful</strong> -- create signals during setup and return a <em>render function</em>
 (setup runs once, render re-runs when signals change)::</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">component</span>
-<span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">):</span>
-<span class="w">    </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">render</span><span class="p">():</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="p">),</span>
 <span class="w">                   </span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">on_click</span><span class="o">=</span><span class="n">lambda</span><span class="w"> </span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)))</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">render</span>
 </code></pre></div>
 
-<p><strong>Children</strong> are available via a <code>children</code> parameter::</p>
+<p><strong>Stateless</strong> -- return a <code>VNode</code> directly.  The body is auto-wrapped
+as a render function and re-called when prop signals change::</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
-<span class="n">def</span><span class="w"> </span><span class="n">Card</span><span class="p">(</span><span class="nl">title</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">children</span><span class="o">=</span><span class="k">None</span><span class="p">)</span><span class="err">:</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="n">children</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="err">[]</span><span class="p">))</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name()}!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>, so you can
-compose components without <code>h()</code>::</p>
+<p><strong>Children</strong> are available via a <code>children</code> parameter::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="ss">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">children</span><span class="o">=</span><span class="k">None</span><span class="p">)</span><span class="err">:</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">render</span><span class="p">()</span><span class="err">:</span>
+<span class="w">        </span><span class="n">kids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">children</span><span class="p">()</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="err">[]</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span><span class="w"> </span><span class="n">list</span><span class="p">)</span><span class="err">:</span>
+<span class="w">            </span><span class="n">kids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">kids</span><span class="o">]</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span><span class="w"> </span><span class="o">*</span><span class="n">kids</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">render</span>
+</code></pre></div>
+
+<p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>::</p>
 <div class="codehilite"><pre><span></span><code>Counter(initial=5)
 Card(&quot;child1&quot;, &quot;child2&quot;, title=&quot;My Card&quot;)
 </code></pre></div>
@@ -2052,7 +2109,7 @@ where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</cod
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Stateful</strong> — create signals and return a render function:</p>
@@ -2060,17 +2117,18 @@ where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</cod
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
-<p><strong>Children</strong> are available via a <code>children</code> parameter:</p>
+<p><strong>Children</strong> are available via a <code>children</code> parameter (also a getter):</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">)</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span> <span class="o">*</span><span class="n">kids</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>:</p>

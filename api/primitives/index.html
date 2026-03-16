@@ -1576,17 +1576,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get_props
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1931,17 +1920,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get_props
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2038,6 +2016,12 @@ naturally (no cursor system needed).</p>
 <p>The effect runs immediately and re-runs whenever any signal read
 inside <em>fn</em> changes.  <code>on_cleanup</code> may be called inside <em>fn</em> to
 register per-run cleanup (runs before re-execution and on disposal).</p>
+<p>If <em>fn</em> accepts a positional parameter, the <strong>previous return value</strong>
+is passed on each re-execution (<code>None</code> on the first run), matching
+SolidJS <code>createEffect(prev =&gt; ...)</code>::</p>
+<div class="codehilite"><pre><span></span><code>create_effect(lambda prev: (print(&quot;was&quot;, prev), count())[1])
+</code></pre></div>
+
 <p>Inside a component, the effect is automatically disposed on unmount.</p>
 
 
@@ -2105,28 +2089,6 @@ print(doubled())  # reactive read
 <li>Inside <code>create_effect</code>: runs before each re-execution and on disposal.</li>
 <li>Inside a component's setup phase: runs when the component unmounts.</li>
 </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="wybthon.reactivity.get_props" class="doc doc-heading">
-            <code class=" language-python"><span class="n">get_props</span><span class="p">()</span></code>
-
-<a href="#wybthon.reactivity.get_props" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Return a reactive getter for the current component's props.</p>
-<p>Useful in stateful components that need to react to parent prop changes::</p>
-<div class="codehilite"><pre><span></span><code>props = get_props()
-create_effect(lambda: print(&quot;query changed:&quot;, props()[&quot;query&quot;]))
-</code></pre></div>
 
 
     </div>
