@@ -43,7 +43,7 @@ from .reactivity import (
     untrack,
 )
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 _IN_BROWSER = False
 try:

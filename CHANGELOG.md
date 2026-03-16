@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.16.0 (2026-03-16)
+
+### Features
+
+- **component**: Make component props reactive getters; remove legacy aliases
+  ([`4e63675`](https://github.com/wybthon/wybthon/commit/4e63675b81122a878d586e5fa50d37b177877384))
+
+### Testing
+
+- **examples**: Fix demo current_path init and E2E smoke selectors
+  ([`cd71721`](https://github.com/wybthon/wybthon/commit/cd71721438bc602466030586b2e1528656d856d6))
+
+
 ## v0.15.0 (2026-03-15)
 
 ### Features
