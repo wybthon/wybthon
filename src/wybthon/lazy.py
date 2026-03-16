@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 
-from .reactivity import Signal, effect, signal
+from .reactivity import Signal, effect
 from .vnode import VNode, h
 
 __all__ = ["lazy", "load_component", "preload_component"]
@@ -43,8 +43,8 @@ def load_component(module_path: str, attr: Optional[str] = None) -> Callable[[Di
     `preload_component` to warm the cache.
     """
 
-    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = signal(None)
-    error_sig: Signal[Optional[Any]] = signal(None)
+    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = Signal(None)
+    error_sig: Signal[Optional[Any]] = Signal(None)
 
     def _do_import() -> None:
         try:
@@ -101,10 +101,10 @@ def lazy(loader: Callable[[], Tuple[str, Optional[str]]]) -> Callable[[Dict[str,
         Route(path="/users/:id", component=lazy(UserPageLazy))
     """
 
-    module_path: Signal[Optional[str]] = signal(None)
-    attr_name: Signal[Optional[str]] = signal(None)
-    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = signal(None)
-    error_sig: Signal[Optional[Any]] = signal(None)
+    module_path: Signal[Optional[str]] = Signal(None)
+    attr_name: Signal[Optional[str]] = Signal(None)
+    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = Signal(None)
+    error_sig: Signal[Optional[Any]] = Signal(None)
 
     def start_load() -> None:
         try:

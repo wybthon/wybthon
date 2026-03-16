@@ -292,8 +292,12 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
             return
 
     if ctx is not None and ctx._render_fn is not None:
-        # -- STATEFUL: transfer context, update props signal --
+        # -- REACTIVE: transfer context, update prop signals --
         ctx._props = new.props
+        if ctx._prop_signals:
+            defaults = getattr(new.tag, "_wyb_defaults", {})
+            for name, sig in ctx._prop_signals.items():
+                sig.set(new.props.get(name, defaults.get(name)))
         if ctx._props_signal is not None:
             ctx._props_signal.set(new.props)
         ctx._vnode = new

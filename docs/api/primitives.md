@@ -8,4 +8,3 @@
         - create_memo
         - on_mount
         - on_cleanup
-        - get_props

@@ -2,7 +2,7 @@
 
 Tips:
 
-- Prefer signals at the edges; derive with `computed` to minimize re-renders
+- Prefer signals at the edges; derive with `create_memo` to minimize re-renders
 - Use `key` on lists to help the diffing algorithm
 - Batch updates with `batch()`
 

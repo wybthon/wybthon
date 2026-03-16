@@ -20,7 +20,7 @@ _child_render_count = [0]
 @component
 def _ExpensiveChild(label=None):
     _child_render_count[0] += 1
-    return p(f"Child rendered {_child_render_count[0]} time(s). label={label}")
+    return p(f"Child rendered {_child_render_count[0]} time(s). label={label()}")
 
 
 MemoChild = memo(_ExpensiveChild)

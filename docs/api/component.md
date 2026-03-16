@@ -13,7 +13,7 @@ from wybthon import component, p
 
 @component
 def Greeting(name: str = "world"):
-    return p(f"Hello, {name}!")
+    return p(f"Hello, {name()}!")
 ```
 
 **Stateful** — create signals and return a render function:
@@ -23,19 +23,20 @@ from wybthon import component, create_signal, div, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+    count, set_count = create_signal(initial())
     def render():
         return div(p(f"Count: {count()}"))
     return render
 ```
 
-**Children** are available via a `children` parameter:
+**Children** are available via a `children` parameter (also a getter):
 
 ```python
 @component
 def Card(title: str = "", children=None):
-    kids = children or []
-    return section(h3(title), *kids)
+    kids = children()
+    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
+    return section(h3(title()), *kids)
 ```
 
 **Direct calls** with keyword arguments return a `VNode`:

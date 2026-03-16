@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .context import Provider, create_context, use_context
-from .reactivity import Signal, get_props, signal
+from .reactivity import Signal, get_props
 from .router_core import resolve as _resolve_core
 from .vnode import VNode, h
 
@@ -23,7 +23,7 @@ def _current_url() -> str:
         return "/"
 
 
-current_path: Signal[str] = signal(_current_url())
+current_path: Signal[str] = Signal(_current_url())
 
 _popstate_proxy: Any = None
 

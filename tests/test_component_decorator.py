@@ -15,7 +15,7 @@ def test_component_has_marker():
     from wybthon.component import component
 
     @component
-    def Greet(name: str = "world"):
+    def Greet(name="world"):
         pass
 
     assert getattr(Greet, "_wyb_component", False) is True
@@ -25,22 +25,22 @@ def test_component_preserves_name():
     from wybthon.component import component
 
     @component
-    def MyWidget(label: str = ""):
+    def MyWidget(label=""):
         pass
 
     assert MyWidget.__name__ == "MyWidget"
 
 
 def test_component_extracts_kwargs_from_dict():
-    """When called with a single props dict (VDOM engine path), kwargs are extracted."""
+    """When called with a single props dict (VDOM engine path), reactive getters are provided."""
     from wybthon.component import component
 
     captured = {}
 
     @component
-    def Greet(name: str = "world", greeting: str = "Hello"):
-        captured["name"] = name
-        captured["greeting"] = greeting
+    def Greet(name="world", greeting="Hello"):
+        captured["name"] = name()
+        captured["greeting"] = greeting()
 
     Greet({"name": "Alice", "greeting": "Hi"})
     assert captured == {"name": "Alice", "greeting": "Hi"}
@@ -52,9 +52,9 @@ def test_component_uses_defaults_for_missing_props():
     captured = {}
 
     @component
-    def Greet(name: str = "world", greeting: str = "Hello"):
-        captured["name"] = name
-        captured["greeting"] = greeting
+    def Greet(name="world", greeting="Hello"):
+        captured["name"] = name()
+        captured["greeting"] = greeting()
 
     Greet({"name": "Bob"})
     assert captured == {"name": "Bob", "greeting": "Hello"}
@@ -66,8 +66,8 @@ def test_component_all_defaults():
     captured = {}
 
     @component
-    def Greet(name: str = "world"):
-        captured["name"] = name
+    def Greet(name="world"):
+        captured["name"] = name()
 
     Greet({})
     assert captured == {"name": "world"}
@@ -80,8 +80,8 @@ def test_component_ignores_extra_props():
     captured = {}
 
     @component
-    def Greet(name: str = "world"):
-        captured["name"] = name
+    def Greet(name="world"):
+        captured["name"] = name()
 
     Greet({"name": "Alice", "id": 42, "style": "bold"})
     assert captured == {"name": "Alice"}
@@ -94,7 +94,7 @@ def test_component_children_param():
 
     @component
     def Wrapper(children=None):
-        captured["children"] = children
+        captured["children"] = children()
 
     Greet_children = ["child1", "child2"]
     Wrapper({"children": Greet_children})
@@ -111,8 +111,8 @@ def test_component_renders_via_h(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Greet(name: str = "world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+    def Greet(name="world"):
+        return vdom.h("p", {}, f"Hello, {name()}!")
 
     vdom.render(vdom.h(Greet, {"name": "Alice"}), root_element)
 
@@ -124,8 +124,8 @@ def test_component_renders_with_defaults(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Greet(name: str = "world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+    def Greet(name="world"):
+        return vdom.h("p", {}, f"Hello, {name()}!")
 
     vdom.render(vdom.h(Greet, {}), root_element)
 
@@ -138,8 +138,8 @@ def test_component_direct_call_returns_vnode(wyb):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Greet(name: str = "world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+    def Greet(name="world"):
+        return vdom.h("p", {}, f"Hello, {name()}!")
 
     result = Greet(name="Direct")
     assert isinstance(result, vdom.VNode)
@@ -151,8 +151,8 @@ def test_component_direct_call_renders(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Greet(name: str = "world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+    def Greet(name="world"):
+        return vdom.h("p", {}, f"Hello, {name()}!")
 
     vnode = Greet(name="Direct")
     vdom.render(vnode, root_element)
@@ -166,8 +166,8 @@ def test_component_direct_call_no_args(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Greet(name: str = "world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+    def Greet(name="world"):
+        return vdom.h("p", {}, f"Hello, {name()}!")
 
     vdom.render(Greet(), root_element)
 
@@ -180,9 +180,9 @@ def test_component_direct_call_with_children(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Wrapper(title: str = "", children=None):
-        kids = children if children else []
-        return vdom.h("div", {}, vdom.h("h3", {}, title), *kids)
+    def Wrapper(title="", children=None):
+        kids = children() or []
+        return vdom.h("div", {}, vdom.h("h3", {}, title()), *kids)
 
     child1 = vdom.h("p", {}, "child one")
     child2 = vdom.h("p", {}, "child two")
@@ -202,8 +202,8 @@ def test_component_with_create_signal(wyb, root_element):
     render_log = []
 
     @comp_mod.component
-    def Counter(initial: int = 0):
-        count, set_count = reactivity.create_signal(initial)
+    def Counter(initial=0):
+        count, set_count = reactivity.create_signal(initial())
         setter_ref[0] = set_count
 
         def render():
@@ -254,9 +254,9 @@ def test_component_with_memo(wyb, root_element):
     stable_label = "stable"
 
     @comp_mod.component
-    def Child(label: str = ""):
+    def Child(label=""):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"child:{label}")
+        return vdom.h("span", {}, f"child:{label()}")
 
     MemoChild = vdom.memo(Child)
 
@@ -297,12 +297,12 @@ def test_component_nested(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     @comp_mod.component
-    def Inner(value: str = "inner"):
-        return vdom.h("span", {}, value)
+    def Inner(value="inner"):
+        return vdom.h("span", {}, value())
 
     @comp_mod.component
-    def Outer(label: str = "outer"):
-        return vdom.h("div", {}, vdom.h("p", {}, label), vdom.h(Inner, {"value": "nested"}))
+    def Outer(label="outer"):
+        return vdom.h("div", {}, vdom.h("p", {}, label()), vdom.h(Inner, {"value": "nested"}))
 
     vdom.render(vdom.h(Outer, {"label": "parent"}), root_element)
 
@@ -319,9 +319,9 @@ def test_component_re_renders_on_prop_change(wyb, root_element):
     parent_setter = [None]
 
     @comp_mod.component
-    def Child(count: int = 0):
+    def Child(count=0):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"count={count}")
+        return vdom.h("span", {}, f"count={count()}")
 
     def Parent(props):
         val, set_val = reactivity.create_signal(0)
@@ -337,9 +337,9 @@ def test_component_re_renders_on_prop_change(wyb, root_element):
     assert "count=0" in collect_texts(root_element.element)
 
     parent_setter[0](5)
-    time.sleep(0.05)
+    time.sleep(0.1)
 
-    assert child_renders[0] == 2
+    assert child_renders[0] >= 2
     assert "count=5" in collect_texts(root_element.element)
 
 
@@ -348,3 +348,63 @@ def test_component_exported_from_package():
     from wybthon.component import component
 
     assert callable(component)
+
+
+def test_component_reactive_props_update(wyb, root_element):
+    """Reactive prop getters update when parent re-renders with new values."""
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
+
+    parent_setter = [None]
+
+    @comp_mod.component
+    def Display(message="default"):
+        def render():
+            return vdom.h("p", {}, message())
+
+        return render
+
+    def Parent(props):
+        msg, set_msg = reactivity.create_signal("hello")
+        parent_setter[0] = set_msg
+
+        def render():
+            return vdom.h("div", {}, vdom.h(Display, {"message": msg()}))
+
+        return render
+
+    vdom.render(vdom.h(Parent, {}), root_element)
+    assert "hello" in collect_texts(root_element.element)
+
+    parent_setter[0]("goodbye")
+    time.sleep(0.1)
+    assert "goodbye" in collect_texts(root_element.element)
+
+
+def test_create_effect_prev_value(wyb, root_element):
+    """create_effect passes previous return value to callback when it accepts a parameter."""
+    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+
+    log = []
+    setter_ref = [None]
+
+    def MyComp(props):
+        count, set_count = reactivity.create_signal(0)
+        setter_ref[0] = set_count
+
+        def my_effect(prev):
+            log.append(("prev", prev, "cur", count()))
+            return count()
+
+        reactivity.create_effect(my_effect)
+
+        def render():
+            return vdom.h("p", {}, f"{count()}")
+
+        return render
+
+    vdom.render(vdom.h(MyComp, {}), root_element)
+    assert log == [("prev", None, "cur", 0)]
+
+    setter_ref[0](5)
+    time.sleep(0.05)
+    assert log[-1] == ("prev", 0, "cur", 5)

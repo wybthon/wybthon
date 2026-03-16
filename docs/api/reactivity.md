@@ -4,22 +4,14 @@
 
 #### Public API
 
-##### Core reactive primitives
-
-- `signal(value) -> Signal[T]`
-- `computed(fn) -> _Computed[T]` with `.get()` and `.dispose()`
-- `effect(fn) -> Computation` (returns a handle; call `.dispose()` to stop)
-- `on_effect_cleanup(comp, fn)`
-- `batch() -> context manager`
-
-##### Signals-first API (recommended for `@component`)
+##### Signals-first API (recommended)
 
 - `create_signal(value) -> (getter, setter)`
-- `create_effect(fn) -> Computation`
+- `create_effect(fn) -> Computation` — supports previous value: `create_effect(lambda prev: ...)`
 - `create_memo(fn) -> getter`
 - `on_mount(fn)` — run after first render
-- `on_cleanup(fn)` — run on unmount
-- `get_props() -> getter` — reactive props accessor
+- `on_cleanup(fn)` — run on unmount or before effect re-execution
+- `batch() -> context manager`
 
 ##### Resources
 
@@ -34,4 +26,4 @@
 - `merge_props(*sources)` — merge prop dicts
 - `split_props(props, *key_groups)` — split props by key name
 
-Type hints are provided for all public functions and classes. Prefer retrieving values via `.get()` on signals and computed values to subscribe computations.
+Type hints are provided for all public functions and classes.

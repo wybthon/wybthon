@@ -8,7 +8,7 @@ which require a component context.
 from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
-from wybthon.reactivity import signal
+from wybthon.reactivity import Signal as signal
 
 
 class FakeResource:

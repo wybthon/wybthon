@@ -3,7 +3,7 @@ from wybthon import code, component, div, h2, h3, p, pre
 
 @component
 def Page(params=None):
-    params = params or {}
+    params = params() or {}
     wildcard = params.get("wildcard", "")
     return div(
         div(

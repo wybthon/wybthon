@@ -4,18 +4,13 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Deque, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Deque, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
 
 __all__ = [
     "Signal",
     "Computation",
-    "signal",
-    "computed",
-    "effect",
-    "on_effect_cleanup",
     "batch",
     "Resource",
-    "use_resource",
     "create_resource",
     # Signals-first component primitives
     "create_signal",
@@ -23,7 +18,6 @@ __all__ = [
     "create_memo",
     "on_mount",
     "on_cleanup",
-    "get_props",
     # Reactive utilities
     "untrack",
     "on",
@@ -450,6 +444,7 @@ class _ComponentContext(_CleanupOwner):
         "_render_fn",
         "_props",
         "_props_signal",
+        "_prop_signals",
         "_vnode",
         "_error_handler",
     )
@@ -461,6 +456,7 @@ class _ComponentContext(_CleanupOwner):
         self._render_fn: Optional[Callable[[], Any]] = None
         self._props: dict = {}
         self._props_signal: Optional[Signal[Any]] = None
+        self._prop_signals: Dict[str, Signal[Any]] = {}
         self._vnode: Any = None
         self._error_handler: Optional[Callable[..., Any]] = None
 
@@ -528,23 +524,48 @@ def create_signal(value: T) -> tuple:
     return sig.get, sig.set
 
 
-def create_effect(fn: Callable[[], Any]) -> Computation:
+def create_effect(fn: Callable[..., Any]) -> Computation:
     """Create an auto-tracking reactive effect.
 
     The effect runs immediately and re-runs whenever any signal read
     inside *fn* changes.  ``on_cleanup`` may be called inside *fn* to
     register per-run cleanup (runs before re-execution and on disposal).
 
+    If *fn* accepts a positional parameter, the **previous return value**
+    is passed on each re-execution (``None`` on the first run), matching
+    SolidJS ``createEffect(prev => ...)``::
+
+        create_effect(lambda prev: (print("was", prev), count())[1])
+
     Inside a component, the effect is automatically disposed on unmount.
     """
+    import inspect as _inspect
+
     ctx = _get_component_ctx()
     scope = _EffectScope()
+
+    try:
+        _sig = _inspect.signature(fn)
+        _positional = [
+            p
+            for p in _sig.parameters.values()
+            if p.kind in (_inspect.Parameter.POSITIONAL_ONLY, _inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            and p.default is _inspect.Parameter.empty
+        ]
+        _accepts_prev = len(_positional) > 0
+    except (ValueError, TypeError):
+        _accepts_prev = False
+
+    _prev: List[Any] = [None]
 
     def wrapped() -> None:
         scope._run_cleanups()
         _owner_stack.append(scope)
         try:
-            fn()
+            if _accepts_prev:
+                _prev[0] = fn(_prev[0])
+            else:
+                fn()
         finally:
             if _owner_stack and _owner_stack[-1] is scope:
                 _owner_stack.pop()

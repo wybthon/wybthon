@@ -3,7 +3,7 @@ from wybthon import Link, component, h, nav
 
 @component
 def Nav(base_path=None):
-    lp = {"base_path": base_path, "class": "nav-link", "class_active": "active"}
+    lp = {"base_path": base_path(), "class": "nav-link", "class_active": "active"}
     return nav(
         h(Link, {**lp, "to": "/"}, "Home"),
         h(Link, {**lp, "to": "/primitives"}, "Primitives"),

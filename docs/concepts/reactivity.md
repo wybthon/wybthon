@@ -3,35 +3,20 @@
 Signals drive the render pipeline.
 
 ```python
-from wybthon import signal, computed, effect, batch
-
-count = signal(0)
-double = computed(lambda: count.get() * 2)
-
-def log():
-    print("double:", double.get())
-
-eff = effect(log)
-count.set(1)
-```
-
-- `signal(value)` → get/set
-- `computed(fn)` → derived; dispose when not needed
-- `effect(fn)` → runs and re-runs on dependencies
-- `batch()` → batch updates and schedule once
-- `create_resource(fetcher)` → async data with loading/error signals
-
-#### Signals-first API (recommended)
-
-For use inside `@component` functions, prefer the signals-first API:
-
-```python
-from wybthon import create_signal, create_effect, create_memo
+from wybthon import create_signal, create_effect, create_memo, batch
 
 count, set_count = create_signal(0)
 double = create_memo(lambda: count() * 2)
-create_effect(lambda: print("count changed:", count()))
+
+create_effect(lambda: print("double:", double()))
+set_count(1)
 ```
+
+- `create_signal(value)` → `(getter, setter)` tuple
+- `create_memo(fn)` → derived getter; re-computes only when deps change
+- `create_effect(fn)` → runs and re-runs on dependencies; supports previous value
+- `batch()` → batch updates and schedule once
+- `create_resource(fetcher)` → async data with loading/error signals
 
 #### Reactive utilities
 
@@ -84,11 +69,11 @@ result = create_root(lambda dispose: ...)
 
 Effects are scheduled on a microtask in Pyodide via `queueMicrotask` when available, with fallbacks to `setTimeout(0)` and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.
 
-`batch()` coalesces multiple `set()` operations into a single flush at the end of the batch.
+`batch()` coalesces multiple setter operations into a single flush at the end of the batch.
 
 #### Disposal
 
-Calling `dispose()` on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via `on_effect_cleanup` are executed during disposal.
+Calling `dispose()` on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via `on_cleanup` inside effects are executed during disposal.
 
 #### Resources, cancellation, and Suspense
 

@@ -30,23 +30,17 @@ from .forms import (
 from .reactivity import (
     Resource,
     batch,
-    computed,
     create_effect,
     create_memo,
     create_resource,
     create_root,
     create_signal,
-    effect,
-    get_props,
     merge_props,
     on,
     on_cleanup,
-    on_effect_cleanup,
     on_mount,
-    signal,
     split_props,
     untrack,
-    use_resource,
 )
 
 __version__ = "0.15.0"
@@ -152,18 +146,11 @@ if _IN_BROWSER:
         "batch",
         "on_mount",
         "on_cleanup",
-        "get_props",
         "untrack",
         "on",
         "merge_props",
         "split_props",
         "Resource",
-        # Legacy aliases
-        "signal",
-        "computed",
-        "effect",
-        "on_effect_cleanup",
-        "use_resource",
         # Events
         "DomEvent",
         # Context
@@ -282,18 +269,11 @@ else:
         "batch",
         "on_mount",
         "on_cleanup",
-        "get_props",
         "untrack",
         "on",
         "merge_props",
         "split_props",
         "Resource",
-        # Legacy aliases
-        "signal",
-        "computed",
-        "effect",
-        "on_effect_cleanup",
-        "use_resource",
         # Context
         "Context",
         "create_context",

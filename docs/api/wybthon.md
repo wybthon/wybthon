@@ -10,7 +10,8 @@
 - Components
   - `ErrorBoundary`, `Suspense`
 - Reactivity
-  - `signal`, `computed`, `effect`, `batch`, `on_effect_cleanup`
+  - `create_signal`, `create_effect`, `create_memo`, `batch`
+  - `on_mount`, `on_cleanup`
   - `Resource`, `create_resource`
 - Context
   - `Context`, `create_context`, `use_context`, `Provider`

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .reactivity import Signal, signal
+from .reactivity import Signal
 
 __all__ = [
     "Validator",
@@ -111,7 +111,7 @@ def form_state(initial: Dict[str, Any]) -> Dict[str, FieldState]:
     """Create a form state map from initial values using Signals."""
     state: Dict[str, FieldState] = {}
     for name, val in initial.items():
-        state[name] = FieldState(value=signal(val), error=signal(None), touched=signal(False))
+        state[name] = FieldState(value=Signal(val), error=Signal(None), touched=Signal(False))
     return state
 
 

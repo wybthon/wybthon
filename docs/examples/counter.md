@@ -7,7 +7,7 @@ from wybthon import button, component, create_signal, div, on_mount, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+    count, set_count = create_signal(initial())
 
     on_mount(lambda: print("Counter mounted with initial count:", count()))
 
@@ -23,14 +23,14 @@ def Counter(initial: int = 0):
 #### Traditional function component
 
 ```python
-from wybthon import signal, effect, div, p, button
+from wybthon import create_signal, div, p, button
 
-counter_signal = signal(0)
+count, set_count = create_signal(0)
 
 def Counter(props):
     return div(
-        p(f"Count: {counter_signal.get()}"),
-        button("Increment", on_click=lambda e: counter_signal.set(counter_signal.get() + 1)),
+        p(f"Count: {count()}"),
+        button("Increment", on_click=lambda e: set_count(count() + 1)),
         class_name="counter",
     )
 ```

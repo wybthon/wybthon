@@ -5,7 +5,8 @@ from wybthon import Provider, component, div, footer, h, h1, header, main_, p, s
 
 @component
 def Layout(base_path="", children=None):
-    kids = children if isinstance(children, list) else ([children] if children else [])
+    _ch = children()
+    kids = _ch if isinstance(_ch, list) else ([_ch] if _ch else [])
     return div(
         header(
             div(
@@ -13,7 +14,7 @@ def Layout(base_path="", children=None):
                 h1("Wybthon"),
                 class_name="header-brand",
             ),
-            h(Nav, {"base_path": base_path}),
+            h(Nav, {"base_path": base_path()}),
             class_name="app-header",
         ),
         h(

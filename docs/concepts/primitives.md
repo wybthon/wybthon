@@ -16,7 +16,7 @@ from wybthon import component, create_signal, div, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+    count, set_count = create_signal(initial())
 
     def render():
         return div(
@@ -64,6 +64,12 @@ def tracked():
     on_cleanup(lambda: print(f"cleaning up for {val}"))
 
 create_effect(tracked)
+```
+
+Effects can also receive the previous return value as an argument:
+
+```python
+create_effect(lambda prev: (print(f"was {prev}, now {count()}"), count())[-1])
 ```
 
 ---
@@ -121,18 +127,18 @@ def Timer():
 
 ---
 
-#### `get_props`
+#### Reactive props
 
-Return a reactive getter for the current component's props.  Useful in
-stateful components that need to react when a parent changes props:
+With `@component`, each parameter is automatically a reactive getter.
+Call the parameter with `()` to read its current value — no need for
+`get_props()`:
 
 ```python
-from wybthon import component, create_effect, get_props
+from wybthon import component, create_effect
 
 @component
 def Search(query: str = ""):
-    props = get_props()
-    create_effect(lambda: print("query changed:", props()["query"]))
+    create_effect(lambda: print("query changed:", query()))
 
     def render():
         return ...

@@ -16,23 +16,23 @@ Guidelines:
 #### Examples
 
 - Reactivity API
-  - `signal(value) -> Signal[T]`
-  - `computed(fn: Callable[[], T]) -> _Computed[T]`
-  - `effect(fn: Callable[[], Any]) -> Computation`
+  - `create_signal(value: T) -> tuple[Callable[[], T], Callable[[T], None]]`
+  - `create_memo(fn: Callable[[], T]) -> Callable[[], T]`
+  - `create_effect(fn: Callable[[], Any]) -> Computation`
   - `create_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`
 
 ```python
 from typing import Awaitable
-from wybthon import signal, computed, effect, create_resource
+from wybthon import create_signal, create_memo, create_effect, create_resource
 
-count = signal(0)
-double = computed(lambda: count.get() * 2)
+count, set_count = create_signal(0)
+double = create_memo(lambda: count() * 2)
 
 def log() -> None:
-    _ = double.get()  # subscribes
+    _ = double()  # subscribes
 
-c = effect(log)      # Computation
-c.dispose()          # stop updates
+c = create_effect(log)  # Computation
+c.dispose()             # stop updates
 
 async def fetch_user() -> dict:
     return {"name": "Ada"}

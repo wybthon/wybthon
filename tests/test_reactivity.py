@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from wybthon import batch, computed, effect, signal, use_resource
+from wybthon.reactivity import batch, computed, effect, signal, use_resource
 
 
 def test_signal_and_effect():

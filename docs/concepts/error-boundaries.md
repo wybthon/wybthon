@@ -22,12 +22,12 @@ view = h(ErrorBoundary, {"fallback": fallback}, h(Failing, {}))
 When a `reset_key` (single) or `reset_keys` (list/tuple) value changes, the boundary clears its error and re-renders children on the next render.
 
 ```python
-from wybthon import ErrorBoundary, h, signal
+from wybthon import ErrorBoundary, h, create_signal
 
-count = signal(0)
+count, set_count = create_signal(0)
 
 def Counter(_props):
-    c = count.get()
+    c = count()
     if c % 2 == 1:
         raise ValueError("odd!")
     return h("span", {}, f"Count: {c}")
@@ -36,13 +36,13 @@ view = h(
     "div",
     {},
     h(ErrorBoundary, {"fallback": lambda err, reset: h("span", {}, f"Err: {err}")}, h(Counter, {})),
-    h("button", {"on_click": lambda e: count.set(count.get() + 1)}, "+1"),
+    h("button", {"on_click": lambda e: set_count(count() + 1)}, "+1"),
 )
 
 # Or couple the boundary to a key so it resets when `count` changes:
 view_keyed = h(
     ErrorBoundary,
-    {"fallback": lambda err, reset: h("span", {}, f"Err: {err}"), "reset_key": lambda: count.get()},
+    {"fallback": lambda err, reset: h("span", {}, f"Err: {err}"), "reset_key": lambda: count()},
     h(Counter, {}),
 )
 ```

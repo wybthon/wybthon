@@ -12,7 +12,7 @@ from wybthon import component, div, h2
 
 @component
 def Hello(name: str = "world"):
-    return h2(f"Hello, {name}!", class_name="greeting")
+    return h2(f"Hello, {name()}!", class_name="greeting")
 ```
 
 Props become regular Python parameters with type annotations and defaults.
@@ -24,7 +24,7 @@ parent passes new props:
 ```python
 @component
 def Greeting(name: str = "world"):
-    return p(f"Hello, {name}!")
+    return p(f"Hello, {name()}!")
 ```
 
 **Stateful** components create signals during setup and return a *render
@@ -35,7 +35,7 @@ from wybthon import button, component, create_signal, div, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+    count, set_count = create_signal(initial())
 
     def render():
         return div(
@@ -52,8 +52,9 @@ from wybthon import component, h3, section
 
 @component
 def Card(title: str = "", children=None):
-    kids = children if isinstance(children, list) else ([children] if children else [])
-    return section(h3(title), *kids, class_name="card")
+    kids = children()
+    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
+    return section(h3(title()), *kids, class_name="card")
 ```
 
 **Direct calls** with keyword args return a `VNode`, so you can compose
@@ -114,8 +115,8 @@ from wybthon import component, memo, h
 
 @component
 def ExpensiveList(items=None):
-    items = items or []
-    return h("ul", {}, *[h("li", {}, str(i)) for i in items])
+    its = items() or []
+    return h("ul", {}, *[h("li", {}, str(i)) for i in its])
 
 MemoList = memo(ExpensiveList)
 ```
