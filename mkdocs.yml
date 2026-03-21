@@ -46,6 +46,7 @@ nav:
     - Forms: examples/forms.md
     - Error Boundary: examples/errors.md
     - Router: examples/router.md
+    - Authoring Patterns: examples/authoring-patterns.md
   - API Reference:
     - Package: api/wybthon.md
     - component: api/component.md
