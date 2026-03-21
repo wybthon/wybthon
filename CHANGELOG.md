@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.17.0 (2026-03-21)
+
+### Chores
+
+- **bench**: Revamp suite to match js-framework-benchmark
+  ([`1789d4f`](https://github.com/wybthon/wybthon/commit/1789d4f001a44b73ac08ac5043e1916884cfe7a0))
+
+### Documentation
+
+- **mkdocs**: Remove orphaned api.md stub; add authoring-patterns to nav
+  ([`c0a031f`](https://github.com/wybthon/wybthon/commit/c0a031f615a27539f76c9803a37d2f378cab6b9a))
+
+- **repo**: Add missing flow scope to CONTRIBUTING.md
+  ([`6741f5f`](https://github.com/wybthon/wybthon/commit/6741f5f45cf741588128ee80768822d43d6abf86))
+
+- **repo**: Rewrite README with banner, structured sections, and badges
+  ([`b4f1491`](https://github.com/wybthon/wybthon/commit/b4f1491b9cb3a5c4f361dbb41eb61072ac155c6a))
+
+### Features
+
+- **store**: Add create_store and produce for nested reactive state
+  ([`f5abf5e`](https://github.com/wybthon/wybthon/commit/f5abf5e6efaac9f6a2d88e02c2ec018841ea8e40))
+
+
 ## v0.16.0 (2026-03-16)
 
 ### Features
