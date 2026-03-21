@@ -15,7 +15,7 @@ set_count(1)
 - `create_signal(value)` → `(getter, setter)` tuple
 - `create_memo(fn)` → derived getter; re-computes only when deps change
 - `create_effect(fn)` → runs and re-runs on dependencies; supports previous value
-- `batch()` → batch updates and schedule once
+- `batch()` → batch updates as context manager or `batch(fn)` with callback
 - `create_resource(fetcher)` → async data with loading/error signals
 
 #### Reactive utilities
@@ -69,7 +69,17 @@ result = create_root(lambda dispose: ...)
 
 Effects are scheduled on a microtask in Pyodide via `queueMicrotask` when available, with fallbacks to `setTimeout(0)` and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.
 
-`batch()` coalesces multiple setter operations into a single flush at the end of the batch.
+`batch()` coalesces multiple setter operations into a single flush at the end of the batch. It can be used as a context manager or with a callback:
+
+```python
+# Context manager (Pythonic)
+with batch():
+    set_a(1)
+    set_b(2)
+
+# Callback (SolidJS-style) — effects flush synchronously before returning
+batch(lambda: (set_a(1), set_b(2)))
+```
 
 #### Disposal
 

@@ -98,6 +98,7 @@ async function bootstrap() {
       "reconciler.py",
       "router.py",
       "router_core.py",
+      "store.py",
       "suspense.py",
       "vdom.py",
       "vnode.py",
@@ -123,6 +124,7 @@ async function bootstrap() {
     ensureDir("/app/errors");
     ensureDir("/app/patterns");
     ensureDir("/app/primitives");
+    ensureDir("/app/stores");
 
     const appFiles = [
       "app/__init__.py",
@@ -157,6 +159,8 @@ async function bootstrap() {
       "app/patterns/page.py",
       "app/primitives/__init__.py",
       "app/primitives/page.py",
+      "app/stores/__init__.py",
+      "app/stores/page.py",
     ];
     for (const f of appFiles) {
       const resp = await fetch(`./${f}?v=${cacheBust}`);

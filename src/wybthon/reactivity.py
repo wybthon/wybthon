@@ -231,12 +231,37 @@ class _Batch:
         global _batch_depth
         _batch_depth -= 1
         if _batch_depth == 0 and _pending_set:
-            _schedule_flush()
+            _flush()
 
 
-def batch() -> _Batch:
-    """Batch signal updates within the returned context manager."""
-    return _Batch()
+def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
+    """Batch signal updates so subscribers flush once at the end.
+
+    Can be used as a **context manager** (Pythonic style)::
+
+        with batch():
+            set_a(1)
+            set_b(2)
+
+    Or with a **callback** (SolidJS style)::
+
+        batch(lambda: (set_a(1), set_b(2)))
+
+    When called with a function, the function's return value is returned.
+    Effects are flushed synchronously before ``batch`` returns, matching
+    SolidJS semantics.
+    """
+    if fn is None:
+        return _Batch()
+    global _batch_depth
+    _batch_depth += 1
+    try:
+        result = fn()
+    finally:
+        _batch_depth -= 1
+        if _batch_depth == 0 and _pending_set:
+            _flush()
+    return result
 
 
 def untrack(fn: Callable[[], T]) -> T:

@@ -42,6 +42,7 @@ from .reactivity import (
     split_props,
     untrack,
 )
+from .store import create_store, produce
 
 __version__ = "0.16.0"
 
@@ -189,6 +190,9 @@ if _IN_BROWSER:
         "rules_from_schema",
         "a11y_control_attrs",
         "error_message_attrs",
+        # Stores
+        "create_store",
+        "produce",
         # Lazy loading
         "lazy",
         "load_component",
@@ -286,6 +290,9 @@ else:
         "Switch",
         "Match",
         "Dynamic",
+        # Stores
+        "create_store",
+        "produce",
         # Forms
         "bind_text",
         "bind_checkbox",

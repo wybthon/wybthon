@@ -8,6 +8,7 @@ def Nav(base_path=None):
         h(Link, {**lp, "to": "/"}, "Home"),
         h(Link, {**lp, "to": "/primitives"}, "Primitives"),
         h(Link, {**lp, "to": "/patterns"}, "Patterns"),
+        h(Link, {**lp, "to": "/stores"}, "Stores"),
         h(Link, {**lp, "to": "/forms"}, "Forms"),
         h(Link, {**lp, "to": "/fetch"}, "Fetch"),
         h(Link, {**lp, "to": "/errors"}, "Errors"),

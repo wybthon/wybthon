@@ -25,6 +25,7 @@ nav:
     - Reactivity: concepts/reactivity.md
     - Router: concepts/router.md
     - Context: concepts/context.md
+    - Stores: concepts/stores.md
     - Events: concepts/events.md
     - Forms: concepts/forms.md
     - DOM Interop: concepts/dom.md
@@ -55,6 +56,7 @@ nav:
     - router: api/router.md
     - vdom: api/vdom.md
     - primitives: api/primitives.md
+    - store: api/store.md
     - forms: api/forms.md
     - html: api/html.md
   - Meta:

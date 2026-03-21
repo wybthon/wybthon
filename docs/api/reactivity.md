@@ -11,7 +11,7 @@
 - `create_memo(fn) -> getter`
 - `on_mount(fn)` — run after first render
 - `on_cleanup(fn)` — run on unmount or before effect re-execution
-- `batch() -> context manager`
+- `batch() -> context manager` or `batch(fn) -> result` — callback form flushes synchronously
 
 ##### Resources
 

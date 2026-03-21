@@ -110,6 +110,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `reconciler` – reconciliation engine for mounting, patching, and unmounting
   - `router` – routing, paths, and navigation helpers
   - `router_core` – core route resolution helpers
+  - `store` – reactive stores (`create_store`, `produce`) for nested state management
   - `suspense` – suspense boundaries and async fallback UI
   - `vdom` – virtual DOM and renderer
   - `vnode` – virtual node data structure and creation utilities
