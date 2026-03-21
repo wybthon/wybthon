@@ -100,6 +100,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `dom` – DOM interop and element helpers
   - `error_boundary` – error boundary component and fallback rendering
   - `events` – DOM events and event utilities
+  - `flow` – control-flow components (Show, For, Index, Switch, Match, Dynamic)
   - `forms` – form state, validators, and bindings
   - `html` – Pythonic HTML element helpers and Fragment
   - `lazy` – lazy loading and preloading utilities
