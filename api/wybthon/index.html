@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.wybthon.com/api/wybthon/">
       
       
-        <link rel="prev" href="../../examples/router/">
+        <link rel="prev" href="../../examples/authoring-patterns/">
       
       
         <link rel="next" href="../component/">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -517,6 +517,34 @@
     
   
     Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stores
   
 
     
@@ -1139,6 +1167,34 @@
     
   
     Router
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Patterns
   
 
     
@@ -1926,6 +1982,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.create_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.email" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2117,6 +2184,17 @@
     <span class="md-ellipsis">
       
         preload_component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.produce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        produce
       
     </span>
   </a>
@@ -2470,6 +2548,34 @@
     
   
     primitives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    store
   
 
     
@@ -3392,6 +3498,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.create_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.email" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3583,6 +3700,17 @@
     <span class="md-ellipsis">
       
         preload_component
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.produce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        produce
       
     </span>
   </a>
@@ -4929,14 +5057,27 @@ and popping context values around this component's subtree mount.</p>
 
 
 <h2 id="wybthon.batch" class="doc doc-heading">
-            <code class=" language-python"><span class="n">batch</span><span class="p">()</span></code>
+            <code class=" language-python"><span class="n">batch</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#wybthon.batch" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents ">
 
-        <p>Batch signal updates within the returned context manager.</p>
+        <p>Batch signal updates so subscribers flush once at the end.</p>
+<p>Can be used as a <strong>context manager</strong> (Pythonic style)::</p>
+<div class="codehilite"><pre><span></span><code>with batch():
+    set_a(1)
+    set_b(2)
+</code></pre></div>
+
+<p>Or with a <strong>callback</strong> (SolidJS style)::</p>
+<div class="codehilite"><pre><span></span><code>batch(lambda: (set_a(1), set_b(2)))
+</code></pre></div>
+
+<p>When called with a function, the function's return value is returned.
+Effects are flushed synchronously before <code>batch</code> returns, matching
+SolidJS semantics.</p>
 
 
     </div>
@@ -5159,6 +5300,41 @@ naturally (no cursor system needed).</p>
 <span class="n">set_count</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span><span class="w">          </span><span class="c1"># 5</span>
 </code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.create_store" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_store</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span></code>
+
+<a href="#wybthon.create_store" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a reactive store from an initial value.</p>
+<p>Returns <code>(store, set_store)</code> where <em>store</em> is a reactive proxy that
+tracks reads per-path, and <em>set_store</em> is a setter supporting
+path-based updates.</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code>store, set_store = create_store({&quot;count&quot;: 0, &quot;user&quot;: {&quot;name&quot;: &quot;Ada&quot;}})
+
+<span class="gh">#</span> Reactive reads:
+store.count         # 0
+store.user.name     # &quot;Ada&quot;
+
+<span class="gh">#</span> Path-based writes:
+set_store(&quot;count&quot;, 5)
+set_store(&quot;user&quot;, &quot;name&quot;, &quot;Jane&quot;)
+set_store(&quot;count&quot;, lambda c: c + 1)
+</code></pre></div>
+
+<p>See module docstring for full API documentation.</p>
 
 
     </div>
@@ -5520,6 +5696,34 @@ only when the form is valid.</p>
     <div class="doc doc-contents ">
 
         <p>Eagerly import a component to warm caches before navigation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.produce" class="doc doc-heading">
+            <code class=" language-python"><span class="n">produce</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.produce" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a producer for batch-mutating store state.</p>
+<p>The function <em>fn</em> receives a mutable draft of the store.  Mutations
+on the draft are recorded and applied reactively when passed to
+<code>set_store</code>::</p>
+<div class="codehilite"><pre><span></span><code>set_store(produce(lambda s: setattr(s, &quot;count&quot;, s.count + 1)))
+</code></pre></div>
+
+<p>The draft supports attribute access, item access, <code>append</code>, and
+<code>pop</code> for lists::</p>
+<div class="codehilite"><pre><span></span><code>set_store(produce(lambda s: s.todos.append({&quot;text&quot;: &quot;New&quot;, &quot;done&quot;: False})))
+</code></pre></div>
 
 
     </div>

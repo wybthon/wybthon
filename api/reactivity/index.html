@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -517,6 +517,34 @@
     
   
     Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stores
   
 
     
@@ -1139,6 +1167,34 @@
     
   
     Router
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authoring-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Patterns
   
 
     
@@ -1793,6 +1849,34 @@
     
   
     primitives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    store
   
 
     
@@ -2565,14 +2649,27 @@ resource automatically refetches.</p>
 
 
 <h2 id="wybthon.reactivity.batch" class="doc doc-heading">
-            <code class=" language-python"><span class="n">batch</span><span class="p">()</span></code>
+            <code class=" language-python"><span class="n">batch</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#wybthon.reactivity.batch" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents ">
 
-        <p>Batch signal updates within the returned context manager.</p>
+        <p>Batch signal updates so subscribers flush once at the end.</p>
+<p>Can be used as a <strong>context manager</strong> (Pythonic style)::</p>
+<div class="codehilite"><pre><span></span><code>with batch():
+    set_a(1)
+    set_b(2)
+</code></pre></div>
+
+<p>Or with a <strong>callback</strong> (SolidJS style)::</p>
+<div class="codehilite"><pre><span></span><code>batch(lambda: (set_a(1), set_b(2)))
+</code></pre></div>
+
+<p>When called with a function, the function's return value is returned.
+Effects are flushed synchronously before <code>batch</code> returns, matching
+SolidJS semantics.</p>
 
 
     </div>
@@ -2950,7 +3047,7 @@ a dependency::</p>
 <li><code>create_memo(fn) -&gt; getter</code></li>
 <li><code>on_mount(fn)</code> — run after first render</li>
 <li><code>on_cleanup(fn)</code> — run on unmount or before effect re-execution</li>
-<li><code>batch() -&gt; context manager</code></li>
+<li><code>batch() -&gt; context manager</code> or <code>batch(fn) -&gt; result</code> — callback form flushes synchronously</li>
 </ul>
 <h5 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h5>
 <ul>
