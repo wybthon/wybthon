@@ -2036,7 +2036,28 @@
 <a id="wybthon.reactivity"></a>
     <div class="doc doc-contents first">
 
-        <p>Signal-based reactive primitives and async Resource helper.</p>
+        <p>Signal-based reactive primitives with ownership tree, inspired by SolidJS.</p>
+<p>The ownership tree ensures that every reactive computation (effect, memo)
+is <strong>owned</strong> by its parent scope.  When a parent re-runs or is disposed,
+all child computations are automatically cleaned up -- preventing memory
+leaks and ensuring correct lifecycle semantics.</p>
+<p>Key classes:</p>
+<ul>
+<li><code>Owner</code>        -- base ownership scope (cleanups + child tracking)</li>
+<li><code>Computation</code>  -- reactive computation that is also an ownership scope</li>
+<li><code>Signal</code>       -- mutable reactive container</li>
+</ul>
+<p>Key functions:</p>
+<ul>
+<li><code>create_signal</code>  -- create a (getter, setter) pair</li>
+<li><code>create_effect</code>  -- auto-tracking side-effect</li>
+<li><code>create_memo</code>    -- auto-tracking derived value</li>
+<li><code>on_mount</code>       -- run once after component mount</li>
+<li><code>on_cleanup</code>     -- register teardown callback</li>
+<li><code>create_root</code>    -- create an independent reactive root</li>
+<li><code>batch</code>          -- batch signal updates</li>
+<li><code>untrack</code>        -- read without tracking</li>
+</ul>
 
 
 

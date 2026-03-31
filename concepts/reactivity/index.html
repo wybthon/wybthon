@@ -545,6 +545,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ownership-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership tree
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ownership tree">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-effects-vs-render-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup effects vs render effects
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#disposal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1946,6 +1974,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ownership-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership tree
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ownership tree">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-effects-vs-render-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup effects vs render effects
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#disposal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2060,8 +2116,82 @@ returning <code>(group1, group2, ..., rest)</code>:</p>
 <span class="n">batch</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">set_a</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">set_b</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
 </code></pre></div>
 
+<h4 id="ownership-tree">Ownership tree<a class="headerlink" href="#ownership-tree" title="Permanent link">&para;</a></h4>
+<p>Every reactive computation belongs to an <strong>ownership tree</strong> (inspired by
+SolidJS).  Two base classes form the hierarchy:</p>
+<ul>
+<li><code>Owner</code> — tracks child owners and cleanup callbacks.</li>
+<li><code>Computation(Owner)</code> — a reactive computation that is also an ownership scope.</li>
+</ul>
+<p>When a new effect or memo is created, it is automatically registered as a
+child of <code>_current_owner</code>, the owner that is active at the time of
+creation.  This forms a tree:</p>
+<div class="codehilite"><pre><span></span><code>Root Owner
+├── ComponentContext (MyApp)
+│   ├── setup effect (on_mount callback)
+│   ├── ComponentContext (Counter)
+│   │   ├── setup effect (logger)
+│   │   └── render effect
+│   │       └── inner effect (conditionally created)
+│   └── render effect
+└── ...
+</code></pre></div>
+
+<p><strong>Disposal is depth-first:</strong> when an owner is disposed, all its children
+are disposed first, then its own cleanup callbacks run.  This guarantees
+that inner scopes are torn down before outer ones.</p>
+<p>When a <code>Computation</code> re-runs (due to a signal change), it disposes all
+of its children and runs its own cleanups <em>before</em> re-executing its
+function.  Any effects created during the new execution become fresh
+children of the computation.  This prevents leaks from
+conditionally-created effects.</p>
+<h5 id="setup-effects-vs-render-effects">Setup effects vs render effects<a class="headerlink" href="#setup-effects-vs-render-effects" title="Permanent link">&para;</a></h5>
+<p>Inside a component, effects have different lifetimes depending on
+<strong>when</strong> they are created:</p>
+<table>
+<thead>
+<tr>
+<th>Created during</th>
+<th>Parent owner</th>
+<th>Disposed when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Setup</strong> (component body, before <code>return</code>)</td>
+<td><code>_ComponentContext</code></td>
+<td>Component unmounts</td>
+</tr>
+<tr>
+<td><strong>Render</strong> (inside the render function)</td>
+<td>Render <code>Computation</code></td>
+<td>Next re-render or unmount</td>
+</tr>
+</tbody>
+</table>
+<p>Setup effects survive re-renders because they are children of the
+component context, not the render effect.  Render effects are torn down
+every time the render function re-runs.</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Setup effect — lives until the component unmounts</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count is&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="c1"># Render effect — disposed and recreated on each re-render</span>
+        <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rendered with&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">render</span>
+</code></pre></div>
+
 <h4 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h4>
 <p>Calling <code>dispose()</code> on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via <code>on_cleanup</code> inside effects are executed during disposal.</p>
+<p>Disposing an <code>Owner</code> (or any subclass) walks the tree depth-first:
+children are disposed before the owner's own cleanups run.  After
+disposal, the owner is removed from its parent's children list.</p>
 <h4 id="resources-cancellation-and-suspense">Resources, cancellation, and Suspense<a class="headerlink" href="#resources-cancellation-and-suspense" title="Permanent link">&para;</a></h4>
 <p><code>create_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
 <p>You can also pass a source signal to automatically refetch when it changes:</p>

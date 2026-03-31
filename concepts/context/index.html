@@ -575,6 +575,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works-the-ownership-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works: the ownership tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1870,6 +1909,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works-the-ownership-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works: the ownership tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1895,7 +1973,8 @@
   <h1>Context</h1>
 
 <h3 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h3>
-<p>Provide and consume values across the tree.</p>
+<p>Provide and consume values across the component tree without prop
+drilling.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">Provider</span><span class="p">,</span> <span class="n">use_context</span>
 
@@ -1908,9 +1987,43 @@
 <span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{})]})</span>
 </code></pre></div>
 
-<blockquote>
-<p>TODO: Document provider scoping and performance notes.</p>
-</blockquote>
+<h4 id="how-it-works-the-ownership-tree">How it works: the ownership tree<a class="headerlink" href="#how-it-works-the-ownership-tree" title="Permanent link">&para;</a></h4>
+<p>Context values are stored directly on the <strong>reactive ownership tree</strong>,
+not on a separate render-time stack.  When a <code>Provider</code> component
+mounts, the reconciler calls <code>_set_context(ctx_id, value)</code> on that
+component's <code>_ComponentContext</code> owner.  This writes the value into the
+owner's <code>_context_map</code>.</p>
+<p>When <code>use_context(ctx)</code> is called, it walks <strong>up</strong> the owner chain
+(<code>_current_owner → parent → parent → ...</code>) looking for the first owner
+whose <code>_context_map</code> contains the context ID.  If none is found, the
+context's default value is returned.</p>
+<div class="codehilite"><pre><span></span><code>Root Owner
+└── ComponentContext (App)
+    └── ComponentContext (Provider)   ← _context_map = {Theme.id: &quot;dark&quot;}
+        └── ComponentContext (Label)
+            └── render effect
+                ← use_context(Theme) walks up and finds &quot;dark&quot;
+</code></pre></div>
+
+<p>This ownership-based lookup means context is available at any point
+during a component's lifecycle — setup phase, render function, or inside
+effects — as long as the code runs under an owner that is a descendant
+of the provider.</p>
+<h4 id="provider-scoping">Provider scoping<a class="headerlink" href="#provider-scoping" title="Permanent link">&para;</a></h4>
+<p>Each <code>Provider</code> sets its value on its own component context.  Nested
+providers for the same context naturally shadow outer ones because the
+ownership-tree walk finds the nearest ancestor first:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;light&quot;</span><span class="p">},</span>
+    <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">},</span>
+        <span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{})),</span>  <span class="c1"># sees &quot;dark&quot;</span>
+    <span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{}),</span>       <span class="c1"># sees &quot;light&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h4 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h4>
+<p>Context lookup is a simple parent-pointer walk — no dict copies, no
+stack manipulation.  The cost is proportional to the depth between the
+consumer and the nearest provider, which is typically small.</p>
 
 
 

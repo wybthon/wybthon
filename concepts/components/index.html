@@ -450,6 +450,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#component-ownership-and-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component ownership and lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#traditional-function-components" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1968,6 +1979,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#component-ownership-and-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component ownership and lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#traditional-function-components" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2120,6 +2142,45 @@ components without <code>h()</code>:</p>
 </code></pre></div>
 
 <p>See: <a href="../primitives/">Primitives</a> for the full signals-first API.</p>
+<h4 id="component-ownership-and-lifecycle">Component ownership and lifecycle<a class="headerlink" href="#component-ownership-and-lifecycle" title="Permanent link">&para;</a></h4>
+<p>Each component instance gets a <code>_ComponentContext</code> (a subclass of
+<code>Owner</code>) that participates in the reactive <strong>ownership tree</strong>.  This
+context is the parent owner for everything created during the
+component's setup phase.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">_ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span><span class="w">       </span><span class="err">←</span><span class="w"> </span><span class="n">created</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="n">mounts</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">setup</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="w">         </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">on_cleanup</span><span class="w"> </span><span class="n">callback</span><span class="w">           </span><span class="err">←</span><span class="w"> </span><span class="n">registered</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">render</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="p">(</span><span class="n">Computation</span><span class="p">)</span><span class="w">   </span><span class="err">←</span><span class="w"> </span><span class="n">also</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">inner</span><span class="w"> </span><span class="n">effect</span><span class="w">              </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">render</span><span class="w"> </span><span class="n">effect</span>
+</code></pre></div>
+
+<p><strong>Setup effects</strong> (created in the component body, before <code>return</code>) are
+owned by the <code>_ComponentContext</code>.  They survive re-renders and are only
+disposed when the component unmounts.</p>
+<p><strong>Render effects</strong> (created inside the render function) are owned by
+the render <code>Computation</code>.  They are disposed and recreated every time
+the render function re-runs due to a signal change.</p>
+<p>This distinction is automatic — no special API is needed.  The ownership
+tree tracks which owner is active at the time <code>create_effect</code> or
+<code>create_memo</code> is called.</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="n">results</span><span class="p">,</span> <span class="n">set_results</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
+
+    <span class="c1"># Setup effect — survives re-renders, disposed on unmount.</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">()))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
+        <span class="c1"># Render effect — disposed on each re-render.</span>
+        <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rendering&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">()),</span> <span class="s2">&quot;items&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ul</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">()])</span>
+
+    <span class="k">return</span> <span class="n">render</span>
+</code></pre></div>
+
+<p>When a component unmounts, the reconciler calls <code>dispose()</code> on its
+<code>_ComponentContext</code>, which walks the tree depth-first: render effects,
+setup effects, and cleanup callbacks are all torn down automatically.</p>
 <h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
 <p>You can still define components the traditional way with a <code>props</code> dict.
 This style is fully supported and does not require a decorator:</p>

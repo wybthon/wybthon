@@ -1505,6 +1505,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.Owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.Resource" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1715,6 +1726,45 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#ownership-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership classes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ownership classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#computationowner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Computation(Owner)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#public-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1753,6 +1803,17 @@
     <span class="md-ellipsis">
       
         Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global state
       
     </span>
   </a>
@@ -2182,6 +2243,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.Owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.Resource" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2392,6 +2464,45 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#ownership-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership classes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ownership classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#computationowner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Computation(Owner)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#public-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2430,6 +2541,17 @@
     <span class="md-ellipsis">
       
         Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global state
       
     </span>
   </a>
@@ -2478,7 +2600,28 @@
 <a id="wybthon.reactivity"></a>
     <div class="doc doc-contents first">
 
-        <p>Signal-based reactive primitives and async Resource helper.</p>
+        <p>Signal-based reactive primitives with ownership tree, inspired by SolidJS.</p>
+<p>The ownership tree ensures that every reactive computation (effect, memo)
+is <strong>owned</strong> by its parent scope.  When a parent re-runs or is disposed,
+all child computations are automatically cleaned up -- preventing memory
+leaks and ensuring correct lifecycle semantics.</p>
+<p>Key classes:</p>
+<ul>
+<li><code>Owner</code>        -- base ownership scope (cleanups + child tracking)</li>
+<li><code>Computation</code>  -- reactive computation that is also an ownership scope</li>
+<li><code>Signal</code>       -- mutable reactive container</li>
+</ul>
+<p>Key functions:</p>
+<ul>
+<li><code>create_signal</code>  -- create a (getter, setter) pair</li>
+<li><code>create_effect</code>  -- auto-tracking side-effect</li>
+<li><code>create_memo</code>    -- auto-tracking derived value</li>
+<li><code>on_mount</code>       -- run once after component mount</li>
+<li><code>on_cleanup</code>     -- register teardown callback</li>
+<li><code>create_root</code>    -- create an independent reactive root</li>
+<li><code>batch</code>          -- batch signal updates</li>
+<li><code>untrack</code>        -- read without tracking</li>
+</ul>
 
 
 
@@ -2511,10 +2654,64 @@
 
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Owner (wybthon.reactivity.Owner)" href="#wybthon.reactivity.Owner">Owner</a></code></p>
 
 
 
         <p>Reactive computation that tracks Signals and re-runs when they change.</p>
+<p>Also serves as an ownership scope: child computations created during
+execution are disposed before each re-run, preventing leaks from
+conditionally-created effects.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="wybthon.reactivity.Owner" class="doc doc-heading">
+            <code>Owner</code>
+
+
+<a href="#wybthon.reactivity.Owner" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Base reactive ownership scope.</p>
+<p>Tracks child owners and cleanup callbacks.  When disposed, children
+are disposed first (depth-first), then own cleanups run.  This
+mirrors SolidJS's ownership model.</p>
 
 
 
@@ -3039,14 +3236,91 @@ a dependency::</p>
 
     </div>
 
-</div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
+</div><h4 id="ownership-classes">Ownership classes<a class="headerlink" href="#ownership-classes" title="Permanent link">&para;</a></h4>
+<h5 id="owner"><code>Owner</code><a class="headerlink" href="#owner" title="Permanent link">&para;</a></h5>
+<p>Base reactive ownership scope.  Tracks child owners and cleanup callbacks.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_parent</code></td>
+<td>Parent <code>Owner</code> or <code>None</code> for roots.</td>
+</tr>
+<tr>
+<td><code>_children</code></td>
+<td>List of child <code>Owner</code> instances.</td>
+</tr>
+<tr>
+<td><code>_cleanups</code></td>
+<td>Callbacks run on disposal (LIFO order).</td>
+</tr>
+<tr>
+<td><code>_context_map</code></td>
+<td>Optional dict mapping context IDs to values (used by <code>Provider</code>).</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dispose()</code></td>
+<td>Dispose children depth-first, run own cleanups, detach from parent.</td>
+</tr>
+<tr>
+<td><code>_lookup_context(ctx_id, default)</code></td>
+<td>Walk up the owner chain to find a context value.</td>
+</tr>
+<tr>
+<td><code>_set_context(ctx_id, value)</code></td>
+<td>Store a context value on this owner.</td>
+</tr>
+</tbody>
+</table>
+<h5 id="computationowner"><code>Computation(Owner)</code><a class="headerlink" href="#computationowner" title="Permanent link">&para;</a></h5>
+<p>Reactive computation that tracks <code>Signal</code> reads and re-runs when they
+change.  Also an ownership scope: child computations created during
+execution are disposed before each re-run.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run()</code></td>
+<td>Dispose children and cleanups, clear deps, re-execute the function under <code>_current_owner = self</code>.</td>
+</tr>
+<tr>
+<td><code>schedule()</code></td>
+<td>Enqueue a re-run on the next flush.</td>
+</tr>
+<tr>
+<td><code>dispose()</code></td>
+<td>Cancel subscriptions, clear deps, remove from pending queue, run cleanups.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
 <h5 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h5>
 <ul>
 <li><code>create_signal(value) -&gt; (getter, setter)</code></li>
-<li><code>create_effect(fn) -&gt; Computation</code> — supports previous value: <code>create_effect(lambda prev: ...)</code></li>
-<li><code>create_memo(fn) -&gt; getter</code></li>
+<li><code>create_effect(fn) -&gt; Computation</code> — the returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.</li>
+<li><code>create_memo(fn) -&gt; getter</code> — creates a <code>Computation</code> under the current owner; disposed when the owner is disposed.</li>
 <li><code>on_mount(fn)</code> — run after first render</li>
-<li><code>on_cleanup(fn)</code> — run on unmount or before effect re-execution</li>
+<li><code>on_cleanup(fn)</code> — appends <code>fn</code> to the current owner's cleanup list.  Inside <code>create_effect</code>: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.</li>
 <li><code>batch() -&gt; context manager</code> or <code>batch(fn) -&gt; result</code> — callback form flushes synchronously</li>
 </ul>
 <h5 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h5>
@@ -3058,10 +3332,14 @@ a dependency::</p>
 <ul>
 <li><code>untrack(fn)</code> — run without tracking signal reads</li>
 <li><code>on(deps, fn, defer=False)</code> — effect with explicit deps</li>
-<li><code>create_root(fn)</code> — independent reactive scope</li>
+<li><code>create_root(fn)</code> — creates an independent <code>Owner</code> root.  <code>fn</code> receives a <code>dispose</code> callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on <code>dispose()</code>.</li>
 <li><code>merge_props(*sources)</code> — merge prop dicts</li>
 <li><code>split_props(props, *key_groups)</code> — split props by key name</li>
 </ul>
+<h5 id="global-state">Global state<a class="headerlink" href="#global-state" title="Permanent link">&para;</a></h5>
+<p>A single <code>_current_owner</code> global tracks the active ownership scope.
+When a <code>Computation.run()</code> executes, it sets <code>_current_owner = self</code> so
+that any effects or memos created during execution become its children.</p>
 <p>Type hints are provided for all public functions and classes.</p>
 
 

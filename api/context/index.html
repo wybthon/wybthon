@@ -1499,28 +1499,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.context.pop_provider_value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pop_provider_value
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wybthon.context.push_provider_value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        push_provider_value
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.context.use_context" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1528,6 +1506,45 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="use_context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create_contextdefault-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_context(default) -&gt; Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_contextctx-any" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_context(ctx) -&gt; Any
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providerprops-vnode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider(props) -&gt; VNode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1994,28 +2011,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wybthon.context.pop_provider_value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pop_provider_value
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wybthon.context.push_provider_value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        push_provider_value
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#wybthon.context.use_context" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2023,6 +2018,45 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="use_context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create_contextdefault-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_context(default) -&gt; Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use_contextctx-any" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        use_context(ctx) -&gt; Any
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providerprops-vnode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider(props) -&gt; VNode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2058,7 +2092,10 @@
 <a id="wybthon.context"></a>
     <div class="doc doc-contents first">
 
-        <p>Tiny context system for passing values through the component tree.</p>
+        <p>Context system for passing values through the component tree.</p>
+<p>Context values are stored on the reactive ownership tree.  <code>use_context</code>
+walks up the owner chain to find the nearest Provider, eliminating the
+need for a separate render-time stack.</p>
 
 
 
@@ -2142,8 +2179,9 @@
     <div class="doc doc-contents ">
 
         <p>Context provider component (function component).</p>
-<p>Renders its children transparently.  The reconciler handles pushing
-and popping context values around this component's subtree mount.</p>
+<p>Renders its children transparently.  The reconciler sets the context
+value on this component's ownership scope so that descendants can
+find it via <code>use_context</code>.</p>
 
 
 <details class="props" open>
@@ -2180,42 +2218,6 @@ and popping context values around this component's subtree mount.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="wybthon.context.pop_provider_value" class="doc doc-heading">
-            <code class=" language-python"><span class="n">pop_provider_value</span><span class="p">()</span></code>
-
-<a href="#wybthon.context.pop_provider_value" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Pop the latest provider scope from the context stack if present.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="wybthon.context.push_provider_value" class="doc doc-heading">
-            <code class=" language-python"><span class="n">push_provider_value</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></code>
-
-<a href="#wybthon.context.push_provider_value" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Push a new provider value for <code>ctx</code> onto the context stack.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h2 id="wybthon.context.use_context" class="doc doc-heading">
             <code class=" language-python"><span class="n">use_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span></code>
 
@@ -2224,7 +2226,9 @@ and popping context values around this component's subtree mount.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Read the current value for <code>ctx</code>, or its default if not provided.</p>
+        <p>Read the current value for <em>ctx</em> from the ownership tree.</p>
+<p>Walks up the owner chain looking for the nearest Provider that set
+a value for this context.  Falls back to the context's default.</p>
 
 
     </div>
@@ -2237,7 +2241,28 @@ and popping context values around this component's subtree mount.</p>
 
     </div>
 
-</div>
+</div><h4 id="create_contextdefault-context"><code>create_context(default) -&gt; Context</code><a class="headerlink" href="#create_contextdefault-context" title="Permanent link">&para;</a></h4>
+<p>Create a new context with a unique ID and a default value.  The default
+is returned by <code>use_context</code> when no ancestor <code>Provider</code> supplies a
+value.</p>
+<h4 id="use_contextctx-any"><code>use_context(ctx) -&gt; Any</code><a class="headerlink" href="#use_contextctx-any" title="Permanent link">&para;</a></h4>
+<p>Read the current value for <code>ctx</code> by walking up the <strong>ownership tree</strong>
+from <code>_current_owner</code>.  Searches each owner's <code>_context_map</code> for the
+context ID; returns the first match, or <code>ctx.default</code> if none is found.</p>
+<p>Can be called during a component's setup phase, inside a render
+function, or inside an effect — anywhere that runs under a reactive
+owner.</p>
+<h4 id="providerprops-vnode"><code>Provider(props) -&gt; VNode</code><a class="headerlink" href="#providerprops-vnode" title="Permanent link">&para;</a></h4>
+<p>Function component that provides a context value to its subtree.  The
+reconciler sets the value on the provider's <code>_ComponentContext</code> via
+<code>_set_context</code>, making it visible to all descendant owners.</p>
+<p>Props:</p>
+<ul>
+<li><code>context</code> — a <code>Context</code> object created by <code>create_context</code>.</li>
+<li><code>value</code> — the value to provide.</li>
+<li><code>children</code> — child VNodes.</li>
+</ul>
+<p>Nested providers for the same context shadow outer ones.</p>
 
 
 
