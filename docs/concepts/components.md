@@ -75,6 +75,53 @@ h(Counter, {"initial": 5})
 
 See: [Primitives](primitives.md) for the full signals-first API.
 
+#### Component ownership and lifecycle
+
+Each component instance gets a `_ComponentContext` (a subclass of
+`Owner`) that participates in the reactive **ownership tree**.  This
+context is the parent owner for everything created during the
+component's setup phase.
+
+```
+_ComponentContext (Counter)       ← created when Counter mounts
+├── setup effect (logger)         ← child of the component context
+├── on_cleanup callback           ← registered on the component context
+└── render effect (Computation)   ← also a child of the component context
+    └── inner effect              ← child of the render effect
+```
+
+**Setup effects** (created in the component body, before `return`) are
+owned by the `_ComponentContext`.  They survive re-renders and are only
+disposed when the component unmounts.
+
+**Render effects** (created inside the render function) are owned by
+the render `Computation`.  They are disposed and recreated every time
+the render function re-runs due to a signal change.
+
+This distinction is automatic — no special API is needed.  The ownership
+tree tracks which owner is active at the time `create_effect` or
+`create_memo` is called.
+
+```python
+@component
+def SearchResults(query: str = ""):
+    results, set_results = create_signal([])
+
+    # Setup effect — survives re-renders, disposed on unmount.
+    create_effect(lambda: print("query changed:", query()))
+
+    def render():
+        # Render effect — disposed on each re-render.
+        create_effect(lambda: print("rendering", len(results()), "items"))
+        return ul(*[li(r) for r in results()])
+
+    return render
+```
+
+When a component unmounts, the reconciler calls `dispose()` on its
+`_ComponentContext`, which walks the tree depth-first: render effects,
+setup effects, and cleanup callbacks are all torn down automatically.
+
 #### Traditional function components
 
 You can still define components the traditional way with a `props` dict.

@@ -81,9 +81,77 @@ with batch():
 batch(lambda: (set_a(1), set_b(2)))
 ```
 
+#### Ownership tree
+
+Every reactive computation belongs to an **ownership tree** (inspired by
+SolidJS).  Two base classes form the hierarchy:
+
+- `Owner` — tracks child owners and cleanup callbacks.
+- `Computation(Owner)` — a reactive computation that is also an ownership scope.
+
+When a new effect or memo is created, it is automatically registered as a
+child of `_current_owner`, the owner that is active at the time of
+creation.  This forms a tree:
+
+```
+Root Owner
+├── ComponentContext (MyApp)
+│   ├── setup effect (on_mount callback)
+│   ├── ComponentContext (Counter)
+│   │   ├── setup effect (logger)
+│   │   └── render effect
+│   │       └── inner effect (conditionally created)
+│   └── render effect
+└── ...
+```
+
+**Disposal is depth-first:** when an owner is disposed, all its children
+are disposed first, then its own cleanup callbacks run.  This guarantees
+that inner scopes are torn down before outer ones.
+
+When a `Computation` re-runs (due to a signal change), it disposes all
+of its children and runs its own cleanups *before* re-executing its
+function.  Any effects created during the new execution become fresh
+children of the computation.  This prevents leaks from
+conditionally-created effects.
+
+##### Setup effects vs render effects
+
+Inside a component, effects have different lifetimes depending on
+**when** they are created:
+
+| Created during | Parent owner | Disposed when |
+|----------------|--------------|---------------|
+| **Setup** (component body, before `return`) | `_ComponentContext` | Component unmounts |
+| **Render** (inside the render function) | Render `Computation` | Next re-render or unmount |
+
+Setup effects survive re-renders because they are children of the
+component context, not the render effect.  Render effects are torn down
+every time the render function re-runs.
+
+```python
+@component
+def Timer(interval: int = 1000):
+    count, set_count = create_signal(0)
+
+    # Setup effect — lives until the component unmounts
+    create_effect(lambda: print("count is", count()))
+
+    def render():
+        # Render effect — disposed and recreated on each re-render
+        create_effect(lambda: print("rendered with", count()))
+        return p(f"Elapsed: {count()}")
+
+    return render
+```
+
 #### Disposal
 
 Calling `dispose()` on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via `on_cleanup` inside effects are executed during disposal.
+
+Disposing an `Owner` (or any subclass) walks the tree depth-first:
+children are disposed before the owner's own cleanups run.  After
+disposal, the owner is removed from its parent's children list.
 
 #### Resources, cancellation, and Suspense
 

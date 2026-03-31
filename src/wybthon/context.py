@@ -1,16 +1,20 @@
-"""Tiny context system for passing values through the component tree."""
+"""Context system for passing values through the component tree.
+
+Context values are stored on the reactive ownership tree.  ``use_context``
+walks up the owner chain to find the nearest Provider, eliminating the
+need for a separate render-time stack.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from .vnode import Fragment
 
 __all__ = ["Context", "create_context", "use_context", "Provider"]
 
 _next_context_id = 0
-_context_stack: List[Dict[int, Any]] = []
 
 
 @dataclass(frozen=True)
@@ -28,37 +32,28 @@ def create_context(default: Any) -> Context:
     return Context(id=_next_context_id, default=default)
 
 
-def _current_map() -> Dict[int, Any]:
-    """Return the current effective context mapping for the render scope."""
-    if _context_stack:
-        return _context_stack[-1]
-    return {}
-
-
 def use_context(ctx: Context) -> Any:
-    """Read the current value for `ctx`, or its default if not provided."""
-    mapping = _current_map()
-    return mapping.get(ctx.id, ctx.default)
+    """Read the current value for *ctx* from the ownership tree.
 
+    Walks up the owner chain looking for the nearest Provider that set
+    a value for this context.  Falls back to the context's default.
+    """
+    from .reactivity import _current_owner
 
-def push_provider_value(ctx: Context, value: Any) -> None:
-    """Push a new provider value for `ctx` onto the context stack."""
-    base = _current_map().copy()
-    base[ctx.id] = value
-    _context_stack.append(base)
-
-
-def pop_provider_value() -> None:
-    """Pop the latest provider scope from the context stack if present."""
-    if _context_stack:
-        _context_stack.pop()
+    owner = _current_owner
+    while owner is not None:
+        if owner._context_map is not None and ctx.id in owner._context_map:
+            return owner._context_map[ctx.id]
+        owner = owner._parent
+    return ctx.default
 
 
 def Provider(props: Dict[str, Any]) -> Any:
     """Context provider component (function component).
 
-    Renders its children transparently.  The reconciler handles pushing
-    and popping context values around this component's subtree mount.
+    Renders its children transparently.  The reconciler sets the context
+    value on this component's ownership scope so that descendants can
+    find it via ``use_context``.
 
     Props:
       - context: Context

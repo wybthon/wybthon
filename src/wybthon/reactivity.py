@@ -1,4 +1,27 @@
-"""Signal-based reactive primitives and async Resource helper."""
+"""Signal-based reactive primitives with ownership tree, inspired by SolidJS.
+
+The ownership tree ensures that every reactive computation (effect, memo)
+is **owned** by its parent scope.  When a parent re-runs or is disposed,
+all child computations are automatically cleaned up -- preventing memory
+leaks and ensuring correct lifecycle semantics.
+
+Key classes:
+
+- ``Owner``        -- base ownership scope (cleanups + child tracking)
+- ``Computation``  -- reactive computation that is also an ownership scope
+- ``Signal``       -- mutable reactive container
+
+Key functions:
+
+- ``create_signal``  -- create a (getter, setter) pair
+- ``create_effect``  -- auto-tracking side-effect
+- ``create_memo``    -- auto-tracking derived value
+- ``on_mount``       -- run once after component mount
+- ``on_cleanup``     -- register teardown callback
+- ``create_root``    -- create an independent reactive root
+- ``batch``          -- batch signal updates
+- ``untrack``        -- read without tracking
+"""
 
 from __future__ import annotations
 
@@ -7,18 +30,17 @@ from collections.abc import Awaitable as AbcAwaitable
 from typing import Any, Awaitable, Callable, Deque, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
 
 __all__ = [
+    "Owner",
     "Signal",
     "Computation",
     "batch",
     "Resource",
     "create_resource",
-    # Signals-first component primitives
     "create_signal",
     "create_effect",
     "create_memo",
     "on_mount",
     "on_cleanup",
-    # Reactive utilities
     "untrack",
     "on",
     "create_root",
@@ -28,13 +50,22 @@ __all__ = [
 
 T = TypeVar("T")
 
+# ---------------------------------------------------------------------------
+# Global reactive state
+# ---------------------------------------------------------------------------
 
+_current_owner: Optional["Owner"] = None
 _current_computation: Optional["Computation"] = None
-# Deterministic FIFO pending queue and membership set
+
 _pending_queue: Deque["Computation"] = deque()
 _pending_set: Set["Computation"] = set()
 _flush_scheduled: bool = False
 _batch_depth: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Microtask scheduling
+# ---------------------------------------------------------------------------
 
 
 def _schedule_flush() -> None:
@@ -43,79 +74,153 @@ def _schedule_flush() -> None:
         return
     _flush_scheduled = True
 
-    # Try microtask scheduling; fall back to setTimeout(0)
     try:
         from js import queueMicrotask
         from pyodide.ffi import create_once_callable
 
         queueMicrotask(create_once_callable(lambda: _flush()))
     except Exception:  # pragma: no cover
-        # Try Pyodide setTimeout, else Python threading/asyncio fallback
         try:
             from js import setTimeout
             from pyodide.ffi import create_once_callable
 
             setTimeout(create_once_callable(lambda: _flush()), 0)
         except Exception:
-            # Pure-Python fallback for non-browser environments
             try:
                 import threading
 
                 threading.Timer(0, _flush).start()
             except Exception:
-                # Last resort: run synchronously (can re-entrantly flush)
                 _flush()
 
 
 def _flush() -> None:
     global _flush_scheduled
     _flush_scheduled = False
-    # Process only the items that were queued at the time the flush was scheduled.
-    # Any computations scheduled during this flush will run in the next microtask.
     initial_count = len(_pending_queue)
     for _ in range(initial_count):
         comp = _pending_queue.popleft()
         if comp not in _pending_set:
-            # Was removed or already processed
             continue
         _pending_set.discard(comp)
-        if not getattr(comp, "_is_disposed", False):
+        if not comp._disposed:
             comp.run()
 
 
-class Computation:
-    """Reactive computation that tracks Signals and re-runs when they change."""
+# ---------------------------------------------------------------------------
+# Owner -- base ownership scope
+# ---------------------------------------------------------------------------
+
+
+class Owner:
+    """Base reactive ownership scope.
+
+    Tracks child owners and cleanup callbacks.  When disposed, children
+    are disposed first (depth-first), then own cleanups run.  This
+    mirrors SolidJS's ownership model.
+    """
+
+    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map")
+
+    def __init__(self) -> None:
+        self._parent: Optional[Owner] = None
+        self._children: List[Owner] = []
+        self._cleanups: List[Callable[[], Any]] = []
+        self._disposed: bool = False
+        self._context_map: Optional[Dict[int, Any]] = None
+
+    def _add_child(self, child: "Owner") -> None:
+        child._parent = self
+        self._children.append(child)
+
+    def _dispose_children(self) -> None:
+        for child in list(self._children):
+            child.dispose()
+        self._children.clear()
+
+    def _run_cleanups(self) -> None:
+        while self._cleanups:
+            fn = self._cleanups.pop()
+            try:
+                fn()
+            except Exception:
+                pass
+
+    def _set_context(self, ctx_id: int, value: Any) -> None:
+        if self._context_map is None:
+            self._context_map = {}
+        self._context_map[ctx_id] = value
+
+    def _lookup_context(self, ctx_id: int, default: Any) -> Any:
+        owner: Optional[Owner] = self
+        while owner is not None:
+            if owner._context_map is not None and ctx_id in owner._context_map:
+                return owner._context_map[ctx_id]
+            owner = owner._parent
+        return default
+
+    def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
+        self._dispose_children()
+        self._run_cleanups()
+        if self._parent is not None:
+            try:
+                self._parent._children.remove(self)
+            except ValueError:
+                pass
+            self._parent = None
+
+
+# ---------------------------------------------------------------------------
+# Computation -- reactive computation (extends Owner)
+# ---------------------------------------------------------------------------
+
+
+class Computation(Owner):
+    """Reactive computation that tracks Signals and re-runs when they change.
+
+    Also serves as an ownership scope: child computations created during
+    execution are disposed before each re-run, preventing leaks from
+    conditionally-created effects.
+    """
+
+    __slots__ = ("_fn", "_deps")
 
     def __init__(self, fn: Callable[[], Any]) -> None:
+        super().__init__()
         self._fn = fn
         self._deps: Set[Signal[Any]] = set()
-        self._is_disposed = False
-        self._on_dispose: List[Callable[[], Any]] = []
 
     def _track(self, signal: "Signal[Any]") -> None:
-        if self._is_disposed:
+        if self._disposed:
             return
         if signal not in self._deps:
             self._deps.add(signal)
             signal._add_subscriber(self)
 
     def run(self) -> None:
-        if self._is_disposed:
+        if self._disposed:
             return
-        # Clear old subscriptions
+        self._dispose_children()
+        self._run_cleanups()
         for s in list(self._deps):
             s._remove_subscriber(self)
         self._deps.clear()
-        global _current_computation
-        prev = _current_computation
+        global _current_owner, _current_computation
+        prev_owner = _current_owner
+        prev_comp = _current_computation
+        _current_owner = self
         _current_computation = self
         try:
             self._fn()
         finally:
-            _current_computation = prev
+            _current_owner = prev_owner
+            _current_computation = prev_comp
 
     def schedule(self) -> None:
-        if self._is_disposed:
+        if self._disposed:
             return
         if self not in _pending_set:
             _pending_set.add(self)
@@ -124,21 +229,26 @@ class Computation:
             _schedule_flush()
 
     def dispose(self) -> None:
-        if self._is_disposed:
+        if self._disposed:
             return
-        self._is_disposed = True
+        self._disposed = True
+        self._dispose_children()
         for s in list(self._deps):
             s._remove_subscriber(self)
         self._deps.clear()
-        # Remove from pending queue membership; the actual deque node will be skipped on flush
-        if self in _pending_set:
-            _pending_set.discard(self)
-        while self._on_dispose:
-            fn = self._on_dispose.pop()
+        _pending_set.discard(self)
+        self._run_cleanups()
+        if self._parent is not None:
             try:
-                fn()
-            except Exception:
+                self._parent._children.remove(self)
+            except ValueError:
                 pass
+            self._parent = None
+
+
+# ---------------------------------------------------------------------------
+# Signal
+# ---------------------------------------------------------------------------
 
 
 class Signal(Generic[T]):
@@ -146,7 +256,6 @@ class Signal(Generic[T]):
 
     def __init__(self, value: T) -> None:
         self._value: T = value
-        # Maintain deterministic subscription order
         self._subscribers: List[Computation] = []
         self._subscriber_set: Set[Computation] = set()
 
@@ -172,28 +281,32 @@ class Signal(Generic[T]):
         if value == self._value:
             return
         self._value = value
-        # Notify subscribers
         for comp in list(self._subscribers):
             comp.schedule()
 
 
 def signal(value: T) -> Signal[T]:
-    """Create a new `Signal` with the given initial value."""
+    """Create a new ``Signal`` with the given initial value."""
     return Signal(value)
+
+
+# ---------------------------------------------------------------------------
+# Computed (memo)
+# ---------------------------------------------------------------------------
 
 
 class _Computed(Generic[T]):
     """Read-only signal computed from other signals."""
 
     def __init__(self, fn: Callable[[], T]) -> None:
-        # Initialize with a dummy value; immediately computed below
         self._value_signal: Signal[T] = Signal(cast(T, None))
 
         def runner() -> None:
             self._value_signal.set(fn())
 
         self._comp = Computation(runner)
-        # Compute immediately
+        if _current_owner is not None:
+            _current_owner._add_child(self._comp)
         self._comp.run()
 
     def get(self) -> T:
@@ -211,13 +324,20 @@ def computed(fn: Callable[[], T]) -> _Computed[T]:
 def effect(fn: Callable[[], Any]) -> Computation:
     """Run a reactive effect and return its computation handle."""
     comp = Computation(fn)
+    if _current_owner is not None:
+        _current_owner._add_child(comp)
     comp.run()
     return comp
 
 
 def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
     """Register a cleanup callback to run when a computation is disposed."""
-    comp._on_dispose.append(fn)
+    comp._cleanups.append(fn)
+
+
+# ---------------------------------------------------------------------------
+# Batch
+# ---------------------------------------------------------------------------
 
 
 class _Batch:
@@ -227,7 +347,7 @@ class _Batch:
         global _batch_depth
         _batch_depth += 1
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         global _batch_depth
         _batch_depth -= 1
         if _batch_depth == 0 and _pending_set:
@@ -281,9 +401,11 @@ def untrack(fn: Callable[[], T]) -> T:
         _current_computation = prev
 
 
-# -------------------- Async resource utility --------------------
-R = TypeVar("R")
+# ---------------------------------------------------------------------------
+# Async resource
+# ---------------------------------------------------------------------------
 
+R = TypeVar("R")
 
 FetchFn = Callable[..., Union[Awaitable[R], R]]
 
@@ -336,43 +458,36 @@ class Resource(Generic[R]):
         try:
             from js import AbortController
 
-            # In Pyodide, construct with .new()
             return AbortController.new()
         except Exception:
             return None
 
     async def _run(self, current_version: int, controller: Any) -> None:
         try:
-            # If fetcher accepts a 'signal' kwarg, pass it; otherwise call without
             if self._inspect.signature(self._fetcher).parameters.get("signal") is not None:
                 coro_or_val = self._fetcher(signal=getattr(controller, "signal", None))
             else:
                 coro_or_val = self._fetcher()
 
-            # Await the result if needed (support both awaitable and plain values)
             if isinstance(coro_or_val, AbcAwaitable):
                 result = await coro_or_val
             else:
                 result = cast(R, coro_or_val)
 
-            # Only commit if still latest
             if current_version == self._version:
                 self.error.set(None)
                 self.data.set(result)
                 self.loading.set(False)
         except Exception as e:
-            # Ignore results if outdated
             if current_version != self._version:
                 return
             self.error.set(e)
             self.loading.set(False)
 
     def reload(self) -> None:
-        # Cancel any existing task and start a new one
         self.cancel()
         self._version += 1
         self.loading.set(True)
-        # Keep last good data; reset error on new attempt
         self.error.set(None)
 
         controller = self._make_abort_controller()
@@ -384,28 +499,22 @@ class Resource(Generic[R]):
         try:
             self._task = self._asyncio.create_task(runner())
         except Exception:
-            # As a fallback, run synchronously (Pyodide will still interleave)
-            # This should rarely happen but keeps API usable.
             self._asyncio.get_event_loop().create_task(runner())
 
     def cancel(self) -> None:
-        # Invalidate current version so any late results are ignored
         self._version += 1
-        # Abort JS fetch if possible
         try:
             if self._abort_controller is not None:
                 self._abort_controller.abort()
         except Exception:
             pass
         self._abort_controller = None
-        # Cancel Python task if any
         try:
             if self._task is not None:
                 self._task.cancel()
         except Exception:
             pass
         self._task = None
-        # Reflect cancellation in loading state
         try:
             self.loading.set(False)
         except Exception:
@@ -436,36 +545,22 @@ def create_resource(
 use_resource = create_resource
 
 
-# -------------------- Component context & signals-first primitives --------------------
+# ---------------------------------------------------------------------------
+# Component context
+# ---------------------------------------------------------------------------
 
 
-class _CleanupOwner:
-    """Base for objects that can own ``on_cleanup`` callbacks."""
+class _ComponentContext(Owner):
+    """Per-component-instance ownership scope.
 
-    __slots__ = ("_cleanups",)
-
-    def __init__(self) -> None:
-        self._cleanups: List[Callable[[], Any]] = []
-
-    def _run_cleanups(self) -> None:
-        while self._cleanups:
-            fn = self._cleanups.pop()
-            try:
-                fn()
-            except Exception:
-                pass
-
-
-class _ComponentContext(_CleanupOwner):
-    """Per-component-instance context for the signals-first model.
-
-    Tracks lifecycle callbacks, child effects, the optional render function,
-    and a reactive props signal for stateful components.
+    Tracks lifecycle callbacks, the optional render function, and
+    reactive props signals for stateful components.  Extends ``Owner``
+    so that effects created during setup are automatically disposed
+    when the component unmounts.
     """
 
     __slots__ = (
         "_mount_callbacks",
-        "_effects",
         "_render_fn",
         "_props",
         "_props_signal",
@@ -477,7 +572,6 @@ class _ComponentContext(_CleanupOwner):
     def __init__(self) -> None:
         super().__init__()
         self._mount_callbacks: List[Callable[[], Any]] = []
-        self._effects: List[Computation] = []
         self._render_fn: Optional[Callable[[], Any]] = None
         self._props: dict = {}
         self._props_signal: Optional[Signal[Any]] = None
@@ -493,42 +587,30 @@ class _ComponentContext(_CleanupOwner):
                 pass
         self._mount_callbacks.clear()
 
-    def _dispose_effects(self) -> None:
-        for comp in self._effects:
-            try:
-                comp.dispose()
-            except Exception:
-                pass
-        self._effects.clear()
+
+# ---------------------------------------------------------------------------
+# Owner tracking helpers
+# ---------------------------------------------------------------------------
 
 
-class _EffectScope(_CleanupOwner):
-    """Per-effect cleanup scope used inside ``create_effect`` callbacks."""
-
-    __slots__ = ()
-
-
-_owner_stack: List[Any] = []
-_component_ctx_stack: List[_ComponentContext] = []
-
-
-def _push_component_ctx(ctx: _ComponentContext) -> None:
-    _component_ctx_stack.append(ctx)
-    _owner_stack.append(ctx)
-
-
-def _pop_component_ctx() -> None:
-    if _component_ctx_stack:
-        _component_ctx_stack.pop()
-    if _owner_stack:
-        _owner_stack.pop()
+def _get_owner() -> Optional[Owner]:
+    """Return the current reactive owner, if any."""
+    return _current_owner
 
 
 def _get_component_ctx() -> Optional[_ComponentContext]:
-    return _component_ctx_stack[-1] if _component_ctx_stack else None
+    """Walk up the ownership chain to find the nearest component context."""
+    owner = _current_owner
+    while owner is not None:
+        if isinstance(owner, _ComponentContext):
+            return owner
+        owner = owner._parent
+    return None
 
 
-# ---- Public primitives ----
+# ---------------------------------------------------------------------------
+# Public primitives
+# ---------------------------------------------------------------------------
 
 
 def create_signal(value: T) -> tuple:
@@ -566,9 +648,6 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
     """
     import inspect as _inspect
 
-    ctx = _get_component_ctx()
-    scope = _EffectScope()
-
     try:
         _sig = _inspect.signature(fn)
         _positional = [
@@ -584,23 +663,15 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
     _prev: List[Any] = [None]
 
     def wrapped() -> None:
-        scope._run_cleanups()
-        _owner_stack.append(scope)
-        try:
-            if _accepts_prev:
-                _prev[0] = fn(_prev[0])
-            else:
-                fn()
-        finally:
-            if _owner_stack and _owner_stack[-1] is scope:
-                _owner_stack.pop()
+        if _accepts_prev:
+            _prev[0] = fn(_prev[0])
+        else:
+            fn()
 
     comp = Computation(wrapped)
-    comp._on_dispose.append(scope._run_cleanups)
+    if _current_owner is not None:
+        _current_owner._add_child(comp)
     comp.run()
-
-    if ctx is not None:
-        ctx._effects.append(comp)
     return comp
 
 
@@ -616,9 +687,6 @@ def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
         print(doubled())  # reactive read
     """
     c = _Computed(fn)
-    ctx = _get_component_ctx()
-    if ctx is not None:
-        ctx._effects.append(c._comp)
     return c.get
 
 
@@ -640,8 +708,8 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
     - Inside ``create_effect``: runs before each re-execution and on disposal.
     - Inside a component's setup phase: runs when the component unmounts.
     """
-    if _owner_stack:
-        _owner_stack[-1]._cleanups.append(fn)
+    if _current_owner is not None:
+        _current_owner._cleanups.append(fn)
     else:
         raise RuntimeError("on_cleanup() must be called inside a component or create_effect()")
 
@@ -662,7 +730,9 @@ def get_props() -> Callable[[], dict]:
     return ctx._props_signal.get
 
 
-# ---- Additional reactive utilities ----
+# ---------------------------------------------------------------------------
+# Additional reactive utilities
+# ---------------------------------------------------------------------------
 
 
 def on(
@@ -718,20 +788,18 @@ def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
 
         result = create_root(lambda dispose: ...)
     """
-    effects: List[Computation] = []
-    root_ctx = _ComponentContext()
-    _push_component_ctx(root_ctx)
+    root = Owner()
+    global _current_owner
+    prev = _current_owner
+    _current_owner = root
     try:
 
         def dispose() -> None:
-            root_ctx._dispose_effects()
-            root_ctx._run_cleanups()
+            root.dispose()
 
-        result = fn(dispose)
-        effects.extend(root_ctx._effects)
-        return result
+        return fn(dispose)
     finally:
-        _pop_component_ctx()
+        _current_owner = prev
 
 
 def merge_props(*sources: dict) -> dict:

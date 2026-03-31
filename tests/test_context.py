@@ -1,19 +1,30 @@
-from wybthon.context import create_context, pop_provider_value, push_provider_value, use_context
+import wybthon.reactivity as _rx
+from wybthon.context import create_context, use_context
+from wybthon.reactivity import Owner
 
 
-def test_context_stack_basic():
+def test_context_via_ownership_tree():
+    """Context values are found by walking up the ownership tree."""
     Theme = create_context("light")
     assert use_context(Theme) == "light"
 
-    push_provider_value(Theme, "dark")
+    parent = Owner()
+    parent._set_context(Theme.id, "dark")
+
+    child = Owner()
+    parent._add_child(child)
+
+    prev = _rx._current_owner
+    _rx._current_owner = child
     try:
         assert use_context(Theme) == "dark"
-        push_provider_value(Theme, "contrast")
-        try:
-            assert use_context(Theme) == "contrast"
-        finally:
-            pop_provider_value()
+
+        grandchild = Owner()
+        child._add_child(grandchild)
+        _rx._current_owner = grandchild
         assert use_context(Theme) == "dark"
+
+        child._set_context(Theme.id, "contrast")
+        assert use_context(Theme) == "contrast"
     finally:
-        pop_provider_value()
-    assert use_context(Theme) == "light"
+        _rx._current_owner = prev

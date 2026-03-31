@@ -2,7 +2,7 @@
 
 This module implements the VDOM diffing algorithm that translates virtual node
 trees into real DOM mutations.  All components are function components using
-the signals-first reactive model.
+the signals-first reactive model with ownership-based lifecycle management.
 
 Key functions:
   - ``render(vnode, container)`` -- top-level entry point
@@ -19,14 +19,12 @@ from typing import Any, Dict, List, Optional, Set, Union, cast
 from js import document
 
 from ._warnings import component_name, log_error
-from .context import pop_provider_value, push_provider_value
 from .dom import Element
 from .events import remove_all_for
 from .props import apply_props, attach_ref, detach_ref
 from .reactivity import (
     _ComponentContext,
-    _pop_component_ctx,
-    _push_component_ctx,
+    _get_component_ctx,
     effect,
 )
 from .vnode import ChildType, VNode, normalize_children, to_text_vnode
@@ -86,14 +84,20 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
 
 
 def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
-    """Mount a function component using the signals-first model.
+    """Mount a function component using the signals-first ownership model.
 
     The component function is called once (setup phase).  If it returns a
     *callable*, that callable is treated as the render function and wrapped
     in a reactive ``effect`` so it re-runs when signals change (stateful).
     If it returns a ``VNode`` directly, the component is treated as
     stateless and the entire function is re-called on signal changes.
+
+    The component's ``_ComponentContext`` is placed in the ownership tree
+    as a child of the nearest parent component context, ensuring proper
+    lifecycle management and context propagation.
     """
+    import wybthon.reactivity as _rx
+
     comp_fn = vnode.tag
     assert callable(comp_fn)
 
@@ -101,6 +105,12 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
     ctx._props = vnode.props
     ctx._vnode = vnode
     vnode.component_ctx = ctx
+
+    parent_ctx = _get_component_ctx()
+    if parent_ctx is not None:
+        parent_ctx._add_child(ctx)
+    elif _rx._current_owner is not None:
+        _rx._current_owner._add_child(ctx)
 
     is_provider = getattr(comp_fn, "_wyb_provider", False)
     setup_done: List[bool] = [False]
@@ -115,11 +125,16 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
 
         if not setup_done[0]:
             # -- first run: setup + initial render --
-            _push_component_ctx(_ctx)
+            # Override _current_owner so that effects/cleanups created
+            # during setup are owned by the component context (not the
+            # render effect).  Keep _current_computation unchanged so
+            # signal reads are still tracked by the render effect.
+            prev_owner = _rx._current_owner
+            _rx._current_owner = _ctx
             try:
                 result = _comp_fn(_ctx._props)
             finally:
-                _pop_component_ctx()
+                _rx._current_owner = prev_owner
 
             if callable(result) and not isinstance(result, VNode):
                 _ctx._render_fn = result
@@ -133,14 +148,15 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
             cur_vnode.subtree = sub_tree
 
             if is_provider:
-                push_provider_value(_ctx._props.get("context"), _ctx._props.get("value"))
+                ctx_obj = _ctx._props.get("context")
+                value = _ctx._props.get("value")
+                if ctx_obj is not None:
+                    _ctx._set_context(ctx_obj.id, value)
 
             try:
                 mounted_el = mount(sub_tree, _container, _anchor)
                 cur_vnode.el = mounted_el
             except Exception as e:
-                if is_provider:
-                    pop_provider_value()
                 if _ctx._error_handler is not None:
                     _ctx._error_handler(e)
                     placeholder = to_text_vnode("")
@@ -149,9 +165,6 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
                     cur_vnode.el = mounted_el
                 else:
                     raise
-            else:
-                if is_provider:
-                    pop_provider_value()
 
             setup_done[0] = True
         else:
@@ -159,11 +172,12 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
             if _ctx._render_fn is not None:
                 sub_tree = _ctx._render_fn()
             else:
-                _push_component_ctx(_ctx)
+                prev_owner = _rx._current_owner
+                _rx._current_owner = _ctx
                 try:
                     sub_tree = _comp_fn(_ctx._props)
                 finally:
-                    _pop_component_ctx()
+                    _rx._current_owner = prev_owner
 
             if not isinstance(sub_tree, VNode):
                 sub_tree = to_text_vnode(sub_tree)
@@ -172,7 +186,10 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
             cur_vnode.subtree = sub_tree
 
             if is_provider:
-                push_provider_value(_ctx._props.get("context"), _ctx._props.get("value"))
+                ctx_obj = _ctx._props.get("context")
+                value = _ctx._props.get("value")
+                if ctx_obj is not None:
+                    _ctx._set_context(ctx_obj.id, value)
 
             try:
                 if prev_sub is None:
@@ -182,21 +199,20 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
                     patch(prev_sub, sub_tree, _container)
                     cur_vnode.el = sub_tree.el
             except Exception as e:
-                if is_provider:
-                    pop_provider_value()
                 if _ctx._error_handler is not None:
                     _ctx._error_handler(e)
                 else:
                     raise
-            else:
-                if is_provider:
-                    pop_provider_value()
 
+    prev_owner = _rx._current_owner
+    _rx._current_owner = ctx
     try:
         vnode.render_effect = effect(run_component)
     except Exception as e:
         log_error(f"Render failed in function component {component_name(comp_fn)}", e)
         raise
+    finally:
+        _rx._current_owner = prev_owner
 
     ctx._run_mount_callbacks()
     return vnode.el
@@ -215,12 +231,10 @@ def unmount(vnode: VNode) -> None:
 
     if vnode.component_ctx is not None:
         try:
-            vnode.component_ctx._run_cleanups()
-            vnode.component_ctx._dispose_effects()
+            vnode.component_ctx.dispose()
         except Exception as e:
-            log_error(f"Component context cleanup failed in {component_name(vnode.tag)}", e)
-
-    if vnode.render_effect is not None:
+            log_error(f"Component context disposal failed in {component_name(vnode.tag)}", e)
+    elif vnode.render_effect is not None:
         try:
             vnode.render_effect.dispose()
         except Exception as e:
@@ -275,6 +289,8 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
 
 def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     """Patch a function component using the signals-first model."""
+    import wybthon.reactivity as _rx
+
     ctx = old.component_ctx
     is_provider = getattr(new.tag, "_wyb_provider", False)
 
@@ -300,6 +316,13 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
                 sig.set(new.props.get(name, defaults.get(name)))
         if ctx._props_signal is not None:
             ctx._props_signal.set(new.props)
+
+        if is_provider:
+            ctx_obj = new.props.get("context")
+            value = new.props.get("value")
+            if ctx_obj is not None:
+                ctx._set_context(ctx_obj.id, value)
+
         ctx._vnode = new
 
         new.component_ctx = ctx
@@ -317,11 +340,12 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
         new.subtree = old.subtree
         new.el = old.el
 
-        _push_component_ctx(ctx)
+        prev_owner = _rx._current_owner
+        _rx._current_owner = ctx
         try:
             result = new.tag(new.props)  # type: ignore[operator]
         finally:
-            _pop_component_ctx()
+            _rx._current_owner = prev_owner
 
         if not isinstance(result, VNode):
             result = to_text_vnode(result)
@@ -330,7 +354,11 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
         new.subtree = result
 
         if is_provider:
-            push_provider_value(new.props.get("context"), new.props.get("value"))
+            ctx_obj = new.props.get("context")
+            value = new.props.get("value")
+            if ctx_obj is not None:
+                ctx._set_context(ctx_obj.id, value)
+
         try:
             if prev_sub is None:
                 mount(result, container)
@@ -338,15 +366,10 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
                 patch(prev_sub, result, container)
             new.el = result.el
         except Exception as e:
-            if is_provider:
-                pop_provider_value()
             if ctx._error_handler is not None:
                 ctx._error_handler(e)
             else:
                 raise
-        else:
-            if is_provider:
-                pop_provider_value()
     else:
         result = new.tag(new.props)  # type: ignore[operator]
         if not isinstance(result, VNode):
