@@ -254,13 +254,13 @@ Co-authored-by: Name <email>
 ### Branching rules
 
 - `main`: default branch.
-- Feature branches: `feature/...` from `main`; hotfixes: `hotfix/...` from `main`.
+- All work branches are created from `main`.
 
 #### Branch naming
 
 - Use lowercase kebab-case; no spaces; keep names concise (aim ≤ 40 chars).
-- Suggested prefixes (align with Conventional Commit categories):
-  - `feature/<scope>-<short-desc>`
+- Branch prefixes match Conventional Commit types:
+  - `feat/<scope>-<short-desc>`
   - `fix/<issue-or-bug>-<short-desc>`
   - `chore/<short-desc>`
   - `docs/<short-desc>`
@@ -269,21 +269,18 @@ Co-authored-by: Name <email>
   - `test/<short-desc>`
   - `perf/<short-desc>`
   - `build/<short-desc>`
-  - `release/vX.Y.Z`
-  - `hotfix/<short-desc>`
 
 Examples:
 
 ```text
-feature/reactivity-computed
+feat/reactivity-computed
 fix/vdom-keyed-order-123
 docs/contributing-guidelines
 ci/add-basic-workflow
 build/update-black
 refactor/component-state-split
 test/component-lifecycle
-release/v0.0.2
-hotfix/dom-event-delegation
+fix/dom-event-delegation
 ```
 
 ### CI
