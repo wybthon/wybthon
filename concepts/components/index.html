@@ -2193,25 +2193,37 @@ parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
 
 <p>The second argument is an <code>Element</code> or a CSS selector string.</p>
 <h4 id="flow-control">Flow control<a class="headerlink" href="#flow-control" title="Permanent link">&para;</a></h4>
-<p>Wybthon provides SolidJS-style flow control components for declarative
-rendering logic:</p>
+<p>Wybthon provides SolidJS-style <strong>reactive</strong> flow control components.
+Each creates its own reactive scope — only the relevant subtree
+re-renders when the tracked condition or list changes.</p>
+<p>Pass <strong>getters</strong> (signal accessors or lambdas) for conditions, lists,
+children, and fallbacks so reads happen inside the flow control's own
+scope rather than the parent's:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
 
-<span class="c1"># Conditional rendering</span>
-<span class="n">Show</span><span class="p">(</span><span class="n">is_logged_in</span><span class="p">(),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
+<span class="c1"># Conditional rendering (reactive)</span>
+<span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">is_logged_in</span><span class="p">,</span>
+     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span>
+     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
 
-<span class="c1"># List rendering (keyed)</span>
-<span class="n">For</span><span class="p">(</span><span class="n">items</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
+<span class="c1"># List rendering (keyed, reactive)</span>
+<span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
+    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
 
-<span class="c1"># Multi-branch matching</span>
+<span class="c1"># Multi-branch matching (reactive)</span>
 <span class="n">Switch</span><span class="p">(</span>
-    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;loading&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
-    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Error!&quot;</span><span class="p">)),</span>
-    <span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
-    <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;loading&quot;</span><span class="p">,</span>
+          <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+          <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Error!&quot;</span><span class="p">)),</span>
+    <span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span>
+          <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
+    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
 
+<p>Plain values still work when reactivity is not needed (e.g. static
+conditions evaluated in a render function).</p>
 <p>See the guide for recommended patterns around props, state, children, cleanup, and context:</p>
 <ul>
 <li>Guide: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></li>

@@ -4737,7 +4737,7 @@ resource automatically refetches.</p>
 
 
 <h2 id="wybthon.Dynamic" class="doc doc-heading">
-            <code class=" language-python"><span class="n">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.Dynamic" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -4746,9 +4746,10 @@ resource automatically refetches.</p>
 
         <p>Render a dynamically-chosen component.</p>
 <p><em>component</em> may be a string tag name, a component function, or <code>None</code>
-(renders nothing).</p>
+(renders nothing).  Can also be a getter for reactive switching.</p>
 <p>Example::</p>
-<div class="codehilite"><pre><span></span><code>Dynamic(heading_level(), f&quot;Section {idx}&quot;)
+<div class="codehilite"><pre><span></span><code>Dynamic(component=lambda: heading_level(),
+        children=[f&quot;Section {idx}&quot;])
 </code></pre></div>
 
 
@@ -4788,7 +4789,7 @@ resource automatically refetches.</p>
 
 
 <h2 id="wybthon.For" class="doc doc-heading">
-            <code class=" language-python"><span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="p">,</span> <span class="n">children</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">For</span><span class="p">(</span><span class="n">props_or_each</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.For" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -4796,12 +4797,20 @@ resource automatically refetches.</p>
     <div class="doc doc-contents ">
 
         <p>Render a list of items using a keyed mapping function.</p>
-<p><em>each</em> is an iterable (or a zero-arg getter returning one).
-<em>children</em> is a callback <code>(item, index_getter) -&gt; VNode</code> called for
-every item.</p>
-<p>Example::</p>
-<div class="codehilite"><pre><span></span><code><span class="k">For</span><span class="ss">(</span><span class="nv">items</span><span class="ss">()</span>,<span class="w"> </span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">i</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">i</span><span class="ss">()))</span>
+<p><strong>Component style</strong> (reactive)::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">For</span><span class="ss">(</span><span class="nv">each</span><span class="o">=</span><span class="nv">items</span>,
+<span class="w">    </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">index</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span><span class="ss">()</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">index</span><span class="ss">()))</span>
 </code></pre></div>
+
+<p><strong>Direct call</strong>::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">For</span><span class="ss">(</span><span class="nv">each</span><span class="o">=</span><span class="nv">items</span>,
+<span class="w">    </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">index</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span><span class="ss">()</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">index</span><span class="ss">()))</span>
+</code></pre></div>
+
+<p><em>each</em> is a getter (or list).  <em>children</em> is <code>(item, index_getter) -&gt; VNode</code>.</p>
+<p>Inside the callback, <code>item</code> is a <strong>getter</strong> returning the current
+item value for that position, and <code>index</code> is a getter returning
+the current integer index — matching SolidJS <code>&lt;For&gt;</code>.</p>
 
 
     </div>
@@ -4839,7 +4848,7 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 
 
 <h2 id="wybthon.Index" class="doc doc-heading">
-            <code class=" language-python"><span class="n">Index</span><span class="p">(</span><span class="n">each</span><span class="p">,</span> <span class="n">children</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">Index</span><span class="p">(</span><span class="n">props_or_each</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.Index" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -4850,8 +4859,11 @@ CSS layout while keeping the VDOM diffing algorithm simple.</p>
 <p>Unlike :func:<code>For</code>, the <em>children</em> callback receives
 <code>(item_getter, index)</code> so that the DOM node for each index is
 reused even when the underlying data changes.</p>
+<p><em>each</em> is a getter (or list).  <em>children</em> is
+<code>(item_getter, index: int) -&gt; VNode</code>.</p>
 <p>Example::</p>
-<div class="codehilite"><pre><span></span><code>Index(items(), lambda item, i: li(item()))
+<div class="codehilite"><pre><span></span><code>Index(each=items,
+      children=lambda item, i: li(item()))
 </code></pre></div>
 
 
@@ -4881,7 +4893,7 @@ reused even when the underlying data changes.</p>
 
 
 <h2 id="wybthon.Match" class="doc doc-heading">
-            <code class=" language-python"><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.Match" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -4889,8 +4901,12 @@ reused even when the underlying data changes.</p>
     <div class="doc doc-contents ">
 
         <p>Declare a branch inside a :func:<code>Switch</code>.</p>
-<p><em>when</em> is evaluated as a boolean (may be a getter).  If truthy, <em>children</em>
-is the content to render.</p>
+<p><em>when</em> may be a getter or a plain value.</p>
+<p>Supports both positional and keyword calling styles::</p>
+<div class="codehilite"><pre><span></span><code>Match(True, h(&quot;p&quot;, {}, &quot;yes&quot;))       # positional
+Match(when=lambda: x() &gt; 0, children=lambda: p(&quot;positive&quot;))  # keyword
+</code></pre></div>
+
 <p>Must be used inside <code>Switch()</code>.</p>
 
 
@@ -4958,7 +4974,7 @@ and popping context values around this component's subtree mount.</p>
 
 
 <h2 id="wybthon.Show" class="doc doc-heading">
-            <code class=" language-python"><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">Show</span><span class="p">(</span><span class="n">props_or_when</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.Show" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -4966,11 +4982,22 @@ and popping context values around this component's subtree mount.</p>
     <div class="doc doc-contents ">
 
         <p>Conditionally render <em>children</em> when <em>when</em> is truthy.</p>
-<p><em>when</em> may be a value or a zero-arg callable (getter).  If falsy the
-<em>fallback</em> is rendered instead (defaults to an empty text node).</p>
-<p>Example::</p>
-<div class="codehilite"><pre><span></span><code>Show(is_logged_in(), p(&quot;Welcome!&quot;), fallback=p(&quot;Please log in&quot;))
+<p>Can be called in two styles:</p>
+<p><strong>Component style</strong> (reactive — recommended for dynamic conditions)::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">Show</span><span class="ss">(</span><span class="nv">when</span><span class="o">=</span><span class="nv">count</span>,<span class="w"> </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="nv">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="ss">)</span>,
+<span class="w">     </span><span class="nv">fallback</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Empty&quot;</span><span class="ss">))</span>
 </code></pre></div>
+
+<p><strong>Direct call</strong> (evaluated once — fine inside a render function)::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">Show</span><span class="ss">(</span><span class="nv">when</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">count</span><span class="ss">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>,
+<span class="w">     </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Positive&quot;</span><span class="ss">)</span>,
+<span class="w">     </span><span class="nv">fallback</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Not positive&quot;</span><span class="ss">))</span>
+</code></pre></div>
+
+<p><em>when</em> may be a zero-arg getter or a plain value.
+<em>children</em> / <em>fallback</em> may be a <code>VNode</code>, a callable, or a plain value.
+When <em>children</em> is callable and <em>when</em> is truthy, the truthy value is
+passed as the first argument (matching SolidJS <code>&lt;Show&gt;</code>).</p>
 
 
     </div>
@@ -5009,7 +5036,7 @@ and popping context values around this component's subtree mount.</p>
 
 
 <h2 id="wybthon.Switch" class="doc doc-heading">
-            <code class=" language-python"><span class="n">Switch</span><span class="p">(</span><span class="o">*</span><span class="n">branches</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">Switch</span><span class="p">(</span><span class="o">*</span><span class="n">branches</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 <a href="#wybthon.Switch" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -5017,14 +5044,18 @@ and popping context values around this component's subtree mount.</p>
     <div class="doc doc-contents ">
 
         <p>Render the first matching :func:<code>Match</code> branch, or <em>fallback</em>.</p>
-<p>Example::</p>
+<p><strong>Component style</strong> (reactive)::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Switch</span><span class="p">(</span>
-<span class="w">    </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;loading&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Error!&quot;</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ready&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;loading&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="n">children</span><span class="o">=</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ready&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="n">children</span><span class="o">=</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">fallback</span><span class="o">=</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
+
+<p>Each <code>Match</code> <em>when</em> is evaluated lazily inside the <code>Switch</code>
+component's reactive scope.</p>
 
 
     </div>
