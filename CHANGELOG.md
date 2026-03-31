@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.18.0 (2026-03-31)
+
+### Features
+
+- **flow**: Rewrite flow controls as isolated reactive components
+  ([`6fa87c1`](https://github.com/wybthon/wybthon/commit/6fa87c190af7d2f8f4c72f2a933bd5bb1da89f2c))
+
+
 ## v0.17.0 (2026-03-21)
 
 ### Chores
