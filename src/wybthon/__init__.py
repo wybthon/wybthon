@@ -44,7 +44,7 @@ from .reactivity import (
 )
 from .store import create_store, produce
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 _IN_BROWSER = False
 try:

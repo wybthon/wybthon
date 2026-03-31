@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.19.0 (2026-03-31)
+
+### Features
+
+- **reactivity,reconciler,context**: Introduce reactive ownership tree for automatic lifecycle
+  management
+  ([`1eed8fa`](https://github.com/wybthon/wybthon/commit/1eed8fa76c5f38fb102efbc02047295961289b30))
+
+
 ## v0.18.0 (2026-03-31)
 
 ### Features
