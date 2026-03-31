@@ -1,6 +1,7 @@
 import contextlib
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -9,10 +10,10 @@ import pytest
 
 @pytest.fixture(scope="session")
 def http_server_base_url():
-    """Start a simple HTTP server at the repo root for serving demo assets.
+    """Start the Wybthon dev server at the repo root for serving demo assets.
 
-    The demo bootstrap fetches from ../../src relative to examples/demo, so we
-    must serve the repository root. We select a free port dynamically.
+    Uses ``wyb dev`` so the ``/__manifest`` endpoint is available for
+    bootstrap.js to dynamically discover Python files.
     """
     # Pick an available localhost port
     with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
@@ -21,7 +22,7 @@ def http_server_base_url():
 
     repo_root = Path(__file__).resolve().parents[2]
     proc = subprocess.Popen(
-        ["python", "-m", "http.server", str(port)],
+        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(repo_root)],
         cwd=str(repo_root),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -30,7 +31,7 @@ def http_server_base_url():
     base_url = f"http://127.0.0.1:{port}"
 
     # Give the server a moment to start
-    time.sleep(0.5)
+    time.sleep(1)
 
     try:
         yield base_url

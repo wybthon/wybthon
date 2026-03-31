@@ -169,26 +169,40 @@ The second argument is an `Element` or a CSS selector string.
 
 #### Flow control
 
-Wybthon provides SolidJS-style flow control components for declarative
-rendering logic:
+Wybthon provides SolidJS-style **reactive** flow control components.
+Each creates its own reactive scope — only the relevant subtree
+re-renders when the tracked condition or list changes.
+
+Pass **getters** (signal accessors or lambdas) for conditions, lists,
+children, and fallbacks so reads happen inside the flow control's own
+scope rather than the parent's:
 
 ```python
 from wybthon import Show, For, Switch, Match
 
-# Conditional rendering
-Show(is_logged_in(), p("Welcome!"), fallback=p("Please log in"))
+# Conditional rendering (reactive)
+Show(when=is_logged_in,
+     children=lambda: p("Welcome!"),
+     fallback=lambda: p("Please log in"))
 
-# List rendering (keyed)
-For(items(), lambda item, idx: li(item, key=idx()))
+# List rendering (keyed, reactive)
+For(each=items,
+    children=lambda item, idx: li(item(), key=idx()))
 
-# Multi-branch matching
+# Multi-branch matching (reactive)
 Switch(
-    Match(status() == "loading", p("Loading...")),
-    Match(status() == "error", p("Error!")),
-    Match(status() == "ready", p("Ready")),
-    fallback=p("Unknown"),
+    Match(when=lambda: status() == "loading",
+          children=lambda: p("Loading...")),
+    Match(when=lambda: status() == "error",
+          children=lambda: p("Error!")),
+    Match(when=lambda: status() == "ready",
+          children=lambda: p("Ready")),
+    fallback=lambda: p("Unknown"),
 )
 ```
+
+Plain values still work when reactivity is not needed (e.g. static
+conditions evaluated in a render function).
 
 See the guide for recommended patterns around props, state, children, cleanup, and context:
 

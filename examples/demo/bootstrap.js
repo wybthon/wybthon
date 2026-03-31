@@ -77,104 +77,45 @@ async function bootstrap() {
     const { loadPyodide } = await import(`${PYODIDE_BASE_URL}pyodide.mjs`);
     const pyodide = await loadPyodide({ indexURL: PYODIDE_BASE_URL });
 
-    // Load the library modules from src into Pyodide's filesystem so `import wybthon` works.
-    try { pyodide.FS.mkdir("/wybthon"); } catch {}
-    const files = [
-      "__init__.py",
-      "_warnings.py",
-      "component.py",
-      "context.py",
-      "dev.py",
-      "dom.py",
-      "error_boundary.py",
-      "events.py",
-      "flow.py",
-      "forms.py",
-      "html.py",
-      "lazy.py",
-      "portal.py",
-      "props.py",
-      "reactivity.py",
-      "reconciler.py",
-      "router.py",
-      "router_core.py",
-      "store.py",
-      "suspense.py",
-      "vdom.py",
-      "vnode.py",
-    ];
+    // --- Helper: fetch a manifest from the dev server and load all .py files ---
     const cacheBust = Date.now();
-    for (const f of files) {
-      const resp = await fetch(`../../src/wybthon/${f}?v=${cacheBust}`);
-      const txt = await resp.text();
-      pyodide.FS.writeFile(`/wybthon/${f}`, new TextEncoder().encode(txt));
+
+    async function loadPyPackage(pyodide, manifestDir, fetchBase, mountRoot) {
+      // Fetch the auto-generated file list from the dev server
+      const resp = await fetch(`/__manifest?dir=${encodeURIComponent(manifestDir)}&v=${cacheBust}`);
+      const files = await resp.json();  // e.g. ["__init__.py", "sub/page.py"]
+
+      // Ensure all necessary directories exist in the Pyodide FS
+      const dirs = new Set();
+      dirs.add(mountRoot);
+      for (const f of files) {
+        const parts = f.split("/");
+        for (let i = 1; i < parts.length; i++) {
+          dirs.add(mountRoot + "/" + parts.slice(0, i).join("/"));
+        }
+      }
+      for (const d of [...dirs].sort()) {
+        try { pyodide.FS.mkdir(d); } catch {}
+      }
+
+      // Fetch each file and write it into Pyodide's virtual FS
+      for (const f of files) {
+        const url = `${fetchBase}/${f}?v=${cacheBust}`;
+        const r = await fetch(url);
+        const txt = await r.text();
+        pyodide.FS.writeFile(`${mountRoot}/${f}`, new TextEncoder().encode(txt));
+      }
+      return files;
     }
+
+    // Load the wybthon library package from src/
+    const libFiles = await loadPyPackage(pyodide, "src/wybthon", "../../src/wybthon", "/wybthon");
     await pyodide.runPythonAsync("import sys; sys.path.insert(0, '/')");
 
-    // Mount the demo app package under /app
-    const ensureDir = (p) => { try { pyodide.FS.mkdir(p); } catch {} };
-    ensureDir("/app");
-    ensureDir("/app/components");
-    ensureDir("/app/contexts");
-    ensureDir("/app/about");
-    ensureDir("/app/about/team");
-    ensureDir("/app/docs");
-    ensureDir("/app/fetch");
-    ensureDir("/app/forms");
-    ensureDir("/app/errors");
-    ensureDir("/app/patterns");
-    ensureDir("/app/primitives");
-    ensureDir("/app/stores");
+    // Load the demo app package
+    const appFiles = await loadPyPackage(pyodide, "examples/demo/app", "./app", "/app");
 
-    const appFiles = [
-      "app/__init__.py",
-      "app/layout.py",
-      "app/routes.py",
-      "app/main.py",
-      "app/page.py",
-      "app/not_found.py",
-      "app/components/__init__.py",
-      "app/components/hello.py",
-      "app/components/counter.py",
-      "app/components/theme_label.py",
-      "app/components/nav.py",
-      "app/components/card.py",
-      "app/components/names_list.py",
-      "app/components/timer.py",
-      "app/contexts/__init__.py",
-      "app/contexts/theme.py",
-      "app/about/__init__.py",
-      "app/about/page.py",
-      "app/about/team/__init__.py",
-      "app/about/team/page.py",
-      "app/docs/__init__.py",
-      "app/docs/page.py",
-      "app/fetch/__init__.py",
-      "app/fetch/page.py",
-      "app/forms/__init__.py",
-      "app/forms/page.py",
-      "app/errors/__init__.py",
-      "app/errors/page.py",
-      "app/patterns/__init__.py",
-      "app/patterns/page.py",
-      "app/primitives/__init__.py",
-      "app/primitives/page.py",
-      "app/stores/__init__.py",
-      "app/stores/page.py",
-    ];
-    for (const f of appFiles) {
-      const resp = await fetch(`./${f}?v=${cacheBust}`);
-      const txt = await resp.text();
-      pyodide.FS.writeFile(`/${f}`, new TextEncoder().encode(txt));
-    }
-
-    // Optional debug listings
-    try {
-      const listingLib = await pyodide.runPythonAsync("import os; os.listdir('/wybthon')");
-      console.log("/wybthon contents:", listingLib);
-      const listingApp = await pyodide.runPythonAsync("import os; os.listdir('/app')");
-      console.log("/app contents:", listingApp);
-    } catch {}
+    console.log(`Loaded ${libFiles.length} library files, ${appFiles.length} app files`);
 
     // Import and run the app entrypoint
     try {

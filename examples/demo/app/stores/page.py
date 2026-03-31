@@ -1,4 +1,4 @@
-from wybthon import button, component, create_store, div, h, h2, h3, p, produce, span
+from wybthon import For, button, component, create_store, div, h, h2, h3, p, produce, span
 
 
 @component
@@ -33,23 +33,24 @@ def TodoStore():
         return div(
             h3("Todo List (create_store + produce)"),
             p(f"{len(todos)} items, {done_count} done"),
-            div(
-                *[
-                    div(
-                        span(
-                            f"{'[x]' if todo.done else '[ ]'} {todo.text}",
-                            on_click=toggle(i),
-                            style={"cursor": "pointer", "textDecoration": "line-through" if todo.done else "none"},
-                        ),
-                        button(
-                            "x",
-                            on_click=remove(i),
-                            style={"marginLeft": "8px", "fontSize": "0.8rem"},
-                        ),
-                        style={"display": "flex", "alignItems": "center", "gap": "4px", "padding": "4px 0"},
-                    )
-                    for i, todo in enumerate(todos)
-                ],
+            For(
+                each=lambda: list(store.todos),
+                children=lambda item, idx: div(
+                    span(
+                        f"{'[x]' if item().done else '[ ]'} {item().text}",
+                        on_click=toggle(idx()),
+                        style={
+                            "cursor": "pointer",
+                            "textDecoration": "line-through" if item().done else "none",
+                        },
+                    ),
+                    button(
+                        "x",
+                        on_click=remove(idx()),
+                        style={"marginLeft": "8px", "fontSize": "0.8rem"},
+                    ),
+                    style={"display": "flex", "alignItems": "center", "gap": "4px", "padding": "4px 0"},
+                ),
             ),
             button("Add todo", on_click=add_todo),
             class_name="demo-section",

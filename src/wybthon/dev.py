@@ -11,7 +11,7 @@ import time
 import webbrowser
 from pathlib import Path
 from typing import Iterable
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
@@ -50,7 +50,60 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
                 except Exception:
                     pass
             return
+
+        parsed = urlsplit(self.path)
+        if parsed.path == "/__manifest":
+            self._handle_manifest(parsed.query)
+            return
+
         return super().do_GET()
+
+    def _handle_manifest(self, query: str) -> None:
+        """Respond with a JSON array of .py files under a requested directory.
+
+        Usage: ``GET /__manifest?dir=examples/demo/app``
+
+        The response is a sorted list of paths relative to the server
+        root, e.g. ``["app/__init__.py", "app/main.py", ...]``.
+        Bootstrap scripts can fetch this instead of maintaining a
+        hardcoded file list.
+        """
+        import json
+
+        params: dict[str, str] = {}
+        for part in query.split("&"):
+            if "=" in part:
+                k, v = part.split("=", 1)
+                params[k] = unquote(v)
+
+        rel_dir = params.get("dir", "")
+        if not rel_dir:
+            self.send_error(400, "Missing ?dir= parameter")
+            return
+
+        # Resolve against server root; reject traversal
+        segments = _sanitize_segments(rel_dir)
+        target = self.root
+        for seg in segments:
+            target = target / seg
+        if not target.is_dir():
+            self.send_error(404, f"Directory not found: {rel_dir}")
+            return
+
+        py_files: list[str] = []
+        for dirpath, _dirnames, filenames in os.walk(target):
+            for fname in filenames:
+                if fname.endswith(".py"):
+                    full = Path(dirpath) / fname
+                    py_files.append(str(full.relative_to(target)))
+        py_files.sort()
+
+        body = json.dumps(py_files).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     # Map request path to filesystem path honoring mounts, falling back to root
     def translate_path(self, path: str) -> str:  # noqa: D401 - behavior explained in doc above
