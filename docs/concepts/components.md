@@ -227,14 +227,20 @@ scope rather than the parent's:
 ```python
 from wybthon import Show, For, Switch, Match
 
-# Conditional rendering (reactive)
+# Conditional rendering — keyed scope disposes on transition
 Show(when=is_logged_in,
      children=lambda: p("Welcome!"),
      fallback=lambda: p("Please log in"))
 
-# List rendering (keyed, reactive)
+# List rendering — per-item reactive scopes (keyed by identity)
+# Item and index getters are signal-backed
 For(each=items,
     children=lambda item, idx: li(item(), key=idx()))
+
+# Index-based rendering — per-index reactive scopes
+# Item getter updates in place when the value at that position changes
+Index(each=items,
+      children=lambda item, idx: li(f"[{idx}] {item()}"))
 
 # Multi-branch matching (reactive)
 Switch(

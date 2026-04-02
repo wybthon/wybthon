@@ -39,22 +39,78 @@ on(count, lambda v: print("count is now", v))
 on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
 ```
 
-`merge_props(*sources)` merges multiple prop dicts (later sources win):
+`merge_props(*sources)` merges multiple prop sources into a **reactive
+proxy**.  Each source may be a plain dict or a callable getter (e.g. a
+signal accessor that returns a dict).  Reads on the proxy are lazy —
+when a source is callable, it is called on each property access, so
+signal reads inside a reactive computation are tracked automatically.
 
 ```python
-from wybthon import merge_props
+from wybthon import merge_props, create_signal
 
 defaults = {"size": "md", "variant": "solid"}
 final = merge_props(defaults, props)
+final["size"]  # reads from props first, falls back to defaults
+
+# Reactive source:
+dyn, set_dyn = create_signal({"color": "red"})
+merged = merge_props(defaults, dyn)
+merged["color"]  # calls dyn() → reactive tracking
 ```
 
-`split_props(props, *key_groups)` splits a props dict by key name,
-returning `(group1, group2, ..., rest)`:
+`split_props(props, *key_groups)` splits a props source by key name,
+returning `(group1, group2, ..., rest)` as **reactive proxies**.
 
 ```python
 from wybthon import split_props
 
 local, rest = split_props(props, ["class", "style"])
+# local["class"] lazily reads from props
+```
+
+#### Reactive list primitives
+
+`map_array(source, map_fn)` creates a **keyed reactive list mapping**
+with stable per-item scopes.  Items are matched by reference identity.
+The mapping callback runs **once** per unique item; when an item leaves,
+its reactive scope is disposed.
+
+```python
+from wybthon import create_signal, map_array, create_effect
+
+items, set_items = create_signal(["A", "B", "C"])
+mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+
+create_effect(lambda: print(mapped()))  # ["0: A", "1: B", "2: C"]
+set_items(["B", "C", "D"])             # only "D" runs the mapping
+```
+
+`index_array(source, map_fn)` is similar but keyed by **index
+position**.  Each slot has a reactive item signal that updates when the
+value at that position changes.
+
+```python
+from wybthon import create_signal, index_array
+
+items, set_items = create_signal(["A", "B", "C"])
+mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
+# items[0] changes → slot 0's item signal fires
+```
+
+`create_selector(source)` creates an efficient **selection signal**.
+Only computations that called `is_selected()` with the *previous* or
+*new* key are notified — giving O(1) updates instead of O(n).
+
+```python
+from wybthon import create_signal, create_selector
+
+selected, set_selected = create_signal(1)
+is_selected = create_selector(selected)
+
+is_selected(1)  # True
+is_selected(2)  # False
+set_selected(2)
+# Only effects tracking key 1 and key 2 re-run
 ```
 
 `create_root(fn)` runs `fn` in an independent reactive scope:

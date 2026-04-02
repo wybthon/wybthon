@@ -54,8 +54,14 @@ execution are disposed before each re-run.
 - `untrack(fn)` — run without tracking signal reads
 - `on(deps, fn, defer=False)` — effect with explicit deps
 - `create_root(fn)` — creates an independent `Owner` root.  `fn` receives a `dispose` callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on `dispose()`.
-- `merge_props(*sources)` — merge prop dicts
-- `split_props(props, *key_groups)` — split props by key name
+- `merge_props(*sources)` — merge prop sources into a **reactive proxy**.  Each source may be a plain ``dict``, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting ``[]``, ``.get()``, ``in``, ``len()``, iteration, and ``==`` comparison with dicts.
+- `split_props(props, *key_groups)` — split a props source into **reactive proxy** groups by key name, plus a rest group.  Returns ``(group1, ..., rest)``; each proxy lazily reads from the original source.
+
+##### Reactive list primitives
+
+- `map_array(source, map_fn)` — keyed reactive list mapping.  ``source`` is a getter returning a list; ``map_fn(item_getter, index_getter)`` runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.
+- `index_array(source, map_fn)` — index-keyed reactive list mapping.  Like ``map_array`` but keyed by index position.  ``map_fn(item_getter, index: int)`` — the item getter is a signal that updates in place.  Returns a getter producing the mapped list.
+- `create_selector(source)` — efficient selection signal.  Returns ``is_selected(key) -> bool``.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).
 
 ##### Global state
 

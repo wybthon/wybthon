@@ -26,7 +26,10 @@ def ShowDemo():
     def render():
         return div(
             h3("Show - Conditional Rendering"),
-            p("Show creates its own reactive scope. Toggling visibility only re-renders the Show subtree."),
+            p(
+                "Show uses keyed conditional rendering. When truthiness changes, "
+                "the previous branch scope is disposed and a new scope is created."
+            ),
             div(
                 button("Toggle", on_click=lambda e: set_visible(not visible())),
                 button("+1", on_click=lambda e: set_count(count() + 1)),
@@ -61,7 +64,11 @@ def ForDemo():
     def render():
         return div(
             h3("For - Keyed List Rendering"),
-            p("For takes a getter and a mapping callback. Each item receives a reactive item() getter."),
+            p(
+                "For maintains per-item reactive scopes keyed by identity. "
+                "The mapping callback runs once per unique item and receives "
+                "signal-backed item() and index() getters."
+            ),
             div(
                 button("Add item", on_click=add_item),
                 button("Remove last", on_click=remove_last),
@@ -138,7 +145,11 @@ def IndexDemo():
     def render():
         return div(
             h3("Index - Index-Stable Rendering"),
-            p("Index gives a stable item() getter per index position."),
+            p(
+                "Index maintains per-index reactive scopes. Each slot has a "
+                "signal-backed item() getter that updates when the value at "
+                "that position changes."
+            ),
             button("Reverse", on_click=shuffle),
             ul(
                 Index(

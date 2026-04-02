@@ -16,6 +16,13 @@ Key API rules
 * ``children`` — may be a ``VNode``, a callable returning a ``VNode``,
   or (for ``For`` / ``Index``) the per-item mapping callback.
 * ``fallback`` — same flexibility as ``children``.
+
+Fine-grained list primitives
+----------------------------
+``For`` maintains **stable per-item reactive scopes** (keyed by
+reference identity), so the mapping callback runs only once per unique
+item.  ``Index`` maintains **stable per-index scopes** with a reactive
+item signal that updates when the value at that position changes.
 """
 
 from __future__ import annotations
@@ -123,6 +130,12 @@ def Show(props_or_when: Any = None, children_pos: Any = None, /, **kwargs: Any) 
     *children* / *fallback* may be a ``VNode``, a callable, or a plain value.
     When *children* is callable and *when* is truthy, the truthy value is
     passed as the first argument (matching SolidJS ``<Show>``).
+
+    The component creates a **keyed conditional scope**: when the
+    truthiness of *when* changes, the previous branch's scope is
+    disposed and a new scope is created.  This ensures that effects
+    and cleanups registered inside a branch are properly torn down
+    on transitions.
     """
     if isinstance(props_or_when, dict) and not kwargs and children_pos is None:
         return _ShowComponent(props_or_when)
@@ -137,18 +150,34 @@ def Show(props_or_when: Any = None, children_pos: Any = None, /, **kwargs: Any) 
 
 def _ShowComponent(props: Dict[str, Any]) -> Any:
     """Internal component backing ``Show``."""
-    from .reactivity import get_props
+    import wybthon.reactivity as _rx
 
-    props_getter = get_props()
+    props_getter = _rx.get_props()
+    comp_ctx = _rx._get_component_ctx()
+
+    _branch: List[Optional[str]] = [None]
+    _branch_owner: List[Optional[_rx.Owner]] = [None]
 
     def render() -> VNode:
         p = props_getter()
         condition = _eval(p.get("when"))
+        new_branch = "truthy" if condition else "falsy"
+
+        if _branch[0] != new_branch:
+            if _branch_owner[0] is not None:
+                _branch_owner[0].dispose()
+            owner = _rx.Owner()
+            if comp_ctx is not None:
+                comp_ctx._add_child(owner)
+            _branch_owner[0] = owner
+            _branch[0] = new_branch
+
         if condition:
             children = p.get("children")
             if children is None:
                 return to_text_vnode("")
             return _render_slot(children, condition)
+
         fb = p.get("fallback")
         if fb is None:
             return to_text_vnode("")
@@ -177,9 +206,14 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
 
     *each* is a getter (or list).  *children* is ``(item, index_getter) -> VNode``.
 
-    Inside the callback, ``item`` is a **getter** returning the current
-    item value for that position, and ``index`` is a getter returning
-    the current integer index — matching SolidJS ``<For>``.
+    Inside the callback, ``item`` is a **signal-backed getter** returning
+    the current item value, and ``index`` is a signal-backed getter
+    returning the current integer index — matching SolidJS ``<For>``.
+
+    ``For`` maintains **stable per-item reactive scopes** keyed by
+    reference identity.  The mapping callback runs only once per unique
+    item.  When an item leaves the list its scope (including any
+    effects or cleanups created inside the callback) is disposed.
     """
     if isinstance(props_or_each, dict) and not kwargs and children_pos is None:
         return _ForComponent(props_or_each)
@@ -193,37 +227,68 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
 
 
 def _ForComponent(props: Dict[str, Any]) -> Any:
-    """Internal component backing ``For``."""
-    from .reactivity import get_props
+    """Internal component backing ``For`` with per-item reactive scopes."""
+    import wybthon.reactivity as _rx
 
-    props_getter = get_props()
+    props_getter = _rx.get_props()
+    comp_ctx = _rx._get_component_ctx()
+
+    # (item_ref, owner, item_signal, index_signal)
+    _cache: List[Any] = []
 
     def render() -> VNode:
         p = props_getter()
         items_val = _eval(p.get("each"))
+        children_fn = p.get("children")
+
         if not items_val:
+            for entry in _cache:
+                entry[1].dispose()
+            _cache.clear()
             fb = p.get("fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
-        children_fn = p.get("children")
         if children_fn is None:
             return to_text_vnode("")
 
-        vnodes: List[VNode] = []
+        new_cache: List[Any] = []
+        used = [False] * len(_cache)
+
         for idx, item in enumerate(items_val):
-            _item = item
-            _idx = idx
+            found_ci = -1
+            for ci in range(len(_cache)):
+                if not used[ci] and item is _cache[ci][0]:
+                    found_ci = ci
+                    break
 
-            def _item_getter(_it: Any = _item) -> Any:
-                return _it
+            if found_ci >= 0:
+                used[found_ci] = True
+                _item_ref, owner, item_sig, idx_sig = _cache[found_ci]
+                idx_sig.set(idx)
+                new_cache.append((_item_ref, owner, item_sig, idx_sig))
+            else:
+                owner = _rx.Owner()
+                if comp_ctx is not None:
+                    comp_ctx._add_child(owner)
 
-            def _index_getter(_i: int = _idx) -> int:
-                return _i
+                item_sig = _rx.Signal(item)
+                idx_sig = _rx.Signal(idx)
 
-            node = children_fn(_item_getter, _index_getter)
-            if not isinstance(node, VNode):
-                node = to_text_vnode("" if node is None else str(node))
-            vnodes.append(node)
+                new_cache.append((item, owner, item_sig, idx_sig))
+
+        for ci in range(len(_cache)):
+            if not used[ci]:
+                _cache[ci][1].dispose()
+
+        _cache.clear()
+        _cache.extend(new_cache)
+
+        vnodes: List[VNode] = []
+        for entry in new_cache:
+            _, _, item_sig, idx_sig = entry
+            result = children_fn(item_sig.get, idx_sig.get)
+            vnodes.append(_to_vnode(result))
+
         return Fragment(*vnodes)
 
     return render
@@ -244,6 +309,11 @@ def Index(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any)
     *each* is a getter (or list).  *children* is
     ``(item_getter, index: int) -> VNode``.
 
+    ``Index`` maintains **stable per-index reactive scopes**.  Each
+    slot has a signal-backed ``item_getter`` that updates when the
+    value at that position changes.  Growing the list creates new
+    scopes; shrinking disposes excess scopes.
+
     Example::
 
         Index(each=items,
@@ -261,34 +331,57 @@ def Index(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any)
 
 
 def _IndexComponent(props: Dict[str, Any]) -> Any:
-    """Internal component backing ``Index``."""
-    from .reactivity import get_props
+    """Internal component backing ``Index`` with per-index reactive scopes."""
+    import wybthon.reactivity as _rx
 
-    props_getter = get_props()
+    props_getter = _rx.get_props()
+    comp_ctx = _rx._get_component_ctx()
+
+    # (owner, item_signal)
+    _slots: List[Any] = []
 
     def render() -> VNode:
         p = props_getter()
         items_val = _eval(p.get("each"))
+        children_fn = p.get("children")
+
         if not items_val:
+            for slot in _slots:
+                slot[0].dispose()
+            _slots.clear()
             fb = p.get("fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
-        children_fn = p.get("children")
         if children_fn is None:
             return to_text_vnode("")
 
-        item_list = list(items_val)
+        items_list = list(items_val)
+        new_len = len(items_list)
+        old_len = len(_slots)
+
+        for i in range(min(old_len, new_len)):
+            _slots[i][1].set(items_list[i])
+
+        if new_len > old_len:
+            for i in range(old_len, new_len):
+                owner = _rx.Owner()
+                if comp_ctx is not None:
+                    comp_ctx._add_child(owner)
+
+                item_sig = _rx.Signal(items_list[i])
+                _slots.append((owner, item_sig))
+
+        elif new_len < old_len:
+            for slot in _slots[new_len:]:
+                slot[0].dispose()
+            del _slots[new_len:]
+
         vnodes: List[VNode] = []
-        for idx, item in enumerate(item_list):
-            _item = item
+        for i in range(new_len):
+            item_sig = _slots[i][1]
+            result = children_fn(item_sig.get, i)
+            vnodes.append(_to_vnode(result))
 
-            def _item_getter(_it: Any = _item) -> Any:
-                return _it
-
-            node = children_fn(_item_getter, idx)
-            if not isinstance(node, VNode):
-                node = to_text_vnode("" if node is None else str(node))
-            vnodes.append(node)
         return Fragment(*vnodes)
 
     return render

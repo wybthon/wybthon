@@ -46,6 +46,9 @@ __all__ = [
     "create_root",
     "merge_props",
     "split_props",
+    "map_array",
+    "index_array",
+    "create_selector",
 ]
 
 T = TypeVar("T")
@@ -802,43 +805,476 @@ def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
         _current_owner = prev
 
 
-def merge_props(*sources: dict) -> dict:
-    """Merge multiple prop dicts.  Later sources win on conflict.
+def _resolve_source(src: Any) -> Any:
+    """Call *src* if it is a callable getter; otherwise return as-is."""
+    if src is None:
+        return None
+    if callable(src) and not isinstance(src, dict):
+        return src()
+    return src
+
+
+class _MergedProps:
+    """Reactive merged-props proxy.
+
+    Reading a key lazily checks sources right-to-left.  When a source
+    is a callable (e.g. a signal getter returning a dict), it is called
+    on each access, so reads inside reactive computations are tracked
+    automatically.
+    """
+
+    __slots__ = ("_sources",)
+
+    def __init__(self, sources: List[Any]) -> None:
+        object.__setattr__(self, "_sources", sources)
+
+    def _resolve(self) -> dict:
+        merged: dict = {}
+        for src in object.__getattribute__(self, "_sources"):
+            d = _resolve_source(src)
+            if d is None:
+                continue
+            if isinstance(d, (_MergedProps, _SplitProps)):
+                merged.update(dict(d.items()))
+            elif hasattr(d, "items"):
+                merged.update(d)
+        return merged
+
+    def __getitem__(self, key: str) -> Any:
+        for src in reversed(object.__getattribute__(self, "_sources")):
+            d = _resolve_source(src)
+            if d is None:
+                continue
+            try:
+                if key in d:
+                    return d[key]
+            except TypeError:
+                continue
+        raise KeyError(key)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def keys(self) -> Any:
+        return self._resolve().keys()
+
+    def values(self) -> Any:
+        return self._resolve().values()
+
+    def items(self) -> Any:
+        return self._resolve().items()
+
+    def __contains__(self, key: Any) -> bool:
+        for src in reversed(object.__getattribute__(self, "_sources")):
+            d = _resolve_source(src)
+            if d is None:
+                continue
+            try:
+                if key in d:
+                    return True
+            except TypeError:
+                continue
+        return False
+
+    def __iter__(self) -> Any:
+        return iter(self._resolve())
+
+    def __len__(self) -> int:
+        return len(self._resolve())
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, dict):
+            return self._resolve() == other
+        if isinstance(other, (_MergedProps, _SplitProps)):
+            return self._resolve() == other._resolve()
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return f"MergedProps({self._resolve()!r})"
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+            return
+        raise AttributeError("MergedProps is read-only")
+
+
+class _SplitProps:
+    """Reactive split-props proxy that filters keys from a source.
+
+    Reads are forwarded to the underlying source, so callable sources
+    maintain reactive tracking.
+    """
+
+    __slots__ = ("_source", "_keys", "_exclude")
+
+    def __init__(
+        self,
+        source: Any,
+        keys: Optional[Set[str]] = None,
+        exclude: Optional[Set[str]] = None,
+    ) -> None:
+        object.__setattr__(self, "_source", source)
+        object.__setattr__(self, "_keys", frozenset(keys) if keys else None)
+        object.__setattr__(self, "_exclude", frozenset(exclude) if exclude else None)
+
+    def _get_source(self) -> Any:
+        src = object.__getattribute__(self, "_source")
+        return _resolve_source(src)
+
+    def _included(self, key: str) -> bool:
+        keys = object.__getattribute__(self, "_keys")
+        exclude = object.__getattribute__(self, "_exclude")
+        if keys is not None:
+            return key in keys
+        if exclude is not None:
+            return key not in exclude
+        return True
+
+    def _resolve(self) -> dict:
+        d = self._get_source()
+        if d is None:
+            return {}
+        if isinstance(d, (_MergedProps, _SplitProps)):
+            return {k: v for k, v in d.items() if self._included(k)}
+        if hasattr(d, "items"):
+            return {k: v for k, v in d.items() if self._included(k)}
+        return {}
+
+    def __getitem__(self, key: str) -> Any:
+        if not self._included(key):
+            raise KeyError(key)
+        d = self._get_source()
+        if d is not None and key in d:
+            return d[key]
+        raise KeyError(key)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def keys(self) -> Any:
+        return self._resolve().keys()
+
+    def values(self) -> Any:
+        return self._resolve().values()
+
+    def items(self) -> Any:
+        return self._resolve().items()
+
+    def __contains__(self, key: Any) -> bool:
+        if not self._included(key):
+            return False
+        d = self._get_source()
+        return d is not None and key in d
+
+    def __iter__(self) -> Any:
+        return iter(self._resolve())
+
+    def __len__(self) -> int:
+        return len(self._resolve())
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, dict):
+            return self._resolve() == other
+        if isinstance(other, (_MergedProps, _SplitProps)):
+            return self._resolve() == other._resolve()
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return f"SplitProps({self._resolve()!r})"
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+            return
+        raise AttributeError("SplitProps is read-only")
+
+
+def merge_props(*sources: Any) -> "_MergedProps":
+    """Merge multiple prop sources into a reactive proxy.
+
+    Each source may be a plain ``dict``, a zero-arg getter that returns
+    a dict, or another ``_MergedProps`` / ``_SplitProps``.  Later sources
+    override earlier ones on key conflicts.
+
+    The returned object supports dict-like access (``[]``, ``.get``,
+    ``in``, iteration).  When a source is a callable, it is called on
+    each property access, so signal reads inside the getter are tracked
+    by the current reactive computation.
 
     Example::
 
         defaults = {"size": "md", "variant": "solid"}
         final = merge_props(defaults, props)
+        # final["size"] lazily reads from props, then defaults
     """
-    out: dict = {}
-    for src in sources:
-        if src:
-            out.update(src)
-    return out
+    return _MergedProps(list(sources))
 
 
 def split_props(
-    props: dict,
+    props: Any,
     *key_groups: List[str],
-) -> Tuple[dict, ...]:
-    """Split a props dict into groups by key name, plus a rest dict.
+) -> Tuple[Any, ...]:
+    """Split a props source into groups by key name, plus a rest group.
 
-    Returns ``(group1, group2, ..., rest)`` where *rest* contains keys
-    not claimed by any group.
+    Returns ``(group1, group2, ..., rest)`` where each group is a
+    reactive proxy that lazily reads from the original *props*.
+
+    *props* may be a plain ``dict``, a callable getter, or a
+    ``_MergedProps`` / ``_SplitProps``.
 
     Example::
 
         local, rest = split_props(props, ["class", "style"])
     """
-    results: List[dict] = []
-    used: set = set()
+    results: List[Any] = []
+    claimed: set = set()
     for group in key_groups:
-        d: dict = {}
-        for key in group:
-            if key in props:
-                d[key] = props[key]
-                used.add(key)
-        results.append(d)
-    rest = {k: v for k, v in props.items() if k not in used}
-    results.append(rest)
+        group_set = set(group)
+        claimed |= group_set
+        results.append(_SplitProps(props, keys=group_set))
+    results.append(_SplitProps(props, exclude=claimed))
     return tuple(results)
+
+
+# ---------------------------------------------------------------------------
+# Reactive list mapping primitives
+# ---------------------------------------------------------------------------
+
+_map_key_counter: int = 0
+
+
+def map_array(
+    source: Callable[[], Optional[List[Any]]],
+    map_fn: Callable[[Callable[[], Any], Callable[[], int]], T],
+) -> Callable[[], List[T]]:
+    """Keyed reactive list mapping with stable per-item scopes.
+
+    *source* is a zero-arg getter returning a list (typically a signal
+    accessor).  *map_fn* receives ``(item_getter, index_getter)`` and is
+    called **once** per unique item (matched by reference identity).
+    When an item leaves the list its reactive scope is disposed.
+
+    Returns a getter that produces the mapped list.  Reading it inside
+    a reactive computation creates a dependency — the getter updates
+    whenever the source list changes.
+
+    Example::
+
+        items, set_items = create_signal(["A", "B", "C"])
+        mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+        create_effect(lambda: print(mapped()))  # ["0: A", "1: B", "2: C"]
+    """
+    global _map_key_counter
+    _parent = _current_owner
+    _cache: List[Dict[str, Any]] = []
+
+    def _compute() -> List[T]:
+        global _map_key_counter, _current_owner, _current_computation
+        items = source()
+        if not items:
+            for entry in _cache:
+                entry["owner"].dispose()
+            _cache.clear()
+            return []
+
+        new_cache: List[Dict[str, Any]] = []
+        used = [False] * len(_cache)
+
+        for idx, item in enumerate(items):
+            found = -1
+            for ci in range(len(_cache)):
+                if not used[ci] and item is _cache[ci]["item"]:
+                    found = ci
+                    break
+
+            if found >= 0:
+                used[found] = True
+                entry = _cache[found]
+                entry["index_signal"].set(idx)
+                new_cache.append(entry)
+            else:
+                owner = Owner()
+                if _parent is not None:
+                    _parent._add_child(owner)
+
+                item_sig: Signal[Any] = Signal(item)
+                idx_sig: Signal[int] = Signal(idx)
+
+                prev_owner = _current_owner
+                prev_comp = _current_computation
+                _current_owner = owner
+                _current_computation = None
+                try:
+                    result = map_fn(item_sig.get, idx_sig.get)
+                finally:
+                    _current_owner = prev_owner
+                    _current_computation = prev_comp
+
+                _map_key_counter += 1
+                new_cache.append(
+                    {
+                        "item": item,
+                        "owner": owner,
+                        "result": result,
+                        "item_signal": item_sig,
+                        "index_signal": idx_sig,
+                        "key": _map_key_counter,
+                    }
+                )
+
+        for ci in range(len(_cache)):
+            if not used[ci]:
+                _cache[ci]["owner"].dispose()
+
+        _cache.clear()
+        _cache.extend(new_cache)
+        return [e["result"] for e in new_cache]
+
+    return create_memo(_compute)
+
+
+def index_array(
+    source: Callable[[], Optional[List[Any]]],
+    map_fn: Callable[[Callable[[], Any], int], T],
+) -> Callable[[], List[T]]:
+    """Index-keyed reactive list mapping with stable per-index scopes.
+
+    Unlike :func:`map_array`, scopes are keyed by *index position*.
+    Each slot has a reactive ``item_getter`` signal that updates when
+    the value at that index changes.  *map_fn* receives
+    ``(item_getter, index: int)`` — the index is a plain ``int``, not
+    a getter.
+
+    Returns a getter producing the mapped list.
+
+    Example::
+
+        items, set_items = create_signal(["A", "B", "C"])
+        mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
+        create_effect(lambda: print(mapped()))
+    """
+    _parent = _current_owner
+    _slots: List[Dict[str, Any]] = []
+
+    def _compute() -> List[T]:
+        global _current_owner, _current_computation
+        items = source()
+        if not items:
+            for slot in _slots:
+                slot["owner"].dispose()
+            _slots.clear()
+            return []
+
+        items_list = list(items)
+        new_len = len(items_list)
+        old_len = len(_slots)
+
+        for i in range(min(old_len, new_len)):
+            _slots[i]["item_signal"].set(items_list[i])
+
+        if new_len > old_len:
+            for i in range(old_len, new_len):
+                owner = Owner()
+                if _parent is not None:
+                    _parent._add_child(owner)
+
+                item_sig: Signal[Any] = Signal(items_list[i])
+
+                prev_owner = _current_owner
+                prev_comp = _current_computation
+                _current_owner = owner
+                _current_computation = None
+                try:
+                    result = map_fn(item_sig.get, i)
+                finally:
+                    _current_owner = prev_owner
+                    _current_computation = prev_comp
+
+                _slots.append({"owner": owner, "result": result, "item_signal": item_sig})
+
+        elif new_len < old_len:
+            for slot in _slots[new_len:]:
+                slot["owner"].dispose()
+            del _slots[new_len:]
+
+        return [s["result"] for s in _slots]
+
+    return create_memo(_compute)
+
+
+def create_selector(
+    source: Callable[[], Any],
+) -> Callable[[Any], bool]:
+    """Create an efficient selection signal.
+
+    Returns ``is_selected(key) -> bool``.  When the source value
+    changes, only computations that called ``is_selected`` with the
+    **previous** or **new** key are notified — giving O(1) updates
+    instead of O(n).
+
+    Example::
+
+        selected, set_selected = create_signal(1)
+        is_selected = create_selector(selected)
+
+        # Inside a For loop per item:
+        create_effect(lambda: print("active:", is_selected(item_id)))
+    """
+    _subs: Dict[Any, List["Computation"]] = {}
+    _prev_key: List[Any] = [None]
+    _first = [True]
+
+    def _tracker() -> None:
+        new_key = source()
+        old_key = _prev_key[0]
+        _prev_key[0] = new_key
+
+        if _first[0]:
+            _first[0] = False
+            return
+
+        if old_key == new_key:
+            return
+
+        for comp in list(_subs.get(old_key, [])):
+            comp.schedule()
+        for comp in list(_subs.get(new_key, [])):
+            comp.schedule()
+
+    _effect = Computation(_tracker)
+    if _current_owner is not None:
+        _current_owner._add_child(_effect)
+    _effect.run()
+
+    def is_selected(key: Any) -> bool:
+        if _current_computation is not None:
+            subs = _subs.setdefault(key, [])
+            comp = _current_computation
+            if comp not in subs:
+                subs.append(comp)
+        return _prev_key[0] == key
+
+    return is_selected

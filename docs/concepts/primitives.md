@@ -145,3 +145,54 @@ def Search(query: str = ""):
     return render
 ```
 
+---
+
+#### `map_array`
+
+Keyed reactive list mapping with stable per-item scopes.  Items are
+matched by reference identity — the mapping callback runs **once** per
+unique item.  Removed items have their scopes disposed.
+
+```python
+from wybthon import create_signal, map_array
+
+items, set_items = create_signal(["A", "B", "C"])
+mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+# mapped() → ["0: A", "1: B", "2: C"]
+```
+
+---
+
+#### `index_array`
+
+Index-keyed reactive list mapping with stable per-index scopes.  Each
+slot has a reactive item signal that updates when the value at that
+position changes.  The index is a plain `int`.
+
+```python
+from wybthon import create_signal, index_array
+
+items, set_items = create_signal(["A", "B", "C"])
+mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
+# mapped() → ["[0] A", "[1] B", "[2] C"]
+```
+
+---
+
+#### `create_selector`
+
+Efficient selection signal for O(1) selection tracking.  Returns
+`is_selected(key) → bool` — only effects for the previous and new
+key are notified.
+
+```python
+from wybthon import create_signal, create_selector
+
+selected, set_selected = create_signal(1)
+is_selected = create_selector(selected)
+
+is_selected(1)   # True
+is_selected(2)   # False
+set_selected(2)  # only keys 1 and 2 fire
+```
+
