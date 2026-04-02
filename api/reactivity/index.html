@@ -1604,6 +1604,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_selector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_signal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1630,6 +1641,28 @@
     <span class="md-ellipsis">
       
         get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.index_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        index_array
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.map_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map_array
       
     </span>
   </a>
@@ -1803,6 +1836,17 @@
     <span class="md-ellipsis">
       
         Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-list-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive list primitives
       
     </span>
   </a>
@@ -2342,6 +2386,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_selector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_signal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2368,6 +2423,28 @@
     <span class="md-ellipsis">
       
         get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.index_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        index_array
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.map_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map_array
       
     </span>
   </a>
@@ -2541,6 +2618,17 @@
     <span class="md-ellipsis">
       
         Reactive utilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-list-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive list primitives
       
     </span>
   </a>
@@ -2995,6 +3083,35 @@ created inside the root::</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.reactivity.create_selector" class="doc doc-heading">
+            <code class=" language-python"><span class="n">create_selector</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.create_selector" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create an efficient selection signal.</p>
+<p>Returns <code>is_selected(key) -&gt; bool</code>.  When the source value
+changes, only computations that called <code>is_selected</code> with the
+<strong>previous</strong> or <strong>new</strong> key are notified — giving O(1) updates
+instead of O(n).</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code>selected, set_selected = create_signal(1)
+is_selected = create_selector(selected)
+
+<span class="gh">#</span> Inside a For loop per item:
+create_effect(lambda: print(&quot;active:&quot;, is_selected(item_id)))
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.reactivity.create_signal" class="doc doc-heading">
             <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
 
@@ -3062,6 +3179,65 @@ create_effect(lambda: print(&quot;query changed:&quot;, props()[&quot;query&quot
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.reactivity.index_array" class="doc doc-heading">
+            <code class=" language-python"><span class="n">index_array</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">map_fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.index_array" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Index-keyed reactive list mapping with stable per-index scopes.</p>
+<p>Unlike :func:<code>map_array</code>, scopes are keyed by <em>index position</em>.
+Each slot has a reactive <code>item_getter</code> signal that updates when
+the value at that index changes.  <em>map_fn</em> receives
+<code>(item_getter, index: int)</code> — the index is a plain <code>int</code>, not
+a getter.</p>
+<p>Returns a getter producing the mapped list.</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">set_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">index_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">idx</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="s2">&quot;[{idx}] {item()}&quot;</span><span class="p">)</span>
+<span class="n">create_effect</span><span class="p">(</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="nb">print</span><span class="p">(</span><span class="n">mapped</span><span class="p">()))</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.map_array" class="doc doc-heading">
+            <code class=" language-python"><span class="n">map_array</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">map_fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.map_array" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Keyed reactive list mapping with stable per-item scopes.</p>
+<p><em>source</em> is a zero-arg getter returning a list (typically a signal
+accessor).  <em>map_fn</em> receives <code>(item_getter, index_getter)</code> and is
+called <strong>once</strong> per unique item (matched by reference identity).
+When an item leaves the list its reactive scope is disposed.</p>
+<p>Returns a getter that produces the mapped list.  Reading it inside
+a reactive computation creates a dependency — the getter updates
+whenever the source list changes.</p>
+<p>Example::</p>
+<div class="codehilite"><pre><span></span><code><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">set_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">idx</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="s2">&quot;{idx()}: {item()}&quot;</span><span class="p">)</span>
+<span class="n">create_effect</span><span class="p">(</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="nb">print</span><span class="p">(</span><span class="n">mapped</span><span class="p">()))</span><span class="w">  </span><span class="c1"># [&quot;0: A&quot;, &quot;1: B&quot;, &quot;2: C&quot;]</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.reactivity.merge_props" class="doc doc-heading">
             <code class=" language-python"><span class="n">merge_props</span><span class="p">(</span><span class="o">*</span><span class="n">sources</span><span class="p">)</span></code>
 
@@ -3070,10 +3246,18 @@ create_effect(lambda: print(&quot;query changed:&quot;, props()[&quot;query&quot
 
     <div class="doc doc-contents ">
 
-        <p>Merge multiple prop dicts.  Later sources win on conflict.</p>
+        <p>Merge multiple prop sources into a reactive proxy.</p>
+<p>Each source may be a plain <code>dict</code>, a zero-arg getter that returns
+a dict, or another <code>_MergedProps</code> / <code>_SplitProps</code>.  Later sources
+override earlier ones on key conflicts.</p>
+<p>The returned object supports dict-like access (<code>[]</code>, <code>.get</code>,
+<code>in</code>, iteration).  When a source is a callable, it is called on
+each property access, so signal reads inside the getter are tracked
+by the current reactive computation.</p>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">defaults</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;md&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;variant&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;solid&quot;</span><span class="p">}</span>
 <span class="n">final</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">merge_props</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="p">)</span>
+<span class="c1"># final[&quot;size&quot;] lazily reads from props, then defaults</span>
 </code></pre></div>
 
 
@@ -3196,9 +3380,11 @@ tracked; the body of <em>fn</em> is run inside <code>untrack</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Split a props dict into groups by key name, plus a rest dict.</p>
-<p>Returns <code>(group1, group2, ..., rest)</code> where <em>rest</em> contains keys
-not claimed by any group.</p>
+        <p>Split a props source into groups by key name, plus a rest group.</p>
+<p>Returns <code>(group1, group2, ..., rest)</code> where each group is a
+reactive proxy that lazily reads from the original <em>props</em>.</p>
+<p><em>props</em> may be a plain <code>dict</code>, a callable getter, or a
+<code>_MergedProps</code> / <code>_SplitProps</code>.</p>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code>local, rest = split_props(props, [&quot;class&quot;, &quot;style&quot;])
 </code></pre></div>
@@ -3333,8 +3519,14 @@ execution are disposed before each re-run.</p>
 <li><code>untrack(fn)</code> — run without tracking signal reads</li>
 <li><code>on(deps, fn, defer=False)</code> — effect with explicit deps</li>
 <li><code>create_root(fn)</code> — creates an independent <code>Owner</code> root.  <code>fn</code> receives a <code>dispose</code> callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on <code>dispose()</code>.</li>
-<li><code>merge_props(*sources)</code> — merge prop dicts</li>
-<li><code>split_props(props, *key_groups)</code> — split props by key name</li>
+<li><code>merge_props(*sources)</code> — merge prop sources into a <strong>reactive proxy</strong>.  Each source may be a plain <code>dict</code>, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting <code>[]</code>, <code>.get()</code>, <code>in</code>, <code>len()</code>, iteration, and <code>==</code> comparison with dicts.</li>
+<li><code>split_props(props, *key_groups)</code> — split a props source into <strong>reactive proxy</strong> groups by key name, plus a rest group.  Returns <code>(group1, ..., rest)</code>; each proxy lazily reads from the original source.</li>
+</ul>
+<h5 id="reactive-list-primitives">Reactive list primitives<a class="headerlink" href="#reactive-list-primitives" title="Permanent link">&para;</a></h5>
+<ul>
+<li><code>map_array(source, map_fn)</code> — keyed reactive list mapping.  <code>source</code> is a getter returning a list; <code>map_fn(item_getter, index_getter)</code> runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.</li>
+<li><code>index_array(source, map_fn)</code> — index-keyed reactive list mapping.  Like <code>map_array</code> but keyed by index position.  <code>map_fn(item_getter, index: int)</code> — the item getter is a signal that updates in place.  Returns a getter producing the mapped list.</li>
+<li><code>create_selector(source)</code> — efficient selection signal.  Returns <code>is_selected(key) -&gt; bool</code>.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).</li>
 </ul>
 <h5 id="global-state">Global state<a class="headerlink" href="#global-state" title="Permanent link">&para;</a></h5>
 <p>A single <code>_current_owner</code> global tracks the active ownership scope.

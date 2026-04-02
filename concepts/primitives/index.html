@@ -532,6 +532,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#map_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map_array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        index_array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_selector
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2011,6 +2044,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#map_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map_array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index_array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        index_array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_selector
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2151,6 +2217,45 @@ Call the parameter with <code>()</code> to read its current value — no need fo
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="o">...</span>
     <span class="k">return</span> <span class="n">render</span>
+</code></pre></div>
+
+<hr />
+<h4 id="map_array"><code>map_array</code><a class="headerlink" href="#map_array" title="Permanent link">&para;</a></h4>
+<p>Keyed reactive list mapping with stable per-item scopes.  Items are
+matched by reference identity — the mapping callback runs <strong>once</strong> per
+unique item.  Removed items have their scopes disposed.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">map_array</span>
+
+<span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span> <span class="o">=</span> <span class="n">map_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">idx</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># mapped() → [&quot;0: A&quot;, &quot;1: B&quot;, &quot;2: C&quot;]</span>
+</code></pre></div>
+
+<hr />
+<h4 id="index_array"><code>index_array</code><a class="headerlink" href="#index_array" title="Permanent link">&para;</a></h4>
+<p>Index-keyed reactive list mapping with stable per-index scopes.  Each
+slot has a reactive item signal that updates when the value at that
+position changes.  The index is a plain <code>int</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">index_array</span>
+
+<span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span> <span class="o">=</span> <span class="n">index_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># mapped() → [&quot;[0] A&quot;, &quot;[1] B&quot;, &quot;[2] C&quot;]</span>
+</code></pre></div>
+
+<hr />
+<h4 id="create_selector"><code>create_selector</code><a class="headerlink" href="#create_selector" title="Permanent link">&para;</a></h4>
+<p>Efficient selection signal for O(1) selection tracking.  Returns
+<code>is_selected(key) → bool</code> — only effects for the previous and new
+key are notified.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_selector</span>
+
+<span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_selector</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+
+<span class="n">is_selected</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># True</span>
+<span class="n">is_selected</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>   <span class="c1"># False</span>
+<span class="n">set_selected</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># only keys 1 and 2 fire</span>
 </code></pre></div>
 
 

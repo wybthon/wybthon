@@ -534,6 +534,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#reactive-list-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive list primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scheduling-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1963,6 +1974,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#reactive-list-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive list primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scheduling-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2084,18 +2106,67 @@ tracking.  The body of <code>fn</code> is automatically untracked:</p>
 <span class="n">on</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">va</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;a=</span><span class="si">{</span><span class="n">va</span><span class="si">}</span><span class="s2">, b=</span><span class="si">{</span><span class="n">vb</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">defer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
-<p><code>merge_props(*sources)</code> merges multiple prop dicts (later sources win):</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_props</span>
+<p><code>merge_props(*sources)</code> merges multiple prop sources into a <strong>reactive
+proxy</strong>.  Each source may be a plain dict or a callable getter (e.g. a
+signal accessor that returns a dict).  Reads on the proxy are lazy —
+when a source is callable, it is called on each property access, so
+signal reads inside a reactive computation are tracked automatically.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_props</span><span class="p">,</span> <span class="n">create_signal</span>
 
 <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="s2">&quot;variant&quot;</span><span class="p">:</span> <span class="s2">&quot;solid&quot;</span><span class="p">}</span>
 <span class="n">final</span> <span class="o">=</span> <span class="n">merge_props</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="n">props</span><span class="p">)</span>
+<span class="n">final</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span>  <span class="c1"># reads from props first, falls back to defaults</span>
+
+<span class="c1"># Reactive source:</span>
+<span class="n">dyn</span><span class="p">,</span> <span class="n">set_dyn</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">({</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">})</span>
+<span class="n">merged</span> <span class="o">=</span> <span class="n">merge_props</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="n">dyn</span><span class="p">)</span>
+<span class="n">merged</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span>  <span class="c1"># calls dyn() → reactive tracking</span>
 </code></pre></div>
 
-<p><code>split_props(props, *key_groups)</code> splits a props dict by key name,
-returning <code>(group1, group2, ..., rest)</code>:</p>
+<p><code>split_props(props, *key_groups)</code> splits a props source by key name,
+returning <code>(group1, group2, ..., rest)</code> as <strong>reactive proxies</strong>.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_props</span>
 
 <span class="n">local</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">split_props</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;style&quot;</span><span class="p">])</span>
+<span class="c1"># local[&quot;class&quot;] lazily reads from props</span>
+</code></pre></div>
+
+<h4 id="reactive-list-primitives">Reactive list primitives<a class="headerlink" href="#reactive-list-primitives" title="Permanent link">&para;</a></h4>
+<p><code>map_array(source, map_fn)</code> creates a <strong>keyed reactive list mapping</strong>
+with stable per-item scopes.  Items are matched by reference identity.
+The mapping callback runs <strong>once</strong> per unique item; when an item leaves,
+its reactive scope is disposed.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">map_array</span><span class="p">,</span> <span class="n">create_effect</span>
+
+<span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span> <span class="o">=</span> <span class="n">map_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">idx</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">mapped</span><span class="p">()))</span>  <span class="c1"># [&quot;0: A&quot;, &quot;1: B&quot;, &quot;2: C&quot;]</span>
+<span class="n">set_items</span><span class="p">([</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">])</span>             <span class="c1"># only &quot;D&quot; runs the mapping</span>
+</code></pre></div>
+
+<p><code>index_array(source, map_fn)</code> is similar but keyed by <strong>index
+position</strong>.  Each slot has a reactive item signal that updates when the
+value at that position changes.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">index_array</span>
+
+<span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+<span class="n">mapped</span> <span class="o">=</span> <span class="n">index_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># items[0] changes → slot 0&#39;s item signal fires</span>
+</code></pre></div>
+
+<p><code>create_selector(source)</code> creates an efficient <strong>selection signal</strong>.
+Only computations that called <code>is_selected()</code> with the <em>previous</em> or
+<em>new</em> key are notified — giving O(1) updates instead of O(n).</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_selector</span>
+
+<span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_selector</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+
+<span class="n">is_selected</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># True</span>
+<span class="n">is_selected</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># False</span>
+<span class="n">set_selected</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1"># Only effects tracking key 1 and key 2 re-run</span>
 </code></pre></div>
 
 <p><code>create_root(fn)</code> runs <code>fn</code> in an independent reactive scope:</p>

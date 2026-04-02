@@ -2262,14 +2262,20 @@ children, and fallbacks so reads happen inside the flow control's own
 scope rather than the parent's:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
 
-<span class="c1"># Conditional rendering (reactive)</span>
+<span class="c1"># Conditional rendering — keyed scope disposes on transition</span>
 <span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">is_logged_in</span><span class="p">,</span>
      <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span>
      <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
 
-<span class="c1"># List rendering (keyed, reactive)</span>
+<span class="c1"># List rendering — per-item reactive scopes (keyed by identity)</span>
+<span class="c1"># Item and index getters are signal-backed</span>
 <span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
+
+<span class="c1"># Index-based rendering — per-index reactive scopes</span>
+<span class="c1"># Item getter updates in place when the value at that position changes</span>
+<span class="n">Index</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
+      <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
 
 <span class="c1"># Multi-branch matching (reactive)</span>
 <span class="n">Switch</span><span class="p">(</span>
