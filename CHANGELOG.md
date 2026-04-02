@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.20.0 (2026-04-02)
+
+### Documentation
+
+- Align branch prefixes with conventional commit types
+  ([`b089c6b`](https://github.com/wybthon/wybthon/commit/b089c6bc7704a86c5884685babd3f3460e36f629))
+
+### Features
+
+- **reactivity,flow**: Add map_array/index_array; rewrite flow scopes
+  ([`04cb8d2`](https://github.com/wybthon/wybthon/commit/04cb8d246c9575651767fb7062930c1d2ccdc861))
+
+
 ## v0.19.0 (2026-03-31)
 
 ### Features
