@@ -26,6 +26,7 @@ from wybthon.reconciler import render       # direct import
 
 - `VNode`
 - `h(tag, props=None, *children) -> VNode`
+- `Fragment(*children)` — groups children **without** a wrapper element; the reconciler uses invisible comment markers and mounts children in the parent (no `display:contents` span).
 - `render(vnode, container) -> Element`
 - `ErrorBoundary` component
 - `Suspense` component

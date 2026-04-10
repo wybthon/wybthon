@@ -55,7 +55,7 @@ from wybthon import Element, component, h, h2, render
 
 @component
 def Hello(name: str = "world"):
-    return h2(f"Hello, {name()}!")
+    return h2(f"Hello, {name}!")
 
 tree = Hello(name="Python")
 container = Element("body", existing=True)
@@ -69,7 +69,7 @@ from wybthon import Element, button, component, create_signal, div, h, on_mount,
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial())
+    count, set_count = create_signal(initial)
 
     on_mount(lambda: print("Counter mounted"))
 

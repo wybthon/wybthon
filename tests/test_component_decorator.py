@@ -32,15 +32,15 @@ def test_component_preserves_name():
 
 
 def test_component_extracts_kwargs_from_dict():
-    """When called with a single props dict (VDOM engine path), reactive getters are provided."""
+    """When called with a single props dict (VDOM engine path), plain values are provided."""
     from wybthon.component import component
 
     captured = {}
 
     @component
     def Greet(name="world", greeting="Hello"):
-        captured["name"] = name()
-        captured["greeting"] = greeting()
+        captured["name"] = name
+        captured["greeting"] = greeting
 
     Greet({"name": "Alice", "greeting": "Hi"})
     assert captured == {"name": "Alice", "greeting": "Hi"}
@@ -53,8 +53,8 @@ def test_component_uses_defaults_for_missing_props():
 
     @component
     def Greet(name="world", greeting="Hello"):
-        captured["name"] = name()
-        captured["greeting"] = greeting()
+        captured["name"] = name
+        captured["greeting"] = greeting
 
     Greet({"name": "Bob"})
     assert captured == {"name": "Bob", "greeting": "Hello"}
@@ -67,7 +67,7 @@ def test_component_all_defaults():
 
     @component
     def Greet(name="world"):
-        captured["name"] = name()
+        captured["name"] = name
 
     Greet({})
     assert captured == {"name": "world"}
@@ -81,7 +81,7 @@ def test_component_ignores_extra_props():
 
     @component
     def Greet(name="world"):
-        captured["name"] = name()
+        captured["name"] = name
 
     Greet({"name": "Alice", "id": 42, "style": "bold"})
     assert captured == {"name": "Alice"}
@@ -94,7 +94,7 @@ def test_component_children_param():
 
     @component
     def Wrapper(children=None):
-        captured["children"] = children()
+        captured["children"] = children
 
     Greet_children = ["child1", "child2"]
     Wrapper({"children": Greet_children})
@@ -112,7 +112,7 @@ def test_component_renders_via_h(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name()}!")
+        return vdom.h("p", {}, f"Hello, {name}!")
 
     vdom.render(vdom.h(Greet, {"name": "Alice"}), root_element)
 
@@ -125,7 +125,7 @@ def test_component_renders_with_defaults(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name()}!")
+        return vdom.h("p", {}, f"Hello, {name}!")
 
     vdom.render(vdom.h(Greet, {}), root_element)
 
@@ -139,7 +139,7 @@ def test_component_direct_call_returns_vnode(wyb):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name()}!")
+        return vdom.h("p", {}, f"Hello, {name}!")
 
     result = Greet(name="Direct")
     assert isinstance(result, vdom.VNode)
@@ -152,7 +152,7 @@ def test_component_direct_call_renders(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name()}!")
+        return vdom.h("p", {}, f"Hello, {name}!")
 
     vnode = Greet(name="Direct")
     vdom.render(vnode, root_element)
@@ -167,7 +167,7 @@ def test_component_direct_call_no_args(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name()}!")
+        return vdom.h("p", {}, f"Hello, {name}!")
 
     vdom.render(Greet(), root_element)
 
@@ -181,8 +181,8 @@ def test_component_direct_call_with_children(wyb, root_element):
 
     @comp_mod.component
     def Wrapper(title="", children=None):
-        kids = children() or []
-        return vdom.h("div", {}, vdom.h("h3", {}, title()), *kids)
+        kids = children or []
+        return vdom.h("div", {}, vdom.h("h3", {}, title), *kids)
 
     child1 = vdom.h("p", {}, "child one")
     child2 = vdom.h("p", {}, "child two")
@@ -203,7 +203,7 @@ def test_component_with_create_signal(wyb, root_element):
 
     @comp_mod.component
     def Counter(initial=0):
-        count, set_count = reactivity.create_signal(initial())
+        count, set_count = reactivity.create_signal(initial)
         setter_ref[0] = set_count
 
         def render():
@@ -256,7 +256,7 @@ def test_component_with_memo(wyb, root_element):
     @comp_mod.component
     def Child(label=""):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"child:{label()}")
+        return vdom.h("span", {}, f"child:{label}")
 
     MemoChild = vdom.memo(Child)
 
@@ -298,11 +298,11 @@ def test_component_nested(wyb, root_element):
 
     @comp_mod.component
     def Inner(value="inner"):
-        return vdom.h("span", {}, value())
+        return vdom.h("span", {}, value)
 
     @comp_mod.component
     def Outer(label="outer"):
-        return vdom.h("div", {}, vdom.h("p", {}, label()), vdom.h(Inner, {"value": "nested"}))
+        return vdom.h("div", {}, vdom.h("p", {}, label), vdom.h(Inner, {"value": "nested"}))
 
     vdom.render(vdom.h(Outer, {"label": "parent"}), root_element)
 
@@ -321,7 +321,7 @@ def test_component_re_renders_on_prop_change(wyb, root_element):
     @comp_mod.component
     def Child(count=0):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"count={count()}")
+        return vdom.h("span", {}, f"count={count}")
 
     def Parent(props):
         val, set_val = reactivity.create_signal(0)
@@ -351,15 +351,21 @@ def test_component_exported_from_package():
 
 
 def test_component_reactive_props_update(wyb, root_element):
-    """Reactive prop getters update when parent re-renders with new values."""
+    """ReactiveProps update when parent re-renders with new values.
+
+    Stateful @component captures initial values at setup.  For reactive
+    prop tracking, use get_props() inside the render function.
+    """
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     parent_setter = [None]
 
     @comp_mod.component
     def Display(message="default"):
+        props = reactivity.get_props()
+
         def render():
-            return vdom.h("p", {}, message())
+            return vdom.h("p", {}, props["message"])
 
         return render
 

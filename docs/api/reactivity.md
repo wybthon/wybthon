@@ -37,12 +37,74 @@ execution are disposed before each re-run.
 
 ##### Signals-first API (recommended)
 
-- `create_signal(value) -> (getter, setter)`
+- `create_signal(value, *, equals=...) -> (getter, setter)` — optional **`equals`**: default skips notification when `new == old`; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (same-as / custom equality).
 - `create_effect(fn) -> Computation` — the returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
 - `create_memo(fn) -> getter` — creates a `Computation` under the current owner; disposed when the owner is disposed.
 - `on_mount(fn)` — run after first render
 - `on_cleanup(fn)` — appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
 - `batch() -> context manager` or `batch(fn) -> result` — callback form flushes synchronously
+
+##### `create_signal` and `equals`
+
+```python
+from wybthon import create_signal
+
+# Default: notify only when value changes (==)
+x, set_x = create_signal({"a": 1})
+
+# Always notify subscribers, even if value is ==
+y, set_y = create_signal(0, equals=False)
+
+# Custom: e.g. only notify when identity changes
+z, set_z = create_signal([], equals=lambda old, new: old is new)
+```
+
+##### `ReactiveProps` and `get_props()`
+
+`get_props()` returns a **`ReactiveProps`** proxy for the current `@component` instance. Attribute or key access (`props.name`, `props["name"]`) establishes a reactive dependency on that prop, similar to Solid prop access. Use this in **stateful** components when setup runs once but props can change from the parent.
+
+```python
+from wybthon import component, create_effect, get_props, p
+
+@component
+def Greeting(name: str = "world"):
+    props = get_props()
+    create_effect(lambda: print("name is now", props.name))
+    def render():
+        return p(f"Hello, {props.name}!")
+    return render
+```
+
+`ReactiveProps` is read-only; the parent/reconciler updates underlying values.
+
+##### `get_owner()` and `run_with_owner(owner, fn)`
+
+After an `await`, the reactive owner stack may no longer match the component that started the work. Capture the owner before awaiting and restore it when creating effects or other scoped work:
+
+```python
+from wybthon import create_effect, get_owner, run_with_owner
+
+async def load():
+    owner = get_owner()
+    data = await fetch_something()
+    run_with_owner(owner, lambda: create_effect(lambda: use(data)))
+```
+
+##### `children(fn)`
+
+`children(getter)` wraps a zero-argument callable that returns the children value (often `lambda: get_props().children`) and returns a **memo getter** that flattens and resolves the list. Matches Solid’s `children()` helper. Import under an alias (e.g. `from wybthon import children as resolve_children`) if your component also names a parameter `children`.
+
+```python
+from wybthon import children, component, get_props, section, h3
+
+@component
+def Card(title: str = ""):
+    props = get_props()
+    resolved = children(lambda: props.children)
+    def render():
+        return section(h3(props.title), *resolved(), class_name="card")
+    return render
+```
 
 ##### Resources
 

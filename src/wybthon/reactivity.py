@@ -33,6 +33,7 @@ __all__ = [
     "Owner",
     "Signal",
     "Computation",
+    "ReactiveProps",
     "batch",
     "Resource",
     "create_resource",
@@ -44,6 +45,9 @@ __all__ = [
     "untrack",
     "on",
     "create_root",
+    "get_owner",
+    "run_with_owner",
+    "children",
     "merge_props",
     "split_props",
     "map_array",
@@ -52,6 +56,8 @@ __all__ = [
 ]
 
 T = TypeVar("T")
+
+_DEFAULT_EQUALS = object()
 
 # ---------------------------------------------------------------------------
 # Global reactive state
@@ -257,10 +263,11 @@ class Computation(Owner):
 class Signal(Generic[T]):
     """Mutable container that notifies subscribed computations on changes."""
 
-    def __init__(self, value: T) -> None:
+    def __init__(self, value: T, *, equals: Any = _DEFAULT_EQUALS) -> None:
         self._value: T = value
         self._subscribers: List[Computation] = []
         self._subscriber_set: Set[Computation] = set()
+        self._equals = equals
 
     def _add_subscriber(self, comp: "Computation") -> None:
         if comp not in self._subscriber_set:
@@ -281,8 +288,12 @@ class Signal(Generic[T]):
         return self._value
 
     def set(self, value: T) -> None:
-        if value == self._value:
-            return
+        if self._equals is not False:
+            if callable(self._equals):
+                if self._equals(self._value, value):
+                    return
+            elif value == self._value:
+                return
         self._value = value
         for comp in list(self._subscribers):
             comp.schedule()
@@ -291,6 +302,103 @@ class Signal(Generic[T]):
 def signal(value: T) -> Signal[T]:
     """Create a new ``Signal`` with the given initial value."""
     return Signal(value)
+
+
+# ---------------------------------------------------------------------------
+# ReactiveProps
+# ---------------------------------------------------------------------------
+
+
+class ReactiveProps:
+    """Reactive proxy for component props.
+
+    Property access creates a reactive dependency on that specific prop,
+    matching SolidJS prop access semantics.
+    """
+
+    __slots__ = ("_signals", "_raw", "_defaults")
+
+    def __init__(self, props: dict, defaults: Optional[Dict[str, Any]] = None) -> None:
+        object.__setattr__(self, "_signals", {})
+        object.__setattr__(self, "_raw", dict(props))
+        object.__setattr__(self, "_defaults", defaults or {})
+
+    def _get(self, key: str) -> Any:
+        signals = object.__getattribute__(self, "_signals")
+        raw = object.__getattribute__(self, "_raw")
+        defaults = object.__getattribute__(self, "_defaults")
+        if key not in signals:
+            value = raw.get(key, defaults.get(key))
+            signals[key] = Signal(value)
+        return signals[key].get()
+
+    def _update(self, new_props: dict) -> None:
+        """Update props from parent (called by reconciler on re-render)."""
+        signals = object.__getattribute__(self, "_signals")
+        defaults = object.__getattribute__(self, "_defaults")
+        object.__setattr__(self, "_raw", dict(new_props))
+        for key, sig in signals.items():
+            new_val = new_props.get(key, defaults.get(key))
+            sig.set(new_val)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        return self._get(name)
+
+    def __getitem__(self, key: str) -> Any:
+        return self._get(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        signals = object.__getattribute__(self, "_signals")
+        raw = object.__getattribute__(self, "_raw")
+        defaults_map = object.__getattribute__(self, "_defaults")
+        if key not in signals:
+            value = raw.get(key, defaults_map.get(key, default))
+            signals[key] = Signal(value)
+        return signals[key].get()
+
+    def __contains__(self, key: Any) -> bool:
+        raw = object.__getattribute__(self, "_raw")
+        return key in raw
+
+    def keys(self) -> Any:
+        raw = object.__getattribute__(self, "_raw")
+        return raw.keys()
+
+    def values(self) -> Any:
+        raw = object.__getattribute__(self, "_raw")
+        return [self._get(k) for k in raw]
+
+    def items(self) -> Any:
+        raw = object.__getattribute__(self, "_raw")
+        return [(k, self._get(k)) for k in raw]
+
+    def __iter__(self) -> Any:
+        raw = object.__getattribute__(self, "_raw")
+        return iter(raw)
+
+    def __len__(self) -> int:
+        raw = object.__getattribute__(self, "_raw")
+        return len(raw)
+
+    def __repr__(self) -> str:
+        raw = object.__getattribute__(self, "_raw")
+        return f"ReactiveProps({raw!r})"
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+            return
+        raise AttributeError("ReactiveProps is read-only. Props are updated by the parent component.")
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, dict):
+            raw = object.__getattribute__(self, "_raw")
+            return raw == other
+        if isinstance(other, ReactiveProps):
+            return object.__getattribute__(self, "_raw") == object.__getattribute__(other, "_raw")
+        return NotImplemented
 
 
 # ---------------------------------------------------------------------------
@@ -568,6 +676,7 @@ class _ComponentContext(Owner):
         "_props",
         "_props_signal",
         "_prop_signals",
+        "_reactive_props",
         "_vnode",
         "_error_handler",
     )
@@ -579,6 +688,7 @@ class _ComponentContext(Owner):
         self._props: dict = {}
         self._props_signal: Optional[Signal[Any]] = None
         self._prop_signals: Dict[str, Signal[Any]] = {}
+        self._reactive_props: Optional[ReactiveProps] = None
         self._vnode: Any = None
         self._error_handler: Optional[Callable[..., Any]] = None
 
@@ -611,17 +721,53 @@ def _get_component_ctx() -> Optional[_ComponentContext]:
     return None
 
 
+def get_owner() -> Optional[Owner]:
+    """Return the current reactive owner scope, if any.
+
+    Capture the owner before crossing async boundaries (e.g. ``await``)
+    and restore it with ``run_with_owner`` to maintain proper lifecycle
+    management.
+    """
+    return _current_owner
+
+
+def run_with_owner(owner: Optional[Owner], fn: Callable[[], T]) -> T:
+    """Run *fn* under the given ownership scope.
+
+    Useful for restoring context after an ``await`` boundary where
+    the reactive owner would otherwise be lost::
+
+        owner = get_owner()
+        data = await fetch(...)
+        run_with_owner(owner, lambda: create_effect(lambda: ...))
+    """
+    global _current_owner
+    prev = _current_owner
+    _current_owner = owner
+    try:
+        return fn()
+    finally:
+        _current_owner = prev
+
+
 # ---------------------------------------------------------------------------
 # Public primitives
 # ---------------------------------------------------------------------------
 
 
-def create_signal(value: T) -> tuple:
+def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
     """Create a reactive signal.  Returns ``(getter, setter)``.
 
     Works inside or outside components.  Inside a stateful component the
     signal is captured by the render function's closure and persists
     naturally (no cursor system needed).
+
+    The *equals* parameter controls when subscribers are notified:
+
+    - ``_DEFAULT_EQUALS`` (default) — skip notification when ``new == old``.
+    - ``False`` — always notify on every ``set()`` call.
+    - A callable ``(old, new) -> bool`` — skip notification when it
+      returns ``True``.
 
     Example::
 
@@ -630,7 +776,7 @@ def create_signal(value: T) -> tuple:
         set_count(5)
         print(count())          # 5
     """
-    sig: Signal[Any] = Signal(value)
+    sig: Signal[Any] = Signal(value, equals=equals)
     return sig.get, sig.set
 
 
@@ -717,20 +863,44 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
         raise RuntimeError("on_cleanup() must be called inside a component or create_effect()")
 
 
-def get_props() -> Callable[[], dict]:
-    """Return a reactive getter for the current component's props.
+def children(fn: Callable[[], Any]) -> Callable[[], List[Any]]:
+    """Resolve and memoize reactive children.
 
-    Useful in stateful components that need to react to parent prop changes::
+    Wraps a getter that returns children (e.g. ``lambda: props.children``)
+    and returns a memo that flattens and resolves the children list.
+    Matches SolidJS ``children()`` helper.
+    """
+
+    def _resolve(val: Any) -> List[Any]:
+        if val is None:
+            return []
+        if isinstance(val, (list, tuple)):
+            out: List[Any] = []
+            for item in val:
+                out.extend(_resolve(item))
+            return out
+        return [val]
+
+    return create_memo(lambda: _resolve(fn()))
+
+
+def get_props() -> "ReactiveProps":
+    """Return the reactive props proxy for the current component.
+
+    The returned ``ReactiveProps`` object provides reactive access
+    to individual props via attribute or dict-style access::
 
         props = get_props()
-        create_effect(lambda: print("query changed:", props()["query"]))
+        create_effect(lambda: print("name changed:", props.name))
     """
     ctx = _get_component_ctx()
     if ctx is None:
         raise RuntimeError("get_props() can only be called inside a component")
-    if ctx._props_signal is None:
-        ctx._props_signal = Signal(ctx._props)
-    return ctx._props_signal.get
+    if ctx._reactive_props is not None:
+        return ctx._reactive_props
+    rp = ReactiveProps(ctx._props)
+    ctx._reactive_props = rp
+    return rp
 
 
 # ---------------------------------------------------------------------------

@@ -1,25 +1,37 @@
 """``@component`` decorator and ``forward_ref`` for function components.
 
-The ``@component`` decorator converts each function parameter into a
-**reactive getter** backed by a Signal.  This means prop changes from a
-parent automatically propagate without boilerplate.  The component body
-always runs **once** (setup phase).  To produce dynamic output, return a
-*render function* that will be re-invoked whenever a tracked signal
-(including a prop getter) changes.
+The ``@component`` decorator provides two main features:
 
-Reactive prop getters
----------------------
-Each named parameter in the decorated function is replaced by a
-zero-argument *getter* function.  Call it to read the current value::
+1. **Kwargs calling convention** -- call a component directly with
+   keyword arguments and it returns an ``h()`` VNode::
+
+       Counter(initial=5)          # → h(Counter, {"initial": 5})
+       Card("child", title="Hi")   # → h(Card, {"title": "Hi", "children": ["child"]})
+
+2. **Automatic prop destructuring** -- named parameters are read from
+   the ``ReactiveProps`` proxy and passed as plain Python values.  For
+   **stateless** components (those that return a VNode directly), the
+   decorator wraps the body in a render function that re-reads props
+   on each render cycle, keeping the output reactive.
+
+Reactive prop access
+--------------------
+Props are plain values inside the function body — no callable getters::
 
     @component
     def Greeting(name="world"):
-        def render():
-            return p(f"Hello, {name()}!")
-        return render
+        return p(f"Hello, {name}!")   # name is a plain string
 
-The getter is backed by a ``Signal`` that the reconciler updates
-whenever the parent provides new prop values.
+For **stateful** components, setup runs once with initial values.
+Use ``get_props()`` to access the ``ReactiveProps`` proxy for
+reactive tracking inside effects or the render function::
+
+    @component
+    def Counter(initial=0):
+        count, set_count = create_signal(initial)
+        def render():
+            return div(p(f"Count: {count()}"))
+        return render
 """
 
 from __future__ import annotations
@@ -35,14 +47,14 @@ __all__ = ["component", "forward_ref"]
 
 
 def component(fn: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorator that turns function parameters into reactive prop getters.
+    """Decorator that provides kwargs calling and prop destructuring.
 
     **Stateful** -- create signals during setup and return a *render function*
     (setup runs once, render re-runs when signals change)::
 
         @component
         def Counter(initial=0):
-            count, set_count = create_signal(initial())
+            count, set_count = create_signal(initial)
             def render():
                 return div(p(f"Count: {count()}"),
                            button("+", on_click=lambda e: set_count(count() + 1)))
@@ -53,18 +65,16 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
 
         @component
         def Greeting(name="world"):
-            return p(f"Hello, {name()}!")
+            return p(f"Hello, {name}!")
 
     **Children** are available via a ``children`` parameter::
 
         @component
         def Card(title="", children=None):
-            def render():
-                kids = children() or []
-                if not isinstance(kids, list):
-                    kids = [kids]
-                return section(h3(title()), *kids)
-            return render
+            kids = children or []
+            if not isinstance(kids, list):
+                kids = [kids]
+            return section(h3(title), *kids)
 
     **Direct calls** with keyword arguments return a ``VNode``::
 
@@ -75,7 +85,7 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
 
         h(Counter, {"initial": 5})
     """
-    from .reactivity import Signal, _get_component_ctx
+    from .reactivity import ReactiveProps, _get_component_ctx
 
     sig = inspect.signature(fn)
     params = sig.parameters
@@ -89,28 +99,33 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
-            props = args[0]
+        if len(args) == 1 and isinstance(args[0], (dict, ReactiveProps)) and not kwargs:
+            props_input = args[0]
 
-            prop_signals: Dict[str, Signal] = {}
-            getter_kwargs: Dict[str, Callable[[], Any]] = {}
-            for pname in params:
-                value = props.get(pname, defaults.get(pname))
-                prop_sig: Signal = Signal(value)
-                prop_signals[pname] = prop_sig
-                getter_kwargs[pname] = prop_sig.get
+            if isinstance(props_input, ReactiveProps):
+                reactive_props = props_input
+            else:
+                reactive_props = ReactiveProps(props_input, defaults)
 
             ctx = _get_component_ctx()
             if ctx is not None:
-                ctx._prop_signals = prop_signals
+                ctx._reactive_props = reactive_props
 
-            result = fn(**getter_kwargs)
+            initial_kwargs: Dict[str, Any] = {}
+            for pname in params:
+                initial_kwargs[pname] = reactive_props.get(pname, defaults.get(pname))
+
+            result = fn(**initial_kwargs)
 
             if not callable(result):
-                _gkw = getter_kwargs
+                _rp = reactive_props
+                _params = params
 
                 def _stateless_render() -> Any:
-                    return fn(**_gkw)
+                    kw: Dict[str, Any] = {}
+                    for pn in _params:
+                        kw[pn] = _rp._get(pn)
+                    return fn(**kw)
 
                 if ctx is not None:
                     ctx._render_fn = _stateless_render

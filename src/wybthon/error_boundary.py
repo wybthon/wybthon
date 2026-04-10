@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, List
 
-from .reactivity import _get_component_ctx, create_signal, get_props
+from .reactivity import _get_component_ctx, create_signal
 from .vnode import Fragment, VNode, to_text_vnode
 
 __all__ = ["ErrorBoundary"]
 
 
-def _compute_reset_token(props: Dict[str, Any]) -> str:
+def _compute_reset_token(props: Any) -> str:
     """Derive a stable token from reset_keys/reset_key for auto-clear."""
     try:
         if "reset_keys" in props:
@@ -28,7 +28,7 @@ def _compute_reset_token(props: Dict[str, Any]) -> str:
         return ""
 
 
-def _render_fallback(err: Any, props: Dict[str, Any], reset_fn: Any) -> VNode:
+def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
     """Build the fallback VNode from the ``fallback`` prop."""
     fb = props.get("fallback")
     if callable(fb):
@@ -46,7 +46,7 @@ def _render_fallback(err: Any, props: Dict[str, Any], reset_fn: Any) -> VNode:
     return vnode
 
 
-def ErrorBoundary(props: Dict[str, Any]) -> Any:
+def ErrorBoundary(props: Any) -> Any:
     """Catch render errors in children and display a fallback.
 
     Props:
@@ -58,15 +58,13 @@ def ErrorBoundary(props: Dict[str, Any]) -> Any:
     error, set_error = create_signal(None)
     last_token: List[str] = [""]
     ctx = _get_component_ctx()
-    props_getter = get_props()
 
     def reset() -> None:
         set_error(None)
 
     def _handle_error(err: Any) -> None:
         set_error(err)
-        p = props_getter()
-        handler = p.get("on_error")
+        handler = props.get("on_error")
         if callable(handler):
             try:
                 handler(err)
@@ -77,19 +75,18 @@ def ErrorBoundary(props: Dict[str, Any]) -> Any:
         ctx._error_handler = _handle_error
 
     def render() -> VNode:
-        p = props_getter()
         err = error()
 
-        token = _compute_reset_token(p)
+        token = _compute_reset_token(props)
         if token != last_token[0] and err is not None:
             set_error(None)
             err = None
         last_token[0] = token
 
         if err is not None:
-            return _render_fallback(err, p, reset)
+            return _render_fallback(err, props, reset)
 
-        children: List[Any] = p.get("children", [])
+        children: List[Any] = props.get("children", [])
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)

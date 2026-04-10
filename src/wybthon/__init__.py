@@ -28,20 +28,24 @@ from .forms import (
     validate_form,
 )
 from .reactivity import (
+    ReactiveProps,
     Resource,
     batch,
+    children,
     create_effect,
     create_memo,
     create_resource,
     create_root,
     create_selector,
     create_signal,
+    get_owner,
     index_array,
     map_array,
     merge_props,
     on,
     on_cleanup,
     on_mount,
+    run_with_owner,
     split_props,
     untrack,
 )
@@ -158,6 +162,10 @@ if _IN_BROWSER:
         "index_array",
         "create_selector",
         "Resource",
+        "ReactiveProps",
+        "get_owner",
+        "run_with_owner",
+        "children",
         # Events
         "DomEvent",
         # Context
@@ -287,6 +295,10 @@ else:
         "index_array",
         "create_selector",
         "Resource",
+        "ReactiveProps",
+        "get_owner",
+        "run_with_owner",
+        "children",
         # Context
         "Context",
         "create_context",

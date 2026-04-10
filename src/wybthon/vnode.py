@@ -47,6 +47,7 @@ class VNode:
     subtree: Optional[VNode] = None
     render_effect: Optional[Computation] = None
     component_ctx: Optional[Any] = None
+    _frag_end: Optional[Element] = None
 
 
 def to_text_vnode(value: Any) -> VNode:
@@ -68,11 +69,18 @@ def flatten_children(items: Iterable[Any]) -> List[Any]:
 
 
 def normalize_children(children: List[ChildType]) -> List[VNode]:
-    """Normalize mixed children into a list of VNodes (converting strings)."""
+    """Normalize mixed children into a list of VNodes (converting strings).
+
+    Fragment children are flattened into the parent list so that
+    the reconciler always works with a flat child list for element nodes.
+    """
     out: List[VNode] = []
     for ch in children:
         if isinstance(ch, VNode):
-            out.append(ch)
+            if ch.tag == "_fragment":
+                out.extend(normalize_children(ch.children))
+            else:
+                out.append(ch)
         else:
             out.append(to_text_vnode(ch))
     return out
@@ -93,10 +101,12 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
 
 
 def Fragment(*args: Any) -> VNode:
-    """Group multiple children without adding a visible wrapper to the DOM.
+    """Group multiple children without adding extra DOM elements.
 
-    Uses a ``<span style="display:contents">`` so the wrapper is invisible to
-    CSS layout while keeping the VDOM diffing algorithm simple.
+    Unlike the previous ``<span style="display:contents">`` approach,
+    fragments now use comment-node markers and mount children directly
+    into the parent container.  This avoids polluting the DOM, breaking
+    CSS selectors like ``:first-child``, or affecting layout.
 
     Can be called directly::
 
@@ -112,7 +122,7 @@ def Fragment(*args: Any) -> VNode:
         children = kids if isinstance(kids, list) else [kids]
     else:
         children = list(args)
-    return h("span", {"style": {"display": "contents"}}, *children)
+    return VNode(tag="_fragment", props={}, children=children)
 
 
 def memo(

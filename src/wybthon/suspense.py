@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, List
 
-from .reactivity import create_signal, get_props
+from .reactivity import create_signal
 from .vnode import Fragment, VNode, to_text_vnode
 
 __all__ = ["Suspense"]
 
 
-def Suspense(props: Dict[str, Any]) -> Any:
+def Suspense(props: Any) -> Any:
     """Render a fallback while one or more resources are loading.
 
     Props:
@@ -20,9 +20,8 @@ def Suspense(props: Dict[str, Any]) -> Any:
       - children: child VNodes to render when not loading
     """
     has_completed, set_completed = create_signal(False)
-    props_getter = get_props()
 
-    def _normalize_resources(p: Dict[str, Any]) -> List[Any]:
+    def _normalize_resources(p: Any) -> List[Any]:
         res = p.get("resources")
         if res is None and "resource" in p:
             res = [p.get("resource")]
@@ -44,13 +43,13 @@ def Suspense(props: Dict[str, Any]) -> Any:
                 continue
         return False
 
-    def _render_children(p: Dict[str, Any]) -> VNode:
+    def _render_children(p: Any) -> VNode:
         children: List[Any] = p.get("children", [])
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)
 
-    def _render_fallback(p: Dict[str, Any]) -> VNode:
+    def _render_fallback(p: Any) -> VNode:
         fb = p.get("fallback")
         vnode: Any
         if callable(fb):
@@ -65,18 +64,17 @@ def Suspense(props: Dict[str, Any]) -> Any:
         return vnode
 
     def render() -> VNode:
-        p = props_getter()
-        resources = _normalize_resources(p)
+        resources = _normalize_resources(props)
         if not resources:
-            return _render_children(p)
-        keep_previous = bool(p.get("keep_previous", False))
+            return _render_children(props)
+        keep_previous = bool(props.get("keep_previous", False))
         loading = _is_loading(resources)
         if loading:
             if keep_previous and has_completed():
-                return _render_children(p)
-            return _render_fallback(p)
+                return _render_children(props)
+            return _render_fallback(props)
         if not has_completed():
             set_completed(True)
-        return _render_children(p)
+        return _render_children(props)
 
     return render

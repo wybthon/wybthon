@@ -118,21 +118,22 @@ def test_select_with_options(browser_stubs):
 # ── Fragment tests ──
 
 
-def test_fragment_creates_span_with_display_contents(browser_stubs):
+def test_fragment_creates_fragment_vnode(browser_stubs):
     _, vdom_mod, _ = _load_modules()
     frag = vdom_mod.Fragment(
         vdom_mod.h("p", {}, "A"),
         vdom_mod.h("p", {}, "B"),
     )
-    assert frag.tag == "span"
-    assert frag.props.get("style") == {"display": "contents"}
+    assert frag.tag == "_fragment"
+    assert frag.props == {}
     assert len(frag.children) == 2
 
 
 def test_fragment_with_no_children(browser_stubs):
     _, vdom_mod, _ = _load_modules()
     frag = vdom_mod.Fragment()
-    assert frag.tag == "span"
+    assert frag.tag == "_fragment"
+    assert frag.props == {}
     assert len(frag.children) == 0
 
 
@@ -142,7 +143,8 @@ def test_fragment_called_as_component(browser_stubs):
     child_a = vdom_mod.h("p", {}, "A")
     child_b = vdom_mod.h("p", {}, "B")
     frag = vdom_mod.Fragment({"children": [child_a, child_b]})
-    assert frag.tag == "span"
+    assert frag.tag == "_fragment"
+    assert frag.props == {}
     assert len(frag.children) == 2
 
 
@@ -154,12 +156,14 @@ def test_fragment_renders_to_dom(browser_stubs):
         vdom_mod.h("p", {}, "Second"),
     )
     vdom_mod.render(tree, root)
-    el = root.element.childNodes[0]
-    assert el.tag == "span"
-    assert el.style._props.get("display") == "contents"
-    assert len(el.childNodes) == 2
-    assert el.childNodes[0].childNodes[0].nodeValue == "First"
-    assert el.childNodes[1].childNodes[0].nodeValue == "Second"
+    children = root.element.childNodes
+    assert len(children) == 4  # comment_start, p, p, comment_end
+    assert getattr(children[0], "_is_comment", False) is True
+    assert children[1].tag == "p"
+    assert children[1].childNodes[0].nodeValue == "First"
+    assert children[2].tag == "p"
+    assert children[2].childNodes[0].nodeValue == "Second"
+    assert getattr(children[3], "_is_comment", False) is True
 
 
 def test_fragment_in_function_component(browser_stubs):
@@ -174,9 +178,12 @@ def test_fragment_in_function_component(browser_stubs):
 
     tree = vdom_mod.h(MyComp, {})
     vdom_mod.render(tree, root)
-    span_el = root.element.childNodes[0]
-    assert span_el.tag == "span"
-    assert len(span_el.childNodes) == 2
+    children = root.element.childNodes
+    assert len(children) == 4  # comment_start, h1, p, comment_end
+    assert getattr(children[0], "_is_comment", False) is True
+    assert children[1].tag == "h1"
+    assert children[2].tag == "p"
+    assert getattr(children[3], "_is_comment", False) is True
 
 
 # ── _is_event_prop fix tests ──

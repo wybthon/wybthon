@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .context import Provider, create_context, use_context
-from .reactivity import Signal, get_props
+from .reactivity import Signal
 from .router_core import resolve as _resolve_core
 from .vnode import VNode, h
 
@@ -158,7 +158,7 @@ def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optiona
 BasePath = create_context("")
 
 
-def Router(props: Dict[str, Any]) -> Any:
+def Router(props: Any) -> Any:
     """Function component that renders the matched route's component.
 
     Props:
@@ -166,12 +166,10 @@ def Router(props: Dict[str, Any]) -> Any:
       - base_path: str
       - not_found: component to render on 404
     """
-    props_getter = get_props()
 
     def render() -> VNode:
-        p = props_getter()
-        routes: List[Route] = p.get("routes", [])
-        base_path: str = p.get("base_path", "")
+        routes: List[Route] = props.get("routes", [])
+        base_path: str = props.get("base_path", "")
         path = current_path.get()
 
         if "?" in path:
@@ -183,7 +181,7 @@ def Router(props: Dict[str, Any]) -> Any:
 
         resolved = _resolve(routes, pathname, base_path)
         if resolved is None:
-            not_found = p.get("not_found")
+            not_found = props.get("not_found")
             if not_found is not None:
                 return h(not_found, {"query": query, "params": {}})
             return h("div", {}, "Not Found")

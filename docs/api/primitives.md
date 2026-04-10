@@ -8,3 +8,7 @@
         - create_memo
         - on_mount
         - on_cleanup
+        - get_props
+        - children
+        - get_owner
+        - run_with_owner

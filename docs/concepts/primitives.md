@@ -16,7 +16,7 @@ from wybthon import component, create_signal, div, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial())
+    count, set_count = create_signal(initial)
 
     def render():
         return div(
@@ -24,6 +24,8 @@ def Counter(initial: int = 0):
         )
     return render
 ```
+
+Optional keyword **`equals`** controls when subscribers run: default skips notification when the new value compares equal to the old (`==`); `equals=False` notifies on every `set()`; `equals=comparator` with `comparator(old, new) -> bool` skips when the comparator returns `True` (treat as “same”).
 
 The setter accepts a plain value:
 
@@ -129,21 +131,32 @@ def Timer():
 
 #### Reactive props
 
-With `@component`, each parameter is automatically a reactive getter.
-Call the parameter with `()` to read its current value — no need for
-`get_props()`:
+With `@component`, parameters are **plain Python values**. Stateless
+components re-run their body with fresh values when the parent updates
+props. **Stateful** components run setup once: parameter values are the
+initial snapshot only.
+
+For reactive reads of individual props after setup (effects, memos, or
+when you need the latest prop inside a long-lived setup callback), call
+`get_props()` once and use the **`ReactiveProps`** proxy — `props.name` or
+`props["name"]` tracks that prop:
 
 ```python
-from wybthon import component, create_effect
+from wybthon import component, create_effect, get_props
 
 @component
 def Search(query: str = ""):
-    create_effect(lambda: print("query changed:", query()))
+    props = get_props()
+    create_effect(lambda: print("query changed:", props.query))
 
     def render():
         return ...
     return render
 ```
+
+See also: [Reactivity API](../api/reactivity.md) for `get_owner` /
+`run_with_owner` (async boundaries) and `children(fn)` for memoized
+children resolution.
 
 ---
 

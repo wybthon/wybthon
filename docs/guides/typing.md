@@ -16,7 +16,7 @@ Guidelines:
 #### Examples
 
 - Reactivity API
-  - `create_signal(value: T) -> tuple[Callable[[], T], Callable[[T], None]]`
+  - `create_signal(value: T, *, equals: Any = ...) -> tuple[Callable[[], T], Callable[[T], None]]` — `equals` optional: default equality, `False` for always notify, or `(old, new) -> bool` “same value” predicate
   - `create_memo(fn: Callable[[], T]) -> Callable[[], T]`
   - `create_effect(fn: Callable[[], Any]) -> Computation`
   - `create_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`

@@ -8,10 +8,11 @@
   - `Element`, `Ref`
   - `VNode`, `h`, `render`
 - Components
-  - `ErrorBoundary`, `Suspense`
+  - `component`, `forward_ref`, `ErrorBoundary`, `Suspense`
 - Reactivity
-  - `create_signal`, `create_effect`, `create_memo`, `batch`
+  - `create_signal` (optional `equals=`), `create_effect`, `create_memo`, `batch`
   - `on_mount`, `on_cleanup`
+  - `ReactiveProps`, `get_props`, `children` (memoized children helper), `get_owner`, `run_with_owner`
   - `Resource`, `create_resource`
 - Context
   - `Context`, `create_context`, `use_context`, `Provider`

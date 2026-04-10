@@ -125,6 +125,11 @@ class StubDocument:
     def createTextNode(self, text):
         return StubNode(text=str(text))
 
+    def createComment(self, text=""):
+        node = StubNode(text=str(text))
+        node._is_comment = True
+        return node
+
     def addEventListener(self, event_type, proxy):
         self._listeners.setdefault(event_type, set()).add(proxy)
 

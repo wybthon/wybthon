@@ -99,14 +99,22 @@ def test_h_none_children():
 
 def test_fragment():
     frag = Fragment("a", "b")
-    assert frag.tag == "span"
-    assert frag.props.get("style") == {"display": "contents"}
+    assert frag.tag == "_fragment"
+    assert frag.props == {}
     assert len(frag.children) == 2
 
 
 def test_fragment_from_props():
     frag = Fragment({"children": ["x", "y"]})
+    assert frag.tag == "_fragment"
+    assert frag.props == {}
     assert len(frag.children) == 2
+
+
+def test_normalize_children_flattens_fragments():
+    frag = Fragment(VNode(tag="p"), VNode(tag="span"))
+    result = normalize_children([VNode(tag="div"), frag, VNode(tag="a")])
+    assert [v.tag for v in result] == ["div", "p", "span", "a"]
 
 
 def test_memo_basic():

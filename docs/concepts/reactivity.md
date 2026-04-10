@@ -12,7 +12,7 @@ create_effect(lambda: print("double:", double()))
 set_count(1)
 ```
 
-- `create_signal(value)` → `(getter, setter)` tuple
+- `create_signal(value, *, equals=...)` → `(getter, setter)` tuple (`equals` controls notification; see [Reactivity API](../api/reactivity.md))
 - `create_memo(fn)` → derived getter; re-computes only when deps change
 - `create_effect(fn)` → runs and re-runs on dependencies; supports previous value
 - `batch()` → batch updates as context manager or `batch(fn)` with callback
@@ -165,6 +165,11 @@ Root Owner
 are disposed first, then its own cleanup callbacks run.  This guarantees
 that inner scopes are torn down before outer ones.
 
+**Async boundaries:** `await` drops the current reactive owner. Use
+`get_owner()` before suspending and `run_with_owner(owner, fn)` when
+scheduling work after `await` so effects and memos attach to the correct
+scope (see [Reactivity API](../api/reactivity.md)).
+
 When a `Computation` re-runs (due to a signal change), it disposes all
 of its children and runs its own cleanups *before* re-executing its
 function.  Any effects created during the new execution become fresh
@@ -186,6 +191,8 @@ component context, not the render effect.  Render effects are torn down
 every time the render function re-runs.
 
 ```python
+from wybthon import component, create_effect, create_signal, p
+
 @component
 def Timer(interval: int = 1000):
     count, set_count = create_signal(0)

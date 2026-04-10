@@ -148,19 +148,17 @@ def Show(props_or_when: Any = None, children_pos: Any = None, /, **kwargs: Any) 
     return h(_ShowComponent, props)
 
 
-def _ShowComponent(props: Dict[str, Any]) -> Any:
+def _ShowComponent(props: Any) -> Any:
     """Internal component backing ``Show``."""
     import wybthon.reactivity as _rx
 
-    props_getter = _rx.get_props()
     comp_ctx = _rx._get_component_ctx()
 
     _branch: List[Optional[str]] = [None]
     _branch_owner: List[Optional[_rx.Owner]] = [None]
 
     def render() -> VNode:
-        p = props_getter()
-        condition = _eval(p.get("when"))
+        condition = _eval(props.get("when"))
         new_branch = "truthy" if condition else "falsy"
 
         if _branch[0] != new_branch:
@@ -173,12 +171,12 @@ def _ShowComponent(props: Dict[str, Any]) -> Any:
             _branch[0] = new_branch
 
         if condition:
-            children = p.get("children")
+            children = props.get("children")
             if children is None:
                 return to_text_vnode("")
             return _render_slot(children, condition)
 
-        fb = p.get("fallback")
+        fb = props.get("fallback")
         if fb is None:
             return to_text_vnode("")
         return _render_slot(fb)
@@ -226,26 +224,24 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
     return h(_ForComponent, props)
 
 
-def _ForComponent(props: Dict[str, Any]) -> Any:
+def _ForComponent(props: Any) -> Any:
     """Internal component backing ``For`` with per-item reactive scopes."""
     import wybthon.reactivity as _rx
 
-    props_getter = _rx.get_props()
     comp_ctx = _rx._get_component_ctx()
 
     # (item_ref, owner, item_signal, index_signal)
     _cache: List[Any] = []
 
     def render() -> VNode:
-        p = props_getter()
-        items_val = _eval(p.get("each"))
-        children_fn = p.get("children")
+        items_val = _eval(props.get("each"))
+        children_fn = props.get("children")
 
         if not items_val:
             for entry in _cache:
                 entry[1].dispose()
             _cache.clear()
-            fb = p.get("fallback")
+            fb = props.get("fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
         if children_fn is None:
@@ -330,26 +326,24 @@ def Index(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any)
     return h(_IndexComponent, props)
 
 
-def _IndexComponent(props: Dict[str, Any]) -> Any:
+def _IndexComponent(props: Any) -> Any:
     """Internal component backing ``Index`` with per-index reactive scopes."""
     import wybthon.reactivity as _rx
 
-    props_getter = _rx.get_props()
     comp_ctx = _rx._get_component_ctx()
 
     # (owner, item_signal)
     _slots: List[Any] = []
 
     def render() -> VNode:
-        p = props_getter()
-        items_val = _eval(p.get("each"))
-        children_fn = p.get("children")
+        items_val = _eval(props.get("each"))
+        children_fn = props.get("children")
 
         if not items_val:
             for slot in _slots:
                 slot[0].dispose()
             _slots.clear()
-            fb = p.get("fallback")
+            fb = props.get("fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
         if children_fn is None:
@@ -446,21 +440,17 @@ def Switch(*branches: Any, fallback: Any = None, **kwargs: Any) -> Any:
     return h(_SwitchComponent, props)
 
 
-def _SwitchComponent(props: Dict[str, Any]) -> Any:
+def _SwitchComponent(props: Any) -> Any:
     """Internal component backing ``Switch``."""
-    from .reactivity import get_props
-
-    props_getter = get_props()
 
     def render() -> VNode:
-        p = props_getter()
-        branches: List[_MatchResult] = p.get("branches", [])
+        branches: List[_MatchResult] = props.get("branches", [])
         for branch in branches:
             condition = _eval(branch.when)
             if condition:
                 return _render_slot(branch.children)
 
-        fb = p.get("fallback")
+        fb = props.get("fallback")
         if fb is None:
             return to_text_vnode("")
         return _render_slot(fb)
@@ -498,18 +488,14 @@ def Dynamic(
     return h(_DynamicComponent, merged)
 
 
-def _DynamicComponent(props: Dict[str, Any]) -> Any:
+def _DynamicComponent(props: Any) -> Any:
     """Internal component backing ``Dynamic``."""
-    from .reactivity import get_props
-
-    props_getter = get_props()
 
     def render() -> VNode:
-        p = props_getter()
-        comp = _eval(p.get("component"))
+        comp = _eval(props.get("component"))
         if comp is None:
             return to_text_vnode("")
-        inner_props: Dict[str, Any] = {k: v for k, v in p.items() if k != "component"}
+        inner_props: Dict[str, Any] = {k: v for k, v in props.items() if k != "component"}
         children = inner_props.pop("children", [])
         if not isinstance(children, list):
             children = [children]

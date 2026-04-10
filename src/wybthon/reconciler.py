@@ -23,6 +23,7 @@ from .dom import Element
 from .events import remove_all_for
 from .props import apply_props, attach_ref, detach_ref
 from .reactivity import (
+    ReactiveProps,
     _ComponentContext,
     _get_component_ctx,
     effect,
@@ -67,10 +68,79 @@ def _create_dom(vnode: VNode) -> Element:
     return el
 
 
+def _get_next_sibling(vnode: VNode) -> Any:
+    """Get the DOM node immediately after all of this vnode's DOM nodes."""
+    if vnode.subtree is not None:
+        return _get_next_sibling(vnode.subtree)
+    if vnode.tag == "_fragment" and vnode._frag_end is not None:
+        return vnode._frag_end.element.nextSibling
+    if vnode.el is not None:
+        return vnode.el.element.nextSibling
+    return None
+
+
+def _get_first_dom(vnode: VNode) -> Any:
+    """Get the first DOM node belonging to this vnode."""
+    if vnode.subtree is not None:
+        return _get_first_dom(vnode.subtree)
+    if vnode.el is not None:
+        return vnode.el.element
+    return None
+
+
+def _get_dom_nodes(vnode: VNode) -> List[Any]:
+    """Get all top-level DOM nodes belonging to this vnode."""
+    if vnode.subtree is not None:
+        return _get_dom_nodes(vnode.subtree)
+    if vnode.tag == "_fragment":
+        nodes: List[Any] = []
+        if vnode.el is not None:
+            nodes.append(vnode.el.element)
+        for child in normalize_children(vnode.children):
+            nodes.extend(_get_dom_nodes(child))
+        if vnode._frag_end is not None:
+            nodes.append(vnode._frag_end.element)
+        return nodes
+    if vnode.el is not None:
+        return [vnode.el.element]
+    return []
+
+
+def _mount_fragment(vnode: VNode, container: Element, anchor: Any = None) -> Element:
+    """Mount a fragment using comment markers, children directly in container."""
+    start_comment = document.createComment("")
+    start_el = Element(node=start_comment)
+    vnode.el = start_el
+
+    if anchor is None:
+        container.element.appendChild(start_comment)
+    else:
+        container.element.insertBefore(start_comment, anchor)
+
+    end_comment = document.createComment("")
+    end_el = Element(node=end_comment)
+    vnode._frag_end = end_el
+
+    if anchor is None:
+        container.element.appendChild(end_comment)
+    else:
+        container.element.insertBefore(end_comment, anchor)
+
+    norm_children = normalize_children(vnode.children)
+    vnode.children = cast(List[ChildType], norm_children)
+    for child in norm_children:
+        mount(child, container, end_comment)
+
+    return start_el
+
+
 def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> Element:
     """Mount a VNode (or string) into the container, returning its element."""
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
+
+    if vnode.tag == "_fragment":
+        return _mount_fragment(vnode, container, anchor)
 
     if callable(vnode.tag):
         return _mount_component(vnode, container, anchor)
@@ -83,19 +153,8 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
     return el
 
 
-def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
-    """Mount a function component using the signals-first ownership model.
-
-    The component function is called once (setup phase).  If it returns a
-    *callable*, that callable is treated as the render function and wrapped
-    in a reactive ``effect`` so it re-runs when signals change (stateful).
-    If it returns a ``VNode`` directly, the component is treated as
-    stateless and the entire function is re-called on signal changes.
-
-    The component's ``_ComponentContext`` is placed in the ownership tree
-    as a child of the nearest parent component context, ensuring proper
-    lifecycle management and context propagation.
-    """
+def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> Element:
+    """Mount a function component using the signals-first ownership model."""
     import wybthon.reactivity as _rx
 
     comp_fn = vnode.tag
@@ -105,6 +164,9 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
     ctx._props = vnode.props
     ctx._vnode = vnode
     vnode.component_ctx = ctx
+
+    comp_defaults = getattr(comp_fn, "_wyb_defaults", {})
+    ctx._reactive_props = ReactiveProps(vnode.props, comp_defaults)
 
     parent_ctx = _get_component_ctx()
     if parent_ctx is not None:
@@ -124,15 +186,10 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
         cur_vnode = _ctx._vnode
 
         if not setup_done[0]:
-            # -- first run: setup + initial render --
-            # Override _current_owner so that effects/cleanups created
-            # during setup are owned by the component context (not the
-            # render effect).  Keep _current_computation unchanged so
-            # signal reads are still tracked by the render effect.
             prev_owner = _rx._current_owner
             _rx._current_owner = _ctx
             try:
-                result = _comp_fn(_ctx._props)
+                result = _comp_fn(_ctx._reactive_props)
             finally:
                 _rx._current_owner = prev_owner
 
@@ -141,6 +198,13 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
                 sub_tree = result()
             else:
                 sub_tree = result
+                if _ctx._render_fn is None:
+                    _rp = _ctx._reactive_props
+
+                    def _stateless_render() -> Any:
+                        return _comp_fn(_rp)
+
+                    _ctx._render_fn = _stateless_render
 
             if not isinstance(sub_tree, VNode):
                 sub_tree = to_text_vnode(sub_tree)
@@ -168,14 +232,13 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
 
             setup_done[0] = True
         else:
-            # -- subsequent runs: re-render (signal change) --
             if _ctx._render_fn is not None:
                 sub_tree = _ctx._render_fn()
             else:
                 prev_owner = _rx._current_owner
                 _rx._current_owner = _ctx
                 try:
-                    sub_tree = _comp_fn(_ctx._props)
+                    sub_tree = _comp_fn(_ctx._reactive_props)
                 finally:
                     _rx._current_owner = prev_owner
 
@@ -218,10 +281,26 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any) -> Element:
     return vnode.el
 
 
+def _unmount_fragment(vnode: VNode) -> None:
+    """Unmount a fragment: dispose children, remove comment markers."""
+    for child in normalize_children(vnode.children):
+        if isinstance(child, VNode):
+            unmount(child)
+    if vnode.el is not None and vnode.el.element.parentNode is not None:
+        vnode.el.element.parentNode.removeChild(vnode.el.element)
+    if vnode._frag_end is not None and vnode._frag_end.element.parentNode is not None:
+        vnode._frag_end.element.parentNode.removeChild(vnode._frag_end.element)
+
+
 def unmount(vnode: VNode) -> None:
     """Unmount a VNode and dispose associated resources and effects."""
     if vnode.el is None:
         return
+
+    if vnode.tag == "_fragment":
+        _unmount_fragment(vnode)
+        return
+
     detach_ref(vnode.props)
     try:
         remove_all_for(vnode.el)
@@ -261,7 +340,7 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
         return
 
     if not _same_type(old, new):
-        anchor = old.el.element.nextSibling if (old.el is not None) else None
+        anchor = _get_next_sibling(old)
         unmount(old)
         mount(new, container, anchor)
         return
@@ -273,6 +352,10 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
             new_text = new.props.get("nodeValue", "")
             if old_text != new_text:
                 new.el.element.nodeValue = new_text
+        return
+
+    if old.tag == "_fragment" and new.tag == "_fragment":
+        _patch_fragment(old, new, container)
         return
 
     assert old.el is not None
@@ -287,6 +370,90 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
     _patch_children(old, new)
 
 
+def _patch_fragment(old: VNode, new: VNode, container: Element) -> None:
+    """Patch two fragment VNodes in place."""
+    new.el = old.el
+    new._frag_end = old._frag_end
+
+    old_children = normalize_children(old.children)
+    new_children = normalize_children(new.children)
+    new.children = cast(List[ChildType], new_children)
+
+    end_marker = new._frag_end.element if new._frag_end is not None else None
+
+    old_key_to_index: Dict[Union[str, int], int] = {}
+    for i, ch in enumerate(old_children):
+        if ch.key is not None:
+            old_key_to_index[ch.key] = i
+
+    used_old: List[bool] = [False] * len(old_children)
+    sources: List[int] = [-1] * len(new_children)
+
+    for i, new_child in enumerate(new_children):
+        if new_child.key is not None and new_child.key in old_key_to_index:
+            idx = old_key_to_index[new_child.key]
+            sources[i] = idx
+            used_old[idx] = True
+            patch(old_children[idx], new_child, container)
+        else:
+            for j, oc in enumerate(old_children):
+                if used_old[j]:
+                    continue
+                if oc.key is None and _same_type(oc, new_child):
+                    sources[i] = j
+                    used_old[j] = True
+                    patch(oc, new_child, container)
+                    break
+
+    n = len(new_children)
+    tails: List[int] = []
+    tails_idx: List[int] = []
+    prev_idx: List[int] = [-1] * n
+    for i in range(n):
+        s = sources[i]
+        if s == -1:
+            continue
+        pos = bisect_left(tails, s)
+        if pos == len(tails):
+            tails.append(s)
+            tails_idx.append(i)
+        else:
+            tails[pos] = s
+            tails_idx[pos] = i
+        prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
+
+    lis_set: Set[int] = set()
+    k = tails_idx[-1] if tails_idx else -1
+    while k != -1:
+        lis_set.add(k)
+        k = prev_idx[k]
+
+    next_anchor_node = end_marker
+    for i in range(n - 1, -1, -1):
+        new_child = new_children[i]
+        s = sources[i]
+        if s == -1:
+            try:
+                mount(new_child, container, next_anchor_node)
+                next_anchor_node = _get_first_dom(new_child)
+            except Exception as e:
+                log_error(f"Failed to mount fragment child at index {i}", e)
+        else:
+            first_dom = _get_first_dom(new_child)
+            if first_dom is not None:
+                if i not in lis_set:
+                    for dom_node in _get_dom_nodes(new_child):
+                        try:
+                            container.element.insertBefore(dom_node, next_anchor_node)
+                        except Exception as e:
+                            log_error(f"Failed to reorder fragment child at index {i}", e)
+                next_anchor_node = first_dom
+
+    for j, oc in enumerate(old_children):
+        if not used_old[j]:
+            unmount(oc)
+
+
 def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     """Patch a function component using the signals-first model."""
     import wybthon.reactivity as _rx
@@ -294,7 +461,6 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     ctx = old.component_ctx
     is_provider = getattr(new.tag, "_wyb_provider", False)
 
-    # -- memo check --
     if getattr(new.tag, "_wyb_memo", False):
         compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
         old_props = ctx._props if ctx is not None else {}
@@ -308,9 +474,10 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
             return
 
     if ctx is not None and ctx._render_fn is not None:
-        # -- REACTIVE: transfer context, update prop signals --
         ctx._props = new.props
-        if ctx._prop_signals:
+        if ctx._reactive_props is not None:
+            ctx._reactive_props._update(new.props)
+        elif ctx._prop_signals:
             defaults = getattr(new.tag, "_wyb_defaults", {})
             for name, sig in ctx._prop_signals.items():
                 sig.set(new.props.get(name, defaults.get(name)))
@@ -331,7 +498,6 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
         new.el = old.el
         return
 
-    # -- STATELESS: re-call component with new props --
     if ctx is not None:
         ctx._props = new.props
         ctx._vnode = new
@@ -340,10 +506,13 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
         new.subtree = old.subtree
         new.el = old.el
 
+        if ctx._reactive_props is not None:
+            ctx._reactive_props._update(new.props)
+
         prev_owner = _rx._current_owner
         _rx._current_owner = ctx
         try:
-            result = new.tag(new.props)  # type: ignore[operator]
+            result = new.tag(ctx._reactive_props)  # type: ignore[operator]
         finally:
             _rx._current_owner = prev_owner
 

@@ -12,19 +12,21 @@ from wybthon import component, div, h2
 
 @component
 def Hello(name: str = "world"):
-    return h2(f"Hello, {name()}!", class_name="greeting")
+    return h2(f"Hello, {name}!", class_name="greeting")
 ```
 
 Props become regular Python parameters with type annotations and defaults.
-This makes components self-documenting and enables static type checking.
+Each parameter is a **plain value** (not a getter you call with `()`). This makes components self-documenting and enables static type checking.
 
 **Stateless** components return a `VNode` directly and re-render when the
 parent passes new props:
 
 ```python
+from wybthon import component, p
+
 @component
 def Greeting(name: str = "world"):
-    return p(f"Hello, {name()}!")
+    return p(f"Hello, {name}!")
 ```
 
 **Stateful** components create signals during setup and return a *render
@@ -35,7 +37,7 @@ from wybthon import button, component, create_signal, div, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial())
+    count, set_count = create_signal(initial)
 
     def render():
         return div(
@@ -45,16 +47,17 @@ def Counter(initial: int = 0):
     return render
 ```
 
-**Children** are received via a `children` parameter:
+**Children** are received via a `children` parameter as a plain vnode, list, or `None`:
 
 ```python
 from wybthon import component, h3, section
 
 @component
 def Card(title: str = "", children=None):
-    kids = children()
-    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
-    return section(h3(title()), *kids, class_name="card")
+    kids = children or []
+    if not isinstance(kids, list):
+        kids = [kids]
+    return section(h3(title), *kids, class_name="card")
 ```
 
 **Direct calls** with keyword args return a `VNode`, so you can compose
@@ -103,12 +106,15 @@ tree tracks which owner is active at the time `create_effect` or
 `create_memo` is called.
 
 ```python
+from wybthon import component, create_effect, create_signal, get_props, li, ul
+
 @component
 def SearchResults(query: str = ""):
+    props = get_props()
     results, set_results = create_signal([])
 
     # Setup effect — survives re-renders, disposed on unmount.
-    create_effect(lambda: print("query changed:", query()))
+    create_effect(lambda: print("query changed:", props.query))
 
     def render():
         # Render effect — disposed on each re-render.
@@ -139,7 +145,7 @@ The HTML helpers accept **children as positional arguments** and **props as keyw
 
 #### Fragment
 
-Use `Fragment` to group children without adding a visible wrapper element:
+Use `Fragment` to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses **empty comment nodes** as start/end markers (not a `display: contents` wrapper), so fragments do not pollute the DOM or break CSS selectors that expect a certain element structure.
 
 ```python
 from wybthon import Fragment, h1, p
@@ -162,7 +168,7 @@ from wybthon import component, memo, h
 
 @component
 def ExpensiveList(items=None):
-    its = items() or []
+    its = items or []
     return h("ul", {}, *[h("li", {}, str(i)) for i in its])
 
 MemoList = memo(ExpensiveList)

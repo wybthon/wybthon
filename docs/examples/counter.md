@@ -7,7 +7,7 @@ from wybthon import button, component, create_signal, div, on_mount, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial())
+    count, set_count = create_signal(initial)
 
     on_mount(lambda: print("Counter mounted with initial count:", count()))
 

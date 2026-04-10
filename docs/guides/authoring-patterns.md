@@ -12,23 +12,24 @@ from wybthon import component, h2
 
 @component
 def Hello(name: str = "world", greeting: str = "Hello"):
-    return h2(f"{greeting()}, {name()}!")
+    return h2(f"{greeting}, {name}!")
 ```
 
-- Props become regular Python parameters with defaults and type annotations.
+- Props become regular Python parameters with defaults and type annotations. Each is a **plain value** (not a getter).
 - Missing props use the default value from the signature.
 - Extra props not in the signature are ignored.
 
-Children handling with `@component` (children is also a getter):
+Children handling with `@component` — the `children` parameter is a **plain** vnode, list, or `None` (import the `children()` *helper* from `wybthon` under another name if you need memoized reactive resolution; see [Reactivity](../api/reactivity.md)):
 
 ```python
 from wybthon import component, h3, section
 
 @component
 def Card(title: str = "", children=None):
-    kids = children()
-    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
-    return section(h3(title()), *kids, class_name="card")
+    kids = children or []
+    if not isinstance(kids, list):
+        kids = [kids]
+    return section(h3(title), *kids, class_name="card")
 ```
 
 Direct calls return VNodes for composition without `h()`:
@@ -45,7 +46,7 @@ from wybthon import button, component, create_signal, div, on_mount, p
 
 @component
 def Counter(initial: int = 0):
-    count, set_count = create_signal(initial())
+    count, set_count = create_signal(initial)
 
     on_mount(lambda: print(f"Counter mounted with count: {count()}"))
 
@@ -87,22 +88,27 @@ def Card(props):
 With `@component`, props and defaults are built into the function signature:
 
 ```python
+from wybthon import component, img
+
 @component
 def Avatar(src: str = "", alt: str = "avatar", size: int = 48):
-    return img(src=src(), alt=alt(), width=str(size()), height=str(size()))
+    return img(src=src, alt=alt, width=str(size), height=str(size))
 ```
 
 With traditional functions, prefer `props.get("key", default)` when reading optional values. For required props, consider simple guards at the top of `render`.
 
 #### Passing and using children
 
-With `@component`, children come via the `children` parameter (a getter):
+With `@component`, children come via the `children` parameter as a plain value:
 
 ```python
+from wybthon import component, div
+
 @component
 def Layout(children=None):
-    kids = children()
-    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
+    kids = children or []
+    if not isinstance(kids, list):
+        kids = [kids]
     return div(*kids, class_name="layout")
 ```
 
@@ -132,8 +138,9 @@ def ThemeLabel():
 
 @component
 def Layout(children=None):
-    kids = children()
-    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
+    kids = children or []
+    if not isinstance(kids, list):
+        kids = [kids]
     return h("div", {}, h(Provider, {"context": Theme, "value": "dark"}, kids))
 ```
 
@@ -156,13 +163,14 @@ Both styles interoperate seamlessly and can be composed together.
 1) Composition via children (`@component`)
 
 ```python
-from wybthon import component, h, h3, p, section
+from wybthon import component, div, h3, p, section
 
 @component
 def Card(title: str = "", children=None):
-    kids = children()
-    kids = kids if isinstance(kids, list) else ([kids] if kids else [])
-    return section(h3(title()), *kids, class_name="card")
+    kids = children or []
+    if not isinstance(kids, list):
+        kids = [kids]
+    return section(h3(title), *kids, class_name="card")
 
 @component
 def Page():
