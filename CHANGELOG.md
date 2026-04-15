@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.21.0 (2026-04-15)
+
+### Features
+
+- **component,reactivity**: Add ReactiveProps proxy and true Fragment support
+  ([`53e5934`](https://github.com/wybthon/wybthon/commit/53e59344be7f214df960917df2c2f6f28823473f))
+
+
 ## v0.20.0 (2026-04-02)
 
 ### Documentation
