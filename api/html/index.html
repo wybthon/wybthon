@@ -1996,9 +1996,11 @@
 
     <div class="doc doc-contents ">
 
-        <p>Group multiple children without adding a visible wrapper to the DOM.</p>
-<p>Uses a <code>&lt;span style="display:contents"&gt;</code> so the wrapper is invisible to
-CSS layout while keeping the VDOM diffing algorithm simple.</p>
+        <p>Group multiple children without adding extra DOM elements.</p>
+<p>Unlike the previous <code>&lt;span style="display:contents"&gt;</code> approach,
+fragments now use comment-node markers and mount children directly
+into the parent container.  This avoids polluting the DOM, breaking
+CSS selectors like <code>:first-child</code>, or affecting layout.</p>
 <p>Can be called directly::</p>
 <div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
 </code></pre></div>

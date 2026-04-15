@@ -2091,22 +2091,23 @@ making components self-documenting and type-safe:</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">,</span> <span class="n">greeting</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Hello&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">greeting</span><span class="p">()</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">greeting</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <ul>
-<li>Props become regular Python parameters with defaults and type annotations.</li>
+<li>Props become regular Python parameters with defaults and type annotations. Each is a <strong>plain value</strong> (not a getter).</li>
 <li>Missing props use the default value from the signature.</li>
 <li>Extra props not in the signature are ignored.</li>
 </ul>
-<p>Children handling with <code>@component</code> (children is also a getter):</p>
+<p>Children handling with <code>@component</code> — the <code>children</code> parameter is a <strong>plain</strong> vnode, list, or <code>None</code> (import the <code>children()</code> <em>helper</em> from <code>wybthon</code> under another name if you need memoized reactive resolution; see <a href="../../api/reactivity/">Reactivity</a>):</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Direct calls return VNodes for composition without <code>h()</code>:</p>
@@ -2119,7 +2120,7 @@ making components self-documenting and type-safe:</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
     <span class="n">on_mount</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counter mounted with count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
 
@@ -2154,18 +2155,23 @@ making components self-documenting and type-safe:</p>
 
 <h4 id="props-and-defaults">Props and defaults<a class="headerlink" href="#props-and-defaults" title="Permanent link">&para;</a></h4>
 <p>With <code>@component</code>, props and defaults are built into the function signature:</p>
-<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">img</span>
+
+<span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Avatar</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;avatar&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">48</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">img</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">(),</span> <span class="n">alt</span><span class="o">=</span><span class="n">alt</span><span class="p">(),</span> <span class="n">width</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">()),</span> <span class="n">height</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">img</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="n">alt</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">),</span> <span class="n">height</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
 </code></pre></div>
 
 <p>With traditional functions, prefer <code>props.get("key", default)</code> when reading optional values. For required props, consider simple guards at the top of <code>render</code>.</p>
 <h4 id="passing-and-using-children">Passing and using children<a class="headerlink" href="#passing-and-using-children" title="Permanent link">&para;</a></h4>
-<p>With <code>@component</code>, children come via the <code>children</code> parameter (a getter):</p>
-<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<p>With <code>@component</code>, children come via the <code>children</code> parameter as a plain value:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span>
+
+<span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;layout&quot;</span><span class="p">)</span>
 </code></pre></div>
 
@@ -2190,8 +2196,9 @@ making components self-documenting and type-safe:</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Layout</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">},</span> <span class="n">kids</span><span class="p">))</span>
 </code></pre></div>
 
@@ -2210,13 +2217,14 @@ making components self-documenting and type-safe:</p>
 </ul>
 <h4 id="larger-examples">Larger examples<a class="headerlink" href="#larger-examples" title="Permanent link">&para;</a></h4>
 <p>1) Composition via children (<code>@component</code>)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">section</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">section</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>

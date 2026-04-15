@@ -1674,6 +1674,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReactiveProps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.Ref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1905,6 +1916,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        children
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.create_context" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2041,6 +2063,17 @@
     <span class="md-ellipsis">
       
         forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.get_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_owner
       
     </span>
   </a>
@@ -2261,6 +2294,17 @@
     <span class="md-ellipsis">
       
         rules_from_schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.run_with_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_with_owner
       
     </span>
   </a>
@@ -3223,6 +3267,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReactiveProps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.Ref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3454,6 +3509,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        children
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.create_context" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3590,6 +3656,17 @@
     <span class="md-ellipsis">
       
         forward_ref
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.get_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_owner
       
     </span>
   </a>
@@ -3810,6 +3887,17 @@
     <span class="md-ellipsis">
       
         rules_from_schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.run_with_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_with_owner
       
     </span>
   </a>
@@ -4605,6 +4693,54 @@ non-browser environments, importing DOM/VDOM features only when available.</p>
 
 
 
+<h2 id="wybthon.ReactiveProps" class="doc doc-heading">
+            <code>ReactiveProps</code>
+
+
+<a href="#wybthon.ReactiveProps" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Reactive proxy for component props.</p>
+<p>Property access creates a reactive dependency on that specific prop,
+matching SolidJS prop access semantics.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="wybthon.Ref" class="doc doc-heading">
             <code>Ref</code>
 
@@ -4898,9 +5034,11 @@ effects or cleanups created inside the callback) is disposed.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Group multiple children without adding a visible wrapper to the DOM.</p>
-<p>Uses a <code>&lt;span style="display:contents"&gt;</code> so the wrapper is invisible to
-CSS layout while keeping the VDOM diffing algorithm simple.</p>
+        <p>Group multiple children without adding extra DOM elements.</p>
+<p>Unlike the previous <code>&lt;span style="display:contents"&gt;</code> approach,
+fragments now use comment-node markers and mount children directly
+into the parent container.  This avoids polluting the DOM, breaking
+CSS selectors like <code>:first-child</code>, or affecting layout.</p>
 <p>Can be called directly::</p>
 <div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
 </code></pre></div>
@@ -5252,6 +5390,27 @@ SolidJS semantics.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.children" class="doc doc-heading">
+            <code class=" language-python"><span class="n">children</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.children" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Resolve and memoize reactive children.</p>
+<p>Wraps a getter that returns children (e.g. <code>lambda: props.children</code>)
+and returns a memo that flattens and resolves the children list.
+Matches SolidJS <code>children()</code> helper.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.create_context" class="doc doc-heading">
             <code class=" language-python"><span class="n">create_context</span><span class="p">(</span><span class="n">default</span><span class="p">)</span></code>
 
@@ -5423,7 +5582,7 @@ create_effect(lambda: print(&quot;active:&quot;, is_selected(item_id)))
 
 
 <h2 id="wybthon.create_signal" class="doc doc-heading">
-            <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="n">_DEFAULT_EQUALS</span><span class="p">)</span></code>
 
 <a href="#wybthon.create_signal" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -5434,6 +5593,13 @@ create_effect(lambda: print(&quot;active:&quot;, is_selected(item_id)))
 <p>Works inside or outside components.  Inside a stateful component the
 signal is captured by the render function's closure and persists
 naturally (no cursor system needed).</p>
+<p>The <em>equals</em> parameter controls when subscribers are notified:</p>
+<ul>
+<li><code>_DEFAULT_EQUALS</code> (default) — skip notification when <code>new == old</code>.</li>
+<li><code>False</code> — always notify on every <code>set()</code> call.</li>
+<li>A callable <code>(old, new) -&gt; bool</code> — skip notification when it
+  returns <code>True</code>.</li>
+</ul>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span><span class="w">          </span><span class="c1"># 0</span>
@@ -5555,6 +5721,27 @@ where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</cod
 <span class="w">    </span><span class="k">type</span><span class="p">=</span><span class="s">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">=</span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">class_name</span><span class="p">=</span><span class="s">&quot;fancy&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">**</span><span class="nx">props</span><span class="p">,</span>
 <span class="p">))</span>
 </code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.get_owner" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get_owner</span><span class="p">()</span></code>
+
+<a href="#wybthon.get_owner" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current reactive owner scope, if any.</p>
+<p>Capture the owner before crossing async boundaries (e.g. <code>await</code>)
+and restore it with <code>run_with_owner</code> to maintain proper lifecycle
+management.</p>
 
 
     </div>
@@ -6007,6 +6194,30 @@ on the draft are recorded and applied reactively when passed to
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.run_with_owner" class="doc doc-heading">
+            <code class=" language-python"><span class="n">run_with_owner</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.run_with_owner" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run <em>fn</em> under the given ownership scope.</p>
+<p>Useful for restoring context after an <code>await</code> boundary where
+the reactive owner would otherwise be lost::</p>
+<div class="codehilite"><pre><span></span><code>owner = get_owner()
+data = await fetch(...)
+run_with_owner(owner, lambda: create_effect(lambda: ...))
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.set_dev_mode" class="doc doc-heading">
             <code class=" language-python"><span class="n">set_dev_mode</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span></code>
 
@@ -6157,10 +6368,11 @@ a value for this context.  Falls back to the context's default.</p>
 <li><code>Element</code>, <code>Ref</code></li>
 <li><code>VNode</code>, <code>h</code>, <code>render</code></li>
 <li>Components</li>
-<li><code>ErrorBoundary</code>, <code>Suspense</code></li>
+<li><code>component</code>, <code>forward_ref</code>, <code>ErrorBoundary</code>, <code>Suspense</code></li>
 <li>Reactivity</li>
-<li><code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>batch</code></li>
+<li><code>create_signal</code> (optional <code>equals=</code>), <code>create_effect</code>, <code>create_memo</code>, <code>batch</code></li>
 <li><code>on_mount</code>, <code>on_cleanup</code></li>
+<li><code>ReactiveProps</code>, <code>get_props</code>, <code>children</code> (memoized children helper), <code>get_owner</code>, <code>run_with_owner</code></li>
 <li><code>Resource</code>, <code>create_resource</code></li>
 <li>Context</li>
 <li><code>Context</code>, <code>create_context</code>, <code>use_context</code>, <code>Provider</code></li>

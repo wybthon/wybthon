@@ -2091,16 +2091,18 @@ arguments instead of a raw props dict:</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Props become regular Python parameters with type annotations and defaults.
-This makes components self-documenting and enables static type checking.</p>
+Each parameter is a <strong>plain value</strong> (not a getter you call with <code>()</code>). This makes components self-documenting and enables static type checking.</p>
 <p><strong>Stateless</strong> components return a <code>VNode</code> directly and re-render when the
 parent passes new props:</p>
-<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">p</span>
+
+<span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Stateful</strong> components create signals during setup and return a <em>render
@@ -2109,7 +2111,7 @@ function</em>.  Setup runs once; the render function re-runs when signals change
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
@@ -2119,14 +2121,15 @@ function</em>.  Setup runs once; the render function re-runs when signals change
     <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
-<p><strong>Children</strong> are received via a <code>children</code> parameter:</p>
+<p><strong>Children</strong> are received via a <code>children</code> parameter as a plain vnode, list, or <code>None</code>:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span><span class="p">()</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">kids</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">([</span><span class="n">kids</span><span class="p">]</span> <span class="k">if</span> <span class="n">kids</span> <span class="k">else</span> <span class="p">[])</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">()),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Direct calls</strong> with keyword args return a <code>VNode</code>, so you can compose
@@ -2163,12 +2166,15 @@ the render function re-runs due to a signal change.</p>
 <p>This distinction is automatic — no special API is needed.  The ownership
 tree tracks which owner is active at the time <code>create_effect</code> or
 <code>create_memo</code> is called.</p>
-<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span>
+
+<span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
     <span class="n">results</span><span class="p">,</span> <span class="n">set_results</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
 
     <span class="c1"># Setup effect — survives re-renders, disposed on unmount.</span>
-    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">()))</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="c1"># Render effect — disposed on each re-render.</span>
@@ -2193,7 +2199,7 @@ This style is fully supported and does not require a decorator:</p>
 
 <p>The HTML helpers accept <strong>children as positional arguments</strong> and <strong>props as keyword arguments</strong>. Use <code>class_name</code> instead of <code>class</code> (reserved word in Python) and <code>html_for</code> instead of <code>for</code>.</p>
 <h4 id="fragment">Fragment<a class="headerlink" href="#fragment" title="Permanent link">&para;</a></h4>
-<p>Use <code>Fragment</code> to group children without adding a visible wrapper element:</p>
+<p>Use <code>Fragment</code> to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses <strong>empty comment nodes</strong> as start/end markers (not a <code>display: contents</code> wrapper), so fragments do not pollute the DOM or break CSS selectors that expect a certain element structure.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
@@ -2211,7 +2217,7 @@ have not changed (shallow identity comparison by default):</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span> <span class="ow">or</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">its</span><span class="p">])</span>
 
 <span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>

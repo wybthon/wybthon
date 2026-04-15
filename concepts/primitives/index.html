@@ -2116,7 +2116,7 @@ that re-runs automatically when signals change).</p>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">())</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
@@ -2125,6 +2125,7 @@ that re-runs automatically when signals change).</p>
     <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
+<p>Optional keyword <strong><code>equals</code></strong> controls when subscribers run: default skips notification when the new value compares equal to the old (<code>==</code>); <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=comparator</code> with <code>comparator(old, new) -&gt; bool</code> skips when the comparator returns <code>True</code> (treat as “same”).</p>
 <p>The setter accepts a plain value:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">set_count</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 </code></pre></div>
@@ -2205,20 +2206,29 @@ re-computes only when its dependencies change.</p>
 
 <hr />
 <h4 id="reactive-props">Reactive props<a class="headerlink" href="#reactive-props" title="Permanent link">&para;</a></h4>
-<p>With <code>@component</code>, each parameter is automatically a reactive getter.
-Call the parameter with <code>()</code> to read its current value — no need for
-<code>get_props()</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span>
+<p>With <code>@component</code>, parameters are <strong>plain Python values</strong>. Stateless
+components re-run their body with fresh values when the parent updates
+props. <strong>Stateful</strong> components run setup once: parameter values are the
+initial snapshot only.</p>
+<p>For reactive reads of individual props after setup (effects, memos, or
+when you need the latest prop inside a long-lived setup callback), call
+<code>get_props()</code> once and use the <strong><code>ReactiveProps</code></strong> proxy — <code>props.name</code> or
+<code>props["name"]</code> tracks that prop:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_props</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
-    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">()))</span>
+    <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
         <span class="k">return</span> <span class="o">...</span>
     <span class="k">return</span> <span class="n">render</span>
 </code></pre></div>
 
+<p>See also: <a href="../../api/reactivity/">Reactivity API</a> for <code>get_owner</code> /
+<code>run_with_owner</code> (async boundaries) and <code>children(fn)</code> for memoized
+children resolution.</p>
 <hr />
 <h4 id="map_array"><code>map_array</code><a class="headerlink" href="#map_array" title="Permanent link">&para;</a></h4>
 <p>Keyed reactive list mapping with stable per-item scopes.  Items are

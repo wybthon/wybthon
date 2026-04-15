@@ -1966,7 +1966,7 @@
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Reactivity API</li>
-<li><code>create_signal(value: T) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code></li>
+<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code> — <code>equals</code> optional: default equality, <code>False</code> for always notify, or <code>(old, new) -&gt; bool</code> “same value” predicate</li>
 <li><code>create_memo(fn: Callable[[], T]) -&gt; Callable[[], T]</code></li>
 <li><code>create_effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
 <li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>

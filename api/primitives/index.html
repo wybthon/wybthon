@@ -1632,6 +1632,50 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        children
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_owner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.run_with_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_with_owner
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2004,6 +2048,50 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        children
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.get_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_owner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.run_with_owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_with_owner
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2083,7 +2171,7 @@ leaks and ensuring correct lifecycle semantics.</p>
 
 
 <h2 id="wybthon.reactivity.create_signal" class="doc doc-heading">
-            <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+            <code class=" language-python"><span class="n">create_signal</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="n">_DEFAULT_EQUALS</span><span class="p">)</span></code>
 
 <a href="#wybthon.reactivity.create_signal" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -2094,6 +2182,13 @@ leaks and ensuring correct lifecycle semantics.</p>
 <p>Works inside or outside components.  Inside a stateful component the
 signal is captured by the render function's closure and persists
 naturally (no cursor system needed).</p>
+<p>The <em>equals</em> parameter controls when subscribers are notified:</p>
+<ul>
+<li><code>_DEFAULT_EQUALS</code> (default) — skip notification when <code>new == old</code>.</li>
+<li><code>False</code> — always notify on every <code>set()</code> call.</li>
+<li>A callable <code>(old, new) -&gt; bool</code> — skip notification when it
+  returns <code>True</code>.</li>
+</ul>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span><span class="w">          </span><span class="c1"># 0</span>
@@ -2194,6 +2289,95 @@ print(doubled())  # reactive read
 <li>Inside <code>create_effect</code>: runs before each re-execution and on disposal.</li>
 <li>Inside a component's setup phase: runs when the component unmounts.</li>
 </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.get_props" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get_props</span><span class="p">()</span></code>
+
+<a href="#wybthon.reactivity.get_props" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the reactive props proxy for the current component.</p>
+<p>The returned <code>ReactiveProps</code> object provides reactive access
+to individual props via attribute or dict-style access::</p>
+<div class="codehilite"><pre><span></span><code>props = get_props()
+create_effect(lambda: print(&quot;name changed:&quot;, props.name))
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.children" class="doc doc-heading">
+            <code class=" language-python"><span class="n">children</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.children" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Resolve and memoize reactive children.</p>
+<p>Wraps a getter that returns children (e.g. <code>lambda: props.children</code>)
+and returns a memo that flattens and resolves the children list.
+Matches SolidJS <code>children()</code> helper.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.get_owner" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get_owner</span><span class="p">()</span></code>
+
+<a href="#wybthon.reactivity.get_owner" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current reactive owner scope, if any.</p>
+<p>Capture the owner before crossing async boundaries (e.g. <code>await</code>)
+and restore it with <code>run_with_owner</code> to maintain proper lifecycle
+management.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.run_with_owner" class="doc doc-heading">
+            <code class=" language-python"><span class="n">run_with_owner</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.run_with_owner" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run <em>fn</em> under the given ownership scope.</p>
+<p>Useful for restoring context after an <code>await</code> boundary where
+the reactive owner would otherwise be lost::</p>
+<div class="codehilite"><pre><span></span><code>owner = get_owner()
+data = await fetch(...)
+run_with_owner(owner, lambda: create_effect(lambda: ...))
+</code></pre></div>
 
 
     </div>
