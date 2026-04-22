@@ -970,6 +970,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-big-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The big idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authoring-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoring tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#micro-benchmarking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Micro-benchmarking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1870,6 +1909,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-big-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The big idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authoring-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoring tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#micro-benchmarking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Micro-benchmarking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1895,17 +1973,94 @@
   <h1>Performance</h1>
 
 <h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
-<p>Tips:</p>
+<h4 id="the-big-idea">The big idea<a class="headerlink" href="#the-big-idea" title="Permanent link">&para;</a></h4>
+<p>Wybthon component bodies run <strong>once</strong>.  Reactive updates flow through
+<em>reactive holes</em> — a per-binding effect for each callable child or
+prop value.  When a signal changes, only the holes that read it
+re-evaluate, and only the affected DOM nodes are touched.  This is
+fundamentally cheaper than a full component re-render + diff, even
+though we still use a VDOM internally to batch DOM mutations across
+the Python ↔ JS bridge.</p>
+<h4 id="authoring-tips">Authoring tips<a class="headerlink" href="#authoring-tips" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Prefer signals at the edges; derive with <code>create_memo</code> to minimize re-renders</li>
-<li>Use <code>key</code> on lists to help the diffing algorithm</li>
-<li>Batch updates with <code>batch()</code></li>
+<li><strong>Prefer holes over re-rendering.</strong>  Embed <code>signal.get</code> (or a
+  <code>dynamic(lambda: ...)</code>) at the smallest possible spot in the tree
+  rather than reading signals eagerly inside the component body.</li>
 </ul>
-<p>Keyed lists allow the reconciler to reorder elements in-place with minimal DOM operations. Prefer stable keys (IDs) over indices.</p>
-<p>Micro-benchmarking</p>
+<p>```python
+  # Slow — entire body would re-run if reads were tracked
+  return p(f"Hello, {name()}, count={count()}")</p>
+<p># Fast — only two text nodes update
+  return p("Hello, ", span(name), ", count=", span(count.get))
+  ```</p>
 <ul>
-<li>A small test is included that measures reversing a list of 200 keyed items; it should complete well under a second in the stubbed test environment. Use it as a smoke check to catch regressions in the keyed children algorithm.</li>
+<li>
+<p><strong>Co-locate signals with the smallest visible region.</strong>  A hole is
+  cheaper than a <code>Show</code>/<code>For</code> re-evaluation, and a <code>For</code>/<code>Index</code>
+  per-item scope is cheaper than a <code>dynamic</code> returning the full list.</p>
+</li>
+<li>
+<p><strong>Use <code>create_memo</code> for derived values.</strong>  Memoised getters work
+  out-of-the-box as reactive holes: <code>span(my_memo)</code>.</p>
+</li>
+<li>
+<p><strong>Use <code>key</code> on lists.</strong>  Keyed reconciliation reorders existing
+  DOM nodes in place instead of re-creating them.  Prefer stable IDs
+  over indices for keys.</p>
+</li>
+<li>
+<p><strong>Batch updates with <code>batch()</code>.</strong>  When a single user action
+  triggers multiple <code>set()</code> calls, wrap them in <code>batch()</code> so all
+  affected holes flush together.</p>
+</li>
+<li>
+<p><strong>Use <code>For</code> / <code>Index</code> for dynamic lists.</strong>  These maintain stable
+  per-item (or per-index) reactive scopes so the mapping callback
+  runs once per unique item, not per re-render.</p>
+</li>
 </ul>
+<h4 id="micro-benchmarking">Micro-benchmarking<a class="headerlink" href="#micro-benchmarking" title="Permanent link">&para;</a></h4>
+<p>Run the included benchmarks against the stubbed DOM:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>benchmarks/bench_runner.py
+</code></pre></div>
+
+<p>The runner measures:</p>
+<ul>
+<li>Standard JS framework benchmark workloads (create / update / swap /
+  remove rows in a 1k–10k row table) — useful as a regression smoke
+  test for the diffing algorithm.</li>
+<li><strong><code>hole update (1k tree)</code></strong> — change one signal that drives a single
+  reactive hole inside a 1,000-node tree.</li>
+<li><strong><code>full rerender (1k tree)</code></strong> — re-render the entire tree and let the
+  diffing algorithm reduce the change set to one text node.</li>
+</ul>
+<p>Both tree benchmarks update the <em>same</em> DOM node; the difference is
+entirely in <em>what work the framework does to figure out the change</em>.
+On the stubbed DOM (which makes every framework cost more visible than
+real browser DOM mutations) the gap is dramatic:</p>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th style="text-align: right;">Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hole update (1k tree)</code></td>
+<td style="text-align: right;">~0.01 ms</td>
+</tr>
+<tr>
+<td><code>full rerender (1k tree)</code></td>
+<td style="text-align: right;">~25 ms</td>
+</tr>
+</tbody>
+</table>
+<p>In real Pyodide deployments the absolute numbers shift, but the
+relative ordering is the same: skipping the diff entirely is always a
+win.</p>
+<p>Use <code>--bench=&lt;name&gt;</code> to run a single benchmark or <code>--json</code> to emit
+machine-readable output.</p>
 
 
 

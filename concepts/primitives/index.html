@@ -467,6 +467,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reactive-holes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive Holes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#create_signal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1979,6 +1990,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reactive-holes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive Holes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#create_signal" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2106,23 +2128,80 @@
 
 <h3 id="primitives">Primitives<a class="headerlink" href="#primitives" title="Permanent link">&para;</a></h3>
 <p>Wybthon uses a <strong>signals-first</strong> reactive model inspired by SolidJS.
-Components can be <strong>stateless</strong> (return a VNode directly) or <strong>stateful</strong>
-(create signals during a one-time setup phase and return a render function
-that re-runs automatically when signals change).</p>
+Component bodies run <strong>once</strong> at mount.  Reactivity comes from signals
+read inside <em>reactive holes</em> — zero-arg callables placed inside the
+returned VNode tree.  See the <a href="#reactive-holes">Reactive Holes</a> section
+below.</p>
+<hr />
+<h4 id="reactive-holes">Reactive Holes<a class="headerlink" href="#reactive-holes" title="Permanent link">&para;</a></h4>
+<p>A <strong>reactive hole</strong> is a zero-arg callable embedded in a VNode tree
+(child or prop value).  The reconciler wraps each hole in its own
+effect, so the surrounding component body runs <strong>once</strong> while the
+hole updates the DOM in place when its dependencies change.</p>
+<p>There are three ways to create a hole:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Demo</span><span class="p">():</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="c1"># 1) Pass a signal accessor directly:</span>
+        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">)),</span>
+
+        <span class="c1"># 2) Wrap a derived expression with ``dynamic``:</span>
+        <span class="n">p</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Doubled: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)),</span>
+
+        <span class="c1"># 3) Reactive prop value (any callable prop except event handlers):</span>
+        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Status&quot;</span><span class="p">,</span>
+          <span class="n">class_name</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot;danger&quot;</span> <span class="k">if</span> <span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="k">else</span> <span class="s2">&quot;ok&quot;</span><span class="p">),</span>
+
+        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>A hole's getter may return any of:</p>
+<ul>
+<li>a string or number → rendered as a text node</li>
+<li>a <code>VNode</code> → mounted as the hole's subtree (replacing the previous one)</li>
+<li>a <code>Fragment</code> or list of VNodes → mounted as multiple roots between
+  the hole's start/end anchors</li>
+<li><code>None</code> → renders nothing</li>
+</ul>
+<p>Holes are scoped to their owner.  Inside a hole you can use
+<code>on_cleanup</code> to register teardown that runs before each re-execution
+and on disposal — the same lifecycle as <code>create_effect</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Subscriber</span><span class="p">():</span>
+    <span class="n">topic</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span>
+        <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">subscribe</span><span class="p">(</span><span class="n">topic</span><span class="p">())),</span>  <span class="c1"># subscribe re-runs on topic change</span>
+    <span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="n">topic_name</span><span class="p">):</span>
+    <span class="n">handle</span> <span class="o">=</span> <span class="n">open_subscription</span><span class="p">(</span><span class="n">topic_name</span><span class="p">)</span>
+    <span class="n">on_cleanup</span><span class="p">(</span><span class="n">handle</span><span class="o">.</span><span class="n">close</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;listening to </span><span class="si">{</span><span class="n">topic_name</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Why?</strong> This is the SolidJS authoring model adapted for Pyodide.
+Components run once, so signal <em>creation</em>, event-handler <em>closures</em>,
+and lifecycle <em>registrations</em> happen exactly once — and DOM updates
+stay surgical and predictable.</p>
+</blockquote>
 <hr />
 <h4 id="create_signal"><code>create_signal</code><a class="headerlink" href="#create_signal" title="Permanent link">&para;</a></h4>
 <p>Create a reactive signal.  Returns <code>(getter, setter)</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
     <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">)),</span>  <span class="c1"># ← reactive hole</span>
+    <span class="p">)</span>
 </code></pre></div>
 
 <p>Optional keyword <strong><code>equals</code></strong> controls when subscribers run: default skips notification when the new value compares equal to the old (<code>==</code>); <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=comparator</code> with <code>comparator(old, new) -&gt; bool</code> skips when the comparator returns <code>True</code> (treat as “same”).</p>
@@ -2136,7 +2215,7 @@ no cursor system, no "rules of hooks".</p>
 <h4 id="create_effect"><code>create_effect</code><a class="headerlink" href="#create_effect" title="Permanent link">&para;</a></h4>
 <p>Create an auto-tracking reactive effect.  The effect runs immediately and
 re-runs whenever any signal it reads changes.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Logger</span><span class="p">():</span>
@@ -2144,9 +2223,7 @@ re-runs whenever any signal it reads changes.</p>
 
     <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count is now&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="o">...</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Use <code>on_cleanup</code> inside a <code>create_effect</code> callback to register cleanup
@@ -2173,15 +2250,12 @@ re-computes only when its dependencies change.</p>
 <hr />
 <h4 id="on_mount"><code>on_mount</code><a class="headerlink" href="#on_mount" title="Permanent link">&para;</a></h4>
 <p>Register a callback to run once after the component mounts.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_mount</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">MyComponent</span><span class="p">():</span>
     <span class="n">on_mount</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Component is in the DOM!&quot;</span><span class="p">))</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="o">...</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
@@ -2189,41 +2263,46 @@ re-computes only when its dependencies change.</p>
 <p>Register a cleanup callback.</p>
 <ul>
 <li>Inside a component's setup phase: runs when the component unmounts.</li>
-<li>Inside a <code>create_effect</code> callback: runs before each re-execution and
-  on disposal.</li>
+<li>Inside a <code>create_effect</code> callback or a reactive hole: runs before
+  each re-execution and on disposal.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_cleanup</span><span class="p">,</span> <span class="n">on_mount</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_cleanup</span><span class="p">,</span> <span class="n">on_mount</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">():</span>
     <span class="n">on_mount</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">start_timer</span><span class="p">())</span>
     <span class="n">on_cleanup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">stop_timer</span><span class="p">())</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="o">...</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
 <h4 id="reactive-props">Reactive props<a class="headerlink" href="#reactive-props" title="Permanent link">&para;</a></h4>
-<p>With <code>@component</code>, parameters are <strong>plain Python values</strong>. Stateless
-components re-run their body with fresh values when the parent updates
-props. <strong>Stateful</strong> components run setup once: parameter values are the
-initial snapshot only.</p>
-<p>For reactive reads of individual props after setup (effects, memos, or
-when you need the latest prop inside a long-lived setup callback), call
-<code>get_props()</code> once and use the <strong><code>ReactiveProps</code></strong> proxy — <code>props.name</code> or
-<code>props["name"]</code> tracks that prop:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_props</span>
+<p>With <code>@component</code>, parameters are <strong>plain Python values</strong> captured
+once at setup time.  Because the component body runs once, parameter
+values reflect the initial snapshot.</p>
+<p>For reactive reads of individual props (effects, memos, or reactive
+holes), call <code>get_props()</code> once and use the <strong><code>ReactiveProps</code></strong> proxy
+— <code>props.name</code> or <code>props["name"]</code> tracks that prop:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Search</span><span class="p">(</span><span class="n">initial_query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
     <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
     <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="o">...</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Searching: &quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
+</code></pre></div>
+
+<p>When a parent component wants to pass a <em>reactive value</em> to a child,
+the canonical pattern is to <strong>pass the getter</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Parent</span><span class="p">():</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">&quot;Ada&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>   <span class="c1"># pass the getter, not the value</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>        <span class="c1"># ``name`` is now a reactive hole</span>
 </code></pre></div>
 
 <p>See also: <a href="../../api/reactivity/">Reactivity API</a> for <code>get_owner</code> /

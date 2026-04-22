@@ -1605,6 +1605,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.vdom.dynamic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dynamic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.vdom.h" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1620,6 +1631,17 @@
     <span class="md-ellipsis">
       
         is_event_prop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.vdom.is_getter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_getter
       
     </span>
   </a>
@@ -2187,6 +2209,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.vdom.dynamic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dynamic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.vdom.h" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2202,6 +2235,17 @@
     <span class="md-ellipsis">
       
         is_event_prop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.vdom.is_getter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_getter
       
     </span>
   </a>
@@ -2450,7 +2494,7 @@
 
 
 
-        <p>Virtual node representing an element, text, or component subtree.</p>
+        <p>Virtual node representing an element, text, component, or reactive hole.</p>
 
 
 
@@ -2592,6 +2636,33 @@ and overlays that need to break out of their parent's DOM hierarchy.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.vdom.dynamic" class="doc doc-heading">
+            <code class=" language-python"><span class="n">dynamic</span><span class="p">(</span><span class="n">getter</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.vdom.dynamic" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Create a reactive-hole VNode that re-evaluates <em>getter</em> on dependency changes.</p>
+<p>This is the explicit form of the same machinery that wraps callable
+children automatically.  Use it when you want to be explicit about
+which child is dynamic, or to attach a stable <code>key</code> for keyed
+reuse inside a fragment::</p>
+<div class="codehilite"><pre><span></span><code>div(dynamic(lambda: f&quot;Hello, {name()}!&quot;))
+</code></pre></div>
+
+<p>Inside a reactive hole you may return a <code>VNode</code>, a <code>str</code>, a
+list of either, or <code>None</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.vdom.h" class="doc doc-heading">
             <code class=" language-python"><span class="n">h</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">children</span><span class="p">)</span></code>
 
@@ -2601,6 +2672,11 @@ and overlays that need to break out of their parent's DOM hierarchy.</p>
     <div class="doc doc-contents ">
 
         <p>Create a VNode from a tag, props, and children (component-aware).</p>
+<p>Callable children (zero-argument getters) are passed through
+unchanged; <code>normalize_children</code> will wrap them as <code>_dynamic</code>
+VNodes when the parent element mounts.  Components receive their
+children verbatim via the <code>children</code> prop so they can decide how
+to render them.</p>
 
 
     </div>
@@ -2619,6 +2695,33 @@ and overlays that need to break out of their parent's DOM hierarchy.</p>
     <div class="doc doc-contents ">
 
         <p>Return True if a prop name is an event handler prop like on_click or onClick.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.vdom.is_getter" class="doc doc-heading">
+            <code class=" language-python"><span class="n">is_getter</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></code>
+
+<a href="#wybthon.vdom.is_getter" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return True when <em>value</em> is a zero-argument callable suitable for a reactive hole.</p>
+<p>Excludes:</p>
+<ul>
+<li><code>VNode</code> instances</li>
+<li>Classes (<code>isinstance(v, type)</code>)</li>
+<li>Components / providers (marked with <code>_wyb_component</code> / <code>_wyb_provider</code>)</li>
+<li><code>Ref</code> objects (have a <code>current</code> attribute)</li>
+<li>Callables that require positional arguments (e.g. event handlers
+  taking an event object)</li>
+</ul>
 
 
     </div>
@@ -2772,6 +2875,11 @@ deeper comparison logic.</p>
 <li><code>h(tag, props=None, *children) -&gt; VNode</code></li>
 <li><code>Fragment(*children)</code> — groups children <strong>without</strong> a wrapper element; the reconciler uses invisible comment markers and mounts children in the parent (no <code>display:contents</code> span).</li>
 <li><code>render(vnode, container) -&gt; Element</code></li>
+<li><code>dynamic(getter, *, key=None) -&gt; VNode</code> — wrap a zero-arg callable as a
+  <em>reactive hole</em> (see <a href="../../concepts/primitives/#reactive-holes">Primitives → Reactive Holes</a>).  Callable children passed to <code>h()</code> are auto-wrapped via this helper.</li>
+<li><code>is_getter(value) -&gt; bool</code> — predicate the reconciler uses to decide whether
+  a callable child or prop value is a reactive hole.  Useful when authoring
+  components or helpers that need to detect getters explicitly.</li>
 <li><code>ErrorBoundary</code> component</li>
 <li><code>Suspense</code> component</li>
 <li><code>memo(component, are_props_equal=None)</code> — memoize a function component</li>

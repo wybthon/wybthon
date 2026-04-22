@@ -2084,6 +2084,12 @@
 
 <h3 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h3>
 <p>Wybthon uses function components exclusively, following the SolidJS model.</p>
+<blockquote>
+<p><strong>Mental model:</strong> A component body <strong>runs once</strong> during mount.  Reactivity
+happens inside <em>reactive holes</em> — zero-arg callables that you embed in
+the returned VNode tree.  See <a href="../primitives/#reactive-holes">Primitives</a>
+for the full story.</p>
+</blockquote>
 <h4 id="function-components-with-component-recommended">Function components with <code>@component</code> (recommended)<a class="headerlink" href="#function-components-with-component-recommended" title="Permanent link">&para;</a></h4>
 <p>The <code>@component</code> decorator lets you define components using Pythonic keyword
 arguments instead of a raw props dict:</p>
@@ -2096,8 +2102,7 @@ arguments instead of a raw props dict:</p>
 
 <p>Props become regular Python parameters with type annotations and defaults.
 Each parameter is a <strong>plain value</strong> (not a getter you call with <code>()</code>). This makes components self-documenting and enables static type checking.</p>
-<p><strong>Stateless</strong> components return a <code>VNode</code> directly and re-render when the
-parent passes new props:</p>
+<p><strong>Stateless</strong> components return a <code>VNode</code> directly:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
@@ -2105,22 +2110,31 @@ parent passes new props:</p>
     <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p><strong>Stateful</strong> components create signals during setup and return a <em>render
-function</em>.  Setup runs once; the render function re-runs when signals change:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
+<p><strong>Stateful</strong> components create signals during setup and embed reactive
+holes (signal getters or <code>dynamic(lambda: ...)</code>) in the returned tree.
+The body runs once; only the holes update when signals change:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
     <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-            <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">)),</span>                          <span class="c1"># ← reactive hole</span>
+        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="p">)</span>
 </code></pre></div>
 
+<p><code>count.get</code> is a zero-arg accessor.  When you place it in the VNode
+tree, the reconciler wraps it in its own effect so only that text
+node updates — the surrounding component body does not re-run.</p>
+<blockquote>
+<p><strong>Note (legacy pattern):</strong> Components may also return a <em>render
+function</em> (<code>def render(): return ...</code>); this is treated as a
+single-root reactive hole and works identically to the example
+above for backward compatibility.  New code should prefer the
+direct return + holes style.</p>
+</blockquote>
 <p><strong>Children</strong> are received via a <code>children</code> parameter as a plain vnode, list, or <code>None</code>:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
 
@@ -2149,43 +2163,45 @@ components without <code>h()</code>:</p>
 <p>Each component instance gets a <code>_ComponentContext</code> (a subclass of
 <code>Owner</code>) that participates in the reactive <strong>ownership tree</strong>.  This
 context is the parent owner for everything created during the
-component's setup phase.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">_ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span><span class="w">       </span><span class="err">←</span><span class="w"> </span><span class="n">created</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="n">mounts</span>
-<span class="err">├──</span><span class="w"> </span><span class="n">setup</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="p">(</span><span class="n">logger</span><span class="p">)</span><span class="w">         </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
+component's setup phase, including the per-hole effects.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">_ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span><span class="w">       </span><span class="err">←</span><span class="w"> </span><span class="n">created</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="n">mounts</span><span class="w"> </span><span class="p">(</span><span class="n">body</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="n">once</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">setup</span><span class="w"> </span><span class="n">effect</span><span class="w">                  </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span><span class="w"> </span><span class="p">(</span><span class="n">survives</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">body</span><span class="p">)</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">on_cleanup</span><span class="w"> </span><span class="n">callback</span><span class="w">           </span><span class="err">←</span><span class="w"> </span><span class="n">registered</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
-<span class="err">└──</span><span class="w"> </span><span class="n">render</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="p">(</span><span class="n">Computation</span><span class="p">)</span><span class="w">   </span><span class="err">←</span><span class="w"> </span><span class="n">also</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
-<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">inner</span><span class="w"> </span><span class="n">effect</span><span class="w">              </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">render</span><span class="w"> </span><span class="n">effect</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">reactive</span><span class="w"> </span><span class="n">holes</span><span class="w">                </span><span class="err">←</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">hole</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">its</span><span class="w"> </span><span class="n">own</span><span class="w"> </span><span class="n">effect</span><span class="p">,</span><span class="w"> </span><span class="n">also</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">child</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">.</span><span class="n">get</span><span class="p">)</span><span class="w">           </span><span class="err">←</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="n">node</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="p">...</span>
 </code></pre></div>
 
-<p><strong>Setup effects</strong> (created in the component body, before <code>return</code>) are
-owned by the <code>_ComponentContext</code>.  They survive re-renders and are only
-disposed when the component unmounts.</p>
-<p><strong>Render effects</strong> (created inside the render function) are owned by
-the render <code>Computation</code>.  They are disposed and recreated every time
-the render function re-runs due to a signal change.</p>
+<p><strong>Setup effects</strong> (created in the component body, before <code>return</code>) and
+<strong>reactive hole effects</strong> are both owned by the <code>_ComponentContext</code>.
+They are disposed when the component unmounts.</p>
+<p>When a hole returns a sub-tree containing further effects (for
+example a hole returning a VNode that contains its own holes), the
+inner effects are owned by the hole's effect.  When the hole re-runs,
+those inner effects are disposed first (so their <code>on_cleanup</code>
+callbacks fire), then re-created on the next evaluation.</p>
 <p>This distinction is automatic — no special API is needed.  The ownership
 tree tracks which owner is active at the time <code>create_effect</code> or
 <code>create_memo</code> is called.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">ul</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
-    <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="n">query</span><span class="p">,</span> <span class="n">set_query</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
     <span class="n">results</span><span class="p">,</span> <span class="n">set_results</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
 
-    <span class="c1"># Setup effect — survives re-renders, disposed on unmount.</span>
-    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
+    <span class="c1"># Setup effect — runs once on mount, disposed on unmount.</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">()))</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="c1"># Render effect — disposed on each re-render.</span>
-        <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rendering&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">()),</span> <span class="s2">&quot;items&quot;</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">ul</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">()])</span>
-
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="k">return</span> <span class="n">ul</span><span class="p">(</span>
+        <span class="c1"># Reactive hole — its effect re-runs only when ``results`` changes.</span>
+        <span class="c1"># When it re-runs, any inner effects are disposed and recreated.</span>
+        <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">()]),</span>
+    <span class="p">)</span>
 </code></pre></div>
 
 <p>When a component unmounts, the reconciler calls <code>dispose()</code> on its
-<code>_ComponentContext</code>, which walks the tree depth-first: render effects,
+<code>_ComponentContext</code>, which walks the tree depth-first: hole effects,
 setup effects, and cleanup callbacks are all torn down automatically.</p>
 <h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
 <p>You can still define components the traditional way with a <code>props</code> dict.

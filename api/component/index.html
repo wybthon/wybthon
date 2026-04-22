@@ -2071,28 +2071,43 @@
 </li>
 <li>
 <p><strong>Automatic prop destructuring</strong> -- named parameters are read from
-   the <code>ReactiveProps</code> proxy and passed as plain Python values.  For
-   <strong>stateless</strong> components (those that return a VNode directly), the
-   decorator wraps the body in a render function that re-reads props
-   on each render cycle, keeping the output reactive.</p>
+   the <code>ReactiveProps</code> proxy and passed as plain Python values <strong>once</strong>
+   during component setup.  This matches SolidJS-style "setup runs once"
+   semantics: the body is invoked a single time when the component is
+   mounted, and updates flow through reactive holes embedded in the
+   returned VNode tree.</p>
 </li>
 </ol>
 <h3 id="wybthon.component--reactive-prop-access">Reactive prop access<a class="headerlink" href="#wybthon.component--reactive-prop-access" title="Permanent link">&para;</a></h3>
-<p>Props are plain values inside the function body — no callable getters::</p>
+<p>Inside the body, parameter values are plain Python values that
+reflect the <strong>initial</strong> props.  Because the body never re-runs,
+re-rendering on prop changes happens at the <strong>hole</strong> boundary -- pass
+a getter expression directly in the VNode tree::</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
-<span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name}!&quot;</span><span class="p">)</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">plain</span><span class="w"> </span><span class="n">string</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="k">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">)</span><span class="o">:</span>
+<span class="w">    </span><span class="c1"># `name` here is the initial value; for reactive updates use a hole:</span>
+<span class="w">    </span><span class="n">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_props</span><span class="p">()</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="o">:</span><span class="w"> </span><span class="n">props</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>For <strong>stateful</strong> components, setup runs once with initial values.
-Use <code>get_props()</code> to access the <code>ReactiveProps</code> proxy for
-reactive tracking inside effects or the render function::</p>
+<p>For the special case where you only need access to the <strong>current</strong> prop
+value at one site, calling <code>get_props()</code> and reading attribute
+accesses inside a hole is the idiomatic pattern.</p>
+<p>The legacy "return a render function" pattern is still supported and
+implemented as syntactic sugar for a single-root reactive hole::</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">component</span>
 <span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">    </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">render</span><span class="p">():</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">render</span>
+</code></pre></div>
+
+<p>When the component returns a callable, the reconciler wraps it in a
+<code>_dynamic</code> VNode whose effect re-runs the render function on
+dependency changes.  This is identical to writing the render fn as a
+direct child of a div::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">return</span><span class="w"> </span><span class="nv">div</span><span class="ss">(</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="nv">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="ss">))</span>
 </code></pre></div>
 
 
@@ -2127,22 +2142,36 @@ reactive tracking inside effects or the render function::</p>
     <div class="doc doc-contents ">
 
         <p>Decorator that provides kwargs calling and prop destructuring.</p>
-<p><strong>Stateful</strong> -- create signals during setup and return a <em>render function</em>
-(setup runs once, render re-runs when signals change)::</p>
+<p>Components run <strong>once</strong> during mount.  Reactive updates inside the
+component come from holes in the returned VNode tree (callable
+children/props), not from re-running the body.</p>
+<p><strong>Stateful</strong> -- create signals during setup; embed them as
+reactive holes in the returned tree::</p>
+<div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">div</span><span class="p">(</span>
+<span class="w">        </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">),</span>
+<span class="w">        </span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">on_click</span><span class="o">=</span><span class="n">lambda</span><span class="w"> </span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)),</span>
+<span class="w">    </span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Legacy stateful</strong> -- returning a render function is still supported;
+the reconciler treats it as a single-root reactive hole::</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">component</span>
 <span class="n">def</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">    </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">render</span><span class="p">():</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="p">),</span>
-<span class="w">                   </span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">on_click</span><span class="o">=</span><span class="n">lambda</span><span class="w"> </span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)))</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">render</span>
 </code></pre></div>
 
-<p><strong>Stateless</strong> -- return a <code>VNode</code> directly.  The body is auto-wrapped
-as a render function and re-called when prop signals change::</p>
+<p><strong>Stateless</strong> -- return a <code>VNode</code> directly.  Note that prop values
+captured in the body are read <strong>once</strong> at mount; for live updates
+use <code>get_props()</code> and access props inside a reactive hole::</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
 <span class="n">def</span><span class="w"> </span><span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="ss">&quot;world&quot;</span><span class="p">)</span><span class="err">:</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name}!&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="n">f</span><span class="ss">&quot;Hello, {name}!&quot;</span><span class="p">)</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">initial</span><span class="w"> </span><span class="k">value</span>
 </code></pre></div>
 
 <p><strong>Children</strong> are available via a <code>children</code> parameter::</p>

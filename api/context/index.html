@@ -2182,6 +2182,9 @@ need for a separate render-time stack.</p>
 <p>Renders its children transparently.  The reconciler sets the context
 value on this component's ownership scope so that descendants can
 find it via <code>use_context</code>.</p>
+<p>Children are rendered through a reactive hole so that updates from
+the parent (e.g. a router swapping the matched route component) flow
+into the subtree even though the Provider body runs only once.</p>
 
 
 <details class="props" open>
