@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.22.0 (2026-04-22)
+
+### Features
+
+- **component,vnode**: Add run-once components with reactive holes
+  ([`edaaaa6`](https://github.com/wybthon/wybthon/commit/edaaaa686f0c3bd833606c38183e315cd29ef771))
+
+
 ## v0.21.0 (2026-04-15)
 
 ### Features
