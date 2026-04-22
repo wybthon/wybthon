@@ -20,25 +20,31 @@ def _feature(title, desc):
 
 @component
 def _HeroDemo():
+    """Hero demo using the new fine-grained model.
+
+    The component body runs **once**; each ``span`` / ``p`` text receives
+    a getter that becomes a reactive hole.  Only the relevant text node
+    updates when the signal changes — no component re-render.
+    """
     count, set_count = create_signal(0)
 
-    def render():
-        return div(
-            span("Live Demo", class_name="demo-badge"),
-            p(f"{count()}", class_name="demo-count"),
-            div(
-                button("-", on_click=lambda e: set_count(count() - 1)),
-                button("+", on_click=lambda e: set_count(count() + 1)),
-                class_name="demo-buttons",
-            ),
-            p(
-                f"Double: {count() * 2}  |  Even: {'yes' if count() % 2 == 0 else 'no'}",
-                class_name="demo-derived",
-            ),
-            class_name="hero-demo",
-        )
-
-    return render
+    return div(
+        span("Live Demo", class_name="demo-badge"),
+        p(count, class_name="demo-count"),
+        div(
+            button("-", on_click=lambda e: set_count(count() - 1)),
+            button("+", on_click=lambda e: set_count(count() + 1)),
+            class_name="demo-buttons",
+        ),
+        p(
+            "Double: ",
+            span(lambda: str(count() * 2)),
+            "  |  Even: ",
+            span(lambda: "yes" if count() % 2 == 0 else "no"),
+            class_name="demo-derived",
+        ),
+        class_name="hero-demo",
+    )
 
 
 @component
@@ -59,19 +65,18 @@ def Page():
             h2("Write components, not configuration", class_name="section-title"),
             pre(
                 code(
-                    "from wybthon import component, create_signal, div, button, p\n"
+                    "from wybthon import component, create_signal, div, button, p, span\n"
                     "\n"
                     "@component\n"
                     "def Counter(initial=0):\n"
                     "    count, set_count = create_signal(initial)\n"
-                    "\n"
-                    "    def render():\n"
-                    "        return div(\n"
-                    '            p(f"Count: {count()}"),\n'
-                    '            button("+", on_click=lambda e: set_count(count() + 1)),\n'
-                    "        )\n"
-                    "\n"
-                    "    return render"
+                    "    # Body runs ONCE.  ``count`` is a zero-arg getter and\n"
+                    "    # the surrounding span turns it into a reactive hole:\n"
+                    "    # only that text node updates when the signal changes.\n"
+                    "    return div(\n"
+                    '        p("Count: ", span(count)),\n'
+                    '        button("+", on_click=lambda e: set_count(count() + 1)),\n'
+                    "    )"
                 ),
                 class_name="code-block",
             ),
@@ -85,12 +90,17 @@ def Page():
                     "Fine-grained reactivity with create_signal, create_effect, " "and create_memo.",
                 ),
                 _feature(
+                    "Reactive Holes",
+                    "Components run once. Embed signal getters anywhere in your "
+                    "VNode tree and only the relevant node updates.",
+                ),
+                _feature(
                     "Components",
                     "Function components with the @component decorator.",
                 ),
                 _feature(
                     "Virtual DOM",
-                    "Efficient diffing and patching with key-aware reconciliation.",
+                    "Batched, key-aware diffing — efficient for Pyodide's bridge.",
                 ),
                 _feature(
                     "Routing",

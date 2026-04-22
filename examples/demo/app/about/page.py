@@ -1,5 +1,5 @@
 from app.components.theme_label import ThemeLabel
-from wybthon import button, component, div, h, h2, h3, navigate, p
+from wybthon import Link, component, div, h, h2, h3, p
 
 
 @component
@@ -69,7 +69,7 @@ def Page():
                 "This page was lazy-loaded. The team sub-page demonstrates "
                 "nested routing with lazy-loaded components."
             ),
-            button("View Team Page", on_click=lambda e: navigate("/about/team")),
+            h(Link, {"to": "/about/team", "class": "button"}, "View Team Page"),
             class_name="demo-section",
         ),
         class_name="page",

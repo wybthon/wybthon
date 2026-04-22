@@ -59,15 +59,17 @@ def test_memo_skips_rerender_same_props(wyb, root_element):
 
 
 def test_memo_rerenders_on_changed_props(wyb, root_element):
+    """Without memo, a parent re-render still updates the child's reactive hole on prop change."""
     vdom = wyb["vdom"]
     reactivity = wyb["reactivity"]
 
-    child_renders = [0]
+    child_setup_runs = [0]
     parent_setter = [None]
 
     def Child(props):
-        child_renders[0] += 1
-        return vdom.h("span", {}, f"count={props.get('count')}")
+        child_setup_runs[0] += 1
+        rprops = reactivity.get_props()
+        return vdom.h("span", {}, lambda: f"count={rprops['count']}")
 
     MemoChild = vdom.memo(Child)
 
@@ -81,13 +83,13 @@ def test_memo_rerenders_on_changed_props(wyb, root_element):
         return render
 
     vdom.render(vdom.h(Parent, {}), root_element)
-    assert child_renders[0] == 1
+    assert child_setup_runs[0] == 1
     assert "count=0" in collect_texts(root_element.element)
 
     parent_setter[0](1)
     time.sleep(0.05)
 
-    assert child_renders[0] == 2
+    assert child_setup_runs[0] == 1, "child setup runs once; updates flow through the hole"
     assert "count=1" in collect_texts(root_element.element)
 
 

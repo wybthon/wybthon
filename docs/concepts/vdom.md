@@ -3,8 +3,10 @@
 The VDOM is represented by `VNode` and created via `h(tag, props, *children)`.
 
 - `tag`: string (DOM node) or callable (component)
-- `props`: attributes, event handlers, and special props like `key`
-- `children`: strings or `VNode`s
+- `props`: attributes, event handlers, special props (`key`, `ref`),
+  or **getter callables** that become reactive bindings
+- `children`: strings, `VNode`s, or **getter callables** that become
+  reactive holes
 
 ```python
 from wybthon import h
@@ -15,6 +17,30 @@ view = h("div", {"class": "app"},
 ```
 
 Rendering is done with `render(view, container)`.
+
+#### Reactive holes (fine-grained updates)
+
+A zero-arg callable placed inside a VNode tree becomes a **reactive
+hole**: the reconciler wraps it in its own effect, so only the hole
+(and not the surrounding component) re-runs when its dependencies
+change.  This is how Wybthon achieves SolidJS-style fine-grained
+updates while keeping the VDOM as a batching layer.
+
+```python
+from wybthon import create_signal, dynamic, h
+
+count, set_count = create_signal(0)
+
+view = h("p", {"class": lambda: f"counter {('odd' if count() % 2 else 'even')}"},
+         "Count: ",
+         count.get,                         # text hole
+         dynamic(lambda: f" (×2={count()*2})"))
+```
+
+Holes are also recognised on prop values (except `on_*` event handlers
+and `ref`).  Each prop has its own effect, so unrelated reactive
+attributes update independently.  See the [Reactive Holes section in
+Primitives](primitives.md#reactive-holes) for the full mental model.
 
 #### Architecture
 

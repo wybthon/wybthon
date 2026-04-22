@@ -1,13 +1,21 @@
 """Virtual node data structure and creation utilities.
 
 This module defines the core ``VNode`` tree representation and the functions
-used to build it (``h``, ``Fragment``, ``memo``).  It is intentionally free
-of browser/DOM dependencies so that VNode trees can be constructed and
-inspected in any Python environment.
+used to build it (``h``, ``Fragment``, ``memo``, ``dynamic``).  It is
+intentionally free of browser/DOM dependencies so that VNode trees can be
+constructed and inspected in any Python environment.
+
+A ``_dynamic`` VNode (created via ``dynamic()`` or implicitly when a
+zero-argument callable appears in a child position) represents a
+**reactive hole**: the reconciler wraps the getter in its own effect
+that updates only the corresponding DOM region when the getter's
+dependencies change.  This is the building block for SolidJS-style
+"setup once, update fine-grained" rendering.
 """
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
@@ -29,6 +37,8 @@ __all__ = [
     "h",
     "Fragment",
     "memo",
+    "dynamic",
+    "is_getter",
 ]
 
 PropsDict = Dict[str, Any]
@@ -37,7 +47,7 @@ ChildType = Union["VNode", str]
 
 @dataclass
 class VNode:
-    """Virtual node representing an element, text, or component subtree."""
+    """Virtual node representing an element, text, component, or reactive hole."""
 
     tag: Optional[Union[str, Callable[..., Any]]]
     props: PropsDict = field(default_factory=dict)
@@ -55,6 +65,67 @@ def to_text_vnode(value: Any) -> VNode:
     return VNode(tag="_text", props={"nodeValue": "" if value is None else str(value)}, children=[])
 
 
+def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None) -> VNode:
+    """Create a reactive-hole VNode that re-evaluates *getter* on dependency changes.
+
+    This is the explicit form of the same machinery that wraps callable
+    children automatically.  Use it when you want to be explicit about
+    which child is dynamic, or to attach a stable ``key`` for keyed
+    reuse inside a fragment::
+
+        div(dynamic(lambda: f"Hello, {name()}!"))
+
+    Inside a reactive hole you may return a ``VNode``, a ``str``, a
+    list of either, or ``None``.
+    """
+    return VNode(tag="_dynamic", props={"getter": getter}, children=[], key=key)
+
+
+def _signature_has_required_positional(fn: Any) -> bool:
+    """Return True when *fn* has at least one required positional parameter."""
+    try:
+        sig = inspect.signature(fn)
+    except (ValueError, TypeError):
+        return True
+    for p in sig.parameters.values():
+        if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+            if p.default is inspect.Parameter.empty:
+                return True
+    return False
+
+
+def is_getter(value: Any) -> bool:
+    """Return True when *value* is a zero-argument callable suitable for a reactive hole.
+
+    Excludes:
+
+    * ``VNode`` instances
+    * Classes (``isinstance(v, type)``)
+    * Components / providers (marked with ``_wyb_component`` / ``_wyb_provider``)
+    * ``Ref`` objects (have a ``current`` attribute)
+    * Callables that require positional arguments (e.g. event handlers
+      taking an event object)
+    """
+    if value is None:
+        return False
+    if not callable(value):
+        return False
+    if isinstance(value, (VNode, type)):
+        return False
+    if hasattr(value, "current"):
+        return False
+    if getattr(value, "_wyb_component", False):
+        return False
+    if getattr(value, "_wyb_provider", False):
+        return False
+    if getattr(value, "_wyb_getter", False):
+        return True
+    self_obj = getattr(value, "__self__", None)
+    if self_obj is not None and type(self_obj).__name__ == "Signal":
+        return True
+    return not _signature_has_required_positional(value)
+
+
 def flatten_children(items: Iterable[Any]) -> List[Any]:
     """Flatten nested child lists into a single list while dropping ``None``s."""
     out: List[Any] = []
@@ -69,10 +140,13 @@ def flatten_children(items: Iterable[Any]) -> List[Any]:
 
 
 def normalize_children(children: List[ChildType]) -> List[VNode]:
-    """Normalize mixed children into a list of VNodes (converting strings).
+    """Normalize mixed children into a list of VNodes.
 
-    Fragment children are flattened into the parent list so that
-    the reconciler always works with a flat child list for element nodes.
+    * ``VNode`` -- kept as-is (fragments are flattened into the parent list).
+    * Zero-argument callable -- wrapped in a ``_dynamic`` VNode (reactive hole).
+    * Anything else -- coerced to a text VNode.
+
+    The reconciler always works with a flat list of VNodes.
     """
     out: List[VNode] = []
     for ch in children:
@@ -81,13 +155,22 @@ def normalize_children(children: List[ChildType]) -> List[VNode]:
                 out.extend(normalize_children(ch.children))
             else:
                 out.append(ch)
+        elif callable(ch) and is_getter(ch):
+            out.append(dynamic(ch))
         else:
             out.append(to_text_vnode(ch))
     return out
 
 
 def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] = None, *children: Any) -> VNode:
-    """Create a VNode from a tag, props, and children (component-aware)."""
+    """Create a VNode from a tag, props, and children (component-aware).
+
+    Callable children (zero-argument getters) are passed through
+    unchanged; ``normalize_children`` will wrap them as ``_dynamic``
+    VNodes when the parent element mounts.  Components receive their
+    children verbatim via the ``children`` prop so they can decide how
+    to render them.
+    """
     props = props or {}
     key = props.get("key") if "key" in props else None
     flat_children = flatten_children(children)

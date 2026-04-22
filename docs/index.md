@@ -8,8 +8,13 @@ Build interactive web apps in Python that execute entirely in the browser. Wybth
 
 ## Features
 
-- Virtual DOM renderer with function components
-- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`
+- **Run-once components + reactive holes**: function components run a single
+  time at mount.  Embed signal getters anywhere in your VNode tree to create
+  a *reactive hole* — only that node updates when the signal changes.  No
+  React-style component re-renders.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
+- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`
+- Virtual DOM renderer with function components — **batched** mutations
+  amortise the Pyodide ↔ JS bridge cost
 - Async data: `create_resource` with loading/error signals and `Suspense`
 - Router with path params, query parsing, and a `Link` component
 - Contexts and a `Provider` component

@@ -348,8 +348,19 @@ def test_nested_components(wyb, root_element):
 # --------------------------------------------------------------------------- #
 
 
-def test_function_component_reads_signal_reactively(wyb, root_element):
-    """Stateless function components that read raw signals re-render."""
+def test_function_component_runs_once_for_static_signal_read(wyb, root_element):
+    """Stateless components run **once**; eager signal reads capture the initial value.
+
+    This is the SolidJS-style "setup runs once" behavior: the body of a
+    function component is executed a single time during mount.  Reading
+    a signal eagerly (``external_sig.get()``) captures whatever value
+    it has at that moment; subsequent ``set()`` calls do not re-run the
+    body.
+
+    To get reactive updates use a *reactive hole* -- pass the getter
+    itself (``external_sig.get``) into the VNode tree.  See
+    ``test_function_component_signal_via_hole`` below.
+    """
     vdom = wyb["vdom"]
     reactivity = wyb["reactivity"]
 
@@ -367,5 +378,27 @@ def test_function_component_reads_signal_reactively(wyb, root_element):
 
     external_sig.set("updated")
     time.sleep(0.05)
-    assert render_count[0] == 2
-    assert "updated" in collect_texts(root_element.element)
+    assert render_count[0] == 1, "body must run exactly once"
+    assert "initial" in collect_texts(root_element.element), "static read does not update DOM"
+
+
+def test_function_component_signal_via_hole(wyb, root_element):
+    """Passing a signal getter as a child creates a reactive hole that updates the DOM."""
+    vdom = wyb["vdom"]
+    reactivity = wyb["reactivity"]
+
+    external_sig = reactivity.signal("initial")
+    render_count = [0]
+
+    def Display(props):
+        render_count[0] += 1
+        return vdom.h("p", {}, external_sig.get)
+
+    vdom.render(vdom.h(Display, {}), root_element)
+    assert render_count[0] == 1
+    assert "initial" in collect_texts(root_element.element)
+
+    external_sig.set("updated")
+    time.sleep(0.05)
+    assert render_count[0] == 1, "body still runs only once with the hole"
+    assert "updated" in collect_texts(root_element.element), "hole updates the DOM"

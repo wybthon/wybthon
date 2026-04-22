@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 from wybthon import (
     a11y_control_attrs,
     bind_checkbox,
@@ -15,6 +13,12 @@ from wybthon import (
 
 
 class DummyTarget:
+    """Stand-in for ``DomEvent.target`` exposing ``value``/``checked`` directly.
+
+    Mirrors the ergonomic ``Element`` wrapper API so tests can assert
+    against the same handler surface real handlers see.
+    """
+
     def __init__(self, value=None, checked=False):
         self.value = value
         self.checked = checked
@@ -24,7 +28,7 @@ class DummyEvent:
     def __init__(self, value=None, checked=False):
         self._js_event = None
         self.type = None
-        self.target = SimpleNamespace(element=DummyTarget(value=value, checked=checked))
+        self.target = DummyTarget(value=value, checked=checked)
         self.current_target = None
         self._stopped = False
 

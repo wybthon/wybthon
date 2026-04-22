@@ -311,8 +311,13 @@ def test_component_nested(wyb, root_element):
     assert "nested" in texts
 
 
-def test_component_re_renders_on_prop_change(wyb, root_element):
-    """Stateless @component re-renders when parent passes new props."""
+def test_component_runs_once_static_prop_capture(wyb, root_element):
+    """Stateless @component bodies run **once**; eagerly-captured props don't auto-update.
+
+    To get reactive updates the child should use ``get_props()`` and
+    place the prop access inside a reactive hole -- see
+    ``test_component_reactive_props_update`` below.
+    """
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     child_renders = [0]
@@ -339,8 +344,41 @@ def test_component_re_renders_on_prop_change(wyb, root_element):
     parent_setter[0](5)
     time.sleep(0.1)
 
-    assert child_renders[0] >= 2
-    assert "count=5" in collect_texts(root_element.element)
+    assert child_renders[0] == 1, "child body must not re-run"
+    assert "count=0" in collect_texts(root_element.element), "static read keeps old value"
+
+
+def test_component_re_renders_via_reactive_hole(wyb, root_element):
+    """Reading props through ``get_props()`` inside a hole updates the DOM in-place."""
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
+
+    child_renders = [0]
+    parent_setter = [None]
+
+    @comp_mod.component
+    def Child(count=0):
+        child_renders[0] += 1
+        props = reactivity.get_props()
+        return vdom.h("span", {}, lambda: f"count={props['count']}")
+
+    def Parent(props):
+        val, set_val = reactivity.create_signal(0)
+        parent_setter[0] = set_val
+
+        def render():
+            return vdom.h("div", {}, vdom.h(Child, {"count": val()}))
+
+        return render
+
+    vdom.render(vdom.h(Parent, {}), root_element)
+    assert child_renders[0] == 1
+    assert "count=0" in collect_texts(root_element.element)
+
+    parent_setter[0](5)
+    time.sleep(0.1)
+
+    assert child_renders[0] == 1, "body still runs only once"
+    assert "count=5" in collect_texts(root_element.element), "hole updates the DOM"
 
 
 def test_component_exported_from_package():

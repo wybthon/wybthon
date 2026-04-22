@@ -176,22 +176,24 @@ function.  Any effects created during the new execution become fresh
 children of the computation.  This prevents leaks from
 conditionally-created effects.
 
-##### Setup effects vs render effects
+##### Setup effects vs hole effects
 
-Inside a component, effects have different lifetimes depending on
-**when** they are created:
+The component body runs **once**.  Effects you create there are
+*setup effects*, parented to the component context.  Effects created
+inside a reactive hole (or returned by an inner `dynamic` expression)
+are children of that hole's effect.
 
 | Created during | Parent owner | Disposed when |
 |----------------|--------------|---------------|
 | **Setup** (component body, before `return`) | `_ComponentContext` | Component unmounts |
-| **Render** (inside the render function) | Render `Computation` | Next re-render or unmount |
+| **Reactive hole** (inside a hole getter or a child it created) | Hole's `Computation` | Next hole re-run or unmount |
 
-Setup effects survive re-renders because they are children of the
-component context, not the render effect.  Render effects are torn down
-every time the render function re-runs.
+Setup effects survive across hole re-runs because they are not children
+of any hole.  Effects created inside a hole are torn down every time
+the hole re-runs (so their `on_cleanup` callbacks fire).
 
 ```python
-from wybthon import component, create_effect, create_signal, p
+from wybthon import component, create_effect, create_signal, dynamic, p
 
 @component
 def Timer(interval: int = 1000):
@@ -200,12 +202,11 @@ def Timer(interval: int = 1000):
     # Setup effect — lives until the component unmounts
     create_effect(lambda: print("count is", count()))
 
-    def render():
-        # Render effect — disposed and recreated on each re-render
-        create_effect(lambda: print("rendered with", count()))
-        return p(f"Elapsed: {count()}")
-
-    return render
+    return p(
+        # Hole effect — re-runs only when ``count`` changes; any inner
+        # effects it creates are disposed before the next run.
+        dynamic(lambda: f"Elapsed: {count()}"),
+    )
 ```
 
 #### Disposal

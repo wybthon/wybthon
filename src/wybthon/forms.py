@@ -123,10 +123,8 @@ def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None
     validators = validators or []
 
     def on_input(evt) -> None:  # DomEvent
-        try:
-            target = evt.target.element
-            val = getattr(target, "value", "")
-        except Exception:
+        val = evt.target.value if evt.target is not None else ""
+        if val is None:
             val = ""
         field.value.set(val)
         field.touched.set(True)
@@ -142,11 +140,7 @@ def bind_checkbox(field: FieldState) -> Dict[str, Any]:
     """Bind a checkbox input to a boolean field."""
 
     def on_change(evt) -> None:  # DomEvent
-        try:
-            target = evt.target.element
-            checked = bool(getattr(target, "checked", False))
-        except Exception:
-            checked = False
+        checked = bool(evt.target.checked) if evt.target is not None else False
         field.value.set(checked)
         field.touched.set(True)
         field.error.set(None)
@@ -161,10 +155,8 @@ def bind_select(field: FieldState) -> Dict[str, Any]:
     """Bind a select element to a field, updating value on change."""
 
     def on_change(evt) -> None:  # DomEvent
-        try:
-            target = evt.target.element
-            val = getattr(target, "value", "")
-        except Exception:
+        val = evt.target.value if evt.target is not None else ""
+        if val is None:
             val = ""
         field.value.set(val)
         field.touched.set(True)

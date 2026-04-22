@@ -28,6 +28,11 @@ from wybthon.reconciler import render       # direct import
 - `h(tag, props=None, *children) -> VNode`
 - `Fragment(*children)` — groups children **without** a wrapper element; the reconciler uses invisible comment markers and mounts children in the parent (no `display:contents` span).
 - `render(vnode, container) -> Element`
+- `dynamic(getter, *, key=None) -> VNode` — wrap a zero-arg callable as a
+  *reactive hole* (see [Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes)).  Callable children passed to `h()` are auto-wrapped via this helper.
+- `is_getter(value) -> bool` — predicate the reconciler uses to decide whether
+  a callable child or prop value is a reactive hole.  Useful when authoring
+  components or helpers that need to detect getters explicitly.
 - `ErrorBoundary` component
 - `Suspense` component
 - `memo(component, are_props_equal=None)` — memoize a function component

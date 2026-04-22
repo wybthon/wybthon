@@ -1,9 +1,74 @@
 ### Primitives
 
 Wybthon uses a **signals-first** reactive model inspired by SolidJS.
-Components can be **stateless** (return a VNode directly) or **stateful**
-(create signals during a one-time setup phase and return a render function
-that re-runs automatically when signals change).
+Component bodies run **once** at mount.  Reactivity comes from signals
+read inside *reactive holes* — zero-arg callables placed inside the
+returned VNode tree.  See the [Reactive Holes](#reactive-holes) section
+below.
+
+---
+
+#### Reactive Holes
+
+A **reactive hole** is a zero-arg callable embedded in a VNode tree
+(child or prop value).  The reconciler wraps each hole in its own
+effect, so the surrounding component body runs **once** while the
+hole updates the DOM in place when its dependencies change.
+
+There are three ways to create a hole:
+
+```python
+from wybthon import button, component, create_signal, div, dynamic, p, span
+
+@component
+def Demo():
+    count, set_count = create_signal(0)
+
+    return div(
+        # 1) Pass a signal accessor directly:
+        p("Count: ", span(count.get)),
+
+        # 2) Wrap a derived expression with ``dynamic``:
+        p(dynamic(lambda: f"Doubled: {count() * 2}")),
+
+        # 3) Reactive prop value (any callable prop except event handlers):
+        p("Status",
+          class_name=lambda: "danger" if count() > 5 else "ok"),
+
+        button("+1", on_click=lambda e: set_count(count() + 1)),
+    )
+```
+
+A hole's getter may return any of:
+
+- a string or number → rendered as a text node
+- a `VNode` → mounted as the hole's subtree (replacing the previous one)
+- a `Fragment` or list of VNodes → mounted as multiple roots between
+  the hole's start/end anchors
+- `None` → renders nothing
+
+Holes are scoped to their owner.  Inside a hole you can use
+`on_cleanup` to register teardown that runs before each re-execution
+and on disposal — the same lifecycle as `create_effect`:
+
+```python
+@component
+def Subscriber():
+    topic, _ = create_signal("a")
+    return p(
+        dynamic(lambda: subscribe(topic())),  # subscribe re-runs on topic change
+    )
+
+def subscribe(topic_name):
+    handle = open_subscription(topic_name)
+    on_cleanup(handle.close)
+    return f"listening to {topic_name}"
+```
+
+> **Why?** This is the SolidJS authoring model adapted for Pyodide.
+> Components run once, so signal *creation*, event-handler *closures*,
+> and lifecycle *registrations* happen exactly once — and DOM updates
+> stay surgical and predictable.
 
 ---
 
@@ -12,17 +77,15 @@ that re-runs automatically when signals change).
 Create a reactive signal.  Returns `(getter, setter)`.
 
 ```python
-from wybthon import component, create_signal, div, p
+from wybthon import component, create_signal, div, p, span
 
 @component
 def Counter(initial: int = 0):
     count, set_count = create_signal(initial)
 
-    def render():
-        return div(
-            p(f"Count: {count()}"),
-        )
-    return render
+    return div(
+        p("Count: ", span(count.get)),  # ← reactive hole
+    )
 ```
 
 Optional keyword **`equals`** controls when subscribers run: default skips notification when the new value compares equal to the old (`==`); `equals=False` notifies on every `set()`; `equals=comparator` with `comparator(old, new) -> bool` skips when the comparator returns `True` (treat as “same”).
@@ -44,7 +107,7 @@ Create an auto-tracking reactive effect.  The effect runs immediately and
 re-runs whenever any signal it reads changes.
 
 ```python
-from wybthon import component, create_effect, create_signal
+from wybthon import component, create_effect, create_signal, p
 
 @component
 def Logger():
@@ -52,9 +115,7 @@ def Logger():
 
     create_effect(lambda: print("count is now", count()))
 
-    def render():
-        return ...
-    return render
+    return p(count.get)
 ```
 
 Use `on_cleanup` inside a `create_effect` callback to register cleanup
@@ -93,15 +154,12 @@ print(doubled())  # reactive read
 Register a callback to run once after the component mounts.
 
 ```python
-from wybthon import component, on_mount
+from wybthon import component, on_mount, p
 
 @component
 def MyComponent():
     on_mount(lambda: print("Component is in the DOM!"))
-
-    def render():
-        return ...
-    return render
+    return p("hello")
 ```
 
 ---
@@ -111,47 +169,54 @@ def MyComponent():
 Register a cleanup callback.
 
 - Inside a component's setup phase: runs when the component unmounts.
-- Inside a `create_effect` callback: runs before each re-execution and
-  on disposal.
+- Inside a `create_effect` callback or a reactive hole: runs before
+  each re-execution and on disposal.
 
 ```python
-from wybthon import component, on_cleanup, on_mount
+from wybthon import component, div, on_cleanup, on_mount
 
 @component
 def Timer():
     on_mount(lambda: start_timer())
     on_cleanup(lambda: stop_timer())
-
-    def render():
-        return ...
-    return render
+    return div("...")
 ```
 
 ---
 
 #### Reactive props
 
-With `@component`, parameters are **plain Python values**. Stateless
-components re-run their body with fresh values when the parent updates
-props. **Stateful** components run setup once: parameter values are the
-initial snapshot only.
+With `@component`, parameters are **plain Python values** captured
+once at setup time.  Because the component body runs once, parameter
+values reflect the initial snapshot.
 
-For reactive reads of individual props after setup (effects, memos, or
-when you need the latest prop inside a long-lived setup callback), call
-`get_props()` once and use the **`ReactiveProps`** proxy — `props.name` or
-`props["name"]` tracks that prop:
+For reactive reads of individual props (effects, memos, or reactive
+holes), call `get_props()` once and use the **`ReactiveProps`** proxy
+— `props.name` or `props["name"]` tracks that prop:
 
 ```python
-from wybthon import component, create_effect, get_props
+from wybthon import component, create_effect, get_props, p
 
 @component
-def Search(query: str = ""):
+def Search(initial_query: str = ""):
     props = get_props()
     create_effect(lambda: print("query changed:", props.query))
 
-    def render():
-        return ...
-    return render
+    return p("Searching: ", lambda: str(props.query))
+```
+
+When a parent component wants to pass a *reactive value* to a child,
+the canonical pattern is to **pass the getter**:
+
+```python
+@component
+def Parent():
+    name, _ = create_signal("Ada")
+    return Greeting(name=name.get)   # pass the getter, not the value
+
+@component
+def Greeting(name=None):
+    return p("Hello, ", name)        # ``name`` is now a reactive hole
 ```
 
 See also: [Reactivity API](../api/reactivity.md) for `get_owner` /

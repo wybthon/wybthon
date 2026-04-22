@@ -65,7 +65,7 @@ render(tree, container)
 Stateful component with signals:
 
 ```python
-from wybthon import Element, button, component, create_signal, div, h, on_mount, p, render
+from wybthon import Element, button, component, create_signal, div, h, on_mount, p, render, span
 
 @component
 def Counter(initial: int = 0):
@@ -73,17 +73,23 @@ def Counter(initial: int = 0):
 
     on_mount(lambda: print("Counter mounted"))
 
-    def render_fn():
-        return div(
-            p(f"Count: {count()}"),
-            button("Increment", on_click=lambda e: set_count(count() + 1)),
-        )
-    return render_fn
+    # Component body runs ONCE.  ``count.get`` is a *reactive hole*:
+    # only the highlighted text node updates when the signal changes.
+    return div(
+        p("Count: ", span(count.get)),
+        button("Increment", on_click=lambda e: set_count(count() + 1)),
+    )
 
 tree = h(Counter, {"initial": 5})
 container = Element("body", existing=True)
 render(tree, container)
 ```
+
+> **Why the `span(count.get)` instead of `f"Count: {count()}"`?**
+> Reading `count()` eagerly at setup captures the current value once.
+> To get reactive updates, embed the *getter* — the reconciler then
+> wraps it as a reactive hole and updates only that DOM node when the
+> signal changes.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
 
 Traditional function component (also supported):
 

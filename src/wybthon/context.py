@@ -55,15 +55,23 @@ def Provider(props: Dict[str, Any]) -> Any:
     value on this component's ownership scope so that descendants can
     find it via ``use_context``.
 
+    Children are rendered through a reactive hole so that updates from
+    the parent (e.g. a router swapping the matched route component) flow
+    into the subtree even though the Provider body runs only once.
+
     Props:
       - context: Context
       - value: Any
       - children: VNode or list of VNodes
     """
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return Fragment(*children)
+
+    def render() -> Any:
+        children = props.get("children", [])
+        if not isinstance(children, list):
+            children = [children]
+        return Fragment(*children)
+
+    return render
 
 
 Provider._wyb_provider = True  # type: ignore[attr-defined]

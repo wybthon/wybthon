@@ -6,6 +6,7 @@ def Nav(base_path=None):
     lp = {"base_path": base_path, "class": "nav-link", "class_active": "active"}
     return nav(
         h(Link, {**lp, "to": "/"}, "Home"),
+        h(Link, {**lp, "to": "/holes"}, "Holes"),
         h(Link, {**lp, "to": "/primitives"}, "Primitives"),
         h(Link, {**lp, "to": "/patterns"}, "Patterns"),
         h(Link, {**lp, "to": "/stores"}, "Stores"),

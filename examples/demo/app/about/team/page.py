@@ -1,4 +1,4 @@
-from wybthon import button, code, component, div, h2, h3, navigate, p, pre
+from wybthon import Link, code, component, div, h, h2, h3, p, pre
 
 
 @component
@@ -37,6 +37,6 @@ def Page():
             ),
             class_name="demo-section",
         ),
-        button("Back to About", on_click=lambda e: navigate("/about")),
+        h(Link, {"to": "/about", "class": "button"}, "Back to About"),
         class_name="page",
     )

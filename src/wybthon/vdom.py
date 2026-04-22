@@ -17,7 +17,7 @@ from .portal import create_portal
 from .props import is_event_prop
 from .reconciler import mount, patch, render, unmount
 from .suspense import Suspense
-from .vnode import Fragment, VNode, h, memo
+from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
 
 __all__ = [
     "VNode",
@@ -28,6 +28,8 @@ __all__ = [
     "Suspense",
     "memo",
     "create_portal",
+    "dynamic",
+    "is_getter",
     "is_event_prop",
     "mount",
     "unmount",

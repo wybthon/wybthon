@@ -9,22 +9,31 @@ The ``@component`` decorator provides two main features:
        Card("child", title="Hi")   # → h(Card, {"title": "Hi", "children": ["child"]})
 
 2. **Automatic prop destructuring** -- named parameters are read from
-   the ``ReactiveProps`` proxy and passed as plain Python values.  For
-   **stateless** components (those that return a VNode directly), the
-   decorator wraps the body in a render function that re-reads props
-   on each render cycle, keeping the output reactive.
+   the ``ReactiveProps`` proxy and passed as plain Python values **once**
+   during component setup.  This matches SolidJS-style "setup runs once"
+   semantics: the body is invoked a single time when the component is
+   mounted, and updates flow through reactive holes embedded in the
+   returned VNode tree.
 
 Reactive prop access
 --------------------
-Props are plain values inside the function body — no callable getters::
+Inside the body, parameter values are plain Python values that
+reflect the **initial** props.  Because the body never re-runs,
+re-rendering on prop changes happens at the **hole** boundary -- pass
+a getter expression directly in the VNode tree::
 
     @component
     def Greeting(name="world"):
-        return p(f"Hello, {name}!")   # name is a plain string
+        # `name` here is the initial value; for reactive updates use a hole:
+        props = get_props()
+        return p("Hello, ", lambda: props.name, "!")
 
-For **stateful** components, setup runs once with initial values.
-Use ``get_props()`` to access the ``ReactiveProps`` proxy for
-reactive tracking inside effects or the render function::
+For the special case where you only need access to the **current** prop
+value at one site, calling ``get_props()`` and reading attribute
+accesses inside a hole is the idiomatic pattern.
+
+The legacy "return a render function" pattern is still supported and
+implemented as syntactic sugar for a single-root reactive hole::
 
     @component
     def Counter(initial=0):
@@ -32,6 +41,13 @@ reactive tracking inside effects or the render function::
         def render():
             return div(p(f"Count: {count()}"))
         return render
+
+When the component returns a callable, the reconciler wraps it in a
+``_dynamic`` VNode whose effect re-runs the render function on
+dependency changes.  This is identical to writing the render fn as a
+direct child of a div::
+
+    return div(lambda: p(f"Count: {count()}"))
 """
 
 from __future__ import annotations
@@ -49,23 +65,38 @@ __all__ = ["component", "forward_ref"]
 def component(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator that provides kwargs calling and prop destructuring.
 
-    **Stateful** -- create signals during setup and return a *render function*
-    (setup runs once, render re-runs when signals change)::
+    Components run **once** during mount.  Reactive updates inside the
+    component come from holes in the returned VNode tree (callable
+    children/props), not from re-running the body.
+
+    **Stateful** -- create signals during setup; embed them as
+    reactive holes in the returned tree::
+
+        @component
+        def Counter(initial=0):
+            count, set_count = create_signal(initial)
+            return div(
+                p("Count: ", count),
+                button("+", on_click=lambda e: set_count(count() + 1)),
+            )
+
+    **Legacy stateful** -- returning a render function is still supported;
+    the reconciler treats it as a single-root reactive hole::
 
         @component
         def Counter(initial=0):
             count, set_count = create_signal(initial)
             def render():
-                return div(p(f"Count: {count()}"),
-                           button("+", on_click=lambda e: set_count(count() + 1)))
+                return div(p(f"Count: {count()}"))
             return render
 
-    **Stateless** -- return a ``VNode`` directly.  The body is auto-wrapped
-    as a render function and re-called when prop signals change::
+    **Stateless** -- return a ``VNode`` directly.  Note that prop values
+    captured in the body are read **once** at mount; for live updates
+    use ``get_props()`` and access props inside a reactive hole::
 
         @component
         def Greeting(name="world"):
-            return p(f"Hello, {name}!")
+            return p(f"Hello, {name}!")   # name is the initial value
 
     **Children** are available via a ``children`` parameter::
 
@@ -115,22 +146,7 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
             for pname in params:
                 initial_kwargs[pname] = reactive_props.get(pname, defaults.get(pname))
 
-            result = fn(**initial_kwargs)
-
-            if not callable(result):
-                _rp = reactive_props
-                _params = params
-
-                def _stateless_render() -> Any:
-                    kw: Dict[str, Any] = {}
-                    for pn in _params:
-                        kw[pn] = _rp._get(pn)
-                    return fn(**kw)
-
-                if ctx is not None:
-                    ctx._render_fn = _stateless_render
-
-            return result
+            return fn(**initial_kwargs)
 
         from .vnode import h
 

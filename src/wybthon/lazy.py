@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 
-from .reactivity import Signal, effect
+from .reactivity import Signal
 from .vnode import VNode, h
 
 __all__ = ["lazy", "load_component", "preload_component"]
@@ -43,24 +43,14 @@ def load_component(module_path: str, attr: Optional[str] = None) -> Callable[[Di
     `preload_component` to warm the cache.
     """
 
-    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = Signal(None)
+    loaded: Signal[Optional[Any]] = Signal(None)
     error_sig: Signal[Optional[Any]] = Signal(None)
 
     def _do_import() -> None:
         try:
             mod = importlib.import_module(module_path)
             comp = _resolve_attr(mod, attr)
-
-            # Wrap class components into h(class, props) and allow function components to pass through
-            def as_vnode(props: Dict[str, Any]) -> VNode:
-                if isinstance(comp, type):
-                    return h(comp, props)
-                sub = comp(props)
-                if isinstance(sub, VNode):
-                    return sub
-                return h("div", {}, sub)
-
-            loaded.set(as_vnode)
+            loaded.set(comp)
         except Exception as e:  # pragma: no cover - depends on runtime module availability
             error_sig.set(e)
 
@@ -71,22 +61,22 @@ def load_component(module_path: str, attr: Optional[str] = None) -> Callable[[Di
     except Exception as e:
         error_sig.set(e)
 
-    def _Component(props: Dict[str, Any]) -> VNode:
-        comp_fn = loaded.get()
-        err = error_sig.get()
-        if comp_fn is None and err is None:
-            # Trigger a re-render when load completes
-            def tick() -> None:
-                if loaded.get() is not None or error_sig.get() is not None:
-                    # No op; reads signals to subscribe
-                    pass
+    def _Component(props: Dict[str, Any]) -> Any:
+        # Body runs once; the inner ``render`` callable becomes a single-root
+        # reactive hole that re-evaluates when ``loaded`` / ``error_sig`` change.
+        # ``render`` MUST return a ``VNode`` -- we hand off mounting of the
+        # resolved component to the reconciler via ``h(comp, props)`` so that
+        # function-component setup, context, and lifecycle all run correctly.
+        def render() -> VNode:
+            comp = loaded.get()
+            err = error_sig.get()
+            if comp is None and err is None:
+                return h("div", {"class": "lazy-loading"}, props.get("fallback", "Loading..."))
+            if err is not None:
+                return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")
+            return h(comp, props)
 
-            effect(tick)
-            return h("div", {"class": "lazy-loading"}, props.get("fallback", "Loading..."))
-        if err is not None:
-            return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")
-        # got it
-        return comp_fn(props)
+        return render
 
     return _Component
 
@@ -101,17 +91,14 @@ def lazy(loader: Callable[[], Tuple[str, Optional[str]]]) -> Callable[[Dict[str,
         Route(path="/users/:id", component=lazy(UserPageLazy))
     """
 
-    module_path: Signal[Optional[str]] = Signal(None)
-    attr_name: Signal[Optional[str]] = Signal(None)
-    loaded: Signal[Optional[Callable[[Dict[str, Any]], VNode]]] = Signal(None)
+    loaded: Signal[Optional[Any]] = Signal(None)
     error_sig: Signal[Optional[Any]] = Signal(None)
 
     def start_load() -> None:
         try:
             mp, an = loader()
-            module_path.set(mp)
-            attr_name.set(an)
-            comp = load_component(mp, an)
+            mod = importlib.import_module(mp)
+            comp = _resolve_attr(mod, an)
             loaded.set(comp)
         except Exception as e:
             error_sig.set(e)
@@ -122,20 +109,19 @@ def lazy(loader: Callable[[], Tuple[str, Optional[str]]]) -> Callable[[Dict[str,
     except Exception as e:  # pragma: no cover
         error_sig.set(e)
 
-    def _Component(props: Dict[str, Any]) -> VNode:
-        comp_fn = loaded.get()
-        err = error_sig.get()
-        if comp_fn is None and err is None:
+    def _Component(props: Dict[str, Any]) -> Any:
+        # See ``load_component`` -- ``render`` returns ``h(comp, props)`` so
+        # the reconciler mounts the resolved module's component correctly.
+        def render() -> VNode:
+            comp = loaded.get()
+            err = error_sig.get()
+            if comp is None and err is None:
+                return h("div", {"class": "lazy-loading"}, props.get("fallback", "Loading..."))
+            if err is not None:
+                return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")
+            return h(comp, props)
 
-            def tick() -> None:
-                if loaded.get() is not None or error_sig.get() is not None:
-                    pass
-
-            effect(tick)
-            return h("div", {"class": "lazy-loading"}, props.get("fallback", "Loading..."))
-        if err is not None:
-            return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")
-        return comp_fn(props)
+        return render
 
     return _Component
 

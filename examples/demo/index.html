@@ -25,6 +25,7 @@
       --success: #10b981;
       --error: #ef4444;
       --warning: #f59e0b;
+      --accent: #d946ef;
       --radius: 8px;
       --radius-lg: 12px;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -55,6 +56,8 @@
     .nav-link { padding: 0.375rem 0.75rem; border-radius: 6px; text-decoration: none; color: var(--text-2); font-size: 0.875rem; font-weight: 500; transition: all 0.15s ease; }
     .nav-link:hover { color: var(--primary); background: var(--primary-light); text-decoration: none; }
     .nav-link.active { color: var(--primary); background: var(--primary-light); font-weight: 600; }
+    a.button { display: inline-block; font-family: var(--font); font-size: 0.875rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s ease; line-height: 1.4; text-decoration: none; }
+    a.button:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
     .app-main { flex: 1; max-width: var(--max-w); width: 100%; margin: 0 auto; padding: 2rem 1.5rem; }
     .app-footer { border-top: 1px solid var(--border); padding: 1.5rem; text-align: center; color: var(--text-3); font-size: 0.8rem; }
 
@@ -145,6 +148,16 @@
     /* Lists inside demos */
     .card ul, .demo-section ul { list-style: none; padding: 0; }
     .card li, .demo-section li { padding: 0.2rem 0; }
+
+    /* Reactive holes demo */
+    .page-subtitle { color: var(--text-2); font-size: 1rem; max-width: 640px; margin-top: 0.5rem; }
+    .hole-value { font-family: var(--font-mono); font-weight: 700; color: var(--primary); padding: 0.05rem 0.35rem; background: var(--primary-light); border-radius: 4px; }
+    .form-input { font-family: var(--font); font-size: 0.875rem; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin: 0.5rem 0; }
+    .form-row > div { flex: 1; min-width: 220px; padding: 0.75rem; background: var(--surface-2); border-radius: var(--radius); }
+    .pill { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem; background: var(--primary-light); color: var(--primary); }
+    .pill.danger { background: #fee2e2; color: var(--error); }
+    .inline-code { font-family: var(--font-mono); }
 
     /* Responsive */
     @media (max-width: 640px) {

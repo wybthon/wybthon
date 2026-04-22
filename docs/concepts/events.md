@@ -16,10 +16,19 @@ Supported prop names: `on_click`, `on_input`, `on_change`, etc. Both `on_foo` an
 Handlers receive a `DomEvent` object that wraps the browser event and provides a small, Python-friendly surface:
 
 - `type`: the event type string (e.g., `"click"`, `"input"`).
-- `target`: an `Element` for the original event target node (or `None`). Access the underlying DOM node via `target.element`.
+- `target`: an `Element` for the original event target node (or `None`). Common form-input properties (`value`, `checked`, `files`) are exposed directly on the wrapper, mirroring the JS DOM API. The raw JS node is also available via `target.element`.
 - `current_target`: an `Element` for the node whose handler is currently running during delegated bubbling. This is set for you before your handler is called.
 - `prevent_default()`: calls `preventDefault()` on the underlying JS event, if available. Safe to call in non-browser tests.
 - `stop_propagation()`: stops delegated propagation within Wybthon’s dispatcher for this event. It also attempts to call the underlying JS `stopPropagation()` when available.
+
+Read input values exactly like in JS/React/SolidJS:
+
+```python
+input_(
+    value=name,
+    on_input=lambda e: set_name(e.target.value),
+)
+```
 
 Example:
 

@@ -127,7 +127,7 @@ if _IN_BROWSER:
     from .reconciler import render
     from .router import Link, Route, Router, current_path, navigate
     from .suspense import Suspense
-    from .vnode import Fragment, VNode, h, memo
+    from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
 
     __all__ = [
         # DOM
@@ -145,6 +145,8 @@ if _IN_BROWSER:
         "Suspense",
         "memo",
         "create_portal",
+        "dynamic",
+        "is_getter",
         # Reactivity
         "create_signal",
         "create_effect",

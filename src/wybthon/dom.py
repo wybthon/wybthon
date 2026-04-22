@@ -24,6 +24,40 @@ class Element:
                     raise ValueError("Provide a tag name when creating a new element.")
                 self.element = document.createElement(tag)
 
+    # --------------- Form-input properties (proxy to underlying DOM node) ---------------
+    # These mirror the JS DOM API so handlers can write ``e.target.value`` /
+    # ``e.target.checked`` exactly as in React/SolidJS, without reaching
+    # into ``e.target.element``.
+
+    @property
+    def value(self) -> Any:
+        """Current value of an ``<input>``/``<textarea>``/``<select>``."""
+        return getattr(self.element, "value", None)
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        try:
+            self.element.value = new_value
+        except Exception:
+            pass
+
+    @property
+    def checked(self) -> bool:
+        """Checked state of a checkbox or radio input."""
+        return bool(getattr(self.element, "checked", False))
+
+    @checked.setter
+    def checked(self, flag: bool) -> None:
+        try:
+            self.element.checked = bool(flag)
+        except Exception:
+            pass
+
+    @property
+    def files(self) -> Any:
+        """``FileList`` for file inputs (``<input type="file">``)."""
+        return getattr(self.element, "files", None)
+
     def set_text(self, text: str) -> None:
         """Set text content for this element."""
         self.element.textContent = text

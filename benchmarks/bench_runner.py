@@ -218,6 +218,9 @@ class _Document:
     def createTextNode(self, text):
         return _Node(text=str(text))
 
+    def createComment(self, text=""):
+        return _Node(text=str(text))
+
     def addEventListener(self, event_type, proxy):
         self._listeners.setdefault(event_type, set()).add(proxy)
 
@@ -457,6 +460,82 @@ def op_clear_rows(state):
     state.do_render()
 
 
+# ---------------------------------------------------------------------------
+# Reactive-hole microbenchmarks (new-model "headline" comparison)
+#
+# Both benchmarks update a single text node inside a tree of 1,000 spans.
+# The "hole" version uses a reactive hole — one effect, one DOM mutation.
+# The "rerender" version re-renders the whole tree from scratch and lets
+# the reconciler diff its way to the same single update.
+# ---------------------------------------------------------------------------
+
+
+_HOLE_TREE_SIZE = 1000
+
+
+class _HoleState:
+    """State for the hole-vs-rerender microbenchmarks."""
+
+    def __init__(self, h_fn, render_fn, dom_mod, registry, reactivity, vnode):
+        self._h = h_fn
+        self._render_fn = render_fn
+        self._dom_mod = dom_mod
+        self._registry = registry
+        self._reactivity = reactivity
+        self._vnode = vnode
+        self.root = dom_mod.Element(node=_Node(tag="div"))
+
+    def cleanup(self):
+        self._registry.pop(id(self.root.element), None)
+
+
+def _setup_hole(state):
+    """Mount a tree of N spans where the first one is a reactive hole."""
+    n = _HOLE_TREE_SIZE
+    getter, setter = state._reactivity.create_signal(0)
+    state._setter = setter
+    state._counter = 0
+
+    spans = [state._h("span", {}, getter)]
+    spans.extend(state._h("span", {}, f"static-{i}") for i in range(1, n))
+    state._render_fn(state._h("div", {}, *spans), state.root)
+
+
+def _setup_rerender(state):
+    """Mount the same tree as a single static render."""
+    n = _HOLE_TREE_SIZE
+    state._n = n
+    state._counter = 0
+
+    def build(value):
+        spans = [state._h("span", {}, str(value))]
+        spans.extend(state._h("span", {}, f"static-{i}") for i in range(1, n))
+        return state._h("div", {}, *spans)
+
+    state._build = build
+    state._render_fn(build(0), state.root)
+
+
+def op_hole_update(state):
+    """Update one signal — only the one hole-driven text node is touched.
+
+    Wrapped in ``batch`` so effects flush synchronously inside the timed
+    region, matching the behavior of ``op_full_rerender``.
+    """
+    state._counter += 1
+
+    def update():
+        state._setter(state._counter)
+
+    state._reactivity.batch(update)
+
+
+def op_full_rerender(state):
+    """Re-render the entire tree and let the reconciler diff to one text update."""
+    state._counter += 1
+    state._render_fn(state._build(state._counter), state.root)
+
+
 # (name, setup_fn, operation_fn, default_warmup)
 BENCHMARKS = [
     ("create rows", _setup_empty, op_create_rows, 5),
@@ -471,6 +550,12 @@ BENCHMARKS = [
 ]
 
 
+HOLE_BENCHMARKS = [
+    ("hole update (1k tree)", _setup_hole, op_hole_update, 5),
+    ("full rerender (1k tree)", _setup_rerender, op_full_rerender, 5),
+]
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -481,7 +566,44 @@ def _make_state(h_fn, render_fn, dom_mod, registry):
     return BenchState(h_fn, render_fn, dom_mod, registry)
 
 
-def run_benchmarks(warmup_override=None, iterations=10, include_memory=False):
+def _make_hole_state(h_fn, render_fn, dom_mod, registry, reactivity, vnode):
+    registry.clear()
+    return _HoleState(h_fn, render_fn, dom_mod, registry, reactivity, vnode)
+
+
+def _bench_loop(make_state, setup_fn, op_fn, warmup, iterations):
+    times = []
+    for i in range(warmup + iterations):
+        state = make_state()
+        setup_fn(state)
+
+        start = time.perf_counter()
+        op_fn(state)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+
+        state.cleanup()
+
+        if i >= warmup:
+            times.append(elapsed_ms)
+    return times
+
+
+def _summarise(name, times):
+    avg = mean(times)
+    sd = stdev(times) if len(times) > 1 else 0.0
+    ci = 1.96 * sd / sqrt(len(times)) if len(times) > 1 else 0.0
+    return {
+        "name": name,
+        "mean_ms": round(avg, 2),
+        "stdev_ms": round(sd, 2),
+        "ci95_ms": round(ci, 2),
+        "min_ms": round(min(times), 2),
+        "max_ms": round(max(times), 2),
+        "iterations": len(times),
+    }
+
+
+def run_benchmarks(warmup_override=None, iterations=10, include_memory=False, name_filter=None):
     _install_stubs()
     mods = _load_wybthon()
 
@@ -489,42 +611,41 @@ def run_benchmarks(warmup_override=None, iterations=10, include_memory=False):
     render_fn = mods["wybthon.vdom"].render
     dom_mod = mods["wybthon.dom"]
     registry = mods["wybthon.reconciler"]._container_registry
+    reactivity = mods["wybthon.reactivity"]
+    vnode = mods["wybthon.vnode"]
+
+    def _accept(name):
+        return name_filter is None or name_filter in name
 
     results = []
     for name, setup_fn, op_fn, default_warmup in BENCHMARKS:
+        if not _accept(name):
+            continue
         warmup = warmup_override if warmup_override is not None else default_warmup
-        times = []
-
-        for i in range(warmup + iterations):
-            state = _make_state(h_fn, render_fn, dom_mod, registry)
-            setup_fn(state)
-
-            start = time.perf_counter()
-            op_fn(state)
-            elapsed_ms = (time.perf_counter() - start) * 1000
-
-            state.cleanup()
-
-            if i >= warmup:
-                times.append(elapsed_ms)
-
-        avg = mean(times)
-        sd = stdev(times) if len(times) > 1 else 0.0
-        ci = 1.96 * sd / sqrt(len(times)) if len(times) > 1 else 0.0
-        results.append(
-            {
-                "name": name,
-                "mean_ms": round(avg, 2),
-                "stdev_ms": round(sd, 2),
-                "ci95_ms": round(ci, 2),
-                "min_ms": round(min(times), 2),
-                "max_ms": round(max(times), 2),
-                "iterations": len(times),
-            }
+        times = _bench_loop(
+            lambda: _make_state(h_fn, render_fn, dom_mod, registry),
+            setup_fn,
+            op_fn,
+            warmup,
+            iterations,
         )
+        results.append(_summarise(name, times))
+
+    for name, setup_fn, op_fn, default_warmup in HOLE_BENCHMARKS:
+        if not _accept(name):
+            continue
+        warmup = warmup_override if warmup_override is not None else default_warmup
+        times = _bench_loop(
+            lambda: _make_hole_state(h_fn, render_fn, dom_mod, registry, reactivity, vnode),
+            setup_fn,
+            op_fn,
+            warmup,
+            iterations,
+        )
+        results.append(_summarise(name, times))
 
     memory = None
-    if include_memory:
+    if include_memory and (name_filter is None or "memory" in name_filter):
         memory = _measure_memory(h_fn, render_fn, dom_mod, registry)
 
     return results, memory
@@ -609,6 +730,12 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument("--memory", action="store_true", help="Include memory measurements")
     parser.add_argument(
+        "--bench",
+        type=str,
+        default=None,
+        help="Run only benchmarks whose name contains this substring",
+    )
+    parser.add_argument(
         "--warmup",
         type=int,
         default=None,
@@ -621,6 +748,7 @@ def main():
         warmup_override=args.warmup,
         iterations=args.iterations,
         include_memory=args.memory,
+        name_filter=args.bench,
     )
 
     if args.json:

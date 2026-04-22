@@ -2,23 +2,29 @@
 
 Handles translating VNode props into DOM attribute/style/event mutations,
 including controlled form elements (``value``, ``checked``), CSS style
-objects, dataset attributes, and event handler delegation.
+objects, dataset attributes, event handler delegation, and **reactive
+prop bindings** (callable prop values that update independently of the
+surrounding component).
 """
 
 from __future__ import annotations
 
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ._warnings import component_name, log_error
 from .dom import Element
 from .events import set_handler
+from .vnode import is_getter
 
 __all__: list = []
 
 PropsDict = Dict[str, Any]
 
 CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
+
+# Sentinel used by reactive prop bindings to detect "first run".
+_UNSET = object()
 
 
 def to_kebab(name: str) -> str:
@@ -56,58 +62,145 @@ def detach_ref(props: PropsDict) -> None:
         ref.current = None
 
 
+# ---------------------------------------------------------------------------
+# Per-prop appliers (used by both initial mount and per-prop reactive bindings)
+# ---------------------------------------------------------------------------
+
+
+def _apply_single_prop(el: Element, name: str, old_val: Any, new_val: Any) -> None:
+    """Apply / diff a single prop on a real DOM element.
+
+    *old_val* may be the sentinel :data:`_UNSET` for an initial application.
+    """
+    if name in ("key", "ref"):
+        return
+
+    if is_event_prop(name):
+        if old_val is not _UNSET and old_val is new_val:
+            return
+        set_handler(el, name, new_val if callable(new_val) else None)
+        return
+
+    if name in ("class", "className"):
+        _apply_class(el, new_val)
+        return
+
+    if name == "style":
+        _apply_style(el, None if old_val is _UNSET else old_val, new_val)
+        return
+
+    if name == "dataset":
+        _apply_dataset(el, None if old_val is _UNSET else old_val, new_val)
+        return
+
+    if name == "value":
+        _set_dom_property(el, "value", "" if new_val is None else str(new_val))
+        return
+
+    if name == "checked":
+        _set_dom_property(el, "checked", bool(new_val))
+        return
+
+    el.set_attr(name, new_val)
+
+
+def _remove_single_prop(el: Element, name: str, old_val: Any) -> None:
+    """Remove a single prop from a real DOM element."""
+    if name in ("key", "ref"):
+        return
+    if is_event_prop(name):
+        set_handler(el, name, None)
+    elif name in ("class", "className"):
+        el.set_attr("class", "")
+    elif name == "style":
+        _remove_styles(el, old_val)
+    elif name == "dataset":
+        _remove_dataset(el, old_val)
+    elif name == "value":
+        _set_dom_property(el, "value", "")
+    elif name == "checked":
+        _set_dom_property(el, "checked", False)
+    else:
+        el.remove_attr(name)
+
+
+# ---------------------------------------------------------------------------
+# Bulk appliers
+# ---------------------------------------------------------------------------
+
+
 def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None:
-    """Apply prop diffs to a concrete DOM element, including events and styles."""
+    """Apply prop diffs to a concrete DOM element, including events and styles.
+
+    Used by the patch path; both old and new props are static (already
+    resolved) values.  For initial mount with potentially reactive prop
+    values, use :func:`apply_initial_props`.
+    """
     for name, old_val in list(old_props.items()):
         if name in ("key", "ref"):
             continue
         if name not in new_props:
-            if is_event_prop(name):
-                set_handler(el, name, None)
-            elif name in ("class", "className"):
-                el.set_attr("class", "")
-            elif name == "style":
-                _remove_styles(el, old_val)
-            elif name == "dataset":
-                _remove_dataset(el, old_val)
-            elif name == "value":
-                _set_dom_property(el, "value", "")
-            elif name == "checked":
-                _set_dom_property(el, "checked", False)
-            else:
-                el.remove_attr(name)
+            _remove_single_prop(el, name, old_val)
 
     for name, new_val in new_props.items():
         if name in ("key", "ref"):
             continue
+        old_val = old_props.get(name, _UNSET)
+        _apply_single_prop(el, name, old_val, new_val)
+
+
+def apply_initial_props(el: Element, new_props: PropsDict, owner_vnode: Optional[Any] = None) -> None:
+    """Apply a fresh set of props to an element, wiring reactive holes for callable values.
+
+    Callable prop values (excluding event handlers and ``ref``) are
+    treated as **reactive bindings**: each one is wrapped in its own
+    effect so that updates re-apply only that single prop, with no
+    re-render of the surrounding component.  Static values are applied
+    once.
+
+    The *owner_vnode* argument is unused at this layer but accepted for
+    forward compatibility with reconciler bookkeeping.
+    """
+    from .reactivity import _current_owner, effect
+
+    for name, value in new_props.items():
+        if name in ("key", "ref"):
+            continue
         if is_event_prop(name):
-            old_handler = old_props.get(name)
-            if old_handler is new_val:
-                continue
-            set_handler(el, name, new_val if callable(new_val) else None)
+            set_handler(el, name, value if callable(value) else None)
             continue
+        if is_getter(value):
+            _bind_reactive_prop(el, name, value)
+        else:
+            _apply_single_prop(el, name, _UNSET, value)
 
-        if name in ("class", "className"):
-            _apply_class(el, new_val)
-            continue
+    # Re-export to silence unused-import warnings if this function is
+    # invoked outside an active reactive scope.
+    _ = (_current_owner, effect)
 
-        if name == "style":
-            _apply_style(el, old_props.get("style"), new_val)
-            continue
 
-        if name == "dataset":
-            _apply_dataset(el, old_props.get("dataset"), new_val)
-            continue
+def _bind_reactive_prop(el: Element, name: str, getter: Any) -> Any:
+    """Wrap a callable prop value in a reactive effect that re-applies on changes."""
+    from .reactivity import effect
 
-        if name == "value":
-            _set_dom_property(el, "value", "" if new_val is None else str(new_val))
-            continue
+    last: list = [_UNSET]
 
-        if name == "checked":
-            _set_dom_property(el, "checked", bool(new_val))
-            continue
+    def update() -> None:
+        try:
+            new_val = getter()
+        except Exception as exc:
+            log_error(f"Reactive prop '{name}' getter raised: {exc}", exc)
+            return
+        old_val = last[0]
+        last[0] = new_val
+        _apply_single_prop(el, name, old_val, new_val)
 
-        el.set_attr(name, new_val)
+    return effect(update)
+
+
+# ---------------------------------------------------------------------------
+# Class / Style / Dataset helpers (unchanged; used by single-prop appliers)
+# ---------------------------------------------------------------------------
 
 
 def _apply_class(el: Element, value: Any) -> None:
@@ -119,6 +212,9 @@ def _apply_class(el: Element, value: Any) -> None:
         class_str = value
     elif isinstance(value, (list, tuple)):
         class_str = " ".join(str(x) for x in value if x)
+    elif isinstance(value, dict):
+        # Accept {"name": truthy} mapping for conditional classes
+        class_str = " ".join(str(k) for k, v in value.items() if v)
     else:
         class_str = str(value)
     el.set_attr("class", class_str)

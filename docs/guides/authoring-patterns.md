@@ -2,6 +2,11 @@
 
 This guide shows how to author components in Wybthon using the `@component` decorator and traditional function components. It focuses on props, state with `create_signal`/`create_effect`/`create_memo`, children composition, cleanup, and context.
 
+> **Mental model in one line:** Components run **once**.  Reactivity
+> happens through *reactive holes* — zero-arg callables you embed in
+> the returned VNode tree.  See
+> [Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes).
+
 #### `@component` decorator (recommended)
 
 The `@component` decorator lets you define props as keyword arguments,
@@ -39,10 +44,11 @@ Card("child text", title="My Card")  # positional args become children
 Counter(initial=5)                   # keyword args become props
 ```
 
-Stateful component with signals:
+Stateful component with signals (new style — body runs once, the text
+hole updates):
 
 ```python
-from wybthon import button, component, create_signal, div, on_mount, p
+from wybthon import button, component, create_signal, div, on_mount, p, span
 
 @component
 def Counter(initial: int = 0):
@@ -50,14 +56,14 @@ def Counter(initial: int = 0):
 
     on_mount(lambda: print(f"Counter mounted with count: {count()}"))
 
-    def render():
-        return div(
-            p(f"Count: {count()}"),
-            button("+1", on_click=lambda e: set_count(count() + 1)),
-            class_name="counter",
-        )
-    return render
+    return div(
+        p("Count: ", span(count.get)),                          # ← reactive hole
+        button("+1", on_click=lambda e: set_count(count() + 1)),
+        class_name="counter",
+    )
 ```
+
+> **Legacy compatibility:** Returning a render function (`def render(): ...; return render`) is still supported — it is treated as a single-root reactive hole.  Prefer the direct-return + holes style for new code.
 
 #### Traditional function components
 
@@ -182,7 +188,9 @@ def Page():
 2) State and derived values (`@component` with `create_signal` + `create_memo`)
 
 ```python
-from wybthon import button, component, create_memo, create_signal, div, h, p, ul
+from wybthon import (
+    button, component, create_memo, create_signal, div, dynamic, h, p, span, ul,
+)
 
 @component
 def NamesList():
@@ -197,24 +205,24 @@ def NamesList():
     def clear(_evt):
         set_names([])
 
-    def render():
-        items = [h("li", {}, n) for n in names()]
-        return div(
-            p(f"Total: {len(names())} | Starts with A: {starts_with_a()}"),
-            div(
-                button("+ Ada", on_click=make_add("Ada")),
-                button("+ Alan", on_click=make_add("Alan")),
-                button("Clear", on_click=clear),
-            ),
-            ul(*items),
-        )
-    return render
+    return div(
+        p("Total: ", span(lambda: str(len(names()))),
+          " | Starts with A: ", span(starts_with_a)),
+        div(
+            button("+ Ada", on_click=make_add("Ada")),
+            button("+ Alan", on_click=make_add("Alan")),
+            button("Clear", on_click=clear),
+        ),
+        # The whole list is one hole; for very large lists prefer
+        # the For/Index components which provide stable per-item scopes.
+        ul(dynamic(lambda: [h("li", {}, n) for n in names()])),
+    )
 ```
 
 3) Cleanup and lifecycles (`@component` with signals)
 
 ```python
-from wybthon import component, create_signal, div, on_cleanup, on_mount
+from wybthon import component, create_signal, div, dynamic, on_cleanup, on_mount
 
 @component
 def Timer():
@@ -231,9 +239,7 @@ def Timer():
 
     on_mount(start)
 
-    def render():
-        return div(f"Seconds: {seconds()}", class_name="timer")
-    return render
+    return div(dynamic(lambda: f"Seconds: {seconds()}"), class_name="timer")
 ```
 
 Putting it together:

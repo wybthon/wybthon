@@ -2,6 +2,11 @@
 
 Wybthon uses function components exclusively, following the SolidJS model.
 
+> **Mental model:** A component body **runs once** during mount.  Reactivity
+> happens inside *reactive holes* — zero-arg callables that you embed in
+> the returned VNode tree.  See [Primitives](primitives.md#reactive-holes)
+> for the full story.
+
 #### Function components with `@component` (recommended)
 
 The `@component` decorator lets you define components using Pythonic keyword
@@ -18,8 +23,7 @@ def Hello(name: str = "world"):
 Props become regular Python parameters with type annotations and defaults.
 Each parameter is a **plain value** (not a getter you call with `()`). This makes components self-documenting and enables static type checking.
 
-**Stateless** components return a `VNode` directly and re-render when the
-parent passes new props:
+**Stateless** components return a `VNode` directly:
 
 ```python
 from wybthon import component, p
@@ -29,23 +33,32 @@ def Greeting(name: str = "world"):
     return p(f"Hello, {name}!")
 ```
 
-**Stateful** components create signals during setup and return a *render
-function*.  Setup runs once; the render function re-runs when signals change:
+**Stateful** components create signals during setup and embed reactive
+holes (signal getters or `dynamic(lambda: ...)`) in the returned tree.
+The body runs once; only the holes update when signals change:
 
 ```python
-from wybthon import button, component, create_signal, div, p
+from wybthon import button, component, create_signal, div, p, span
 
 @component
 def Counter(initial: int = 0):
     count, set_count = create_signal(initial)
 
-    def render():
-        return div(
-            p(f"Count: {count()}"),
-            button("+1", on_click=lambda e: set_count(count() + 1)),
-        )
-    return render
+    return div(
+        p("Count: ", span(count.get)),                          # ← reactive hole
+        button("+1", on_click=lambda e: set_count(count() + 1)),
+    )
 ```
+
+`count.get` is a zero-arg accessor.  When you place it in the VNode
+tree, the reconciler wraps it in its own effect so only that text
+node updates — the surrounding component body does not re-run.
+
+> **Note (legacy pattern):** Components may also return a *render
+> function* (`def render(): return ...`); this is treated as a
+> single-root reactive hole and works identically to the example
+> above for backward compatibility.  New code should prefer the
+> direct return + holes style.
 
 **Children** are received via a `children` parameter as a plain vnode, list, or `None`:
 
@@ -83,49 +96,51 @@ See: [Primitives](primitives.md) for the full signals-first API.
 Each component instance gets a `_ComponentContext` (a subclass of
 `Owner`) that participates in the reactive **ownership tree**.  This
 context is the parent owner for everything created during the
-component's setup phase.
+component's setup phase, including the per-hole effects.
 
 ```
-_ComponentContext (Counter)       ← created when Counter mounts
-├── setup effect (logger)         ← child of the component context
+_ComponentContext (Counter)       ← created when Counter mounts (body runs once)
+├── setup effect                  ← child of the component context (survives the body)
 ├── on_cleanup callback           ← registered on the component context
-└── render effect (Computation)   ← also a child of the component context
-    └── inner effect              ← child of the render effect
+└── reactive holes                ← each hole has its own effect, also a child
+    ├── span(count.get)           ← effect that updates one text node
+    └── ...
 ```
 
-**Setup effects** (created in the component body, before `return`) are
-owned by the `_ComponentContext`.  They survive re-renders and are only
-disposed when the component unmounts.
+**Setup effects** (created in the component body, before `return`) and
+**reactive hole effects** are both owned by the `_ComponentContext`.
+They are disposed when the component unmounts.
 
-**Render effects** (created inside the render function) are owned by
-the render `Computation`.  They are disposed and recreated every time
-the render function re-runs due to a signal change.
+When a hole returns a sub-tree containing further effects (for
+example a hole returning a VNode that contains its own holes), the
+inner effects are owned by the hole's effect.  When the hole re-runs,
+those inner effects are disposed first (so their `on_cleanup`
+callbacks fire), then re-created on the next evaluation.
 
 This distinction is automatic — no special API is needed.  The ownership
 tree tracks which owner is active at the time `create_effect` or
 `create_memo` is called.
 
 ```python
-from wybthon import component, create_effect, create_signal, get_props, li, ul
+from wybthon import component, create_effect, create_signal, dynamic, li, p, ul
 
 @component
-def SearchResults(query: str = ""):
-    props = get_props()
+def SearchResults(initial: str = ""):
+    query, set_query = create_signal(initial)
     results, set_results = create_signal([])
 
-    # Setup effect — survives re-renders, disposed on unmount.
-    create_effect(lambda: print("query changed:", props.query))
+    # Setup effect — runs once on mount, disposed on unmount.
+    create_effect(lambda: print("query changed:", query()))
 
-    def render():
-        # Render effect — disposed on each re-render.
-        create_effect(lambda: print("rendering", len(results()), "items"))
-        return ul(*[li(r) for r in results()])
-
-    return render
+    return ul(
+        # Reactive hole — its effect re-runs only when ``results`` changes.
+        # When it re-runs, any inner effects are disposed and recreated.
+        dynamic(lambda: [li(r) for r in results()]),
+    )
 ```
 
 When a component unmounts, the reconciler calls `dispose()` on its
-`_ComponentContext`, which walks the tree depth-first: render effects,
+`_ComponentContext`, which walks the tree depth-first: hole effects,
 setup effects, and cleanup callbacks are all torn down automatically.
 
 #### Traditional function components

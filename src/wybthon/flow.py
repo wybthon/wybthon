@@ -29,39 +29,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .vnode import Fragment, VNode, h, to_text_vnode
+from .vnode import Fragment, VNode, h, is_getter, to_text_vnode
 
 __all__ = ["Show", "For", "Index", "Switch", "Match", "Dynamic"]
 
 
-def _is_getter(v: Any) -> bool:
-    """Return True if *v* looks like a zero-arg getter (not a component)."""
-    if not callable(v):
-        return False
-    if isinstance(v, type):
-        return False
-    if getattr(v, "_wyb_component", False):
-        return False
-    if getattr(v, "_wyb_provider", False):
-        return False
-    import inspect
-
-    try:
-        sig = inspect.signature(v)
-        required = [
-            p
-            for p in sig.parameters.values()
-            if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            and p.default is inspect.Parameter.empty
-        ]
-        return len(required) == 0
-    except (ValueError, TypeError):
-        return False
-
-
 def _eval(v: Any) -> Any:
     """If *v* is a zero-arg getter, call it; otherwise return as-is."""
-    return v() if _is_getter(v) else v
+    return v() if is_getter(v) else v
 
 
 def _to_vnode(v: Any) -> VNode:
