@@ -2096,6 +2096,10 @@
 <p>Context values are stored on the reactive ownership tree.  <code>use_context</code>
 walks up the owner chain to find the nearest Provider, eliminating the
 need for a separate render-time stack.</p>
+<p>The provider's <code>value</code> is wrapped in a <code>Signal</code>, so descendants
+that read it inside a tracking scope (e.g. a reactive hole or
+<code>create_effect</code>) automatically re-run when the provider's value
+changes — without re-mounting any subtrees.</p>
 
 
 
@@ -2178,12 +2182,13 @@ need for a separate render-time stack.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Context provider component (function component).</p>
-<p>Renders its children transparently.  The reconciler sets the context
-value on this component's ownership scope so that descendants can
-find it via <code>use_context</code>.</p>
-<p>Children are rendered through a reactive hole so that updates from
-the parent (e.g. a router swapping the matched route component) flow
+        <p>Context provider component.</p>
+<p>Renders its children transparently.  The reconciler stores
+<code>value</code> as a <code>Signal</code> on this component's ownership scope so
+that descendants can find it via :func:<code>use_context</code> and react to
+updates fine-grainedly.</p>
+<p>Children are wrapped in a reactive hole so updates from the
+parent (e.g. a router swapping the matched route component) flow
 into the subtree even though the Provider body runs only once.</p>
 
 
@@ -2232,6 +2237,11 @@ into the subtree even though the Provider body runs only once.</p>
         <p>Read the current value for <em>ctx</em> from the ownership tree.</p>
 <p>Walks up the owner chain looking for the nearest Provider that set
 a value for this context.  Falls back to the context's default.</p>
+<p>The returned value is unwrapped from the provider's signal — so
+callers receive the <em>current</em> value.  When called inside a
+tracking scope (e.g. a reactive hole or effect), the dependency
+on the provider signal is recorded so the scope re-runs when the
+provider updates.</p>
 
 
     </div>

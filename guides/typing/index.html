@@ -1966,7 +1966,7 @@
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Reactivity API</li>
-<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code> — <code>equals</code> optional: default equality, <code>False</code> for always notify, or <code>(old, new) -&gt; bool</code> “same value” predicate</li>
+<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code> — <code>equals</code> optional: default value equality (<code>==</code>) with identity fast-path, <code>True</code> is equivalent, <code>False</code> to always notify, or <code>(old, new) -&gt; bool</code> “same value” predicate (use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics)</li>
 <li><code>create_memo(fn: Callable[[], T]) -&gt; Callable[[], T]</code></li>
 <li><code>create_effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
 <li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
@@ -1991,13 +1991,17 @@
 
 <ul>
 <li>Component typing</li>
-<li>Function components: <code>def MyComp(props: Dict[str, Any]) -&gt; VNode</code></li>
+<li>The <code>@component</code> decorator binds each parameter to a reactive
+    accessor: <code>Callable[[], T]</code>.  Annotate the parameter with the
+    underlying value type — Wybthon's machinery handles the wrapping.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">VNode</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VNode</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">HelloFn</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;world&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VNode</span><span class="p">:</span>
+    <span class="c1"># ``name`` is a Callable[[], str] at runtime; type it as ``str`` for</span>
+    <span class="c1"># readability of the public API.</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <ul>
@@ -2005,11 +2009,14 @@
 <li><code>Route(path: str, component: Union[Callable[[Dict[str, Any]], VNode], type])</code></li>
 <li><code>navigate(path: str, replace: bool = False) -&gt; None</code></li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">h</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">HomePage</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Home&quot;</span><span class="p">)</span>
 
 <span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_props</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Home&quot;</span><span class="p">)),</span>
+    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">HomePage</span><span class="p">),</span>
 <span class="p">]</span>
 </code></pre></div>
 

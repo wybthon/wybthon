@@ -2483,10 +2483,6 @@
             <code>VNode</code>
 
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
-  </span>
-
 <a href="#wybthon.vdom.VNode" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
@@ -2495,6 +2491,8 @@
 
 
         <p>Virtual node representing an element, text, component, or reactive hole.</p>
+<p>Uses <code>__slots__</code> for compact memory layout and faster attribute
+access — meaningful when authoring large lists.</p>
 
 
 
@@ -2566,10 +2564,9 @@
     <div class="doc doc-contents ">
 
         <p>Group multiple children without adding extra DOM elements.</p>
-<p>Unlike the previous <code>&lt;span style="display:contents"&gt;</code> approach,
-fragments now use comment-node markers and mount children directly
-into the parent container.  This avoids polluting the DOM, breaking
-CSS selectors like <code>:first-child</code>, or affecting layout.</p>
+<p>Fragments use comment-node markers and mount children directly into
+the parent container, avoiding extra DOM elements that would
+pollute selectors like <code>:first-child</code> or affect layout.</p>
 <p>Can be called directly::</p>
 <div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
 </code></pre></div>
@@ -2624,8 +2621,9 @@ CSS selectors like <code>:first-child</code>, or affecting layout.</p>
 
         <p>Render children into a different DOM container.</p>
 <p>Returns a VNode that, when mounted, renders <em>children</em> into <em>container</em>
-instead of the parent component's DOM node.  Useful for modals, tooltips,
-and overlays that need to break out of their parent's DOM hierarchy.</p>
+instead of the parent component's DOM node.  Useful for modals,
+tooltips, and overlays that need to break out of their parent's DOM
+hierarchy.</p>
 <p><em>container</em> may be an <code>Element</code> or a CSS selector string.</p>
 
 
@@ -2958,20 +2956,26 @@ deeper comparison logic.</p>
 </li>
 </ul>
 <h4 id="memo">memo<a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
-<p><code>memo(component, are_props_equal=None)</code> wraps a function component to skip re-renders when props are unchanged.</p>
+<p><code>memo(component, are_props_equal=None)</code> wraps a function component to
+skip re-mounting when props are unchanged.</p>
 <ul>
 <li>By default, uses shallow identity comparison (<code>is</code>) on each prop value.</li>
 <li>Pass a custom <code>are_props_equal(old_props, new_props) -&gt; bool</code> for deeper comparison.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">memo</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">memo</span><span class="p">,</span> <span class="n">p</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="c1"># ... render a large list ...</span>
-    <span class="k">pass</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Items: &quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">its</span><span class="p">)))</span>
 
 <span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
 </code></pre></div>
 
+<p>Because Wybthon components run <strong>once</strong> and then update via reactive
+holes, <code>memo</code> is only useful when you want to skip <strong>re-mounting</strong> on
+prop changes (for example, an expensive setup phase).  Most components
+do not need it.</p>
 <h4 id="create_portal">create_portal<a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
 <p><code>create_portal(children, container)</code> renders children into a different DOM container.</p>
 <ul>

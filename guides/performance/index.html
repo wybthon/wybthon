@@ -1983,15 +1983,15 @@ though we still use a VDOM internally to batch DOM mutations across
 the Python ↔ JS bridge.</p>
 <h4 id="authoring-tips">Authoring tips<a class="headerlink" href="#authoring-tips" title="Permanent link">&para;</a></h4>
 <ul>
-<li><strong>Prefer holes over re-rendering.</strong>  Embed <code>signal.get</code> (or a
+<li><strong>Prefer holes over re-rendering.</strong>  Embed a signal accessor (or
   <code>dynamic(lambda: ...)</code>) at the smallest possible spot in the tree
   rather than reading signals eagerly inside the component body.</li>
 </ul>
 <p>```python
-  # Slow — entire body would re-run if reads were tracked
+  # Slow — eager reads happen during setup; future changes are missed.
   return p(f"Hello, {name()}, count={count()}")</p>
-<p># Fast — only two text nodes update
-  return p("Hello, ", span(name), ", count=", span(count.get))
+<p># Fast — only two text nodes update.
+  return p("Hello, ", span(name), ", count=", span(count))
   ```</p>
 <ul>
 <li>

@@ -2184,10 +2184,19 @@ signal is captured by the render function's closure and persists
 naturally (no cursor system needed).</p>
 <p>The <em>equals</em> parameter controls when subscribers are notified:</p>
 <ul>
-<li><code>_DEFAULT_EQUALS</code> (default) — skip notification when <code>new == old</code>.</li>
-<li><code>False</code> — always notify on every <code>set()</code> call.</li>
+<li>default (or <code>True</code>) — <strong>value equality</strong> (<code>new == old</code>) with
+  an identity fast-path.  Skips notification when the new value is
+  <code>is</code>-identical <em>or</em> <code>==</code>-equal to the old.  This matches
+  Python's natural intuition: re-setting an unchanged value is a
+  no-op, but a fresh container with equal contents <em>also</em> skips
+  (so <code>data.append(x); set_data(data)</code> does <strong>not</strong> notify —
+  copy the container or use <code>equals=False</code> if you need that).</li>
+<li><code>False</code> — always notify on every <code>set()</code> call, even when the
+  new value is identical or equal to the old.  Useful for "fire
+  a change event" signals.</li>
 <li>A callable <code>(old, new) -&gt; bool</code> — skip notification when it
-  returns <code>True</code>.</li>
+  returns <code>True</code>.  Pass <code>equals=lambda a, b: a is b</code> for
+  SolidJS-style identity-only semantics.</li>
 </ul>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -2308,9 +2317,20 @@ print(doubled())  # reactive read
 
         <p>Return the reactive props proxy for the current component.</p>
 <p>The returned <code>ReactiveProps</code> object provides reactive access
-to individual props via attribute or dict-style access::</p>
-<div class="codehilite"><pre><span></span><code>props = get_props()
-create_effect(lambda: print(&quot;name changed:&quot;, props.name))
+to individual props.  Each attribute / index lookup yields a
+callable getter; call the getter to read the current value
+(tracked).  Use <code>get_props()</code> for advanced cases — most
+components should rely on the destructured parameters provided
+by <code>@component</code>::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Greet</span><span class="p">(</span><span class="k">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">)</span><span class="o">:</span>
+<span class="w">    </span><span class="c1"># ``name`` is a reactive accessor.</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
+
+<span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Advanced</span><span class="p">()</span><span class="o">:</span>
+<span class="w">    </span><span class="n">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_props</span><span class="p">()</span>
+<span class="w">    </span><span class="n">create_effect</span><span class="p">(</span><span class="n">lambda</span><span class="o">:</span><span class="w"> </span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;name:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="p">.</span><span class="k">name</span><span class="p">()))</span>
 </code></pre></div>
 
 

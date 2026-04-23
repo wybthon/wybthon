@@ -1524,6 +1524,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="ReactiveProps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        items
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1692,6 +1742,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.iter_prop_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_prop_keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.map_array" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1751,6 +1812,17 @@
     <span class="md-ellipsis">
       
         on_mount
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.read_prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_prop
       
     </span>
   </a>
@@ -2394,6 +2466,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="ReactiveProps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        items
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.ReactiveProps.values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2562,6 +2684,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#wybthon.reactivity.iter_prop_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iter_prop_keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#wybthon.reactivity.map_array" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2621,6 +2754,17 @@
     <span class="md-ellipsis">
       
         on_mount
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.reactivity.read_prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_prop
       
     </span>
   </a>
@@ -3022,8 +3166,29 @@ mirrors SolidJS's ownership model.</p>
 
 
         <p>Reactive proxy for component props.</p>
-<p>Property access creates a reactive dependency on that specific prop,
-matching SolidJS prop access semantics.</p>
+<p>Every prop access returns a <strong>reactive accessor</strong> (a zero-argument
+callable that returns the current value and tracks the read).
+This matches SolidJS's <code>props.x</code> semantics adapted to Python::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">props</span>.<span class="nv">name</span><span class="w">        </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span>
+<span class="nv">props</span>.<span class="nv">name</span><span class="ss">()</span><span class="w">      </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="nv">value</span><span class="w"> </span><span class="ss">(</span><span class="nv">tracked</span><span class="ss">)</span>
+<span class="nv">props</span>[<span class="s2">&quot;name&quot;</span>]<span class="w">     </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span><span class="w"> </span><span class="ss">(</span><span class="nv">same</span><span class="w"> </span><span class="nv">as</span><span class="w"> </span>``<span class="nv">props</span>.<span class="nv">name</span>``<span class="ss">)</span>
+<span class="nv">props</span>.<span class="nv">get</span><span class="ss">(</span><span class="s2">&quot;name&quot;</span>,<span class="w"> </span><span class="nv">default</span><span class="ss">)</span><span class="w">  </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span>,<span class="w"> </span><span class="nv">returns</span><span class="w"> </span><span class="nv">default</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">missing</span>
+</code></pre></div>
+
+<p>Pass a getter directly into a VNode tree to create an automatic
+reactive hole — the surrounding DOM region updates when the prop
+changes::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">return</span><span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Hello, &quot;</span>,<span class="w"> </span><span class="nv">props</span>.<span class="nv">name</span>,<span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="ss">)</span><span class="w">  </span>#<span class="w"> </span><span class="nv">auto</span><span class="o">-</span><span class="nv">hole</span><span class="w"> </span><span class="nv">on</span><span class="w"> </span><span class="nv">props</span>.<span class="nv">name</span>
+</code></pre></div>
+
+<p>To unwrap once at setup time (untracked initial value)::</p>
+<div class="codehilite"><pre><span></span><code>initial = props.name()    # current value, no tracking inside body
+</code></pre></div>
+
+<p>To iterate / introspect the props dict::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="nv">in</span><span class="w"> </span><span class="nv">props</span>:<span class="w">           </span>#<span class="w"> </span><span class="nv">keys</span>
+<span class="w">    </span><span class="nv">print</span><span class="ss">(</span><span class="nv">key</span>,<span class="w"> </span><span class="nv">props</span>.<span class="nv">value</span><span class="ss">(</span><span class="nv">key</span><span class="ss">))</span><span class="w">    </span>#<span class="w"> </span>``<span class="nv">value</span><span class="ss">()</span>``<span class="w"> </span><span class="nv">returns</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="nv">value</span>
+</code></pre></div>
 
 
 
@@ -3045,6 +3210,92 @@ matching SolidJS prop access semantics.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.reactivity.ReactiveProps.get" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.ReactiveProps.get" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return a callable getter for <em>key</em>, falling back to <em>default</em> when missing.</p>
+<p>When <em>key</em> exists on the prop bag (in raw props, prior signals,
+or component-parameter defaults), the returned getter reads the
+underlying signal -- a tracking scope subscribes to it.</p>
+<p>When <em>key</em> is <strong>missing</strong>, the getter returns <em>default</em> on each
+call without creating a tracked signal.  This means repeated
+<code>get(key, x)</code> / <code>get(key, y)</code> calls each return their own
+default (no sticky behavior).  Components that need reactivity
+for a possibly-missing prop should declare it as a parameter
+with a default value -- <code>@component</code> ensures a signal is
+created up front so future updates always propagate.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.reactivity.ReactiveProps.items" class="doc doc-heading">
+            <code class=" language-python"><span class="n">items</span><span class="p">()</span></code>
+
+<a href="#wybthon.reactivity.ReactiveProps.items" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return <code>(key, current_value)</code> pairs (tracked).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.reactivity.ReactiveProps.value" class="doc doc-heading">
+            <code class=" language-python"><span class="n">value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">_MISSING</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.ReactiveProps.value" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current value for <em>key</em> (tracked, with auto-unwrap).</p>
+<p>If the stored prop value is a getter, it is invoked and the
+result returned -- mirroring :meth:<code>_make_getter</code>.  If <em>default</em>
+is provided, it is returned when <em>key</em> is absent from both the
+props dict and the component's parameter defaults.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.reactivity.ReactiveProps.values" class="doc doc-heading">
+            <code class=" language-python"><span class="n">values</span><span class="p">()</span></code>
+
+<a href="#wybthon.reactivity.ReactiveProps.values" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return current prop values as a list (tracked).</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -3371,10 +3622,19 @@ signal is captured by the render function's closure and persists
 naturally (no cursor system needed).</p>
 <p>The <em>equals</em> parameter controls when subscribers are notified:</p>
 <ul>
-<li><code>_DEFAULT_EQUALS</code> (default) — skip notification when <code>new == old</code>.</li>
-<li><code>False</code> — always notify on every <code>set()</code> call.</li>
+<li>default (or <code>True</code>) — <strong>value equality</strong> (<code>new == old</code>) with
+  an identity fast-path.  Skips notification when the new value is
+  <code>is</code>-identical <em>or</em> <code>==</code>-equal to the old.  This matches
+  Python's natural intuition: re-setting an unchanged value is a
+  no-op, but a fresh container with equal contents <em>also</em> skips
+  (so <code>data.append(x); set_data(data)</code> does <strong>not</strong> notify —
+  copy the container or use <code>equals=False</code> if you need that).</li>
+<li><code>False</code> — always notify on every <code>set()</code> call, even when the
+  new value is identical or equal to the old.  Useful for "fire
+  a change event" signals.</li>
 <li>A callable <code>(old, new) -&gt; bool</code> — skip notification when it
-  returns <code>True</code>.</li>
+  returns <code>True</code>.  Pass <code>equals=lambda a, b: a is b</code> for
+  SolidJS-style identity-only semantics.</li>
 </ul>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -3440,9 +3700,20 @@ management.</p>
 
         <p>Return the reactive props proxy for the current component.</p>
 <p>The returned <code>ReactiveProps</code> object provides reactive access
-to individual props via attribute or dict-style access::</p>
-<div class="codehilite"><pre><span></span><code>props = get_props()
-create_effect(lambda: print(&quot;name changed:&quot;, props.name))
+to individual props.  Each attribute / index lookup yields a
+callable getter; call the getter to read the current value
+(tracked).  Use <code>get_props()</code> for advanced cases — most
+components should rely on the destructured parameters provided
+by <code>@component</code>::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Greet</span><span class="p">(</span><span class="k">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">)</span><span class="o">:</span>
+<span class="w">    </span><span class="c1"># ``name`` is a reactive accessor.</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="p">)</span>
+
+<span class="nv">@component</span>
+<span class="n">def</span><span class="w"> </span><span class="n">Advanced</span><span class="p">()</span><span class="o">:</span>
+<span class="w">    </span><span class="n">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_props</span><span class="p">()</span>
+<span class="w">    </span><span class="n">create_effect</span><span class="p">(</span><span class="n">lambda</span><span class="o">:</span><span class="w"> </span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;name:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="p">.</span><span class="k">name</span><span class="p">()))</span>
 </code></pre></div>
 
 
@@ -3473,6 +3744,27 @@ a getter.</p>
 <span class="n">mapped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">index_array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">idx</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="s2">&quot;[{idx}] {item()}&quot;</span><span class="p">)</span>
 <span class="n">create_effect</span><span class="p">(</span><span class="n">lambda</span><span class="p">:</span><span class="w"> </span><span class="nb">print</span><span class="p">(</span><span class="n">mapped</span><span class="p">()))</span>
 </code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="wybthon.reactivity.iter_prop_keys" class="doc doc-heading">
+            <code class=" language-python"><span class="n">iter_prop_keys</span><span class="p">(</span><span class="n">props</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.iter_prop_keys" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the list of prop keys present on <em>props</em>.</p>
+<p>Same uniform shim as :func:<code>read_prop</code> for components that need to
+iterate over an unknown prop bag (e.g. <code>Link</code> forwarding extra
+attributes onto the rendered <code>&lt;a&gt;</code>).</p>
 
 
     </div>
@@ -3628,6 +3920,29 @@ tracked; the body of <em>fn</em> is run inside <code>untrack</code>.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="wybthon.reactivity.read_prop" class="doc doc-heading">
+            <code class=" language-python"><span class="n">read_prop</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.reactivity.read_prop" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current value for <em>key</em> from <em>props</em>.</p>
+<p>Works with both :class:<code>ReactiveProps</code> (the common case inside the
+reconciler) and plain dicts (test paths and a few legacy code
+sites).  When called inside a tracking scope, the read is tracked
+against the underlying signal -- mirroring the auto-unwrap behavior
+of :meth:<code>ReactiveProps.value</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="wybthon.reactivity.run_with_owner" class="doc doc-heading">
             <code class=" language-python"><span class="n">run_with_owner</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span></code>
 
@@ -3708,6 +4023,10 @@ reactive proxy that lazily reads from the original <em>props</em>.</p>
 a dependency::</p>
 <div class="codehilite"><pre><span></span><code>create_effect(lambda: print(&quot;a changed:&quot;, a(), &quot;b is:&quot;, untrack(b)))
 </code></pre></div>
+
+<p>Inside <code>untrack</code> the dev-mode destructured-prop warning is also
+silenced -- so <code>count, set_count = create_signal(untrack(initial))</code>
+cleanly opts out of the noise.</p>
 
 
     </div>
@@ -3800,7 +4119,7 @@ execution are disposed before each re-run.</p>
 <h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
 <h5 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code> — optional <strong><code>equals</code></strong>: default skips notification when <code>new == old</code>; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (same-as / custom equality).</li>
+<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code> — optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.</li>
 <li><code>create_effect(fn) -&gt; Computation</code> — the returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.</li>
 <li><code>create_memo(fn) -&gt; getter</code> — creates a <code>Computation</code> under the current owner; disposed when the owner is disposed.</li>
 <li><code>on_mount(fn)</code> — run after first render</li>
@@ -3810,30 +4129,54 @@ execution are disposed before each re-run.</p>
 <h5 id="create_signal-and-equals"><code>create_signal</code> and <code>equals</code><a class="headerlink" href="#create_signal-and-equals" title="Permanent link">&para;</a></h5>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span>
 
-<span class="c1"># Default: notify only when value changes (==)</span>
+<span class="c1"># Default: value equality (==) with an identity (is) fast-path.</span>
+<span class="c1"># Re-setting an unchanged value is a no-op; a new container with</span>
+<span class="c1"># value-equal contents also skips.  Mutating the same list/dict in</span>
+<span class="c1"># place and re-setting the same reference is a no-op too -- copy</span>
+<span class="c1"># the container first or pass ``equals=False`` to force notification.</span>
 <span class="n">x</span><span class="p">,</span> <span class="n">set_x</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 
-<span class="c1"># Always notify subscribers, even if value is ==</span>
-<span class="n">y</span><span class="p">,</span> <span class="n">set_y</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1"># Equivalent to the default.</span>
+<span class="n">y</span><span class="p">,</span> <span class="n">set_y</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="c1"># Custom: e.g. only notify when identity changes</span>
-<span class="n">z</span><span class="p">,</span> <span class="n">set_z</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([],</span> <span class="n">equals</span><span class="o">=</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">old</span> <span class="ow">is</span> <span class="n">new</span><span class="p">)</span>
+<span class="c1"># Always notify subscribers, even when the value is unchanged.</span>
+<span class="n">z</span><span class="p">,</span> <span class="n">set_z</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># SolidJS-style identity-only semantics: notify whenever the new</span>
+<span class="c1"># reference is not the same Python object as the old.</span>
+<span class="n">w</span><span class="p">,</span> <span class="n">set_w</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([],</span> <span class="n">equals</span><span class="o">=</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">old</span> <span class="ow">is</span> <span class="n">new</span><span class="p">)</span>
 </code></pre></div>
 
 <h5 id="reactiveprops-and-get_props"><code>ReactiveProps</code> and <code>get_props()</code><a class="headerlink" href="#reactiveprops-and-get_props" title="Permanent link">&para;</a></h5>
-<p><code>get_props()</code> returns a <strong><code>ReactiveProps</code></strong> proxy for the current <code>@component</code> instance. Attribute or key access (<code>props.name</code>, <code>props["name"]</code>) establishes a reactive dependency on that prop, similar to Solid prop access. Use this in <strong>stateful</strong> components when setup runs once but props can change from the parent.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">p</span>
+<p><code>get_props()</code> returns the <strong><code>ReactiveProps</code></strong> proxy for the current
+<code>@component</code> instance.  The proxy exposes one consistent shape for
+every prop:</p>
+<ul>
+<li><code>props.name</code> (attribute) or <code>props["name"]</code> (item) returns a
+  <strong>stable zero-arg accessor</strong>.  Calling the accessor reads the
+  current value (tracked when called inside an effect or hole).
+  Embedding it in a VNode tree creates a reactive auto-hole.</li>
+<li><code>props.value(name, default=None)</code> reads the current value
+  immediately (a one-shot, untracked-friendly snapshot).</li>
+<li>The proxy supports <code>in</code>, <code>len()</code>, iteration, and <code>==</code> against
+  dicts.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>
     <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
-    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;name is now&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;name is now&quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">))</span>
 </code></pre></div>
 
-<p><code>ReactiveProps</code> is read-only; the parent/reconciler updates underlying values.</p>
+<p>When a component declares a single positional parameter with no
+default, the decorator passes the proxy in directly (proxy mode);
+otherwise each parameter is bound to its own accessor and there is no
+need to call <code>get_props()</code>.</p>
+<p><code>ReactiveProps</code> is read-only; the parent/reconciler updates underlying
+values.  When a parent passes a getter (e.g. <code>name=my_signal</code>), the
+proxy unwraps it transparently — children always read with <code>props.name()</code>.</p>
 <h5 id="get_owner-and-run_with_ownerowner-fn"><code>get_owner()</code> and <code>run_with_owner(owner, fn)</code><a class="headerlink" href="#get_owner-and-run_with_ownerowner-fn" title="Permanent link">&para;</a></h5>
 <p>After an <code>await</code>, the reactive owner stack may no longer match the component that started the work. Capture the owner before awaiting and restore it when creating effects or other scoped work:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_owner</span><span class="p">,</span> <span class="n">run_with_owner</span>
@@ -3845,16 +4188,14 @@ execution are disposed before each re-run.</p>
 </code></pre></div>
 
 <h5 id="childrenfn"><code>children(fn)</code><a class="headerlink" href="#childrenfn" title="Permanent link">&para;</a></h5>
-<p><code>children(getter)</code> wraps a zero-argument callable that returns the children value (often <code>lambda: get_props().children</code>) and returns a <strong>memo getter</strong> that flattens and resolves the list. Matches Solid’s <code>children()</code> helper. Import under an alias (e.g. <code>from wybthon import children as resolve_children</code>) if your component also names a parameter <code>children</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">h3</span>
+<p><code>children(getter)</code> wraps a zero-argument callable that returns the children value (often <code>lambda: get_props().children()</code>) and returns a <strong>memo getter</strong> that flattens and resolves the list. Matches Solid’s <code>children()</code> helper. Import under an alias (e.g. <code>from wybthon import children as resolve_children</code>) if your component also names a parameter <code>children</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
     <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
-    <span class="n">resolved</span> <span class="o">=</span> <span class="n">children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">resolved</span><span class="p">(),</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">render</span>
+    <span class="n">resolved</span> <span class="o">=</span> <span class="n">children</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">children</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="p">())),</span> <span class="o">*</span><span class="n">resolved</span><span class="p">(),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <h5 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h5>

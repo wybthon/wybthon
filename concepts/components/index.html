@@ -439,13 +439,63 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components-with-component-recommended" class="md-nav__link">
+  <a href="#function-components-with-component" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components with @component (recommended)
+        Function components with @component
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Function components with @component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-or-getter-same-call-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Static or getter — same call site
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-calls-no-h" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct calls (no h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxy-mode-single-positional-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy mode (single positional parameter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -461,10 +511,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#traditional-function-components" class="md-nav__link">
+  <a href="#dev-mode-warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Traditional function components
+        Dev-mode warnings
       
     </span>
   </a>
@@ -1968,13 +2018,63 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#function-components-with-component-recommended" class="md-nav__link">
+  <a href="#function-components-with-component" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Function components with @component (recommended)
+        Function components with @component
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Function components with @component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-or-getter-same-call-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Static or getter — same call site
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#direct-calls-no-h" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct calls (no h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxy-mode-single-positional-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy mode (single positional parameter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1990,10 +2090,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#traditional-function-components" class="md-nav__link">
+  <a href="#dev-mode-warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Traditional function components
+        Dev-mode warnings
       
     </span>
   </a>
@@ -2085,80 +2185,150 @@
 <h3 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h3>
 <p>Wybthon uses function components exclusively, following the SolidJS model.</p>
 <blockquote>
-<p><strong>Mental model:</strong> A component body <strong>runs once</strong> during mount.  Reactivity
-happens inside <em>reactive holes</em> — zero-arg callables that you embed in
-the returned VNode tree.  See <a href="../primitives/#reactive-holes">Primitives</a>
-for the full story.</p>
+<p><strong>Mental model:</strong> A component body <strong>runs once</strong> during mount.  Every
+prop is a <strong>reactive accessor</strong> (a zero-arg callable).  Embed an
+accessor in the returned VNode tree to create a <em>reactive hole</em> —
+only that node updates when the prop changes.  See
+<a href="../primitives/#reactive-holes">Primitives</a> for the full story.</p>
 </blockquote>
-<h4 id="function-components-with-component-recommended">Function components with <code>@component</code> (recommended)<a class="headerlink" href="#function-components-with-component-recommended" title="Permanent link">&para;</a></h4>
-<p>The <code>@component</code> decorator lets you define components using Pythonic keyword
-arguments instead of a raw props dict:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h2</span>
-
-<span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<p>Props become regular Python parameters with type annotations and defaults.
-Each parameter is a <strong>plain value</strong> (not a getter you call with <code>()</code>). This makes components self-documenting and enables static type checking.</p>
-<p><strong>Stateless</strong> components return a <code>VNode</code> directly:</p>
+<h4 id="function-components-with-component">Function components with <code>@component</code><a class="headerlink" href="#function-components-with-component" title="Permanent link">&para;</a></h4>
+<p>The <code>@component</code> decorator turns a function into a Wybthon component.
+Declare props as regular Python keyword arguments — defaults and
+annotations work as you would expect:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;world&quot;</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>
+    <span class="c1"># ``name`` is a zero-arg getter.  Passing it directly into the tree</span>
+    <span class="c1"># creates a reactive hole — only the text node updates if the</span>
+    <span class="c1"># parent passes a new ``name``.</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p><strong>Stateful</strong> components create signals during setup and embed reactive
-holes (signal getters or <code>dynamic(lambda: ...)</code>) in the returned tree.
-The body runs once; only the holes update when signals change:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
+<p>Each parameter is bound to a <strong>reactive accessor</strong>:</p>
+<ul>
+<li>Pass it into the tree (<code>p("Hello, ", name)</code>) for an automatic
+  reactive hole.</li>
+<li>Call it (<code>name()</code>) to read the current value (tracked when called
+  inside an effect).</li>
+<li>Wrap it with <a href="../primitives/#untrack"><code>untrack</code></a> to read once
+  without subscribing — useful for seeding local state from a prop.</li>
+</ul>
+<p>The body of an <code>@component</code> runs <strong>once</strong> per mount.  There is no
+re-render: the only things that update later are the holes embedded
+in the tree.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">untrack</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="c1"># ``initial`` is a getter; ``untrack`` reads the seed value</span>
+    <span class="c1"># without subscribing.  ``count`` is the new local signal getter.</span>
+    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="n">initial</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">get</span><span class="p">)),</span>                          <span class="c1"># ← reactive hole</span>
+        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">)),</span>                       <span class="c1"># ← reactive hole</span>
         <span class="n">button</span><span class="p">(</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
     <span class="p">)</span>
 </code></pre></div>
 
-<p><code>count.get</code> is a zero-arg accessor.  When you place it in the VNode
+<p><code>count</code> is a zero-arg accessor.  When you place it in the VNode
 tree, the reconciler wraps it in its own effect so only that text
 node updates — the surrounding component body does not re-run.</p>
-<blockquote>
-<p><strong>Note (legacy pattern):</strong> Components may also return a <em>render
-function</em> (<code>def render(): return ...</code>); this is treated as a
-single-root reactive hole and works identically to the example
-above for backward compatibility.  New code should prefer the
-direct return + holes style.</p>
-</blockquote>
-<p><strong>Children</strong> are received via a <code>children</code> parameter as a plain vnode, list, or <code>None</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
+<h5 id="static-or-getter-same-call-site">Static or getter — same call site<a class="headerlink" href="#static-or-getter-same-call-site" title="Permanent link">&para;</a></h5>
+<p>A child component never has to care whether the parent passed a
+constant or a signal — both are unwrapped uniformly:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="c1"># Works whether the parent passes count=7 or count=my_signal.</span>
+    <span class="k">return</span> <span class="n">span</span><span class="p">(</span><span class="s2">&quot;count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
 
-<span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">kids</span> <span class="o">=</span> <span class="n">children</span> <span class="ow">or</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Badge</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>         <span class="c1"># static value</span>
+<span class="n">h</span><span class="p">(</span><span class="n">Badge</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="n">my_signal</span><span class="p">})</span> <span class="c1"># signal accessor</span>
 </code></pre></div>
 
-<p><strong>Direct calls</strong> with keyword args return a <code>VNode</code>, so you can compose
-components without <code>h()</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<p>Because props are always callable, you can also pass <code>lambda: a() + b()</code>
+as a prop and the child will re-evaluate it whenever <code>a</code> or <code>b</code>
+changes.</p>
+<h5 id="children">Children<a class="headerlink" href="#children" title="Permanent link">&para;</a></h5>
+<p><code>children</code> is a normal prop — also a reactive accessor.  Most layouts
+read children once at setup, so wrap with <code>untrack</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">untrack</span><span class="p">,</span> <span class="n">dynamic</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">kids</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="k">else</span> <span class="n">children</span>
+    <span class="k">if</span> <span class="n">kids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kids</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">kids</span> <span class="o">=</span> <span class="p">[</span><span class="n">kids</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">title</span><span class="p">())),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h5 id="direct-calls-no-h">Direct calls (no <code>h</code>)<a class="headerlink" href="#direct-calls-no-h" title="Permanent link">&para;</a></h5>
+<p><code>@component</code> also enables a sugar form for tree authoring — calling the
+component directly with kwargs returns a <code>VNode</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                          <span class="c1"># → h(Counter, {&quot;initial&quot;: 5})</span>
 <span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>   <span class="c1"># positional args become children</span>
 </code></pre></div>
 
 <p>The component still works with <code>h()</code> as usual:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
-
 <span class="n">h</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;initial&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
 </code></pre></div>
 
-<p>See: <a href="../primitives/">Primitives</a> for the full signals-first API.</p>
+<h5 id="proxy-mode-single-positional-parameter">Proxy mode (single positional parameter)<a class="headerlink" href="#proxy-mode-single-positional-parameter" title="Permanent link">&para;</a></h5>
+<p><code>@component</code> chooses one of two binding modes by inspecting the
+decorated function's signature:</p>
+<table>
+<thead>
+<tr>
+<th>Signature shape</th>
+<th>Mode</th>
+<th>What the parameter receives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zero args, or any kw-args / defaults / <code>**kwargs</code></td>
+<td>named-accessor</td>
+<td>one reactive accessor per declared name</td>
+</tr>
+<tr>
+<td><strong>exactly one</strong> positional-only or positional-or-keyword parameter, <strong>no default</strong>, no <code>*args</code>/<code>**kwargs</code></td>
+<td><strong>proxy mode</strong></td>
+<td>the entire <code>ReactiveProps</code> proxy</td>
+</tr>
+</tbody>
+</table>
+<p>In other words: if your component looks like <code>def Foo(props):</code> (one
+bare positional parameter), you get the proxy.  Anything else —
+<code>def Foo(name="world")</code>, <code>def Foo(name, age=0)</code>, <code>def Foo(**props)</code>,
+<code>def Foo()</code> — uses the named-accessor mode.</p>
+<p>Proxy mode is the right choice for <strong>generic wrappers</strong> that don't
+know their props' names ahead of time:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">p</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">DumpProps</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
+    <span class="c1"># ``props`` is the ReactiveProps proxy.</span>
+    <span class="c1"># ``props.x`` → reactive accessor; ``props.x()`` → current value.</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">props</span><span class="p">)))</span>
+</code></pre></div>
+
+<p>For ordinary components, prefer named accessors — they're easier to
+read, type, and refactor:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>    <span class="c1"># ← named accessor: ``name`` is a getter</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>           <span class="c1"># ← proxy mode: ``props.name`` is the getter</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div>
+
+<p>If you're in named-accessor mode and still need the proxy (for
+example, to iterate keys or forward unknown props), call
+<a href="../primitives/#get_props"><code>get_props</code></a> from inside the body.</p>
 <h4 id="component-ownership-and-lifecycle">Component ownership and lifecycle<a class="headerlink" href="#component-ownership-and-lifecycle" title="Permanent link">&para;</a></h4>
 <p>Each component instance gets a <code>_ComponentContext</code> (a subclass of
 <code>Owner</code>) that participates in the reactive <strong>ownership tree</strong>.  This
@@ -2168,7 +2338,7 @@ component's setup phase, including the per-hole effects.</p>
 <span class="err">├──</span><span class="w"> </span><span class="n">setup</span><span class="w"> </span><span class="n">effect</span><span class="w">                  </span><span class="err">←</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span><span class="w"> </span><span class="p">(</span><span class="n">survives</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">body</span><span class="p">)</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">on_cleanup</span><span class="w"> </span><span class="n">callback</span><span class="w">           </span><span class="err">←</span><span class="w"> </span><span class="n">registered</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">component</span><span class="w"> </span><span class="n">context</span>
 <span class="err">└──</span><span class="w"> </span><span class="n">reactive</span><span class="w"> </span><span class="n">holes</span><span class="w">                </span><span class="err">←</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">hole</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">its</span><span class="w"> </span><span class="n">own</span><span class="w"> </span><span class="n">effect</span><span class="p">,</span><span class="w"> </span><span class="n">also</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">child</span>
-<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">.</span><span class="n">get</span><span class="p">)</span><span class="w">           </span><span class="err">←</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="n">node</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">)</span><span class="w">               </span><span class="err">←</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="n">node</span>
 <span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="p">...</span>
 </code></pre></div>
 
@@ -2183,19 +2353,18 @@ callbacks fire), then re-created on the next evaluation.</p>
 <p>This distinction is automatic — no special API is needed.  The ownership
 tree tracks which owner is active at the time <code>create_effect</code> or
 <code>create_memo</code> is called.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">ul</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span><span class="p">,</span> <span class="n">untrack</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
-    <span class="n">query</span><span class="p">,</span> <span class="n">set_query</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">SearchResults</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="c1"># ``initial`` is a getter; ``untrack`` snapshots the seed value</span>
+    <span class="c1"># without subscribing (and silences the destructured-prop warning).</span>
+    <span class="n">query</span><span class="p">,</span> <span class="n">set_query</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="n">initial</span><span class="p">))</span>
     <span class="n">results</span><span class="p">,</span> <span class="n">set_results</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
 
-    <span class="c1"># Setup effect — runs once on mount, disposed on unmount.</span>
     <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;query changed:&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">()))</span>
 
     <span class="k">return</span> <span class="n">ul</span><span class="p">(</span>
-        <span class="c1"># Reactive hole — its effect re-runs only when ``results`` changes.</span>
-        <span class="c1"># When it re-runs, any inner effects are disposed and recreated.</span>
         <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">()]),</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -2203,17 +2372,21 @@ tree tracks which owner is active at the time <code>create_effect</code> or
 <p>When a component unmounts, the reconciler calls <code>dispose()</code> on its
 <code>_ComponentContext</code>, which walks the tree depth-first: hole effects,
 setup effects, and cleanup callbacks are all torn down automatically.</p>
-<h4 id="traditional-function-components">Traditional function components<a class="headerlink" href="#traditional-function-components" title="Permanent link">&para;</a></h4>
-<p>You can still define components the traditional way with a <code>props</code> dict.
-This style is fully supported and does not require a decorator:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">h2</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;world&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s2">&quot;greeting&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<p>The HTML helpers accept <strong>children as positional arguments</strong> and <strong>props as keyword arguments</strong>. Use <code>class_name</code> instead of <code>class</code> (reserved word in Python) and <code>html_for</code> instead of <code>for</code>.</p>
+<h4 id="dev-mode-warnings">Dev-mode warnings<a class="headerlink" href="#dev-mode-warnings" title="Permanent link">&para;</a></h4>
+<p>When running outside the browser (or with <code>WYBTHON_DEV=1</code>), the
+component decorator catches the most common reactive footguns:</p>
+<ul>
+<li><strong>Destructured prop access during setup.</strong> Calling a prop accessor
+  inside the component body without wrapping in <code>untrack</code> warns once
+  per component — you almost always want to either pass the accessor
+  directly into the tree (creating a hole) or <code>untrack(prop)</code> for a
+  one-shot snapshot.</li>
+<li><strong><code>each=plain_list</code></strong> in <code>For</code> / <code>Index</code> warns that the list will
+  not update reactively.  Pass a signal accessor instead.</li>
+</ul>
+<p>Warnings are silenced when the offending read happens inside an
+<code>untrack(...)</code> call, so you can opt out explicitly when the static
+behaviour is intentional.</p>
 <h4 id="fragment">Fragment<a class="headerlink" href="#fragment" title="Permanent link">&para;</a></h4>
 <p>Use <code>Fragment</code> to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses <strong>empty comment nodes</strong> as start/end markers (not a <code>display: contents</code> wrapper), so fragments do not pollute the DOM or break CSS selectors that expect a certain element structure.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span>
@@ -2227,13 +2400,13 @@ This style is fully supported and does not require a decorator:</p>
 </code></pre></div>
 
 <h4 id="memo"><code>memo</code><a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
-<p>Wrap a function component with <code>memo</code> to skip re-renders when its props
+<p>Wrap a function component with <code>memo</code> to skip re-mounts when its props
 have not changed (shallow identity comparison by default):</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">memo</span><span class="p">,</span> <span class="n">h</span>
 
 <span class="nd">@component</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ExpensiveList</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">its</span> <span class="o">=</span> <span class="n">items</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="o">*</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;li&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">its</span><span class="p">])</span>
 
 <span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">)</span>
@@ -2243,6 +2416,12 @@ have not changed (shallow identity comparison by default):</p>
 <div class="codehilite"><pre><span></span><code><span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">,</span> <span class="n">are_props_equal</span><span class="o">=</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">old</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">new</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">])</span>
 </code></pre></div>
 
+<blockquote>
+<p>Because props are reactive and the body runs once, <code>memo</code> is only
+useful when you want to <strong>skip re-mounting</strong> the component on a prop
+change (for example, an expensive setup phase).  Most ordinary
+components do not need it.</p>
+</blockquote>
 <h4 id="forward_ref"><code>forward_ref</code><a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
 <p>Use <code>forward_ref</code> to create a component that can receive a <code>ref</code> prop
 and forward it to a child element:</p>
@@ -2256,8 +2435,9 @@ and forward it to a child element:</p>
 <span class="c1"># Usage: h(FancyInput, {&quot;ref&quot;: my_ref})</span>
 </code></pre></div>
 
-<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>.
-When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
+<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
+and <code>ref</code> is <strong>stripped</strong> from props (matching React's <code>forwardRef</code>
+semantics).  When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
 <h4 id="create_portal"><code>create_portal</code><a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
 <p>Use <code>create_portal</code> to render children into a DOM node outside the
 parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
@@ -2282,7 +2462,7 @@ re-renders when the tracked condition or list changes.</p>
 <p>Pass <strong>getters</strong> (signal accessors or lambdas) for conditions, lists,
 children, and fallbacks so reads happen inside the flow control's own
 scope rather than the parent's:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Index</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
 
 <span class="c1"># Conditional rendering — keyed scope disposes on transition</span>
 <span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">is_logged_in</span><span class="p">,</span>
@@ -2311,8 +2491,8 @@ scope rather than the parent's:</p>
 <span class="p">)</span>
 </code></pre></div>
 
-<p>Plain values still work when reactivity is not needed (e.g. static
-conditions evaluated in a render function).</p>
+<p><code>each=</code> requires a signal accessor (or other reactive getter) to track
+list updates; passing a plain Python <code>list</code> triggers a dev warning.</p>
 <p>See the guide for recommended patterns around props, state, children, cleanup, and context:</p>
 <ul>
 <li>Guide: <a href="../../guides/authoring-patterns/">Authoring Patterns</a></li>

@@ -1715,6 +1715,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="ReactiveProps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        items
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1744,6 +1794,17 @@
     <span class="md-ellipsis">
       
         Route
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.Signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal
       
     </span>
   </a>
@@ -3363,6 +3424,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="ReactiveProps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        items
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.ReactiveProps.values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3392,6 +3503,17 @@
     <span class="md-ellipsis">
       
         Route
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wybthon.Signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal
       
     </span>
   </a>
@@ -4883,8 +5005,29 @@ non-browser environments, importing DOM/VDOM features only when available.</p>
 
 
         <p>Reactive proxy for component props.</p>
-<p>Property access creates a reactive dependency on that specific prop,
-matching SolidJS prop access semantics.</p>
+<p>Every prop access returns a <strong>reactive accessor</strong> (a zero-argument
+callable that returns the current value and tracks the read).
+This matches SolidJS's <code>props.x</code> semantics adapted to Python::</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">props</span>.<span class="nv">name</span><span class="w">        </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span>
+<span class="nv">props</span>.<span class="nv">name</span><span class="ss">()</span><span class="w">      </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="nv">value</span><span class="w"> </span><span class="ss">(</span><span class="nv">tracked</span><span class="ss">)</span>
+<span class="nv">props</span>[<span class="s2">&quot;name&quot;</span>]<span class="w">     </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span><span class="w"> </span><span class="ss">(</span><span class="nv">same</span><span class="w"> </span><span class="nv">as</span><span class="w"> </span>``<span class="nv">props</span>.<span class="nv">name</span>``<span class="ss">)</span>
+<span class="nv">props</span>.<span class="nv">get</span><span class="ss">(</span><span class="s2">&quot;name&quot;</span>,<span class="w"> </span><span class="nv">default</span><span class="ss">)</span><span class="w">  </span>#<span class="w"> </span>→<span class="w"> </span><span class="nv">callable</span><span class="w"> </span><span class="nv">getter</span>,<span class="w"> </span><span class="nv">returns</span><span class="w"> </span><span class="nv">default</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">missing</span>
+</code></pre></div>
+
+<p>Pass a getter directly into a VNode tree to create an automatic
+reactive hole — the surrounding DOM region updates when the prop
+changes::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">return</span><span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Hello, &quot;</span>,<span class="w"> </span><span class="nv">props</span>.<span class="nv">name</span>,<span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="ss">)</span><span class="w">  </span>#<span class="w"> </span><span class="nv">auto</span><span class="o">-</span><span class="nv">hole</span><span class="w"> </span><span class="nv">on</span><span class="w"> </span><span class="nv">props</span>.<span class="nv">name</span>
+</code></pre></div>
+
+<p>To unwrap once at setup time (untracked initial value)::</p>
+<div class="codehilite"><pre><span></span><code>initial = props.name()    # current value, no tracking inside body
+</code></pre></div>
+
+<p>To iterate / introspect the props dict::</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="nv">in</span><span class="w"> </span><span class="nv">props</span>:<span class="w">           </span>#<span class="w"> </span><span class="nv">keys</span>
+<span class="w">    </span><span class="nv">print</span><span class="ss">(</span><span class="nv">key</span>,<span class="w"> </span><span class="nv">props</span>.<span class="nv">value</span><span class="ss">(</span><span class="nv">key</span><span class="ss">))</span><span class="w">    </span>#<span class="w"> </span>``<span class="nv">value</span><span class="ss">()</span>``<span class="w"> </span><span class="nv">returns</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="nv">value</span>
+</code></pre></div>
 
 
 
@@ -4906,6 +5049,92 @@ matching SolidJS prop access semantics.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.ReactiveProps.get" class="doc doc-heading">
+            <code class=" language-python"><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#wybthon.ReactiveProps.get" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return a callable getter for <em>key</em>, falling back to <em>default</em> when missing.</p>
+<p>When <em>key</em> exists on the prop bag (in raw props, prior signals,
+or component-parameter defaults), the returned getter reads the
+underlying signal -- a tracking scope subscribes to it.</p>
+<p>When <em>key</em> is <strong>missing</strong>, the getter returns <em>default</em> on each
+call without creating a tracked signal.  This means repeated
+<code>get(key, x)</code> / <code>get(key, y)</code> calls each return their own
+default (no sticky behavior).  Components that need reactivity
+for a possibly-missing prop should declare it as a parameter
+with a default value -- <code>@component</code> ensures a signal is
+created up front so future updates always propagate.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.ReactiveProps.items" class="doc doc-heading">
+            <code class=" language-python"><span class="n">items</span><span class="p">()</span></code>
+
+<a href="#wybthon.ReactiveProps.items" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return <code>(key, current_value)</code> pairs (tracked).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.ReactiveProps.value" class="doc doc-heading">
+            <code class=" language-python"><span class="n">value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">_MISSING</span><span class="p">)</span></code>
+
+<a href="#wybthon.ReactiveProps.value" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current value for <em>key</em> (tracked, with auto-unwrap).</p>
+<p>If the stored prop value is a getter, it is invoked and the
+result returned -- mirroring :meth:<code>_make_getter</code>.  If <em>default</em>
+is provided, it is returned when <em>key</em> is absent from both the
+props dict and the component's parameter defaults.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.ReactiveProps.values" class="doc doc-heading">
+            <code class=" language-python"><span class="n">values</span><span class="p">()</span></code>
+
+<a href="#wybthon.ReactiveProps.values" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return current prop values as a list (tracked).</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -5066,13 +5295,57 @@ resource automatically refetches.</p>
 
 
 
+<h2 id="wybthon.Signal" class="doc doc-heading">
+            <code>Signal</code>
+
+
+<a href="#wybthon.Signal" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Generic">Generic</span>[<span title="wybthon.reactivity.T">T</span>]</code></p>
+
+
+
+        <p>Mutable container that notifies subscribed computations on changes.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="wybthon.VNode" class="doc doc-heading">
             <code>VNode</code>
 
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
-  </span>
 
 <a href="#wybthon.VNode" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -5082,6 +5355,8 @@ resource automatically refetches.</p>
 
 
         <p>Virtual node representing an element, text, component, or reactive hole.</p>
+<p>Uses <code>__slots__</code> for compact memory layout and faster attribute
+access — meaningful when authoring large lists.</p>
 
 
 
@@ -5125,8 +5400,9 @@ resource automatically refetches.</p>
     <div class="doc doc-contents ">
 
         <p>Render a dynamically-chosen component.</p>
-<p><em>component</em> may be a string tag name, a component function, or <code>None</code>
-(renders nothing).  Can also be a getter for reactive switching.</p>
+<p><em>component</em> may be a string tag name, a component function, or
+<code>None</code> (renders nothing).  Can also be a getter for reactive
+switching.</p>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code>Dynamic(component=lambda: heading_level(),
         children=[f&quot;Section {idx}&quot;])
@@ -5179,22 +5455,18 @@ resource automatically refetches.</p>
         <p>Render a list of items using a keyed mapping function.</p>
 <p><strong>Component style</strong> (reactive)::</p>
 <div class="codehilite"><pre><span></span><code><span class="k">For</span><span class="ss">(</span><span class="nv">each</span><span class="o">=</span><span class="nv">items</span>,
-<span class="w">    </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">index</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span><span class="ss">()</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">index</span><span class="ss">()))</span>
+<span class="w">    </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">index</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">index</span><span class="ss">()))</span>
 </code></pre></div>
 
-<p><strong>Direct call</strong>::</p>
-<div class="codehilite"><pre><span></span><code><span class="k">For</span><span class="ss">(</span><span class="nv">each</span><span class="o">=</span><span class="nv">items</span>,
-<span class="w">    </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span><span class="w"> </span><span class="nv">item</span>,<span class="w"> </span><span class="nv">index</span>:<span class="w"> </span><span class="nv">li</span><span class="ss">(</span><span class="nv">item</span><span class="ss">()</span>,<span class="w"> </span><span class="nv">key</span><span class="o">=</span><span class="nv">index</span><span class="ss">()))</span>
-</code></pre></div>
-
-<p><em>each</em> is a getter (or list).  <em>children</em> is <code>(item, index_getter) -&gt; VNode</code>.</p>
-<p>Inside the callback, <code>item</code> is a <strong>signal-backed getter</strong> returning
-the current item value, and <code>index</code> is a signal-backed getter
-returning the current integer index — matching SolidJS <code>&lt;For&gt;</code>.</p>
+<p><em>each</em> is a getter (or list).  <em>children</em> is
+<code>(item, index_getter) -&gt; VNode</code>.  Inside the callback, <code>item</code>
+is a <strong>signal-backed getter</strong> returning the current item value, and
+<code>index</code> is a signal-backed getter returning the current integer
+index — matching SolidJS <code>&lt;For&gt;</code>.</p>
 <p><code>For</code> maintains <strong>stable per-item reactive scopes</strong> keyed by
-reference identity.  The mapping callback runs only once per unique
-item.  When an item leaves the list its scope (including any
-effects or cleanups created inside the callback) is disposed.</p>
+reference identity.  The mapping callback runs only once per
+unique item.  When an item leaves the list its scope (including
+any effects or cleanups created inside the callback) is disposed.</p>
 
 
     </div>
@@ -5213,10 +5485,9 @@ effects or cleanups created inside the callback) is disposed.</p>
     <div class="doc doc-contents ">
 
         <p>Group multiple children without adding extra DOM elements.</p>
-<p>Unlike the previous <code>&lt;span style="display:contents"&gt;</code> approach,
-fragments now use comment-node markers and mount children directly
-into the parent container.  This avoids polluting the DOM, breaking
-CSS selectors like <code>:first-child</code>, or affecting layout.</p>
+<p>Fragments use comment-node markers and mount children directly into
+the parent container, avoiding extra DOM elements that would
+pollute selectors like <code>:first-child</code> or affect layout.</p>
 <p>Can be called directly::</p>
 <div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
 </code></pre></div>
@@ -5251,10 +5522,6 @@ reused even when the underlying data changes.</p>
 slot has a signal-backed <code>item_getter</code> that updates when the
 value at that position changes.  Growing the list creates new
 scopes; shrinking disposes excess scopes.</p>
-<p>Example::</p>
-<div class="codehilite"><pre><span></span><code>Index(each=items,
-      children=lambda item, i: li(item()))
-</code></pre></div>
 
 
     </div>
@@ -5272,7 +5539,13 @@ scopes; shrinking disposes excess scopes.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Anchor element component that navigates via history API without reloads.</p>
+        <p>Anchor element component that navigates via the History API.</p>
+<p>Wrapped in a reactive hole so the active class flips automatically
+when the route changes — no parent re-render required.</p>
+<p>Recognised class spellings on the prop bag (in priority order):
+<code>"class"</code>, <code>"class_"</code>, <code>"className"</code>.  All three are merged
+with the active-class (when the link's href matches
+<code>current_path</code>).</p>
 
 
     </div>
@@ -5315,12 +5588,13 @@ Match(when=lambda: x() &gt; 0, children=lambda: p(&quot;positive&quot;))  # keyw
 
     <div class="doc doc-contents ">
 
-        <p>Context provider component (function component).</p>
-<p>Renders its children transparently.  The reconciler sets the context
-value on this component's ownership scope so that descendants can
-find it via <code>use_context</code>.</p>
-<p>Children are rendered through a reactive hole so that updates from
-the parent (e.g. a router swapping the matched route component) flow
+        <p>Context provider component.</p>
+<p>Renders its children transparently.  The reconciler stores
+<code>value</code> as a <code>Signal</code> on this component's ownership scope so
+that descendants can find it via :func:<code>use_context</code> and react to
+updates fine-grainedly.</p>
+<p>Children are wrapped in a reactive hole so updates from the
+parent (e.g. a router swapping the matched route component) flow
 into the subtree even though the Provider body runs only once.</p>
 
 
@@ -5358,7 +5632,10 @@ into the subtree even though the Provider body runs only once.</p>
 <li>base_path: str</li>
 <li>not_found: component to render on 404</li>
 </ul>
-</details>
+</details>        <p>The render function is wrapped in a reactive hole so that swaps to
+<code>current_path</code> automatically re-evaluate the matched route — no
+component re-mount required.</p>
+
 
     </div>
 
@@ -5378,25 +5655,26 @@ into the subtree even though the Provider body runs only once.</p>
         <p>Conditionally render <em>children</em> when <em>when</em> is truthy.</p>
 <p>Can be called in two styles:</p>
 <p><strong>Component style</strong> (reactive — recommended for dynamic conditions)::</p>
-<div class="codehilite"><pre><span></span><code><span class="k">Show</span><span class="ss">(</span><span class="nv">when</span><span class="o">=</span><span class="nv">count</span>,<span class="w"> </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="nv">f</span><span class="s2">&quot;Count: {count()}&quot;</span><span class="ss">)</span>,
+<div class="codehilite"><pre><span></span><code><span class="k">Show</span><span class="ss">(</span><span class="nv">when</span><span class="o">=</span><span class="nv">count</span>,<span class="w"> </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Count: &quot;</span>,<span class="w"> </span><span class="nv">count</span><span class="ss">)</span>,
 <span class="w">     </span><span class="nv">fallback</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Empty&quot;</span><span class="ss">))</span>
 </code></pre></div>
 
-<p><strong>Direct call</strong> (evaluated once — fine inside a render function)::</p>
+<p><strong>Direct call</strong> (evaluated once — fine inside an explicit hole)::</p>
 <div class="codehilite"><pre><span></span><code><span class="k">Show</span><span class="ss">(</span><span class="nv">when</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">count</span><span class="ss">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>,
 <span class="w">     </span><span class="nv">children</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Positive&quot;</span><span class="ss">)</span>,
 <span class="w">     </span><span class="nv">fallback</span><span class="o">=</span><span class="nv">lambda</span>:<span class="w"> </span><span class="nv">p</span><span class="ss">(</span><span class="s2">&quot;Not positive&quot;</span><span class="ss">))</span>
 </code></pre></div>
 
 <p><em>when</em> may be a zero-arg getter or a plain value.
-<em>children</em> / <em>fallback</em> may be a <code>VNode</code>, a callable, or a plain value.
-When <em>children</em> is callable and <em>when</em> is truthy, the truthy value is
-passed as the first argument (matching SolidJS <code>&lt;Show&gt;</code>).</p>
+<em>children</em> / <em>fallback</em> may be a <code>VNode</code>, a callable, or a plain
+value.  When <em>children</em> is callable and <em>when</em> is truthy, the
+truthy value is passed as the first argument (matching SolidJS
+<code>&lt;Show&gt;</code>).</p>
 <p>The component creates a <strong>keyed conditional scope</strong>: when the
 truthiness of <em>when</em> changes, the previous branch's scope is
 disposed and a new scope is created.  This ensures that effects
-and cleanups registered inside a branch are properly torn down
-on transitions.</p>
+and cleanups registered inside a branch are properly torn down on
+transitions.</p>
 
 
     </div>
@@ -5672,8 +5950,9 @@ print(doubled())  # reactive read
 
         <p>Render children into a different DOM container.</p>
 <p>Returns a VNode that, when mounted, renders <em>children</em> into <em>container</em>
-instead of the parent component's DOM node.  Useful for modals, tooltips,
-and overlays that need to break out of their parent's DOM hierarchy.</p>
+instead of the parent component's DOM node.  Useful for modals,
+tooltips, and overlays that need to break out of their parent's DOM
+hierarchy.</p>
 <p><em>container</em> may be an <code>Element</code> or a CSS selector string.</p>
 
 
@@ -5776,10 +6055,19 @@ signal is captured by the render function's closure and persists
 naturally (no cursor system needed).</p>
 <p>The <em>equals</em> parameter controls when subscribers are notified:</p>
 <ul>
-<li><code>_DEFAULT_EQUALS</code> (default) — skip notification when <code>new == old</code>.</li>
-<li><code>False</code> — always notify on every <code>set()</code> call.</li>
+<li>default (or <code>True</code>) — <strong>value equality</strong> (<code>new == old</code>) with
+  an identity fast-path.  Skips notification when the new value is
+  <code>is</code>-identical <em>or</em> <code>==</code>-equal to the old.  This matches
+  Python's natural intuition: re-setting an unchanged value is a
+  no-op, but a fresh container with equal contents <em>also</em> skips
+  (so <code>data.append(x); set_data(data)</code> does <strong>not</strong> notify —
+  copy the container or use <code>equals=False</code> if you need that).</li>
+<li><code>False</code> — always notify on every <code>set()</code> call, even when the
+  new value is identical or equal to the old.  Useful for "fire
+  a change event" signals.</li>
 <li>A callable <code>(old, new) -&gt; bool</code> — skip notification when it
-  returns <code>True</code>.</li>
+  returns <code>True</code>.  Pass <code>equals=lambda a, b: a is b</code> for
+  SolidJS-style identity-only semantics.</li>
 </ul>
 <p>Example::</p>
 <div class="codehilite"><pre><span></span><code><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">set_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -5922,11 +6210,13 @@ list of either, or <code>None</code>.</p>
     <div class="doc doc-contents ">
 
         <p>Create a component that forwards a <code>ref</code> prop to a child element.</p>
-<p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
-where <em>ref</em> is the value of the <code>ref</code> prop (or <code>None</code>).</p>
-<p>Example::</p>
+<p>The wrapped function receives <code>(props, ref)</code> instead of
+<code>(props,)</code>, where <em>ref</em> is the value of the <code>ref</code> prop (or
+<code>None</code>).  <code>ref</code> is <strong>stripped from props</strong> (matching React's
+<code>forwardRef</code> semantics) so the wrapped function only sees its
+own concerns::</p>
 <div class="codehilite"><pre><span></span><code><span class="nx">FancyInput</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">forward_ref</span><span class="p">(</span><span class="nx">lambda</span><span class="w"> </span><span class="nx">props</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">:</span><span class="w"> </span><span class="nx">input_</span><span class="p">(</span>
-<span class="w">    </span><span class="k">type</span><span class="p">=</span><span class="s">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">=</span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">class_name</span><span class="p">=</span><span class="s">&quot;fancy&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">**</span><span class="nx">props</span><span class="p">,</span>
+<span class="w">    </span><span class="k">type</span><span class="p">=</span><span class="s">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">=</span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">class_</span><span class="p">=</span><span class="s">&quot;fancy&quot;</span><span class="p">,</span>
 <span class="p">))</span>
 </code></pre></div>
 
@@ -6064,13 +6354,13 @@ a getter.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Dynamically import a module (optionally attribute) and return a function component factory.</p>
-<p>The returned function component will render a small loader until the module
-is imported. On success it will render the loaded component with the same
-props. On error, it renders a minimal error text.</p>
-<p>This utility is Pyodide-friendly: it uses Python's import system, which
-is compatible with packages pre-bundled or fetched via micropip. Use
-<code>preload_component</code> to warm the cache.</p>
+        <p>Dynamically import a module (optionally attribute) and return a component.</p>
+<p>The returned function component renders a small loader until the module
+is imported.  On success it renders the loaded component with the
+forwarded props.  On error it renders a minimal error message.</p>
+<p>Pyodide-friendly: uses Python's import system, so packages pre-bundled
+or fetched via <code>micropip</code> work transparently.  Pair with
+:func:<code>preload_component</code> to warm caches before navigation.</p>
 
 
     </div>
@@ -6515,6 +6805,10 @@ a dependency::</p>
 <div class="codehilite"><pre><span></span><code>create_effect(lambda: print(&quot;a changed:&quot;, a(), &quot;b is:&quot;, untrack(b)))
 </code></pre></div>
 
+<p>Inside <code>untrack</code> the dev-mode destructured-prop warning is also
+silenced -- so <code>count, set_count = create_signal(untrack(initial))</code>
+cleanly opts out of the noise.</p>
+
 
     </div>
 
@@ -6534,6 +6828,11 @@ a dependency::</p>
         <p>Read the current value for <em>ctx</em> from the ownership tree.</p>
 <p>Walks up the owner chain looking for the nearest Provider that set
 a value for this context.  Falls back to the context's default.</p>
+<p>The returned value is unwrapped from the provider's signal — so
+callers receive the <em>current</em> value.  When called inside a
+tracking scope (e.g. a reactive hole or effect), the dependency
+on the provider signal is recorded so the scope re-runs when the
+provider updates.</p>
 
 
     </div>
@@ -6606,16 +6905,22 @@ a value for this context.  Falls back to the context's default.</p>
 <ul>
 <li>Core rendering</li>
 <li><code>Element</code>, <code>Ref</code></li>
-<li><code>VNode</code>, <code>h</code>, <code>render</code></li>
+<li><code>VNode</code>, <code>h</code>, <code>render</code>, <code>Fragment</code>, <code>dynamic</code>, <code>is_getter</code>, <code>memo</code></li>
 <li>Components</li>
 <li><code>component</code>, <code>forward_ref</code>, <code>ErrorBoundary</code>, <code>Suspense</code></li>
 <li>Reactivity</li>
-<li><code>create_signal</code> (optional <code>equals=</code>), <code>create_effect</code>, <code>create_memo</code>, <code>batch</code></li>
+<li><code>create_signal</code> (optional <code>equals=</code>), <code>create_effect</code>, <code>create_memo</code>, <code>batch</code>, <code>untrack</code>, <code>on</code>, <code>create_root</code>, <code>create_selector</code></li>
 <li><code>on_mount</code>, <code>on_cleanup</code></li>
 <li><code>ReactiveProps</code>, <code>get_props</code>, <code>children</code> (memoized children helper), <code>get_owner</code>, <code>run_with_owner</code></li>
 <li><code>Resource</code>, <code>create_resource</code></li>
+<li><code>merge_props</code>, <code>split_props</code>, <code>map_array</code>, <code>index_array</code></li>
+<li>Types: <code>Signal</code>, <code>Computed</code> (for type hints; create instances via <code>create_signal</code> / <code>create_memo</code>)</li>
 <li>Context</li>
 <li><code>Context</code>, <code>create_context</code>, <code>use_context</code>, <code>Provider</code></li>
+<li>Stores</li>
+<li><code>create_store</code>, <code>produce</code></li>
+<li>Flow control</li>
+<li><code>Show</code>, <code>For</code>, <code>Index</code>, <code>Switch</code>, <code>Match</code>, <code>Dynamic</code></li>
 <li>Router</li>
 <li><code>Route</code>, <code>Router</code>, <code>Link</code>, <code>navigate</code>, <code>current_path</code></li>
 <li>Forms</li>
@@ -6631,7 +6936,11 @@ a value for this context.  Falls back to the context's default.</p>
 <li><code>DEV_MODE</code>, <code>set_dev_mode</code>, <code>is_dev_mode</code></li>
 </ul>
 <blockquote>
-<p>Note: DOM/VDOM-related symbols (e.g., <code>Element</code>, <code>h</code>, <code>render</code>, router) require a Pyodide/browser environment. In non-browser contexts, only reactivity, forms, and lazy utilities are available.</p>
+<p>Note: DOM/VDOM rendering (<code>Element</code>, <code>render</code>, router, etc.)
+requires a Pyodide/browser environment.  In non-browser contexts the
+reactivity primitives, forms, lazy utilities, and pure-Python VDOM
+constructs (<code>VNode</code>, <code>h</code>, <code>Fragment</code>, <code>dynamic</code>, <code>memo</code>, <code>is_getter</code>)
+are still available.</p>
 </blockquote>
 
 

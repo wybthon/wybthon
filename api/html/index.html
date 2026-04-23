@@ -1954,14 +1954,14 @@
 </code></pre></div>
 
 <p>you can write::</p>
-<div class="codehilite"><pre><span></span><code>div(p(&quot;Hello&quot;), class_name=&quot;card&quot;, on_click=handler)
+<div class="codehilite"><pre><span></span><code>div(p(&quot;Hello&quot;), class_=&quot;card&quot;, on_click=handler)
 </code></pre></div>
 
 <p>Children are positional arguments, props are keyword arguments.</p>
 <p>Prop name mapping:</p>
 <ul>
-<li><code>class_name</code> → <code>class</code> (Python reserved word)</li>
-<li><code>html_for</code> → <code>for</code> (Python reserved word)</li>
+<li><code>class_</code>   → <code>class</code>  (the canonical reserved-word workaround)</li>
+<li><code>html_for</code> → <code>for</code>    (Python reserved word)</li>
 <li>All other kwargs pass through unchanged.</li>
 </ul>
 
@@ -1997,10 +1997,9 @@
     <div class="doc doc-contents ">
 
         <p>Group multiple children without adding extra DOM elements.</p>
-<p>Unlike the previous <code>&lt;span style="display:contents"&gt;</code> approach,
-fragments now use comment-node markers and mount children directly
-into the parent container.  This avoids polluting the DOM, breaking
-CSS selectors like <code>:first-child</code>, or affecting layout.</p>
+<p>Fragments use comment-node markers and mount children directly into
+the parent container, avoiding extra DOM elements that would
+pollute selectors like <code>:first-child</code> or affect layout.</p>
 <p>Can be called directly::</p>
 <div class="codehilite"><pre><span></span><code>Fragment(child1, child2)
 </code></pre></div>

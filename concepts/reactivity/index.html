@@ -2084,7 +2084,11 @@
 </code></pre></div>
 
 <ul>
-<li><code>create_signal(value, *, equals=...)</code> → <code>(getter, setter)</code> tuple (<code>equals</code> controls notification; see <a href="../../api/reactivity/">Reactivity API</a>)</li>
+<li><code>create_signal(value, *, equals=...)</code> → <code>(getter, setter)</code> tuple.
+  By default <code>equals</code> uses <strong>value equality</strong> (<code>==</code>) with an identity
+  fast-path; pass <code>equals=False</code> to fire on every set, or a custom
+  comparator (e.g. <code>equals=lambda a, b: a is b</code> for SolidJS-style
+  identity-only semantics). See <a href="../../api/reactivity/">Reactivity API</a>.</li>
 <li><code>create_memo(fn)</code> → derived getter; re-computes only when deps change</li>
 <li><code>create_effect(fn)</code> → runs and re-runs on dependencies; supports previous value</li>
 <li><code>batch()</code> → batch updates as context manager or <code>batch(fn)</code> with callback</li>
@@ -2252,7 +2256,7 @@ the hole re-runs (so their <code>on_cleanup</code> callbacks fire).</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">p</span>
 
 <span class="nd">@component</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
     <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="c1"># Setup effect — lives until the component unmounts</span>

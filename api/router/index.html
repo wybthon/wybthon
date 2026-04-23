@@ -2131,7 +2131,13 @@
 
     <div class="doc doc-contents ">
 
-        <p>Anchor element component that navigates via history API without reloads.</p>
+        <p>Anchor element component that navigates via the History API.</p>
+<p>Wrapped in a reactive hole so the active class flips automatically
+when the route changes — no parent re-render required.</p>
+<p>Recognised class spellings on the prop bag (in priority order):
+<code>"class"</code>, <code>"class_"</code>, <code>"className"</code>.  All three are merged
+with the active-class (when the link's href matches
+<code>current_path</code>).</p>
 
 
     </div>
@@ -2159,7 +2165,10 @@
 <li>base_path: str</li>
 <li>not_found: component to render on 404</li>
 </ul>
-</details>
+</details>        <p>The render function is wrapped in a reactive hole so that swaps to
+<code>current_path</code> automatically re-evaluate the matched route — no
+component re-mount required.</p>
+
 
     </div>
 

@@ -1966,19 +1966,23 @@
 <p>Build interactive web apps in Python that execute entirely in the browser. Wybthon provides a Virtual DOM renderer, reactive primitives, routing, forms, and DOM/event interop, all designed for Pyodide.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Run-once components + reactive holes</strong>: function components run a single
-  time at mount.  Embed signal getters anywhere in your VNode tree to create
-  a <em>reactive hole</em> — only that node updates when the signal changes.  No
-  React-style component re-renders.  See <a href="concepts/primitives/#reactive-holes">Reactive Holes</a>.</li>
-<li><strong>Signals-first</strong> reactive model: <code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>on_mount</code>, <code>on_cleanup</code>, <code>batch</code>, <code>untrack</code>, <code>on</code></li>
+<li><strong>Fully-reactive props + run-once components</strong>: function components
+  run a single time at mount.  Every prop is a zero-arg accessor —
+  pass it into the tree for an automatic <em>reactive hole</em> and only that
+  node updates when the prop changes.  No React-style component
+  re-renders.  See <a href="concepts/primitives/#reactive-holes">Reactive Holes</a>.</li>
+<li><strong>Signals-first</strong> reactive model: <code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>on_mount</code>, <code>on_cleanup</code>, <code>batch</code>, <code>untrack</code>, <code>on</code>, <code>dynamic</code></li>
 <li>Virtual DOM renderer with function components — <strong>batched</strong> mutations
   amortise the Pyodide ↔ JS bridge cost</li>
 <li>Async data: <code>create_resource</code> with loading/error signals and <code>Suspense</code></li>
+<li><strong>Reactive context</strong>: <code>Provider</code> values are signal-backed so consumers
+  update without re-mounting the subtree</li>
 <li>Router with path params, query parsing, and a <code>Link</code> component</li>
-<li>Contexts and a <code>Provider</code> component</li>
 <li>DOM helpers and event delegation</li>
 <li>Forms state, validators, and bindings</li>
 <li>Dev server with hot-reload (SSE)</li>
+<li><strong>Dev-mode warnings</strong> for the most common reactive footguns
+  (destructured prop access, plain-list <code>each=</code>, legacy render returns)</li>
 </ul>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>1) Clone the repo and run the demo:</p>

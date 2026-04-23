@@ -579,6 +579,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reactive-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-it-works-the-ownership-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1913,6 +1924,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#reactive-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-it-works-the-ownership-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1975,40 +1997,58 @@
 <h3 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h3>
 <p>Provide and consume values across the component tree without prop
 drilling.</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">p</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">Provider</span><span class="p">,</span> <span class="n">use_context</span>
 
 <span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">(</span><span class="n">props</span><span class="p">):</span>
-    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;span&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="sa">f</span><span class="s2">&quot;Theme: </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Theme: &quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)))</span>
 
-<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">,</span> <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{})]})</span>
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;dark&quot;</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{}))</span>
 </code></pre></div>
 
+<h4 id="reactive-value">Reactive <code>value</code><a class="headerlink" href="#reactive-value" title="Permanent link">&para;</a></h4>
+<p><code>Provider</code>'s <code>value</code> prop is <strong>signal-backed</strong>: passing a getter (or a
+signal accessor) makes the provided value reactive.  Consumers that
+read <code>use_context</code> inside a reactive hole will update automatically
+when the value changes — no subtree re-mount required.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_context</span><span class="p">,</span> <span class="n">Provider</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+    <span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">&quot;dark&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="n">Provider</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">Theme</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">theme</span><span class="p">},</span>  <span class="c1"># ← getter</span>
+             <span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{}))</span>
+
+<span class="nd">@component</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">():</span>
+    <span class="c1"># Wrap in dynamic so the text node updates when ``theme`` flips.</span>
+    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Theme: </span><span class="si">{</span><span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>If you only need a static value, pass it as-is — the Provider handles
+both shapes uniformly.</p>
 <h4 id="how-it-works-the-ownership-tree">How it works: the ownership tree<a class="headerlink" href="#how-it-works-the-ownership-tree" title="Permanent link">&para;</a></h4>
 <p>Context values are stored directly on the <strong>reactive ownership tree</strong>,
 not on a separate render-time stack.  When a <code>Provider</code> component
-mounts, the reconciler calls <code>_set_context(ctx_id, value)</code> on that
-component's <code>_ComponentContext</code> owner.  This writes the value into the
-owner's <code>_context_map</code>.</p>
-<p>When <code>use_context(ctx)</code> is called, it walks <strong>up</strong> the owner chain
-(<code>_current_owner → parent → parent → ...</code>) looking for the first owner
-whose <code>_context_map</code> contains the context ID.  If none is found, the
-context's default value is returned.</p>
-<div class="codehilite"><pre><span></span><code>Root Owner
-└── ComponentContext (App)
-    └── ComponentContext (Provider)   ← _context_map = {Theme.id: &quot;dark&quot;}
-        └── ComponentContext (Label)
-            └── render effect
-                ← use_context(Theme) walks up and finds &quot;dark&quot;
+mounts, the reconciler creates a per-context signal on that component's
+<code>_ComponentContext</code> owner.  Consumers read the signal via
+<code>use_context</code>, so they participate in normal reactive tracking.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Root</span><span class="w"> </span><span class="n">Owner</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">App</span><span class="p">)</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">Provider</span><span class="p">)</span><span class="w">   </span><span class="err">←</span><span class="w"> </span><span class="n">_context_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">Theme</span><span class="o">.</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="k">signal</span><span class="p">(</span><span class="s2">&quot;dark&quot;</span><span class="p">)}</span>
+<span class="w">        </span><span class="err">└──</span><span class="w"> </span><span class="n">ComponentContext</span><span class="w"> </span><span class="p">(</span><span class="n">Label</span><span class="p">)</span>
+<span class="w">            </span><span class="err">└──</span><span class="w"> </span><span class="n">render</span><span class="w"> </span><span class="n">effect</span>
+<span class="w">                </span><span class="err">←</span><span class="w"> </span><span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span><span class="w"> </span><span class="n">walks</span><span class="w"> </span><span class="n">up</span><span class="p">,</span><span class="w"> </span><span class="n">reads</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">signal</span><span class="p">,</span>
+<span class="w">                  </span><span class="ow">and</span><span class="w"> </span><span class="n">tracks</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">future</span><span class="w"> </span><span class="n">updates</span><span class="o">.</span>
 </code></pre></div>
 
 <p>This ownership-based lookup means context is available at any point
-during a component's lifecycle — setup phase, render function, or inside
-effects — as long as the code runs under an owner that is a descendant
-of the provider.</p>
+during a component's lifecycle — setup phase, render function, or
+inside effects — as long as the code runs under an owner that is a
+descendant of the provider.</p>
 <h4 id="provider-scoping">Provider scoping<a class="headerlink" href="#provider-scoping" title="Permanent link">&para;</a></h4>
 <p>Each <code>Provider</code> sets its value on its own component context.  Nested
 providers for the same context naturally shadow outer ones because the
@@ -2023,7 +2063,10 @@ ownership-tree walk finds the nearest ancestor first:</p>
 <h4 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h4>
 <p>Context lookup is a simple parent-pointer walk — no dict copies, no
 stack manipulation.  The cost is proportional to the depth between the
-consumer and the nearest provider, which is typically small.</p>
+consumer and the nearest provider, which is typically small.  When the
+<code>Provider</code> value is a getter, an internal effect mirrors it into the
+context signal so consumers update reactively without the <code>Provider</code>
+itself re-rendering.</p>
 
 
 
