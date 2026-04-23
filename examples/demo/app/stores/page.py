@@ -1,4 +1,4 @@
-from wybthon import For, button, component, create_store, div, h, h2, h3, p, produce, span
+from wybthon import For, button, component, create_store, div, dynamic, h, h2, h3, p, produce, span
 
 
 @component
@@ -26,37 +26,36 @@ def TodoStore():
     def remove(idx):
         return lambda e: set_store("todos", lambda ts: [t for i, t in enumerate(ts) if i != idx])
 
-    def render():
+    def summary() -> str:
         todos = list(store.todos)
-        done_count = sum(1 for t in todos if t.done)
+        done = sum(1 for t in todos if t.done)
+        return f"{len(todos)} items, {done} done"
 
-        return div(
-            h3("Todo List (create_store + produce)"),
-            p(f"{len(todos)} items, {done_count} done"),
-            For(
-                each=lambda: list(store.todos),
-                children=lambda item, idx: div(
-                    span(
-                        f"{'[x]' if item().done else '[ ]'} {item().text}",
-                        on_click=toggle(idx()),
-                        style={
-                            "cursor": "pointer",
-                            "textDecoration": "line-through" if item().done else "none",
-                        },
-                    ),
-                    button(
-                        "x",
-                        on_click=remove(idx()),
-                        style={"marginLeft": "8px", "fontSize": "0.8rem"},
-                    ),
-                    style={"display": "flex", "alignItems": "center", "gap": "4px", "padding": "4px 0"},
+    return div(
+        h3("Todo List (create_store + produce)"),
+        p(dynamic(summary)),
+        For(
+            each=lambda: list(store.todos),
+            children=lambda item, idx: div(
+                span(
+                    dynamic(lambda: f"{'[x]' if item().done else '[ ]'} {item().text}"),
+                    on_click=toggle(idx()),
+                    style=lambda: {
+                        "cursor": "pointer",
+                        "textDecoration": "line-through" if item().done else "none",
+                    },
                 ),
+                button(
+                    "x",
+                    on_click=remove(idx()),
+                    style={"marginLeft": "8px", "fontSize": "0.8rem"},
+                ),
+                style={"display": "flex", "alignItems": "center", "gap": "4px", "padding": "4px 0"},
             ),
-            button("Add todo", on_click=add_todo),
-            class_name="demo-section",
-        )
-
-    return render
+        ),
+        button("Add todo", on_click=add_todo),
+        class_="demo-section",
+    )
 
 
 @component
@@ -77,22 +76,19 @@ def NestedStore():
     def rename(e):
         set_store("user", "name", lambda n: "Grace Hopper" if n == "Ada Lovelace" else "Ada Lovelace")
 
-    def render():
-        return div(
-            h3("Nested State (path-based setter)"),
-            p(f"User: {store.user.name} ({store.user.role})"),
-            p(f"Theme: {store.settings.theme}"),
-            p(f"Notifications: {'on' if store.settings.notifications else 'off'}"),
-            div(
-                button("Toggle theme", on_click=toggle_theme),
-                button("Toggle notifications", on_click=toggle_notifications),
-                button("Swap name", on_click=rename),
-                style={"display": "flex", "gap": "8px", "flexWrap": "wrap"},
-            ),
-            class_name="demo-section",
-        )
-
-    return render
+    return div(
+        h3("Nested State (path-based setter)"),
+        p(dynamic(lambda: f"User: {store.user.name} ({store.user.role})")),
+        p(dynamic(lambda: f"Theme: {store.settings.theme}")),
+        p(dynamic(lambda: f"Notifications: {'on' if store.settings.notifications else 'off'}")),
+        div(
+            button("Toggle theme", on_click=toggle_theme),
+            button("Toggle notifications", on_click=toggle_notifications),
+            button("Swap name", on_click=rename),
+            style={"display": "flex", "gap": "8px", "flexWrap": "wrap"},
+        ),
+        class_="demo-section",
+    )
 
 
 @component
@@ -100,10 +96,10 @@ def Page():
     return div(
         div(
             h2("Stores"),
-            p("Reactive state management for nested objects and lists, " "inspired by SolidJS createStore."),
-            class_name="page-header",
+            p("Reactive state management for nested objects and lists, inspired by SolidJS createStore."),
+            class_="page-header",
         ),
         h(TodoStore, {}),
         h(NestedStore, {}),
-        class_name="page",
+        class_="page",
     )

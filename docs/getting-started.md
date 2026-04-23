@@ -48,14 +48,17 @@ await micropip.install("wybthon")
 
 ## Minimal component example
 
-Using the `@component` decorator (recommended):
+Using the `@component` decorator:
 
 ```python
-from wybthon import Element, component, h, h2, render
+from wybthon import Element, component, h2, render
 
 @component
-def Hello(name: str = "world"):
-    return h2(f"Hello, {name}!")
+def Hello(name="world"):
+    # ``name`` is a reactive accessor; passing it as a child creates a
+    # reactive hole, so the text node updates whenever the parent
+    # passes a new ``name``.
+    return h2("Hello, ", name, "!")
 
 tree = Hello(name="Python")
 container = Element("body", existing=True)
@@ -65,18 +68,22 @@ render(tree, container)
 Stateful component with signals:
 
 ```python
-from wybthon import Element, button, component, create_signal, div, h, on_mount, p, render, span
+from wybthon import (
+    Element, button, component, create_signal, div, h, on_mount, p, render, span, untrack,
+)
 
 @component
-def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+def Counter(initial=0):
+    # ``initial`` is a reactive accessor; ``untrack`` reads its
+    # current value without subscribing -- perfect as a signal seed.
+    count, set_count = create_signal(untrack(initial))
 
     on_mount(lambda: print("Counter mounted"))
 
-    # Component body runs ONCE.  ``count.get`` is a *reactive hole*:
+    # Component body runs ONCE.  ``count`` is a *reactive hole*:
     # only the highlighted text node updates when the signal changes.
     return div(
-        p("Count: ", span(count.get)),
+        p("Count: ", span(count)),
         button("Increment", on_click=lambda e: set_count(count() + 1)),
     )
 
@@ -85,24 +92,10 @@ container = Element("body", existing=True)
 render(tree, container)
 ```
 
-> **Why the `span(count.get)` instead of `f"Count: {count()}"`?**
-> Reading `count()` eagerly at setup captures the current value once.
-> To get reactive updates, embed the *getter* — the reconciler then
-> wraps it as a reactive hole and updates only that DOM node when the
-> signal changes.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
-
-Traditional function component (also supported):
-
-```python
-from wybthon import Element, h, h2, render
-
-def Hello(props):
-    name = props.get("name", "world")
-    return h2(f"Hello, {name}!")
-
-tree = h(Hello, {"name": "Python"})
-container = Element("body", existing=True)
-render(tree, container)
-```
+> **Why `span(count)` instead of `f"Count: {count()}"`?**  Reading
+> `count()` eagerly at setup captures the current value once.  To get
+> reactive updates, embed the *accessor* — the reconciler wraps it as
+> a reactive hole and updates only that DOM node when the signal
+> changes.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
 
 See: [Authoring Patterns](guides/authoring-patterns.md)

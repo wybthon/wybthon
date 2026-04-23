@@ -9,6 +9,7 @@ from wybthon import (
     component,
     create_signal,
     div,
+    dynamic,
     h,
     h2,
     h3,
@@ -23,27 +24,24 @@ def ShowDemo():
     visible, set_visible = create_signal(True)
     count, set_count = create_signal(0)
 
-    def render():
-        return div(
-            h3("Show - Conditional Rendering"),
-            p(
-                "Show uses keyed conditional rendering. When truthiness changes, "
-                "the previous branch scope is disposed and a new scope is created."
-            ),
-            div(
-                button("Toggle", on_click=lambda e: set_visible(not visible())),
-                button("+1", on_click=lambda e: set_count(count() + 1)),
-                style={"display": "flex", "gap": "8px"},
-            ),
-            Show(
-                when=visible,
-                children=lambda: p(f"Visible! Count is {count()}"),
-                fallback=lambda: p("Hidden (fallback shown)", style={"color": "var(--text-3)"}),
-            ),
-            class_name="demo-section",
-        )
-
-    return render
+    return div(
+        h3("Show - Conditional Rendering"),
+        p(
+            "Show uses keyed conditional rendering. When truthiness changes, "
+            "the previous branch scope is disposed and a new scope is created."
+        ),
+        div(
+            button("Toggle", on_click=lambda e: set_visible(not visible())),
+            button("+1", on_click=lambda e: set_count(count() + 1)),
+            style={"display": "flex", "gap": "8px"},
+        ),
+        Show(
+            when=visible,
+            children=lambda: p(dynamic(lambda: f"Visible! Count is {count()}")),
+            fallback=lambda: p("Hidden (fallback shown)", style={"color": "var(--text-3)"}),
+        ),
+        class_="demo-section",
+    )
 
 
 @component
@@ -61,29 +59,26 @@ def ForDemo():
         if cur:
             set_items(cur[:-1])
 
-    def render():
-        return div(
-            h3("For - Keyed List Rendering"),
-            p(
-                "For maintains per-item reactive scopes keyed by identity. "
-                "The mapping callback runs once per unique item and receives "
-                "signal-backed item() and index() getters."
+    return div(
+        h3("For - Keyed List Rendering"),
+        p(
+            "For maintains per-item reactive scopes keyed by identity. "
+            "The mapping callback runs once per unique item and receives "
+            "signal-backed item() and index() getters."
+        ),
+        div(
+            button("Add item", on_click=add_item),
+            button("Remove last", on_click=remove_last),
+            style={"display": "flex", "gap": "8px"},
+        ),
+        ul(
+            For(
+                each=items,
+                children=lambda item, idx: li(dynamic(lambda: f"{idx()}: {item()}"), key=idx()),
             ),
-            div(
-                button("Add item", on_click=add_item),
-                button("Remove last", on_click=remove_last),
-                style={"display": "flex", "gap": "8px"},
-            ),
-            ul(
-                For(
-                    each=items,
-                    children=lambda item, idx: li(f"{idx()}: {item()}", key=idx()),
-                ),
-            ),
-            class_name="demo-section",
-        )
-
-    return render
+        ),
+        class_="demo-section",
+    )
 
 
 @component
@@ -95,21 +90,18 @@ def SwitchDemo():
         nxt = {"idle": "loading", "loading": "error", "error": "ready", "ready": "idle"}
         set_status(nxt.get(cur, "idle"))
 
-    def render():
-        return div(
-            h3("Switch / Match - Multi-Branch"),
-            p(f"Current status: {status()}"),
-            button("Cycle status", on_click=cycle),
-            Switch(
-                Match(when=lambda: status() == "loading", children=lambda: p("Loading...", style={"color": "orange"})),
-                Match(when=lambda: status() == "error", children=lambda: p("Error!", style={"color": "red"})),
-                Match(when=lambda: status() == "ready", children=lambda: p("Ready.", style={"color": "green"})),
-                fallback=lambda: p("Idle - click to start", style={"color": "var(--text-3)"}),
-            ),
-            class_name="demo-section",
-        )
-
-    return render
+    return div(
+        h3("Switch / Match - Multi-Branch"),
+        p("Current status: ", status),
+        button("Cycle status", on_click=cycle),
+        Switch(
+            Match(when=lambda: status() == "loading", children=lambda: p("Loading...", style={"color": "orange"})),
+            Match(when=lambda: status() == "error", children=lambda: p("Error!", style={"color": "red"})),
+            Match(when=lambda: status() == "ready", children=lambda: p("Ready.", style={"color": "green"})),
+            fallback=lambda: p("Idle - click to start", style={"color": "var(--text-3)"}),
+        ),
+        class_="demo-section",
+    )
 
 
 @component
@@ -121,16 +113,13 @@ def DynamicDemo():
         nxt = {"h3": "h2", "h2": "h1", "h1": "p", "p": "h3"}
         set_level(nxt.get(cur, "h3"))
 
-    def render():
-        return div(
-            h3("Dynamic - Dynamic Component"),
-            p(f"Current tag: <{level()}>"),
-            button("Cycle tag", on_click=cycle),
-            Dynamic(component=lambda: level(), children=["Dynamic content!"]),
-            class_name="demo-section",
-        )
-
-    return render
+    return div(
+        h3("Dynamic - Dynamic Component"),
+        p("Current tag: ", dynamic(lambda: f"<{level()}>")),
+        button("Cycle tag", on_click=cycle),
+        Dynamic(component=lambda: level(), children=["Dynamic content!"]),
+        class_="demo-section",
+    )
 
 
 @component
@@ -142,25 +131,22 @@ def IndexDemo():
         cur.reverse()
         set_items(cur)
 
-    def render():
-        return div(
-            h3("Index - Index-Stable Rendering"),
-            p(
-                "Index maintains per-index reactive scopes. Each slot has a "
-                "signal-backed item() getter that updates when the value at "
-                "that position changes."
+    return div(
+        h3("Index - Index-Stable Rendering"),
+        p(
+            "Index maintains per-index reactive scopes. Each slot has a "
+            "signal-backed item() getter that updates when the value at "
+            "that position changes."
+        ),
+        button("Reverse", on_click=shuffle),
+        ul(
+            Index(
+                each=items,
+                children=lambda item, idx: li(dynamic(lambda: f"[{idx}] {item()}")),
             ),
-            button("Reverse", on_click=shuffle),
-            ul(
-                Index(
-                    each=items,
-                    children=lambda item, idx: li(f"[{idx}] {item()}"),
-                ),
-            ),
-            class_name="demo-section",
-        )
-
-    return render
+        ),
+        class_="demo-section",
+    )
 
 
 @component
@@ -172,12 +158,12 @@ def Page():
                 "Reactive flow control components: Show, For, Index, Switch/Match, "
                 "and Dynamic. Each creates an isolated reactive scope."
             ),
-            class_name="page-header",
+            class_="page-header",
         ),
         h(ShowDemo, {}),
         h(ForDemo, {}),
         h(SwitchDemo, {}),
         h(IndexDemo, {}),
         h(DynamicDemo, {}),
-        class_name="page",
+        class_="page",
     )

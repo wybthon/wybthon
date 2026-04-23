@@ -90,9 +90,7 @@ def HoverDemo():
 
     on_mount(setup)
 
-    def render():
-        return div("Hover me", ref=ref, class_name="box")
-    return render
+    return div("Hover me", ref=ref, class_="box")
 ```
 
 #### Pyodide cross-browser notes

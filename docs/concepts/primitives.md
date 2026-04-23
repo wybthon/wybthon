@@ -26,14 +26,14 @@ def Demo():
 
     return div(
         # 1) Pass a signal accessor directly:
-        p("Count: ", span(count.get)),
+        p("Count: ", span(count)),
 
         # 2) Wrap a derived expression with ``dynamic``:
         p(dynamic(lambda: f"Doubled: {count() * 2}")),
 
         # 3) Reactive prop value (any callable prop except event handlers):
         p("Status",
-          class_name=lambda: "danger" if count() > 5 else "ok"),
+          class_=lambda: "danger" if count() > 5 else "ok"),
 
         button("+1", on_click=lambda e: set_count(count() + 1)),
     )
@@ -80,15 +80,31 @@ Create a reactive signal.  Returns `(getter, setter)`.
 from wybthon import component, create_signal, div, p, span
 
 @component
-def Counter(initial: int = 0):
-    count, set_count = create_signal(initial)
+def Counter(initial=0):
+    # ``initial`` is a reactive accessor; untrack the seed value.
+    from wybthon import untrack
+    count, set_count = create_signal(untrack(initial))
 
     return div(
-        p("Count: ", span(count.get)),  # ← reactive hole
+        p("Count: ", span(count)),  # ← reactive hole
     )
 ```
 
-Optional keyword **`equals`** controls when subscribers run: default skips notification when the new value compares equal to the old (`==`); `equals=False` notifies on every `set()`; `equals=comparator` with `comparator(old, new) -> bool` skips when the comparator returns `True` (treat as “same”).
+Optional keyword **`equals`** controls when subscribers run:
+
+* **default (value equality)** — skip notification when the new value
+  is `==` to the previous one.  An identity (`is`) check runs first as
+  a fast-path, so re-setting the same reference is cheap.  Mutating
+  the same list/dict in place and re-setting the same reference is a
+  no-op (the value didn't change) — copy the container or use
+  `equals=False` to force notification.
+* **`equals=True`** — equivalent to the default.
+* **`equals=False`** — notify on every `set()`, even when the value is
+  unchanged.
+* **`equals=comparator`** — `comparator(old, new) -> bool`; skip when
+  the comparator returns `True`.  Use
+  `equals=lambda a, b: a is b` for SolidJS-style identity-only
+  semantics.
 
 The setter accepts a plain value:
 
@@ -115,7 +131,7 @@ def Logger():
 
     create_effect(lambda: print("count is now", count()))
 
-    return p(count.get)
+    return p(count)
 ```
 
 Use `on_cleanup` inside a `create_effect` callback to register cleanup
@@ -146,6 +162,27 @@ re-computes only when its dependencies change.
 doubled = create_memo(lambda: count() * 2)
 print(doubled())  # reactive read
 ```
+
+---
+
+#### `untrack`
+
+Read a getter (signal, memo, or prop accessor) **without** subscribing
+to it.  Use during component setup to capture a one-shot snapshot:
+
+```python
+from wybthon import component, create_signal, untrack
+
+@component
+def Counter(initial=0):
+    # Read ``initial`` once for the seed; updates to the prop won't
+    # be tracked here (because we are inside untrack).
+    count, set_count = create_signal(untrack(initial))
+    ...
+```
+
+`untrack` also suppresses dev-mode warnings about destructured prop
+access — it is the explicit "I know what I'm doing" escape hatch.
 
 ---
 
@@ -186,37 +223,42 @@ def Timer():
 
 #### Reactive props
 
-With `@component`, parameters are **plain Python values** captured
-once at setup time.  Because the component body runs once, parameter
-values reflect the initial snapshot.
-
-For reactive reads of individual props (effects, memos, or reactive
-holes), call `get_props()` once and use the **`ReactiveProps`** proxy
-— `props.name` or `props["name"]` tracks that prop:
+With `@component`, every parameter is a **reactive accessor** (a
+zero-arg callable) — there is one consistent shape regardless of
+whether the parent passed a static value or a signal.
 
 ```python
-from wybthon import component, create_effect, get_props, p
-
 @component
-def Search(initial_query: str = ""):
-    props = get_props()
-    create_effect(lambda: print("query changed:", props.query))
+def Greeting(name="world"):
+    # ``name`` is a getter.
+    return p(
+        "Hello, ", name, "!",                     # auto-hole
+        title=dynamic(lambda: f"hi {name()}!"),   # reactive prop binding
+    )
 
-    return p("Searching: ", lambda: str(props.query))
-```
-
-When a parent component wants to pass a *reactive value* to a child,
-the canonical pattern is to **pass the getter**:
-
-```python
 @component
 def Parent():
     name, _ = create_signal("Ada")
-    return Greeting(name=name.get)   # pass the getter, not the value
+    return Greeting(name=name)                 # pass the accessor
+    # Greeting(name="Ada") is also valid; the child code is identical.
+```
+
+When you need the underlying ``ReactiveProps`` proxy (e.g. for
+introspection or to iterate keys), call ``get_props()`` from inside
+the component body, or declare the component with a single positional
+parameter (proxy mode):
+
+```python
+from wybthon import component, dynamic, get_props, p
 
 @component
-def Greeting(name=None):
-    return p("Hello, ", name)        # ``name`` is now a reactive hole
+def Search(initial_query=""):
+    props = get_props()                                 # ReactiveProps proxy
+    return p("Searching: ", dynamic(lambda: str(props.query)))
+
+@component
+def Generic(props):                                     # proxy mode
+    return p(dynamic(lambda: ", ".join(sorted(list(props)))))
 ```
 
 See also: [Reactivity API](../api/reactivity.md) for `get_owner` /
@@ -273,4 +315,3 @@ is_selected(1)   # True
 is_selected(2)   # False
 set_selected(2)  # only keys 1 and 2 fire
 ```
-

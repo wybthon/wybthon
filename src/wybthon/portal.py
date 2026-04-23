@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Union
 
-from .reactivity import on_cleanup, on_mount
-from .vnode import Fragment, VNode, h, to_text_vnode
+from .reactivity import on_cleanup, on_mount, read_prop
+from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
 
 __all__ = ["create_portal"]
 
@@ -18,11 +18,13 @@ def _PortalComponent(props: Any) -> Any:
         from .dom import Element
         from .reconciler import mount, patch
 
-        container = props.get("_portal_container")
+        container = read_prop(props, "_portal_container")
         if isinstance(container, str):
             container = Element(container, existing=True)
 
-        children: List[Any] = props.get("children", [])
+        children = read_prop(props, "children", [])
+        if children is None:
+            children = []
         if not isinstance(children, list):
             children = [children]
         new_tree = Fragment(*children)
@@ -47,20 +49,27 @@ def _PortalComponent(props: Any) -> Any:
     on_cleanup(_cleanup)
 
     def render() -> VNode:
-        _ = props.get("children")
+        # Reading children inside the reactive hole tracks the children
+        # signal so the portal re-renders into its container when the
+        # parent updates them.
+        _ = read_prop(props, "children")
         if portal_tree[0] is not None:
             _do_render()
         return to_text_vnode("")
 
-    return render
+    return dynamic(render)
+
+
+_PortalComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 def create_portal(children: Union[VNode, List[VNode]], container: Any) -> VNode:
     """Render children into a different DOM container.
 
     Returns a VNode that, when mounted, renders *children* into *container*
-    instead of the parent component's DOM node.  Useful for modals, tooltips,
-    and overlays that need to break out of their parent's DOM hierarchy.
+    instead of the parent component's DOM node.  Useful for modals,
+    tooltips, and overlays that need to break out of their parent's DOM
+    hierarchy.
 
     *container* may be an ``Element`` or a CSS selector string.
     """

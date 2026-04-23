@@ -12,16 +12,16 @@ the Python ↔ JS bridge.
 
 #### Authoring tips
 
-- **Prefer holes over re-rendering.**  Embed `signal.get` (or a
+- **Prefer holes over re-rendering.**  Embed a signal accessor (or
   `dynamic(lambda: ...)`) at the smallest possible spot in the tree
   rather than reading signals eagerly inside the component body.
 
   ```python
-  # Slow — entire body would re-run if reads were tracked
+  # Slow — eager reads happen during setup; future changes are missed.
   return p(f"Hello, {name()}, count={count()}")
 
-  # Fast — only two text nodes update
-  return p("Hello, ", span(name), ", count=", span(count.get))
+  # Fast — only two text nodes update.
+  return p("Hello, ", span(name), ", count=", span(count))
   ```
 
 - **Co-locate signals with the smallest visible region.**  A hole is

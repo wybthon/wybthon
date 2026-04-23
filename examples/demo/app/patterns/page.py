@@ -14,10 +14,10 @@ def Page():
                 "Reusable patterns: Card wrapper, stateless components, "
                 "signal-based state, and lifecycle management."
             ),
-            class_name="page-header",
+            class_="page-header",
         ),
         h(Card, {"title": "Stateless Component"}, h(Hello, {"name": "Wybthon"})),
         h(Card, {"title": "State & Derived Values"}, h(NamesList, {})),
         h(Card, {"title": "Lifecycle: Mount & Cleanup"}, h(Timer, {})),
-        class_name="page",
+        class_="page",
     )

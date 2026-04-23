@@ -10,7 +10,7 @@ def Page():
                 "This page demonstrates nested routing and lazy loading. "
                 "It was loaded on-demand when you navigated here."
             ),
-            class_name="page-header",
+            class_="page-header",
         ),
         div(
             h3("How It Works"),
@@ -19,7 +19,7 @@ def Page():
                 "of /about. It was lazy-loaded using the lazy() wrapper, "
                 "meaning the module is only fetched when you navigate here."
             ),
-            class_name="demo-section",
+            class_="demo-section",
         ),
         div(
             h3("Route Configuration"),
@@ -33,10 +33,10 @@ def Page():
                     "    ],\n"
                     ")"
                 ),
-                class_name="code-block",
+                class_="code-block",
             ),
-            class_name="demo-section",
+            class_="demo-section",
         ),
-        h(Link, {"to": "/about", "class": "button"}, "Back to About"),
-        class_name="page",
+        h(Link, {"to": "/about", "class_": "button"}, "Back to About"),
+        class_="page",
     )

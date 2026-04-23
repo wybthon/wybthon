@@ -9,12 +9,13 @@ Folders under `examples/demo/app/` mirror routes and components.
 
 #### Routing and lazy loading
 
-Routes are defined in `examples/demo/app/routes.py`. The demo showcases lazy loading using `load_component()` and `lazy()`:
+Routes are defined in `examples/demo/app/routes.py`.  Components are
+passed directly — the new `@component` decorator handles the
+`(props,)` calling convention used by the router:
 
-```12:36:examples/demo/app/routes.py
+```python
 from app.errors.page import Page as ErrorsPage
 from app.fetch.page import FetchPage
-from app.forms.page import FormsPage
 from app.page import Page as HomePage
 from wybthon import Route, lazy, load_component
 
@@ -27,13 +28,13 @@ def _TeamLazy():
     return ("app.about.team.page", "Page")
 
 
-# Example of eager dynamic loader (resolves at route creation time)
+# Eager dynamic loader (resolves at route creation time).
 Docs = load_component("app.docs.page", "Page")
 
 
 def create_routes():
     return [
-        Route(path="/", component=lambda p: HomePage(p)),
+        Route(path="/", component=HomePage),
         Route(
             path="/about",
             component=lazy(_AboutLazy),
@@ -42,89 +43,66 @@ def create_routes():
             ],
         ),
         Route(path="/fetch", component=FetchPage),
-        Route(path="/forms", component=FormsPage),
-        Route(path="/errors", component=lambda p: ErrorsPage(p)),
+        Route(path="/errors", component=ErrorsPage),
         Route(path="/docs/*", component=Docs),
     ]
 ```
 
-We also preload the Team route when the user hovers the link in the nav for a snappier transition:
+The demo also preloads the Team route on hover for snappier
+transitions:
 
-```1:40:examples/demo/app/components/nav.py
-from wybthon import Link, h, preload_component
+```python
+from wybthon import Link, component, h, nav, preload_component, untrack
 
 
-def Nav(props):
-    base_path = props.get("base_path")
-    # Hint: Preload team route on nav hover to improve perceived navigation time
-    def on_hover_team(_evt):
+@component
+def Nav(base_path=None):
+    bp = untrack(base_path)
+    lp = {"base_path": bp, "class_": "nav-link", "class_active": "active"}
+
+    def preload_team(_evt):
         try:
             preload_component("app.about.team.page", "Page")
         except Exception:
             pass
-    return h(
-        "nav",
-        {"class": "nav"},
-        h(Link, {"to": "/", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Home"),
-        " | ",
-        h(Link, {"to": "/about", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "About"),
-        " (",
-        h(
-            Link,
-            {
-                "to": "/about/team",
-                "base_path": base_path,
-                "class": "nav-link",
-                "class_active": "active",
-                # Use a bubbling event so delegated handlers work
-                "on_mouseover": on_hover_team,
-            },
-            "Team",
-        ),
-        ")",
-        " | ",
-        h(Link, {"to": "/fetch", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Fetch"),
-        " | ",
-        h(Link, {"to": "/forms", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Forms"),
-        " | ",
-        h(Link, {"to": "/errors", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Errors"),
-        " | ",
-        h(Link, {"to": "/docs", "base_path": base_path, "class": "nav-link", "class_active": "active"}, "Docs"),
-        " (",
-        h(
-            Link,
-            {"to": "/docs/guide/intro", "base_path": base_path, "class": "nav-link", "class_active": "active"},
-            "guide/intro",
-        ),
-        ")",
-        " | ",
-        h(
-            Link,
-            {"to": "/about", "base_path": base_path, "replace": True, "class": "nav-link", "class_active": "active"},
-            "About (replace)",
-        ),
+
+    return nav(
+        h(Link, {**lp, "to": "/"}, "Home"),
+        h(Link, {**lp, "to": "/about"}, "About"),
+        h(Link, {**lp, "to": "/about/team", "on_mouseover": preload_team}, "Team"),
+        h(Link, {**lp, "to": "/fetch"}, "Fetch"),
+        h(Link, {**lp, "to": "/docs"}, "Docs"),
+        class_="app-nav",
     )
 ```
 
 #### Suspense for loading UI
 
-The Fetch page uses `Suspense` to show a fallback while its `create_resource` is loading and keeps the previous content on reloads:
+The Fetch page uses `Suspense` to show a fallback while its
+`create_resource` is loading, and keeps the previous content visible
+on reloads:
 
-```1:80:examples/demo/app/fetch/page.py
-from wybthon import Suspense, component, create_resource, h
+```python
+from wybthon import Suspense, component, create_resource, dynamic, h, p
+
 
 @component
 def FetchPage():
     res = create_resource(fetcher)
-    # ... see source for full example ...
-    def render():
-        return h(
-            "div",
-            {},
-            h("h3", {}, "Async Fetch Demo"),
-            h(Suspense, {"resource": res, "fallback": h("p", {}, "Loading..."), "keep_previous": True}, ...),
-        )
-    return render
+
+    def display_text():
+        err = res.error.get()
+        if err:
+            return str(err)
+        return res.data.get() or "No data"
+
+    return h(Suspense, {
+        "resource": res,
+        "fallback": p("Loading..."),
+        "keep_previous": True,
+        "children": [p(dynamic(display_text))],
+    })
 ```
 
-This mirrors how you'd code-split larger apps and warm the import cache based on intent.
+This mirrors how you'd code-split larger apps and warm the import
+cache based on intent.

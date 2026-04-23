@@ -1,7 +1,7 @@
 """Core reconciliation engine: mounting, patching, and unmounting VNode trees.
 
-This module implements the VDOM diffing algorithm that translates virtual node
-trees into real DOM mutations.
+This module implements the VDOM diffing algorithm that translates virtual
+node trees into real DOM mutations.
 
 Key concepts:
 
@@ -15,11 +15,11 @@ Key concepts:
   created automatically whenever a callable child or callable prop
   value appears in the tree, and explicitly via :func:`wybthon.dynamic`.
 
-* **Legacy ``return render`` pattern still works.**  If a component
-  returns a callable, the reconciler wraps it in a single-root
-  reactive hole, so the existing "set up state, return a render
-  function" idiom keeps working unchanged -- it's just expressed
-  using the same primitive as user-level holes.
+* **Components return a VNode** (or a value coercible to one).
+  The idiomatic style is to return a static tree and use
+  :func:`wybthon.dynamic` for explicit reactive subtrees; a returned
+  zero-argument callable is also accepted and is wrapped in a single
+  reactive hole for convenience (handy when authoring HOCs).
 
 Public functions:
   - ``render(vnode, container)`` -- top-level entry point
@@ -356,16 +356,13 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
 def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> Element:
     """Mount a function component using the run-once + reactive-holes model.
 
-    The component body is invoked exactly once.  The returned value is
-    interpreted as follows:
-
-    * ``VNode``                -- mounted directly.  Updates flow through any
-                                  reactive holes embedded inside it.
-    * Zero-argument callable   -- treated as the legacy "render function"
-                                  pattern; wrapped in a single-root
-                                  reactive hole so the subtree is
-                                  re-evaluated when its dependencies change.
-    * Anything else            -- coerced to a text VNode.
+    The component body is invoked exactly once.  The return value is
+    coerced to a VNode subtree.  As a convenience, a callable return
+    is wrapped in a single-root reactive hole (the same primitive
+    :func:`wybthon.dynamic` produces), so HOCs that build a render
+    callback continue to work.  Idiomatic components return a
+    :class:`VNode` directly and use :func:`wybthon.dynamic` where they
+    need reactive subtrees.
     """
     import wybthon.reactivity as _rx
 
@@ -392,7 +389,34 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
         ctx_obj = ctx._props.get("context")
         value = ctx._props.get("value")
         if ctx_obj is not None:
-            ctx._set_context(ctx_obj.id, value)
+            # Store a Signal so descendants get fine-grained reactive
+            # updates when the provider's ``value`` prop changes.
+            from .vnode import is_getter as _is_getter
+
+            initial_value = value() if callable(value) and _is_getter(value) else value
+            value_sig = _rx.Signal(initial_value)
+            ctx._set_context(ctx_obj.id, value_sig)
+            # Remember the signal so the patch path can update it in
+            # place without rebuilding child contexts.
+            if ctx._provider_value_signals is None:
+                ctx._provider_value_signals = {}
+            ctx._provider_value_signals[ctx_obj.id] = value_sig
+
+            # If ``value`` is itself a getter, set up an effect owned by
+            # this Provider's context so the value signal stays in sync
+            # with the upstream source — without re-mounting subtrees.
+            if callable(value) and _is_getter(value):
+                value_getter = value
+                prev_owner = _rx._current_owner
+                _rx._current_owner = ctx
+                try:
+
+                    def _track_value() -> None:
+                        value_sig.set(value_getter())
+
+                    _rx.create_effect(_track_value)
+                finally:
+                    _rx._current_owner = prev_owner
 
     prev_owner = _rx._current_owner
     _rx._current_owner = ctx
@@ -409,7 +433,7 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
     finally:
         _rx._current_owner = prev_owner
 
-    sub_tree = _normalize_component_result(result, ctx)
+    sub_tree = _normalize_component_result(result, ctx, comp_fn)
 
     vnode.subtree = sub_tree
 
@@ -435,17 +459,17 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
     return vnode.el
 
 
-def _normalize_component_result(result: Any, ctx: _ComponentContext) -> VNode:
+def _normalize_component_result(result: Any, ctx: _ComponentContext, comp_fn: Any = None) -> VNode:
     """Coerce a component's return value to a VNode subtree.
 
-    A returned callable becomes a single-root reactive hole; the
-    component context tracks the original render fn for backwards
-    compatibility checks.
+    Components should return a ``VNode``; use :func:`wybthon.dynamic`
+    for reactive subtrees.  As a courtesy, a callable return is
+    wrapped in a single-root reactive hole so it still renders
+    (useful for HOCs that build a render callback).
     """
     if isinstance(result, VNode):
         return result
     if callable(result):
-        ctx._render_fn = result
         return dynamic(result)
     return to_text_vnode(result)
 
@@ -455,9 +479,7 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
 
     Components do not re-render on patch -- the existing reactive props
     proxy is updated in place, and any reactive holes inside the
-    subtree that read those props will re-fire automatically.  For the
-    legacy ``return render`` pattern, the single-root reactive hole's
-    effect re-runs the same way.
+    subtree that read those props will re-fire automatically.
     """
     ctx = old.component_ctx
     is_provider = getattr(new.tag, "_wyb_provider", False)
@@ -475,8 +497,6 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
             return
 
     if ctx is None:
-        # No context (extremely unusual: a plain callable used as a tag
-        # with no setup phase).  Fall back to a fresh remount.
         anchor = _get_next_sibling(old)
         unmount(old)
         mount(new, container, anchor)
@@ -485,18 +505,25 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     ctx._props = new.props
     if ctx._reactive_props is not None:
         ctx._reactive_props._update(new.props)
-    elif ctx._prop_signals:
-        defaults = getattr(new.tag, "_wyb_defaults", {})
-        for name, sig in ctx._prop_signals.items():
-            sig.set(new.props.get(name, defaults.get(name)))
-    if ctx._props_signal is not None:
-        ctx._props_signal.set(new.props)
 
     if is_provider:
         ctx_obj = new.props.get("context")
-        value = new.props.get("value")
+        new_value = new.props.get("value")
         if ctx_obj is not None:
-            ctx._set_context(ctx_obj.id, value)
+            from .vnode import is_getter as _is_getter
+
+            resolved = new_value() if callable(new_value) and _is_getter(new_value) else new_value
+            existing_signals = ctx._provider_value_signals
+            if existing_signals is not None and ctx_obj.id in existing_signals:
+                existing_signals[ctx_obj.id].set(resolved)
+            else:
+                from .reactivity import Signal as _Signal
+
+                value_sig = _Signal(resolved)
+                ctx._set_context(ctx_obj.id, value_sig)
+                if ctx._provider_value_signals is None:
+                    ctx._provider_value_signals = {}
+                ctx._provider_value_signals[ctx_obj.id] = value_sig
 
     ctx._vnode = new
 

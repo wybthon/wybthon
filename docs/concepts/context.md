@@ -4,44 +4,65 @@ Provide and consume values across the component tree without prop
 drilling.
 
 ```python
-from wybthon import h
+from wybthon import component, dynamic, h, p
 from wybthon.context import create_context, Provider, use_context
 
 Theme = create_context("light")
 
-def Label(props):
-    theme = use_context(Theme)
-    return h("span", {}, f"Theme: {theme}")
+@component
+def Label():
+    return p("Theme: ", dynamic(lambda: use_context(Theme)))
 
-view = h(Provider, {"context": Theme, "value": "dark", "children": [h(Label, {})]})
+view = h(Provider, {"context": Theme, "value": "dark"}, h(Label, {}))
 ```
+
+#### Reactive `value`
+
+`Provider`'s `value` prop is **signal-backed**: passing a getter (or a
+signal accessor) makes the provided value reactive.  Consumers that
+read `use_context` inside a reactive hole will update automatically
+when the value changes — no subtree re-mount required.
+
+```python
+from wybthon import component, create_signal, dynamic, h, p, use_context, Provider
+
+@component
+def App():
+    theme, set_theme = create_signal("dark")
+    return h(Provider, {"context": Theme, "value": theme},  # ← getter
+             h(Label, {}))
+
+@component
+def Label():
+    # Wrap in dynamic so the text node updates when ``theme`` flips.
+    return p(dynamic(lambda: f"Theme: {use_context(Theme)}"))
+```
+
+If you only need a static value, pass it as-is — the Provider handles
+both shapes uniformly.
 
 #### How it works: the ownership tree
 
 Context values are stored directly on the **reactive ownership tree**,
 not on a separate render-time stack.  When a `Provider` component
-mounts, the reconciler calls `_set_context(ctx_id, value)` on that
-component's `_ComponentContext` owner.  This writes the value into the
-owner's `_context_map`.
-
-When `use_context(ctx)` is called, it walks **up** the owner chain
-(`_current_owner → parent → parent → ...`) looking for the first owner
-whose `_context_map` contains the context ID.  If none is found, the
-context's default value is returned.
+mounts, the reconciler creates a per-context signal on that component's
+`_ComponentContext` owner.  Consumers read the signal via
+`use_context`, so they participate in normal reactive tracking.
 
 ```
 Root Owner
 └── ComponentContext (App)
-    └── ComponentContext (Provider)   ← _context_map = {Theme.id: "dark"}
+    └── ComponentContext (Provider)   ← _context_map = {Theme.id: signal("dark")}
         └── ComponentContext (Label)
             └── render effect
-                ← use_context(Theme) walks up and finds "dark"
+                ← use_context(Theme) walks up, reads the signal,
+                  and tracks it for future updates.
 ```
 
 This ownership-based lookup means context is available at any point
-during a component's lifecycle — setup phase, render function, or inside
-effects — as long as the code runs under an owner that is a descendant
-of the provider.
+during a component's lifecycle — setup phase, render function, or
+inside effects — as long as the code runs under an owner that is a
+descendant of the provider.
 
 #### Provider scoping
 
@@ -61,4 +82,7 @@ h(Provider, {"context": Theme, "value": "light"},
 
 Context lookup is a simple parent-pointer walk — no dict copies, no
 stack manipulation.  The cost is proportional to the depth between the
-consumer and the nearest provider, which is typically small.
+consumer and the nearest provider, which is typically small.  When the
+`Provider` value is a getter, an internal effect mirrors it into the
+context signal so consumers update reactively without the `Provider`
+itself re-rendering.

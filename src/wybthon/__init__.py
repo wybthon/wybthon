@@ -28,8 +28,10 @@ from .forms import (
     validate_form,
 )
 from .reactivity import (
+    Computed,
     ReactiveProps,
     Resource,
+    Signal,
     batch,
     children,
     create_effect,
@@ -50,6 +52,9 @@ from .reactivity import (
     untrack,
 )
 from .store import create_store, produce
+
+# Pure-Python VDOM data structures are available in any environment.
+from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
 
 __version__ = "0.22.0"
 
@@ -127,7 +132,6 @@ if _IN_BROWSER:
     from .reconciler import render
     from .router import Link, Route, Router, current_path, navigate
     from .suspense import Suspense
-    from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
 
     __all__ = [
         # DOM
@@ -165,6 +169,8 @@ if _IN_BROWSER:
         "create_selector",
         "Resource",
         "ReactiveProps",
+        "Signal",
+        "Computed",
         "get_owner",
         "run_with_owner",
         "children",
@@ -280,6 +286,13 @@ else:
     __all__ = [
         "component",
         "forward_ref",
+        # VDOM (pure-Python; usable for tree construction without a browser)
+        "VNode",
+        "h",
+        "Fragment",
+        "memo",
+        "dynamic",
+        "is_getter",
         # Reactivity
         "create_signal",
         "create_effect",
@@ -298,6 +311,8 @@ else:
         "create_selector",
         "Resource",
         "ReactiveProps",
+        "Signal",
+        "Computed",
         "get_owner",
         "run_with_owner",
         "children",

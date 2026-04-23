@@ -3,11 +3,11 @@
 These components create **isolated reactive scopes** so that only the
 relevant subtree re-renders when the tracked condition or list changes.
 
-Each flow control is a proper function component (returning a render
-function) rather than a plain helper.  Conditions, sources, children,
-and fallbacks are accepted as **getters** (zero-arg callables) so that
-reads happen inside the component's own reactive effect — not the
-parent's.
+Each flow control is a proper function component (returning
+``dynamic(...)``) rather than a plain helper.  Conditions, sources,
+children, and fallbacks are accepted as **getters** (zero-arg
+callables) so that reads happen inside the flow control's own
+reactive effect — not the parent's.
 
 Key API rules
 -------------
@@ -29,7 +29,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .vnode import Fragment, VNode, h, is_getter, to_text_vnode
+from ._warnings import warn_each_plain_list
+from .reactivity import ReactiveProps, read_prop
+from .vnode import Fragment, VNode, dynamic, h, is_getter, to_text_vnode
 
 __all__ = ["Show", "For", "Index", "Switch", "Match", "Dynamic"]
 
@@ -51,33 +53,60 @@ def _render_slot(slot: Any, *args: Any) -> VNode:
 
     * If *slot* is a ``VNode``, return it directly.
     * If *slot* is callable, call it (with optional positional args
-      if the callable accepts them) and coerce the result to a ``VNode``.
+      if the callable accepts them) and coerce the result to a
+      ``VNode``.
     * Otherwise, coerce to a text ``VNode``.
     """
     if isinstance(slot, VNode):
         return slot
     if callable(slot):
         if args:
-            import inspect
+            from .vnode import _signature_has_required_positional
 
-            try:
-                sig = inspect.signature(slot)
-                positional = [
-                    p
-                    for p in sig.parameters.values()
-                    if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-                    and p.default is inspect.Parameter.empty
-                ]
-                if positional:
-                    result = slot(*args)
-                else:
-                    result = slot()
-            except (ValueError, TypeError):
+            if _signature_has_required_positional(slot):
+                result = slot(*args)
+            else:
                 result = slot()
         else:
             result = slot()
         return _to_vnode(result)
     return _to_vnode(slot)
+
+
+def _is_static_list_prop(props: Any, name: str) -> bool:
+    """Return True when the *raw* prop value at *name* is a plain list/tuple.
+
+    This bypasses the auto-unwrap that :class:`ReactiveProps.value` would
+    perform, so ``For`` and ``Index`` can warn correctly when the user
+    passes ``each=[1, 2, 3]`` instead of a signal accessor.
+    """
+    if isinstance(props, ReactiveProps):
+        raw = object.__getattribute__(props, "_raw")
+        defaults = object.__getattribute__(props, "_defaults")
+        val = raw.get(name, defaults.get(name))
+    elif hasattr(props, "get"):
+        val = props.get(name)
+    else:
+        val = None
+    return isinstance(val, (list, tuple))
+
+
+def _maybe_warn_plain_each(component: Any, props: Any) -> None:
+    """Warn (dev mode) when ``each=`` is a plain list rather than a getter."""
+    if _is_static_list_prop(props, "each"):
+        warn_each_plain_list(component)
+
+
+def _normalize_children_callback(value: Any) -> Any:
+    """Unwrap a single-callable ``children`` list into the raw callable.
+
+    ``h(For, props, lambda...)`` puts the callback into a one-element
+    list (since children is always a list).  ``For(children=...)``
+    direct-call passes the bare callable.  Both must work.
+    """
+    if isinstance(value, list) and len(value) == 1 and callable(value[0]):
+        return value[0]
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -92,25 +121,26 @@ def Show(props_or_when: Any = None, children_pos: Any = None, /, **kwargs: Any) 
 
     **Component style** (reactive — recommended for dynamic conditions)::
 
-        Show(when=count, children=lambda: p(f"Count: {count()}"),
+        Show(when=count, children=lambda: p("Count: ", count),
              fallback=lambda: p("Empty"))
 
-    **Direct call** (evaluated once — fine inside a render function)::
+    **Direct call** (evaluated once — fine inside an explicit hole)::
 
         Show(when=lambda: count() > 0,
              children=lambda: p("Positive"),
              fallback=lambda: p("Not positive"))
 
     *when* may be a zero-arg getter or a plain value.
-    *children* / *fallback* may be a ``VNode``, a callable, or a plain value.
-    When *children* is callable and *when* is truthy, the truthy value is
-    passed as the first argument (matching SolidJS ``<Show>``).
+    *children* / *fallback* may be a ``VNode``, a callable, or a plain
+    value.  When *children* is callable and *when* is truthy, the
+    truthy value is passed as the first argument (matching SolidJS
+    ``<Show>``).
 
     The component creates a **keyed conditional scope**: when the
     truthiness of *when* changes, the previous branch's scope is
     disposed and a new scope is created.  This ensures that effects
-    and cleanups registered inside a branch are properly torn down
-    on transitions.
+    and cleanups registered inside a branch are properly torn down on
+    transitions.
     """
     if isinstance(props_or_when, dict) and not kwargs and children_pos is None:
         return _ShowComponent(props_or_when)
@@ -133,7 +163,7 @@ def _ShowComponent(props: Any) -> Any:
     _branch_owner: List[Optional[_rx.Owner]] = [None]
 
     def render() -> VNode:
-        condition = _eval(props.get("when"))
+        condition = _eval(read_prop(props, "when"))
         new_branch = "truthy" if condition else "falsy"
 
         if _branch[0] != new_branch:
@@ -146,17 +176,20 @@ def _ShowComponent(props: Any) -> Any:
             _branch[0] = new_branch
 
         if condition:
-            children = props.get("children")
+            children = read_prop(props, "children")
             if children is None:
                 return to_text_vnode("")
             return _render_slot(children, condition)
 
-        fb = props.get("fallback")
+        fb = read_prop(props, "fallback")
         if fb is None:
             return to_text_vnode("")
         return _render_slot(fb)
 
-    return render
+    return dynamic(render)
+
+
+_ShowComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -170,25 +203,20 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
     **Component style** (reactive)::
 
         For(each=items,
-            children=lambda item, index: li(item(), key=index()))
+            children=lambda item, index: li(item, key=index()))
 
-    **Direct call**::
-
-        For(each=items,
-            children=lambda item, index: li(item(), key=index()))
-
-    *each* is a getter (or list).  *children* is ``(item, index_getter) -> VNode``.
-
-    Inside the callback, ``item`` is a **signal-backed getter** returning
-    the current item value, and ``index`` is a signal-backed getter
-    returning the current integer index — matching SolidJS ``<For>``.
+    *each* is a getter (or list).  *children* is
+    ``(item, index_getter) -> VNode``.  Inside the callback, ``item``
+    is a **signal-backed getter** returning the current item value, and
+    ``index`` is a signal-backed getter returning the current integer
+    index — matching SolidJS ``<For>``.
 
     ``For`` maintains **stable per-item reactive scopes** keyed by
-    reference identity.  The mapping callback runs only once per unique
-    item.  When an item leaves the list its scope (including any
-    effects or cleanups created inside the callback) is disposed.
+    reference identity.  The mapping callback runs only once per
+    unique item.  When an item leaves the list its scope (including
+    any effects or cleanups created inside the callback) is disposed.
     """
-    if isinstance(props_or_each, dict) and not kwargs and children_pos is None:
+    if isinstance(props_or_each, (dict, ReactiveProps)) and not kwargs and children_pos is None:
         return _ForComponent(props_or_each)
 
     each = kwargs.pop("each", props_or_each)
@@ -199,6 +227,9 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
     return h(_ForComponent, props)
 
 
+For._wyb_component = True  # type: ignore[attr-defined]
+
+
 def _ForComponent(props: Any) -> Any:
     """Internal component backing ``For`` with per-item reactive scopes."""
     import wybthon.reactivity as _rx
@@ -207,16 +238,21 @@ def _ForComponent(props: Any) -> Any:
 
     # (item_ref, owner, item_signal, index_signal)
     _cache: List[Any] = []
+    _warned_plain_list: List[bool] = [False]
 
     def render() -> VNode:
-        items_val = _eval(props.get("each"))
-        children_fn = props.get("children")
+        each_val = read_prop(props, "each")
+        if not _warned_plain_list[0]:
+            _maybe_warn_plain_each(_ForComponent, props)
+            _warned_plain_list[0] = True
+        items_val = _eval(each_val)
+        children_fn = _normalize_children_callback(read_prop(props, "children"))
 
         if not items_val:
             for entry in _cache:
                 entry[1].dispose()
             _cache.clear()
-            fb = props.get("fallback")
+            fb = read_prop(props, "fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
         if children_fn is None:
@@ -262,7 +298,10 @@ def _ForComponent(props: Any) -> Any:
 
         return Fragment(*vnodes)
 
-    return render
+    return dynamic(render)
+
+
+_ForComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -284,13 +323,8 @@ def Index(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any)
     slot has a signal-backed ``item_getter`` that updates when the
     value at that position changes.  Growing the list creates new
     scopes; shrinking disposes excess scopes.
-
-    Example::
-
-        Index(each=items,
-              children=lambda item, i: li(item()))
     """
-    if isinstance(props_or_each, dict) and not kwargs and children_pos is None:
+    if isinstance(props_or_each, (dict, ReactiveProps)) and not kwargs and children_pos is None:
         return _IndexComponent(props_or_each)
 
     each = kwargs.pop("each", props_or_each)
@@ -301,6 +335,9 @@ def Index(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any)
     return h(_IndexComponent, props)
 
 
+Index._wyb_component = True  # type: ignore[attr-defined]
+
+
 def _IndexComponent(props: Any) -> Any:
     """Internal component backing ``Index`` with per-index reactive scopes."""
     import wybthon.reactivity as _rx
@@ -309,16 +346,21 @@ def _IndexComponent(props: Any) -> Any:
 
     # (owner, item_signal)
     _slots: List[Any] = []
+    _warned_plain_list: List[bool] = [False]
 
     def render() -> VNode:
-        items_val = _eval(props.get("each"))
-        children_fn = props.get("children")
+        each_val = read_prop(props, "each")
+        if not _warned_plain_list[0]:
+            _maybe_warn_plain_each(_IndexComponent, props)
+            _warned_plain_list[0] = True
+        items_val = _eval(each_val)
+        children_fn = _normalize_children_callback(read_prop(props, "children"))
 
         if not items_val:
             for slot in _slots:
                 slot[0].dispose()
             _slots.clear()
-            fb = props.get("fallback")
+            fb = read_prop(props, "fallback")
             return _render_slot(fb) if fb is not None else to_text_vnode("")
 
         if children_fn is None:
@@ -353,7 +395,10 @@ def _IndexComponent(props: Any) -> Any:
 
         return Fragment(*vnodes)
 
-    return render
+    return dynamic(render)
+
+
+_IndexComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -419,18 +464,21 @@ def _SwitchComponent(props: Any) -> Any:
     """Internal component backing ``Switch``."""
 
     def render() -> VNode:
-        branches: List[_MatchResult] = props.get("branches", [])
+        branches: List[_MatchResult] = read_prop(props, "branches", [])
         for branch in branches:
             condition = _eval(branch.when)
             if condition:
                 return _render_slot(branch.children)
 
-        fb = props.get("fallback")
+        fb = read_prop(props, "fallback")
         if fb is None:
             return to_text_vnode("")
         return _render_slot(fb)
 
-    return render
+    return dynamic(render)
+
+
+_SwitchComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -445,8 +493,9 @@ def Dynamic(
 ) -> Any:
     """Render a dynamically-chosen component.
 
-    *component* may be a string tag name, a component function, or ``None``
-    (renders nothing).  Can also be a getter for reactive switching.
+    *component* may be a string tag name, a component function, or
+    ``None`` (renders nothing).  Can also be a getter for reactive
+    switching.
 
     Example::
 
@@ -467,13 +516,19 @@ def _DynamicComponent(props: Any) -> Any:
     """Internal component backing ``Dynamic``."""
 
     def render() -> VNode:
-        comp = _eval(props.get("component"))
+        comp = _eval(read_prop(props, "component"))
         if comp is None:
             return to_text_vnode("")
-        inner_props: Dict[str, Any] = {k: v for k, v in props.items() if k != "component"}
+        if isinstance(props, ReactiveProps):
+            inner_props: Dict[str, Any] = {k: props.value(k) for k in props if k != "component"}
+        else:
+            inner_props = {k: v for k, v in props.items() if k != "component"}
         children = inner_props.pop("children", [])
         if not isinstance(children, list):
             children = [children]
         return h(comp, inner_props, *children)
 
-    return render
+    return dynamic(render)
+
+
+_DynamicComponent._wyb_component = True  # type: ignore[attr-defined]

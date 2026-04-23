@@ -16,7 +16,7 @@ Guidelines:
 #### Examples
 
 - Reactivity API
-  - `create_signal(value: T, *, equals: Any = ...) -> tuple[Callable[[], T], Callable[[T], None]]` — `equals` optional: default equality, `False` for always notify, or `(old, new) -> bool` “same value” predicate
+  - `create_signal(value: T, *, equals: Any = ...) -> tuple[Callable[[], T], Callable[[T], None]]` — `equals` optional: default value equality (`==`) with identity fast-path, `True` is equivalent, `False` to always notify, or `(old, new) -> bool` “same value” predicate (use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics)
   - `create_memo(fn: Callable[[], T]) -> Callable[[], T]`
   - `create_effect(fn: Callable[[], Any]) -> Computation`
   - `create_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`
@@ -41,14 +41,18 @@ res = create_resource(cast(Callable[[], Awaitable[dict]], fetch_user))
 ```
 
 - Component typing
-  - Function components: `def MyComp(props: Dict[str, Any]) -> VNode`
+  - The `@component` decorator binds each parameter to a reactive
+    accessor: ``Callable[[], T]``.  Annotate the parameter with the
+    underlying value type — Wybthon's machinery handles the wrapping.
 
 ```python
-from typing import Any, Dict
-from wybthon import h, VNode
+from wybthon import VNode, component, h2
 
-def HelloFn(props: Dict[str, Any]) -> VNode:
-    return h("div", {}, f"Hello {props.get('name', 'world')}")
+@component
+def Hello(name: str = "world") -> VNode:
+    # ``name`` is a Callable[[], str] at runtime; type it as ``str`` for
+    # readability of the public API.
+    return h2("Hello, ", name, "!")
 ```
 
 - Router types
@@ -56,10 +60,13 @@ def HelloFn(props: Dict[str, Any]) -> VNode:
   - `navigate(path: str, replace: bool = False) -> None`
 
 ```python
-from typing import Any, Dict
-from wybthon import Route, Router, h
+from wybthon import Route, component, h2
+
+@component
+def HomePage():
+    return h2("Home")
 
 routes = [
-    Route(path="/", component=lambda _props: h("div", {}, "Home")),
+    Route(path="/", component=HomePage),
 ]
 ```

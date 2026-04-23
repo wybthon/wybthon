@@ -108,20 +108,27 @@ render(h("div", {}, "world"), root)  # updates the same text node
 
 #### memo
 
-`memo(component, are_props_equal=None)` wraps a function component to skip re-renders when props are unchanged.
+`memo(component, are_props_equal=None)` wraps a function component to
+skip re-mounting when props are unchanged.
 
 - By default, uses shallow identity comparison (`is`) on each prop value.
 - Pass a custom `are_props_equal(old_props, new_props) -> bool` for deeper comparison.
 
 ```python
-from wybthon import memo
+from wybthon import component, memo, p
 
-def ExpensiveList(props):
-    # ... render a large list ...
-    pass
+@component
+def ExpensiveList(items=None):
+    its = items() or []
+    return p("Items: ", str(len(its)))
 
 MemoList = memo(ExpensiveList)
 ```
+
+Because Wybthon components run **once** and then update via reactive
+holes, `memo` is only useful when you want to skip **re-mounting** on
+prop changes (for example, an expensive setup phase).  Most components
+do not need it.
 
 #### create_portal
 

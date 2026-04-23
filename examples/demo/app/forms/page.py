@@ -8,6 +8,7 @@ from wybthon import (
     component,
     create_signal,
     div,
+    dynamic,
     email,
     error_message_attrs,
     form,
@@ -56,94 +57,89 @@ def FormsPage():
 
     submit = on_submit_validated(rules, submit_handler, fs)
 
-    def render():
-        name_field = fs["name"]
-        email_field = fs["email"]
-        sub_field = fs["subscribe"]
-        choice_field = fs["choice"]
+    name_field = fs["name"]
+    email_field = fs["email"]
+    sub_field = fs["subscribe"]
+    choice_field = fs["choice"]
 
-        name_bind = bind_text(name_field, validators=[required(), min_length(2)])
-        email_bind = bind_text(email_field, validators=[email()])
-        sub_bind = bind_checkbox(sub_field)
-        choice_bind = bind_select(choice_field)
+    name_bind = bind_text(name_field, validators=[required(), min_length(2)])
+    email_bind = bind_text(email_field, validators=[email()])
+    sub_bind = bind_checkbox(sub_field)
+    choice_bind = bind_select(choice_field)
 
-        result_text = result()
+    name_err_id = "name-error"
+    email_err_id = "email-error"
 
-        name_err_id = "name-error"
-        email_err_id = "email-error"
-
-        return div(
-            div(
-                h2("Forms"),
-                p("Built-in form state, validation, and two-way data bindings."),
-                class_name="page-header",
-            ),
-            div(
-                form(
-                    div(
-                        label("Name", html_for="name-input"),
-                        input_(
-                            id="name-input",
-                            type="text",
-                            **name_bind,
-                            **a11y_control_attrs(name_field, described_by_id=name_err_id),
-                        ),
-                        span(
-                            name_field.error.get() or "",
-                            style={"color": "var(--error)", "fontSize": "0.8rem"},
-                            **error_message_attrs(id=name_err_id),
-                        ),
-                        class_name="form-group",
+    return div(
+        div(
+            h2("Forms"),
+            p("Built-in form state, validation, and two-way data bindings."),
+            class_="page-header",
+        ),
+        div(
+            form(
+                div(
+                    label("Name", html_for="name-input"),
+                    input_(
+                        id="name-input",
+                        type="text",
+                        **name_bind,
+                        **a11y_control_attrs(name_field, described_by_id=name_err_id),
                     ),
-                    div(
-                        label("Email", html_for="email-input"),
-                        input_(
-                            id="email-input",
-                            type="email",
-                            **email_bind,
-                            **a11y_control_attrs(email_field, described_by_id=email_err_id),
-                        ),
-                        span(
-                            email_field.error.get() or "",
-                            style={"color": "var(--error)", "fontSize": "0.8rem"},
-                            **error_message_attrs(id=email_err_id),
-                        ),
-                        class_name="form-group",
+                    span(
+                        dynamic(lambda: name_field.error.get() or ""),
+                        style={"color": "var(--error)", "fontSize": "0.8rem"},
+                        **error_message_attrs(id=name_err_id),
                     ),
-                    div(
-                        label(input_(type="checkbox", **sub_bind), " Subscribe to newsletter"),
-                        class_name="form-group",
-                    ),
-                    div(
-                        label("Choice", html_for="choice-select"),
-                        select(
-                            option("--", value=""),
-                            option("Option A", value="a"),
-                            option("Option B", value="b"),
-                            id="choice-select",
-                            **choice_bind,
-                        ),
-                        class_name="form-group",
-                    ),
-                    button("Submit", type="submit"),
-                    on_submit=submit,
+                    class_="form-group",
                 ),
-                p(result_text) if result_text else span(""),
-                class_name="demo-section",
-            ),
-            div(
-                h3("Validation Rules"),
-                pre(
-                    code(
-                        "form = form_state({...})\n"
-                        "rules = {...}\n"
-                        "on_submit = on_submit_validated(rules, handler, form)"
+                div(
+                    label("Email", html_for="email-input"),
+                    input_(
+                        id="email-input",
+                        type="email",
+                        **email_bind,
+                        **a11y_control_attrs(email_field, described_by_id=email_err_id),
                     ),
-                    class_name="code-block",
+                    span(
+                        dynamic(lambda: email_field.error.get() or ""),
+                        style={"color": "var(--error)", "fontSize": "0.8rem"},
+                        **error_message_attrs(id=email_err_id),
+                    ),
+                    class_="form-group",
                 ),
-                class_name="demo-section",
+                div(
+                    label(input_(type="checkbox", **sub_bind), " Subscribe to newsletter"),
+                    class_="form-group",
+                ),
+                div(
+                    label("Choice", html_for="choice-select"),
+                    select(
+                        option("--", value=""),
+                        option("Option A", value="a"),
+                        option("Option B", value="b"),
+                        id="choice-select",
+                        **choice_bind,
+                    ),
+                    class_="form-group",
+                ),
+                button("Submit", type="submit"),
+                on_submit=submit,
             ),
-            class_name="page",
-        )
-
-    return render
+            dynamic(lambda: p(result()) if result() else span("")),
+            class_="demo-section",
+        ),
+        div(
+            h3("Validation Rules"),
+            pre(
+                code(
+                    "form = form_state({...})\n"
+                    "rules = {...}\n"
+                    "on_submit = on_submit_validated(rules, handler, form)"
+                ),
+                class_="code-block",
+            ),
+            class_="demo-section",
+        ),
+        class_="page",
+    )

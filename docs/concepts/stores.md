@@ -104,7 +104,7 @@ Only effects that read the changed path re-run. Changing `store.user.name` won't
 Stores pair naturally with the `@component` decorator:
 
 ```python
-from wybthon import component, create_store, div, button, p, produce
+from wybthon import For, button, component, create_store, div, dynamic, p, produce
 
 @component
 def TodoApp():
@@ -122,19 +122,16 @@ def TodoApp():
     def toggle(idx):
         return lambda e: set_store("todos", idx, "done", lambda d: not d)
 
-    def render():
-        return div(
-            button("Add", on_click=add_todo),
-            *[
-                p(
-                    f"{'[x]' if todo.done else '[ ]'} {todo.text}",
-                    on_click=toggle(i),
-                )
-                for i, todo in enumerate(store.todos)
-            ],
-        )
-
-    return render
+    return div(
+        button("Add", on_click=add_todo),
+        For(
+            each=lambda: list(store.todos),
+            children=lambda todo, i: p(
+                dynamic(lambda: f"{'[x]' if todo().done else '[ ]'} {todo().text}"),
+                on_click=toggle(i()),
+            ),
+        ),
+    )
 ```
 
 #### Stores vs signals

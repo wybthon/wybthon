@@ -8,19 +8,23 @@ Build interactive web apps in Python that execute entirely in the browser. Wybth
 
 ## Features
 
-- **Run-once components + reactive holes**: function components run a single
-  time at mount.  Embed signal getters anywhere in your VNode tree to create
-  a *reactive hole* — only that node updates when the signal changes.  No
-  React-style component re-renders.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
-- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`
+- **Fully-reactive props + run-once components**: function components
+  run a single time at mount.  Every prop is a zero-arg accessor —
+  pass it into the tree for an automatic *reactive hole* and only that
+  node updates when the prop changes.  No React-style component
+  re-renders.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
+- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`, `dynamic`
 - Virtual DOM renderer with function components — **batched** mutations
   amortise the Pyodide ↔ JS bridge cost
 - Async data: `create_resource` with loading/error signals and `Suspense`
+- **Reactive context**: `Provider` values are signal-backed so consumers
+  update without re-mounting the subtree
 - Router with path params, query parsing, and a `Link` component
-- Contexts and a `Provider` component
 - DOM helpers and event delegation
 - Forms state, validators, and bindings
 - Dev server with hot-reload (SSE)
+- **Dev-mode warnings** for the most common reactive footguns
+  (destructured prop access, plain-list `each=`, legacy render returns)
 
 ## Quickstart
 

@@ -1,20 +1,31 @@
-from wybthon import code, component, div, h2, h3, p, pre
+from wybthon import code, component, div, dynamic, h2, h3, p, pre
 
 
 @component
 def Page(params=None):
-    params = params or {}
-    wildcard = params.get("wildcard", "")
+    """Docs page driven by a wildcard route segment.
+
+    ``params`` is a reactive accessor — call it to read the current
+    route params dict.  Wrapping the derived display string in
+    :func:`dynamic` keeps the heading reactive without re-mounting the
+    component when the URL changes.
+    """
+
+    def current_path() -> str:
+        p_dict = params() or {}
+        wildcard = p_dict.get("wildcard", "")
+        return f"/docs/{wildcard}" if wildcard else "/docs/"
+
     return div(
         div(
             h2("Documentation"),
             p("This page demonstrates wildcard route matching."),
-            class_name="page-header",
+            class_="page-header",
         ),
         div(
             h3("Current Path"),
             p(
-                f"/docs/{wildcard}" if wildcard else "/docs/",
+                dynamic(current_path),
                 style={
                     "fontFamily": "var(--font-mono)",
                     "fontSize": "1.1rem",
@@ -22,8 +33,8 @@ def Page(params=None):
                     "fontWeight": "600",
                 },
             ),
-            p("Try navigating to /docs/guide/intro or /docs/api/signals " "to see the wildcard parameter change."),
-            class_name="demo-section",
+            p("Try navigating to /docs/guide/intro or /docs/api/signals to see the wildcard parameter change."),
+            class_="demo-section",
         ),
         div(
             h3("How It Works"),
@@ -33,9 +44,9 @@ def Page(params=None):
             ),
             pre(
                 code('Route(path="/docs/*", component=DocsPage)'),
-                class_name="code-block",
+                class_="code-block",
             ),
-            class_name="demo-section",
+            class_="demo-section",
         ),
-        class_name="page",
+        class_="page",
     )

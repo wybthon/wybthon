@@ -4,23 +4,29 @@ This example mirrors the demo app's Patterns page and showcases:
 
 - State with `create_signal` and derived values with `create_memo`
 - Children composition (a `Card` component)
+- Reactive list rendering with `For`
+- Reactive expressions with `dynamic`
 - Cleanup via `on_cleanup` (a ticking `Timer`)
 
-Key snippets (see demo under `examples/demo` for full code):
+Key snippets (see the demo under `examples/demo` for full code):
 
 ```python
-from wybthon import h
+from wybthon import component, h3, section, untrack
 
-def Card(props):
-    title = props.get("title", "")
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return h("section", {"class": "card"}, h("h3", {}, title), children)
+@component
+def Card(title="", children=None):
+    kids = untrack(children) if callable(children) else children
+    if kids is None:
+        kids = []
+    if not isinstance(kids, list):
+        kids = [kids]
+    return section(h3(title), *kids, class_="card")
 ```
 
 ```python
-from wybthon import button, component, create_memo, create_signal, div, h, p, ul
+from wybthon import (
+    For, button, component, create_memo, create_signal, div, dynamic, li, p, ul,
+)
 
 @component
 def NamesList():
@@ -35,22 +41,19 @@ def NamesList():
     def clear(_evt):
         set_names([])
 
-    def render():
-        items = [h("li", {}, n) for n in names()]
-        return div(
-            p(f"Total: {len(names())} | Starts with A: {starts_with_a()}"),
-            div(
-                button("+ Ada", on_click=make_add("Ada")),
-                button("+ Alan", on_click=make_add("Alan")),
-                button("Clear", on_click=clear),
-            ),
-            ul(*items),
-        )
-    return render
+    return div(
+        p(dynamic(lambda: f"Total: {len(names())} | Starts with A: {starts_with_a()}")),
+        div(
+            button("+ Ada", on_click=make_add("Ada")),
+            button("+ Alan", on_click=make_add("Alan")),
+            button("Clear", on_click=clear),
+        ),
+        ul(For(each=names, children=lambda n, _i: li(n))),
+    )
 ```
 
 ```python
-from wybthon import component, create_signal, div, on_cleanup, on_mount
+from wybthon import component, create_signal, div, dynamic, on_cleanup, on_mount
 
 @component
 def Timer():
@@ -66,15 +69,14 @@ def Timer():
 
     on_mount(start)
 
-    def render():
-        return div(f"Seconds: {seconds()}", class_name="timer")
-    return render
+    return div(dynamic(lambda: f"Seconds: {seconds()}"), class_="timer")
 ```
 
 ```python
-from wybthon import div, h
+from wybthon import component, div, h
 
-def Page(_props):
+@component
+def Page():
     return div(
         h(Card, {"title": "State & Derived"}, h(NamesList, {})),
         h(Card, {"title": "Cleanup"}, h(Timer, {})),
@@ -82,5 +84,3 @@ def Page(_props):
 ```
 
 See the guide for deeper discussion: [Authoring Patterns](../guides/authoring-patterns.md)
-
-

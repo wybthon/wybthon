@@ -14,7 +14,8 @@ def test_forward_ref_renders_normally(wyb, root_element):
     vdom, comp_mod = wyb["vdom"], wyb["component"]
 
     def _render(props, ref):
-        return vdom.h("input", {"type": "text", "value": props.get("value", "")})
+        # ``props`` is a ReactiveProps proxy.  Accessors are callable.
+        return vdom.h("input", {"type": "text", "value": props.value("value", "")})
 
     FancyInput = comp_mod.forward_ref(_render)
     vdom.render(vdom.h(FancyInput, {"value": "hello"}), root_element)
@@ -67,7 +68,7 @@ def test_forward_ref_strips_ref_from_props(wyb, root_element):
     vdom.render(vdom.h(Wrapper, {"ref": "some_ref", "name": "test"}), root_element)
 
     assert "ref" not in received_props[0]
-    assert received_props[0]["name"] == "test"
+    assert received_props[0].value("name") == "test"
 
 
 def test_forward_ref_has_marker():

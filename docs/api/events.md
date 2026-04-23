@@ -68,9 +68,7 @@ def Video():
 
     on_mount(setup)
 
-    def render():
-        return h("video", {"ref": ref})
-    return render
+    return h("video", {"ref": ref})
 ```
 
 #### Pyodide and cross-browser notes

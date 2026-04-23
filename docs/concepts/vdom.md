@@ -33,8 +33,8 @@ count, set_count = create_signal(0)
 
 view = h("p", {"class": lambda: f"counter {('odd' if count() % 2 else 'even')}"},
          "Count: ",
-         count.get,                         # text hole
-         dynamic(lambda: f" (×2={count()*2})"))
+         count,                              # text hole (signal accessor)
+         dynamic(lambda: f" (×2={count()*2})"))  # text hole (derived expression)
 ```
 
 Holes are also recognised on prop values (except `on_*` event handlers

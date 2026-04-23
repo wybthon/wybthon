@@ -4,6 +4,7 @@ from wybthon import (
     component,
     create_signal,
     div,
+    dynamic,
     h,
     h2,
     h3,
@@ -15,35 +16,35 @@ from wybthon import (
 
 
 def _feature(title, desc):
-    return div(h3(title), p(desc), class_name="feature-card")
+    return div(h3(title), p(desc), class_="feature-card")
 
 
 @component
 def _HeroDemo():
-    """Hero demo using the new fine-grained model.
+    """Hero demo using the new fully-reactive props model.
 
-    The component body runs **once**; each ``span`` / ``p`` text receives
-    a getter that becomes a reactive hole.  Only the relevant text node
-    updates when the signal changes — no component re-render.
+    The component body runs **once**.  Each ``span`` / ``p`` text receives
+    a getter that becomes a reactive hole — only the relevant text node
+    updates when the signal changes.  No component re-render.
     """
     count, set_count = create_signal(0)
 
     return div(
-        span("Live Demo", class_name="demo-badge"),
-        p(count, class_name="demo-count"),
+        span("Live Demo", class_="demo-badge"),
+        p(count, class_="demo-count"),
         div(
             button("-", on_click=lambda e: set_count(count() - 1)),
             button("+", on_click=lambda e: set_count(count() + 1)),
-            class_name="demo-buttons",
+            class_="demo-buttons",
         ),
         p(
             "Double: ",
-            span(lambda: str(count() * 2)),
+            span(dynamic(lambda: str(count() * 2))),
             "  |  Even: ",
-            span(lambda: "yes" if count() % 2 == 0 else "no"),
-            class_name="demo-derived",
+            span(dynamic(lambda: "yes" if count() % 2 == 0 else "no")),
+            class_="demo-derived",
         ),
-        class_name="hero-demo",
+        class_="hero-demo",
     )
 
 
@@ -51,48 +52,62 @@ def _HeroDemo():
 def Page():
     return div(
         section(
-            h2("Build web apps in pure Python", class_name="hero-title"),
+            h2("Build web apps in pure Python", class_="hero-title"),
             p(
                 "Wybthon brings SolidJS-style signals and fine-grained reactivity "
                 "to Python. Write modern, interactive frontends entirely in Python, "
                 "no JavaScript required.",
-                class_name="hero-subtitle",
+                class_="hero-subtitle",
             ),
             h(_HeroDemo, {}),
-            class_name="hero",
+            class_="hero",
         ),
         section(
-            h2("Write components, not configuration", class_name="section-title"),
+            h2("Write components, not configuration", class_="section-title"),
             pre(
                 code(
                     "from wybthon import component, create_signal, div, button, p, span\n"
                     "\n"
                     "@component\n"
                     "def Counter(initial=0):\n"
-                    "    count, set_count = create_signal(initial)\n"
-                    "    # Body runs ONCE.  ``count`` is a zero-arg getter and\n"
-                    "    # the surrounding span turns it into a reactive hole:\n"
-                    "    # only that text node updates when the signal changes.\n"
+                    "    # Props are reactive accessors.  Use untrack() to seed a signal\n"
+                    "    # without subscribing to future updates.\n"
+                    "    from wybthon import untrack\n"
+                    "    count, set_count = create_signal(untrack(initial))\n"
+                    "    # Body runs ONCE.  ``count`` is a zero-arg getter and the\n"
+                    "    # surrounding span turns it into a reactive hole: only that\n"
+                    "    # text node updates when the signal changes.\n"
                     "    return div(\n"
                     '        p("Count: ", span(count)),\n'
                     '        button("+", on_click=lambda e: set_count(count() + 1)),\n'
                     "    )"
                 ),
-                class_name="code-block",
+                class_="code-block",
             ),
-            class_name="code-section",
+            class_="code-section",
         ),
         section(
-            h2("Everything you need", class_name="section-title"),
+            h2("Everything you need", class_="section-title"),
             div(
                 _feature(
+                    "Reactive Props",
+                    "Every prop is a getter.  Pass it into the tree for an "
+                    "auto-hole, call it for a static value, or wrap in "
+                    "untrack() to seed local state.",
+                ),
+                _feature(
                     "Signals",
-                    "Fine-grained reactivity with create_signal, create_effect, " "and create_memo.",
+                    "Fine-grained reactivity with create_signal, create_effect, and create_memo.",
                 ),
                 _feature(
                     "Reactive Holes",
                     "Components run once. Embed signal getters anywhere in your "
                     "VNode tree and only the relevant node updates.",
+                ),
+                _feature(
+                    "Reactive Context",
+                    "Provider values are signal-backed: changing the value "
+                    "ripples to consumers without re-mounting the subtree.",
                 ),
                 _feature(
                     "Components",
@@ -104,7 +119,7 @@ def Page():
                 ),
                 _feature(
                     "Routing",
-                    "Client-side routing with nested routes, lazy loading, " "and wildcards.",
+                    "Client-side routing with nested routes, lazy loading, and wildcards.",
                 ),
                 _feature(
                     "Forms",
@@ -122,9 +137,9 @@ def Page():
                     "Error Boundaries",
                     "Graceful error handling with fallback UI and recovery.",
                 ),
-                class_name="feature-grid",
+                class_="feature-grid",
             ),
-            class_name="features",
+            class_="features",
         ),
-        class_name="page home",
+        class_="page home",
     )

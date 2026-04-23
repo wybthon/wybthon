@@ -24,17 +24,17 @@ def _load_modules():
 
 def test_div_creates_correct_vnode(browser_stubs):
     _, vdom_mod, html_mod = _load_modules()
-    node = html_mod.div("Hello", class_name="box")
+    node = html_mod.div("Hello", class_="box")
     assert node.tag == "div"
     assert node.props.get("class") == "box"
     assert len(node.children) == 1
 
 
-def test_class_name_maps_to_class(browser_stubs):
+def test_class_underscore_maps_to_class(browser_stubs):
     _, _, html_mod = _load_modules()
-    node = html_mod.span(class_name="highlight")
+    node = html_mod.span(class_="highlight")
     assert node.props.get("class") == "highlight"
-    assert "class_name" not in node.props
+    assert "class_" not in node.props
 
 
 def test_html_for_maps_to_for(browser_stubs):
@@ -94,7 +94,7 @@ def test_main_helper_name(browser_stubs):
 
 def test_mixed_children_and_props(browser_stubs):
     _, _, html_mod = _load_modules()
-    node = html_mod.a("Click here", href="/about", class_name="link")
+    node = html_mod.a("Click here", href="/about", class_="link")
     assert node.tag == "a"
     assert node.props.get("href") == "/about"
     assert node.props.get("class") == "link"
@@ -221,7 +221,7 @@ def test_html_helpers_render_to_dom(browser_stubs):
     tree = html_mod.div(
         html_mod.h1("Hello"),
         html_mod.p("World"),
-        class_name="container",
+        class_="container",
     )
     vdom_mod.render(tree, root)
     container = root.element.childNodes[0]
@@ -236,13 +236,13 @@ def test_html_helpers_patch_correctly(browser_stubs):
     dom_mod, vdom_mod, html_mod = _load_modules()
     root = dom_mod.Element(node=StubNode(tag="div"))
 
-    tree1 = html_mod.div(html_mod.p("Before"), class_name="v1")
+    tree1 = html_mod.div(html_mod.p("Before"), class_="v1")
     vdom_mod.render(tree1, root)
     node = root.element.childNodes[0]
     assert node.getAttribute("class") == "v1"
     assert node.childNodes[0].childNodes[0].nodeValue == "Before"
 
-    tree2 = html_mod.div(html_mod.p("After"), class_name="v2")
+    tree2 = html_mod.div(html_mod.p("After"), class_="v2")
     vdom_mod.render(tree2, root)
     node = root.element.childNodes[0]
     assert node.getAttribute("class") == "v2"
@@ -253,7 +253,7 @@ def test_spread_props_with_html_helpers(browser_stubs):
     """Spreading dicts via ** should work with keyword args."""
     _, _, html_mod = _load_modules()
     bindings = {"value": "test", "on_input": lambda e: None}
-    node = html_mod.input_(type="text", **bindings, class_name="field")
+    node = html_mod.input_(type="text", **bindings, class_="field")
     assert node.props.get("type") == "text"
     assert node.props.get("value") == "test"
     assert node.props.get("class") == "field"

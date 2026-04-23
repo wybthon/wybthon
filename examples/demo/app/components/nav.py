@@ -1,11 +1,13 @@
-from wybthon import Link, component, h, nav
+from wybthon import Link, component, h, nav, untrack
 
 
 @component
 def Nav(base_path=None):
-    lp = {"base_path": base_path, "class": "nav-link", "class_active": "active"}
+    bp = untrack(base_path)
+    lp = {"base_path": bp, "class": "nav-link", "class_active": "active"}
     return nav(
         h(Link, {**lp, "to": "/"}, "Home"),
+        h(Link, {**lp, "to": "/props"}, "Props"),
         h(Link, {**lp, "to": "/holes"}, "Holes"),
         h(Link, {**lp, "to": "/primitives"}, "Primitives"),
         h(Link, {**lp, "to": "/patterns"}, "Patterns"),
@@ -16,5 +18,5 @@ def Nav(base_path=None):
         h(Link, {**lp, "to": "/errors"}, "Errors"),
         h(Link, {**lp, "to": "/about"}, "About"),
         h(Link, {**lp, "to": "/docs"}, "Docs"),
-        class_name="app-nav",
+        class_="app-nav",
     )

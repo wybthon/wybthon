@@ -12,7 +12,11 @@ create_effect(lambda: print("double:", double()))
 set_count(1)
 ```
 
-- `create_signal(value, *, equals=...)` → `(getter, setter)` tuple (`equals` controls notification; see [Reactivity API](../api/reactivity.md))
+- `create_signal(value, *, equals=...)` → `(getter, setter)` tuple.
+  By default `equals` uses **value equality** (`==`) with an identity
+  fast-path; pass `equals=False` to fire on every set, or a custom
+  comparator (e.g. `equals=lambda a, b: a is b` for SolidJS-style
+  identity-only semantics). See [Reactivity API](../api/reactivity.md).
 - `create_memo(fn)` → derived getter; re-computes only when deps change
 - `create_effect(fn)` → runs and re-runs on dependencies; supports previous value
 - `batch()` → batch updates as context manager or `batch(fn)` with callback
@@ -196,7 +200,7 @@ the hole re-runs (so their `on_cleanup` callbacks fire).
 from wybthon import component, create_effect, create_signal, dynamic, p
 
 @component
-def Timer(interval: int = 1000):
+def Timer(interval=1000):
     count, set_count = create_signal(0)
 
     # Setup effect — lives until the component unmounts

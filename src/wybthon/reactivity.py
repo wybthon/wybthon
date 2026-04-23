@@ -31,8 +31,9 @@ from typing import Any, Awaitable, Callable, Deque, Dict, Generic, List, Optiona
 
 __all__ = [
     "Owner",
-    "Signal",
     "Computation",
+    "Signal",
+    "Computed",
     "ReactiveProps",
     "batch",
     "Resource",
@@ -47,6 +48,9 @@ __all__ = [
     "create_root",
     "get_owner",
     "run_with_owner",
+    "get_props",
+    "read_prop",
+    "iter_prop_keys",
     "children",
     "merge_props",
     "split_props",
@@ -58,6 +62,7 @@ __all__ = [
 T = TypeVar("T")
 
 _DEFAULT_EQUALS = object()
+_MISSING = object()
 
 # ---------------------------------------------------------------------------
 # Global reactive state
@@ -70,6 +75,27 @@ _pending_queue: Deque["Computation"] = deque()
 _pending_set: Set["Computation"] = set()
 _flush_scheduled: bool = False
 _batch_depth: int = 0
+
+# Re-entrant counter incremented while inside :func:`untrack`.  Used by
+# the dev-mode "destructured prop" warning to detect intentional
+# untracked reads and stay quiet.
+_untrack_depth: int = 0
+
+
+def _is_inside_untrack() -> bool:
+    """Return True when the current call stack is inside :func:`untrack`."""
+    return _untrack_depth > 0
+
+
+def _has_current_computation() -> bool:
+    """Return True when there is an active reactive computation (effect/memo).
+
+    Used by the dev-mode "destructured prop" warning to suppress noise
+    when a prop accessor is read inside an effect / memo body during
+    setup -- those are the canonical "subscribe to this prop" patterns,
+    not the footgun the warning is trying to flag.
+    """
+    return _current_computation is not None
 
 
 # ---------------------------------------------------------------------------
@@ -292,8 +318,25 @@ class Signal(Generic[T]):
             if callable(self._equals):
                 if self._equals(self._value, value):
                     return
-            elif value == self._value:
-                return
+            else:
+                # Default / ``equals=True`` -- value equality with an
+                # identity fast-path.  ``is`` first (cheap and short-
+                # circuits for the common "same reference" case, e.g.
+                # mutate-then-set with no fresh allocation), then ``==``
+                # so a new container with equal contents still skips
+                # notification.  This matches Python's natural intuition
+                # (``data.append(x); set_data(data)`` is a no-op because
+                # the value didn't change) while letting users opt into
+                # identity-only semantics with
+                # ``equals=lambda a, b: a is b`` or skip altogether with
+                # ``equals=False``.
+                if value is self._value:
+                    return
+                try:
+                    if value == self._value:
+                        return
+                except Exception:
+                    pass
         self._value = value
         for comp in list(self._subscribers):
             comp.schedule()
@@ -312,25 +355,100 @@ def signal(value: T) -> Signal[T]:
 class ReactiveProps:
     """Reactive proxy for component props.
 
-    Property access creates a reactive dependency on that specific prop,
-    matching SolidJS prop access semantics.
+    Every prop access returns a **reactive accessor** (a zero-argument
+    callable that returns the current value and tracks the read).
+    This matches SolidJS's ``props.x`` semantics adapted to Python::
+
+        props.name        # → callable getter
+        props.name()      # → current value (tracked)
+        props["name"]     # → callable getter (same as ``props.name``)
+        props.get("name", default)  # → callable getter, returns default if missing
+
+    Pass a getter directly into a VNode tree to create an automatic
+    reactive hole — the surrounding DOM region updates when the prop
+    changes::
+
+        return p("Hello, ", props.name, "!")  # auto-hole on props.name
+
+    To unwrap once at setup time (untracked initial value)::
+
+        initial = props.name()    # current value, no tracking inside body
+
+    To iterate / introspect the props dict::
+
+        for key in props:           # keys
+            print(key, props.value(key))    # ``value()`` returns the current value
     """
 
-    __slots__ = ("_signals", "_raw", "_defaults")
+    __slots__ = ("_signals", "_getters", "_raw", "_defaults")
 
     def __init__(self, props: dict, defaults: Optional[Dict[str, Any]] = None) -> None:
         object.__setattr__(self, "_signals", {})
+        object.__setattr__(self, "_getters", {})
         object.__setattr__(self, "_raw", dict(props))
         object.__setattr__(self, "_defaults", defaults or {})
 
-    def _get(self, key: str) -> Any:
+    def _signal_for(self, key: str) -> "Signal[Any]":
+        signals = object.__getattribute__(self, "_signals")
+        sig = signals.get(key)
+        if sig is None:
+            raw = object.__getattribute__(self, "_raw")
+            defaults = object.__getattribute__(self, "_defaults")
+            value = raw.get(key, defaults.get(key))
+            sig = Signal(value)
+            signals[key] = sig
+        return sig
+
+    def _make_getter(self, key: str) -> Callable[[], Any]:
+        """Return a stable, callable accessor for *key* (cached).
+
+        The accessor reads the prop signal and, when the stored value is
+        itself a getter (callable with no required args), transparently
+        calls it.  This means parents can pass either a static value
+        (``count=5``) or a getter (``count=count_signal.get`` /
+        ``count=lambda: total()``) and children always read the current
+        value the same way: ``props.count()``.  Reactivity is tracked
+        through *both* the prop signal and any underlying source.
+        """
+        getters = object.__getattribute__(self, "_getters")
+        cached = getters.get(key)
+        if cached is not None:
+            return cached
+        sig = self._signal_for(key)
+
+        def accessor() -> Any:
+            value = sig.get()
+            if value is None:
+                return None
+            from .vnode import is_getter as _is_getter
+
+            if callable(value) and _is_getter(value):
+                return value()
+            return value
+
+        accessor._wyb_getter = True  # type: ignore[attr-defined]
+        accessor.__name__ = f"<prop:{key}>"
+        accessor.__qualname__ = accessor.__name__
+        getters[key] = accessor
+        return accessor
+
+    def value(self, key: str, default: Any = _MISSING) -> Any:
+        """Return the current value for *key* (tracked, with auto-unwrap).
+
+        If the stored prop value is a getter, it is invoked and the
+        result returned -- mirroring :meth:`_make_getter`.  If *default*
+        is provided, it is returned when *key* is absent from both the
+        props dict and the component's parameter defaults.
+        """
         signals = object.__getattribute__(self, "_signals")
         raw = object.__getattribute__(self, "_raw")
-        defaults = object.__getattribute__(self, "_defaults")
-        if key not in signals:
-            value = raw.get(key, defaults.get(key))
-            signals[key] = Signal(value)
-        return signals[key].get()
+        defaults_map = object.__getattribute__(self, "_defaults")
+
+        if key in signals or key in raw or key in defaults_map:
+            return self._make_getter(key)()
+        if default is _MISSING:
+            return None
+        return default
 
     def _update(self, new_props: dict) -> None:
         """Update props from parent (called by reconciler on re-render)."""
@@ -344,19 +462,38 @@ class ReactiveProps:
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             return object.__getattribute__(self, name)
-        return self._get(name)
+        return self._make_getter(name)
 
-    def __getitem__(self, key: str) -> Any:
-        return self._get(key)
+    def __getitem__(self, key: str) -> Callable[[], Any]:
+        return self._make_getter(key)
 
-    def get(self, key: str, default: Any = None) -> Any:
-        signals = object.__getattribute__(self, "_signals")
-        raw = object.__getattribute__(self, "_raw")
+    def get(self, key: str, default: Any = None) -> Callable[[], Any]:
+        """Return a callable getter for *key*, falling back to *default* when missing.
+
+        When *key* exists on the prop bag (in raw props, prior signals,
+        or component-parameter defaults), the returned getter reads the
+        underlying signal -- a tracking scope subscribes to it.
+
+        When *key* is **missing**, the getter returns *default* on each
+        call without creating a tracked signal.  This means repeated
+        ``get(key, x)`` / ``get(key, y)`` calls each return their own
+        default (no sticky behavior).  Components that need reactivity
+        for a possibly-missing prop should declare it as a parameter
+        with a default value -- ``@component`` ensures a signal is
+        created up front so future updates always propagate.
+        """
         defaults_map = object.__getattribute__(self, "_defaults")
-        if key not in signals:
-            value = raw.get(key, defaults_map.get(key, default))
-            signals[key] = Signal(value)
-        return signals[key].get()
+        raw = object.__getattribute__(self, "_raw")
+        signals = object.__getattribute__(self, "_signals")
+        if key in signals or key in raw or key in defaults_map:
+            return self._make_getter(key)
+
+        def _default_getter() -> Any:
+            return default
+
+        _default_getter._wyb_getter = True  # type: ignore[attr-defined]
+        _default_getter.__name__ = f"<prop:{key}:default>"
+        return _default_getter
 
     def __contains__(self, key: Any) -> bool:
         raw = object.__getattribute__(self, "_raw")
@@ -367,12 +504,14 @@ class ReactiveProps:
         return raw.keys()
 
     def values(self) -> Any:
+        """Return current prop values as a list (tracked)."""
         raw = object.__getattribute__(self, "_raw")
-        return [self._get(k) for k in raw]
+        return [self._signal_for(k).get() for k in raw]
 
     def items(self) -> Any:
+        """Return ``(key, current_value)`` pairs (tracked)."""
         raw = object.__getattribute__(self, "_raw")
-        return [(k, self._get(k)) for k in raw]
+        return [(k, self._signal_for(k).get()) for k in raw]
 
     def __iter__(self) -> Any:
         raw = object.__getattribute__(self, "_raw")
@@ -400,6 +539,44 @@ class ReactiveProps:
             return object.__getattribute__(self, "_raw") == object.__getattribute__(other, "_raw")
         return NotImplemented
 
+    def __hash__(self) -> int:
+        return id(self)
+
+
+# ---------------------------------------------------------------------------
+# Prop-reading helpers (work uniformly on ReactiveProps and plain dicts)
+# ---------------------------------------------------------------------------
+
+
+def read_prop(props: Any, key: str, default: Any = None) -> Any:
+    """Return the current value for *key* from *props*.
+
+    Works with both :class:`ReactiveProps` (the common case inside the
+    reconciler) and plain dicts (test paths and a few legacy code
+    sites).  When called inside a tracking scope, the read is tracked
+    against the underlying signal -- mirroring the auto-unwrap behavior
+    of :meth:`ReactiveProps.value`.
+    """
+    if isinstance(props, ReactiveProps):
+        return props.value(key, default)
+    if hasattr(props, "get"):
+        return props.get(key, default)
+    return default
+
+
+def iter_prop_keys(props: Any) -> List[str]:
+    """Return the list of prop keys present on *props*.
+
+    Same uniform shim as :func:`read_prop` for components that need to
+    iterate over an unknown prop bag (e.g. ``Link`` forwarding extra
+    attributes onto the rendered ``<a>``).
+    """
+    if isinstance(props, ReactiveProps):
+        return list(props)
+    if hasattr(props, "keys"):
+        return list(props.keys())
+    return []
+
 
 # ---------------------------------------------------------------------------
 # Computed (memo)
@@ -425,6 +602,13 @@ class _Computed(Generic[T]):
 
     def dispose(self) -> None:
         self._comp.dispose()
+
+
+# Public alias for the computed-value type.  Users who want to type-hint a
+# memoised value (for example, ``Computed[int]``) should reach for this name.
+# The constructor lives at :func:`create_memo` (returns a getter, not the
+# class instance), but the type itself is part of the public surface.
+Computed = _Computed
 
 
 def computed(fn: Callable[[], T]) -> _Computed[T]:
@@ -502,13 +686,19 @@ def untrack(fn: Callable[[], T]) -> T:
     a dependency::
 
         create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
+
+    Inside ``untrack`` the dev-mode destructured-prop warning is also
+    silenced -- so ``count, set_count = create_signal(untrack(initial))``
+    cleanly opts out of the noise.
     """
-    global _current_computation
+    global _current_computation, _untrack_depth
     prev = _current_computation
     _current_computation = None
+    _untrack_depth += 1
     try:
         return fn()
     finally:
+        _untrack_depth -= 1
         _current_computation = prev
 
 
@@ -664,33 +854,31 @@ use_resource = create_resource
 class _ComponentContext(Owner):
     """Per-component-instance ownership scope.
 
-    Tracks lifecycle callbacks, the optional render function, and
-    reactive props signals for stateful components.  Extends ``Owner``
-    so that effects created during setup are automatically disposed
-    when the component unmounts.
+    Tracks lifecycle callbacks and reactive prop signals for stateful
+    components.  Extends ``Owner`` so that effects created during
+    setup are automatically disposed when the component unmounts.
     """
 
     __slots__ = (
         "_mount_callbacks",
-        "_render_fn",
         "_props",
-        "_props_signal",
-        "_prop_signals",
         "_reactive_props",
         "_vnode",
         "_error_handler",
+        "_provider_value_signals",
     )
 
     def __init__(self) -> None:
         super().__init__()
         self._mount_callbacks: List[Callable[[], Any]] = []
-        self._render_fn: Optional[Callable[[], Any]] = None
         self._props: dict = {}
-        self._props_signal: Optional[Signal[Any]] = None
-        self._prop_signals: Dict[str, Signal[Any]] = {}
         self._reactive_props: Optional[ReactiveProps] = None
         self._vnode: Any = None
         self._error_handler: Optional[Callable[..., Any]] = None
+        # Maps ``Context.id -> Signal`` for any contexts this component
+        # provides via ``Provider``.  Used by the reconciler to update
+        # the context value reactively without re-mounting subtrees.
+        self._provider_value_signals: Optional[Dict[int, "Signal[Any]"]] = None
 
     def _run_mount_callbacks(self) -> None:
         for fn in self._mount_callbacks:
@@ -764,10 +952,19 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 
     The *equals* parameter controls when subscribers are notified:
 
-    - ``_DEFAULT_EQUALS`` (default) — skip notification when ``new == old``.
-    - ``False`` — always notify on every ``set()`` call.
+    - default (or ``True``) — **value equality** (``new == old``) with
+      an identity fast-path.  Skips notification when the new value is
+      ``is``-identical *or* ``==``-equal to the old.  This matches
+      Python's natural intuition: re-setting an unchanged value is a
+      no-op, but a fresh container with equal contents *also* skips
+      (so ``data.append(x); set_data(data)`` does **not** notify —
+      copy the container or use ``equals=False`` if you need that).
+    - ``False`` — always notify on every ``set()`` call, even when the
+      new value is identical or equal to the old.  Useful for "fire
+      a change event" signals.
     - A callable ``(old, new) -> bool`` — skip notification when it
-      returns ``True``.
+      returns ``True``.  Pass ``equals=lambda a, b: a is b`` for
+      SolidJS-style identity-only semantics.
 
     Example::
 
@@ -888,10 +1085,21 @@ def get_props() -> "ReactiveProps":
     """Return the reactive props proxy for the current component.
 
     The returned ``ReactiveProps`` object provides reactive access
-    to individual props via attribute or dict-style access::
+    to individual props.  Each attribute / index lookup yields a
+    callable getter; call the getter to read the current value
+    (tracked).  Use ``get_props()`` for advanced cases — most
+    components should rely on the destructured parameters provided
+    by ``@component``::
 
-        props = get_props()
-        create_effect(lambda: print("name changed:", props.name))
+        @component
+        def Greet(name="world"):
+            # ``name`` is a reactive accessor.
+            return p("Hello, ", name, "!")
+
+        @component
+        def Advanced():
+            props = get_props()
+            create_effect(lambda: print("name:", props.name()))
     """
     ctx = _get_component_ctx()
     if ctx is None:

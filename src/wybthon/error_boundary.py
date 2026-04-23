@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from .reactivity import _get_component_ctx, create_signal
-from .vnode import Fragment, VNode, to_text_vnode
+from .reactivity import _get_component_ctx, create_signal, read_prop
+from .vnode import Fragment, VNode, dynamic, to_text_vnode
 
 __all__ = ["ErrorBoundary"]
 
@@ -14,9 +14,9 @@ def _compute_reset_token(props: Any) -> str:
     """Derive a stable token from reset_keys/reset_key for auto-clear."""
     try:
         if "reset_keys" in props:
-            rk = props.get("reset_keys")
+            rk: Any = read_prop(props, "reset_keys")
         elif "reset_key" in props:
-            rk = props.get("reset_key")
+            rk = read_prop(props, "reset_key")
         else:
             return ""
         if callable(rk):
@@ -30,8 +30,8 @@ def _compute_reset_token(props: Any) -> str:
 
 def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
     """Build the fallback VNode from the ``fallback`` prop."""
-    fb = props.get("fallback")
-    if callable(fb):
+    fb = read_prop(props, "fallback")
+    if callable(fb) and not isinstance(fb, VNode):
         try:
             try:
                 vnode = fb(err, reset_fn)
@@ -64,7 +64,7 @@ def ErrorBoundary(props: Any) -> Any:
 
     def _handle_error(err: Any) -> None:
         set_error(err)
-        handler = props.get("on_error")
+        handler = read_prop(props, "on_error")
         if callable(handler):
             try:
                 handler(err)
@@ -86,9 +86,14 @@ def ErrorBoundary(props: Any) -> Any:
         if err is not None:
             return _render_fallback(err, props, reset)
 
-        children: List[Any] = props.get("children", [])
+        children = read_prop(props, "children", [])
+        if children is None:
+            children = []
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)
 
-    return render
+    return dynamic(render)
+
+
+ErrorBoundary._wyb_component = True  # type: ignore[attr-defined]

@@ -1,11 +1,11 @@
 """Virtual node data structure and creation utilities.
 
-This module defines the core ``VNode`` tree representation and the functions
-used to build it (``h``, ``Fragment``, ``memo``, ``dynamic``).  It is
-intentionally free of browser/DOM dependencies so that VNode trees can be
-constructed and inspected in any Python environment.
+This module defines the core ``VNode`` tree representation and the
+functions used to build it (``h``, ``Fragment``, ``memo``, ``dynamic``).
+It is intentionally free of browser/DOM dependencies so that VNode
+trees can be constructed and inspected in any Python environment.
 
-A ``_dynamic`` VNode (created via ``dynamic()`` or implicitly when a
+A ``_dynamic`` VNode (created via :func:`dynamic` or implicitly when a
 zero-argument callable appears in a child position) represents a
 **reactive hole**: the reconciler wraps the getter in its own effect
 that updates only the corresponding DOM region when the getter's
@@ -16,7 +16,7 @@ dependencies change.  This is the building block for SolidJS-style
 from __future__ import annotations
 
 import inspect
-from dataclasses import dataclass, field
+import weakref
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -45,19 +45,47 @@ PropsDict = Dict[str, Any]
 ChildType = Union["VNode", str]
 
 
-@dataclass
 class VNode:
-    """Virtual node representing an element, text, component, or reactive hole."""
+    """Virtual node representing an element, text, component, or reactive hole.
 
-    tag: Optional[Union[str, Callable[..., Any]]]
-    props: PropsDict = field(default_factory=dict)
-    children: List[ChildType] = field(default_factory=list)
-    key: Optional[Union[str, int]] = None
-    el: Optional[Element] = None
-    subtree: Optional[VNode] = None
-    render_effect: Optional[Computation] = None
-    component_ctx: Optional[Any] = None
-    _frag_end: Optional[Element] = None
+    Uses ``__slots__`` for compact memory layout and faster attribute
+    access — meaningful when authoring large lists.
+    """
+
+    __slots__ = (
+        "tag",
+        "props",
+        "children",
+        "key",
+        "el",
+        "subtree",
+        "render_effect",
+        "component_ctx",
+        "_frag_end",
+    )
+
+    def __init__(
+        self,
+        tag: Optional[Union[str, Callable[..., Any]]],
+        props: Optional[PropsDict] = None,
+        children: Optional[List[ChildType]] = None,
+        key: Optional[Union[str, int]] = None,
+    ) -> None:
+        self.tag = tag
+        self.props = props if props is not None else {}
+        self.children = children if children is not None else []
+        self.key = key
+        self.el: Optional[Element] = None
+        self.subtree: Optional[VNode] = None
+        self.render_effect: Optional[Computation] = None
+        self.component_ctx: Optional[Any] = None
+        self._frag_end: Optional[Element] = None
+
+    def __repr__(self) -> str:  # pragma: no cover - debug helper
+        tag = self.tag
+        if callable(tag):
+            tag = getattr(tag, "__name__", repr(tag))
+        return f"VNode(tag={tag!r}, props={self.props!r}, children={len(self.children)})"
 
 
 def to_text_vnode(value: Any) -> VNode:
@@ -81,17 +109,48 @@ def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None)
     return VNode(tag="_dynamic", props={"getter": getter}, children=[], key=key)
 
 
+# ---------------------------------------------------------------------------
+# is_getter — cached signature inspection for callable children / props
+# ---------------------------------------------------------------------------
+
+# Cache callables → bool using weak references.  ``inspect.signature``
+# is one of the hottest calls in the rendering path; caching the result
+# is essential.  Weak refs avoid the id-reuse hazard plain ``dict[id]``
+# has when short-lived test functions go out of scope.
+_required_pos_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDictionary()
+
+
 def _signature_has_required_positional(fn: Any) -> bool:
-    """Return True when *fn* has at least one required positional parameter."""
+    """Return True when *fn* has at least one required positional parameter.
+
+    Result is cached via weak references so per-call cost is amortised
+    while still being safe across test runs that recycle ``id`` values.
+    """
+    try:
+        cached = _required_pos_cache.get(fn)
+        if cached is not None:
+            return cached
+    except TypeError:
+        cached = None
     try:
         sig = inspect.signature(fn)
     except (ValueError, TypeError):
+        try:
+            _required_pos_cache[fn] = True
+        except TypeError:
+            pass
         return True
+    result = False
     for p in sig.parameters.values():
         if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             if p.default is inspect.Parameter.empty:
-                return True
-    return False
+                result = True
+                break
+    try:
+        _required_pos_cache[fn] = result
+    except TypeError:
+        pass
+    return result
 
 
 def is_getter(value: Any) -> bool:
@@ -186,10 +245,9 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
 def Fragment(*args: Any) -> VNode:
     """Group multiple children without adding extra DOM elements.
 
-    Unlike the previous ``<span style="display:contents">`` approach,
-    fragments now use comment-node markers and mount children directly
-    into the parent container.  This avoids polluting the DOM, breaking
-    CSS selectors like ``:first-child``, or affecting layout.
+    Fragments use comment-node markers and mount children directly into
+    the parent container, avoiding extra DOM elements that would
+    pollute selectors like ``:first-child`` or affect layout.
 
     Can be called directly::
 
@@ -226,7 +284,7 @@ def memo(
 
     compare = are_props_equal if are_props_equal is not None else _default_compare
 
-    def MemoWrapper(props: PropsDict) -> Any:
+    def MemoWrapper(props: Any) -> Any:
         return component(props)
 
     MemoWrapper._wyb_memo = True  # type: ignore[attr-defined]

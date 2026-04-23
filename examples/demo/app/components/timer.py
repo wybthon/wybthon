@@ -3,7 +3,7 @@ from wybthon import component, create_signal, div, dynamic, on_cleanup, on_mount
 
 @component
 def Timer():
-    """Setup-once timer.  Uses ``dynamic`` to interpolate the seconds counter."""
+    """Setup-once timer.  Uses ``dynamic`` for the formatted seconds string."""
     seconds, set_seconds = create_signal(0)
 
     tick_proxy = [None]
@@ -36,4 +36,4 @@ def Timer():
     on_mount(start)
     on_cleanup(stop)
 
-    return div(dynamic(lambda: f"Elapsed: {seconds()}s"), class_name="timer")
+    return div(dynamic(lambda: f"Elapsed: {seconds()}s"), class_="timer")

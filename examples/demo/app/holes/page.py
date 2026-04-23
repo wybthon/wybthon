@@ -36,11 +36,11 @@ def TextHole():
 
     return div(
         h3("Text hole"),
-        p("The component body runs once. Only the highlighted text node " "updates when the signal changes."),
-        p("Value: ", span(count, class_name="hole-value")),
+        p("The component body runs once. Only the highlighted text node updates when the signal changes."),
+        p("Value: ", span(count, class_="hole-value")),
         button("+1", on_click=lambda e: set_count(count() + 1)),
         button("Reset", on_click=lambda e: set_count(0)),
-        class_name="demo-section",
+        class_="demo-section",
     )
 
 
@@ -63,18 +63,18 @@ def DynamicHelper():
                 value=first,
                 on_input=lambda e: set_first(e.target.value),
                 placeholder="First",
-                class_name="form-input",
+                class_="form-input",
             ),
             input_(
                 value=last,
                 on_input=lambda e: set_last(e.target.value),
                 placeholder="Last",
-                class_name="form-input",
+                class_="form-input",
             ),
-            class_name="form-row",
+            class_="form-row",
         ),
         p("Greeting: ", dynamic(lambda: f"Hello, {first()} {last()}!")),
-        class_name="demo-section",
+        class_="demo-section",
     )
 
 
@@ -84,7 +84,7 @@ def DynamicHelper():
 
 
 @component
-def ReactiveProps():
+def ReactivePropBindings():
     """Callable prop values become independent reactive bindings."""
     danger, set_danger = create_signal(False)
     color, set_color = create_signal("teal")
@@ -95,9 +95,9 @@ def ReactiveProps():
         h3("Reactive props"),
         p("Each prop has its own effect — no component re-render."),
         div(
-            span("Status", class_name=pill_class),
+            span("Status", class_=pill_class),
             span("Hello", style=lambda: {"color": color(), "fontWeight": "600"}),
-            class_name="form-row",
+            class_="form-row",
         ),
         div(
             button(
@@ -108,9 +108,9 @@ def ReactiveProps():
                 "Cycle color",
                 on_click=lambda e: set_color({"teal": "salmon", "salmon": "gold", "gold": "teal"}.get(color(), "teal")),
             ),
-            class_name="form-row",
+            class_="form-row",
         ),
-        class_name="demo-section",
+        class_="demo-section",
     )
 
 
@@ -151,18 +151,18 @@ def IndependentHoles():
         p("Each hole has its own effect.  Watch the run counters."),
         div(
             div(
-                p("Value A: ", span(get_a, class_name="hole-value")),
+                p("Value A: ", span(get_a, class_="hole-value")),
                 p("A hole runs: ", span(a_count_sig)),
                 button("A++", on_click=click_a),
             ),
             div(
-                p("Value B: ", span(get_b, class_name="hole-value")),
+                p("Value B: ", span(get_b, class_="hole-value")),
                 p("B hole runs: ", span(b_count_sig)),
                 button("B++", on_click=click_b),
             ),
-            class_name="form-row",
+            class_="form-row",
         ),
-        class_name="demo-section",
+        class_="demo-section",
     )
 
 
@@ -181,7 +181,7 @@ def NodeHole():
         if m == "emphasis":
             return span("important!", style={"color": "var(--accent)", "fontWeight": "700"})
         if m == "code":
-            return code("important!", class_name="inline-code")
+            return code("important!", class_="inline-code")
         return span("important!", style={"color": "var(--text-3)"})
 
     cycle_map = {"emphasis": "code", "code": "plain", "plain": "emphasis"}
@@ -194,7 +194,7 @@ def NodeHole():
             "Cycle mode",
             on_click=lambda e: set_mode(cycle_map.get(mode(), "emphasis")),
         ),
-        class_name="demo-section",
+        class_="demo-section",
     )
 
 
@@ -211,7 +211,7 @@ its dependencies change.
 
 \u2022 Pass a signal accessor: ``span(count)``
 \u2022 Pass a derived expression: ``dynamic(lambda: f\"hi {name()}\")``
-\u2022 Use it in a prop: ``p(class_name=cls)``"""
+\u2022 Use it in a prop: ``p(class_=cls)``"""
 
 
 @component
@@ -220,19 +220,19 @@ def Page():
         div(
             h2("Reactive Holes"),
             p(
-                "Fine-grained reactivity inside the VDOM.  Components run " "once; holes update independently.",
-                class_name="page-subtitle",
+                "Fine-grained reactivity inside the VDOM.  Components run once; holes update independently.",
+                class_="page-subtitle",
             ),
-            class_name="page-header",
+            class_="page-header",
         ),
         section(
-            pre(code(_INTRO), class_name="code-block"),
-            class_name="code-section",
+            pre(code(_INTRO), class_="code-block"),
+            class_="code-section",
         ),
         h(TextHole, {}),
         h(DynamicHelper, {}),
-        h(ReactiveProps, {}),
+        h(ReactivePropBindings, {}),
         h(IndependentHoles, {}),
         h(NodeHole, {}),
-        class_name="page",
+        class_="page",
     )

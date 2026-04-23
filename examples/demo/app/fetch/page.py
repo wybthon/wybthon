@@ -1,4 +1,4 @@
-from wybthon import Suspense, button, code, component, create_resource, div, h, h2, h3, on_cleanup, p, pre
+from wybthon import Suspense, button, code, component, create_resource, div, dynamic, h, h2, h3, on_cleanup, p, pre
 
 
 @component
@@ -19,53 +19,54 @@ def FetchPage():
 
     on_cleanup(lambda: res.cancel())
 
-    def render():
-        text = str(res.error.get()) if res.error.get() else res.data.get() or "No data"
+    def display_text() -> str:
+        err = res.error.get()
+        if err:
+            return str(err)
+        return res.data.get() or "No data"
 
-        return div(
-            div(
-                h2("Data Fetching"),
-                p("Fetch data with create_resource and display loading states with Suspense."),
-                class_name="page-header",
+    return div(
+        div(
+            h2("Data Fetching"),
+            p("Fetch data with create_resource and display loading states with Suspense."),
+            class_="page-header",
+        ),
+        div(
+            h3("JSONPlaceholder API"),
+            h(
+                Suspense,
+                {
+                    "resource": res,
+                    "fallback": p("Loading..."),
+                    "keep_previous": True,
+                    "children": [p(dynamic(display_text))],
+                },
             ),
             div(
-                h3("JSONPlaceholder API"),
-                h(
-                    Suspense,
-                    {
-                        "resource": res,
-                        "fallback": p("Loading..."),
-                        "keep_previous": True,
-                        "children": [p(text)],
-                    },
-                ),
-                div(
-                    button("Reload", on_click=lambda e: res.reload()),
-                    button("Cancel", on_click=lambda e: res.cancel()),
-                ),
-                class_name="demo-section",
+                button("Reload", on_click=lambda e: res.reload()),
+                button("Cancel", on_click=lambda e: res.cancel()),
             ),
-            div(
-                h3("How It Works"),
-                pre(
-                    code(
-                        "async def fetcher(signal=None):\n"
-                        '    resp = await js.fetch(url, {"signal": signal})\n'
-                        "    data = await resp.json()\n"
-                        '    return f"Todo: {data.title}"\n'
-                        "\n"
-                        "res = create_resource(fetcher)\n"
-                        "\n"
-                        "h(Suspense, {\n"
-                        '    "resource": res,\n'
-                        '    "fallback": p("Loading..."),\n'
-                        "}, content)"
-                    ),
-                    class_name="code-block",
+            class_="demo-section",
+        ),
+        div(
+            h3("How It Works"),
+            pre(
+                code(
+                    "async def fetcher(signal=None):\n"
+                    '    resp = await js.fetch(url, {"signal": signal})\n'
+                    "    data = await resp.json()\n"
+                    '    return f"Todo: {data.title}"\n'
+                    "\n"
+                    "res = create_resource(fetcher)\n"
+                    "\n"
+                    "h(Suspense, {\n"
+                    '    "resource": res,\n'
+                    '    "fallback": p("Loading..."),\n'
+                    "}, content)"
                 ),
-                class_name="demo-section",
+                class_="code-block",
             ),
-            class_name="page",
-        )
-
-    return render
+            class_="demo-section",
+        ),
+        class_="page",
+    )

@@ -1,30 +1,66 @@
 from app.components.nav import Nav
 from app.contexts.theme import Theme
-from wybthon import Provider, component, div, footer, h, h1, header, main_, p, span
+from wybthon import (
+    Provider,
+    button,
+    component,
+    create_signal,
+    div,
+    dynamic,
+    footer,
+    h,
+    h1,
+    header,
+    main_,
+    p,
+    span,
+    untrack,
+)
 
 
 @component
 def Layout(base_path="", children=None):
-    _ch = children
-    kids = _ch if isinstance(_ch, list) else ([_ch] if _ch else [])
+    """App shell with reactive theme toggle.
+
+    Demonstrates the new fully-reactive context: switching the
+    ``theme`` signal flows through the Provider into every consumer
+    without any subtree being re-mounted.
+    """
+    bp = untrack(base_path)
+    kids = untrack(children) if callable(children) else children
+    if kids is None:
+        kids = []
+    if not isinstance(kids, list):
+        kids = [kids]
+
+    theme, set_theme = create_signal("dark")
+
+    def toggle(_evt):
+        set_theme("light" if theme() == "dark" else "dark")
+
     return div(
         header(
             div(
-                span("W", class_name="logo-icon"),
+                span("W", class_="logo-icon"),
                 h1("Wybthon"),
-                class_name="header-brand",
+                button(
+                    dynamic(lambda: f"Theme: {theme()}"),
+                    on_click=toggle,
+                    class_="theme-toggle",
+                ),
+                class_="header-brand",
             ),
-            h(Nav, {"base_path": base_path}),
-            class_name="app-header",
+            h(Nav, {"base_path": bp}),
+            class_="app-header",
         ),
         h(
             Provider,
-            {"context": Theme, "value": "dark"},
-            main_(*kids, class_name="app-main"),
+            {"context": Theme, "value": theme},
+            main_(*kids, class_="app-main"),
         ),
         footer(
             p("Built with Wybthon + Pyodide"),
-            class_name="app-footer",
+            class_="app-footer",
         ),
         id="app",
     )

@@ -6,14 +6,14 @@ Instead of writing::
 
 you can write::
 
-    div(p("Hello"), class_name="card", on_click=handler)
+    div(p("Hello"), class_="card", on_click=handler)
 
 Children are positional arguments, props are keyword arguments.
 
 Prop name mapping:
 
-- ``class_name`` → ``class`` (Python reserved word)
-- ``html_for`` → ``for`` (Python reserved word)
+- ``class_``   → ``class``  (the canonical reserved-word workaround)
+- ``html_for`` → ``for``    (Python reserved word)
 - All other kwargs pass through unchanged.
 """
 
@@ -92,12 +92,12 @@ __all__ = [
 def _process_props(kwargs: dict) -> dict:
     """Convert Python keyword arguments to a VNode props dict.
 
-    Maps ``class_name`` to ``class`` and ``html_for`` to ``for`` since
-    those are reserved words in Python.
+    Maps ``class_`` to ``class`` (the canonical reserved-word
+    workaround) and ``html_for`` to ``for``.
     """
     props: dict = {}
     for key, value in kwargs.items():
-        if key == "class_name":
+        if key == "class_":
             props["class"] = value
         elif key == "html_for":
             props["for"] = value

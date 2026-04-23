@@ -3,7 +3,8 @@ from wybthon import ErrorBoundary, button, code, component, create_signal, div, 
 
 @component
 def Page():
-    def Bug(_props):
+    @component
+    def Bug():
         raise RuntimeError("Boom!")
 
     key_val, set_key_val = create_signal(0)
@@ -22,20 +23,20 @@ def Page():
         div(
             h2("Error Boundaries"),
             p("Graceful error handling with fallback UI and recovery."),
-            class_name="page-header",
+            class_="page-header",
         ),
         div(
             h3("Automatic Error Catching"),
             p("The component below throws a RuntimeError. The ErrorBoundary catches it:"),
             h(ErrorBoundary, {"fallback": Fallback}, div(h(Bug, {}))),
-            class_name="demo-section",
+            class_="demo-section",
         ),
         div(
             h3("Reset via Key Change"),
             p("This boundary re-renders its children when the reset key changes:"),
             h(ErrorBoundary, {"fallback": Fallback, "reset_key": key_val}, div(h(Bug, {}))),
             button("Change Reset Key", on_click=bump_key),
-            class_name="demo-section",
+            class_="demo-section",
         ),
         div(
             h3("How It Works"),
@@ -46,9 +47,9 @@ def Page():
                     'h(ErrorBoundary, {"fallback": Fallback,\n'
                     '    "reset_key": key_val}, children)'
                 ),
-                class_name="code-block",
+                class_="code-block",
             ),
-            class_name="demo-section",
+            class_="demo-section",
         ),
-        class_name="page",
+        class_="page",
     )

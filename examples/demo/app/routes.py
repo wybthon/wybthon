@@ -6,6 +6,7 @@ from app.holes.page import Page as HolesPage
 from app.page import Page as HomePage
 from app.patterns.page import Page as PatternsPage
 from app.primitives.page import Page as PrimitivesPage
+from app.props.page import Page as PropsPage
 from app.stores.page import Page as StoresPage
 from wybthon import Route, lazy, load_component
 
@@ -23,7 +24,7 @@ Docs = load_component("app.docs.page", "Page")
 
 def create_routes():
     return [
-        Route(path="/", component=lambda p: HomePage(p)),
+        Route(path="/", component=HomePage),
         Route(
             path="/about",
             component=lazy(_AboutLazy),
@@ -31,13 +32,14 @@ def create_routes():
                 Route(path="team", component=lazy(_TeamLazy)),
             ],
         ),
-        Route(path="/fetch", component=lambda p: FetchPage(p)),
-        Route(path="/flow", component=lambda p: FlowPage(p)),
-        Route(path="/forms", component=lambda p: FormsPage(p)),
-        Route(path="/errors", component=lambda p: ErrorsPage(p)),
-        Route(path="/holes", component=lambda p: HolesPage(p)),
-        Route(path="/patterns", component=lambda p: PatternsPage(p)),
-        Route(path="/primitives", component=lambda p: PrimitivesPage(p)),
-        Route(path="/stores", component=lambda p: StoresPage(p)),
+        Route(path="/fetch", component=FetchPage),
+        Route(path="/flow", component=FlowPage),
+        Route(path="/forms", component=FormsPage),
+        Route(path="/errors", component=ErrorsPage),
+        Route(path="/holes", component=HolesPage),
+        Route(path="/patterns", component=PatternsPage),
+        Route(path="/primitives", component=PrimitivesPage),
+        Route(path="/props", component=PropsPage),
+        Route(path="/stores", component=StoresPage),
         Route(path="/docs/*", component=Docs),
     ]

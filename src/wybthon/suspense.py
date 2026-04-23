@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from .reactivity import create_signal
-from .vnode import Fragment, VNode, to_text_vnode
+from .reactivity import create_signal, read_prop
+from .vnode import Fragment, VNode, dynamic, to_text_vnode
 
 __all__ = ["Suspense"]
 
@@ -22,9 +22,9 @@ def Suspense(props: Any) -> Any:
     has_completed, set_completed = create_signal(False)
 
     def _normalize_resources(p: Any) -> List[Any]:
-        res = p.get("resources")
-        if res is None and "resource" in p:
-            res = [p.get("resource")]
+        res = read_prop(p, "resources")
+        if res is None:
+            res = read_prop(p, "resource")
         if res is None:
             return []
         if not isinstance(res, list):
@@ -44,15 +44,17 @@ def Suspense(props: Any) -> Any:
         return False
 
     def _render_children(p: Any) -> VNode:
-        children: List[Any] = p.get("children", [])
+        children = read_prop(p, "children", [])
+        if children is None:
+            children = []
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)
 
     def _render_fallback(p: Any) -> VNode:
-        fb = p.get("fallback")
+        fb = read_prop(p, "fallback")
         vnode: Any
-        if callable(fb):
+        if callable(fb) and not isinstance(fb, VNode):
             try:
                 vnode = fb()
             except Exception:
@@ -67,7 +69,7 @@ def Suspense(props: Any) -> Any:
         resources = _normalize_resources(props)
         if not resources:
             return _render_children(props)
-        keep_previous = bool(props.get("keep_previous", False))
+        keep_previous = bool(read_prop(props, "keep_previous", False))
         loading = _is_loading(resources)
         if loading:
             if keep_previous and has_completed():
@@ -77,4 +79,7 @@ def Suspense(props: Any) -> Any:
             set_completed(True)
         return _render_children(props)
 
-    return render
+    return dynamic(render)
+
+
+Suspense._wyb_component = True  # type: ignore[attr-defined]

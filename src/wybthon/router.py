@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .context import Provider, create_context, use_context
-from .reactivity import Signal
+from .reactivity import Signal, iter_prop_keys, read_prop
 from .router_core import resolve as _resolve_core
-from .vnode import VNode, h
+from .vnode import VNode, dynamic, h
 
 __all__ = ["Route", "Router", "Link", "navigate", "current_path"]
 
 
 def _current_url() -> str:
-    """Return current pathname+search from the window, or "/" on failure."""
+    """Return current pathname+search from the window, or ``"/"`` on failure."""
     try:
         from js import window
 
@@ -50,7 +50,7 @@ _install_popstate()
 
 
 def navigate(path: str, *, replace: bool = False) -> None:
-    """Programmatically change the current path and update `current_path`."""
+    """Programmatically change the current path and update ``current_path``."""
     try:
         from js import window
 
@@ -64,7 +64,7 @@ def navigate(path: str, *, replace: bool = False) -> None:
 
 
 def _parse_query(search: str) -> Dict[str, str]:
-    """Parse a query string like "?a=1&b=2" into a dict."""
+    """Parse a query string like ``"?a=1&b=2"`` into a dict."""
     if not search or not search.startswith("?"):
         return {}
     out: Dict[str, str] = {}
@@ -165,11 +165,15 @@ def Router(props: Any) -> Any:
       - routes: List[Route]
       - base_path: str
       - not_found: component to render on 404
+
+    The render function is wrapped in a reactive hole so that swaps to
+    ``current_path`` automatically re-evaluate the matched route — no
+    component re-mount required.
     """
 
     def render() -> VNode:
-        routes: List[Route] = props.get("routes", [])
-        base_path: str = props.get("base_path", "")
+        routes: List[Route] = read_prop(props, "routes", []) or []
+        base_path: str = read_prop(props, "base_path", "") or ""
         path = current_path.get()
 
         if "?" in path:
@@ -181,7 +185,7 @@ def Router(props: Any) -> Any:
 
         resolved = _resolve(routes, pathname, base_path)
         if resolved is None:
-            not_found = props.get("not_found")
+            not_found = read_prop(props, "not_found")
             if not_found is not None:
                 return h(not_found, {"query": query, "params": {}})
             return h("div", {}, "Not Found")
@@ -193,19 +197,28 @@ def Router(props: Any) -> Any:
         route_props = {**info}
         return h(Provider, {"context": BasePath, "value": base_path}, h(comp, route_props))
 
-    return render
+    return dynamic(render)
 
 
-def Link(props: Dict[str, Any]) -> VNode:
-    """Anchor element component that navigates via history API without reloads."""
+Router._wyb_component = True  # type: ignore[attr-defined]
+
+
+def Link(props: Any) -> Any:
+    """Anchor element component that navigates via the History API.
+
+    Wrapped in a reactive hole so the active class flips automatically
+    when the route changes — no parent re-render required.
+
+    Recognised class spellings on the prop bag (in priority order):
+    ``"class"``, ``"class_"``, ``"className"``.  All three are merged
+    with the active-class (when the link's href matches
+    ``current_path``).
+    """
     from .events import DomEvent
 
-    to = props.get("to", "/")
-    replace = bool(props.get("replace", False))
-    class_active = props.get("class_active", "active")
-    base_path: str = props.get("base_path") or use_context(BasePath) or ""
+    base_path_ctx = use_context(BasePath) or ""
 
-    def _with_base(target: str) -> str:
+    def _with_base(target: str, base_path: str) -> str:
         if not isinstance(target, str):
             return "/"
         if target.startswith("http://") or target.startswith("https://") or target.startswith("#"):
@@ -220,53 +233,78 @@ def Link(props: Dict[str, Any]) -> VNode:
             return "/" + target.strip("/")
         return (base_path.rstrip("/") or "") + "/" + target.strip("/")
 
-    def handle_click(evt: DomEvent) -> None:
+    _reserved = {
+        "to",
+        "replace",
+        "class_active",
+        "base_path",
+        "children",
+        "class",
+        "className",
+        "class_",
+        "href",
+        "on_click",
+    }
+
+    def render() -> VNode:
+        to = read_prop(props, "to", "/")
+        replace = bool(read_prop(props, "replace", False))
+        class_active = read_prop(props, "class_active", "active")
+        base_path = read_prop(props, "base_path") or base_path_ctx or ""
+
+        def handle_click(evt: DomEvent) -> None:
+            try:
+                js_evt = evt._js_event
+                if (
+                    getattr(js_evt, "metaKey", False)
+                    or getattr(js_evt, "ctrlKey", False)
+                    or getattr(js_evt, "shiftKey", False)
+                    or getattr(js_evt, "button", 0) != 0
+                ):
+                    return
+            except Exception:
+                pass
+            evt.prevent_default()
+            href = _with_base(to, base_path)
+            navigate(href, replace=replace)
+
         try:
-            js_evt = evt._js_event
-            if (
-                getattr(js_evt, "metaKey", False)
-                or getattr(js_evt, "ctrlKey", False)
-                or getattr(js_evt, "shiftKey", False)
-                or getattr(js_evt, "button", 0) != 0
-            ):
-                return
+            current = current_path.get()
         except Exception:
-            pass
-        evt.prevent_default()
-        href = _with_base(to)
-        navigate(href, replace=replace)
+            current = "/"
+        href_no_search = _with_base(to, base_path)
+        if "?" in current:
+            current_no_search = current.split("?", 1)[0]
+        else:
+            current_no_search = current
 
-    try:
-        current = current_path.get()
-    except Exception:
-        current = "/"
-    href_no_search = _with_base(to)
-    if "?" in current:
-        current_no_search = current.split("?", 1)[0]
-    else:
-        current_no_search = current
+        is_active = current_no_search == href_no_search
 
-    is_active = current_no_search == href_no_search
+        existing_class = read_prop(props, "class") or read_prop(props, "class_") or read_prop(props, "className")
+        classes: List[str] = []
+        if isinstance(existing_class, str) and existing_class.strip():
+            classes.append(existing_class)
+        elif isinstance(existing_class, (list, tuple)):
+            classes.extend(str(x) for x in existing_class if x)
+        if is_active and class_active:
+            classes.append(str(class_active))
 
-    existing_class = props.get("class") or props.get("className")
-    classes: List[str] = []
-    if isinstance(existing_class, str) and existing_class.strip():
-        classes.append(existing_class)
-    elif isinstance(existing_class, (list, tuple)):
-        classes.extend(str(x) for x in existing_class if x)
-    if is_active and class_active:
-        classes.append(str(class_active))
+        attrs: Dict[str, Any] = {"href": href_no_search, "on_click": handle_click}
+        if classes:
+            attrs["class"] = " ".join(classes)
 
-    attrs: Dict[str, Any] = {"href": href_no_search, "on_click": handle_click}
-    if classes:
-        attrs["class"] = " ".join(classes)
+        for k in iter_prop_keys(props):
+            if k in _reserved:
+                continue
+            attrs[k] = read_prop(props, k)
+        children = read_prop(props, "children", [])
+        if children is None:
+            children = []
+        if not isinstance(children, list):
+            children = [children]
+        return h("a", attrs, *children)
 
-    _reserved = {"to", "replace", "class_active", "base_path", "children", "class", "className", "href", "on_click"}
-    for k, v in props.items():
-        if k in _reserved:
-            continue
-        attrs[k] = v
-    children = props.get("children", [])
-    if not isinstance(children, list):
-        children = [children]
-    return h("a", attrs, *children)
+    return dynamic(render)
+
+
+Link._wyb_component = True  # type: ignore[attr-defined]

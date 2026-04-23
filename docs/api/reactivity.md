@@ -37,7 +37,7 @@ execution are disposed before each re-run.
 
 ##### Signals-first API (recommended)
 
-- `create_signal(value, *, equals=...) -> (getter, setter)` — optional **`equals`**: default skips notification when `new == old`; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (same-as / custom equality).
+- `create_signal(value, *, equals=...) -> (getter, setter)` — optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.
 - `create_effect(fn) -> Computation` — the returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
 - `create_memo(fn) -> getter` — creates a `Computation` under the current owner; disposed when the owner is disposed.
 - `on_mount(fn)` — run after first render
@@ -49,33 +49,57 @@ execution are disposed before each re-run.
 ```python
 from wybthon import create_signal
 
-# Default: notify only when value changes (==)
+# Default: value equality (==) with an identity (is) fast-path.
+# Re-setting an unchanged value is a no-op; a new container with
+# value-equal contents also skips.  Mutating the same list/dict in
+# place and re-setting the same reference is a no-op too -- copy
+# the container first or pass ``equals=False`` to force notification.
 x, set_x = create_signal({"a": 1})
 
-# Always notify subscribers, even if value is ==
-y, set_y = create_signal(0, equals=False)
+# Equivalent to the default.
+y, set_y = create_signal(0, equals=True)
 
-# Custom: e.g. only notify when identity changes
-z, set_z = create_signal([], equals=lambda old, new: old is new)
+# Always notify subscribers, even when the value is unchanged.
+z, set_z = create_signal(0, equals=False)
+
+# SolidJS-style identity-only semantics: notify whenever the new
+# reference is not the same Python object as the old.
+w, set_w = create_signal([], equals=lambda old, new: old is new)
 ```
 
 ##### `ReactiveProps` and `get_props()`
 
-`get_props()` returns a **`ReactiveProps`** proxy for the current `@component` instance. Attribute or key access (`props.name`, `props["name"]`) establishes a reactive dependency on that prop, similar to Solid prop access. Use this in **stateful** components when setup runs once but props can change from the parent.
+`get_props()` returns the **`ReactiveProps`** proxy for the current
+`@component` instance.  The proxy exposes one consistent shape for
+every prop:
+
+* `props.name` (attribute) or `props["name"]` (item) returns a
+  **stable zero-arg accessor**.  Calling the accessor reads the
+  current value (tracked when called inside an effect or hole).
+  Embedding it in a VNode tree creates a reactive auto-hole.
+* `props.value(name, default=None)` reads the current value
+  immediately (a one-shot, untracked-friendly snapshot).
+* The proxy supports `in`, `len()`, iteration, and `==` against
+  dicts.
 
 ```python
-from wybthon import component, create_effect, get_props, p
+from wybthon import component, create_effect, dynamic, get_props, p
 
 @component
-def Greeting(name: str = "world"):
+def Greeting(name="world"):
     props = get_props()
-    create_effect(lambda: print("name is now", props.name))
-    def render():
-        return p(f"Hello, {props.name}!")
-    return render
+    create_effect(lambda: print("name is now", props.name()))
+    return p(dynamic(lambda: f"Hello, {props.name()}!"))
 ```
 
-`ReactiveProps` is read-only; the parent/reconciler updates underlying values.
+When a component declares a single positional parameter with no
+default, the decorator passes the proxy in directly (proxy mode);
+otherwise each parameter is bound to its own accessor and there is no
+need to call `get_props()`.
+
+`ReactiveProps` is read-only; the parent/reconciler updates underlying
+values.  When a parent passes a getter (e.g. `name=my_signal`), the
+proxy unwraps it transparently — children always read with `props.name()`.
 
 ##### `get_owner()` and `run_with_owner(owner, fn)`
 
@@ -92,18 +116,16 @@ async def load():
 
 ##### `children(fn)`
 
-`children(getter)` wraps a zero-argument callable that returns the children value (often `lambda: get_props().children`) and returns a **memo getter** that flattens and resolves the list. Matches Solid’s `children()` helper. Import under an alias (e.g. `from wybthon import children as resolve_children`) if your component also names a parameter `children`.
+`children(getter)` wraps a zero-argument callable that returns the children value (often `lambda: get_props().children()`) and returns a **memo getter** that flattens and resolves the list. Matches Solid’s `children()` helper. Import under an alias (e.g. `from wybthon import children as resolve_children`) if your component also names a parameter `children`.
 
 ```python
-from wybthon import children, component, get_props, section, h3
+from wybthon import children, component, dynamic, get_props, h3, section
 
 @component
-def Card(title: str = ""):
+def Card(title=""):
     props = get_props()
-    resolved = children(lambda: props.children)
-    def render():
-        return section(h3(props.title), *resolved(), class_name="card")
-    return render
+    resolved = children(lambda: props.children())
+    return section(h3(dynamic(lambda: props.title())), *resolved(), class_="card")
 ```
 
 ##### Resources

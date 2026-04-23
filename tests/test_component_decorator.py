@@ -1,4 +1,4 @@
-"""Tests for the @component decorator."""
+"""Tests for the @component decorator (new fully-reactive props model)."""
 
 import time
 
@@ -31,8 +31,8 @@ def test_component_preserves_name():
     assert MyWidget.__name__ == "MyWidget"
 
 
-def test_component_extracts_kwargs_from_dict():
-    """When called with a single props dict (VDOM engine path), plain values are provided."""
+def test_component_passes_reactive_accessors():
+    """Each parameter is bound to a callable getter (the reactive accessor)."""
     from wybthon.component import component
 
     captured = {}
@@ -43,7 +43,10 @@ def test_component_extracts_kwargs_from_dict():
         captured["greeting"] = greeting
 
     Greet({"name": "Alice", "greeting": "Hi"})
-    assert captured == {"name": "Alice", "greeting": "Hi"}
+    assert callable(captured["name"])
+    assert callable(captured["greeting"])
+    assert captured["name"]() == "Alice"
+    assert captured["greeting"]() == "Hi"
 
 
 def test_component_uses_defaults_for_missing_props():
@@ -57,7 +60,8 @@ def test_component_uses_defaults_for_missing_props():
         captured["greeting"] = greeting
 
     Greet({"name": "Bob"})
-    assert captured == {"name": "Bob", "greeting": "Hello"}
+    assert captured["name"]() == "Bob"
+    assert captured["greeting"]() == "Hello"
 
 
 def test_component_all_defaults():
@@ -70,11 +74,11 @@ def test_component_all_defaults():
         captured["name"] = name
 
     Greet({})
-    assert captured == {"name": "world"}
+    assert captured["name"]() == "world"
 
 
 def test_component_ignores_extra_props():
-    """Props not in the function signature are silently ignored."""
+    """Props not in the function signature are silently ignored at the call surface."""
     from wybthon.component import component
 
     captured = {}
@@ -84,7 +88,8 @@ def test_component_ignores_extra_props():
         captured["name"] = name
 
     Greet({"name": "Alice", "id": 42, "style": "bold"})
-    assert captured == {"name": "Alice"}
+    assert set(captured.keys()) == {"name"}
+    assert captured["name"]() == "Alice"
 
 
 def test_component_children_param():
@@ -96,9 +101,27 @@ def test_component_children_param():
     def Wrapper(children=None):
         captured["children"] = children
 
-    Greet_children = ["child1", "child2"]
-    Wrapper({"children": Greet_children})
-    assert captured["children"] == ["child1", "child2"]
+    kids = ["child1", "child2"]
+    Wrapper({"children": kids})
+    assert callable(captured["children"])
+    assert captured["children"]() == ["child1", "child2"]
+
+
+def test_proxy_mode_for_single_positional_param():
+    """A single positional param with no default receives the ReactiveProps proxy directly."""
+    from wybthon.component import component
+    from wybthon.reactivity import ReactiveProps
+
+    captured = {}
+
+    @component
+    def Advanced(props):
+        captured["props"] = props
+
+    Advanced({"x": 1, "y": 2})
+    assert isinstance(captured["props"], ReactiveProps)
+    assert captured["props"].x() == 1
+    assert captured["props"].y() == 2
 
 
 # ---------------------------------------------------------------------------
@@ -112,12 +135,15 @@ def test_component_renders_via_h(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+        # ``name`` is a callable — pass it as a child for an auto-hole,
+        # or call it once for a static value.
+        return vdom.h("p", {}, "Hello, ", name, "!")
 
     vdom.render(vdom.h(Greet, {"name": "Alice"}), root_element)
 
     texts = collect_texts(root_element.element)
-    assert "Hello, Alice!" in texts
+    assert "Alice" in texts
+    assert "Hello, " in texts
 
 
 def test_component_renders_with_defaults(wyb, root_element):
@@ -125,12 +151,12 @@ def test_component_renders_with_defaults(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+        return vdom.h("p", {}, "Hello, ", name, "!")
 
     vdom.render(vdom.h(Greet, {}), root_element)
 
     texts = collect_texts(root_element.element)
-    assert "Hello, world!" in texts
+    assert "world" in texts
 
 
 def test_component_direct_call_returns_vnode(wyb):
@@ -139,7 +165,7 @@ def test_component_direct_call_returns_vnode(wyb):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+        return vdom.h("p", {}, name)
 
     result = Greet(name="Direct")
     assert isinstance(result, vdom.VNode)
@@ -152,13 +178,13 @@ def test_component_direct_call_renders(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+        return vdom.h("p", {}, "Hello, ", name, "!")
 
     vnode = Greet(name="Direct")
     vdom.render(vnode, root_element)
 
     texts = collect_texts(root_element.element)
-    assert "Hello, Direct!" in texts
+    assert "Direct" in texts
 
 
 def test_component_direct_call_no_args(wyb, root_element):
@@ -167,12 +193,12 @@ def test_component_direct_call_no_args(wyb, root_element):
 
     @comp_mod.component
     def Greet(name="world"):
-        return vdom.h("p", {}, f"Hello, {name}!")
+        return vdom.h("p", {}, "Hello, ", name, "!")
 
     vdom.render(Greet(), root_element)
 
     texts = collect_texts(root_element.element)
-    assert "Hello, world!" in texts
+    assert "world" in texts
 
 
 def test_component_direct_call_with_children(wyb, root_element):
@@ -181,7 +207,7 @@ def test_component_direct_call_with_children(wyb, root_element):
 
     @comp_mod.component
     def Wrapper(title="", children=None):
-        kids = children or []
+        kids = children() or []
         return vdom.h("div", {}, vdom.h("h3", {}, title), *kids)
 
     child1 = vdom.h("p", {}, "child one")
@@ -199,30 +225,24 @@ def test_component_with_create_signal(wyb, root_element):
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     setter_ref = [None]
-    render_log = []
 
     @comp_mod.component
     def Counter(initial=0):
-        count, set_count = reactivity.create_signal(initial)
+        # ``initial`` is a getter; call inside ``untrack`` so we don't
+        # subscribe to it (and to silence the dev warning).
+        seed = reactivity.untrack(initial)
+        count, set_count = reactivity.create_signal(seed)
         setter_ref[0] = set_count
-
-        def render():
-            val = count()
-            render_log.append(val)
-            return vdom.h("p", {}, f"Count: {val}")
-
-        return render
+        return vdom.h("p", {}, "Count: ", count)
 
     vdom.render(vdom.h(Counter, {"initial": 10}), root_element)
-
-    assert render_log == [10]
-    assert "Count: 10" in collect_texts(root_element.element)
+    assert "Count: " in collect_texts(root_element.element)
+    assert "10" in collect_texts(root_element.element)
 
     setter_ref[0](20)
     time.sleep(0.05)
 
-    assert render_log[-1] == 20
-    assert "Count: 20" in collect_texts(root_element.element)
+    assert "20" in collect_texts(root_element.element)
 
 
 def test_component_with_create_effect(wyb, root_element):
@@ -234,11 +254,7 @@ def test_component_with_create_effect(wyb, root_element):
     @comp_mod.component
     def EffectComp():
         reactivity.create_effect(lambda: log.append("effect"))
-
-        def render():
-            return vdom.h("p", {}, "hello")
-
-        return render
+        return vdom.h("p", {}, "hello")
 
     vdom.render(vdom.h(EffectComp, {}), root_element)
 
@@ -256,19 +272,20 @@ def test_component_with_memo(wyb, root_element):
     @comp_mod.component
     def Child(label=""):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"child:{label}")
+        return vdom.h("span", {}, "child:", label)
 
     MemoChild = vdom.memo(Child)
 
-    def Parent(props):
+    @comp_mod.component
+    def Parent():
         count, set_count = reactivity.create_signal(0)
         parent_setter[0] = set_count
-
-        def render():
-            _ = count()
-            return vdom.h("div", {}, vdom.h("p", {}, str(count())), vdom.h(MemoChild, {"label": stable_label}))
-
-        return render
+        return vdom.h(
+            "div",
+            {},
+            vdom.h("p", {}, count),
+            vdom.h(MemoChild, {"label": stable_label}),
+        )
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -302,7 +319,12 @@ def test_component_nested(wyb, root_element):
 
     @comp_mod.component
     def Outer(label="outer"):
-        return vdom.h("div", {}, vdom.h("p", {}, label), vdom.h(Inner, {"value": "nested"}))
+        return vdom.h(
+            "div",
+            {},
+            vdom.h("p", {}, label),
+            vdom.h(Inner, {"value": "nested"}),
+        )
 
     vdom.render(vdom.h(Outer, {"label": "parent"}), root_element)
 
@@ -312,11 +334,10 @@ def test_component_nested(wyb, root_element):
 
 
 def test_component_runs_once_static_prop_capture(wyb, root_element):
-    """Stateless @component bodies run **once**; eagerly-captured props don't auto-update.
+    """Calling a prop accessor at setup captures its value statically.
 
-    To get reactive updates the child should use ``get_props()`` and
-    place the prop access inside a reactive hole -- see
-    ``test_component_reactive_props_update`` below.
+    The component body still runs only once on mount.  To get reactive
+    updates, pass the accessor itself into the VNode tree (auto-hole).
     """
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
@@ -326,16 +347,15 @@ def test_component_runs_once_static_prop_capture(wyb, root_element):
     @comp_mod.component
     def Child(count=0):
         child_renders[0] += 1
-        return vdom.h("span", {}, f"count={count}")
+        # Eager unwrap → static capture
+        snapshot = reactivity.untrack(count)
+        return vdom.h("span", {}, f"count={snapshot}")
 
-    def Parent(props):
+    @comp_mod.component
+    def Parent():
         val, set_val = reactivity.create_signal(0)
         parent_setter[0] = set_val
-
-        def render():
-            return vdom.h("div", {}, vdom.h(Child, {"count": val()}))
-
-        return render
+        return vdom.h("div", {}, vdom.h(Child, {"count": val}))
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
@@ -348,8 +368,8 @@ def test_component_runs_once_static_prop_capture(wyb, root_element):
     assert "count=0" in collect_texts(root_element.element), "static read keeps old value"
 
 
-def test_component_re_renders_via_reactive_hole(wyb, root_element):
-    """Reading props through ``get_props()`` inside a hole updates the DOM in-place."""
+def test_component_re_renders_via_reactive_prop(wyb, root_element):
+    """Passing the prop accessor into the tree creates an auto-hole."""
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     child_renders = [0]
@@ -358,27 +378,24 @@ def test_component_re_renders_via_reactive_hole(wyb, root_element):
     @comp_mod.component
     def Child(count=0):
         child_renders[0] += 1
-        props = reactivity.get_props()
-        return vdom.h("span", {}, lambda: f"count={props['count']}")
+        # Pass the accessor → reactive auto-hole
+        return vdom.h("span", {}, "count=", count)
 
-    def Parent(props):
+    @comp_mod.component
+    def Parent():
         val, set_val = reactivity.create_signal(0)
         parent_setter[0] = set_val
-
-        def render():
-            return vdom.h("div", {}, vdom.h(Child, {"count": val()}))
-
-        return render
+        return vdom.h("div", {}, vdom.h(Child, {"count": val}))
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert child_renders[0] == 1
-    assert "count=0" in collect_texts(root_element.element)
+    assert "0" in collect_texts(root_element.element)
 
     parent_setter[0](5)
     time.sleep(0.1)
 
     assert child_renders[0] == 1, "body still runs only once"
-    assert "count=5" in collect_texts(root_element.element), "hole updates the DOM"
+    assert "5" in collect_texts(root_element.element), "auto-hole updates the DOM"
 
 
 def test_component_exported_from_package():
@@ -388,33 +405,24 @@ def test_component_exported_from_package():
     assert callable(component)
 
 
-def test_component_reactive_props_update(wyb, root_element):
-    """ReactiveProps update when parent re-renders with new values.
-
-    Stateful @component captures initial values at setup.  For reactive
-    prop tracking, use get_props() inside the render function.
-    """
+def test_component_reactive_props_update_via_get_props(wyb, root_element):
+    """``get_props()`` returns the reactive proxy for advanced cases."""
     vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     parent_setter = [None]
 
     @comp_mod.component
     def Display(message="default"):
+        # Identical to passing the accessor; this path also exercises
+        # ``get_props()`` for advanced use.
         props = reactivity.get_props()
+        return vdom.h("p", {}, props["message"])
 
-        def render():
-            return vdom.h("p", {}, props["message"])
-
-        return render
-
-    def Parent(props):
+    @comp_mod.component
+    def Parent():
         msg, set_msg = reactivity.create_signal("hello")
         parent_setter[0] = set_msg
-
-        def render():
-            return vdom.h("div", {}, vdom.h(Display, {"message": msg()}))
-
-        return render
+        return vdom.h("div", {}, vdom.h(Display, {"message": msg}))
 
     vdom.render(vdom.h(Parent, {}), root_element)
     assert "hello" in collect_texts(root_element.element)
@@ -426,12 +434,13 @@ def test_component_reactive_props_update(wyb, root_element):
 
 def test_create_effect_prev_value(wyb, root_element):
     """create_effect passes previous return value to callback when it accepts a parameter."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity, comp_mod = wyb["vdom"], wyb["reactivity"], wyb["component"]
 
     log = []
     setter_ref = [None]
 
-    def MyComp(props):
+    @comp_mod.component
+    def MyComp():
         count, set_count = reactivity.create_signal(0)
         setter_ref[0] = set_count
 
@@ -440,11 +449,7 @@ def test_create_effect_prev_value(wyb, root_element):
             return count()
 
         reactivity.create_effect(my_effect)
-
-        def render():
-            return vdom.h("p", {}, f"{count()}")
-
-        return render
+        return vdom.h("p", {}, count)
 
     vdom.render(vdom.h(MyComp, {}), root_element)
     assert log == [("prev", None, "cur", 0)]

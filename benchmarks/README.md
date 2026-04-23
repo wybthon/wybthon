@@ -19,6 +19,21 @@ approach are used so results are directly comparable.
 | 8 | append rows | Append 1,000 rows to a 10,000-row table | 5 |
 | 9 | clear rows | Clear all rows | 5 |
 
+### Reactive-hole microbenchmarks
+
+These two benchmarks are run after the standard nine to highlight the
+benefit of the fully-reactive component model.  Both mount a `<div>` of
+1,000 `<span>` children and then update one text node per iteration:
+
+| # | Name | Description | Warmup |
+|---|------|-------------|--------|
+| 10 | hole update (1k tree) | Single signal write inside `batch(...)` updates one reactive hole — the reconciler is **not** re-invoked | 5 |
+| 11 | full rerender (1k tree) | The whole tree is re-built and the reconciler diffs its way to the same single text update | 5 |
+
+The "hole update" path is typically several orders of magnitude faster
+than the "full rerender" path on the stubbed DOM, which is the whole
+point of fine-grained reactivity.
+
 Memory measurements (optional):
 - **ready** — baseline after page/module load
 - **run 1k** — after creating 1,000 rows

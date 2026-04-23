@@ -50,8 +50,10 @@
     .app-header { border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); background: rgba(255,255,255,0.88); }
     .app-header > * { max-width: var(--max-w); margin-left: auto; margin-right: auto; }
     .header-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
-    .header-brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0; }
+    .header-brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0; flex: 1; }
     .logo-icon { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .theme-toggle { font-size: 0.75rem; padding: 0.3rem 0.65rem; }
+    .demo-section.nested { padding: 0.75rem 1rem; margin-bottom: 0.5rem; box-shadow: none; background: var(--surface-2); }
     .app-nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
     .nav-link { padding: 0.375rem 0.75rem; border-radius: 6px; text-decoration: none; color: var(--text-2); font-size: 0.875rem; font-weight: 500; transition: all 0.15s ease; }
     .nav-link:hover { color: var(--primary); background: var(--primary-light); text-decoration: none; }

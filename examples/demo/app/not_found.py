@@ -7,5 +7,5 @@ def NotFound():
         h2("404"),
         p("The page you're looking for doesn't exist."),
         button("Go Home", on_click=lambda e: navigate("/")),
-        class_name="not-found",
+        class_="not-found",
     )
