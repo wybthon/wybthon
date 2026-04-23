@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.23.0 (2026-04-23)
+
+### Features
+
+- **component**: Unify component model around fully reactive props
+  ([`5645c8b`](https://github.com/wybthon/wybthon/commit/5645c8b6147a77c9a28860cf033038f814219897))
+
+
 ## v0.22.0 (2026-04-22)
 
 ### Features

@@ -56,7 +56,7 @@ from .store import create_store, produce
 # Pure-Python VDOM data structures are available in any environment.
 from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
 
-__version__ = "0.22.0"
+__version__ = "0.23.0"
 
 _IN_BROWSER = False
 try:
