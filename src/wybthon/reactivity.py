@@ -1,26 +1,43 @@
-"""Signal-based reactive primitives with ownership tree, inspired by SolidJS.
+"""Signal-based reactive primitives with an ownership tree.
 
-The ownership tree ensures that every reactive computation (effect, memo)
-is **owned** by its parent scope.  When a parent re-runs or is disposed,
-all child computations are automatically cleaned up -- preventing memory
-leaks and ensuring correct lifecycle semantics.
+This module is the heart of Wybthon's SolidJS-inspired reactivity. Every
+reactive computation (effect, memo) is **owned** by a parent scope. When
+that scope re-runs or is disposed, all child computations are torn down
+automatically — preventing leaks and giving lifecycle semantics that
+match component mount/unmount boundaries.
 
-Key classes:
+Core types:
 
-- ``Owner``        -- base ownership scope (cleanups + child tracking)
-- ``Computation``  -- reactive computation that is also an ownership scope
-- ``Signal``       -- mutable reactive container
+- [`Signal`][wybthon.Signal]: mutable reactive container.
+- [`Owner`][wybthon.reactivity.Owner]: base ownership scope (cleanups + children).
+- [`Computation`][wybthon.reactivity.Computation]: a reactive computation
+  that is itself an ownership scope.
+- [`Resource`][wybthon.Resource]: async data wrapper with `data`/`error`/`loading`.
 
-Key functions:
+Public primitives:
 
-- ``create_signal``  -- create a (getter, setter) pair
-- ``create_effect``  -- auto-tracking side-effect
-- ``create_memo``    -- auto-tracking derived value
-- ``on_mount``       -- run once after component mount
-- ``on_cleanup``     -- register teardown callback
-- ``create_root``    -- create an independent reactive root
-- ``batch``          -- batch signal updates
-- ``untrack``        -- read without tracking
+- [`create_signal`][wybthon.create_signal]: create a `(getter, setter)` pair.
+- [`create_effect`][wybthon.create_effect]: auto-tracking side-effect.
+- [`create_memo`][wybthon.create_memo]: auto-tracking derived value.
+- [`on_mount`][wybthon.on_mount] / [`on_cleanup`][wybthon.on_cleanup]:
+  lifecycle hooks.
+- [`batch`][wybthon.batch] / [`untrack`][wybthon.untrack]: scheduling control.
+- [`create_root`][wybthon.create_root]: spawn an independent reactive root.
+- [`merge_props`][wybthon.merge_props] / [`split_props`][wybthon.split_props]:
+  prop composition helpers.
+- [`map_array`][wybthon.map_array] / [`index_array`][wybthon.index_array] /
+  [`create_selector`][wybthon.create_selector]: reactive list primitives.
+
+Example:
+    A counter with a derived doubled value::
+
+        from wybthon import create_signal, create_memo, create_effect
+
+        count, set_count = create_signal(0)
+        doubled = create_memo(lambda: count() * 2)
+        create_effect(lambda: print("doubled:", doubled()))
+
+        set_count(2)  # logs "doubled: 4" on the next microtask flush
 """
 
 from __future__ import annotations
@@ -83,17 +100,17 @@ _untrack_depth: int = 0
 
 
 def _is_inside_untrack() -> bool:
-    """Return True when the current call stack is inside :func:`untrack`."""
+    """Return True when the current call stack is inside `untrack`."""
     return _untrack_depth > 0
 
 
 def _has_current_computation() -> bool:
     """Return True when there is an active reactive computation (effect/memo).
 
-    Used by the dev-mode "destructured prop" warning to suppress noise
-    when a prop accessor is read inside an effect / memo body during
-    setup -- those are the canonical "subscribe to this prop" patterns,
-    not the footgun the warning is trying to flag.
+    Used by the dev-mode "destructured prop" warning to suppress noise when a
+    prop accessor is read inside an effect / memo body during setup — those
+    are the canonical "subscribe to this prop" patterns, not the footgun the
+    warning is trying to flag.
     """
     return _current_computation is not None
 
@@ -150,9 +167,17 @@ def _flush() -> None:
 class Owner:
     """Base reactive ownership scope.
 
-    Tracks child owners and cleanup callbacks.  When disposed, children
-    are disposed first (depth-first), then own cleanups run.  This
+    Tracks child owners and cleanup callbacks. When disposed, children are
+    disposed first (depth-first), then this owner's own cleanups run. This
     mirrors SolidJS's ownership model.
+
+    Attributes:
+        _parent: Parent `Owner`, or `None` for roots.
+        _children: List of child owners.
+        _cleanups: Callbacks invoked LIFO during disposal.
+        _disposed: True after `dispose()` has run; further calls are no-ops.
+        _context_map: Lazily-allocated dict of context values stored at
+            this owner (used by `Provider`).
     """
 
     __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map")
@@ -195,6 +220,12 @@ class Owner:
         return default
 
     def dispose(self) -> None:
+        """Tear down this owner and all descendants.
+
+        Disposes children depth-first, then runs this owner's cleanup
+        callbacks in LIFO order, and finally detaches from its parent.
+        Subsequent calls are no-ops.
+        """
         if self._disposed:
             return
         self._disposed = True
@@ -214,11 +245,16 @@ class Owner:
 
 
 class Computation(Owner):
-    """Reactive computation that tracks Signals and re-runs when they change.
+    """Reactive computation that tracks signals and re-runs when they change.
 
     Also serves as an ownership scope: child computations created during
     execution are disposed before each re-run, preventing leaks from
     conditionally-created effects.
+
+    Attributes:
+        _fn: The callback executed by `run()`.
+        _deps: Set of signals this computation currently subscribes to.
+            Cleared and rebuilt on every `run()`.
     """
 
     __slots__ = ("_fn", "_deps")
@@ -236,6 +272,12 @@ class Computation(Owner):
             signal._add_subscriber(self)
 
     def run(self) -> None:
+        """Re-execute the tracked function, refreshing its dependency set.
+
+        Disposes child owners and runs cleanups before each re-run so that
+        conditional effects don't leak. The previous dependency edges are
+        torn down and rebuilt while the body executes under this owner.
+        """
         if self._disposed:
             return
         self._dispose_children()
@@ -255,6 +297,12 @@ class Computation(Owner):
             _current_computation = prev_comp
 
     def schedule(self) -> None:
+        """Enqueue this computation for the next flush.
+
+        Called by `Signal.set` when a tracked dependency changes. When no
+        batch is active a microtask flush is scheduled; otherwise the
+        computation is held until the outermost batch completes.
+        """
         if self._disposed:
             return
         if self not in _pending_set:
@@ -264,6 +312,11 @@ class Computation(Owner):
             _schedule_flush()
 
     def dispose(self) -> None:
+        """Dispose the computation and unsubscribe from all dependencies.
+
+        Removes this computation from any pending flush queue, clears
+        dependency edges, and tears down child owners and cleanups.
+        """
         if self._disposed:
             return
         self._disposed = True
@@ -287,7 +340,18 @@ class Computation(Owner):
 
 
 class Signal(Generic[T]):
-    """Mutable container that notifies subscribed computations on changes."""
+    """Mutable reactive container that notifies subscribed computations on change.
+
+    Most code uses [`create_signal`][wybthon.create_signal] which returns a
+    `(getter, setter)` tuple instead of exposing `Signal` instances directly.
+    This class is part of the public surface so `Signal[T]` can be used in
+    type hints.
+
+    Args:
+        value: The initial value.
+        equals: Equality policy. See [`create_signal`][wybthon.create_signal]
+            for the full semantics.
+    """
 
     def __init__(self, value: T, *, equals: Any = _DEFAULT_EQUALS) -> None:
         self._value: T = value
@@ -309,11 +373,29 @@ class Signal(Generic[T]):
                 pass
 
     def get(self) -> T:
+        """Return the current value and subscribe the active computation.
+
+        When called inside an effect, memo, or reactive hole, this signal
+        is added to that computation's dependency set so it re-runs on
+        future writes. Outside a tracking context the read is untracked.
+
+        Returns:
+            The current value held by the signal.
+        """
         if _current_computation is not None:
             _current_computation._track(self)
         return self._value
 
     def set(self, value: T) -> None:
+        """Write a new value and notify subscribers if it changed.
+
+        Equality is determined by the `equals` policy passed to the
+        constructor (default: `is` then `==`, with `equals=False` to
+        bypass the check entirely).
+
+        Args:
+            value: The new value to store.
+        """
         if self._equals is not False:
             if callable(self._equals):
                 if self._equals(self._value, value):
@@ -343,7 +425,18 @@ class Signal(Generic[T]):
 
 
 def signal(value: T) -> Signal[T]:
-    """Create a new ``Signal`` with the given initial value."""
+    """Create a new `Signal` with the given initial value.
+
+    Most code should call [`create_signal`][wybthon.create_signal] instead;
+    this function exists for low-level uses that need the raw `Signal`
+    object (for example, attaching custom subscribers).
+
+    Args:
+        value: The initial value stored in the signal.
+
+    Returns:
+        A new `Signal[T]` with default equality semantics.
+    """
     return Signal(value)
 
 
@@ -353,31 +446,38 @@ def signal(value: T) -> Signal[T]:
 
 
 class ReactiveProps:
-    """Reactive proxy for component props.
+    """Reactive proxy over a component's props dict.
 
-    Every prop access returns a **reactive accessor** (a zero-argument
-    callable that returns the current value and tracks the read).
-    This matches SolidJS's ``props.x`` semantics adapted to Python::
+    Every attribute or item access returns a **reactive accessor** — a
+    zero-arg callable that returns the current value and tracks the read.
+    This mirrors SolidJS's `props.x` semantics, adapted to Python.
 
-        props.name        # → callable getter
-        props.name()      # → current value (tracked)
-        props["name"]     # → callable getter (same as ``props.name``)
-        props.get("name", default)  # → callable getter, returns default if missing
+    Access patterns:
 
-    Pass a getter directly into a VNode tree to create an automatic
-    reactive hole — the surrounding DOM region updates when the prop
-    changes::
+    | Expression | Returns | Notes |
+    |------------|---------|-------|
+    | `props.name` | callable getter | Stable across reads. |
+    | `props.name()` | current value | Tracked when called inside an effect or hole. |
+    | `props["name"]` | callable getter | Same as `props.name`. |
+    | `props.get("name", default)` | callable getter | Returns `default` when missing. |
+    | `props.value("name", default)` | current value | One-shot snapshot, with auto-unwrap. |
 
-        return p("Hello, ", props.name, "!")  # auto-hole on props.name
+    Embed the accessor directly in the VNode tree to create an automatic
+    reactive hole; the surrounding DOM region updates only when the prop
+    changes.
 
-    To unwrap once at setup time (untracked initial value)::
+    Example:
+        ```python
+        @component
+        def Greeting():
+            props = get_props()
+            # Auto-hole — only the text node updates when ``name`` changes.
+            return p("Hello, ", props.name, "!")
+        ```
 
-        initial = props.name()    # current value, no tracking inside body
-
-    To iterate / introspect the props dict::
-
-        for key in props:           # keys
-            print(key, props.value(key))    # ``value()`` returns the current value
+    Note:
+        `ReactiveProps` is read-only. Parents and the reconciler update it
+        via the internal `_update` method.
     """
 
     __slots__ = ("_signals", "_getters", "_raw", "_defaults")
@@ -400,15 +500,21 @@ class ReactiveProps:
         return sig
 
     def _make_getter(self, key: str) -> Callable[[], Any]:
-        """Return a stable, callable accessor for *key* (cached).
+        """Return a stable, cached, callable accessor for `key`.
 
-        The accessor reads the prop signal and, when the stored value is
-        itself a getter (callable with no required args), transparently
-        calls it.  This means parents can pass either a static value
-        (``count=5``) or a getter (``count=count_signal.get`` /
-        ``count=lambda: total()``) and children always read the current
-        value the same way: ``props.count()``.  Reactivity is tracked
-        through *both* the prop signal and any underlying source.
+        The accessor reads the prop signal and, when the stored value is itself
+        a getter (callable with no required args), transparently calls it. This
+        means parents can pass either a static value (`count=5`) or a getter
+        (`count=count_signal.get`, `count=lambda: total()`) and children always
+        read the current value the same way: `props.count()`. Reactivity is
+        tracked through both the prop signal and any underlying source.
+
+        Args:
+            key: Prop name to access.
+
+        Returns:
+            A zero-arg callable. Accessor identity is stable across calls
+            so it can be embedded in VNode trees as a reactive hole.
         """
         getters = object.__getattribute__(self, "_getters")
         cached = getters.get(key)
@@ -433,12 +539,20 @@ class ReactiveProps:
         return accessor
 
     def value(self, key: str, default: Any = _MISSING) -> Any:
-        """Return the current value for *key* (tracked, with auto-unwrap).
+        """Return the current value for `key` (tracked, with auto-unwrap).
 
-        If the stored prop value is a getter, it is invoked and the
-        result returned -- mirroring :meth:`_make_getter`.  If *default*
-        is provided, it is returned when *key* is absent from both the
-        props dict and the component's parameter defaults.
+        If the stored prop value is a getter, it is invoked and the result
+        returned — mirroring `_make_getter`. If `default` is provided, it is
+        returned when `key` is absent from both the props dict and the
+        component's parameter defaults.
+
+        Args:
+            key: Prop name.
+            default: Value returned when the key is missing. When omitted,
+                missing keys yield `None`.
+
+        Returns:
+            The current prop value (auto-unwrapped if it's a getter).
         """
         signals = object.__getattribute__(self, "_signals")
         raw = object.__getattribute__(self, "_raw")
@@ -468,19 +582,28 @@ class ReactiveProps:
         return self._make_getter(key)
 
     def get(self, key: str, default: Any = None) -> Callable[[], Any]:
-        """Return a callable getter for *key*, falling back to *default* when missing.
+        """Return a callable getter for `key`, falling back to `default` if missing.
 
-        When *key* exists on the prop bag (in raw props, prior signals,
-        or component-parameter defaults), the returned getter reads the
-        underlying signal -- a tracking scope subscribes to it.
+        When `key` exists on the prop bag (in raw props, prior signals, or
+        component-parameter defaults), the returned getter reads the underlying
+        signal — a tracking scope subscribes to it.
 
-        When *key* is **missing**, the getter returns *default* on each
-        call without creating a tracked signal.  This means repeated
-        ``get(key, x)`` / ``get(key, y)`` calls each return their own
-        default (no sticky behavior).  Components that need reactivity
-        for a possibly-missing prop should declare it as a parameter
-        with a default value -- ``@component`` ensures a signal is
-        created up front so future updates always propagate.
+        When `key` is **missing**, the getter returns `default` on each call
+        without creating a tracked signal. This means repeated `get(key, x)`
+        / `get(key, y)` calls each return their own default (no sticky
+        behavior). Components that need reactivity for a possibly-missing
+        prop should declare it as a parameter with a default value —
+        `@component` ensures a signal is created up front so future updates
+        always propagate.
+
+        Args:
+            key: Prop name.
+            default: Value returned by the fallback getter when `key` is
+                missing.
+
+        Returns:
+            A zero-arg callable. Subscribers to a missing-key getter are
+            **not** notified when the prop later appears.
         """
         defaults_map = object.__getattribute__(self, "_defaults")
         raw = object.__getattribute__(self, "_raw")
@@ -500,6 +623,11 @@ class ReactiveProps:
         return key in raw
 
     def keys(self) -> Any:
+        """Return the prop names currently set on this instance.
+
+        The result reflects the latest props pushed into the proxy (it is
+        not tracked as a reactive read).
+        """
         raw = object.__getattribute__(self, "_raw")
         return raw.keys()
 
@@ -509,7 +637,7 @@ class ReactiveProps:
         return [self._signal_for(k).get() for k in raw]
 
     def items(self) -> Any:
-        """Return ``(key, current_value)`` pairs (tracked)."""
+        """Return `(key, current_value)` pairs (tracked)."""
         raw = object.__getattribute__(self, "_raw")
         return [(k, self._signal_for(k).get()) for k in raw]
 
@@ -549,13 +677,21 @@ class ReactiveProps:
 
 
 def read_prop(props: Any, key: str, default: Any = None) -> Any:
-    """Return the current value for *key* from *props*.
+    """Return the current value for `key` from `props`.
 
-    Works with both :class:`ReactiveProps` (the common case inside the
-    reconciler) and plain dicts (test paths and a few legacy code
-    sites).  When called inside a tracking scope, the read is tracked
-    against the underlying signal -- mirroring the auto-unwrap behavior
-    of :meth:`ReactiveProps.value`.
+    Works with both [`ReactiveProps`][wybthon.ReactiveProps] (the common
+    case inside the reconciler) and plain dicts (test paths and a few
+    legacy call sites). When called inside a tracking scope, the read is
+    tracked against the underlying signal — mirroring the auto-unwrap
+    behavior of `ReactiveProps.value`.
+
+    Args:
+        props: A `ReactiveProps` proxy or any dict-like object.
+        key: Prop name to read.
+        default: Returned when `key` is absent. Defaults to `None`.
+
+    Returns:
+        The current value, with auto-unwrap applied for `ReactiveProps`.
     """
     if isinstance(props, ReactiveProps):
         return props.value(key, default)
@@ -565,11 +701,18 @@ def read_prop(props: Any, key: str, default: Any = None) -> Any:
 
 
 def iter_prop_keys(props: Any) -> List[str]:
-    """Return the list of prop keys present on *props*.
+    """Return the list of prop keys present on `props`.
 
-    Same uniform shim as :func:`read_prop` for components that need to
-    iterate over an unknown prop bag (e.g. ``Link`` forwarding extra
-    attributes onto the rendered ``<a>``).
+    Same uniform shim as [`read_prop`][wybthon.reactivity.read_prop] for
+    components that iterate over an unknown prop bag (e.g. `Link`
+    forwarding extra attributes onto the rendered `<a>`).
+
+    Args:
+        props: A `ReactiveProps` proxy or any object with `.keys()`.
+
+    Returns:
+        A list of present keys, or an empty list when `props` is not
+        dict-like.
     """
     if isinstance(props, ReactiveProps):
         return list(props)
@@ -584,7 +727,12 @@ def iter_prop_keys(props: Any) -> List[str]:
 
 
 class _Computed(Generic[T]):
-    """Read-only signal computed from other signals."""
+    """Read-only signal whose value is derived from other signals.
+
+    Backs [`create_memo`][wybthon.create_memo] and the public type
+    alias `Computed`. The internal `Computation` re-runs whenever any
+    of its tracked signals change, recomputing the value.
+    """
 
     def __init__(self, fn: Callable[[], T]) -> None:
         self._value_signal: Signal[T] = Signal(cast(T, None))
@@ -604,20 +752,43 @@ class _Computed(Generic[T]):
         self._comp.dispose()
 
 
-# Public alias for the computed-value type.  Users who want to type-hint a
+# Public alias for the computed-value type. Users who want to type-hint a
 # memoised value (for example, ``Computed[int]``) should reach for this name.
-# The constructor lives at :func:`create_memo` (returns a getter, not the
-# class instance), but the type itself is part of the public surface.
+# The constructor lives at ``create_memo`` (returns a getter, not the class
+# instance), but the type itself is part of the public surface.
 Computed = _Computed
 
 
 def computed(fn: Callable[[], T]) -> _Computed[T]:
-    """Create a computed value that derives from other signals."""
+    """Create a `_Computed` value derived from other signals.
+
+    Low-level helper used by [`create_memo`][wybthon.create_memo]. Most
+    code should use `create_memo` directly because it returns a plain
+    getter (matching SolidJS's API).
+
+    Args:
+        fn: Zero-arg callable. Re-evaluated when any signal it reads
+            changes.
+
+    Returns:
+        A `_Computed[T]` instance whose `.get()` returns the current value.
+    """
     return _Computed(fn)
 
 
 def effect(fn: Callable[[], Any]) -> Computation:
-    """Run a reactive effect and return its computation handle."""
+    """Run a reactive effect immediately and return its `Computation`.
+
+    Low-level helper. Most code should use
+    [`create_effect`][wybthon.create_effect] which additionally supports
+    receiving the previous return value as an argument.
+
+    Args:
+        fn: Zero-arg callback. Re-runs when any signal it reads changes.
+
+    Returns:
+        The underlying `Computation`. Call `.dispose()` to stop the effect.
+    """
     comp = Computation(fn)
     if _current_owner is not None:
         _current_owner._add_child(comp)
@@ -626,7 +797,12 @@ def effect(fn: Callable[[], Any]) -> Computation:
 
 
 def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
-    """Register a cleanup callback to run when a computation is disposed."""
+    """Register `fn` to run when `comp` is disposed.
+
+    Args:
+        comp: The computation whose disposal should trigger the cleanup.
+        fn: Zero-arg cleanup callback.
+    """
     comp._cleanups.append(fn)
 
 
@@ -636,7 +812,12 @@ def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
 
 
 class _Batch:
-    """Context manager to batch signal updates into a single flush."""
+    """Context manager that batches signal updates into a single flush.
+
+    Returned by [`batch()`][wybthon.batch] when called with no arguments.
+    Increments a depth counter on `__enter__` and flushes pending
+    computations exactly once when the outermost batch exits.
+    """
 
     def __enter__(self) -> None:
         global _batch_depth
@@ -652,19 +833,30 @@ class _Batch:
 def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
     """Batch signal updates so subscribers flush once at the end.
 
-    Can be used as a **context manager** (Pythonic style)::
+    Two call shapes are supported:
 
-        with batch():
-            set_a(1)
-            set_b(2)
-
-    Or with a **callback** (SolidJS style)::
-
-        batch(lambda: (set_a(1), set_b(2)))
+    1. **Context manager** (Pythonic):
+       ```python
+       with batch():
+           set_a(1)
+           set_b(2)
+       ```
+    2. **Callback** (SolidJS style):
+       ```python
+       batch(lambda: (set_a(1), set_b(2)))
+       ```
 
     When called with a function, the function's return value is returned.
-    Effects are flushed synchronously before ``batch`` returns, matching
+    Effects are flushed synchronously before `batch` returns, matching
     SolidJS semantics.
+
+    Args:
+        fn: Optional zero-arg callable. When omitted, returns a context
+            manager.
+
+    Returns:
+        Either a `_Batch` context manager (when `fn is None`) or the
+        return value of `fn`.
     """
     if fn is None:
         return _Batch()
@@ -680,16 +872,26 @@ def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
 
 
 def untrack(fn: Callable[[], T]) -> T:
-    """Run *fn* without tracking any signal reads.
+    """Run `fn` without tracking any signal reads.
 
     Useful inside effects when you need to read a signal without creating
-    a dependency::
+    a dependency, or during component setup to seed local state from a
+    prop without subscribing.
 
-        create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
-
-    Inside ``untrack`` the dev-mode destructured-prop warning is also
-    silenced -- so ``count, set_count = create_signal(untrack(initial))``
+    Inside `untrack` the dev-mode destructured-prop warning is also
+    silenced — so `count, set_count = create_signal(untrack(initial))`
     cleanly opts out of the noise.
+
+    Args:
+        fn: Zero-arg callable to invoke with tracking suppressed.
+
+    Returns:
+        Whatever `fn` returns.
+
+    Example:
+        ```python
+        create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
+        ```
     """
     global _current_computation, _untrack_depth
     prev = _current_computation
@@ -712,11 +914,34 @@ FetchFn = Callable[..., Union[Awaitable[R], R]]
 
 
 class Resource(Generic[R]):
-    """Async resource wrapper with Signals for data, error, and loading.
+    """Async resource with reactive `data`, `error`, and `loading` signals.
 
-    Use `reload()` to (re)fetch, `cancel()` to cancel the in-flight request.
-    Optionally accepts a *source* getter; when the source signal changes the
-    resource automatically refetches.
+    Wraps an awaitable fetcher and exposes signal-backed state so consumers
+    can render loading and error UIs declaratively (typically with
+    [`Suspense`][wybthon.Suspense]).
+
+    Use `reload()` to (re)fetch and `cancel()` to abort the in-flight
+    request.
+
+    When constructed with a `source` getter, the resource automatically
+    refetches when the source's tracked value changes (skipping the very
+    first read so it doesn't double-fetch on creation).
+
+    Attributes:
+        data: Reactive accessor for the most recent successful payload, or
+            `None` before any fetch completes.
+        error: Reactive accessor for the most recent exception, or `None`.
+        loading: Reactive accessor; `True` while a fetch is in flight.
+
+    Example:
+        ```python
+        async def load_user(signal=None):
+            resp = await fetch("/api/users/1")
+            return await resp.json()
+
+        user = create_resource(load_user)
+        h("p", {}, dynamic(lambda: "Loading..." if user.loading() else user.data().get("name")))
+        ```
     """
 
     def __init__(self, fetcher: FetchFn, source: Optional[Callable[[], Any]] = None) -> None:
@@ -742,7 +967,7 @@ class Resource(Generic[R]):
             self._setup_source_tracking()
 
     def _setup_source_tracking(self) -> None:
-        """Watch the source signal and refetch when it changes."""
+        """Watch the `source` getter and call `reload()` whenever it changes."""
         first_run = [True]
 
         def watcher() -> None:
@@ -786,6 +1011,12 @@ class Resource(Generic[R]):
             self.loading.set(False)
 
     def reload(self) -> None:
+        """Cancel any in-flight request and start a new fetch.
+
+        Bumps the internal version, sets `loading` to `True`, clears
+        `error`, and dispatches the fetcher on the asyncio loop. Older
+        in-flight tasks are ignored when they resolve.
+        """
         self.cancel()
         self._version += 1
         self.loading.set(True)
@@ -803,6 +1034,12 @@ class Resource(Generic[R]):
             self._asyncio.get_event_loop().create_task(runner())
 
     def cancel(self) -> None:
+        """Abort the current in-flight fetch, if any.
+
+        Calls `AbortController.abort()` on the wrapped browser controller,
+        cancels the asyncio task, and resets `loading` to `False` without
+        touching `data` or `error`.
+        """
         self._version += 1
         try:
             if self._abort_controller is not None:
@@ -826,17 +1063,39 @@ def create_resource(
     source_or_fetcher: Union[Callable[[], Any], Callable[..., Awaitable[R]]],
     fetcher: Optional[Callable[..., Awaitable[R]]] = None,
 ) -> Resource[R]:
-    """Create an async Resource with loading/error states and cancellation.
+    """Create an async [`Resource`][wybthon.Resource] with cancellation support.
 
     Can be called two ways:
 
-    - ``create_resource(fetcher)`` -- simple fetcher, no source signal.
-    - ``create_resource(source, fetcher)`` -- refetches automatically when
-      the *source* getter's return value changes.
+    - `create_resource(fetcher)` — simple fetcher, no source signal.
+    - `create_resource(source, fetcher)` — refetches automatically when the
+      `source` getter's tracked value changes.
 
-    The *fetcher* should be an async function returning the data value.
-    If it accepts a ``signal`` keyword argument, an AbortSignal will be
-    passed for cancellation support when available.
+    The fetcher should be an async function returning the data value. If it
+    accepts a `signal` keyword argument, an `AbortSignal` is passed for
+    cancellation support when running in a browser.
+
+    Args:
+        source_or_fetcher: When called with one argument, this is the
+            fetcher. When called with two, this is the source getter
+            (typically a signal accessor).
+        fetcher: Optional fetcher. Required when `source_or_fetcher` is a
+            source getter.
+
+    Returns:
+        A `Resource[R]` whose `data`, `error`, and `loading` signals can
+        be read inside reactive scopes.
+
+    Example:
+        ```python
+        user_id, set_user_id = create_signal(1)
+
+        async def load_user(signal=None):
+            resp = await fetch(f"/api/users/{user_id()}")
+            return await resp.json()
+
+        user = create_resource(user_id, load_user)
+        ```
     """
     if fetcher is None:
         return Resource(source_or_fetcher)
@@ -854,9 +1113,11 @@ use_resource = create_resource
 class _ComponentContext(Owner):
     """Per-component-instance ownership scope.
 
-    Tracks lifecycle callbacks and reactive prop signals for stateful
-    components.  Extends ``Owner`` so that effects created during
-    setup are automatically disposed when the component unmounts.
+    Created by the reconciler when a `@component` is mounted. Tracks
+    lifecycle callbacks (`on_mount`), reactive prop signals, and any
+    `Provider` values published by this component. Extends `Owner` so
+    effects created during setup are automatically disposed when the
+    component unmounts.
     """
 
     __slots__ = (
@@ -895,12 +1156,12 @@ class _ComponentContext(Owner):
 
 
 def _get_owner() -> Optional[Owner]:
-    """Return the current reactive owner, if any."""
+    """Return the current reactive owner, if any (internal alias)."""
     return _current_owner
 
 
 def _get_component_ctx() -> Optional[_ComponentContext]:
-    """Walk up the ownership chain to find the nearest component context."""
+    """Walk up the ownership chain to find the nearest `_ComponentContext`."""
     owner = _current_owner
     while owner is not None:
         if isinstance(owner, _ComponentContext):
@@ -912,22 +1173,38 @@ def _get_component_ctx() -> Optional[_ComponentContext]:
 def get_owner() -> Optional[Owner]:
     """Return the current reactive owner scope, if any.
 
-    Capture the owner before crossing async boundaries (e.g. ``await``)
-    and restore it with ``run_with_owner`` to maintain proper lifecycle
-    management.
+    Capture the owner before crossing async boundaries (e.g. `await`) and
+    restore it with [`run_with_owner`][wybthon.run_with_owner] to maintain
+    proper lifecycle management.
+
+    Returns:
+        The active `Owner`, or `None` when called outside any reactive
+        scope.
     """
     return _current_owner
 
 
 def run_with_owner(owner: Optional[Owner], fn: Callable[[], T]) -> T:
-    """Run *fn* under the given ownership scope.
+    """Run `fn` under the given ownership scope.
 
-    Useful for restoring context after an ``await`` boundary where
-    the reactive owner would otherwise be lost::
+    Useful for restoring context after an `await` boundary where the
+    reactive owner would otherwise be lost.
 
-        owner = get_owner()
-        data = await fetch(...)
-        run_with_owner(owner, lambda: create_effect(lambda: ...))
+    Args:
+        owner: The owner to install for the duration of `fn`. Pass `None`
+            to disable ownership tracking entirely.
+        fn: Zero-arg callable to execute.
+
+    Returns:
+        Whatever `fn` returns.
+
+    Example:
+        ```python
+        async def load():
+            owner = get_owner()
+            data = await fetch_something()
+            run_with_owner(owner, lambda: create_effect(lambda: use(data)))
+        ```
     """
     global _current_owner
     prev = _current_owner
@@ -944,34 +1221,41 @@ def run_with_owner(owner: Optional[Owner], fn: Callable[[], T]) -> T:
 
 
 def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
-    """Create a reactive signal.  Returns ``(getter, setter)``.
+    """Create a reactive signal and return `(getter, setter)`.
 
-    Works inside or outside components.  Inside a stateful component the
+    Works inside or outside components. Inside a stateful component the
     signal is captured by the render function's closure and persists
-    naturally (no cursor system needed).
+    naturally — there is no cursor system or "rules of hooks".
 
-    The *equals* parameter controls when subscribers are notified:
+    Args:
+        value: Initial value stored in the signal.
+        equals: Equality policy controlling when subscribers are notified.
+            Accepts:
 
-    - default (or ``True``) — **value equality** (``new == old``) with
-      an identity fast-path.  Skips notification when the new value is
-      ``is``-identical *or* ``==``-equal to the old.  This matches
-      Python's natural intuition: re-setting an unchanged value is a
-      no-op, but a fresh container with equal contents *also* skips
-      (so ``data.append(x); set_data(data)`` does **not** notify —
-      copy the container or use ``equals=False`` if you need that).
-    - ``False`` — always notify on every ``set()`` call, even when the
-      new value is identical or equal to the old.  Useful for "fire
-      a change event" signals.
-    - A callable ``(old, new) -> bool`` — skip notification when it
-      returns ``True``.  Pass ``equals=lambda a, b: a is b`` for
-      SolidJS-style identity-only semantics.
+            - The default sentinel (or `True`): **value equality** (`new == old`)
+              with an identity fast-path. Skips notification when the new
+              value is `is`-identical *or* `==`-equal to the old. This
+              matches Python's natural intuition; re-setting an unchanged
+              value is a no-op, and a fresh container with equal contents
+              also skips notification.
+            - `False`: always notify on every `set()` call, even when the
+              new value is identical or equal to the old. Useful for
+              "fire a change event" signals.
+            - A callable `(old, new) -> bool`: skip notification when it
+              returns `True`. Pass `equals=lambda a, b: a is b` for
+              SolidJS-style identity-only semantics.
 
-    Example::
+    Returns:
+        A `(getter, setter)` tuple. The getter is a zero-arg callable
+        suitable for embedding as a reactive hole.
 
+    Example:
+        ```python
         count, set_count = create_signal(0)
         print(count())          # 0
         set_count(5)
         print(count())          # 5
+        ```
     """
     sig: Signal[Any] = Signal(value, equals=equals)
     return sig.get, sig.set
@@ -980,17 +1264,30 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 def create_effect(fn: Callable[..., Any]) -> Computation:
     """Create an auto-tracking reactive effect.
 
-    The effect runs immediately and re-runs whenever any signal read
-    inside *fn* changes.  ``on_cleanup`` may be called inside *fn* to
-    register per-run cleanup (runs before re-execution and on disposal).
+    The effect runs immediately and re-runs whenever any signal read inside
+    `fn` changes. [`on_cleanup`][wybthon.on_cleanup] may be called inside
+    `fn` to register per-run cleanup that runs before re-execution and on
+    disposal.
 
-    If *fn* accepts a positional parameter, the **previous return value**
-    is passed on each re-execution (``None`` on the first run), matching
-    SolidJS ``createEffect(prev => ...)``::
-
-        create_effect(lambda prev: (print("was", prev), count())[1])
+    If `fn` accepts a positional parameter, the **previous return value**
+    is passed on each re-execution (`None` on the first run), matching
+    SolidJS's `createEffect(prev => ...)`.
 
     Inside a component, the effect is automatically disposed on unmount.
+
+    Args:
+        fn: Zero- or one-arg callable. When it accepts an argument, the
+            previous return value is forwarded.
+
+    Returns:
+        The underlying `Computation`. Call `.dispose()` to stop the effect
+        manually.
+
+    Example:
+        ```python
+        count, set_count = create_signal(0)
+        create_effect(lambda prev: (print("was", prev), count())[1])
+        ```
     """
     import inspect as _inspect
 
@@ -1022,15 +1319,23 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
 
 
 def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
-    """Create an auto-tracking computed value.  Returns a *getter* function.
+    """Create an auto-tracking computed value and return its getter.
 
-    Re-computes only when signals read inside *fn* change.  Inside a
+    Re-computes only when signals read inside `fn` change. Inside a
     component, the underlying computation is disposed on unmount.
 
-    Example::
+    Args:
+        fn: Zero-arg callable producing the derived value.
 
+    Returns:
+        A zero-arg callable. Reading it inside a tracking scope creates
+        a dependency on the memoised value.
+
+    Example:
+        ```python
         doubled = create_memo(lambda: count() * 2)
         print(doubled())  # reactive read
+        ```
     """
     c = _Computed(fn)
     return c.get
@@ -1040,7 +1345,13 @@ def on_mount(fn: Callable[[], Any]) -> None:
     """Register a callback to run once after the component mounts.
 
     Must be called during a component's setup phase (the body of a
-    ``@component`` function, before the ``return``).
+    `@component` function, before the `return`).
+
+    Args:
+        fn: Zero-arg callback invoked once after the first render commits.
+
+    Raises:
+        RuntimeError: If called outside a component setup phase.
     """
     ctx = _get_component_ctx()
     if ctx is None:
@@ -1049,10 +1360,21 @@ def on_mount(fn: Callable[[], Any]) -> None:
 
 
 def on_cleanup(fn: Callable[[], Any]) -> None:
-    """Register a cleanup callback.
+    """Register a cleanup callback on the active reactive owner.
 
-    - Inside ``create_effect``: runs before each re-execution and on disposal.
+    Lifecycle differs by call site:
+
+    - Inside [`create_effect`][wybthon.create_effect]: runs before each
+      re-execution and on final disposal.
     - Inside a component's setup phase: runs when the component unmounts.
+    - Inside a reactive hole: runs before each hole re-evaluation and
+      when the hole is disposed.
+
+    Args:
+        fn: Zero-arg cleanup callback.
+
+    Raises:
+        RuntimeError: If called outside any reactive scope.
     """
     if _current_owner is not None:
         _current_owner._cleanups.append(fn)
@@ -1061,11 +1383,27 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
 
 
 def children(fn: Callable[[], Any]) -> Callable[[], List[Any]]:
-    """Resolve and memoize reactive children.
+    """Resolve and memoize reactive children, returning a memo getter.
 
-    Wraps a getter that returns children (e.g. ``lambda: props.children``)
-    and returns a memo that flattens and resolves the children list.
-    Matches SolidJS ``children()`` helper.
+    Wraps a getter that returns children (e.g. `lambda: props.children()`)
+    and returns a memo that flattens nested lists and unwraps callables.
+    Matches SolidJS's `children()` helper.
+
+    Args:
+        fn: Zero-arg getter that returns the raw children value
+            (typically `lambda: get_props().children()`).
+
+    Returns:
+        A zero-arg memo getter producing a flat list of resolved children.
+
+    Example:
+        ```python
+        @component
+        def Card(title=""):
+            props = get_props()
+            resolved = children(lambda: props.children())
+            return section(h3(props.title), *resolved())
+        ```
     """
 
     def _resolve(val: Any) -> List[Any]:
@@ -1082,24 +1420,34 @@ def children(fn: Callable[[], Any]) -> Callable[[], List[Any]]:
 
 
 def get_props() -> "ReactiveProps":
-    """Return the reactive props proxy for the current component.
+    """Return the [`ReactiveProps`][wybthon.ReactiveProps] proxy for the current component.
 
-    The returned ``ReactiveProps`` object provides reactive access
-    to individual props.  Each attribute / index lookup yields a
-    callable getter; call the getter to read the current value
-    (tracked).  Use ``get_props()`` for advanced cases — most
-    components should rely on the destructured parameters provided
-    by ``@component``::
+    The returned object provides reactive access to individual props. Each
+    attribute / index lookup yields a callable getter; call the getter to
+    read the current value (tracked when called inside an effect or hole).
 
+    Most components should rely on the destructured parameters provided
+    by `@component`. Use `get_props()` for advanced cases — generic
+    wrappers, key iteration, or proxy-mode interop.
+
+    Returns:
+        The cached `ReactiveProps` proxy for this component instance.
+
+    Raises:
+        RuntimeError: If called outside a component setup phase.
+
+    Example:
+        ```python
         @component
         def Greet(name="world"):
-            # ``name`` is a reactive accessor.
+            # ``name`` is already a reactive accessor.
             return p("Hello, ", name, "!")
 
         @component
         def Advanced():
             props = get_props()
             create_effect(lambda: print("name:", props.name()))
+        ```
     """
     ctx = _get_component_ctx()
     if ctx is None:
@@ -1123,16 +1471,24 @@ def on(
 ) -> Computation:
     """Create an effect with explicit dependencies.
 
-    *deps* is a single getter or a list of getters.  *fn* receives the
-    current value(s) as positional arguments.  Only the listed deps are
-    tracked; the body of *fn* is run inside ``untrack``.
+    `deps` may be a single getter or a list of getters. `fn` receives the
+    current value(s) as positional arguments. Only the listed deps are
+    tracked; the body of `fn` runs inside `untrack`.
 
-    When *defer* is ``True`` the effect skips the first execution
-    (useful for reacting only to changes, not the initial value).
+    Args:
+        deps: One getter or a list of getters to subscribe to.
+        fn: Callback receiving the current dep value(s) on each change.
+        defer: When `True`, skip the first invocation (so `fn` runs only
+            on subsequent changes, not the initial read).
 
-    Example::
+    Returns:
+        The underlying `Computation`.
 
+    Example:
+        ```python
         on(count, lambda v: print("count is now", v))
+        on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
+        ```
     """
     dep_list: List[Callable[[], Any]] = deps if isinstance(deps, list) else [deps]
     ran = [False]
@@ -1162,12 +1518,22 @@ def on(
 
 
 def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
-    """Run *fn* with an independent reactive root.
+    """Run `fn` inside an independent reactive root.
 
-    *fn* receives a ``dispose`` callback that tears down all effects
-    created inside the root::
+    Useful for spawning long-lived reactive work that should not be tied
+    to the surrounding component's lifecycle (e.g., global stores).
 
-        result = create_root(lambda dispose: ...)
+    Args:
+        fn: Callable receiving a `dispose` callback. Calling `dispose()`
+            tears down the root and any effects created inside it.
+
+    Returns:
+        Whatever `fn` returns.
+
+    Example:
+        ```python
+        result = create_root(lambda dispose: setup_global_state(dispose))
+        ```
     """
     root = Owner()
     global _current_owner
@@ -1184,7 +1550,7 @@ def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
 
 
 def _resolve_source(src: Any) -> Any:
-    """Call *src* if it is a callable getter; otherwise return as-is."""
+    """Call `src` if it is a callable getter; otherwise return as-is."""
     if src is None:
         return None
     if callable(src) and not isinstance(src, dict):
@@ -1193,12 +1559,11 @@ def _resolve_source(src: Any) -> Any:
 
 
 class _MergedProps:
-    """Reactive merged-props proxy.
+    """Reactive merged-props proxy returned by [`merge_props`][wybthon.merge_props].
 
-    Reading a key lazily checks sources right-to-left.  When a source
-    is a callable (e.g. a signal getter returning a dict), it is called
-    on each access, so reads inside reactive computations are tracked
-    automatically.
+    Reading a key lazily checks sources right-to-left. When a source is a
+    callable (e.g. a signal getter returning a dict), it is called on each
+    access, so reads inside reactive computations are tracked automatically.
     """
 
     __slots__ = ("_sources",)
@@ -1289,10 +1654,11 @@ class _MergedProps:
 
 
 class _SplitProps:
-    """Reactive split-props proxy that filters keys from a source.
+    """Reactive split-props proxy returned by [`split_props`][wybthon.split_props].
 
-    Reads are forwarded to the underlying source, so callable sources
-    maintain reactive tracking.
+    Filters a source's keys by inclusion or exclusion. Reads forward to the
+    underlying source, so callable sources continue to participate in
+    reactive tracking.
     """
 
     __slots__ = ("_source", "_keys", "_exclude")
@@ -1393,20 +1759,28 @@ class _SplitProps:
 def merge_props(*sources: Any) -> "_MergedProps":
     """Merge multiple prop sources into a reactive proxy.
 
-    Each source may be a plain ``dict``, a zero-arg getter that returns
-    a dict, or another ``_MergedProps`` / ``_SplitProps``.  Later sources
+    Each source may be a plain `dict`, a zero-arg getter that returns a
+    dict, or another `_MergedProps` / `_SplitProps`. Later sources
     override earlier ones on key conflicts.
 
-    The returned object supports dict-like access (``[]``, ``.get``,
-    ``in``, iteration).  When a source is a callable, it is called on
-    each property access, so signal reads inside the getter are tracked
-    by the current reactive computation.
+    The returned object supports dict-like access (`[]`, `.get`, `in`,
+    iteration). When a source is a callable, it is called on each property
+    access, so signal reads inside the getter are tracked by the current
+    reactive computation.
 
-    Example::
+    Args:
+        *sources: One or more prop sources, in priority order
+            (rightmost wins).
 
+    Returns:
+        A reactive merged-props proxy.
+
+    Example:
+        ```python
         defaults = {"size": "md", "variant": "solid"}
         final = merge_props(defaults, props)
-        # final["size"] lazily reads from props, then defaults
+        # final["size"] lazily reads from props, then falls back to defaults
+        ```
     """
     return _MergedProps(list(sources))
 
@@ -1417,15 +1791,23 @@ def split_props(
 ) -> Tuple[Any, ...]:
     """Split a props source into groups by key name, plus a rest group.
 
-    Returns ``(group1, group2, ..., rest)`` where each group is a
-    reactive proxy that lazily reads from the original *props*.
+    Args:
+        props: A `dict`, callable getter, or `_MergedProps` / `_SplitProps`
+            to split.
+        *key_groups: One or more lists of keys defining each group.
 
-    *props* may be a plain ``dict``, a callable getter, or a
-    ``_MergedProps`` / ``_SplitProps``.
+    Returns:
+        A tuple `(group1, group2, ..., rest)` where each group is a
+        reactive proxy that lazily reads from the original `props`. The
+        final `rest` group contains every key not claimed by an earlier
+        group.
 
-    Example::
-
+    Example:
+        ```python
         local, rest = split_props(props, ["class", "style"])
+        # local["class"] lazily reads from props
+        # rest contains every other key
+        ```
     """
     results: List[Any] = []
     claimed: set = set()
@@ -1448,22 +1830,29 @@ def map_array(
     source: Callable[[], Optional[List[Any]]],
     map_fn: Callable[[Callable[[], Any], Callable[[], int]], T],
 ) -> Callable[[], List[T]]:
-    """Keyed reactive list mapping with stable per-item scopes.
+    """Map a reactive list with stable per-item scopes (keyed by identity).
 
-    *source* is a zero-arg getter returning a list (typically a signal
-    accessor).  *map_fn* receives ``(item_getter, index_getter)`` and is
-    called **once** per unique item (matched by reference identity).
-    When an item leaves the list its reactive scope is disposed.
+    Items are matched by **reference identity**. The mapping callback
+    runs **once** per unique item; when an item leaves the source list,
+    its reactive scope is disposed automatically.
 
-    Returns a getter that produces the mapped list.  Reading it inside
-    a reactive computation creates a dependency — the getter updates
-    whenever the source list changes.
+    Args:
+        source: Zero-arg getter that returns the current list (typically
+            a signal accessor).
+        map_fn: Called as `map_fn(item_getter, index_getter)` for each
+            unique item. `item_getter()` returns the item; `index_getter()`
+            returns its current position.
 
-    Example::
+    Returns:
+        A zero-arg getter producing the mapped list. Reading it inside a
+        reactive scope subscribes to source changes.
 
+    Example:
+        ```python
         items, set_items = create_signal(["A", "B", "C"])
-        mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
-        create_effect(lambda: print(mapped()))  # ["0: A", "1: B", "2: C"]
+        labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+        # labels() == ["0: A", "1: B", "2: C"]
+        ```
     """
     global _map_key_counter
     _parent = _current_owner
@@ -1538,21 +1927,26 @@ def index_array(
     source: Callable[[], Optional[List[Any]]],
     map_fn: Callable[[Callable[[], Any], int], T],
 ) -> Callable[[], List[T]]:
-    """Index-keyed reactive list mapping with stable per-index scopes.
+    """Map a reactive list with stable per-index scopes.
 
-    Unlike :func:`map_array`, scopes are keyed by *index position*.
-    Each slot has a reactive ``item_getter`` signal that updates when
-    the value at that index changes.  *map_fn* receives
-    ``(item_getter, index: int)`` — the index is a plain ``int``, not
-    a getter.
+    Unlike [`map_array`][wybthon.map_array], scopes are keyed by **index
+    position**. Each slot has a reactive `item_getter` signal that
+    updates when the value at that index changes.
 
-    Returns a getter producing the mapped list.
+    Args:
+        source: Zero-arg getter that returns the current list.
+        map_fn: Called as `map_fn(item_getter, index)`. `item_getter()`
+            returns the item; `index` is a plain `int` (not a getter).
 
-    Example::
+    Returns:
+        A zero-arg getter producing the mapped list.
 
+    Example:
+        ```python
         items, set_items = create_signal(["A", "B", "C"])
-        mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
-        create_effect(lambda: print(mapped()))
+        labels = index_array(items, lambda item, idx: f"[{idx}] {item()}")
+        # labels() == ["[0] A", "[1] B", "[2] C"]
+        ```
     """
     _parent = _current_owner
     _slots: List[Dict[str, Any]] = []
@@ -1606,20 +2000,27 @@ def index_array(
 def create_selector(
     source: Callable[[], Any],
 ) -> Callable[[Any], bool]:
-    """Create an efficient selection signal.
+    """Create an `O(1)` selection signal.
 
-    Returns ``is_selected(key) -> bool``.  When the source value
-    changes, only computations that called ``is_selected`` with the
-    **previous** or **new** key are notified — giving O(1) updates
-    instead of O(n).
+    When `source()` changes, only computations that previously called the
+    returned `is_selected(key)` with the **old** or **new** key are
+    notified — instead of every subscriber re-running.
 
-    Example::
+    Args:
+        source: Zero-arg getter returning the currently-selected key.
 
+    Returns:
+        A function `is_selected(key) -> bool` that is reactive to
+        selection changes.
+
+    Example:
+        ```python
         selected, set_selected = create_signal(1)
         is_selected = create_selector(selected)
 
         # Inside a For loop per item:
         create_effect(lambda: print("active:", is_selected(item_id)))
+        ```
     """
     _subs: Dict[Any, List["Computation"]] = {}
     _prev_key: List[Any] = [None]

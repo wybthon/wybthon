@@ -1,4 +1,14 @@
-"""ErrorBoundary function component for catching render errors in subtrees."""
+"""`ErrorBoundary` component for catching render errors in subtrees.
+
+[`ErrorBoundary`][wybthon.ErrorBoundary] is a function component that
+installs an error handler on its owner scope. When a child render or
+effect raises, the boundary swaps in a fallback while leaving sibling
+trees untouched. It is the recommended way to surface unexpected
+errors without crashing the whole app.
+
+See Also:
+    - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
+"""
 
 from __future__ import annotations
 
@@ -11,7 +21,7 @@ __all__ = ["ErrorBoundary"]
 
 
 def _compute_reset_token(props: Any) -> str:
-    """Derive a stable token from reset_keys/reset_key for auto-clear."""
+    """Derive a stable token from `reset_keys` / `reset_key` for auto-clear."""
     try:
         if "reset_keys" in props:
             rk: Any = read_prop(props, "reset_keys")
@@ -29,7 +39,18 @@ def _compute_reset_token(props: Any) -> str:
 
 
 def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
-    """Build the fallback VNode from the ``fallback`` prop."""
+    """Build the fallback `VNode` from the boundary's `fallback` prop.
+
+    Args:
+        err: The caught exception.
+        props: The boundary's prop bag.
+        reset_fn: Callable that clears the error state.
+
+    Returns:
+        A `VNode` representing the fallback UI. Falls back to a text
+        node when the prop is missing or when the user-supplied
+        callable raises.
+    """
     fb = read_prop(props, "fallback")
     if callable(fb) and not isinstance(fb, VNode):
         try:
@@ -49,11 +70,23 @@ def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
 def ErrorBoundary(props: Any) -> Any:
     """Catch render errors in children and display a fallback.
 
-    Props:
-      - fallback: VNode | str | callable(error, reset) -> VNode
-      - on_error: optional callback invoked with the caught exception
-      - reset_key / reset_keys: when this value changes the error is auto-cleared
-      - children: child VNodes to render when there is no error
+    Args:
+        props: The component's props with the following keys:
+
+            - `fallback`: A `VNode`, a string, or a callable
+              `(error, reset) -> VNode`. The callable form may also
+              accept just `(error,)`.
+            - `on_error`: Optional callback invoked with the caught
+              exception (errors raised inside the callback are
+              swallowed).
+            - `reset_key` / `reset_keys`: When this value (or
+              callable result) changes, the boundary auto-clears the
+              current error.
+            - `children`: Children rendered when no error is active.
+
+    Returns:
+        A reactive [`VNode`][wybthon.VNode] subtree that swaps to the
+        fallback whenever a child raises.
     """
     error, set_error = create_signal(None)
     last_token: List[str] = [""]

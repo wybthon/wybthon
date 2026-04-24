@@ -1,4 +1,11 @@
-"""Portal component for rendering children into a different DOM container."""
+"""Portal component for rendering children into a different DOM container.
+
+Use [`create_portal`][wybthon.create_portal] to render content
+outside of the current component's DOM ancestor while keeping it part
+of the same reactive ownership tree (so signals, effects, and context
+still work). Common use cases include modals, tooltips, and toast
+notifications.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +18,7 @@ __all__ = ["create_portal"]
 
 
 def _PortalComponent(props: Any) -> Any:
-    """Internal stateful component that mounts children into a separate container."""
+    """Internal stateful component that mounts children into another container."""
     portal_tree: List[Optional[VNode]] = [None]
 
     def _do_render() -> None:
@@ -49,9 +56,6 @@ def _PortalComponent(props: Any) -> Any:
     on_cleanup(_cleanup)
 
     def render() -> VNode:
-        # Reading children inside the reactive hole tracks the children
-        # signal so the portal re-renders into its container when the
-        # parent updates them.
         _ = read_prop(props, "children")
         if portal_tree[0] is not None:
             _do_render()
@@ -66,12 +70,17 @@ _PortalComponent._wyb_component = True  # type: ignore[attr-defined]
 def create_portal(children: Union[VNode, List[VNode]], container: Any) -> VNode:
     """Render children into a different DOM container.
 
-    Returns a VNode that, when mounted, renders *children* into *container*
-    instead of the parent component's DOM node.  Useful for modals,
-    tooltips, and overlays that need to break out of their parent's DOM
-    hierarchy.
+    Args:
+        children: A single [`VNode`][wybthon.VNode] or a list of
+            them.
+        container: An [`Element`][wybthon.Element] instance or a CSS
+            selector string identifying the target DOM container.
 
-    *container* may be an ``Element`` or a CSS selector string.
+    Returns:
+        A `VNode` that, when mounted, mounts `children` into
+        `container` while remaining linked to the surrounding
+        component's reactive scope (signals, context, and lifecycle
+        hooks still apply).
     """
     if not isinstance(children, list):
         children = [children]

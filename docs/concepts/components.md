@@ -2,11 +2,12 @@
 
 Wybthon uses function components exclusively, following the SolidJS model.
 
-> **Mental model:** A component body **runs once** during mount.  Every
-> prop is a **reactive accessor** (a zero-arg callable).  Embed an
-> accessor in the returned VNode tree to create a *reactive hole* —
-> only that node updates when the prop changes.  See
-> [Primitives](primitives.md#reactive-holes) for the full story.
+!!! tip "Mental model"
+    A component body **runs once** during mount. Every prop is a
+    **reactive accessor** (a zero-arg callable). Embed an accessor in
+    the returned VNode tree to create a *reactive hole* — only that
+    node updates when the prop changes. See
+    [Primitives](primitives.md#reactive-holes) for the full story.
 
 #### Function components with `@component`
 
@@ -154,7 +155,7 @@ def Hello(props):           # ← proxy mode: ``props.name`` is the getter
 
 If you're in named-accessor mode and still need the proxy (for
 example, to iterate keys or forward unknown props), call
-[`get_props`](primitives.md#get_props) from inside the body.
+[`get_props`][wybthon.get_props] from inside the body.
 
 #### Component ownership and lifecycle
 
@@ -261,10 +262,11 @@ Pass a custom comparison function for deeper control:
 MemoList = memo(ExpensiveList, are_props_equal=lambda old, new: old["items"] == new["items"])
 ```
 
-> Because props are reactive and the body runs once, `memo` is only
-> useful when you want to **skip re-mounting** the component on a prop
-> change (for example, an expensive setup phase).  Most ordinary
-> components do not need it.
+!!! note "When `memo` actually helps"
+    Because props are reactive and the body runs once, `memo` is only
+    useful when you want to **skip re-mounting** the component on a
+    prop change (for example, an expensive setup phase). Most ordinary
+    components do not need it.
 
 #### `forward_ref`
 
@@ -354,3 +356,9 @@ See the guide for recommended patterns around props, state, children, cleanup, a
 
 - Guide: [Authoring Patterns](../guides/authoring-patterns.md)
 - Example: [Authoring Patterns Example](../examples/authoring-patterns.md)
+
+## Next steps
+
+- Read [Mental model](mental-model.md) and [Lifecycle and Ownership](lifecycle.md).
+- Browse the [`component`][wybthon.component] API reference.
+- Explore [Flow control][wybthon.Show] for `Show`, `For`, `Switch`, and friends.

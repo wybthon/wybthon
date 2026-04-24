@@ -84,3 +84,9 @@ def Page():
 ```
 
 See the guide for deeper discussion: [Authoring Patterns](../guides/authoring-patterns.md)
+
+## Next steps
+
+- Read [Components](../concepts/components.md) and [Lifecycle and Ownership](../concepts/lifecycle.md).
+- Browse the [Counter example](counter.md) for a smaller starting point.
+- See [Reactivity](../concepts/reactivity.md) for `create_memo` and `dynamic` semantics.

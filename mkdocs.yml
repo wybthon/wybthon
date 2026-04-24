@@ -1,28 +1,79 @@
 site_name: Wybthon
 site_description: Client-side Python SPA framework via Pyodide
+site_author: Owen Carey
 site_url: https://docs.wybthon.com/
 repo_url: https://github.com/wybthon/wybthon
+repo_name: wybthon/wybthon
+edit_uri: edit/main/docs/
+
 theme:
   name: material
+  logo: assets/banner.jpg
+  favicon: assets/banner.jpg
   features:
-    - navigation.sections
-    - navigation.instant
-    - navigation.tracking
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
     - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - navigation.expand
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - search.share
+    - toc.follow
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: custom
       accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
 extra:
   generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/wybthon/wybthon
+      name: Wybthon on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/wybthon/
+      name: Wybthon on PyPI
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Concepts:
+    - Mental Model: concepts/mental-model.md
     - Components: concepts/components.md
     - Primitives: concepts/primitives.md
-    - Virtual DOM: concepts/vdom.md
     - Reactivity: concepts/reactivity.md
+    - Lifecycle and Ownership: concepts/lifecycle.md
+    - Virtual DOM: concepts/vdom.md
     - Router: concepts/router.md
     - Context: concepts/context.md
     - Stores: concepts/stores.md
@@ -30,6 +81,7 @@ nav:
     - Forms: concepts/forms.md
     - DOM Interop: concepts/dom.md
     - Error Boundaries: concepts/error-boundaries.md
+    - Suspense and Lazy Loading: concepts/suspense-lazy.md
   - Guides:
     - Dev Server: guides/dev-server.md
     - Demo App: guides/demo-app.md
@@ -39,6 +91,8 @@ nav:
     - Testing: guides/testing.md
     - Performance: guides/performance.md
     - Typing: guides/typing.md
+    - Migrating from React: guides/migrating-from-react.md
+    - Migrating from Solid: guides/migrating-from-solid.md
   - Examples:
     - Overview: examples.md
     - Counter: examples/counter.md
@@ -49,38 +103,113 @@ nav:
     - Authoring Patterns: examples/authoring-patterns.md
   - API Reference:
     - Package: api/wybthon.md
-    - component: api/component.md
-    - dom: api/dom.md
-    - events: api/events.md
-    - context: api/context.md
-    - reactivity: api/reactivity.md
-    - router: api/router.md
-    - vdom: api/vdom.md
-    - primitives: api/primitives.md
-    - store: api/store.md
-    - forms: api/forms.md
-    - html: api/html.md
+    - Reactivity: api/reactivity.md
+    - Component: api/component.md
+    - VDOM: api/vdom.md
+    - VNode: api/vnode.md
+    - Reconciler: api/reconciler.md
+    - Props: api/props.md
+    - DOM: api/dom.md
+    - HTML helpers: api/html.md
+    - Events: api/events.md
+    - Forms: api/forms.md
+    - Context: api/context.md
+    - Stores: api/store.md
+    - Router: api/router.md
+    - Router core: api/router_core.md
+    - Flow control: api/flow.md
+    - Lazy loading: api/lazy.md
+    - Error Boundary: api/error_boundary.md
+    - Suspense: api/suspense.md
+    - Portal: api/portal.md
+    - Dev server (CLI): api/dev.md
   - Meta:
+    - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md
     - FAQ: meta/faq.md
     - Troubleshooting: meta/troubleshooting.md
     - Changelog: meta/changelog.md
+
 plugins:
-  - search
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - autorefs
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
+          inventories:
+            - https://docs.python.org/3/objects.inv
           options:
-            show_source: false
             docstring_style: google
+            docstring_section_style: table
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_bases: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+            filters: ["!^_"]
   - social:
       cards_layout_options:
         background_color: "#03abe9"
         color: "#ffffff"
+
 extra_css:
   - styles/brand.css
+
 markdown_extensions:
+  - abbr
   - admonition
+  - attr_list
   - codehilite
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
   - toc:
       permalink: true
+      toc_depth: 4
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: wybthon
+      repo: wybthon
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+watch:
+  - src/wybthon

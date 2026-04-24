@@ -61,3 +61,9 @@ view = h(ErrorBoundary, {"fallback": lambda e, r: "Oops", "on_error": on_error},
 #### Limitations
 
 - Only errors thrown during render of the child subtree are caught. Errors in event handlers or async tasks should be handled separately.
+
+## Next steps
+
+- See the [`error_boundary`][wybthon.error_boundary] API reference.
+- Read [Suspense and Lazy Loading](suspense-lazy.md) for async error handling.
+- Walk through the [Error boundary example](../examples/errors.md).

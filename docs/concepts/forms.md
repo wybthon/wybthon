@@ -63,9 +63,16 @@ def View(props):
 ```
 
 Notes:
+
 - Use `validate_form` to aggregate errors and mark fields as touched. It returns `(is_valid, errors_map)`.
 - Use `on_submit_validated(rules, handler, form)` to guard submission until the form is valid.
 - For accessibility:
-  - Set `for` on `label` to match the input `id`.
-  - Add `aria-invalid` and `aria-describedby` via `a11y_control_attrs`.
-  - Render error containers with `role="alert"`/`aria-live="polite"` using `error_message_attrs`.
+    - Set `for` on `label` to match the input `id`.
+    - Add `aria-invalid` and `aria-describedby` via `a11y_control_attrs`.
+    - Render error containers with `role="alert"`/`aria-live="polite"` using `error_message_attrs`.
+
+## Next steps
+
+- See the [Forms example](../examples/forms.md) for an end-to-end form.
+- Browse the [`forms`][wybthon.forms] API reference for every helper.
+- Read [Events](events.md) for delegated handler details.

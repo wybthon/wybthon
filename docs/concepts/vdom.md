@@ -68,3 +68,9 @@ In development mode (`DEV_MODE = True`, the default), rendering errors include
 the component name and a full traceback printed to stderr. This makes it easy
 to locate problems in component trees. Set `set_dev_mode(False)` for production
 to suppress verbose tracebacks.
+
+## Next steps
+
+- See [Primitives](primitives.md) for the reactive hole mental model.
+- Read [Lifecycle and Ownership](lifecycle.md) for mount/unmount semantics.
+- Browse the [`vdom`][wybthon.vdom] and [`reconciler`][wybthon.reconciler] APIs.

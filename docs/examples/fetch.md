@@ -39,3 +39,9 @@ async def load_user(signal=None):
 # Changing user_id triggers a refetch
 res = create_resource(user_id, load_user)
 ```
+
+## Next steps
+
+- Read [Suspense and Lazy Loading](../concepts/suspense-lazy.md).
+- See [`create_resource`][wybthon.create_resource] for the resource lifecycle.
+- Browse the [Error boundary example](errors.md) for failure-state UI.

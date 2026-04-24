@@ -86,3 +86,9 @@ consumer and the nearest provider, which is typically small.  When the
 `Provider` value is a getter, an internal effect mirrors it into the
 context signal so consumers update reactively without the `Provider`
 itself re-rendering.
+
+## Next steps
+
+- See the [`context`][wybthon.context] API for `Context`, `Provider`, and `use_context`.
+- Read [Lifecycle and Ownership](lifecycle.md) for how the ownership tree works.
+- Explore [Stores](stores.md) when you need a richer reactive container.

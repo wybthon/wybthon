@@ -40,4 +40,8 @@ seed, set_seed = create_signal(0)
 Counter(initial=seed)           # ``initial()`` will reflect ``seed()``
 ```
 
-See also: [Primitives](../concepts/primitives.md) · [Authoring Patterns](../guides/authoring-patterns.md)
+## Next steps
+
+- Read [Primitives](../concepts/primitives.md) and [Authoring Patterns](../guides/authoring-patterns.md).
+- See the [Async fetch example](fetch.md) for resource handling.
+- Browse the [`reactivity`][wybthon.reactivity] API for signal helpers.

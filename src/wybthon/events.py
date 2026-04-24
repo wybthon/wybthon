@@ -1,17 +1,37 @@
-"""Event delegation utilities for VDOM event handling in the browser."""
+"""Event delegation utilities for VDOM event handling in the browser.
 
-from typing import Callable, Dict, Optional
+Wybthon installs **one** root listener per event type on `document`
+and dispatches to per-node handlers using a stable `data-wybid`
+attribute. This keeps the number of native listeners small even for
+large trees and lets the renderer add or remove handlers cheaply
+during reconciliation.
 
-# Allow importing this module outside the browser (no js/pyodide) by
-# providing a minimal Element stub if importing from wybthon.dom fails.
+Public surface:
+
+- [`DomEvent`][wybthon.DomEvent]: a thin wrapper passed to handlers
+  exposing `type`, `target`, `current_target`, and helpers like
+  [`prevent_default`][wybthon.DomEvent.prevent_default] and
+  [`stop_propagation`][wybthon.DomEvent.stop_propagation].
+
+The remaining helpers are internal: [`set_handler`][wybthon.events.set_handler],
+[`remove_all_for`][wybthon.events.remove_all_for], and the listener
+ref-counting utilities are exercised by the renderer.
+
+See Also:
+    - [Forms guide](../concepts/forms.md)
+"""
+
+from typing import Any, Callable, Dict, Optional
+
 try:
     from .dom import Element
 except Exception:  # pragma: no cover - exercised in non-browser tests
 
     class Element:  # type: ignore
-        """Minimal Element stub used in non-browser/test environments."""
+        """Minimal `Element` stub used in non-browser/test environments."""
 
         def __init__(self, tag: Optional[str] = None, existing: bool = False, node=None) -> None:
+            """Wrap an opaque DOM-like `node` reference for tests."""
             self.element = node
 
 
@@ -22,12 +42,22 @@ _NODE_ID_ATTR = "data-wybid"
 _next_id = 0
 _handlers: Dict[str, Dict[str, Callable]] = {}
 _listeners: Dict[str, object] = {}
-# Track number of active handlers per event type across all nodes
 _event_counts: Dict[str, int] = {}
 
 
 def _get_or_assign_id(node) -> str:
-    """Return a stable id for a DOM node, assigning one if missing."""
+    """Return a stable id for a DOM node, assigning one if missing.
+
+    The id is stored on the node as a `data-wybid` attribute so that
+    the delegated dispatcher can map a click target back to the
+    Wybthon-side handler table.
+
+    Args:
+        node: Underlying DOM node to identify.
+
+    Returns:
+        The existing or newly-assigned id as a string.
+    """
     wid = None
     try:
         wid = node.getAttribute(_NODE_ID_ATTR)
@@ -46,7 +76,14 @@ def _get_or_assign_id(node) -> str:
 
 
 def _event_prop_to_type(name: str) -> str:
-    """Normalize prop names like on_click/onClick to a plain event type."""
+    """Normalize a prop name like `on_click` or `onClick` to a plain event type.
+
+    Args:
+        name: Prop key as seen on a `VNode` (e.g. `"on_click"`).
+
+    Returns:
+        The lower-cased event type (e.g. `"click"`).
+    """
     if name.startswith("on_"):
         return name[3:]
     if name.startswith("on"):
@@ -55,9 +92,23 @@ def _event_prop_to_type(name: str) -> str:
 
 
 class DomEvent:
-    """Thin wrapper around a JS event with convenience helpers."""
+    """Thin wrapper around a JS event with convenience helpers.
 
-    def __init__(self, js_event) -> None:
+    Attributes:
+        type: Event type string (e.g. `"click"`).
+        target: The original event target as an
+            [`Element`][wybthon.Element], or `None` if unavailable.
+        current_target: The currently-dispatched element while
+            bubbling through delegated handlers; updated by the
+            dispatcher.
+    """
+
+    def __init__(self, js_event: Any) -> None:
+        """Wrap a raw JS event object.
+
+        Args:
+            js_event: The native browser event object.
+        """
         self._js_event = js_event
         self.type = getattr(js_event, "type", None)
         tgt = getattr(js_event, "target", None)
@@ -73,7 +124,12 @@ class DomEvent:
             pass
 
     def stop_propagation(self) -> None:
-        """Stop propagation through the delegated listener chain."""
+        """Stop propagation through both the JS and the delegated chains.
+
+        Sets an internal flag that causes Wybthon's dispatcher to stop
+        walking the DOM ancestors, and also calls the native
+        `stopPropagation` so other JS listeners do not fire.
+        """
         self._stopped = True
         try:
             self._js_event.stopPropagation()
@@ -82,13 +138,14 @@ class DomEvent:
 
 
 def _ensure_root_listener(event_type: str) -> None:
-    """Install a single delegated root listener for the given event type."""
+    """Install a single delegated root listener for `event_type`, idempotently."""
     if event_type in _listeners:
         return
     from js import document
     from pyodide.ffi import create_proxy
 
     def dispatcher(js_event) -> None:
+        """Walk from `target` up the tree and invoke registered handlers."""
         try:
             node = getattr(js_event, "target", None)
             evt = DomEvent(js_event)
@@ -108,7 +165,6 @@ def _ensure_root_listener(event_type: str) -> None:
                                 break
                 node = getattr(node, "parentNode", None)
         except Exception as e:
-            # Surface in console but don't crash
             try:
                 print("Event dispatch error:", e)
             except Exception:
@@ -120,8 +176,11 @@ def _ensure_root_listener(event_type: str) -> None:
 
 
 def _teardown_root_listener(event_type: str) -> None:
-    """Remove the delegated root listener if it is currently installed."""
-    # Best-effort removal; safe in non-browser contexts
+    """Remove the delegated root listener for `event_type` if installed.
+
+    Best-effort: safe to call repeatedly and from non-browser contexts.
+    Errors are swallowed so teardown never raises.
+    """
     try:
         if event_type in _listeners:
             try:
@@ -135,17 +194,16 @@ def _teardown_root_listener(event_type: str) -> None:
                 except Exception:
                     pass
     except Exception:
-        # Never raise from teardown
         pass
 
 
 def _increment_event_count(event_type: str) -> None:
-    """Increment global active-handler count for an event type."""
+    """Increment the global active-handler count for `event_type`."""
     _event_counts[event_type] = _event_counts.get(event_type, 0) + 1
 
 
 def _decrement_event_count(event_type: str) -> None:
-    """Decrement count and teardown root listener when the last handler is removed."""
+    """Decrement the active-handler count and tear down listeners at zero."""
     current = _event_counts.get(event_type, 0)
     if current <= 1:
         if event_type in _event_counts:
@@ -156,7 +214,16 @@ def _decrement_event_count(event_type: str) -> None:
 
 
 def set_handler(el: Element, event_prop_name: str, handler: Optional[Callable]) -> None:
-    """Attach/update/remove a handler for a given event property on an element."""
+    """Attach, update, or remove a handler for an event property on an element.
+
+    Args:
+        el: Wrapped element to attach to.
+        event_prop_name: Prop name as seen on the `VNode` (e.g.
+            `"on_click"`); normalized to the underlying DOM event type
+            (`"on_click"` → `"click"`).
+        handler: Callback to invoke. Pass `None` to remove an existing
+            handler for this event type on this element.
+    """
     event_type = _event_prop_to_type(event_prop_name)
     wid = _get_or_assign_id(el.element)
     mapping = _handlers.get(wid)
@@ -166,26 +233,27 @@ def set_handler(el: Element, event_prop_name: str, handler: Optional[Callable]) 
 
     had_previous = event_type in mapping
 
-    # Removing handler
     if handler is None:
         if had_previous:
             del mapping[event_type]
             _decrement_event_count(event_type)
-            # Optional: prune empty per-node mapping
             if not mapping:
                 _handlers.pop(wid, None)
         return
 
-    # Adding or updating handler
     if not had_previous:
-        # First handler for this event type on this node
         _increment_event_count(event_type)
         _ensure_root_listener(event_type)
     mapping[event_type] = handler
 
 
 def remove_all_for(el: Element) -> None:
-    """Remove all delegated handlers associated with the element's id."""
+    """Remove every delegated handler registered for `el`.
+
+    Called by the renderer during unmount to drop the handler table
+    and decrement the active-listener counters so unused root
+    listeners are released.
+    """
     try:
         wid = el.element.getAttribute(_NODE_ID_ATTR)
     except Exception:
@@ -193,6 +261,5 @@ def remove_all_for(el: Element) -> None:
     if wid is not None:
         mapping = _handlers.pop(wid, None)
         if isinstance(mapping, dict):
-            # Decrement counts for all event types previously registered on this node
             for evt_type in list(mapping.keys()):
                 _decrement_event_count(evt_type)

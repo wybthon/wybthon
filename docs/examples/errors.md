@@ -19,3 +19,9 @@ view = h(ErrorBoundary, {"fallback": Fallback}, h(Boom, {}))
 key, set_key = create_signal(0)
 view_keyed = h(ErrorBoundary, {"fallback": Fallback, "reset_key": lambda: key()}, h(Boom, {}))
 ```
+
+## Next steps
+
+- Read the [Error Boundaries](../concepts/error-boundaries.md) concept page.
+- See the [`error_boundary`][wybthon.error_boundary] API reference.
+- Combine with [Suspense](../concepts/suspense-lazy.md) for async failure handling.

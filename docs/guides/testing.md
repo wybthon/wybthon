@@ -58,3 +58,9 @@ pytest -q --cov=wybthon --cov-branch --cov-report=term-missing
 ```
 
 In CI, coverage is generated as XML and the build fails if coverage drops below the configured threshold.
+
+## Next steps
+
+- Read the [Contributing guide](../meta/contributing.md) for the full local workflow.
+- Browse the [Performance guide](performance.md) for benchmarking tips.
+- See [Pyodide guide](pyodide.md) for browser environment notes.

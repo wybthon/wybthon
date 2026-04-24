@@ -1,15 +1,20 @@
 """Virtual DOM primitives, diffing, and rendering to real DOM elements.
 
-This module re-exports the public API from the focused sub-modules:
+This module is a thin compatibility shim that re-exports the public API
+from the focused sub-modules. Existing code that imports from
+`wybthon.vdom` continues to work unchanged.
 
-- :mod:`wybthon.vnode` -- ``VNode``, ``h``, ``Fragment``, ``memo``
-- :mod:`wybthon.reconciler` -- ``render``, ``mount``, ``unmount``, ``patch``
-- :mod:`wybthon.error_boundary` -- ``ErrorBoundary``
-- :mod:`wybthon.suspense` -- ``Suspense``
-- :mod:`wybthon.portal` -- ``create_portal``
-- :mod:`wybthon.props` -- prop-diffing helpers (``is_event_prop``, etc.)
+Re-exports:
 
-All names previously importable from ``wybthon.vdom`` continue to work.
+- [`wybthon.vnode`][wybthon.vnode]: `VNode`, `h`, `Fragment`, `memo`,
+  `dynamic`, `is_getter`.
+- [`wybthon.reconciler`][wybthon.reconciler]: `render`, `mount`,
+  `unmount`, `patch`.
+- [`wybthon.error_boundary`][wybthon.error_boundary]: `ErrorBoundary`.
+- [`wybthon.suspense`][wybthon.suspense]: `Suspense`.
+- [`wybthon.portal`][wybthon.portal]: `create_portal`.
+- [`wybthon.props`][wybthon.props]: prop-diffing helpers
+  (`is_event_prop`, etc.).
 """
 
 from .error_boundary import ErrorBoundary

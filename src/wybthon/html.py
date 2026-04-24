@@ -1,20 +1,35 @@
-"""Pythonic HTML element helpers that wrap the ``h()`` function.
+"""Pythonic HTML element helpers that wrap [`h()`][wybthon.h].
 
-Instead of writing::
+These helpers let you author markup that reads more like Python than
+hyperscript. Instead of writing:
 
-    h("div", {"class": "card", "on_click": handler}, h("p", {}, "Hello"))
+```python
+h("div", {"class": "card", "on_click": handler}, h("p", {}, "Hello"))
+```
 
-you can write::
+you can write:
 
-    div(p("Hello"), class_="card", on_click=handler)
+```python
+div(p("Hello"), class_="card", on_click=handler)
+```
 
-Children are positional arguments, props are keyword arguments.
+Children are positional arguments and props are keyword arguments.
 
-Prop name mapping:
+Prop name mapping (Python keyword to HTML attribute):
 
-- ``class_``   → ``class``  (the canonical reserved-word workaround)
-- ``html_for`` → ``for``    (Python reserved word)
+- `class_` → `class` (the canonical reserved-word workaround).
+- `html_for` → `for` (Python reserved word).
 - All other kwargs pass through unchanged.
+
+Each helper exported here (e.g. `div`, `p`, `button`, `input_`) is a
+thin wrapper that returns a [`VNode`][wybthon.VNode]. Two element
+names collide with Python builtins, so they are exposed with a trailing
+underscore: `main_` and `input_`.
+
+See Also:
+    - [`h`][wybthon.h] — the underlying hyperscript constructor.
+    - [`Fragment`][wybthon.Fragment] — wrap a list of children with no
+      DOM parent.
 """
 
 from typing import Any, Callable
@@ -92,8 +107,15 @@ __all__ = [
 def _process_props(kwargs: dict) -> dict:
     """Convert Python keyword arguments to a VNode props dict.
 
-    Maps ``class_`` to ``class`` (the canonical reserved-word
-    workaround) and ``html_for`` to ``for``.
+    Maps the reserved-word workarounds `class_` to `class` and
+    `html_for` to `for`. All other keys pass through unchanged.
+
+    Args:
+        kwargs: Keyword arguments captured from an element helper.
+
+    Returns:
+        A new props dictionary suitable for passing to
+        [`h`][wybthon.h].
     """
     props: dict = {}
     for key, value in kwargs.items():
@@ -107,14 +129,23 @@ def _process_props(kwargs: dict) -> dict:
 
 
 def _el(tag: str) -> Callable[..., VNode]:
-    """Create a helper function for the given HTML tag name."""
+    """Create a helper function for the given HTML tag name.
+
+    Args:
+        tag: HTML tag name (e.g. `"div"`, `"section"`).
+
+    Returns:
+        A callable `element_fn(*children, **props) -> VNode` that
+        constructs a `VNode` for the requested tag.
+    """
 
     def element_fn(*children: Any, **props: Any) -> VNode:
+        """Create a `<{tag}>` element. Children are positional, props are keyword."""
         return h(tag, _process_props(props), *children)
 
     element_fn.__name__ = tag
     element_fn.__qualname__ = tag
-    element_fn.__doc__ = f"Create a ``<{tag}>`` element. Children are positional args, props are keyword args."
+    element_fn.__doc__ = f"Create a `<{tag}>` element. Children are positional args, props are keyword args."
     return element_fn
 
 

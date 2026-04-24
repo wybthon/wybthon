@@ -1,4 +1,22 @@
-"""Client-side router components and navigation helpers for Pyodide apps."""
+"""Client-side router components and navigation helpers for Pyodide apps.
+
+This module exposes the browser-facing router built on top of
+[`router_core`][wybthon.router_core]:
+
+- [`Route`][wybthon.Route]: declarative mapping of a path pattern to
+  a component, optionally with nested children.
+- [`Router`][wybthon.Router]: function component that renders the
+  matched route's component and provides the
+  [`BasePath`][wybthon.router.BasePath] context.
+- [`Link`][wybthon.Link]: anchor element that navigates via the
+  History API and toggles an active class.
+- [`navigate`][wybthon.navigate]: programmatic navigation helper.
+- [`current_path`][wybthon.current_path]: a [`Signal`][wybthon.Signal]
+  containing the current pathname plus query string.
+
+See Also:
+    - [Routing guide](../concepts/router.md)
+"""
 
 from __future__ import annotations
 
@@ -14,7 +32,7 @@ __all__ = ["Route", "Router", "Link", "navigate", "current_path"]
 
 
 def _current_url() -> str:
-    """Return current pathname+search from the window, or ``"/"`` on failure."""
+    """Return the current pathname plus search string, or `"/"` on failure."""
     try:
         from js import window
 
@@ -24,12 +42,18 @@ def _current_url() -> str:
 
 
 current_path: Signal[str] = Signal(_current_url())
+"""Signal containing the current pathname plus query string.
+
+Updated by [`navigate`][wybthon.navigate] and by the global `popstate`
+listener (back/forward navigation). Read it inside reactive scopes to
+re-render when the URL changes.
+"""
 
 _popstate_proxy: Any = None
 
 
 def _install_popstate() -> None:
-    """Install the popstate listener (once) if running in a browser."""
+    """Install the `popstate` listener once when running in a browser."""
     global _popstate_proxy
     if _popstate_proxy is not None:
         return
@@ -50,7 +74,13 @@ _install_popstate()
 
 
 def navigate(path: str, *, replace: bool = False) -> None:
-    """Programmatically change the current path and update ``current_path``."""
+    """Programmatically change the current path and update `current_path`.
+
+    Args:
+        path: Target URL path, including any query string.
+        replace: When `True`, use `history.replaceState` so the
+            current history entry is overwritten instead of appended.
+    """
     try:
         from js import window
 
@@ -64,7 +94,7 @@ def navigate(path: str, *, replace: bool = False) -> None:
 
 
 def _parse_query(search: str) -> Dict[str, str]:
-    """Parse a query string like ``"?a=1&b=2"`` into a dict."""
+    """Parse a query string like `"?a=1&b=2"` into a dict, decoding values."""
     if not search or not search.startswith("?"):
         return {}
     out: Dict[str, str] = {}
@@ -80,7 +110,7 @@ def _parse_query(search: str) -> Dict[str, str]:
 
 
 def _decode(s: str) -> str:
-    """Decode a URL-encoded component if available, else return as-is."""
+    """Decode a URL-encoded component if `decodeURIComponent` is available."""
     try:
         from js import decodeURIComponent
 
@@ -91,7 +121,15 @@ def _decode(s: str) -> str:
 
 @dataclass
 class Route:
-    """Declarative route definition mapping a path to a component."""
+    """Declarative route definition mapping a path to a component.
+
+    Attributes:
+        path: Route pattern (e.g. `"/users/:id"`, `"/docs/*"`).
+        component: A function component or class to render when the
+            path matches.
+        children: Optional nested routes whose paths are joined with
+            this route's `path`.
+    """
 
     path: str
     component: Union[Callable[[Dict[str, Any]], VNode], type]
@@ -99,7 +137,7 @@ class Route:
 
 
 def _compile(path: str) -> Tuple[str, List[str]]:
-    """Compile a route path into a regex and list of param names."""
+    """Compile a route path into a regex and list of param names (legacy)."""
     parts = path.strip("/").split("/") if path != "/" else [""]
     names: List[str] = []
     regex_parts: List[str] = []
@@ -125,7 +163,7 @@ def _escape_re(s: str) -> str:
 
 
 def _match(pathname: str, route: Route) -> Optional[Tuple[Dict[str, str], Route]]:
-    """Match a pathname against a route's pattern and return params on success."""
+    """Match `pathname` against `route.path`, returning `(params, route)`."""
     import re
 
     regex, names = _compile(route.path)
@@ -156,19 +194,35 @@ def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optiona
 
 
 BasePath = create_context("")
+"""Context used by the router to expose the active base path.
+
+[`Link`][wybthon.Link] reads this context so that relative `to` paths
+are resolved against the same base path the surrounding
+[`Router`][wybthon.Router] is mounted under.
+"""
 
 
 def Router(props: Any) -> Any:
     """Function component that renders the matched route's component.
 
-    Props:
-      - routes: List[Route]
-      - base_path: str
-      - not_found: component to render on 404
+    The render function is wrapped in a reactive hole so that updates
+    to [`current_path`][wybthon.current_path] automatically
+    re-evaluate the matched route — no parent re-render is required.
 
-    The render function is wrapped in a reactive hole so that swaps to
-    ``current_path`` automatically re-evaluate the matched route — no
-    component re-mount required.
+    Args:
+        props: The component's props with the following keys:
+
+            - `routes` (`List[Route]`): Declared routes.
+            - `base_path` (`str`): Base path stripped before matching.
+            - `not_found`: Optional component rendered when no route
+              matches. Falls back to a literal `"Not Found"`
+              `<div>`.
+
+    Returns:
+        A reactive [`VNode`][wybthon.VNode] containing the matched
+        component, wrapped in a [`Provider`][wybthon.Provider] that
+        publishes the active `base_path` via
+        [`BasePath`][wybthon.router.BasePath].
     """
 
     def render() -> VNode:
@@ -206,13 +260,32 @@ Router._wyb_component = True  # type: ignore[attr-defined]
 def Link(props: Any) -> Any:
     """Anchor element component that navigates via the History API.
 
-    Wrapped in a reactive hole so the active class flips automatically
-    when the route changes — no parent re-render required.
+    Wrapped in a reactive hole so the active class flips
+    automatically when the route changes — no parent re-render
+    required. Modifier-key clicks (Cmd/Ctrl/Shift) and middle-clicks
+    are passed through to the browser so users can open links in a
+    new tab.
 
-    Recognised class spellings on the prop bag (in priority order):
-    ``"class"``, ``"class_"``, ``"className"``.  All three are merged
-    with the active-class (when the link's href matches
-    ``current_path``).
+    Args:
+        props: The component's props with the following keys:
+
+            - `to` (`str`): Target path. Joined with the active base
+              path unless it starts with `http://`, `https://`, or
+              `#`.
+            - `replace` (`bool`): When `True`, replace the current
+              history entry instead of pushing a new one.
+            - `class_active` (`str`): Class added when `to` matches
+              the current path. Defaults to `"active"`.
+            - `base_path` (`str`): Override for the base path.
+              Defaults to the value provided by the surrounding
+              `Router`.
+            - `class` / `class_` / `className`: Recognized class
+              spellings, merged with the active class when applicable.
+            - All other props are forwarded to the underlying `<a>`
+              element.
+
+    Returns:
+        A reactive [`VNode`][wybthon.VNode] for the anchor element.
     """
     from .events import DomEvent
 

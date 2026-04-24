@@ -1,16 +1,18 @@
 """Development mode warnings and error reporting for Wybthon.
 
-Provides a lightweight ``DEV_MODE`` flag and helper functions that surface
-clear, actionable error messages during development while keeping production
-builds quiet.  All output goes to ``sys.stderr`` so it never mixes with
-regular program output.
+Provides a lightweight `DEV_MODE` flag and helper functions that
+surface clear, actionable error messages during development while
+keeping production builds quiet. All output goes to `sys.stderr` so
+it never mixes with regular program output.
 
 Built-in dev warnings include:
 
-* :func:`warn_destructured_prop` -- a reactive prop accessor was unwrapped
-  at component-setup time (loses reactivity).
-* :func:`warn_each_plain_list` -- ``For`` / ``Index`` received a plain
-  list rather than a getter (the list will only render once).
+- `warn_destructured_prop`:
+  a reactive prop accessor was unwrapped at component-setup time
+  (loses reactivity).
+- `warn_each_plain_list`:
+  `For` / `Index` received a plain list rather than a getter (the
+  list will only render once).
 """
 
 from __future__ import annotations
@@ -32,10 +34,20 @@ __all__ = [
 ]
 
 DEV_MODE: bool = True
+"""Process-wide flag toggling Wybthon's development warnings.
+
+Defaults to `True`. Production builds should call
+[`set_dev_mode(False)`][wybthon._warnings.set_dev_mode] at startup.
+"""
 
 
 def set_dev_mode(enabled: bool) -> None:
-    """Enable or disable development mode warnings globally."""
+    """Enable or disable development mode warnings globally.
+
+    Args:
+        enabled: When `False`, `warn` and `warn_once` become no-ops
+            and tracebacks are suppressed in `log_error`.
+    """
     global DEV_MODE
     DEV_MODE = enabled
 
@@ -45,27 +57,36 @@ def is_dev_mode() -> bool:
     return DEV_MODE
 
 
-# Tracks ``(category, key)`` tuples already emitted in this process so each
-# unique warning fires at most once.  Cleared on demand by tests.
 _seen_warnings: Set[Tuple[str, Any]] = set()
 
 
 def _reset_warning_dedupe() -> None:
-    """Test helper -- clear the once-only warning cache."""
+    """Test helper that clears the once-only warning cache."""
     _seen_warnings.clear()
 
 
 def warn(message: str) -> None:
-    """Print a development-mode warning to stderr.
+    """Print a development-mode warning to `stderr`.
 
-    No-op when ``DEV_MODE`` is ``False``.
+    Args:
+        message: Warning text. Prefixed with `"[wybthon] Warning:"`.
+
+    No-op when [`DEV_MODE`][wybthon._warnings.DEV_MODE] is `False`.
     """
     if DEV_MODE:
         print(f"[wybthon] Warning: {message}", file=sys.stderr)
 
 
 def warn_once(category: str, key: Any, message: str) -> None:
-    """Print *message* at most once for the given ``(category, key)`` pair."""
+    """Print `message` at most once for the given `(category, key)` pair.
+
+    Args:
+        category: Warning bucket (e.g. `"each_plain_list"`).
+        key: Hashable identifier within the category — the same
+            warning for the same key is only ever emitted once per
+            process.
+        message: Warning text.
+    """
     if not DEV_MODE:
         return
     cache_key = (category, key)
@@ -76,10 +97,14 @@ def warn_once(category: str, key: Any, message: str) -> None:
 
 
 def log_error(message: str, error: Optional[Exception] = None) -> None:
-    """Log an error with an optional traceback to stderr.
+    """Log an error to `stderr`, with an optional traceback in dev mode.
 
-    Always logs regardless of ``DEV_MODE`` since errors indicate real
-    problems.  In dev mode the full traceback is included.
+    Always logs regardless of `DEV_MODE` since errors indicate real
+    problems. In dev mode the full traceback is included.
+
+    Args:
+        message: Short human-readable error message.
+        error: Optional exception whose traceback should be printed.
     """
     print(f"[wybthon] Error: {message}", file=sys.stderr)
     if error is not None and DEV_MODE:
@@ -87,7 +112,14 @@ def log_error(message: str, error: Optional[Exception] = None) -> None:
 
 
 def component_name(comp: Any) -> str:
-    """Return a human-readable display name for a component or tag."""
+    """Return a human-readable display name for a component or tag.
+
+    Args:
+        comp: A tag string, a function/class component, or any value.
+
+    Returns:
+        A display name suitable for embedding in dev warnings.
+    """
     if isinstance(comp, str):
         return f"<{comp}>"
     name = getattr(comp, "__name__", None) or getattr(comp, "__qualname__", None)
@@ -99,20 +131,19 @@ def component_name(comp: Any) -> str:
     return repr(comp)
 
 
-# ---------------------------------------------------------------------------
-# Targeted footgun warnings
-# ---------------------------------------------------------------------------
-
-
 def warn_destructured_prop(component: Any, prop_name: str) -> None:
     """Warn that a reactive prop accessor was unwrapped at component setup.
 
-    Calling ``my_prop()`` in the component body **before** returning the
-    VNode tree captures the *current* value into the closure -- subsequent
-    parent updates won't propagate.  Use the bare accessor inside the
-    tree (``span(my_prop)``) or wrap the dependent expression in
-    :func:`wybthon.dynamic`
-    (``span(dynamic(lambda: f"v={my_prop()}"))``) to keep it reactive.
+    Calling `my_prop()` in the component body **before** returning the
+    VNode tree captures the *current* value into the closure —
+    subsequent parent updates will not propagate. Use the bare
+    accessor inside the tree (`span(my_prop)`) or wrap the dependent
+    expression in [`dynamic`][wybthon.dynamic]
+    (`span(dynamic(lambda: f"v={my_prop()}"))`) to keep it reactive.
+
+    Args:
+        component: The component that read the prop.
+        prop_name: Name of the prop that was unwrapped.
     """
     name = component_name(component)
     warn_once(
@@ -126,7 +157,11 @@ def warn_destructured_prop(component: Any, prop_name: str) -> None:
 
 
 def warn_each_plain_list(component: Any) -> None:
-    """Warn that ``For`` / ``Index`` received a non-reactive list."""
+    """Warn that [`For`][wybthon.For] / [`Index`][wybthon.Index] received a static list.
+
+    Args:
+        component: The flow control component receiving the prop.
+    """
     name = component_name(component)
     warn_once(
         "each_plain_list",

@@ -143,3 +143,9 @@ def TodoApp():
 | **Write** | `set_count(5)` | `set_store("count", 5)` |
 | **Nested** | Manual (separate signals) | Automatic (path-based) |
 | **Granularity** | Entire value | Per-property |
+
+## Next steps
+
+- See the [`store`][wybthon.store] API for `create_store` and `produce`.
+- Read [Reactivity](reactivity.md) for the underlying signal model.
+- Browse [Authoring patterns](../guides/authoring-patterns.md) for store recipes.

@@ -3,11 +3,11 @@
 This guide shows how to author components in Wybthon's
 fully-reactive `@component` model.
 
-> **Mental model in one line:** Components run **once**.  Every prop
-> is a zero-arg accessor.  Reactivity happens through *reactive holes*
-> — accessors (or `dynamic(...)` getters) embedded in the returned
-> VNode tree.  See
-> [Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes).
+!!! tip "Mental model in one line"
+    Components run **once**. Every prop is a zero-arg accessor.
+    Reactivity happens through *reactive holes* — accessors (or
+    `dynamic(...)` getters) embedded in the returned VNode tree. See
+    [Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes).
 
 #### `@component` decorator
 
@@ -220,3 +220,9 @@ def Page():
 ```
 
 See the demo app "Patterns" page for a working version of these examples.
+
+## Next steps
+
+- Read [Components](../concepts/components.md) and [Lifecycle and Ownership](../concepts/lifecycle.md).
+- Browse the [Authoring patterns example](../examples/authoring-patterns.md).
+- See the [`reactivity`][wybthon.reactivity] API for `get_props`, `children`, and helpers.

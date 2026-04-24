@@ -1,7 +1,36 @@
-"""Top-level Wybthon package API and browser/runtime detection.
+"""Wybthon: a client-side Python SPA framework powered by Pyodide.
 
-This module exposes the public surface area for both browser (Pyodide) and
-non-browser environments, importing DOM/VDOM features only when available.
+Wybthon brings a SolidJS-inspired, signals-first reactive model to the
+browser using Python. Component bodies run **once** at mount; reactivity
+flows through *reactive holes* — zero-arg getters embedded in the VNode
+tree that update only the DOM nodes that depend on them.
+
+The package detects its environment at import time:
+
+- In a browser (Pyodide), the full surface is available — DOM helpers,
+  reconciler, router, events, error boundaries, suspense, portals, and
+  the HTML element factories.
+- Outside a browser, the pure-Python surface (reactivity, VDOM data
+  structures, forms, context, flow control, stores) remains importable
+  so unit tests and tooling can run anywhere CPython runs.
+
+Example:
+    A minimal counter component::
+
+        from wybthon import button, component, create_signal, div, p, span
+
+        @component
+        def Counter(initial: int = 0):
+            count, set_count = create_signal(initial)
+            return div(
+                p("Count: ", span(count)),
+                button("+1", on_click=lambda e: set_count(count() + 1)),
+            )
+
+See Also:
+    * [Getting started](https://docs.wybthon.com/getting-started/)
+    * [Mental model](https://docs.wybthon.com/concepts/mental-model/)
+    * [API reference](https://docs.wybthon.com/api/wybthon/)
 """
 
 import importlib
@@ -41,6 +70,7 @@ from .reactivity import (
     create_selector,
     create_signal,
     get_owner,
+    get_props,
     index_array,
     map_array,
     merge_props,
@@ -162,6 +192,7 @@ if _IN_BROWSER:
         "on_cleanup",
         "untrack",
         "on",
+        "get_props",
         "merge_props",
         "split_props",
         "map_array",
@@ -304,6 +335,7 @@ else:
         "on_cleanup",
         "untrack",
         "on",
+        "get_props",
         "merge_props",
         "split_props",
         "map_array",

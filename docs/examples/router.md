@@ -72,3 +72,9 @@ routes = [
 
 app = h(Router, {"routes": routes, "not_found": NotFound})
 ```
+
+## Next steps
+
+- Read the [Router](../concepts/router.md) concept page.
+- See [Suspense and Lazy Loading](../concepts/suspense-lazy.md) for code-splitting routes.
+- Browse the [`router`][wybthon.router] and [`router_core`][wybthon.router_core] APIs.

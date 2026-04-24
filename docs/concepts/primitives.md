@@ -65,10 +65,11 @@ def subscribe(topic_name):
     return f"listening to {topic_name}"
 ```
 
-> **Why?** This is the SolidJS authoring model adapted for Pyodide.
-> Components run once, so signal *creation*, event-handler *closures*,
-> and lifecycle *registrations* happen exactly once — and DOM updates
-> stay surgical and predictable.
+!!! info "Why this model?"
+    This is the SolidJS authoring model adapted for Pyodide.
+    Components run once, so signal *creation*, event-handler
+    *closures*, and lifecycle *registrations* happen exactly once —
+    and DOM updates stay surgical and predictable.
 
 ---
 
@@ -315,3 +316,9 @@ is_selected(1)   # True
 is_selected(2)   # False
 set_selected(2)  # only keys 1 and 2 fire
 ```
+
+## Next steps
+
+- Read [Reactivity](reactivity.md) for the full primitive reference.
+- See [Lifecycle and Ownership](lifecycle.md) for cleanup semantics.
+- Browse [Flow control][wybthon.For] for keyed list components built on these primitives.

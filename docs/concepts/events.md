@@ -98,3 +98,9 @@ def HoverDemo():
 - Delegation depends on bubbling to `document`. For non-bubbling types, use alternatives or `Element.on`.
 - Chrome/Edge may treat `touchstart`/`touchmove` on `document` as passive, so `preventDefault()` may be ignored. Use a direct listener with `options={"passive": False}` if you need to prevent scrolling.
 - `keypress` is deprecated; prefer `keydown`/`keyup`.
+
+## Next steps
+
+- Read [Forms](forms.md) for higher-level controlled-input patterns.
+- See [DOM Interop](dom.md) for the underlying `Element` and `Ref` APIs.
+- Browse the [`events`][wybthon.events] API reference for delegation internals.

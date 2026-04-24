@@ -1,4 +1,13 @@
-"""Suspense function component for rendering fallback UI during async loading."""
+"""`Suspense` component for rendering fallback UI during async loading.
+
+[`Suspense`][wybthon.Suspense] subscribes to one or more
+[`Resource`][wybthon.Resource]s and shows a fallback while any of
+them are loading. Set `keep_previous=True` to keep showing the
+previously-resolved children when refetching.
+
+See Also:
+    - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
+"""
 
 from __future__ import annotations
 
@@ -13,11 +22,23 @@ __all__ = ["Suspense"]
 def Suspense(props: Any) -> Any:
     """Render a fallback while one or more resources are loading.
 
-    Props:
-      - resources | resource: Resource or list of Resources
-      - fallback: VNode | str | callable returning VNode/str
-      - keep_previous: bool (default False)
-      - children: child VNodes to render when not loading
+    Args:
+        props: The component's props with the following keys:
+
+            - `resources` / `resource`: A single
+              [`Resource`][wybthon.Resource] or a list of resources.
+              When omitted, the component just renders its children.
+            - `fallback`: `VNode`, string, or callable returning
+              one of those. Shown while any resource is loading.
+            - `keep_previous` (`bool`, default `False`): When `True`,
+              show previously-resolved children during refetches
+              instead of replacing them with the fallback.
+            - `children`: Children rendered when no resource is
+              loading.
+
+    Returns:
+        A reactive [`VNode`][wybthon.VNode] subtree that toggles
+        between fallback and children.
     """
     has_completed, set_completed = create_signal(False)
 

@@ -124,3 +124,9 @@ Error overlay (development only):
 
 - The demo `bootstrap.js` now shows a lightweight in-browser overlay when a Python exception or JS error occurs during app startup. It also listens for unhandled promise rejections.
 - The overlay is dismissed via the "Dismiss" button and will be replaced on subsequent errors.
+
+## Next steps
+
+- See the [`dev`][wybthon.dev] API reference for the underlying server.
+- Read the [Deployment guide](deployment.md) for production hosting.
+- Browse [Examples](../examples.md) to see real apps running under the dev server.

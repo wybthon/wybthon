@@ -37,6 +37,13 @@ def View(props):
 ```
 
 Tips:
+
 - Call `on_submit_validated` to block submission until fields validate.
 - Use `a11y_control_attrs` and `error_message_attrs` to wire up errors for assistive tech.
- - Use `rules_from_schema` for a minimal schema-driven approach; or pass `validators` directly to `bind_text` for finer control.
+- Use `rules_from_schema` for a minimal schema-driven approach; or pass `validators` directly to `bind_text` for finer control.
+
+## Next steps
+
+- Read the [Forms](../concepts/forms.md) concept page for the full API surface.
+- Browse the [`forms`][wybthon.forms] API reference.
+- See [Events](../concepts/events.md) for delegated handler details.

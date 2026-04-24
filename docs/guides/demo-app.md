@@ -106,3 +106,9 @@ def FetchPage():
 
 This mirrors how you'd code-split larger apps and warm the import
 cache based on intent.
+
+## Next steps
+
+- Explore the [Examples](../examples.md) for individual feature walkthroughs.
+- Read [Suspense and Lazy Loading](../concepts/suspense-lazy.md).
+- See the [Dev server guide](dev-server.md) for the local feedback loop.

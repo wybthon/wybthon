@@ -1,16 +1,26 @@
-"""Virtual node data structure and creation utilities.
+"""Virtual node data structure and tree-building helpers.
 
-This module defines the core ``VNode`` tree representation and the
-functions used to build it (``h``, ``Fragment``, ``memo``, ``dynamic``).
-It is intentionally free of browser/DOM dependencies so that VNode
-trees can be constructed and inspected in any Python environment.
+This module defines the core [`VNode`][wybthon.VNode] type and the
+functions used to build it ([`h`][wybthon.h], [`Fragment`][wybthon.Fragment],
+[`memo`][wybthon.memo], [`dynamic`][wybthon.dynamic]). It is intentionally
+free of browser or DOM dependencies, so VNode trees can be constructed
+and inspected anywhere CPython runs.
 
-A ``_dynamic`` VNode (created via :func:`dynamic` or implicitly when a
-zero-argument callable appears in a child position) represents a
-**reactive hole**: the reconciler wraps the getter in its own effect
-that updates only the corresponding DOM region when the getter's
-dependencies change.  This is the building block for SolidJS-style
-"setup once, update fine-grained" rendering.
+A `_dynamic` VNode (created via [`dynamic`][wybthon.dynamic] or implicitly
+when a zero-argument callable appears in a child position) represents a
+**reactive hole**: the reconciler wraps the getter in its own effect that
+updates only the corresponding DOM region when the getter's dependencies
+change. This is the building block for SolidJS-style "setup once, update
+fine-grained" rendering.
+
+Example:
+    Building a small subtree without a browser::
+
+        from wybthon import h, Fragment
+
+        view = h("section", {"class": "card"},
+                 h("h1", {}, "Hello"),
+                 Fragment(h("p", {}, "Body 1"), h("p", {}, "Body 2")))
 """
 
 from __future__ import annotations
@@ -48,8 +58,19 @@ ChildType = Union["VNode", str]
 class VNode:
     """Virtual node representing an element, text, component, or reactive hole.
 
-    Uses ``__slots__`` for compact memory layout and faster attribute
-    access — meaningful when authoring large lists.
+    Uses `__slots__` for a compact memory layout and faster attribute
+    access — meaningful when authoring large lists. Internal attributes
+    (`el`, `subtree`, `render_effect`, `component_ctx`, `_frag_end`) are
+    populated by the reconciler when the VNode is mounted.
+
+    Attributes:
+        tag: Element tag name (`"div"`), special tag (`"_text"`,
+            `"_dynamic"`, `"_fragment"`), or component callable.
+        props: Mapping of prop names to values. Event handlers, attributes,
+            and reactive accessors all live here.
+        children: List of child `VNode` instances (or strings, before
+            normalization).
+        key: Optional stable identity used for keyed list reconciliation.
     """
 
     __slots__ = (
@@ -89,22 +110,41 @@ class VNode:
 
 
 def to_text_vnode(value: Any) -> VNode:
-    """Convert an arbitrary value to a text VNode."""
+    """Convert an arbitrary value to a text `VNode`.
+
+    Args:
+        value: Any value. `None` becomes the empty string; everything else
+            is coerced via `str()`.
+
+    Returns:
+        A `_text` VNode with the stringified content stored at `nodeValue`.
+    """
     return VNode(tag="_text", props={"nodeValue": "" if value is None else str(value)}, children=[])
 
 
 def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None) -> VNode:
-    """Create a reactive-hole VNode that re-evaluates *getter* on dependency changes.
+    """Create a reactive-hole VNode that re-evaluates `getter` on dependency changes.
 
     This is the explicit form of the same machinery that wraps callable
-    children automatically.  Use it when you want to be explicit about
-    which child is dynamic, or to attach a stable ``key`` for keyed
-    reuse inside a fragment::
+    children automatically. Use it when you want to be explicit about
+    which child is dynamic, or to attach a stable `key` for keyed reuse
+    inside a fragment.
 
+    The getter may return a `VNode`, a `str`, a list of either, or `None`.
+
+    Args:
+        getter: Zero-arg callable evaluated inside its own effect. Any
+            signal reads inside the getter become dependencies that
+            trigger re-evaluation.
+        key: Optional stable identity used by keyed reconciliation.
+
+    Returns:
+        A `_dynamic` VNode that the reconciler will mount as a reactive hole.
+
+    Example:
+        ```python
         div(dynamic(lambda: f"Hello, {name()}!"))
-
-    Inside a reactive hole you may return a ``VNode``, a ``str``, a
-    list of either, or ``None``.
+        ```
     """
     return VNode(tag="_dynamic", props={"getter": getter}, children=[], key=key)
 
@@ -121,10 +161,10 @@ _required_pos_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDic
 
 
 def _signature_has_required_positional(fn: Any) -> bool:
-    """Return True when *fn* has at least one required positional parameter.
+    """Return True when `fn` declares at least one required positional parameter.
 
-    Result is cached via weak references so per-call cost is amortised
-    while still being safe across test runs that recycle ``id`` values.
+    Result is cached via weak references so the per-call cost is amortised
+    while staying safe across test runs that recycle `id` values.
     """
     try:
         cached = _required_pos_cache.get(fn)
@@ -154,16 +194,23 @@ def _signature_has_required_positional(fn: Any) -> bool:
 
 
 def is_getter(value: Any) -> bool:
-    """Return True when *value* is a zero-argument callable suitable for a reactive hole.
+    """Return True when `value` is a zero-arg callable suitable for a reactive hole.
 
-    Excludes:
+    The check excludes:
 
-    * ``VNode`` instances
-    * Classes (``isinstance(v, type)``)
-    * Components / providers (marked with ``_wyb_component`` / ``_wyb_provider``)
-    * ``Ref`` objects (have a ``current`` attribute)
-    * Callables that require positional arguments (e.g. event handlers
+    - `VNode` instances
+    - Classes (`isinstance(value, type)`)
+    - Components and providers (marked with `_wyb_component` /
+      `_wyb_provider`)
+    - `Ref` objects (have a `current` attribute)
+    - Callables that require positional arguments (e.g. event handlers
       taking an event object)
+
+    Args:
+        value: Any value, typically a child or prop value being normalized.
+
+    Returns:
+        `True` if the value should be treated as a reactive getter.
     """
     if value is None:
         return False
@@ -186,7 +233,7 @@ def is_getter(value: Any) -> bool:
 
 
 def flatten_children(items: Iterable[Any]) -> List[Any]:
-    """Flatten nested child lists into a single list while dropping ``None``s."""
+    """Flatten nested child lists into a single list, dropping `None` entries."""
     out: List[Any] = []
     for item in items:
         if item is None:
@@ -199,13 +246,19 @@ def flatten_children(items: Iterable[Any]) -> List[Any]:
 
 
 def normalize_children(children: List[ChildType]) -> List[VNode]:
-    """Normalize mixed children into a list of VNodes.
+    """Normalize a mixed list of children into a flat list of VNodes.
 
-    * ``VNode`` -- kept as-is (fragments are flattened into the parent list).
-    * Zero-argument callable -- wrapped in a ``_dynamic`` VNode (reactive hole).
-    * Anything else -- coerced to a text VNode.
+    Per-element handling:
 
-    The reconciler always works with a flat list of VNodes.
+    - `VNode`: kept as-is. Fragments are flattened into the parent list.
+    - Zero-arg callable: wrapped in a `_dynamic` VNode (reactive hole).
+    - Anything else: coerced to a text VNode.
+
+    Args:
+        children: Children as produced by `h(...)` or component bodies.
+
+    Returns:
+        A flat list of `VNode` instances ready for the reconciler.
     """
     out: List[VNode] = []
     for ch in children:
@@ -222,13 +275,32 @@ def normalize_children(children: List[ChildType]) -> List[VNode]:
 
 
 def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] = None, *children: Any) -> VNode:
-    """Create a VNode from a tag, props, and children (component-aware).
+    """Create a VNode from a tag, props, and children.
+
+    This is the low-level VNode constructor used everywhere. For
+    common HTML tags, prefer the helpers in
+    [`wybthon.html`][wybthon.html] (`div`, `span`, `button`, …).
 
     Callable children (zero-argument getters) are passed through
-    unchanged; ``normalize_children`` will wrap them as ``_dynamic``
-    VNodes when the parent element mounts.  Components receive their
-    children verbatim via the ``children`` prop so they can decide how
-    to render them.
+    unchanged; `normalize_children` wraps them as `_dynamic` VNodes when
+    the parent element mounts. Components receive their children verbatim
+    via the `children` prop so they can decide how to render them.
+
+    Args:
+        tag: An HTML tag name (`"div"`), a special tag (`"_text"`,
+            `"_dynamic"`, `"_fragment"`), or a component callable.
+        props: Mapping of prop names to values. May be `None`.
+        *children: Children to attach. Lists/tuples are flattened.
+
+    Returns:
+        A new `VNode`.
+
+    Example:
+        ```python
+        from wybthon import h
+
+        view = h("button", {"on_click": handle_click}, "Click me")
+        ```
     """
     props = props or {}
     key = props.get("key") if "key" in props else None
@@ -243,19 +315,26 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
 
 
 def Fragment(*args: Any) -> VNode:
-    """Group multiple children without adding extra DOM elements.
+    """Group multiple children without adding an extra DOM wrapper element.
 
-    Fragments use comment-node markers and mount children directly into
-    the parent container, avoiding extra DOM elements that would
-    pollute selectors like ``:first-child`` or affect layout.
+    Fragments use empty comment nodes as start/end markers and mount their
+    children directly into the parent container. This avoids extra
+    elements that would pollute selectors like `:first-child` or affect
+    layout.
 
-    Can be called directly::
+    Args:
+        *args: Either a sequence of children (`Fragment(a, b, c)`) or a
+            single dict containing a `children` key (the form used when
+            `Fragment` is called as `h(Fragment, {}, a, b, c)`).
 
-        Fragment(child1, child2)
+    Returns:
+        A `_fragment` VNode that the reconciler will mount inline.
 
-    Or used as a component tag via ``h()``::
-
-        h(Fragment, {}, child1, child2)
+    Example:
+        ```python
+        Fragment(h1("Title"), p("Body text"))
+        h(Fragment, {}, h1("Title"), p("Body text"))  # same thing
+        ```
     """
     children: list
     if len(args) == 1 and isinstance(args[0], dict) and "children" in args[0]:
@@ -270,11 +349,29 @@ def memo(
     component: Callable[..., Any],
     are_props_equal: Optional[Callable[[PropsDict, PropsDict], bool]] = None,
 ) -> Callable[..., Any]:
-    """Memoize a function component to skip re-renders when props are unchanged.
+    """Wrap a function component to skip re-mounts when its props are unchanged.
 
-    By default uses shallow identity comparison (``is``) on each prop value.
-    Pass a custom ``are_props_equal(old_props, new_props) -> bool`` for
-    deeper comparison logic.
+    Because Wybthon component bodies run **once**, `memo` is only useful
+    when you want to skip re-mounting on a prop change (for example,
+    components with an expensive setup phase). Most ordinary components
+    do not need it — fine-grained holes already minimise DOM work.
+
+    Args:
+        component: The component callable to memoize.
+        are_props_equal: Optional `(old_props, new_props) -> bool`
+            comparator. Defaults to a shallow identity check (`is`)
+            across every key.
+
+    Returns:
+        A wrapped component callable. Identity is preserved across
+        renders so the reconciler can detect "same component, same
+        props".
+
+    Example:
+        ```python
+        MemoList = memo(ExpensiveList,
+                        are_props_equal=lambda a, b: a["items"] == b["items"])
+        ```
     """
 
     def _default_compare(old_props: PropsDict, new_props: PropsDict) -> bool:

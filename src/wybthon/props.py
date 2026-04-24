@@ -1,10 +1,19 @@
 """DOM property application and diffing for element VNodes.
 
-Handles translating VNode props into DOM attribute/style/event mutations,
-including controlled form elements (``value``, ``checked``), CSS style
-objects, dataset attributes, event handler delegation, and **reactive
-prop bindings** (callable prop values that update independently of the
-surrounding component).
+Translates VNode props into DOM attribute, style, and event mutations,
+including:
+
+- **Controlled form elements** (`value`, `checked`) via DOM properties.
+- **CSS style objects** (`{"backgroundColor": "red"}` → kebab-cased
+  inline styles).
+- **Dataset attributes** (`{"dataset": {"id": 5}}` → `data-id="5"`).
+- **Event delegation** for `on_click` / `onClick` style handlers.
+- **Reactive prop bindings**: callable prop values are wrapped in their
+  own effect so updates re-apply only the affected prop, never the
+  surrounding component.
+
+This module is consumed by the reconciler; most application code never
+imports from it directly.
 """
 
 from __future__ import annotations
@@ -28,19 +37,43 @@ _UNSET = object()
 
 
 def to_kebab(name: str) -> str:
-    """Convert camelCase style property names to kebab-case."""
+    """Convert a camelCase property name to kebab-case.
+
+    Args:
+        name: A camelCase string such as `"backgroundColor"`.
+
+    Returns:
+        The kebab-cased equivalent (e.g. `"background-color"`).
+    """
     return CAMEL_TO_KEBAB.sub("-", name).lower()
 
 
 def is_event_prop(name: str) -> bool:
-    """Return True if a prop name is an event handler prop like on_click or onClick."""
+    """Return True if `name` looks like an event handler prop.
+
+    Both `on_click` (snake-case) and `onClick` (camelCase) styles are
+    recognised.
+
+    Args:
+        name: Prop name to inspect.
+
+    Returns:
+        `True` for event handler props.
+    """
     if name.startswith("on_"):
         return True
     return len(name) > 2 and name.startswith("on") and name[2].isupper()
 
 
 def event_name_from_prop(name: str) -> str:
-    """Map on_click/onClick style props to a DOM event name."""
+    """Convert an `on_click` / `onClick` prop name to its DOM event name.
+
+    Args:
+        name: Event handler prop name.
+
+    Returns:
+        The DOM event name (e.g. `"click"`, `"mouseover"`).
+    """
     if name.startswith("on_"):
         return name[3:]
     if name.startswith("on"):
@@ -49,14 +82,14 @@ def event_name_from_prop(name: str) -> str:
 
 
 def attach_ref(props: PropsDict, el: Element) -> None:
-    """Set *ref.current* to *el* if a ``ref`` prop is present."""
+    """Assign `el` to `props["ref"].current` when a `ref` prop is present."""
     ref = props.get("ref")
     if ref is not None and hasattr(ref, "current"):
         ref.current = el
 
 
 def detach_ref(props: PropsDict) -> None:
-    """Clear *ref.current* if a ``ref`` prop is present."""
+    """Clear `props["ref"].current` when a `ref` prop is present."""
     ref = props.get("ref")
     if ref is not None and hasattr(ref, "current"):
         ref.current = None
@@ -68,9 +101,11 @@ def detach_ref(props: PropsDict) -> None:
 
 
 def _apply_single_prop(el: Element, name: str, old_val: Any, new_val: Any) -> None:
-    """Apply / diff a single prop on a real DOM element.
+    """Apply (or diff) a single prop on a real DOM element.
 
-    *old_val* may be the sentinel :data:`_UNSET` for an initial application.
+    `old_val` may be the sentinel `_UNSET` for an initial application; in
+    that case the prop is written unconditionally with no diff against
+    a previous value.
     """
     if name in ("key", "ref"):
         return
@@ -132,9 +167,14 @@ def _remove_single_prop(el: Element, name: str, old_val: Any) -> None:
 def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None:
     """Apply prop diffs to a concrete DOM element, including events and styles.
 
-    Used by the patch path; both old and new props are static (already
-    resolved) values.  For initial mount with potentially reactive prop
-    values, use :func:`apply_initial_props`.
+    Used by the patch path; both old and new props are static (already-
+    resolved) values. For initial mount with potentially reactive prop
+    values, use [`apply_initial_props`][wybthon.props.apply_initial_props].
+
+    Args:
+        el: The target DOM element wrapper.
+        old_props: Previously-applied prop dict.
+        new_props: Newly-resolved prop dict.
     """
     for name, old_val in list(old_props.items()):
         if name in ("key", "ref"):
@@ -150,16 +190,18 @@ def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None
 
 
 def apply_initial_props(el: Element, new_props: PropsDict, owner_vnode: Optional[Any] = None) -> None:
-    """Apply a fresh set of props to an element, wiring reactive holes for callable values.
+    """Apply a fresh set of props on initial mount, wiring reactive bindings.
 
-    Callable prop values (excluding event handlers and ``ref``) are
-    treated as **reactive bindings**: each one is wrapped in its own
-    effect so that updates re-apply only that single prop, with no
-    re-render of the surrounding component.  Static values are applied
-    once.
+    Callable prop values (excluding event handlers and `ref`) are treated
+    as **reactive bindings**: each is wrapped in its own effect so that
+    updates re-apply only that single prop, with no re-render of the
+    surrounding component. Static values are applied once.
 
-    The *owner_vnode* argument is unused at this layer but accepted for
-    forward compatibility with reconciler bookkeeping.
+    Args:
+        el: The target DOM element wrapper.
+        new_props: Initial prop dict.
+        owner_vnode: Currently unused. Accepted for forward compatibility
+            with reconciler bookkeeping.
     """
     from .reactivity import _current_owner, effect
 
@@ -180,7 +222,11 @@ def apply_initial_props(el: Element, new_props: PropsDict, owner_vnode: Optional
 
 
 def _bind_reactive_prop(el: Element, name: str, getter: Any) -> Any:
-    """Wrap a callable prop value in a reactive effect that re-applies on changes."""
+    """Wrap `getter` in an effect that re-applies prop `name` on changes.
+
+    Returns the underlying `Computation` so callers can dispose it when
+    the element unmounts.
+    """
     from .reactivity import effect
 
     last: list = [_UNSET]

@@ -12,7 +12,7 @@ Decorator that turns a function into a Wybthon component with
 * Pass it directly into the tree to create a reactive auto-hole.
 * Call it (`name()`) to read the current value (tracked when called
   inside an effect or hole).
-* Wrap with [`untrack`](reactivity.md#untrack) for a snapshot read.
+* Wrap with [`untrack`][wybthon.untrack] for a snapshot read.
 
 ```python
 from wybthon import component, p

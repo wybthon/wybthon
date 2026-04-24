@@ -3,6 +3,8 @@ name: Docs
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ '**' ]
 
 permissions:
   contents: write
@@ -23,6 +25,7 @@ jobs:
         run: |
           python -m mkdocs build --strict
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

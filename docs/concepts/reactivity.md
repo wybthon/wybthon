@@ -259,3 +259,9 @@ view = h(
 ```
 
 - Pass `keep_previous=True` to keep previously rendered children visible during subsequent reloads while still showing new data once ready.
+
+## Next steps
+
+- See [Lifecycle and Ownership](lifecycle.md) for the disposal model.
+- Read [Suspense and Lazy Loading](suspense-lazy.md) for resource UI patterns.
+- Browse the [`reactivity`][wybthon.reactivity] API reference.

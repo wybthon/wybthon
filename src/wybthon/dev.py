@@ -1,4 +1,13 @@
-"""Simple threaded dev server with live-reload via Server-Sent Events (SSE)."""
+"""Simple threaded dev server with live-reload via Server-Sent Events.
+
+`wyb dev` serves a directory over HTTP, broadcasts a `reload` event
+on file change through `/__sse`, and exposes a small `/__manifest`
+endpoint that bootstrap scripts can use to discover application
+modules without maintaining a hardcoded file list.
+
+Use the [`main`][wybthon.dev.main] function for CLI entry, or call
+[`serve`][wybthon.dev.serve] directly to embed the server.
+"""
 
 from __future__ import annotations
 
@@ -15,31 +24,38 @@ from urllib.parse import unquote, urlsplit
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP handler that serves files and a /__sse endpoint for reload events."""
+    """HTTP handler that serves files and a `/__sse` endpoint for reload events.
+
+    Class attributes:
+        watchers: List of `wfile` objects for connected SSE clients;
+            updated as clients connect and disconnect.
+        root: Filesystem root used as the fallback when no mount
+            matches the request path.
+        mounts: List of `(prefix, path)` mounts consulted by
+            [`translate_request_path`][wybthon.dev.translate_request_path].
+    """
 
     watchers = []  # type: ignore[var-annotated]
     root: Path = Path.cwd()
     mounts: list[tuple[str, Path]] = []
 
-    def end_headers(self) -> None:  # noqa: D401 - ensure dev assets are never cached
-        # Add aggressive no-store headers to avoid stale assets during development
-        # This applies to all responses (including directory listings and static files).
+    def end_headers(self) -> None:
+        """Append no-cache headers to every response to avoid stale assets."""
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
         super().end_headers()
 
     def do_GET(self):  # noqa: N802
+        """Dispatch requests to the SSE endpoint, manifest endpoint, or static handler."""
         if self.path == "/__sse":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
             self.send_header("Connection", "keep-alive")
             self.end_headers()
-            # Register this client
             self.watchers.append(self.wfile)
             try:
-                # Keep open until client disconnects
                 while True:
                     time.sleep(1)
             except Exception:
@@ -59,14 +75,18 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def _handle_manifest(self, query: str) -> None:
-        """Respond with a JSON array of .py files under a requested directory.
+        """Respond with a JSON array of `.py` files under a requested directory.
 
-        Usage: ``GET /__manifest?dir=examples/demo/app``
+        Usage:
+            `GET /__manifest?dir=examples/demo/app`
 
-        The response is a sorted list of paths relative to the server
-        root, e.g. ``["app/__init__.py", "app/main.py", ...]``.
-        Bootstrap scripts can fetch this instead of maintaining a
-        hardcoded file list.
+        The response is a sorted list of paths relative to the
+        requested directory (e.g. `["app/__init__.py",
+        "app/main.py"]`). Bootstrap scripts can fetch this list to
+        discover modules without maintaining a hardcoded manifest.
+
+        Args:
+            query: Raw query string from the request.
         """
         import json
 
@@ -81,7 +101,6 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(400, "Missing ?dir= parameter")
             return
 
-        # Resolve against server root; reject traversal
         segments = _sanitize_segments(rel_dir)
         target = self.root
         for seg in segments:
@@ -105,13 +124,13 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    # Map request path to filesystem path honoring mounts, falling back to root
-    def translate_path(self, path: str) -> str:  # noqa: D401 - behavior explained in doc above
+    def translate_path(self, path: str) -> str:
+        """Translate a URL path to a filesystem path honoring configured mounts."""
         return str(translate_request_path(path, self.root, self.mounts))
 
     @classmethod
     def notify_reload(cls) -> None:
-        """Notify connected SSE clients to reload by sending a reload event."""
+        """Send a `reload` SSE event to every connected client."""
         dead: list = []
         for w in list(cls.watchers):
             try:
@@ -128,7 +147,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
-    """Yield all files under the provided paths, descending into directories."""
+    """Yield every file under `paths`, descending into directories recursively."""
     for p in paths:
         if p.is_dir():
             for root, _dirs, files in os.walk(p):
@@ -139,17 +158,23 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
 
 
 def _sanitize_segments(path: str) -> list[str]:
-    """Split path and drop empty/dot-dot segments to prevent traversal."""
-    # Strip query/fragment and split; drop unsafe segments
+    """Split `path` into safe segments, dropping empty and `..` parts."""
     p = urlsplit(path).path
     parts = [seg for seg in p.split("/") if seg not in ("", ".", "..")]
     return parts
 
 
 def translate_request_path(path: str, root: Path, mounts: list[tuple[str, Path]]) -> Path:
-    """Translate a URL path to a filesystem path using mounts, with fallback to root.
+    """Translate a URL path to a filesystem path using mounts and a root fallback.
 
-    Longest-prefix match wins. Prevents directory traversal by dropping dangerous segments.
+    Args:
+        path: Incoming URL path.
+        root: Filesystem root used when no mount matches.
+        mounts: List of `(prefix, base)` pairs. Longest prefix wins.
+
+    Returns:
+        Concrete filesystem path. Directory traversal segments are
+        stripped before the path is constructed.
     """
     # Sort mounts by longest prefix to ensure the most specific mount wins
     sorted_mounts = sorted(mounts or [], key=lambda m: len(m[0]), reverse=True)
@@ -173,16 +198,24 @@ def translate_request_path(path: str, root: Path, mounts: list[tuple[str, Path]]
 
 
 def parse_mounts(mount_args: Iterable[str], base_dir: Path) -> list[tuple[str, Path]]:
-    """Parse --mount arguments of the form "/prefix=path".
+    """Parse `--mount` CLI arguments of the form `/prefix=path`.
 
-    - Prefix must start with "/"; if omitted, it will be added
-    - Paths are resolved relative to base_dir if not absolute
-    - Duplicate prefixes are allowed; last one wins via order (we keep all, sorted later)
+    - Prefix must start with `/`; one is added when missing.
+    - Paths are resolved relative to `base_dir` when not absolute.
+    - Duplicate prefixes are allowed; resolution order is determined
+      by [`translate_request_path`][wybthon.dev.translate_request_path].
+
+    Args:
+        mount_args: Raw CLI strings.
+        base_dir: Directory used to resolve relative paths.
+
+    Returns:
+        A list of `(prefix, path)` tuples ready to assign to
+        [`SSEHandler.mounts`][wybthon.dev.SSEHandler].
     """
     mounts: list[tuple[str, Path]] = []
     for raw in mount_args:
         if "=" not in raw:
-            # Treat as root mount
             prefix, raw_path = "/", raw
         else:
             prefix, raw_path = raw.split("=", 1)
@@ -205,7 +238,22 @@ def serve(
     open_browser: bool = False,
     open_path: str | None = None,
 ) -> None:
-    """Run a static dev server with auto-reload for the given directory."""
+    """Run a static dev server with auto-reload for `directory`.
+
+    Args:
+        directory: Filesystem root to serve.
+        host: Bind host.
+        port: Preferred port. If busy, the server tries the next 20
+            ports before failing.
+        watch: Directories to recursively watch for change events.
+        mounts: Optional list of `--mount` strings like
+            `/static=path/to/static`.
+        open_browser: When `True`, open a browser tab to the served
+            URL after binding.
+        open_path: Path to open when `open_browser` is `True`. When
+            omitted, falls back to a sensible default based on
+            content found in `directory`.
+    """
     os.chdir(directory)
     SSEHandler.root = Path(directory)
     handler_cls = SSEHandler
@@ -213,8 +261,8 @@ def serve(
     handler_cls.mounts = parse_mounts(mounts or [], Path(directory))
 
     class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-        # Handle each request in a separate thread so long-lived SSE connections
-        # do not block concurrent static file requests during development.
+        """Threaded TCP server so long-lived SSE clients don't block requests."""
+
         daemon_threads = True
         allow_reuse_address = True
 
@@ -314,7 +362,14 @@ def serve(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entry point for the `wyb` development server."""
+    """CLI entry point for the `wyb` development server.
+
+    Args:
+        argv: Optional argument list (defaults to `sys.argv[1:]`).
+
+    Returns:
+        Process exit code: `0` on success, non-zero on usage errors.
+    """
     parser = argparse.ArgumentParser(prog="wyb", description="Wybthon dev server")
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")

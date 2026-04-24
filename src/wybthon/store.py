@@ -1,12 +1,20 @@
-"""Reactive stores for nested state management, inspired by SolidJS createStore.
+"""Reactive stores for nested state, inspired by SolidJS `createStore`.
 
-Stores provide fine-grained reactive access to nested objects and lists.
-Each path through the store is backed by its own ``Signal``, so reading
-``store.user.name`` only subscribes the current computation to that
-specific leaf — not the entire store.
+Stores provide fine-grained reactive access to nested objects and
+lists. Each path through the store is backed by its own
+[`Signal`][wybthon.Signal], so reading `store.user.name` only
+subscribes the current computation to that specific leaf — not to the
+entire store.
 
-Usage::
+Public surface:
 
+- [`create_store`][wybthon.create_store]: build a store from any
+  initial value.
+- [`produce`][wybthon.produce]: batch mutations through a mutable
+  draft.
+
+Example:
+    ```python
     from wybthon import create_store, produce
 
     store, set_store = create_store({
@@ -17,19 +25,20 @@ Usage::
         ],
     })
 
-    # Reading (reactive):
     store.count           # 0
     store.user.name       # "Ada"
     store.todos[0].text   # "Learn Wybthon"
 
-    # Writing via path-based setter:
     set_store("count", 5)
     set_store("user", "name", "Jane")
     set_store("count", lambda c: c + 1)
     set_store("todos", 0, "done", True)
 
-    # Writing via produce (batch mutations):
     set_store(produce(lambda s: setattr(s, "count", s.count + 1)))
+    ```
+
+See Also:
+    - [Reactivity guide](../concepts/reactivity.md)
 """
 
 from __future__ import annotations
@@ -44,15 +53,17 @@ T = TypeVar("T")
 
 
 class _StoreNode:
-    """Internal node that holds a Signal per property and caches child nodes.
+    """Internal node holding one [`Signal`][wybthon.Signal] per property.
 
-    Child nodes are cached by key so that proxy reads and setter writes
-    for the same path always resolve to the same ``Signal`` instances.
+    Child nodes are cached by key so that proxy reads and setter
+    writes for the same path always resolve to the same `Signal`
+    instances.
     """
 
     __slots__ = ("_signals", "_raw", "_children")
 
     def __init__(self, raw: Any) -> None:
+        """Wrap `raw` in an empty signal/child cache."""
         object.__setattr__(self, "_signals", {})
         object.__setattr__(self, "_raw", raw)
         object.__setattr__(self, "_children", {})
@@ -74,7 +85,7 @@ class _StoreNode:
         return signals[key]
 
     def _get_child(self, key: Any) -> "_StoreNode":
-        """Return (or create) a cached child node for *key*."""
+        """Return (or create) a cached child node for `key`."""
         children: Dict[Any, _StoreNode] = object.__getattribute__(self, "_children")
         if key not in children:
             raw = object.__getattribute__(self, "_raw")
@@ -153,7 +164,7 @@ class _StoreNode:
 
 
 def _wrap_value(value: Any, node: _StoreNode) -> Any:
-    """Wrap a raw value in a reactive proxy backed by *node*."""
+    """Wrap a raw value in a reactive proxy backed by `node`."""
     if isinstance(value, (dict, list)):
         if isinstance(value, dict):
             return _StoreProxy(node)
@@ -164,13 +175,15 @@ def _wrap_value(value: Any, node: _StoreNode) -> Any:
 class _StoreProxy:
     """Reactive proxy for dict-like store objects.
 
-    Attribute reads track the corresponding Signal; nested dicts/lists
-    are lazily wrapped in their own proxies via cached child nodes.
+    Attribute reads track the corresponding `Signal`; nested dicts and
+    lists are lazily wrapped in their own proxies via cached child
+    nodes.
     """
 
     __slots__ = ("_node",)
 
     def __init__(self, node: _StoreNode) -> None:
+        """Bind this proxy to its backing `_StoreNode`."""
         object.__setattr__(self, "_node", node)
 
     def __getattr__(self, name: str) -> Any:
@@ -240,13 +253,15 @@ class _StoreProxy:
 class _StoreListProxy:
     """Reactive proxy for list-like store values.
 
-    Index reads track the corresponding Signal.  Supports ``len()``,
-    iteration, and ``in`` checks.
+    Index reads track the corresponding `Signal`. Supports `len()`,
+    iteration, and `in` checks; mutations must go through the store
+    setter.
     """
 
     __slots__ = ("_node",)
 
     def __init__(self, node: _StoreNode) -> None:
+        """Bind this proxy to its backing `_StoreNode`."""
         object.__setattr__(self, "_node", node)
 
     def __getitem__(self, index: int) -> Any:
@@ -299,10 +314,21 @@ class _StoreListProxy:
 
 
 def _resolve_path(node: _StoreNode, path: Sequence[Any]) -> Tuple[_StoreNode, Any]:
-    """Walk a store tree following *path*, returning (parent_node, final_key).
+    """Walk a store tree following `path`, returning `(parent_node, final_key)`.
 
-    Uses the child-node cache so that writes resolve to the same nodes
-    (and therefore the same Signals) as proxy reads.
+    Uses the child-node cache so that writes resolve to the same
+    nodes (and therefore the same signals) as proxy reads.
+
+    Args:
+        node: Root node of the store sub-tree.
+        path: Sequence of attribute names or indices.
+
+    Returns:
+        A tuple `(parent_node, final_key)` where `parent_node` owns
+        the leaf signal addressed by `final_key`.
+
+    Raises:
+        KeyError: If the path passes through a non-container value.
     """
     current = node
     for segment in path[:-1]:
@@ -316,16 +342,19 @@ def _resolve_path(node: _StoreNode, path: Sequence[Any]) -> Tuple[_StoreNode, An
 class _StoreSetter:
     """Callable that applies path-based updates to a store.
 
-    Supports several calling conventions mirroring SolidJS ``setStore``:
+    Supports several calling conventions mirroring SolidJS
+    `setStore`:
 
-    - ``set_store("key", value)`` — set a top-level key
-    - ``set_store("key", fn)`` — functional update (fn receives current value)
-    - ``set_store("a", "b", value)`` — nested path
-    - ``set_store("a", 0, "done", True)`` — path with list index
-    - ``set_store(produce(fn))`` — batch mutations via produce
+    - `set_store("key", value)`: set a top-level key.
+    - `set_store("key", fn)`: functional update (`fn(current)`).
+    - `set_store("a", "b", value)`: nested path.
+    - `set_store("a", 0, "done", True)`: path with list index.
+    - `set_store(produce(fn))`: batch mutations via
+      [`produce`][wybthon.produce].
     """
 
     def __init__(self, node: _StoreNode) -> None:
+        """Bind this setter to the store's root node."""
         self._node = node
 
     def __call__(self, *args: Any) -> None:
@@ -385,24 +414,30 @@ class _StoreSetter:
 def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
     """Create a reactive store from an initial value.
 
-    Returns ``(store, set_store)`` where *store* is a reactive proxy that
-    tracks reads per-path, and *set_store* is a setter supporting
-    path-based updates.
+    Args:
+        initial: Initial state. Dicts and lists are wrapped in
+            reactive proxies; other values are returned unchanged.
 
-    Example::
+    Returns:
+        A tuple `(store, set_store)` where `store` is a reactive
+        proxy that tracks reads per-path, and `set_store` is a setter
+        supporting path-based updates and
+        [`produce`][wybthon.produce] batches.
 
+    Example:
+        ```python
         store, set_store = create_store({"count": 0, "user": {"name": "Ada"}})
 
-        # Reactive reads:
         store.count         # 0
         store.user.name     # "Ada"
 
-        # Path-based writes:
         set_store("count", 5)
         set_store("user", "name", "Jane")
         set_store("count", lambda c: c + 1)
+        ```
 
-    See module docstring for full API documentation.
+    See the module docstring for the full set of supported calling
+    conventions.
     """
     node = _StoreNode(initial)
     if isinstance(initial, dict):
@@ -419,11 +454,17 @@ def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
 
 
 class _ProduceDraft:
-    """Mutable draft that records attribute writes for later application."""
+    """Mutable draft that records attribute writes for later application.
+
+    Used internally by [`produce`][wybthon.produce]. Mutations made on
+    the draft are accumulated as patches and replayed against the
+    real store via [`_apply_patches`][wybthon.store._apply_patches].
+    """
 
     __slots__ = ("_target", "_patches")
 
     def __init__(self, raw: Any) -> None:
+        """Initialize the draft over `raw` with an empty patch list."""
         object.__setattr__(self, "_target", raw)
         object.__setattr__(self, "_patches", [])
 
@@ -476,11 +517,12 @@ class _ProduceDraft:
 
 
 class _ProduceResult:
-    """Marker wrapping a produce function for the store setter to recognize."""
+    """Marker wrapping a `produce` function for the store setter to recognize."""
 
     __slots__ = ("_fn",)
 
     def __init__(self, fn: Callable[..., None]) -> None:
+        """Capture `fn` until the store setter applies it to a draft."""
         self._fn = fn
 
     def _apply(self, node: _StoreNode) -> None:
@@ -518,16 +560,28 @@ def _apply_patches(node: _StoreNode, draft: _ProduceDraft) -> None:
 def produce(fn: Callable[..., None]) -> _ProduceResult:
     """Create a producer for batch-mutating store state.
 
-    The function *fn* receives a mutable draft of the store.  Mutations
-    on the draft are recorded and applied reactively when passed to
-    ``set_store``::
+    `fn` receives a mutable draft of the store. Mutations are
+    recorded and applied reactively when the producer is passed to a
+    store setter created by [`create_store`][wybthon.create_store].
 
+    The draft supports attribute access, item access, and `append` /
+    `pop` for lists.
+
+    Args:
+        fn: A function that mutates the supplied draft. The draft is
+            consumed immediately when applied; do not keep a
+            reference past the call.
+
+    Returns:
+        A marker object recognized by the store setter.
+
+    Example:
+        ```python
         set_store(produce(lambda s: setattr(s, "count", s.count + 1)))
 
-    The draft supports attribute access, item access, ``append``, and
-    ``pop`` for lists::
-
-        set_store(produce(lambda s: s.todos.append({"text": "New", "done": False})))
-
+        set_store(produce(lambda s: s.todos.append(
+            {"text": "New", "done": False}
+        )))
+        ```
     """
     return _ProduceResult(fn)

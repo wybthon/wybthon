@@ -40,11 +40,15 @@ python -m http.server
 
 ## Coding guidelines
 
-- **Style**: Black (see `requirements.txt`).
+- **Style**: Black (see `requirements.txt`) plus Ruff (`ruff check .`).
 - **Naming**: prefer explicit, descriptive names; keep browser/runtime constraints in mind.
 - **Structure**: separate pure logic from DOM interop; keep render/diff paths lean.
 - **Examples**: keep examples minimal and reproducible; avoid large assets.
 - **Tests**: if you add tests, place them under `tests/` and keep them fast (no network/large IO).
+- **Docstrings**: Google-style for all public modules, classes, and functions. See the
+  [Documentation style guide](docs/meta/style-guide.md) for the full conventions, or
+  the rendered version at <https://docs.wybthon.com/meta/style-guide/>.
+- **Comments**: explain *why*, not *what*. Delete redundant comments during refactors.
 
 Common commands:
 
@@ -288,7 +292,7 @@ fix/dom-event-delegation
 - **CI** (`ci.yml`): runs formatter, linter, type checker, and tests on every push and PR.
 - **PR Lint** (`pr-lint.yml`): validates the PR title against Conventional Commits format (protects squash merges) and checks individual commit messages via commitlint (protects rebase merges). Recommended: add the **PR title** job as a required status check in branch-protection settings.
 - **Release** (`release.yml`): runs on merge to `main`; computes version, generates changelog, tags, creates GitHub Release, and (when `DRAFT_RELEASE` is `"false"`) publishes to PyPI.
-- **Docs** (`docs.yml`): deploys documentation to GitHub Pages on push to `main`.
+- **Docs** (`docs.yml`): builds the MkDocs site with `--strict` (fail on warning) on every push and PR; on push to `main` it also deploys to GitHub Pages.
 
 ## Security and provenance
 

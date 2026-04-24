@@ -36,8 +36,9 @@
 - Development mode
   - `DEV_MODE`, `set_dev_mode`, `is_dev_mode`
 
-> Note: DOM/VDOM rendering (`Element`, `render`, router, etc.)
-> requires a Pyodide/browser environment.  In non-browser contexts the
-> reactivity primitives, forms, lazy utilities, and pure-Python VDOM
-> constructs (`VNode`, `h`, `Fragment`, `dynamic`, `memo`, `is_getter`)
-> are still available.
+!!! note "Browser vs non-browser"
+    DOM/VDOM rendering (`Element`, `render`, router, etc.) requires a
+    Pyodide/browser environment. In non-browser contexts the
+    reactivity primitives, forms, lazy utilities, and pure-Python VDOM
+    constructs (`VNode`, `h`, `Fragment`, `dynamic`, `memo`,
+    `is_getter`) are still available.

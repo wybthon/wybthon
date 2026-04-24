@@ -1,31 +1,32 @@
-"""Core reconciliation engine: mounting, patching, and unmounting VNode trees.
+"""Reconciliation engine: mounting, patching, and unmounting VNode trees.
 
-This module implements the VDOM diffing algorithm that translates virtual
-node trees into real DOM mutations.
+This module is the bridge between the virtual DOM and real DOM. It
+implements the diffing algorithm that translates VNode trees into
+attribute writes, child insertions, and node removals.
 
-Key concepts:
+Mental model:
 
-* **Components run once.**  A function component is invoked a single
-  time during mount.  Its returned VNode tree is mounted directly.
-  Reactive updates flow through *reactive holes* embedded in that
-  tree, **not** by re-running the component body.
+- **Components run once.** A function component is invoked a single time
+  during mount. Its returned VNode tree is mounted directly. Reactive
+  updates flow through *reactive holes* embedded in that tree — not by
+  re-running the component body.
+- **Reactive holes** are `_dynamic` VNodes whose `getter` is re-evaluated
+  by an effect when its dependencies change. They're created automatically
+  whenever a callable child or callable prop value appears in the tree,
+  and explicitly via [`dynamic`][wybthon.dynamic].
+- **Components return a VNode** (or a value coercible to one). The
+  idiomatic style is to return a static tree and use `dynamic` for
+  explicit reactive subtrees; a returned zero-arg callable is also
+  accepted and is wrapped in a single reactive hole for convenience
+  (handy when authoring higher-order components).
 
-* **Reactive holes** are ``_dynamic`` VNodes whose ``getter`` is
-  re-evaluated by an effect when its dependencies change.  They are
-  created automatically whenever a callable child or callable prop
-  value appears in the tree, and explicitly via :func:`wybthon.dynamic`.
+Public surface:
 
-* **Components return a VNode** (or a value coercible to one).
-  The idiomatic style is to return a static tree and use
-  :func:`wybthon.dynamic` for explicit reactive subtrees; a returned
-  zero-argument callable is also accepted and is wrapped in a single
-  reactive hole for convenience (handy when authoring HOCs).
-
-Public functions:
-  - ``render(vnode, container)`` -- top-level entry point
-  - ``mount(vnode, container, anchor)`` -- create DOM for a new VNode
-  - ``unmount(vnode)`` -- tear down a VNode and its DOM
-  - ``patch(old, new, container)`` -- diff two VNodes and apply DOM changes
+- [`render`][wybthon.render]: top-level entry point.
+- [`mount`][wybthon.reconciler.mount]: create DOM for a new VNode.
+- [`unmount`][wybthon.reconciler.unmount]: tear down a VNode and its DOM.
+- [`patch`][wybthon.reconciler.patch]: diff two VNodes and apply DOM
+  changes.
 """
 
 from __future__ import annotations
@@ -53,7 +54,28 @@ _container_registry: Dict[int, VNode] = {}
 
 
 def render(vnode: VNode, container: Union[Element, str]) -> Element:
-    """Render a VNode tree into a container ``Element`` or CSS selector."""
+    """Render a VNode tree into a container element.
+
+    Subsequent calls with the same `container` *patch* the existing tree
+    in place — only the differences are applied. Pass `None` (via the
+    internal API) to unmount.
+
+    Args:
+        vnode: The root VNode to render.
+        container: An [`Element`][wybthon.Element] wrapper or a CSS selector
+            string identifying an existing DOM node.
+
+    Returns:
+        The wrapped container `Element`. Useful for chaining or for
+        retaining a reference to the mount point.
+
+    Example:
+        ```python
+        from wybthon import h, render
+
+        render(h("h1", {}, "Hello, world!"), "#app")
+        ```
+    """
     if isinstance(container, str):
         container_el = Element(container, existing=True)
     else:
@@ -327,7 +349,17 @@ def _unmount_dynamic(vnode: VNode) -> None:
 
 
 def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> Element:
-    """Mount a VNode (or string) into the container, returning its element."""
+    """Mount a VNode (or string) into `container`, returning its DOM element.
+
+    Args:
+        vnode: The VNode to mount. Strings are coerced to text VNodes.
+        container: The parent element wrapper.
+        anchor: Optional sibling DOM node to insert before. When `None`,
+            the new element is appended to `container`.
+
+    Returns:
+        The mounted [`Element`][wybthon.Element] wrapper.
+    """
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
 
@@ -550,7 +582,16 @@ def _unmount_fragment(vnode: VNode) -> None:
 
 
 def unmount(vnode: VNode) -> None:
-    """Unmount a VNode and dispose associated resources and effects."""
+    """Unmount `vnode`, disposing its effects, ownership scope, and DOM.
+
+    Calls cleanup on the owning component context (if any), removes
+    delegated event handlers, runs `on_cleanup` callbacks, and detaches
+    the underlying DOM node from its parent.
+
+    Args:
+        vnode: The VNode to tear down. Safe to call on already-unmounted
+            nodes (becomes a no-op).
+    """
     if vnode.tag == "_dynamic":
         _unmount_dynamic(vnode)
         return
@@ -600,7 +641,17 @@ def _same_type(a: VNode, b: VNode) -> bool:
 
 
 def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
-    """Patch ``old`` into ``new`` by mutating DOM as needed within the container."""
+    """Diff `old` against `new` and apply minimal DOM changes inside `container`.
+
+    Same-type VNodes are patched in place (props and children diffed);
+    different types are unmounted and remounted at the same anchor.
+
+    Args:
+        old: The previously-rendered VNode, or `None` for the initial
+            mount.
+        new: The new VNode to render.
+        container: The parent element wrapper.
+    """
     if old is None:
         mount(new, container)
         return

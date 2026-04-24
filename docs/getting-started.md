@@ -92,10 +92,16 @@ container = Element("body", existing=True)
 render(tree, container)
 ```
 
-> **Why `span(count)` instead of `f"Count: {count()}"`?**  Reading
-> `count()` eagerly at setup captures the current value once.  To get
-> reactive updates, embed the *accessor* — the reconciler wraps it as
-> a reactive hole and updates only that DOM node when the signal
-> changes.  See [Reactive Holes](concepts/primitives.md#reactive-holes).
+!!! tip "Why `span(count)` instead of `f\"Count: {count()}\"`?"
+    Reading `count()` eagerly at setup captures the current value
+    once. To get reactive updates, embed the *accessor* — the
+    reconciler wraps it as a reactive hole and updates only that DOM
+    node when the signal changes. See
+    [Reactive Holes](concepts/primitives.md#reactive-holes).
 
-See: [Authoring Patterns](guides/authoring-patterns.md)
+## Next steps
+
+- Read the [Mental model](concepts/mental-model.md) for a deeper tour.
+- Browse [Authoring patterns](guides/authoring-patterns.md) for idiomatic recipes.
+- Walk through the [examples](examples.md) to see complete apps.
+- Coming from React or SolidJS? Try [Migrating from React](guides/migrating-from-react.md) or [Migrating from Solid](guides/migrating-from-solid.md).

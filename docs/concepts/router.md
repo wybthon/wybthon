@@ -103,5 +103,12 @@ Notes for Pyodide:
 - Dynamic imports are synchronous from Python’s perspective but may involve underlying network fetches when using `micropip`. Use `preload_component` to warm caches before navigation.
 
 Migration notes:
+
 - Prior versions did not include `Link` active styling. If you previously computed active state manually, you can remove that logic and rely on `Link`'s built-in active class.
 - Use the new `replace=True` option on both `Link` and `navigate()` when you want to update the URL without adding a history entry (e.g., tab switches).
+
+## Next steps
+
+- Walk through the [Router example](../examples/router.md).
+- See [Suspense and Lazy Loading](suspense-lazy.md) for code-splitting.
+- Browse the [`router`][wybthon.router] and [`router_core`][wybthon.router_core] API references.

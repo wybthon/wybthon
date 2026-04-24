@@ -70,3 +70,9 @@ routes = [
     Route(path="/", component=HomePage),
 ]
 ```
+
+## Next steps
+
+- See the [Style guide](../meta/style-guide.md) for the project's docstring conventions.
+- Browse the [`reactivity`][wybthon.reactivity] API for type-annotated public symbols.
+- Read the [Contributing guide](../meta/contributing.md) for the local lint/typecheck workflow.

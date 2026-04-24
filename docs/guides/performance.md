@@ -77,3 +77,9 @@ win.
 
 Use `--bench=<name>` to run a single benchmark or `--json` to emit
 machine-readable output.
+
+## Next steps
+
+- Read [Mental model](../concepts/mental-model.md) for the underlying ideas.
+- Browse [Authoring patterns](authoring-patterns.md) for hole-friendly recipes.
+- See [Suspense and Lazy Loading](../concepts/suspense-lazy.md) for code-splitting.
