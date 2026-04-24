@@ -92,9 +92,9 @@ container = Element("body", existing=True)
 render(tree, container)
 ```
 
-!!! tip "Why `span(count)` instead of `f\"Count: {count()}\"`?"
+!!! tip "Why `span(count)` instead of `f'Count: {count()}'`?"
     Reading `count()` eagerly at setup captures the current value
-    once. To get reactive updates, embed the *accessor* — the
+    once. To get reactive updates, embed the *accessor* itself; the
     reconciler wraps it as a reactive hole and updates only that DOM
     node when the signal changes. See
     [Reactive Holes](concepts/primitives.md#reactive-holes).

@@ -99,8 +99,9 @@ def on_hover_about(_evt):
 ```
 
 Notes for Pyodide:
+
 - Ensure the module is available in the Pyodide filesystem or installed via `micropip`. Static bundling is recommended for demo apps.
-- Dynamic imports are synchronous from Python’s perspective but may involve underlying network fetches when using `micropip`. Use `preload_component` to warm caches before navigation.
+- Dynamic imports are synchronous from Python's perspective but may involve underlying network fetches when using `micropip`. Use `preload_component` to warm caches before navigation.
 
 Migration notes:
 

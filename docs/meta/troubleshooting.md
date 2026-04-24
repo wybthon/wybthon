@@ -25,7 +25,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** an unresolved cross-reference (for example a typo in a `[label][wybthon.symbol]` link) or an unused `nav` entry.
 
-    **Fix:** read the warning text — `mkdocstrings` reports the exact symbol it could not find — and update the page or the symbol's docstring. If the broken link is intentional (e.g. while a feature is in flight), turn the link into plain text or remove it.
+    **Fix:** read the warning text. `mkdocstrings` reports the exact symbol it could not find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.
 
 ## Reactive bugs
 
@@ -43,7 +43,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** you passed a Python list instead of a signal accessor for `each=`.
 
-    **Fix:** make `each` a signal accessor — typically the getter returned by [`create_signal`][wybthon.create_signal] — so the list reacts to updates. See `warn_each_plain_list` in `wybthon._warnings`.
+    **Fix:** make `each` a signal accessor (typically the getter returned by [`create_signal`][wybthon.create_signal]) so the list reacts to updates. See `warn_each_plain_list` in `wybthon._warnings`.
 
 ??? bug "An effect fires more often than expected"
 
@@ -73,7 +73,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** you read the ref before the element mounted.
 
-    **Fix:** read the ref inside [`on_mount`][wybthon.on_mount], an effect, or an event handler — all of which run after the first commit.
+    **Fix:** read the ref inside [`on_mount`][wybthon.on_mount], an effect, or an event handler; all of which run after the first commit.
 
 ## Dev server
 

@@ -8,7 +8,7 @@ The reconciler walks a previous and next VDOM tree and applies the
 minimal set of DOM mutations to bring the page into sync. It handles
 keyed lists, fragments, components, text nodes, and reactive holes.
 
-Most users never call into this module directly — [`render`][wybthon.render]
+Most users never call into this module directly. [`render`][wybthon.render]
 mounts a tree and the reconciler kicks in for subsequent updates. Read
 this page if you're contributing to Wybthon, debugging a diffing bug, or
 curious how holes plug into the patching loop.
@@ -25,7 +25,7 @@ curious how holes plug into the patching loop.
 
 #### See also
 
-- [`vdom`][wybthon.vdom] — entry points for rendering and patching.
-- [`vnode`][wybthon.vnode] — the data structure being diffed.
-- [Concepts → Virtual DOM](../concepts/vdom.md)
-- [Concepts → Lifecycle and Ownership](../concepts/lifecycle.md)
+- [`vdom`][wybthon.vdom]: entry points for rendering and patching.
+- [`vnode`][wybthon.vnode]: the data structure being diffed.
+- [Concepts: Virtual DOM](../concepts/vdom.md)
+- [Concepts: Lifecycle and Ownership](../concepts/lifecycle.md)

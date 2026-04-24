@@ -11,6 +11,7 @@
 - `signal current_path` – reactive signal with current `path + search`
 
 Notes:
+
 - Wildcard path segment `*` captures the rest of the path into `params["wildcard"]`.
 - Trailing `/*` also matches the base segment; e.g. `/docs/*` matches `/docs` and `/docs/guide`.
 - Nested routes use `children` and resolve to the most specific match.

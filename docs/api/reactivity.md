@@ -37,12 +37,12 @@ execution are disposed before each re-run.
 
 ##### Signals-first API (recommended)
 
-- `create_signal(value, *, equals=...) -> (getter, setter)` — optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.
-- `create_effect(fn) -> Computation` — the returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
-- `create_memo(fn) -> getter` — creates a `Computation` under the current owner; disposed when the owner is disposed.
-- `on_mount(fn)` — run after first render
-- `on_cleanup(fn)` — appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
-- `batch() -> context manager` or `batch(fn) -> result` — callback form flushes synchronously
+- `create_signal(value, *, equals=...) -> (getter, setter)`. Optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.
+- `create_effect(fn) -> Computation`. The returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
+- `create_memo(fn) -> getter`. Creates a `Computation` under the current owner; disposed when the owner is disposed.
+- `on_mount(fn)`. Run after first render.
+- `on_cleanup(fn)`. Appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
+- `batch() -> context manager` or `batch(fn) -> result`. The callback form flushes synchronously.
 
 ##### `create_signal` and `equals`
 
@@ -98,8 +98,8 @@ otherwise each parameter is bound to its own accessor and there is no
 need to call `get_props()`.
 
 `ReactiveProps` is read-only; the parent/reconciler updates underlying
-values.  When a parent passes a getter (e.g. `name=my_signal`), the
-proxy unwraps it transparently — children always read with `props.name()`.
+values.  When a parent passes a getter (e.g., `name=my_signal`), the
+proxy unwraps it transparently, and children always read with `props.name()`.
 
 ##### `get_owner()` and `run_with_owner(owner, fn)`
 
@@ -116,7 +116,7 @@ async def load():
 
 ##### `children(fn)`
 
-`children(getter)` wraps a zero-argument callable that returns the children value (often `lambda: get_props().children()`) and returns a **memo getter** that flattens and resolves the list. Matches Solid’s `children()` helper. Import under an alias (e.g. `from wybthon import children as resolve_children`) if your component also names a parameter `children`.
+`children(getter)` wraps a zero-argument callable that returns the children value (often `lambda: get_props().children()`) and returns a **memo getter** that flattens and resolves the list. Matches Solid's `children()` helper. Import under an alias (e.g., `from wybthon import children as resolve_children`) if your component also names a parameter `children`.
 
 ```python
 from wybthon import children, component, dynamic, get_props, h3, section
@@ -131,21 +131,21 @@ def Card(title=""):
 ##### Resources
 
 - `create_resource(fetcher) -> Resource`
-- `create_resource(source, fetcher) -> Resource` — refetches when source changes
+- `create_resource(source, fetcher) -> Resource`. Refetches when the source changes.
 
 ##### Reactive utilities
 
-- `untrack(fn)` — run without tracking signal reads
-- `on(deps, fn, defer=False)` — effect with explicit deps
-- `create_root(fn)` — creates an independent `Owner` root.  `fn` receives a `dispose` callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on `dispose()`.
-- `merge_props(*sources)` — merge prop sources into a **reactive proxy**.  Each source may be a plain ``dict``, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting ``[]``, ``.get()``, ``in``, ``len()``, iteration, and ``==`` comparison with dicts.
-- `split_props(props, *key_groups)` — split a props source into **reactive proxy** groups by key name, plus a rest group.  Returns ``(group1, ..., rest)``; each proxy lazily reads from the original source.
+- `untrack(fn)`. Run without tracking signal reads.
+- `on(deps, fn, defer=False)`. Effect with explicit deps.
+- `create_root(fn)`. Creates an independent `Owner` root.  `fn` receives a `dispose` callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on `dispose()`.
+- `merge_props(*sources)`. Merge prop sources into a **reactive proxy**.  Each source may be a plain ``dict``, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting ``[]``, ``.get()``, ``in``, ``len()``, iteration, and ``==`` comparison with dicts.
+- `split_props(props, *key_groups)`. Split a props source into **reactive proxy** groups by key name, plus a rest group.  Returns ``(group1, ..., rest)``; each proxy lazily reads from the original source.
 
 ##### Reactive list primitives
 
-- `map_array(source, map_fn)` — keyed reactive list mapping.  ``source`` is a getter returning a list; ``map_fn(item_getter, index_getter)`` runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.
-- `index_array(source, map_fn)` — index-keyed reactive list mapping.  Like ``map_array`` but keyed by index position.  ``map_fn(item_getter, index: int)`` — the item getter is a signal that updates in place.  Returns a getter producing the mapped list.
-- `create_selector(source)` — efficient selection signal.  Returns ``is_selected(key) -> bool``.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).
+- `map_array(source, map_fn)`. Keyed reactive list mapping.  ``source`` is a getter returning a list; ``map_fn(item_getter, index_getter)`` runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.
+- `index_array(source, map_fn)`. Index-keyed reactive list mapping.  Like ``map_array`` but keyed by index position.  ``map_fn(item_getter, index: int)``: the item getter is a signal that updates in place.  Returns a getter producing the mapped list.
+- `create_selector(source)`. Efficient selection signal.  Returns ``is_selected(key) -> bool``.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).
 
 ##### Global state
 

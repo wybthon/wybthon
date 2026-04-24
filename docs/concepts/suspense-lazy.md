@@ -51,7 +51,7 @@ def Profile():
 
 - The `Suspense` boundary catches any pending resources in its subtree.
 - `fallback` accepts a callable so the placeholder can stay reactive too.
-- Resources resolve independently — `Suspense` waits for *all* of them.
+- Resources resolve independently; `Suspense` waits for *all* of them.
 
 ### Nesting boundaries
 

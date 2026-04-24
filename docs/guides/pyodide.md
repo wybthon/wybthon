@@ -1,6 +1,6 @@
 # Pyodide
 
-Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython distribution compiled to WebAssembly. Most of the framework is plain Python; Pyodide-specific concerns surface only at the boundaries — module loading, async/event-loop integration, and JS interop.
+Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython distribution compiled to WebAssembly. Most of the framework is plain Python; Pyodide-specific concerns surface only at the boundaries: module loading, async/event-loop integration, and JS interop.
 
 ## The basics
 
@@ -46,7 +46,7 @@ user = create_resource(lambda: ("u-1",), fetch_user)
 
 - Convert Python collections to JS objects with `pyodide.ffi.to_js(...)` when calling JS APIs that expect plain objects (e.g. `JSON.stringify` or `fetch` request bodies).
 - Convert JS objects to Python with `.to_py()` (most JS values returned by `await` calls have this method).
-- Wrap Python callbacks in `create_proxy` when handing them to JS APIs that store them long term — Wybthon already does this internally for event handlers and `popstate` listeners, but you'll need to do it manually for direct `addEventListener` calls.
+- Wrap Python callbacks in `create_proxy` when handing them to JS APIs that store them long term. Wybthon already does this internally for event handlers and `popstate` listeners, but you'll need to do it manually for direct `addEventListener` calls.
 
 ## Lazy imports and module loading
 

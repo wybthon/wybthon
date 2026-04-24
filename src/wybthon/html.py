@@ -27,8 +27,8 @@ names collide with Python builtins, so they are exposed with a trailing
 underscore: `main_` and `input_`.
 
 See Also:
-    - [`h`][wybthon.h] — the underlying hyperscript constructor.
-    - [`Fragment`][wybthon.Fragment] — wrap a list of children with no
+    - [`h`][wybthon.h]: the underlying hyperscript constructor.
+    - [`Fragment`][wybthon.Fragment]: wrap a list of children with no
       DOM parent.
 """
 

@@ -3,12 +3,12 @@
 #### The big idea
 
 Wybthon component bodies run **once**.  Reactive updates flow through
-*reactive holes* — a per-binding effect for each callable child or
+*reactive holes*: a per-binding effect for each callable child or
 prop value.  When a signal changes, only the holes that read it
 re-evaluate, and only the affected DOM nodes are touched.  This is
-fundamentally cheaper than a full component re-render + diff, even
+fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
-the Python ↔ JS bridge.
+the Python and JS bridge.
 
 #### Authoring tips
 
@@ -17,10 +17,10 @@ the Python ↔ JS bridge.
   rather than reading signals eagerly inside the component body.
 
   ```python
-  # Slow — eager reads happen during setup; future changes are missed.
+  # Slow: eager reads happen during setup; future changes are missed.
   return p(f"Hello, {name()}, count={count()}")
 
-  # Fast — only two text nodes update.
+  # Fast: only two text nodes update.
   return p("Hello, ", span(name), ", count=", span(count))
   ```
 
@@ -53,12 +53,12 @@ python benchmarks/bench_runner.py
 
 The runner measures:
 
-- Standard JS framework benchmark workloads (create / update / swap /
-  remove rows in a 1k–10k row table) — useful as a regression smoke
+- Standard JS framework benchmark workloads (create, update, swap, and
+  remove rows in a 1k to 10k row table); useful as a regression smoke
   test for the diffing algorithm.
-- **`hole update (1k tree)`** — change one signal that drives a single
+- **`hole update (1k tree)`**: change one signal that drives a single
   reactive hole inside a 1,000-node tree.
-- **`full rerender (1k tree)`** — re-render the entire tree and let the
+- **`full rerender (1k tree)`**: re-render the entire tree and let the
   diffing algorithm reduce the change set to one text node.
 
 Both tree benchmarks update the *same* DOM node; the difference is

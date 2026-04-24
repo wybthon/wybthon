@@ -5,14 +5,14 @@ fully-reactive `@component` model.
 
 !!! tip "Mental model in one line"
     Components run **once**. Every prop is a zero-arg accessor.
-    Reactivity happens through *reactive holes* — accessors (or
+    Reactivity happens through *reactive holes*: accessors (or
     `dynamic(...)` getters) embedded in the returned VNode tree. See
-    [Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes).
+    [Primitives, Reactive Holes](../concepts/primitives.md#reactive-holes).
 
 #### `@component` decorator
 
 The `@component` decorator turns a function into a component.  Each
-parameter becomes a **reactive accessor** — a zero-arg callable.
+parameter becomes a **reactive accessor**, a zero-arg callable.
 
 ```python
 from wybthon import component, h2
@@ -31,7 +31,7 @@ def Hello(name="world", greeting="Hello"):
 * Pass an accessor directly into the tree for a reactive auto-hole.
 * Call it (`name()`) for a tracked read.
 * Wrap with [`untrack`](../concepts/primitives.md#untrack) for a
-  one-shot snapshot (e.g. seeding a signal).
+  one-shot snapshot (e.g., seeding a signal).
 
 ```python
 from wybthon import component, create_signal, button, div, p, span, untrack
@@ -50,7 +50,7 @@ def Counter(initial=0):
 
 ##### Children
 
-`children` is a normal prop — also a reactive accessor.  Most layouts
+`children` is a normal prop, also a reactive accessor.  Most layouts
 read it once at setup; wrap with `untrack`:
 
 ```python
@@ -67,7 +67,7 @@ def Card(title="", children=None):
 ```
 
 For memoized, reactive resolution use the `children()` helper with
-`get_props()` — see [Reactivity API](../api/reactivity.md).
+`get_props()`. See [Reactivity API](../api/reactivity.md).
 
 ##### Direct calls
 
@@ -78,7 +78,7 @@ Card("child text", title="My Card")  # positional args become children
 Counter(initial=5)                    # keyword args become props
 ```
 
-##### Static or getter — the same call site
+##### Static or getter, the same call site
 
 A child component never has to care whether the parent passed a
 constant or a signal:
@@ -131,7 +131,7 @@ update reactively without the subtree being re-mounted.
 
 #### Larger examples
 
-1) Composition via children
+1. Composition via children
 
 ```python
 from wybthon import component, div, h3, p, section, untrack
@@ -152,7 +152,7 @@ def Page():
     )
 ```
 
-2) State and derived values (`For` + `dynamic`)
+2. State and derived values (`For` + `dynamic`)
 
 ```python
 from wybthon import (
@@ -183,7 +183,7 @@ def NamesList():
     )
 ```
 
-3) Cleanup and lifecycles
+3. Cleanup and lifecycles
 
 ```python
 from wybthon import component, create_signal, div, dynamic, on_cleanup, on_mount

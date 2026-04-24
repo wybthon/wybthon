@@ -2,7 +2,7 @@
 
 Wybthon is a client-side Python single-page application (SPA) framework that runs in the browser via [Pyodide](https://pyodide.org/).
 
-If you can write Python, you can build interactive web apps with Wybthon — no JavaScript build pipeline required.
+If you can write Python, you can build interactive web apps with Wybthon, no JavaScript build pipeline required.
 
 ## What is Wybthon?
 
@@ -40,27 +40,27 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 
 ## Quickstart
 
-1) Run the demo straight from a checkout:
+1. Run the demo straight from a checkout:
 
     ```bash
     python -m http.server
     # open http://localhost:8000/examples/demo/index.html
     ```
 
-2) Or run the dev server with auto-reload:
+2. Or run the dev server with auto-reload:
 
     ```bash
     pip install .
     wyb dev --dir .
     ```
 
-3) Explore the demo app in `examples/demo` and the API in the Concepts and API sections.
+3. Explore the demo app in `examples/demo` and the API in the Concepts and API sections.
 
 ## Why Wybthon?
 
-- **Fully reactive props + run-once components**: function components run a single time at mount. Every prop is a zero-argument accessor — pass it into the tree for an automatic *reactive hole* and only that node updates when the prop changes. No React-style re-renders. See [Reactive Holes](concepts/primitives.md#reactive-holes).
+- **Fully reactive props + run-once components**: function components run a single time at mount. Every prop is a zero-argument accessor; pass it into the tree for an automatic *reactive hole* and only that node updates when the prop changes. No React-style re-renders. See [Reactive Holes](concepts/primitives.md#reactive-holes).
 - **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`, `dynamic`.
-- Virtual DOM renderer with function components — **batched** mutations amortise the Pyodide ↔ JS bridge cost.
+- Virtual DOM renderer with function components, with **batched** mutations to amortise the Pyodide and JS bridge cost.
 - Async data: [`create_resource`][wybthon.create_resource] with loading/error signals and a [`Suspense`][wybthon.Suspense] boundary.
 - **Reactive context**: `Provider` values are signal-backed so consumers update without re-mounting the subtree.
 - Router with path params, query parsing, and a `Link` component.
@@ -71,12 +71,12 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 
 ## Documentation map
 
-- **Get started** — install, run the demo, write your first component, explore the dev server.
-- **Concepts** — deep dives into the [mental model](concepts/mental-model.md), reactivity, components, lifecycle, VDOM, and DOM interop.
-- **Guides** — task-oriented recipes for [forms](concepts/forms.md), [routing](concepts/router.md), [stores](concepts/stores.md), [suspense and lazy loading](concepts/suspense-lazy.md), [testing](guides/testing.md), and more.
-- **Examples** — walkthroughs of the demo app pages and patterns.
-- **API reference** — auto-generated documentation per module via `mkdocstrings`.
-- **Meta** — contribution guide, [documentation style guide](meta/style-guide.md), FAQ, and troubleshooting.
+- **Get started**: install, run the demo, write your first component, explore the dev server.
+- **Concepts**: deep dives into the [mental model](concepts/mental-model.md), reactivity, components, lifecycle, VDOM, and DOM interop.
+- **Guides**: task-oriented recipes for [forms](concepts/forms.md), [routing](concepts/router.md), [stores](concepts/stores.md), [suspense and lazy loading](concepts/suspense-lazy.md), [testing](guides/testing.md), and more.
+- **Examples**: walkthroughs of the demo app pages and patterns.
+- **API reference**: auto-generated documentation per module via `mkdocstrings`.
+- **Meta**: contribution guide, [documentation style guide](meta/style-guide.md), FAQ, and troubleshooting.
 
 ## Next steps
 

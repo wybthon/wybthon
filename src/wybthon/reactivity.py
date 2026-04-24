@@ -3,7 +3,7 @@
 This module is the heart of Wybthon's SolidJS-inspired reactivity. Every
 reactive computation (effect, memo) is **owned** by a parent scope. When
 that scope re-runs or is disposed, all child computations are torn down
-automatically — preventing leaks and giving lifecycle semantics that
+automatically, preventing leaks and giving lifecycle semantics that
 match component mount/unmount boundaries.
 
 Core types:
@@ -108,7 +108,7 @@ def _has_current_computation() -> bool:
     """Return True when there is an active reactive computation (effect/memo).
 
     Used by the dev-mode "destructured prop" warning to suppress noise when a
-    prop accessor is read inside an effect / memo body during setup — those
+    prop accessor is read inside an effect / memo body during setup; those
     are the canonical "subscribe to this prop" patterns, not the footgun the
     warning is trying to flag.
     """
@@ -448,7 +448,7 @@ def signal(value: T) -> Signal[T]:
 class ReactiveProps:
     """Reactive proxy over a component's props dict.
 
-    Every attribute or item access returns a **reactive accessor** — a
+    Every attribute or item access returns a **reactive accessor**: a
     zero-arg callable that returns the current value and tracks the read.
     This mirrors SolidJS's `props.x` semantics, adapted to Python.
 
@@ -471,7 +471,7 @@ class ReactiveProps:
         @component
         def Greeting():
             props = get_props()
-            # Auto-hole — only the text node updates when ``name`` changes.
+            # Auto-hole: only the text node updates when ``name`` changes.
             return p("Hello, ", props.name, "!")
         ```
 
@@ -542,7 +542,7 @@ class ReactiveProps:
         """Return the current value for `key` (tracked, with auto-unwrap).
 
         If the stored prop value is a getter, it is invoked and the result
-        returned — mirroring `_make_getter`. If `default` is provided, it is
+        returned, mirroring `_make_getter`. If `default` is provided, it is
         returned when `key` is absent from both the props dict and the
         component's parameter defaults.
 
@@ -586,13 +586,13 @@ class ReactiveProps:
 
         When `key` exists on the prop bag (in raw props, prior signals, or
         component-parameter defaults), the returned getter reads the underlying
-        signal — a tracking scope subscribes to it.
+        signal: a tracking scope subscribes to it.
 
         When `key` is **missing**, the getter returns `default` on each call
         without creating a tracked signal. This means repeated `get(key, x)`
         / `get(key, y)` calls each return their own default (no sticky
         behavior). Components that need reactivity for a possibly-missing
-        prop should declare it as a parameter with a default value —
+        prop should declare it as a parameter with a default value;
         `@component` ensures a signal is created up front so future updates
         always propagate.
 
@@ -682,7 +682,7 @@ def read_prop(props: Any, key: str, default: Any = None) -> Any:
     Works with both [`ReactiveProps`][wybthon.ReactiveProps] (the common
     case inside the reconciler) and plain dicts (test paths and a few
     legacy call sites). When called inside a tracking scope, the read is
-    tracked against the underlying signal — mirroring the auto-unwrap
+    tracked against the underlying signal, mirroring the auto-unwrap
     behavior of `ReactiveProps.value`.
 
     Args:
@@ -879,7 +879,7 @@ def untrack(fn: Callable[[], T]) -> T:
     prop without subscribing.
 
     Inside `untrack` the dev-mode destructured-prop warning is also
-    silenced — so `count, set_count = create_signal(untrack(initial))`
+    silenced, so `count, set_count = create_signal(untrack(initial))`
     cleanly opts out of the noise.
 
     Args:
@@ -1067,8 +1067,8 @@ def create_resource(
 
     Can be called two ways:
 
-    - `create_resource(fetcher)` — simple fetcher, no source signal.
-    - `create_resource(source, fetcher)` — refetches automatically when the
+    - `create_resource(fetcher)`: simple fetcher, no source signal.
+    - `create_resource(source, fetcher)`: refetches automatically when the
       `source` getter's tracked value changes.
 
     The fetcher should be an async function returning the data value. If it
@@ -1225,7 +1225,7 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 
     Works inside or outside components. Inside a stateful component the
     signal is captured by the render function's closure and persists
-    naturally — there is no cursor system or "rules of hooks".
+    naturally; there is no cursor system or "rules of hooks".
 
     Args:
         value: Initial value stored in the signal.
@@ -1427,7 +1427,7 @@ def get_props() -> "ReactiveProps":
     read the current value (tracked when called inside an effect or hole).
 
     Most components should rely on the destructured parameters provided
-    by `@component`. Use `get_props()` for advanced cases — generic
+    by `@component`. Use `get_props()` for advanced cases such as generic
     wrappers, key iteration, or proxy-mode interop.
 
     Returns:
@@ -2004,7 +2004,7 @@ def create_selector(
 
     When `source()` changes, only computations that previously called the
     returned `is_selected(key)` with the **old** or **new** key are
-    notified — instead of every subscriber re-running.
+    notified, instead of every subscriber re-running.
 
     Args:
         source: Zero-arg getter returning the currently-selected key.

@@ -20,9 +20,9 @@ def Counter(initial=0):
 ```
 
 `count` is a zero-arg accessor returned by `create_signal`.  When you
-embed it in the VNode tree the reconciler wraps it in its own effect —
-only that text node updates when the signal changes.  See
-[Primitives → Reactive Holes](../concepts/primitives.md#reactive-holes).
+embed it in the VNode tree the reconciler wraps it in its own effect,
+so only that text node updates when the signal changes.  See
+[Primitives, Reactive Holes](../concepts/primitives.md#reactive-holes).
 
 #### Direct call form (no `h`)
 
@@ -32,7 +32,7 @@ only that text node updates when the signal changes.  See
 Counter(initial=5)              # → h(Counter, {"initial": 5})
 ```
 
-Pass a getter to react to parent state changes — the child code does
+Pass a getter to react to parent state changes; the child code does
 not change:
 
 ```python

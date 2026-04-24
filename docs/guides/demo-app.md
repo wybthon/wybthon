@@ -10,7 +10,7 @@ Folders under `examples/demo/app/` mirror routes and components.
 #### Routing and lazy loading
 
 Routes are defined in `examples/demo/app/routes.py`.  Components are
-passed directly — the new `@component` decorator handles the
+passed directly; the new `@component` decorator handles the
 `(props,)` calling convention used by the router:
 
 ```python

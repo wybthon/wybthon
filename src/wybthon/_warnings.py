@@ -81,8 +81,8 @@ def warn_once(category: str, key: Any, message: str) -> None:
     """Print `message` at most once for the given `(category, key)` pair.
 
     Args:
-        category: Warning bucket (e.g. `"each_plain_list"`).
-        key: Hashable identifier within the category — the same
+        category: Warning bucket (e.g., `"each_plain_list"`).
+        key: Hashable identifier within the category. The same
             warning for the same key is only ever emitted once per
             process.
         message: Warning text.
@@ -135,7 +135,7 @@ def warn_destructured_prop(component: Any, prop_name: str) -> None:
     """Warn that a reactive prop accessor was unwrapped at component setup.
 
     Calling `my_prop()` in the component body **before** returning the
-    VNode tree captures the *current* value into the closure —
+    VNode tree captures the *current* value into the closure, so
     subsequent parent updates will not propagate. Use the bare
     accessor inside the tree (`span(my_prop)`) or wrap the dependent
     expression in [`dynamic`][wybthon.dynamic]

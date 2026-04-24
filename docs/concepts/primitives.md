@@ -2,9 +2,9 @@
 
 Wybthon uses a **signals-first** reactive model inspired by SolidJS.
 Component bodies run **once** at mount.  Reactivity comes from signals
-read inside *reactive holes* — zero-arg callables placed inside the
-returned VNode tree.  See the [Reactive Holes](#reactive-holes) section
-below.
+read inside *reactive holes*, which are zero-arg callables placed
+inside the returned VNode tree.  See the [Reactive Holes](#reactive-holes)
+section below.
 
 ---
 
@@ -41,15 +41,15 @@ def Demo():
 
 A hole's getter may return any of:
 
-- a string or number → rendered as a text node
-- a `VNode` → mounted as the hole's subtree (replacing the previous one)
-- a `Fragment` or list of VNodes → mounted as multiple roots between
+- a string or number, rendered as a text node
+- a `VNode`, mounted as the hole's subtree (replacing the previous one)
+- a `Fragment` or list of VNodes, mounted as multiple roots between
   the hole's start/end anchors
-- `None` → renders nothing
+- `None`, which renders nothing
 
 Holes are scoped to their owner.  Inside a hole you can use
 `on_cleanup` to register teardown that runs before each re-execution
-and on disposal — the same lifecycle as `create_effect`:
+and on disposal, which mirrors the lifecycle of `create_effect`:
 
 ```python
 @component
@@ -68,7 +68,7 @@ def subscribe(topic_name):
 !!! info "Why this model?"
     This is the SolidJS authoring model adapted for Pyodide.
     Components run once, so signal *creation*, event-handler
-    *closures*, and lifecycle *registrations* happen exactly once —
+    *closures*, and lifecycle *registrations* happen exactly once,
     and DOM updates stay surgical and predictable.
 
 ---
@@ -93,16 +93,16 @@ def Counter(initial=0):
 
 Optional keyword **`equals`** controls when subscribers run:
 
-* **default (value equality)** — skip notification when the new value
+* **default (value equality)**: skip notification when the new value
   is `==` to the previous one.  An identity (`is`) check runs first as
   a fast-path, so re-setting the same reference is cheap.  Mutating
   the same list/dict in place and re-setting the same reference is a
-  no-op (the value didn't change) — copy the container or use
+  no-op (the value didn't change); copy the container or use
   `equals=False` to force notification.
-* **`equals=True`** — equivalent to the default.
-* **`equals=False`** — notify on every `set()`, even when the value is
+* **`equals=True`**: equivalent to the default.
+* **`equals=False`**: notify on every `set()`, even when the value is
   unchanged.
-* **`equals=comparator`** — `comparator(old, new) -> bool`; skip when
+* **`equals=comparator`**: `comparator(old, new) -> bool`; skip when
   the comparator returns `True`.  Use
   `equals=lambda a, b: a is b` for SolidJS-style identity-only
   semantics.
@@ -113,8 +113,8 @@ The setter accepts a plain value:
 set_count(42)
 ```
 
-Signals created during setup persist for the lifetime of the component --
-no cursor system, no "rules of hooks".
+Signals created during setup persist for the lifetime of the
+component; no cursor system, no "rules of hooks".
 
 ---
 
@@ -183,7 +183,7 @@ def Counter(initial=0):
 ```
 
 `untrack` also suppresses dev-mode warnings about destructured prop
-access — it is the explicit "I know what I'm doing" escape hatch.
+access; it is the explicit "I know what I'm doing" escape hatch.
 
 ---
 
@@ -225,7 +225,7 @@ def Timer():
 #### Reactive props
 
 With `@component`, every parameter is a **reactive accessor** (a
-zero-arg callable) — there is one consistent shape regardless of
+zero-arg callable), giving one consistent shape regardless of
 whether the parent passed a static value or a signal.
 
 ```python
@@ -244,7 +244,7 @@ def Parent():
     # Greeting(name="Ada") is also valid; the child code is identical.
 ```
 
-When you need the underlying ``ReactiveProps`` proxy (e.g. for
+When you need the underlying ``ReactiveProps`` proxy (e.g., for
 introspection or to iterate keys), call ``get_props()`` from inside
 the component body, or declare the component with a single positional
 parameter (proxy mode):
@@ -271,8 +271,8 @@ children resolution.
 #### `map_array`
 
 Keyed reactive list mapping with stable per-item scopes.  Items are
-matched by reference identity — the mapping callback runs **once** per
-unique item.  Removed items have their scopes disposed.
+matched by reference identity, so the mapping callback runs **once**
+per unique item.  Removed items have their scopes disposed.
 
 ```python
 from wybthon import create_signal, map_array
@@ -303,7 +303,7 @@ mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
 #### `create_selector`
 
 Efficient selection signal for O(1) selection tracking.  Returns
-`is_selected(key) → bool` — only effects for the previous and new
+`is_selected(key) -> bool`; only effects for the previous and new
 key are notified.
 
 ```python

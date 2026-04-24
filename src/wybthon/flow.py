@@ -7,7 +7,7 @@ Each flow control is implemented as a proper function component
 (returning `dynamic(...)`) rather than a plain helper. Conditions,
 sources, children, and fallbacks are accepted as **getters** (zero-arg
 callables) so that reads happen inside the flow control's own reactive
-effect — not the parent's.
+effect, not the parent's.
 
 API rules:
 
@@ -133,13 +133,13 @@ def Show(props_or_when: Any = None, children_pos: Any = None, /, **kwargs: Any) 
 
     Can be called in two styles:
 
-    Component style (reactive — recommended for dynamic conditions):
+    Component style (reactive; recommended for dynamic conditions):
         ```python
         Show(when=count, children=lambda: p("Count: ", count),
              fallback=lambda: p("Empty"))
         ```
 
-    Direct call (evaluated once — fine inside an explicit hole):
+    Direct call (evaluated once; fine inside an explicit hole):
         ```python
         Show(when=lambda: count() > 0,
              children=lambda: p("Positive"),
@@ -236,7 +236,7 @@ def For(props_or_each: Any = None, children_pos: Any = None, /, **kwargs: Any) -
 
     Inside the callback, `item` is a **signal-backed getter** returning
     the current item value, and `index` is a signal-backed getter
-    returning the current integer index — matching SolidJS `<For>`.
+    returning the current integer index, matching SolidJS `<For>`.
 
     `For` maintains **stable per-item reactive scopes** keyed by
     reference identity. The mapping callback runs only once per unique

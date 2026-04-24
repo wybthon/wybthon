@@ -207,7 +207,7 @@ def Router(props: Any) -> Any:
 
     The render function is wrapped in a reactive hole so that updates
     to [`current_path`][wybthon.current_path] automatically
-    re-evaluate the matched route — no parent re-render is required.
+    re-evaluate the matched route; no parent re-render is required.
 
     Args:
         props: The component's props with the following keys:
@@ -261,7 +261,7 @@ def Link(props: Any) -> Any:
     """Anchor element component that navigates via the History API.
 
     Wrapped in a reactive hole so the active class flips
-    automatically when the route changes — no parent re-render
+    automatically when the route changes; no parent re-render is
     required. Modifier-key clicks (Cmd/Ctrl/Shift) and middle-clicks
     are passed through to the browser so users can open links in a
     new tab.

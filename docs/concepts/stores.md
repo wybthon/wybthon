@@ -1,6 +1,6 @@
 ### Stores
 
-Stores provide reactive state management for nested objects and lists. Inspired by SolidJS `createStore`, they let you work with complex state while maintaining fine-grained reactivity — each property path is tracked independently.
+Stores provide reactive state management for nested objects and lists. Inspired by SolidJS `createStore`, they let you work with complex state while maintaining fine-grained reactivity, since each property path is tracked independently.
 
 #### Creating a store
 
@@ -20,7 +20,7 @@ store, set_store = create_store({
 
 #### Reading values
 
-Access store values via attribute syntax. Reads are reactive — any effect or render function that reads a store property will re-run when that specific property changes:
+Access store values via attribute syntax. Reads are reactive: any effect or render function that reads a store property will re-run when that specific property changes:
 
 ```python
 store.count           # 0
@@ -54,7 +54,7 @@ set_store("user", {"name": "Grace", "age": 35})
 set_store("todos", [])
 ```
 
-The store is **read-only** — writing directly via `store.count = 5` raises an error. Always use `set_store`.
+The store is **read-only**: writing directly via `store.count = 5` raises an error. Always use `set_store`.
 
 #### Produce
 

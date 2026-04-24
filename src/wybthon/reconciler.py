@@ -8,7 +8,7 @@ Mental model:
 
 - **Components run once.** A function component is invoked a single time
   during mount. Its returned VNode tree is mounted directly. Reactive
-  updates flow through *reactive holes* embedded in that tree — not by
+  updates flow through *reactive holes* embedded in that tree, not by
   re-running the component body.
 - **Reactive holes** are `_dynamic` VNodes whose `getter` is re-evaluated
   by an effect when its dependencies change. They're created automatically
@@ -57,7 +57,7 @@ def render(vnode: VNode, container: Union[Element, str]) -> Element:
     """Render a VNode tree into a container element.
 
     Subsequent calls with the same `container` *patch* the existing tree
-    in place — only the differences are applied. Pass `None` (via the
+    in place; only the differences are applied. Pass `None` (via the
     internal API) to unmount.
 
     Args:
@@ -436,7 +436,7 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
 
             # If ``value`` is itself a getter, set up an effect owned by
             # this Provider's context so the value signal stays in sync
-            # with the upstream source — without re-mounting subtrees.
+            # with the upstream source, without re-mounting subtrees.
             if callable(value) and _is_getter(value):
                 value_getter = value
                 prev_owner = _rx._current_owner

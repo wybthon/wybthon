@@ -1,7 +1,7 @@
 """Helpers for lazy-loading components with simple loading/error states.
 
 Wybthon's lazy loaders use Python's `importlib` so they work with any
-module that is reachable at import time — including packages bundled
+module that is reachable at import time, including packages bundled
 into the Pyodide image and packages fetched via `micropip`. Pair them
 with [`preload_component`][wybthon.preload_component] to warm caches
 ahead of navigation.

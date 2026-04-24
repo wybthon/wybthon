@@ -3,7 +3,7 @@
 Stores provide fine-grained reactive access to nested objects and
 lists. Each path through the store is backed by its own
 [`Signal`][wybthon.Signal], so reading `store.user.name` only
-subscribes the current computation to that specific leaf — not to the
+subscribes the current computation to that specific leaf, not to the
 entire store.
 
 Public surface:

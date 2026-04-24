@@ -7,7 +7,7 @@
 Decorator that turns a function into a Wybthon component with
 **fully-reactive props**.
 
-**Each parameter is a reactive accessor** — a zero-arg callable.
+**Each parameter is a reactive accessor**, a zero-arg callable.
 
 * Pass it directly into the tree to create a reactive auto-hole.
 * Call it (`name()`) to read the current value (tracked when called
@@ -36,7 +36,7 @@ def Counter(initial=0):
     return div(p("Count: ", span(count)))
 ```
 
-**Children** is a normal prop — also a reactive accessor.  Most
+**Children** is a normal prop, also a reactive accessor.  Most
 layouts read children once at setup; wrap with `untrack`:
 
 ```python
@@ -53,7 +53,7 @@ def Card(title="", children=None):
 ```
 
 For memoized, reactive resolution of `children` (Solid-style), use the
-`children(fn)` helper with `get_props()` — see [Reactivity](reactivity.md).
+`children(fn)` helper with `get_props()`. See [Reactivity](reactivity.md).
 
 **Direct calls** with keyword arguments return a `VNode`:
 

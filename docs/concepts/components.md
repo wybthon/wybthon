@@ -5,14 +5,14 @@ Wybthon uses function components exclusively, following the SolidJS model.
 !!! tip "Mental model"
     A component body **runs once** during mount. Every prop is a
     **reactive accessor** (a zero-arg callable). Embed an accessor in
-    the returned VNode tree to create a *reactive hole* — only that
+    the returned VNode tree to create a *reactive hole*, so only that
     node updates when the prop changes. See
     [Primitives](primitives.md#reactive-holes) for the full story.
 
 #### Function components with `@component`
 
 The `@component` decorator turns a function into a Wybthon component.
-Declare props as regular Python keyword arguments — defaults and
+Declare props as regular Python keyword arguments; defaults and
 annotations work as you would expect:
 
 ```python
@@ -21,7 +21,7 @@ from wybthon import component, p
 @component
 def Hello(name="world"):
     # ``name`` is a zero-arg getter.  Passing it directly into the tree
-    # creates a reactive hole — only the text node updates if the
+    # creates a reactive hole, so only the text node updates if the
     # parent passes a new ``name``.
     return p("Hello, ", name, "!")
 ```
@@ -33,7 +33,7 @@ Each parameter is bound to a **reactive accessor**:
 * Call it (`name()`) to read the current value (tracked when called
   inside an effect).
 * Wrap it with [`untrack`](primitives.md#untrack) to read once
-  without subscribing — useful for seeding local state from a prop.
+  without subscribing, which is useful for seeding local state from a prop.
 
 The body of an `@component` runs **once** per mount.  There is no
 re-render: the only things that update later are the holes embedded
@@ -56,12 +56,12 @@ def Counter(initial=0):
 
 `count` is a zero-arg accessor.  When you place it in the VNode
 tree, the reconciler wraps it in its own effect so only that text
-node updates — the surrounding component body does not re-run.
+node updates; the surrounding component body does not re-run.
 
-##### Static or getter — same call site
+##### Static or getter, same call site
 
 A child component never has to care whether the parent passed a
-constant or a signal — both are unwrapped uniformly:
+constant or a signal; both are unwrapped uniformly:
 
 ```python
 @component
@@ -79,7 +79,7 @@ changes.
 
 ##### Children
 
-`children` is a normal prop — also a reactive accessor.  Most layouts
+`children` is a normal prop, also a reactive accessor.  Most layouts
 read children once at setup, so wrap with `untrack`:
 
 ```python
@@ -97,7 +97,7 @@ def Card(title="", children=None):
 
 ##### Direct calls (no `h`)
 
-`@component` also enables a sugar form for tree authoring — calling the
+`@component` also enables a sugar form for tree authoring; calling the
 component directly with kwargs returns a `VNode`:
 
 ```python
@@ -123,9 +123,9 @@ decorated function's signature:
 | **exactly one** positional-only or positional-or-keyword parameter, **no default**, no `*args`/`**kwargs` | **proxy mode**   | the entire `ReactiveProps` proxy      |
 
 In other words: if your component looks like `def Foo(props):` (one
-bare positional parameter), you get the proxy.  Anything else —
-`def Foo(name="world")`, `def Foo(name, age=0)`, `def Foo(**props)`,
-`def Foo()` — uses the named-accessor mode.
+bare positional parameter), you get the proxy.  Anything else, such as
+`def Foo(name="world")`, `def Foo(name, age=0)`, `def Foo(**props)`, or
+`def Foo()`, uses the named-accessor mode.
 
 Proxy mode is the right choice for **generic wrappers** that don't
 know their props' names ahead of time:
@@ -140,7 +140,7 @@ def DumpProps(props):
     return p(dynamic(lambda: ", ".join(f"{k}={props.value(k)!r}" for k in props)))
 ```
 
-For ordinary components, prefer named accessors — they're easier to
+For ordinary components, prefer named accessors; they're easier to
 read, type, and refactor:
 
 ```python
@@ -183,7 +183,7 @@ inner effects are owned by the hole's effect.  When the hole re-runs,
 those inner effects are disposed first (so their `on_cleanup`
 callbacks fire), then re-created on the next evaluation.
 
-This distinction is automatic — no special API is needed.  The ownership
+This distinction is automatic; no special API is needed.  The ownership
 tree tracks which owner is active at the time `create_effect` or
 `create_memo` is called.
 
@@ -215,7 +215,7 @@ component decorator catches the most common reactive footguns:
 
 * **Destructured prop access during setup.** Calling a prop accessor
   inside the component body without wrapping in `untrack` warns once
-  per component — you almost always want to either pass the accessor
+  per component. You almost always want to either pass the accessor
   directly into the tree (creating a hole) or `untrack(prop)` for a
   one-shot snapshot.
 * **`each=plain_list`** in `For` / `Index` warns that the list will
@@ -291,7 +291,7 @@ semantics).  When no `ref` is provided, `ref` is `None`.
 #### `create_portal`
 
 Use `create_portal` to render children into a DOM node outside the
-parent component's hierarchy — ideal for modals, tooltips, and overlays:
+parent component's hierarchy. Ideal for modals, tooltips, and overlays:
 
 ```python
 from wybthon import component, create_portal, h
@@ -312,7 +312,7 @@ The second argument is an `Element` or a CSS selector string.
 #### Flow control
 
 Wybthon provides SolidJS-style **reactive** flow control components.
-Each creates its own reactive scope — only the relevant subtree
+Each creates its own reactive scope, so only the relevant subtree
 re-renders when the tracked condition or list changes.
 
 Pass **getters** (signal accessors or lambdas) for conditions, lists,
@@ -322,18 +322,18 @@ scope rather than the parent's:
 ```python
 from wybthon import Show, For, Index, Switch, Match
 
-# Conditional rendering — keyed scope disposes on transition
+# Conditional rendering: keyed scope disposes on transition
 Show(when=is_logged_in,
      children=lambda: p("Welcome!"),
      fallback=lambda: p("Please log in"))
 
-# List rendering — per-item reactive scopes (keyed by identity)
-# Item and index getters are signal-backed
+# List rendering: per-item reactive scopes (keyed by identity).
+# Item and index getters are signal-backed.
 For(each=items,
     children=lambda item, idx: li(item(), key=idx()))
 
-# Index-based rendering — per-index reactive scopes
-# Item getter updates in place when the value at that position changes
+# Index-based rendering: per-index reactive scopes.
+# Item getter updates in place when the value at that position changes.
 Index(each=items,
       children=lambda item, idx: li(f"[{idx}] {item()}"))
 

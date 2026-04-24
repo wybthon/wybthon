@@ -2,14 +2,14 @@
 
 Wybthon brings a SolidJS-inspired, signals-first reactive model to the
 browser using Python. Component bodies run **once** at mount; reactivity
-flows through *reactive holes* — zero-arg getters embedded in the VNode
+flows through *reactive holes*: zero-arg getters embedded in the VNode
 tree that update only the DOM nodes that depend on them.
 
 The package detects its environment at import time:
 
-- In a browser (Pyodide), the full surface is available — DOM helpers,
-  reconciler, router, events, error boundaries, suspense, portals, and
-  the HTML element factories.
+- In a browser (Pyodide), the full surface is available, including DOM
+  helpers, reconciler, router, events, error boundaries, suspense,
+  portals, and the HTML element factories.
 - Outside a browser, the pure-Python surface (reactivity, VDOM data
   structures, forms, context, flow control, stores) remains importable
   so unit tests and tooling can run anywhere CPython runs.

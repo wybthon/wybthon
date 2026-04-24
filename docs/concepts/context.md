@@ -21,7 +21,7 @@ view = h(Provider, {"context": Theme, "value": "dark"}, h(Label, {}))
 `Provider`'s `value` prop is **signal-backed**: passing a getter (or a
 signal accessor) makes the provided value reactive.  Consumers that
 read `use_context` inside a reactive hole will update automatically
-when the value changes — no subtree re-mount required.
+when the value changes, without a subtree re-mount.
 
 ```python
 from wybthon import component, create_signal, dynamic, h, p, use_context, Provider
@@ -38,7 +38,7 @@ def Label():
     return p(dynamic(lambda: f"Theme: {use_context(Theme)}"))
 ```
 
-If you only need a static value, pass it as-is — the Provider handles
+If you only need a static value, pass it as-is; the Provider handles
 both shapes uniformly.
 
 #### How it works: the ownership tree
@@ -60,8 +60,8 @@ Root Owner
 ```
 
 This ownership-based lookup means context is available at any point
-during a component's lifecycle — setup phase, render function, or
-inside effects — as long as the code runs under an owner that is a
+during a component's lifecycle (setup phase, render function, or
+inside effects) as long as the code runs under an owner that is a
 descendant of the provider.
 
 #### Provider scoping
@@ -80,7 +80,7 @@ h(Provider, {"context": Theme, "value": "light"},
 
 #### Performance
 
-Context lookup is a simple parent-pointer walk — no dict copies, no
+Context lookup is a simple parent-pointer walk: no dict copies, no
 stack manipulation.  The cost is proportional to the depth between the
 consumer and the nearest provider, which is typically small.  When the
 `Provider` value is a getter, an internal effect mirrors it into the

@@ -11,16 +11,16 @@ Wybthon's component model is **fully reactive** and **runs once**:
 - Embedding an accessor directly inside a `VNode` tree turns the
   surrounding region into a fine-grained **reactive hole** that updates
   only the relevant DOM when the prop changes.
-- The decorator also enables a **direct call** style — invoking the
+- The decorator also enables a **direct call** style: invoking the
   component with keyword arguments yields a `VNode` instead of running
   the body, so trees can be authored ergonomically.
 
 Authoring modes:
 
-- **Named accessor mode** — used when the signature has zero args, kwargs
+- **Named accessor mode**: used when the signature has zero args, kwargs
   with defaults, or `**kwargs`. Each parameter becomes a reactive
   accessor for the prop of the same name.
-- **Proxy mode** — used when the signature has exactly one positional-only
+- **Proxy mode**: used when the signature has exactly one positional-only
   or positional-or-keyword parameter with no default and no
   `*args`/`**kwargs`. The single parameter receives the full
   [`ReactiveProps`][wybthon.ReactiveProps] proxy.
@@ -43,7 +43,7 @@ Example:
                 button("+", on_click=lambda e: set_count(count() + 1)),
             )
 
-When you need the underlying `ReactiveProps` proxy (e.g. to iterate
+When you need the underlying `ReactiveProps` proxy (e.g., to iterate
 keys or forward unknown props), call
 [`get_props`][wybthon.reactivity.get_props] from inside the component
 body, or declare the component with a single positional parameter
@@ -80,7 +80,7 @@ def _build_param_plan(
     """Inspect `fn` once and produce a `(param_names, defaults, proxy_mode)` plan.
 
     `proxy_mode` is True when the function takes a single positional or
-    positional-or-keyword parameter with no default — in which case the
+    positional-or-keyword parameter with no default; in that case the
     decorator passes the `ReactiveProps` proxy directly instead of
     destructuring kwargs.
 
@@ -124,16 +124,16 @@ def _make_setup_getter(
 ) -> Callable[[], Any]:
     """Wrap a prop accessor to fire a dev-mode warning on setup-time reads.
 
-    The wrapper is stable — it forwards every call through to `base_getter`
+    The wrapper is stable: it forwards every call through to `base_getter`
     without changing tracking semantics. A warning fires only when **all**
     of the following hold during setup:
 
-    - `in_setup[0]` is True — the component body has not returned yet.
+    - `in_setup[0]` is True; the component body has not returned yet.
     - The read is **not** inside [`untrack`][wybthon.untrack] (the
       canonical opt-out).
-    - No reactive computation is currently active — i.e. the read is a
+    - No reactive computation is currently active (i.e., the read is a
       raw setup-time call, not a read inside `create_effect` /
-      `create_memo` (which subscribe correctly).
+      `create_memo`, which subscribe correctly).
 
     Combined, these correctly target the actual footgun (`_ = name()` in
     the component body) without false positives on legitimate patterns
@@ -169,7 +169,7 @@ def component(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Decorate a function as a Wybthon component.
 
     The body of `fn` is invoked **once** per mount. Each declared parameter
-    is bound to a **reactive accessor** — call it to read the current
+    is bound to a **reactive accessor**: call it to read the current
     value (tracked) or pass it directly into a `VNode` tree to create a
     reactive hole.
 
@@ -247,7 +247,7 @@ def forward_ref(render_fn: Callable[..., Any]) -> Callable[..., Any]:
 
     The wrapped function receives `(props, ref)` instead of `(props,)`,
     where `ref` is the value of the `ref` prop (or `None`). `ref` is
-    **stripped from props** — matching React's `forwardRef` semantics —
+    **stripped from props** (matching React's `forwardRef` semantics),
     so the wrapped function only sees its own concerns.
 
     Args:

@@ -59,9 +59,10 @@ class VNode:
     """Virtual node representing an element, text, component, or reactive hole.
 
     Uses `__slots__` for a compact memory layout and faster attribute
-    access — meaningful when authoring large lists. Internal attributes
-    (`el`, `subtree`, `render_effect`, `component_ctx`, `_frag_end`) are
-    populated by the reconciler when the VNode is mounted.
+    access, which is meaningful when authoring large lists. Internal
+    attributes (`el`, `subtree`, `render_effect`, `component_ctx`,
+    `_frag_end`) are populated by the reconciler when the VNode is
+    mounted.
 
     Attributes:
         tag: Element tag name (`"div"`), special tag (`"_text"`,
@@ -150,7 +151,7 @@ def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None)
 
 
 # ---------------------------------------------------------------------------
-# is_getter — cached signature inspection for callable children / props
+# is_getter: cached signature inspection for callable children / props
 # ---------------------------------------------------------------------------
 
 # Cache callables → bool using weak references.  ``inspect.signature``
@@ -354,7 +355,7 @@ def memo(
     Because Wybthon component bodies run **once**, `memo` is only useful
     when you want to skip re-mounting on a prop change (for example,
     components with an expensive setup phase). Most ordinary components
-    do not need it — fine-grained holes already minimise DOM work.
+    do not need it; fine-grained holes already minimise DOM work.
 
     Args:
         component: The component callable to memoize.

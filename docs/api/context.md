@@ -15,7 +15,7 @@ from `_current_owner`.  Searches each owner's `_context_map` for the
 context ID; returns the first match, or `ctx.default` if none is found.
 
 Can be called during a component's setup phase, inside a render
-function, or inside an effect — anywhere that runs under a reactive
+function, or inside an effect: anywhere that runs under a reactive
 owner.
 
 #### `Provider(props) -> VNode`
@@ -26,8 +26,8 @@ reconciler sets the value on the provider's `_ComponentContext` via
 
 Props:
 
-- `context` — a `Context` object created by `create_context`.
-- `value` — the value to provide.
-- `children` — child VNodes.
+- `context`: a `Context` object created by `create_context`.
+- `value`: the value to provide.
+- `children`: child VNodes.
 
 Nested providers for the same context shadow outer ones.

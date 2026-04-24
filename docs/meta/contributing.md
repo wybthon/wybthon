@@ -1,6 +1,6 @@
 # Contributing
 
-Welcome! This page is a quick orientation for contributors. The full and authoritative guidelines live in the repository's [`CONTRIBUTING.md`](https://github.com/wybthon/wybthon/blob/main/CONTRIBUTING.md) — please skim it before opening a pull request.
+Welcome! This page is a quick orientation for contributors. The full and authoritative guidelines live in the repository's [`CONTRIBUTING.md`](https://github.com/wybthon/wybthon/blob/main/CONTRIBUTING.md); please skim it before opening a pull request.
 
 ## Quick start
 
@@ -33,7 +33,7 @@ Everything you need to develop the framework, the docs site, and the demo app is
 
 - Author new pages under `docs/` and add them to `mkdocs.yml`.
 - Build the site locally with `mkdocs serve` (or `mkdocs build --strict` to fail on warnings the way CI does).
-- Cross-reference Python symbols with `[label][wybthon.symbol]` syntax — see the [style guide](style-guide.md) for details.
+- Cross-reference Python symbols with `[label][wybthon.symbol]` syntax; see the [style guide](style-guide.md) for details.
 
 ## Filing a pull request
 

@@ -12,20 +12,20 @@ create_effect(lambda: print("double:", double()))
 set_count(1)
 ```
 
-- `create_signal(value, *, equals=...)` → `(getter, setter)` tuple.
+- `create_signal(value, *, equals=...)` returns a `(getter, setter)` tuple.
   By default `equals` uses **value equality** (`==`) with an identity
   fast-path; pass `equals=False` to fire on every set, or a custom
-  comparator (e.g. `equals=lambda a, b: a is b` for SolidJS-style
+  comparator (e.g., `equals=lambda a, b: a is b` for SolidJS-style
   identity-only semantics). See [Reactivity API](../api/reactivity.md).
-- `create_memo(fn)` → derived getter; re-computes only when deps change
-- `create_effect(fn)` → runs and re-runs on dependencies; supports previous value
-- `batch()` → batch updates as context manager or `batch(fn)` with callback
-- `create_resource(fetcher)` → async data with loading/error signals
+- `create_memo(fn)` returns a derived getter; re-computes only when deps change.
+- `create_effect(fn)` runs and re-runs on dependencies; supports previous value.
+- `batch()` batches updates as a context manager, or `batch(fn)` with callback.
+- `create_resource(fetcher)` returns an async data primitive with loading/error signals.
 
 #### Reactive utilities
 
-`untrack(fn)` runs `fn` without tracking any signal reads — useful for
-reading a signal inside an effect without creating a dependency:
+`untrack(fn)` runs `fn` without tracking any signal reads, which is
+useful for reading a signal inside an effect without creating a dependency:
 
 ```python
 from wybthon import create_effect, untrack
@@ -44,8 +44,8 @@ on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
 ```
 
 `merge_props(*sources)` merges multiple prop sources into a **reactive
-proxy**.  Each source may be a plain dict or a callable getter (e.g. a
-signal accessor that returns a dict).  Reads on the proxy are lazy —
+proxy**.  Each source may be a plain dict or a callable getter (e.g., a
+signal accessor that returns a dict).  Reads on the proxy are lazy:
 when a source is callable, it is called on each property access, so
 signal reads inside a reactive computation are tracked automatically.
 
@@ -103,7 +103,7 @@ mapped = index_array(items, lambda item, idx: f"[{idx}] {item()}")
 
 `create_selector(source)` creates an efficient **selection signal**.
 Only computations that called `is_selected()` with the *previous* or
-*new* key are notified — giving O(1) updates instead of O(n).
+*new* key are notified, giving O(1) updates instead of O(n).
 
 ```python
 from wybthon import create_signal, create_selector
@@ -137,7 +137,7 @@ with batch():
     set_a(1)
     set_b(2)
 
-# Callback (SolidJS-style) — effects flush synchronously before returning
+# Callback (SolidJS-style); effects flush synchronously before returning
 batch(lambda: (set_a(1), set_b(2)))
 ```
 
@@ -146,8 +146,8 @@ batch(lambda: (set_a(1), set_b(2)))
 Every reactive computation belongs to an **ownership tree** (inspired by
 SolidJS).  Two base classes form the hierarchy:
 
-- `Owner` — tracks child owners and cleanup callbacks.
-- `Computation(Owner)` — a reactive computation that is also an ownership scope.
+- `Owner`: tracks child owners and cleanup callbacks.
+- `Computation(Owner)`: a reactive computation that is also an ownership scope.
 
 When a new effect or memo is created, it is automatically registered as a
 child of `_current_owner`, the owner that is active at the time of
@@ -203,11 +203,11 @@ from wybthon import component, create_effect, create_signal, dynamic, p
 def Timer(interval=1000):
     count, set_count = create_signal(0)
 
-    # Setup effect — lives until the component unmounts
+    # Setup effect: lives until the component unmounts
     create_effect(lambda: print("count is", count()))
 
     return p(
-        # Hole effect — re-runs only when ``count`` changes; any inner
+        # Hole effect: re-runs only when ``count`` changes; any inner
         # effects it creates are disposed before the next run.
         dynamic(lambda: f"Elapsed: {count()}"),
     )

@@ -115,7 +115,7 @@ def App():
     return Router(routes=routes)
 ```
 
-Wybthon's router supports nested routes, dynamic params, query parsing, and lazy components — see [Routing][wybthon.Router].
+Wybthon's router supports nested routes, dynamic params, query parsing, and lazy components; see [Routing][wybthon.Router].
 
 ## What's intentionally different
 
@@ -127,12 +127,12 @@ Wybthon's router supports nested routes, dynamic params, query parsing, and lazy
 ## What carries over directly
 
 - The mental model (components run once, fine-grained reactivity).
-- Ownership semantics — `on_cleanup` attaches to the current owner.
-- Transitions and resources — `create_resource` integrates with `Suspense`.
+- Ownership semantics: `on_cleanup` attaches to the current owner.
+- Transitions and resources: `create_resource` integrates with `Suspense`.
 - Patterns like keyed lists, conditional flows, and nested boundaries.
 
 ## Next steps
 
 - Read [Mental model](../concepts/mental-model.md) for the framework's core ideas.
-- Explore [Authoring patterns](authoring-patterns.md) — many should look familiar.
+- Explore [Authoring patterns](authoring-patterns.md); many should look familiar.
 - Browse the [API reference](../api/wybthon.md) for the full set of primitives.

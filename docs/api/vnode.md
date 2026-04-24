@@ -22,6 +22,6 @@ directly.
 
 #### See also
 
-- [`vdom`][wybthon.vdom] — render and patch primitives.
-- [`reconciler`][wybthon.reconciler] — keyed list and child diffing.
-- [Concepts → Virtual DOM](../concepts/vdom.md)
+- [`vdom`][wybthon.vdom]: render and patch primitives.
+- [`reconciler`][wybthon.reconciler]: keyed list and child diffing.
+- [Concepts: Virtual DOM](../concepts/vdom.md)

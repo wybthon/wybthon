@@ -30,12 +30,12 @@ def Counter():
     return button("count: ", count, on_click=lambda _e: set_count(count() + 1))
 ```
 
-You'll see `"Counter body running"` exactly once, no matter how many clicks. The `count` accessor passed into `button(...)` becomes a *reactive hole* — only that text node updates. Read [Mental model](../concepts/mental-model.md) for the formal definition.
+You'll see `"Counter body running"` exactly once, no matter how many clicks. The `count` accessor passed into `button(...)` becomes a *reactive hole*, so only that text node updates. Read [Mental model](../concepts/mental-model.md) for the formal definition.
 
 ### Implications
 
 - No dependency arrays. Effects subscribe to whatever signals they read while running.
-- No `useCallback`/`useMemo` for stability — closures don't get re-created.
+- No `useCallback`/`useMemo` for stability; closures don't get re-created.
 - No "stale closure" bugs from missing deps.
 
 ## State and effects
@@ -146,14 +146,14 @@ See [Suspense and Lazy Loading](../concepts/suspense-lazy.md).
 ## Things you can stop doing
 
 - **`useCallback`/`useMemo` for identity stability.** Closures aren't re-created.
-- **`React.memo`.** There's nothing to memoize — components don't re-render.
+- **`React.memo`.** There's nothing to memoize; components don't re-render.
 - **Hook rules and exhaustive deps lints.** State/effect creation is just a function call.
 - **`key` on every list item by index.** Keyed identity is automatic via `For`.
 
 ## Things to watch out for
 
 - **Don't read props eagerly.** `name()` inside the body freezes the value. Pass `name` itself or read inside an effect.
-- **Don't recreate components inside the body.** Define them at module scope. Components are cheap to mount but creating them inside a render does *not* re-render anything either way — define them once.
+- **Don't recreate components inside the body.** Define them at module scope. Components are cheap to mount but creating them inside a render does *not* re-render anything either way, so just define them once.
 - **`if/else` in the body short-circuits.** Use `Show` / `Switch` for conditional subtrees.
 
 ## Cheat sheet

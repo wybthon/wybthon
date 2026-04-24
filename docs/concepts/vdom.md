@@ -46,12 +46,12 @@ Primitives](primitives.md#reactive-holes) for the full mental model.
 
 The VDOM implementation is split into focused modules:
 
-- **`vnode`** — the `VNode` data structure, `h()`, `Fragment`, and `memo()` (browser-agnostic). `Fragment` does not insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
-- **`reconciler`** — the mount/patch/unmount diffing engine
-- **`props`** — DOM property application and diffing (styles, events, datasets)
-- **`error_boundary`** — the `ErrorBoundary` component
-- **`suspense`** — the `Suspense` component
-- **`portal`** — the `create_portal()` function
+- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `memo()` (browser-agnostic). `Fragment` does not insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`reconciler`**: the mount/patch/unmount diffing engine.
+- **`props`**: DOM property application and diffing (styles, events, datasets).
+- **`error_boundary`**: the `ErrorBoundary` component.
+- **`suspense`**: the `Suspense` component.
+- **`portal`**: the `create_portal()` function.
 
 All names are re-exported from `wybthon.vdom` for convenience, and the most
 common ones are available at the top-level `wybthon` package.

@@ -7,7 +7,7 @@ Wybthon apps run entirely in the browser, so deployment is just *static hosting*
 Before you ship:
 
 - Serve the HTML entry point (typically `index.html`) plus the Pyodide runtime and your application files.
-- Configure your host to serve `.py` files with the `text/x-python` content type — most static hosts do this automatically, but a few default to `text/plain`.
+- Configure your host to serve `.py` files with the `text/x-python` content type. Most static hosts do this automatically, but a few default to `text/plain`.
 - Set [`Cross-Origin-Opener-Policy`](https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy) and [`Cross-Origin-Embedder-Policy`](https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy) headers if you plan to use APIs that require cross-origin isolation (`SharedArrayBuffer`, threaded WebAssembly, etc.).
 - Decide whether to load Pyodide from the official CDN (default, easiest) or to vendor it alongside your app (better caching control, supports offline-first installs).
 - Enable long-cache headers for the Pyodide assets and add a content hash to your own assets so users always pick up your latest build.
@@ -76,7 +76,7 @@ Push to your default branch and Netlify will auto-deploy.
 
 ## Vercel
 
-Vercel works similarly — add a `vercel.json` at the repo root that points at your output directory:
+Vercel works similarly. Add a `vercel.json` at the repo root that points at your output directory:
 
 ```json
 {

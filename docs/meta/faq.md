@@ -54,7 +54,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Can I lazy-load route components?"
 
-    Yes — see [`lazy`][wybthon.lazy] and [`load_component`][wybthon.load_component]. Combine them with [`Suspense`][wybthon.Suspense] for declarative loading UIs.
+    Yes; see [`lazy`][wybthon.lazy] and [`load_component`][wybthon.load_component]. Combine them with [`Suspense`][wybthon.Suspense] for declarative loading UIs.
 
 ## Reactivity
 

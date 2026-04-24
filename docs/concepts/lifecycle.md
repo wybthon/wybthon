@@ -6,7 +6,7 @@ This page explains what an owner is, when it is created, and how mount/unmount/c
 
 ## The ownership tree
 
-When a component mounts, the framework pushes a fresh owner onto the active stack. Anything created during the body — effects, memos, child components — attaches to that owner. When the parent unmounts, the framework walks the tree disposing owners depth-first.
+When a component mounts, the framework pushes a fresh owner onto the active stack. Anything created during the body (effects, memos, child components) attaches to that owner. When the parent unmounts, the framework walks the tree disposing owners depth-first.
 
 ```mermaid
 flowchart TD
@@ -20,7 +20,7 @@ flowchart TD
 
 - **Owners** form a tree mirroring the component tree.
 - **Cleanups** registered via [`on_cleanup`][wybthon.on_cleanup] run when their owner is disposed.
-- Disposing a parent disposes all descendants — no orphan effects.
+- Disposing a parent disposes all descendants, leaving no orphan effects.
 
 ## Lifecycle hooks
 

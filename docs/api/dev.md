@@ -36,6 +36,6 @@ events; you can copy it into your own apps.
 
 #### See also
 
-- [Getting started](../getting-started.md) — running the demo.
-- [Dev server guide](../guides/dev-server.md) — deeper walkthrough.
-- [Deployment guide](../guides/deployment.md) — production hosting.
+- [Getting started](../getting-started.md): running the demo.
+- [Dev server guide](../guides/dev-server.md): deeper walkthrough.
+- [Deployment guide](../guides/deployment.md): production hosting.

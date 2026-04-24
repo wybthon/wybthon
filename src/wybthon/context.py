@@ -6,9 +6,9 @@ the nearest [`Provider`][wybthon.Provider], eliminating the need for a
 separate render-time stack.
 
 The provider's `value` is wrapped in a [`Signal`][wybthon.Signal], so
-descendants that read it inside a tracking scope (e.g. a reactive hole
+descendants that read it inside a tracking scope (e.g., a reactive hole
 or [`create_effect`][wybthon.create_effect]) automatically re-run when
-the provider's value changes — without re-mounting any subtrees.
+the provider's value changes, without re-mounting any subtrees.
 
 See Also:
     - [Components guide](../concepts/components.md)
@@ -29,7 +29,7 @@ class Context:
     """Opaque context identifier paired with a default value.
 
     Returned by [`create_context`][wybthon.create_context]. Treat the
-    object as opaque — pass it to a [`Provider`][wybthon.Provider] and
+    object as opaque: pass it to a [`Provider`][wybthon.Provider] and
     to [`use_context`][wybthon.use_context] but do not rely on its
     fields.
 

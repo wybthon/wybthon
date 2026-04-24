@@ -2,7 +2,7 @@
 
 ::: wybthon.events
 
-Wybthon’s event system provides delegated event handling and a thin `DomEvent` wrapper.
+Wybthon's event system provides delegated event handling and a thin `DomEvent` wrapper.
 
 - `DomEvent`: wrapper with `type`, `target` (`Element|None`), `current_target` (`Element|None`), `prevent_default()`, `stop_propagation()`.
 - Handlers can be attached via props like `on_click`, `on_input`, or `onChange`. Names are normalized to DOM event types.
@@ -12,9 +12,9 @@ Wybthon’s event system provides delegated event handling and a thin `DomEvent`
 
 - Any prop starting with `on_` or `on` is treated as an event handler and normalized to a DOM event type.
 - Normalization rules:
-  - `on_click` → "click"
-  - `onInput`/`on_input` → "input"
-  - `onClick`/`onclick` → "click"
+  - `on_click` becomes "click"
+  - `onInput`/`on_input` becomes "input"
+  - `onClick`/`onclick` becomes "click"
   - In general: remove the `on`/`on_` prefix and lowercase the remainder.
 
 Handler signature:
@@ -23,7 +23,7 @@ Handler signature:
 
 #### Delegation and bubbling
 
-Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers registered for that `event_type`. `stop_propagation()` prevents further bubbling within Wybthon’s dispatcher.
+Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers registered for that `event_type`. `stop_propagation()` prevents further bubbling within Wybthon's dispatcher.
 
 Cleanup guarantees:
 

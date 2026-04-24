@@ -117,7 +117,7 @@ Cache busting (development):
 <script type="module">
   const v = Date.now();
   import(`./bootstrap.js?v=${v}`);
-\/script>
+</script>
 ```
 
 Error overlay (development only):

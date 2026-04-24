@@ -44,9 +44,9 @@ def Modal():
 - `mount` accepts a DOM element or a CSS selector string.
 - The portal cleans up its content when its owner unmounts.
 - Events bubble through the React-like component tree, *not* the DOM
-  tree — handy for keeping modal logic close to the trigger.
+  tree, which is handy for keeping modal logic close to the trigger.
 
 #### See also
 
-- [Concepts → DOM Interop](../concepts/dom.md)
-- [Concepts → Components](../concepts/components.md)
+- [Concepts: DOM Interop](../concepts/dom.md)
+- [Concepts: Components](../concepts/components.md)

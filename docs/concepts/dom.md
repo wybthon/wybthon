@@ -11,20 +11,20 @@ div.set_text("Hello")
 div.append_to(root)
 ```
 
-You rarely need to instantiate `Element` directly when authoring components — the renderer creates and manages elements for you. Use it when you need to bridge to imperative DOM APIs (focus management, scrolling, third-party widgets) or when you receive a node back from a `ref`.
+You rarely need to instantiate `Element` directly when authoring components; the renderer creates and manages elements for you. Use it when you need to bridge to imperative DOM APIs (focus management, scrolling, third-party widgets) or when you receive a node back from a `ref`.
 
 ## Refs: holding onto an element
 
 A [`Ref`][wybthon.Ref] is a small mutable container that the renderer fills with the mounted [`Element`][wybthon.Element]. Pass `ref=` to any host element and read `ref.current` inside [`on_mount`][wybthon.on_mount] to interact with the underlying node.
 
 ```python
-from wybthon import component, create_ref, on_mount
+from wybthon import Ref, component, on_mount
 from wybthon.html import input_, div
 
 
 @component
 def AutoFocusInput():
-    ref = create_ref()
+    ref = Ref()
 
     @on_mount
     def _focus():
@@ -34,7 +34,7 @@ def AutoFocusInput():
     return div(input_(type="text", placeholder="Focus me", ref=ref))
 ```
 
-Because the ref is populated after mount, never read `ref.current` from the component body during initial render — use [`on_mount`][wybthon.on_mount], an effect, or an event handler.
+Because the ref is populated after mount, never read `ref.current` from the component body during initial render. Use [`on_mount`][wybthon.on_mount], an effect, or an event handler instead.
 
 ## How the VDOM uses `Element`
 
