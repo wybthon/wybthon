@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3759,7 +3761,7 @@
 <p>This module is the heart of Wybthon's SolidJS-inspired reactivity. Every
 reactive computation (effect, memo) is <strong>owned</strong> by a parent scope. When
 that scope re-runs or is disposed, all child computations are torn down
-automatically — preventing leaks and giving lifecycle semantics that
+automatically, preventing leaks and giving lifecycle semantics that
 match component mount/unmount boundaries.</p>
 <p>Core types:</p>
 <ul>
@@ -4674,7 +4676,7 @@ bypass the check entirely).</p>
 
 
         <p>Reactive proxy over a component's props dict.</p>
-<p>Every attribute or item access returns a <strong>reactive accessor</strong> — a
+<p>Every attribute or item access returns a <strong>reactive accessor</strong>: a
 zero-arg callable that returns the current value and tracks the read.
 This mirrors SolidJS's <code>props.x</code> semantics, adapted to Python.</p>
 <p>Access patterns:</p>
@@ -4724,7 +4726,7 @@ changes.</p>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@component</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">():</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Auto-hole — only the text node updates when ``name`` changes.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Auto-hole: only the text node updates when ``name`` changes.</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
@@ -4828,7 +4830,7 @@ via the internal <code>_update</code> method.</p>
 
         <p>Return the current value for <code>key</code> (tracked, with auto-unwrap).</p>
 <p>If the stored prop value is a getter, it is invoked and the result
-returned — mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
+returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
 returned when <code>key</code> is absent from both the props dict and the
 component's parameter defaults.</p>
 
@@ -4924,12 +4926,12 @@ missing keys yield <code>None</code>.</p>
         <p>Return a callable getter for <code>key</code>, falling back to <code>default</code> if missing.</p>
 <p>When <code>key</code> exists on the prop bag (in raw props, prior signals, or
 component-parameter defaults), the returned getter reads the underlying
-signal — a tracking scope subscribes to it.</p>
+signal: a tracking scope subscribes to it.</p>
 <p>When <code>key</code> is <strong>missing</strong>, the getter returns <code>default</code> on each call
 without creating a tracked signal. This means repeated <code>get(key, x)</code>
 / <code>get(key, y)</code> calls each return their own default (no sticky
 behavior). Components that need reactivity for a possibly-missing
-prop should declare it as a parameter with a default value —
+prop should declare it as a parameter with a default value;
 <code>@component</code> ensures a signal is created up front so future updates
 always propagate.</p>
 
@@ -5380,7 +5382,7 @@ object (for example, attaching custom subscribers).</p>
 <p>Works with both <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ReactiveProps&lt;/span&gt;" href="../wybthon/#wybthon.ReactiveProps"><code>ReactiveProps</code></a> (the common
 case inside the reconciler) and plain dicts (test paths and a few
 legacy call sites). When called inside a tracking scope, the read is
-tracked against the underlying signal — mirroring the auto-unwrap
+tracked against the underlying signal, mirroring the auto-unwrap
 behavior of <code>ReactiveProps.value</code>.</p>
 
 
@@ -5900,7 +5902,7 @@ manager.</p>
 a dependency, or during component setup to seed local state from a
 prop without subscribing.</p>
 <p>Inside <code>untrack</code> the dev-mode destructured-prop warning is also
-silenced — so <code>count, set_count = create_signal(untrack(initial))</code>
+silenced, so <code>count, set_count = create_signal(untrack(initial))</code>
 cleanly opts out of the noise.</p>
 
 
@@ -5984,8 +5986,8 @@ cleanly opts out of the noise.</p>
         <p>Create an async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a> with cancellation support.</p>
 <p>Can be called two ways:</p>
 <ul>
-<li><code>create_resource(fetcher)</code> — simple fetcher, no source signal.</li>
-<li><code>create_resource(source, fetcher)</code> — refetches automatically when the
+<li><code>create_resource(fetcher)</code>: simple fetcher, no source signal.</li>
+<li><code>create_resource(source, fetcher)</code>: refetches automatically when the
   <code>source</code> getter's tracked value changes.</li>
 </ul>
 <p>The fetcher should be an async function returning the data value. If it
@@ -6266,7 +6268,7 @@ to disable ownership tracking entirely.</p>
         <p>Create a reactive signal and return <code>(getter, setter)</code>.</p>
 <p>Works inside or outside components. Inside a stateful component the
 signal is captured by the render function's closure and persists
-naturally — there is no cursor system or "rules of hooks".</p>
+naturally; there is no cursor system or "rules of hooks".</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6834,7 +6836,7 @@ Matches SolidJS's <code>children()</code> helper.</p>
 attribute / index lookup yields a callable getter; call the getter to
 read the current value (tracked when called inside an effect or hole).</p>
 <p>Most components should rely on the destructured parameters provided
-by <code>@component</code>. Use <code>get_props()</code> for advanced cases — generic
+by <code>@component</code>. Use <code>get_props()</code> for advanced cases such as generic
 wrappers, key iteration, or proxy-mode interop.</p>
 
 
@@ -7553,7 +7555,7 @@ returns the item; <code>index</code> is a plain <code>int</code> (not a getter).
         <p>Create an <code>O(1)</code> selection signal.</p>
 <p>When <code>source()</code> changes, only computations that previously called the
 returned <code>is_selected(key)</code> with the <strong>old</strong> or <strong>new</strong> key are
-notified — instead of every subscriber re-running.</p>
+notified, instead of every subscriber re-running.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7720,12 +7722,12 @@ execution are disposed before each re-run.</p>
 <h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
 <h5 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code> — optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.</li>
-<li><code>create_effect(fn) -&gt; Computation</code> — the returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.</li>
-<li><code>create_memo(fn) -&gt; getter</code> — creates a <code>Computation</code> under the current owner; disposed when the owner is disposed.</li>
-<li><code>on_mount(fn)</code> — run after first render</li>
-<li><code>on_cleanup(fn)</code> — appends <code>fn</code> to the current owner's cleanup list.  Inside <code>create_effect</code>: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.</li>
-<li><code>batch() -&gt; context manager</code> or <code>batch(fn) -&gt; result</code> — callback form flushes synchronously</li>
+<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code>. Optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.</li>
+<li><code>create_effect(fn) -&gt; Computation</code>. The returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.</li>
+<li><code>create_memo(fn) -&gt; getter</code>. Creates a <code>Computation</code> under the current owner; disposed when the owner is disposed.</li>
+<li><code>on_mount(fn)</code>. Run after first render.</li>
+<li><code>on_cleanup(fn)</code>. Appends <code>fn</code> to the current owner's cleanup list.  Inside <code>create_effect</code>: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.</li>
+<li><code>batch() -&gt; context manager</code> or <code>batch(fn) -&gt; result</code>. The callback form flushes synchronously.</li>
 </ul>
 <h5 id="create_signal-and-equals"><code>create_signal</code> and <code>equals</code><a class="headerlink" href="#create_signal-and-equals" title="Permanent link">&para;</a></h5>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span>
@@ -7774,8 +7776,8 @@ default, the decorator passes the proxy in directly (proxy mode);
 otherwise each parameter is bound to its own accessor and there is no
 need to call <code>get_props()</code>.</p>
 <p><code>ReactiveProps</code> is read-only; the parent/reconciler updates underlying
-values.  When a parent passes a getter (e.g. <code>name=my_signal</code>), the
-proxy unwraps it transparently — children always read with <code>props.name()</code>.</p>
+values.  When a parent passes a getter (e.g., <code>name=my_signal</code>), the
+proxy unwraps it transparently, and children always read with <code>props.name()</code>.</p>
 <h5 id="get_owner-and-run_with_ownerowner-fn"><code>get_owner()</code> and <code>run_with_owner(owner, fn)</code><a class="headerlink" href="#get_owner-and-run_with_ownerowner-fn" title="Permanent link">&para;</a></h5>
 <p>After an <code>await</code>, the reactive owner stack may no longer match the component that started the work. Capture the owner before awaiting and restore it when creating effects or other scoped work:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">get_owner</span><span class="p">,</span> <span class="n">run_with_owner</span>
@@ -7786,7 +7788,7 @@ proxy unwraps it transparently — children always read with <code>props.name()<
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">run_with_owner</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">use</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
 </span></code></pre></div>
 <h5 id="childrenfn"><code>children(fn)</code><a class="headerlink" href="#childrenfn" title="Permanent link">&para;</a></h5>
-<p><code>children(getter)</code> wraps a zero-argument callable that returns the children value (often <code>lambda: get_props().children()</code>) and returns a <strong>memo getter</strong> that flattens and resolves the list. Matches Solid’s <code>children()</code> helper. Import under an alias (e.g. <code>from wybthon import children as resolve_children</code>) if your component also names a parameter <code>children</code>.</p>
+<p><code>children(getter)</code> wraps a zero-argument callable that returns the children value (often <code>lambda: get_props().children()</code>) and returns a <strong>memo getter</strong> that flattens and resolves the list. Matches Solid's <code>children()</code> helper. Import under an alias (e.g., <code>from wybthon import children as resolve_children</code>) if your component also names a parameter <code>children</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">children</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">get_props</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nd">@component</span>
@@ -7798,21 +7800,21 @@ proxy unwraps it transparently — children always read with <code>props.name()<
 <h5 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h5>
 <ul>
 <li><code>create_resource(fetcher) -&gt; Resource</code></li>
-<li><code>create_resource(source, fetcher) -&gt; Resource</code> — refetches when source changes</li>
+<li><code>create_resource(source, fetcher) -&gt; Resource</code>. Refetches when the source changes.</li>
 </ul>
 <h5 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>untrack(fn)</code> — run without tracking signal reads</li>
-<li><code>on(deps, fn, defer=False)</code> — effect with explicit deps</li>
-<li><code>create_root(fn)</code> — creates an independent <code>Owner</code> root.  <code>fn</code> receives a <code>dispose</code> callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on <code>dispose()</code>.</li>
-<li><code>merge_props(*sources)</code> — merge prop sources into a <strong>reactive proxy</strong>.  Each source may be a plain <code>dict</code>, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting <code>[]</code>, <code>.get()</code>, <code>in</code>, <code>len()</code>, iteration, and <code>==</code> comparison with dicts.</li>
-<li><code>split_props(props, *key_groups)</code> — split a props source into <strong>reactive proxy</strong> groups by key name, plus a rest group.  Returns <code>(group1, ..., rest)</code>; each proxy lazily reads from the original source.</li>
+<li><code>untrack(fn)</code>. Run without tracking signal reads.</li>
+<li><code>on(deps, fn, defer=False)</code>. Effect with explicit deps.</li>
+<li><code>create_root(fn)</code>. Creates an independent <code>Owner</code> root.  <code>fn</code> receives a <code>dispose</code> callback that tears down the root and all its children.  Effects created inside the root are owned by it and cleaned up on <code>dispose()</code>.</li>
+<li><code>merge_props(*sources)</code>. Merge prop sources into a <strong>reactive proxy</strong>.  Each source may be a plain <code>dict</code>, a callable getter, or another proxy.  Reads are lazy: callable sources are called on each access for signal tracking.  Returns an object supporting <code>[]</code>, <code>.get()</code>, <code>in</code>, <code>len()</code>, iteration, and <code>==</code> comparison with dicts.</li>
+<li><code>split_props(props, *key_groups)</code>. Split a props source into <strong>reactive proxy</strong> groups by key name, plus a rest group.  Returns <code>(group1, ..., rest)</code>; each proxy lazily reads from the original source.</li>
 </ul>
 <h5 id="reactive-list-primitives">Reactive list primitives<a class="headerlink" href="#reactive-list-primitives" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>map_array(source, map_fn)</code> — keyed reactive list mapping.  <code>source</code> is a getter returning a list; <code>map_fn(item_getter, index_getter)</code> runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.</li>
-<li><code>index_array(source, map_fn)</code> — index-keyed reactive list mapping.  Like <code>map_array</code> but keyed by index position.  <code>map_fn(item_getter, index: int)</code> — the item getter is a signal that updates in place.  Returns a getter producing the mapped list.</li>
-<li><code>create_selector(source)</code> — efficient selection signal.  Returns <code>is_selected(key) -&gt; bool</code>.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).</li>
+<li><code>map_array(source, map_fn)</code>. Keyed reactive list mapping.  <code>source</code> is a getter returning a list; <code>map_fn(item_getter, index_getter)</code> runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.</li>
+<li><code>index_array(source, map_fn)</code>. Index-keyed reactive list mapping.  Like <code>map_array</code> but keyed by index position.  <code>map_fn(item_getter, index: int)</code>: the item getter is a signal that updates in place.  Returns a getter producing the mapped list.</li>
+<li><code>create_selector(source)</code>. Efficient selection signal.  Returns <code>is_selected(key) -&gt; bool</code>.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).</li>
 </ul>
 <h5 id="global-state">Global state<a class="headerlink" href="#global-state" title="Permanent link">&para;</a></h5>
 <p>A single <code>_current_owner</code> global tracks the active ownership scope.

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2867,7 +2869,7 @@ attribute writes, child insertions, and node removals.</p>
 <ul>
 <li><strong>Components run once.</strong> A function component is invoked a single time
   during mount. Its returned VNode tree is mounted directly. Reactive
-  updates flow through <em>reactive holes</em> embedded in that tree — not by
+  updates flow through <em>reactive holes</em> embedded in that tree, not by
   re-running the component body.</li>
 <li><strong>Reactive holes</strong> are <code>_dynamic</code> VNodes whose <code>getter</code> is re-evaluated
   by an effect when its dependencies change. They're created automatically
@@ -2973,7 +2975,7 @@ attribute writes, child insertions, and node removals.</p>
 
         <p>Render a VNode tree into a container element.</p>
 <p>Subsequent calls with the same <code>container</code> <em>patch</em> the existing tree
-in place — only the differences are applied. Pass <code>None</code> (via the
+in place; only the differences are applied. Pass <code>None</code> (via the
 internal API) to unmount.</p>
 
 
@@ -3328,7 +3330,7 @@ mount.</p>
 <p>The reconciler walks a previous and next VDOM tree and applies the
 minimal set of DOM mutations to bring the page into sync. It handles
 keyed lists, fragments, components, text nodes, and reactive holes.</p>
-<p>Most users never call into this module directly — <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>
+<p>Most users never call into this module directly. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>
 mounts a tree and the reconciler kicks in for subsequent updates. Read
 this page if you're contributing to Wybthon, debugging a diffing bug, or
 curious how holes plug into the patching loop.</p>
@@ -3365,10 +3367,10 @@ curious how holes plug into the patching loop.</p>
 </table>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a> — entry points for rendering and patching.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vnode&lt;/span&gt;" href="../vnode/#wybthon.vnode"><code>vnode</code></a> — the data structure being diffed.</li>
-<li><a href="../../concepts/vdom/">Concepts → Virtual DOM</a></li>
-<li><a href="../../concepts/lifecycle/">Concepts → Lifecycle and Ownership</a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a>: entry points for rendering and patching.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vnode&lt;/span&gt;" href="../vnode/#wybthon.vnode"><code>vnode</code></a>: the data structure being diffed.</li>
+<li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
+<li><a href="../../concepts/lifecycle/">Concepts: Lifecycle and Ownership</a></li>
 </ul>
 
 

@@ -22,7 +22,7 @@
         
       
       
-      <link rel="icon" href="assets/banner.jpg">
+      <link rel="icon" href="assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -113,7 +113,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -416,7 +417,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2755,7 +2757,7 @@
 
 <h1 id="wybthon">Wybthon<a class="headerlink" href="#wybthon" title="Permanent link">&para;</a></h1>
 <p>Wybthon is a client-side Python single-page application (SPA) framework that runs in the browser via <a href="https://pyodide.org/">Pyodide</a>.</p>
-<p>If you can write Python, you can build interactive web apps with Wybthon — no JavaScript build pipeline required.</p>
+<p>If you can write Python, you can build interactive web apps with Wybthon, no JavaScript build pipeline required.</p>
 <h2 id="what-is-wybthon">What is Wybthon?<a class="headerlink" href="#what-is-wybthon" title="Permanent link">&para;</a></h2>
 <p>Wybthon brings a SolidJS-style fine-grained reactive model to Python. You write function components in Python, return a virtual DOM tree, and the framework patches the real DOM in response to signal updates. Components run <strong>once</strong>; only the values that actually change re-render.</p>
 <p>The framework ships with everything you need to build a real app:</p>
@@ -2789,26 +2791,28 @@
 </span></code></pre></div>
 <p>Walk through this example end-to-end in <a href="getting-started/">Getting started</a>, or jump straight into the <a href="concepts/primitives/">Concepts</a> section.</p>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
-<p>1) Run the demo straight from a checkout:</p>
-<div class="codehilite"><pre><span></span><code>```bash
-python -m http.server
-# open http://localhost:8000/examples/demo/index.html
-```
-</code></pre></div>
-
-<p>2) Or run the dev server with auto-reload:</p>
-<div class="codehilite"><pre><span></span><code>```bash
-pip install .
-wyb dev --dir .
-```
-</code></pre></div>
-
-<p>3) Explore the demo app in <code>examples/demo</code> and the API in the Concepts and API sections.</p>
+<ol>
+<li>
+<p>Run the demo straight from a checkout:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-m<span class="w"> </span>http.server
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># open http://localhost:8000/examples/demo/index.html</span>
+</span></code></pre></div>
+</li>
+<li>
+<p>Or run the dev server with auto-reload:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>.
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.
+</span></code></pre></div>
+</li>
+<li>
+<p>Explore the demo app in <code>examples/demo</code> and the API in the Concepts and API sections.</p>
+</li>
+</ol>
 <h2 id="why-wybthon">Why Wybthon?<a class="headerlink" href="#why-wybthon" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Fully reactive props + run-once components</strong>: function components run a single time at mount. Every prop is a zero-argument accessor — pass it into the tree for an automatic <em>reactive hole</em> and only that node updates when the prop changes. No React-style re-renders. See <a href="concepts/primitives/#reactive-holes">Reactive Holes</a>.</li>
+<li><strong>Fully reactive props + run-once components</strong>: function components run a single time at mount. Every prop is a zero-argument accessor; pass it into the tree for an automatic <em>reactive hole</em> and only that node updates when the prop changes. No React-style re-renders. See <a href="concepts/primitives/#reactive-holes">Reactive Holes</a>.</li>
 <li><strong>Signals-first</strong> reactive model: <code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>on_mount</code>, <code>on_cleanup</code>, <code>batch</code>, <code>untrack</code>, <code>on</code>, <code>dynamic</code>.</li>
-<li>Virtual DOM renderer with function components — <strong>batched</strong> mutations amortise the Pyodide ↔ JS bridge cost.</li>
+<li>Virtual DOM renderer with function components, with <strong>batched</strong> mutations to amortise the Pyodide and JS bridge cost.</li>
 <li>Async data: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_resource&lt;/span&gt;" href="api/wybthon/#wybthon.create_resource"><code>create_resource</code></a> with loading/error signals and a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="api/wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundary.</li>
 <li><strong>Reactive context</strong>: <code>Provider</code> values are signal-backed so consumers update without re-mounting the subtree.</li>
 <li>Router with path params, query parsing, and a <code>Link</code> component.</li>
@@ -2819,12 +2823,12 @@ wyb dev --dir .
 </ul>
 <h2 id="documentation-map">Documentation map<a class="headerlink" href="#documentation-map" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Get started</strong> — install, run the demo, write your first component, explore the dev server.</li>
-<li><strong>Concepts</strong> — deep dives into the <a href="concepts/mental-model/">mental model</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
-<li><strong>Guides</strong> — task-oriented recipes for <a href="concepts/forms/">forms</a>, <a href="concepts/router/">routing</a>, <a href="concepts/stores/">stores</a>, <a href="concepts/suspense-lazy/">suspense and lazy loading</a>, <a href="guides/testing/">testing</a>, and more.</li>
-<li><strong>Examples</strong> — walkthroughs of the demo app pages and patterns.</li>
-<li><strong>API reference</strong> — auto-generated documentation per module via <code>mkdocstrings</code>.</li>
-<li><strong>Meta</strong> — contribution guide, <a href="meta/style-guide/">documentation style guide</a>, FAQ, and troubleshooting.</li>
+<li><strong>Get started</strong>: install, run the demo, write your first component, explore the dev server.</li>
+<li><strong>Concepts</strong>: deep dives into the <a href="concepts/mental-model/">mental model</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
+<li><strong>Guides</strong>: task-oriented recipes for <a href="concepts/forms/">forms</a>, <a href="concepts/router/">routing</a>, <a href="concepts/stores/">stores</a>, <a href="concepts/suspense-lazy/">suspense and lazy loading</a>, <a href="guides/testing/">testing</a>, and more.</li>
+<li><strong>Examples</strong>: walkthroughs of the demo app pages and patterns.</li>
+<li><strong>API reference</strong>: auto-generated documentation per module via <code>mkdocstrings</code>.</li>
+<li><strong>Meta</strong>: contribution guide, <a href="meta/style-guide/">documentation style guide</a>, FAQ, and troubleshooting.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

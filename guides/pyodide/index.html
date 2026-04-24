@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2737,7 +2739,7 @@
 
 
 <h1 id="pyodide">Pyodide<a class="headerlink" href="#pyodide" title="Permanent link">&para;</a></h1>
-<p>Wybthon runs in the browser through <a href="https://pyodide.org/">Pyodide</a>, a CPython distribution compiled to WebAssembly. Most of the framework is plain Python; Pyodide-specific concerns surface only at the boundaries — module loading, async/event-loop integration, and JS interop.</p>
+<p>Wybthon runs in the browser through <a href="https://pyodide.org/">Pyodide</a>, a CPython distribution compiled to WebAssembly. Most of the framework is plain Python; Pyodide-specific concerns surface only at the boundaries: module loading, async/event-loop integration, and JS interop.</p>
 <h2 id="the-basics">The basics<a class="headerlink" href="#the-basics" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> to install Python packages from PyPI at runtime.</li>
@@ -2776,7 +2778,7 @@
 <ul>
 <li>Convert Python collections to JS objects with <code>pyodide.ffi.to_js(...)</code> when calling JS APIs that expect plain objects (e.g. <code>JSON.stringify</code> or <code>fetch</code> request bodies).</li>
 <li>Convert JS objects to Python with <code>.to_py()</code> (most JS values returned by <code>await</code> calls have this method).</li>
-<li>Wrap Python callbacks in <code>create_proxy</code> when handing them to JS APIs that store them long term — Wybthon already does this internally for event handlers and <code>popstate</code> listeners, but you'll need to do it manually for direct <code>addEventListener</code> calls.</li>
+<li>Wrap Python callbacks in <code>create_proxy</code> when handing them to JS APIs that store them long term. Wybthon already does this internally for event handlers and <code>popstate</code> listeners, but you'll need to do it manually for direct <code>addEventListener</code> calls.</li>
 </ul>
 <h2 id="lazy-imports-and-module-loading">Lazy imports and module loading<a class="headerlink" href="#lazy-imports-and-module-loading" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy()</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;load_component&lt;/span&gt;" href="../../api/wybthon/#wybthon.load_component"><code>load_component()</code></a> use Python's regular import system, so the only requirement is that the target module is reachable on <code>sys.path</code> at import time:</p>

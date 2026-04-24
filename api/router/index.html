@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3263,7 +3265,7 @@ to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../wybthon/#wybthon.current_path"><code>current_path</code></a> automatically
-re-evaluate the matched route — no parent re-render is required.</p>
+re-evaluate the matched route; no parent re-render is required.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3381,7 +3383,7 @@ re-evaluate the matched route — no parent re-render is required.</p>
 
         <p>Anchor element component that navigates via the History API.</p>
 <p>Wrapped in a reactive hole so the active class flips
-automatically when the route changes — no parent re-render
+automatically when the route changes; no parent re-render is
 required. Modifier-key clicks (Cmd/Ctrl/Shift) and middle-clicks
 are passed through to the browser so users can open links in a
 new tab.</p>
@@ -3475,11 +3477,13 @@ new tab.</p>
 <li><code>function navigate(path: str, replace: bool = False)</code></li>
 <li><code>signal current_path</code> – reactive signal with current <code>path + search</code></li>
 </ul>
-<p>Notes:
-- Wildcard path segment <code>*</code> captures the rest of the path into <code>params["wildcard"]</code>.
-- Trailing <code>/*</code> also matches the base segment; e.g. <code>/docs/*</code> matches <code>/docs</code> and <code>/docs/guide</code>.
-- Nested routes use <code>children</code> and resolve to the most specific match.
-  - <code>Link</code> automatically adds an active CSS class (default: <code>"active"</code>) when its <code>href</code> matches the current pathname. Customize with <code>class_active</code>. Use <code>replace=True</code> to avoid pushing a new history entry.</p>
+<p>Notes:</p>
+<ul>
+<li>Wildcard path segment <code>*</code> captures the rest of the path into <code>params["wildcard"]</code>.</li>
+<li>Trailing <code>/*</code> also matches the base segment; e.g. <code>/docs/*</code> matches <code>/docs</code> and <code>/docs/guide</code>.</li>
+<li>Nested routes use <code>children</code> and resolve to the most specific match.</li>
+<li><code>Link</code> automatically adds an active CSS class (default: <code>"active"</code>) when its <code>href</code> matches the current pathname. Customize with <code>class_active</code>. Use <code>replace=True</code> to avoid pushing a new history entry.</li>
+</ul>
 
 
 

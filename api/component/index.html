@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2827,16 +2829,16 @@
 <li>Embedding an accessor directly inside a <code>VNode</code> tree turns the
   surrounding region into a fine-grained <strong>reactive hole</strong> that updates
   only the relevant DOM when the prop changes.</li>
-<li>The decorator also enables a <strong>direct call</strong> style — invoking the
+<li>The decorator also enables a <strong>direct call</strong> style: invoking the
   component with keyword arguments yields a <code>VNode</code> instead of running
   the body, so trees can be authored ergonomically.</li>
 </ul>
 <p>Authoring modes:</p>
 <ul>
-<li><strong>Named accessor mode</strong> — used when the signature has zero args, kwargs
+<li><strong>Named accessor mode</strong>: used when the signature has zero args, kwargs
   with defaults, or <code>**kwargs</code>. Each parameter becomes a reactive
   accessor for the prop of the same name.</li>
-<li><strong>Proxy mode</strong> — used when the signature has exactly one positional-only
+<li><strong>Proxy mode</strong>: used when the signature has exactly one positional-only
   or positional-or-keyword parameter with no default and no
   <code>*args</code>/<code>**kwargs</code>. The single parameter receives the full
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ReactiveProps&lt;/span&gt;" href="../wybthon/#wybthon.ReactiveProps"><code>ReactiveProps</code></a> proxy.</li>
@@ -2861,7 +2863,7 @@
 <span class="w">        </span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">on_click</span><span class="o">=</span><span class="n">lambda</span><span class="w"> </span><span class="n">e</span><span class="o">:</span><span class="w"> </span><span class="k">set</span><span class="n">_count</span><span class="p">(</span><span class="nf">count</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)),</span>
 <span class="w">    </span><span class="p">)</span>
 </code></pre></div>
-</details>        <p>When you need the underlying <code>ReactiveProps</code> proxy (e.g. to iterate
+</details>        <p>When you need the underlying <code>ReactiveProps</code> proxy (e.g., to iterate
 keys or forward unknown props), call
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_props&lt;/span&gt;" href="../reactivity/#wybthon.reactivity.get_props"><code>get_props</code></a> from inside the component
 body, or declare the component with a single positional parameter
@@ -2942,7 +2944,7 @@ need reactive swaps".</p>
 
         <p>Decorate a function as a Wybthon component.</p>
 <p>The body of <code>fn</code> is invoked <strong>once</strong> per mount. Each declared parameter
-is bound to a <strong>reactive accessor</strong> — call it to read the current
+is bound to a <strong>reactive accessor</strong>: call it to read the current
 value (tracked) or pass it directly into a <code>VNode</code> tree to create a
 reactive hole.</p>
 <p>The decorated callable also supports a <strong>direct call</strong> style:
@@ -3047,7 +3049,7 @@ named-accessor mode or proxy mode is used.</p>
         <p>Create a component that forwards a <code>ref</code> prop to a child element.</p>
 <p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
 where <code>ref</code> is the value of the <code>ref</code> prop (or <code>None</code>). <code>ref</code> is
-<strong>stripped from props</strong> — matching React's <code>forwardRef</code> semantics —
+<strong>stripped from props</strong> (matching React's <code>forwardRef</code> semantics),
 so the wrapped function only sees its own concerns.</p>
 
 
@@ -3130,7 +3132,7 @@ so the wrapped function only sees its own concerns.</p>
 </div><h4 id="component"><code>@component</code><a class="headerlink" href="#component" title="Permanent link">&para;</a></h4>
 <p>Decorator that turns a function into a Wybthon component with
 <strong>fully-reactive props</strong>.</p>
-<p><strong>Each parameter is a reactive accessor</strong> — a zero-arg callable.</p>
+<p><strong>Each parameter is a reactive accessor</strong>, a zero-arg callable.</p>
 <ul>
 <li>Pass it directly into the tree to create a reactive auto-hole.</li>
 <li>Call it (<code>name()</code>) to read the current value (tracked when called
@@ -3154,7 +3156,7 @@ seed local state from props using <code>untrack</code>:</p>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">untrack</span><span class="p">(</span><span class="n">initial</span><span class="p">))</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">)))</span>
 </span></code></pre></div>
-<p><strong>Children</strong> is a normal prop — also a reactive accessor.  Most
+<p><strong>Children</strong> is a normal prop, also a reactive accessor.  Most
 layouts read children once at setup; wrap with <code>untrack</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
@@ -3168,7 +3170,7 @@ layouts read children once at setup; wrap with <code>untrack</code>:</p>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <p>For memoized, reactive resolution of <code>children</code> (Solid-style), use the
-<code>children(fn)</code> helper with <code>get_props()</code> — see <a href="../reactivity/">Reactivity</a>.</p>
+<code>children(fn)</code> helper with <code>get_props()</code>. See <a href="../reactivity/">Reactivity</a>.</p>
 <p><strong>Direct calls</strong> with keyword arguments return a <code>VNode</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>

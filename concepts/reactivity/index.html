@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2821,19 +2823,19 @@
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>create_signal(value, *, equals=...)</code> → <code>(getter, setter)</code> tuple.
+<li><code>create_signal(value, *, equals=...)</code> returns a <code>(getter, setter)</code> tuple.
   By default <code>equals</code> uses <strong>value equality</strong> (<code>==</code>) with an identity
   fast-path; pass <code>equals=False</code> to fire on every set, or a custom
-  comparator (e.g. <code>equals=lambda a, b: a is b</code> for SolidJS-style
+  comparator (e.g., <code>equals=lambda a, b: a is b</code> for SolidJS-style
   identity-only semantics). See <a href="../../api/reactivity/">Reactivity API</a>.</li>
-<li><code>create_memo(fn)</code> → derived getter; re-computes only when deps change</li>
-<li><code>create_effect(fn)</code> → runs and re-runs on dependencies; supports previous value</li>
-<li><code>batch()</code> → batch updates as context manager or <code>batch(fn)</code> with callback</li>
-<li><code>create_resource(fetcher)</code> → async data with loading/error signals</li>
+<li><code>create_memo(fn)</code> returns a derived getter; re-computes only when deps change.</li>
+<li><code>create_effect(fn)</code> runs and re-runs on dependencies; supports previous value.</li>
+<li><code>batch()</code> batches updates as a context manager, or <code>batch(fn)</code> with callback.</li>
+<li><code>create_resource(fetcher)</code> returns an async data primitive with loading/error signals.</li>
 </ul>
 <h4 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h4>
-<p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads — useful for
-reading a signal inside an effect without creating a dependency:</p>
+<p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads, which is
+useful for reading a signal inside an effect without creating a dependency:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;a changed:&quot;</span><span class="p">,</span> <span class="n">a</span><span class="p">(),</span> <span class="s2">&quot;b is:&quot;</span><span class="p">,</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
@@ -2846,8 +2848,8 @@ tracking.  The body of <code>fn</code> is automatically untracked:</p>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">on</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">va</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;a=</span><span class="si">{</span><span class="n">va</span><span class="si">}</span><span class="s2">, b=</span><span class="si">{</span><span class="n">vb</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">defer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>merge_props(*sources)</code> merges multiple prop sources into a <strong>reactive
-proxy</strong>.  Each source may be a plain dict or a callable getter (e.g. a
-signal accessor that returns a dict).  Reads on the proxy are lazy —
+proxy</strong>.  Each source may be a plain dict or a callable getter (e.g., a
+signal accessor that returns a dict).  Reads on the proxy are lazy:
 when a source is callable, it is called on each property access, so
 signal reads inside a reactive computation are tracked automatically.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_props</span><span class="p">,</span> <span class="n">create_signal</span>
@@ -2892,7 +2894,7 @@ value at that position changes.</p>
 </span></code></pre></div>
 <p><code>create_selector(source)</code> creates an efficient <strong>selection signal</strong>.
 Only computations that called <code>is_selected()</code> with the <em>previous</em> or
-<em>new</em> key are notified — giving O(1) updates instead of O(n).</p>
+<em>new</em> key are notified, giving O(1) updates instead of O(n).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_selector</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -2916,15 +2918,15 @@ Only computations that called <code>is_selected()</code> with the <em>previous</
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">set_a</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">set_b</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Callback (SolidJS-style) — effects flush synchronously before returning</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Callback (SolidJS-style); effects flush synchronously before returning</span>
 </span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">batch</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">set_a</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">set_b</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
 </span></code></pre></div>
 <h4 id="ownership-tree">Ownership tree<a class="headerlink" href="#ownership-tree" title="Permanent link">&para;</a></h4>
 <p>Every reactive computation belongs to an <strong>ownership tree</strong> (inspired by
 SolidJS).  Two base classes form the hierarchy:</p>
 <ul>
-<li><code>Owner</code> — tracks child owners and cleanup callbacks.</li>
-<li><code>Computation(Owner)</code> — a reactive computation that is also an ownership scope.</li>
+<li><code>Owner</code>: tracks child owners and cleanup callbacks.</li>
+<li><code>Computation(Owner)</code>: a reactive computation that is also an ownership scope.</li>
 </ul>
 <p>When a new effect or memo is created, it is automatically registered as a
 child of <code>_current_owner</code>, the owner that is active at the time of
@@ -2986,11 +2988,11 @@ the hole re-runs (so their <code>on_cleanup</code> callbacks fire).</p>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="c1"># Setup effect — lives until the component unmounts</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="c1"># Setup effect: lives until the component unmounts</span>
 </span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count is&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
 </span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
 </span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>        <span class="c1"># Hole effect — re-runs only when ``count`` changes; any inner</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>        <span class="c1"># Hole effect: re-runs only when ``count`` changes; any inner</span>
 </span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>        <span class="c1"># effects it creates are disposed before the next run.</span>
 </span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>        <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
 </span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="p">)</span>

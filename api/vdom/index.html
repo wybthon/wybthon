@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3408,9 +3410,10 @@ from the focused sub-modules. Existing code that imports from
 
         <p>Virtual node representing an element, text, component, or reactive hole.</p>
 <p>Uses <code>__slots__</code> for a compact memory layout and faster attribute
-access — meaningful when authoring large lists. Internal attributes
-(<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>, <code>_frag_end</code>) are
-populated by the reconciler when the VNode is mounted.</p>
+access, which is meaningful when authoring large lists. Internal
+attributes (<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>,
+<code>_frag_end</code>) are populated by the reconciler when the VNode is
+mounted.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -4006,7 +4009,7 @@ mount.</p>
 
         <p>Render a VNode tree into a container element.</p>
 <p>Subsequent calls with the same <code>container</code> <em>patch</em> the existing tree
-in place — only the differences are applied. Pass <code>None</code> (via the
+in place; only the differences are applied. Pass <code>None</code> (via the
 internal API) to unmount.</p>
 
 
@@ -4667,7 +4670,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it — fine-grained holes already minimise DOM work.</p>
+do not need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4824,17 +4827,17 @@ across every key.</p>
 <ul>
 <li><code>VNode</code></li>
 <li><code>h(tag, props=None, *children) -&gt; VNode</code></li>
-<li><code>Fragment(*children)</code> — groups children <strong>without</strong> a wrapper element; the reconciler uses invisible comment markers and mounts children in the parent (no <code>display:contents</code> span).</li>
+<li><code>Fragment(*children)</code>. Groups children <strong>without</strong> a wrapper element; the reconciler uses invisible comment markers and mounts children in the parent (no <code>display:contents</code> span).</li>
 <li><code>render(vnode, container) -&gt; Element</code></li>
-<li><code>dynamic(getter, *, key=None) -&gt; VNode</code> — wrap a zero-arg callable as a
-  <em>reactive hole</em> (see <a href="../../concepts/primitives/#reactive-holes">Primitives → Reactive Holes</a>).  Callable children passed to <code>h()</code> are auto-wrapped via this helper.</li>
-<li><code>is_getter(value) -&gt; bool</code> — predicate the reconciler uses to decide whether
+<li><code>dynamic(getter, *, key=None) -&gt; VNode</code>. Wrap a zero-arg callable as a
+  <em>reactive hole</em> (see <a href="../../concepts/primitives/#reactive-holes">Primitives, Reactive Holes</a>).  Callable children passed to <code>h()</code> are auto-wrapped via this helper.</li>
+<li><code>is_getter(value) -&gt; bool</code>. Predicate the reconciler uses to decide whether
   a callable child or prop value is a reactive hole.  Useful when authoring
   components or helpers that need to detect getters explicitly.</li>
 <li><code>ErrorBoundary</code> component</li>
 <li><code>Suspense</code> component</li>
-<li><code>memo(component, are_props_equal=None)</code> — memoize a function component</li>
-<li><code>create_portal(children, container)</code> — render children into a different DOM container</li>
+<li><code>memo(component, are_props_equal=None)</code>. Memoize a function component.</li>
+<li><code>create_portal(children, container)</code>. Render children into a different DOM container.</li>
 </ul>
 <h4 id="keyed-children-and-diffing">Keyed children and diffing<a class="headerlink" href="#keyed-children-and-diffing" title="Permanent link">&para;</a></h4>
 <ul>

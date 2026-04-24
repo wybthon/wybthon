@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2910,7 +2912,7 @@ relevant subtree re-renders when the tracked condition or list changes.</p>
 (returning <code>dynamic(...)</code>) rather than a plain helper. Conditions,
 sources, children, and fallbacks are accepted as <strong>getters</strong> (zero-arg
 callables) so that reads happen inside the flow control's own reactive
-effect — not the parent's.</p>
+effect, not the parent's.</p>
 <p>API rules:</p>
 <ul>
 <li><code>when</code> / <code>each</code>: pass a <em>getter</em> (the signal accessor itself) or a raw
@@ -3041,11 +3043,11 @@ effect — not the parent's.</p>
 
         <p>Conditionally render <code>children</code> when <code>when</code> is truthy.</p>
 <p>Can be called in two styles:</p>
-<p>Component style (reactive — recommended for dynamic conditions):
+<p>Component style (reactive; recommended for dynamic conditions):
     <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">))</span>
 </span></code></pre></div></p>
-<p>Direct call (evaluated once — fine inside an explicit hole):
+<p>Direct call (evaluated once; fine inside an explicit hole):
     <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Positive&quot;</span><span class="p">),</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Not positive&quot;</span><span class="p">))</span>
@@ -3186,7 +3188,7 @@ value (direct call form).</p>
 </span></code></pre></div></p>
 <p>Inside the callback, <code>item</code> is a <strong>signal-backed getter</strong> returning
 the current item value, and <code>index</code> is a signal-backed getter
-returning the current integer index — matching SolidJS <code>&lt;For&gt;</code>.</p>
+returning the current integer index, matching SolidJS <code>&lt;For&gt;</code>.</p>
 <p><code>For</code> maintains <strong>stable per-item reactive scopes</strong> keyed by
 reference identity. The mapping callback runs only once per unique
 item. When an item leaves the list, its scope (including any

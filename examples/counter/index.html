@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2719,14 +2721,14 @@
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p><code>count</code> is a zero-arg accessor returned by <code>create_signal</code>.  When you
-embed it in the VNode tree the reconciler wraps it in its own effect —
-only that text node updates when the signal changes.  See
-<a href="../../concepts/primitives/#reactive-holes">Primitives → Reactive Holes</a>.</p>
+embed it in the VNode tree the reconciler wraps it in its own effect,
+so only that text node updates when the signal changes.  See
+<a href="../../concepts/primitives/#reactive-holes">Primitives, Reactive Holes</a>.</p>
 <h4 id="direct-call-form-no-h">Direct call form (no <code>h</code>)<a class="headerlink" href="#direct-call-form-no-h" title="Permanent link">&para;</a></h4>
 <p><code>@component</code> lets you call the component directly with kwargs:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>              <span class="c1"># → h(Counter, {&quot;initial&quot;: 5})</span>
 </span></code></pre></div>
-<p>Pass a getter to react to parent state changes — the child code does
+<p>Pass a getter to react to parent state changes; the child code does
 not change:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">seed</span><span class="p">,</span> <span class="n">set_seed</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>           <span class="c1"># ``initial()`` will reflect ``seed()``</span>

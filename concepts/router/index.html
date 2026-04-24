@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2885,9 +2887,11 @@
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_hover_about</span><span class="p">(</span><span class="n">_evt</span><span class="p">):</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">preload_component</span><span class="p">(</span><span class="s2">&quot;examples.demo.app.about.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Notes for Pyodide:
-- Ensure the module is available in the Pyodide filesystem or installed via <code>micropip</code>. Static bundling is recommended for demo apps.
-- Dynamic imports are synchronous from Python’s perspective but may involve underlying network fetches when using <code>micropip</code>. Use <code>preload_component</code> to warm caches before navigation.</p>
+<p>Notes for Pyodide:</p>
+<ul>
+<li>Ensure the module is available in the Pyodide filesystem or installed via <code>micropip</code>. Static bundling is recommended for demo apps.</li>
+<li>Dynamic imports are synchronous from Python's perspective but may involve underlying network fetches when using <code>micropip</code>. Use <code>preload_component</code> to warm caches before navigation.</li>
+</ul>
 <p>Migration notes:</p>
 <ul>
 <li>Prior versions did not include <code>Link</code> active styling. If you previously computed active state manually, you can remove that logic and rely on <code>Link</code>'s built-in active class.</li>

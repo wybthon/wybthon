@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2923,9 +2925,9 @@
 <h3 id="primitives">Primitives<a class="headerlink" href="#primitives" title="Permanent link">&para;</a></h3>
 <p>Wybthon uses a <strong>signals-first</strong> reactive model inspired by SolidJS.
 Component bodies run <strong>once</strong> at mount.  Reactivity comes from signals
-read inside <em>reactive holes</em> — zero-arg callables placed inside the
-returned VNode tree.  See the <a href="#reactive-holes">Reactive Holes</a> section
-below.</p>
+read inside <em>reactive holes</em>, which are zero-arg callables placed
+inside the returned VNode tree.  See the <a href="#reactive-holes">Reactive Holes</a>
+section below.</p>
 <hr />
 <h4 id="reactive-holes">Reactive Holes<a class="headerlink" href="#reactive-holes" title="Permanent link">&para;</a></h4>
 <p>A <strong>reactive hole</strong> is a zero-arg callable embedded in a VNode tree
@@ -2955,15 +2957,15 @@ hole updates the DOM in place when its dependencies change.</p>
 </span></code></pre></div>
 <p>A hole's getter may return any of:</p>
 <ul>
-<li>a string or number → rendered as a text node</li>
-<li>a <code>VNode</code> → mounted as the hole's subtree (replacing the previous one)</li>
-<li>a <code>Fragment</code> or list of VNodes → mounted as multiple roots between
+<li>a string or number, rendered as a text node</li>
+<li>a <code>VNode</code>, mounted as the hole's subtree (replacing the previous one)</li>
+<li>a <code>Fragment</code> or list of VNodes, mounted as multiple roots between
   the hole's start/end anchors</li>
-<li><code>None</code> → renders nothing</li>
+<li><code>None</code>, which renders nothing</li>
 </ul>
 <p>Holes are scoped to their owner.  Inside a hole you can use
 <code>on_cleanup</code> to register teardown that runs before each re-execution
-and on disposal — the same lifecycle as <code>create_effect</code>:</p>
+and on disposal, which mirrors the lifecycle of <code>create_effect</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@component</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Subscriber</span><span class="p">():</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">topic</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
@@ -2980,7 +2982,7 @@ and on disposal — the same lifecycle as <code>create_effect</code>:</p>
 <p class="admonition-title">Why this model?</p>
 <p>This is the SolidJS authoring model adapted for Pyodide.
 Components run once, so signal <em>creation</em>, event-handler
-<em>closures</em>, and lifecycle <em>registrations</em> happen exactly once —
+<em>closures</em>, and lifecycle <em>registrations</em> happen exactly once,
 and DOM updates stay surgical and predictable.</p>
 </div>
 <hr />
@@ -3000,16 +3002,16 @@ and DOM updates stay surgical and predictable.</p>
 </span></code></pre></div>
 <p>Optional keyword <strong><code>equals</code></strong> controls when subscribers run:</p>
 <ul>
-<li><strong>default (value equality)</strong> — skip notification when the new value
+<li><strong>default (value equality)</strong>: skip notification when the new value
   is <code>==</code> to the previous one.  An identity (<code>is</code>) check runs first as
   a fast-path, so re-setting the same reference is cheap.  Mutating
   the same list/dict in place and re-setting the same reference is a
-  no-op (the value didn't change) — copy the container or use
+  no-op (the value didn't change); copy the container or use
   <code>equals=False</code> to force notification.</li>
-<li><strong><code>equals=True</code></strong> — equivalent to the default.</li>
-<li><strong><code>equals=False</code></strong> — notify on every <code>set()</code>, even when the value is
+<li><strong><code>equals=True</code></strong>: equivalent to the default.</li>
+<li><strong><code>equals=False</code></strong>: notify on every <code>set()</code>, even when the value is
   unchanged.</li>
-<li><strong><code>equals=comparator</code></strong> — <code>comparator(old, new) -&gt; bool</code>; skip when
+<li><strong><code>equals=comparator</code></strong>: <code>comparator(old, new) -&gt; bool</code>; skip when
   the comparator returns <code>True</code>.  Use
   <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only
   semantics.</li>
@@ -3017,8 +3019,8 @@ and DOM updates stay surgical and predictable.</p>
 <p>The setter accepts a plain value:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Signals created during setup persist for the lifetime of the component --
-no cursor system, no "rules of hooks".</p>
+<p>Signals created during setup persist for the lifetime of the
+component; no cursor system, no "rules of hooks".</p>
 <hr />
 <h4 id="create_effect"><code>create_effect</code><a class="headerlink" href="#create_effect" title="Permanent link">&para;</a></h4>
 <p>Create an auto-tracking reactive effect.  The effect runs immediately and
@@ -3065,7 +3067,7 @@ to it.  Use during component setup to capture a one-shot snapshot:</p>
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="o">...</span>
 </span></code></pre></div>
 <p><code>untrack</code> also suppresses dev-mode warnings about destructured prop
-access — it is the explicit "I know what I'm doing" escape hatch.</p>
+access; it is the explicit "I know what I'm doing" escape hatch.</p>
 <hr />
 <h4 id="on_mount"><code>on_mount</code><a class="headerlink" href="#on_mount" title="Permanent link">&para;</a></h4>
 <p>Register a callback to run once after the component mounts.</p>
@@ -3095,7 +3097,7 @@ access — it is the explicit "I know what I'm doing" escape hatch.</p>
 <hr />
 <h4 id="reactive-props">Reactive props<a class="headerlink" href="#reactive-props" title="Permanent link">&para;</a></h4>
 <p>With <code>@component</code>, every parameter is a <strong>reactive accessor</strong> (a
-zero-arg callable) — there is one consistent shape regardless of
+zero-arg callable), giving one consistent shape regardless of
 whether the parent passed a static value or a signal.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nd">@component</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>
@@ -3111,7 +3113,7 @@ whether the parent passed a static value or a signal.</p>
 </span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="k">return</span> <span class="n">Greeting</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>                 <span class="c1"># pass the accessor</span>
 </span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="c1"># Greeting(name=&quot;Ada&quot;) is also valid; the child code is identical.</span>
 </span></code></pre></div>
-<p>When you need the underlying <code>ReactiveProps</code> proxy (e.g. for
+<p>When you need the underlying <code>ReactiveProps</code> proxy (e.g., for
 introspection or to iterate keys), call <code>get_props()</code> from inside
 the component body, or declare the component with a single positional
 parameter (proxy mode):</p>
@@ -3132,8 +3134,8 @@ children resolution.</p>
 <hr />
 <h4 id="map_array"><code>map_array</code><a class="headerlink" href="#map_array" title="Permanent link">&para;</a></h4>
 <p>Keyed reactive list mapping with stable per-item scopes.  Items are
-matched by reference identity — the mapping callback runs <strong>once</strong> per
-unique item.  Removed items have their scopes disposed.</p>
+matched by reference identity, so the mapping callback runs <strong>once</strong>
+per unique item.  Removed items have their scopes disposed.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">map_array</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
@@ -3154,7 +3156,7 @@ position changes.  The index is a plain <code>int</code>.</p>
 <hr />
 <h4 id="create_selector"><code>create_selector</code><a class="headerlink" href="#create_selector" title="Permanent link">&para;</a></h4>
 <p>Efficient selection signal for O(1) selection tracking.  Returns
-<code>is_selected(key) → bool</code> — only effects for the previous and new
+<code>is_selected(key) -&gt; bool</code>; only effects for the previous and new
 key are notified.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_selector</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>

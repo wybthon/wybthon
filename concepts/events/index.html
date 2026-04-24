@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2803,7 +2805,7 @@
 <li><code>target</code>: an <code>Element</code> for the original event target node (or <code>None</code>). Common form-input properties (<code>value</code>, <code>checked</code>, <code>files</code>) are exposed directly on the wrapper, mirroring the JS DOM API. The raw JS node is also available via <code>target.element</code>.</li>
 <li><code>current_target</code>: an <code>Element</code> for the node whose handler is currently running during delegated bubbling. This is set for you before your handler is called.</li>
 <li><code>prevent_default()</code>: calls <code>preventDefault()</code> on the underlying JS event, if available. Safe to call in non-browser tests.</li>
-<li><code>stop_propagation()</code>: stops delegated propagation within Wybthon’s dispatcher for this event. It also attempts to call the underlying JS <code>stopPropagation()</code> when available.</li>
+<li><code>stop_propagation()</code>: stops delegated propagation within Wybthon's dispatcher for this event. It also attempts to call the underlying JS <code>stopPropagation()</code> when available.</li>
 </ul>
 <p>Read input values exactly like in JS/React/SolidJS:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">input_</span><span class="p">(</span>
@@ -2824,7 +2826,7 @@
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;submit&quot;</span><span class="p">},</span> <span class="s2">&quot;Go&quot;</span><span class="p">))</span>
 </span></code></pre></div>
 <h4 id="delegation-model">Delegation model<a class="headerlink" href="#delegation-model" title="Permanent link">&para;</a></h4>
-<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon’s dispatcher.</p>
+<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon's dispatcher.</p>
 <p>Cleanup guarantees:</p>
 <ul>
 <li>When a node is unmounted, all of its event handlers are removed from the delegation map.</li>
@@ -2832,9 +2834,9 @@
 </ul>
 <h4 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h4>
 <ul>
-<li><code>on_click</code> → "click"</li>
-<li><code>onInput</code>/<code>on_input</code> → "input"</li>
-<li><code>onClick</code>/<code>onclick</code> → "click"</li>
+<li><code>on_click</code> becomes "click"</li>
+<li><code>onInput</code>/<code>on_input</code> becomes "input"</li>
+<li><code>onClick</code>/<code>onclick</code> becomes "click"</li>
 <li>Any prop starting with <code>on_</code> or <code>on</code> is treated as an event handler; non-callable values are ignored.</li>
 </ul>
 <h4 id="event-types-that-work-best-with-delegation">Event types that work best with delegation<a class="headerlink" href="#event-types-that-work-best-with-delegation" title="Permanent link">&para;</a></h4>
@@ -2850,7 +2852,7 @@
 <li>Use <code>focusin</code>/<code>focusout</code> instead of <code>focus</code>/<code>blur</code>.</li>
 <li>Use <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code>.</li>
 </ul>
-<p>When you need non-bubbling events or special options (e.g., <code>passive: False</code>), attach directly via <code>Ref</code> + <code>Element.on</code>:</p>
+<p>When you need non-bubbling events or special options (e.g., <code>passive: False</code>), attach directly via <code>Ref</code> and <code>Element.on</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">Ref</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nd">@component</span>

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3087,9 +3089,10 @@ fine-grained" rendering.</p>
 
         <p>Virtual node representing an element, text, component, or reactive hole.</p>
 <p>Uses <code>__slots__</code> for a compact memory layout and faster attribute
-access — meaningful when authoring large lists. Internal attributes
-(<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>, <code>_frag_end</code>) are
-populated by the reconciler when the VNode is mounted.</p>
+access, which is meaningful when authoring large lists. Internal
+attributes (<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>,
+<code>_frag_end</code>) are populated by the reconciler when the VNode is
+mounted.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -3771,7 +3774,7 @@ single dict containing a <code>children</code> key (the form used when
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it — fine-grained holes already minimise DOM work.</p>
+do not need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3915,9 +3918,9 @@ with a few pure helpers for marker nodes (<code>Fragment</code>) and reactive ho
 directly.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a> — render and patch primitives.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../reconciler/#wybthon.reconciler"><code>reconciler</code></a> — keyed list and child diffing.</li>
-<li><a href="../../concepts/vdom/">Concepts → Virtual DOM</a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a>: render and patch primitives.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../reconciler/#wybthon.reconciler"><code>reconciler</code></a>: keyed list and child diffing.</li>
+<li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 </ul>
 
 

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3327,7 +3329,7 @@ listeners are released.</p>
 
     </div>
 
-</div><p>Wybthon’s event system provides delegated event handling and a thin <code>DomEvent</code> wrapper.</p>
+</div><p>Wybthon's event system provides delegated event handling and a thin <code>DomEvent</code> wrapper.</p>
 <ul>
 <li><code>DomEvent</code>: wrapper with <code>type</code>, <code>target</code> (<code>Element|None</code>), <code>current_target</code> (<code>Element|None</code>), <code>prevent_default()</code>, <code>stop_propagation()</code>.</li>
 <li>Handlers can be attached via props like <code>on_click</code>, <code>on_input</code>, or <code>onChange</code>. Names are normalized to DOM event types.</li>
@@ -3337,9 +3339,9 @@ listeners are released.</p>
 <ul>
 <li>Any prop starting with <code>on_</code> or <code>on</code> is treated as an event handler and normalized to a DOM event type.</li>
 <li>Normalization rules:</li>
-<li><code>on_click</code> → "click"</li>
-<li><code>onInput</code>/<code>on_input</code> → "input"</li>
-<li><code>onClick</code>/<code>onclick</code> → "click"</li>
+<li><code>on_click</code> becomes "click"</li>
+<li><code>onInput</code>/<code>on_input</code> becomes "input"</li>
+<li><code>onClick</code>/<code>onclick</code> becomes "click"</li>
 <li>In general: remove the <code>on</code>/<code>on_</code> prefix and lowercase the remainder.</li>
 </ul>
 <p>Handler signature:</p>
@@ -3347,7 +3349,7 @@ listeners are released.</p>
 <li>All handlers receive a <code>DomEvent</code> object. Use <code>evt.prevent_default()</code> and <code>evt.stop_propagation()</code> as needed. Access the original JS event via <code>evt._js_event</code> only if absolutely necessary.</li>
 </ul>
 <h4 id="delegation-and-bubbling">Delegation and bubbling<a class="headerlink" href="#delegation-and-bubbling" title="Permanent link">&para;</a></h4>
-<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers registered for that <code>event_type</code>. <code>stop_propagation()</code> prevents further bubbling within Wybthon’s dispatcher.</p>
+<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers registered for that <code>event_type</code>. <code>stop_propagation()</code> prevents further bubbling within Wybthon's dispatcher.</p>
 <p>Cleanup guarantees:</p>
 <ul>
 <li>When a node is unmounted, all of its event handlers are removed from the delegation map.</li>

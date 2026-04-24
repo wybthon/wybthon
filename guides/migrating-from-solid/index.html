@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2980,7 +2982,7 @@
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="k">return</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Wybthon's router supports nested routes, dynamic params, query parsing, and lazy components — see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/wybthon/#wybthon.Router">Routing</a>.</p>
+<p>Wybthon's router supports nested routes, dynamic params, query parsing, and lazy components; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/wybthon/#wybthon.Router">Routing</a>.</p>
 <h2 id="whats-intentionally-different">What's intentionally different<a class="headerlink" href="#whats-intentionally-different" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Naming.</strong> snake_case across the API (<code>create_signal</code>, not <code>createSignal</code>). Component names stay PascalCase.</li>
@@ -2991,14 +2993,14 @@
 <h2 id="what-carries-over-directly">What carries over directly<a class="headerlink" href="#what-carries-over-directly" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The mental model (components run once, fine-grained reactivity).</li>
-<li>Ownership semantics — <code>on_cleanup</code> attaches to the current owner.</li>
-<li>Transitions and resources — <code>create_resource</code> integrates with <code>Suspense</code>.</li>
+<li>Ownership semantics: <code>on_cleanup</code> attaches to the current owner.</li>
+<li>Transitions and resources: <code>create_resource</code> integrates with <code>Suspense</code>.</li>
 <li>Patterns like keyed lists, conditional flows, and nested boundaries.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../../concepts/mental-model/">Mental model</a> for the framework's core ideas.</li>
-<li>Explore <a href="../authoring-patterns/">Authoring patterns</a> — many should look familiar.</li>
+<li>Explore <a href="../authoring-patterns/">Authoring patterns</a>; many should look familiar.</li>
 <li>Browse the <a href="../../api/wybthon/">API reference</a> for the full set of primitives.</li>
 </ul>
 

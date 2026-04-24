@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2860,20 +2862,20 @@
 <p class="admonition-title">Mental model</p>
 <p>A component body <strong>runs once</strong> during mount. Every prop is a
 <strong>reactive accessor</strong> (a zero-arg callable). Embed an accessor in
-the returned VNode tree to create a <em>reactive hole</em> — only that
+the returned VNode tree to create a <em>reactive hole</em>, so only that
 node updates when the prop changes. See
 <a href="../primitives/#reactive-holes">Primitives</a> for the full story.</p>
 </div>
 <h4 id="function-components-with-component">Function components with <code>@component</code><a class="headerlink" href="#function-components-with-component" title="Permanent link">&para;</a></h4>
 <p>The <code>@component</code> decorator turns a function into a Wybthon component.
-Declare props as regular Python keyword arguments — defaults and
+Declare props as regular Python keyword arguments; defaults and
 annotations work as you would expect:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@component</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="c1"># ``name`` is a zero-arg getter.  Passing it directly into the tree</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="c1"># creates a reactive hole — only the text node updates if the</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="c1"># creates a reactive hole, so only the text node updates if the</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="c1"># parent passes a new ``name``.</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </span></code></pre></div>
@@ -2884,7 +2886,7 @@ annotations work as you would expect:</p>
 <li>Call it (<code>name()</code>) to read the current value (tracked when called
   inside an effect).</li>
 <li>Wrap it with <a href="../primitives/#untrack"><code>untrack</code></a> to read once
-  without subscribing — useful for seeding local state from a prop.</li>
+  without subscribing, which is useful for seeding local state from a prop.</li>
 </ul>
 <p>The body of an <code>@component</code> runs <strong>once</strong> per mount.  There is no
 re-render: the only things that update later are the holes embedded
@@ -2904,10 +2906,10 @@ in the tree.</p>
 </span></code></pre></div>
 <p><code>count</code> is a zero-arg accessor.  When you place it in the VNode
 tree, the reconciler wraps it in its own effect so only that text
-node updates — the surrounding component body does not re-run.</p>
-<h5 id="static-or-getter-same-call-site">Static or getter — same call site<a class="headerlink" href="#static-or-getter-same-call-site" title="Permanent link">&para;</a></h5>
+node updates; the surrounding component body does not re-run.</p>
+<h5 id="static-or-getter-same-call-site">Static or getter, same call site<a class="headerlink" href="#static-or-getter-same-call-site" title="Permanent link">&para;</a></h5>
 <p>A child component never has to care whether the parent passed a
-constant or a signal — both are unwrapped uniformly:</p>
+constant or a signal; both are unwrapped uniformly:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@component</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Badge</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="c1"># Works whether the parent passes count=7 or count=my_signal.</span>
@@ -2920,7 +2922,7 @@ constant or a signal — both are unwrapped uniformly:</p>
 as a prop and the child will re-evaluate it whenever <code>a</code> or <code>b</code>
 changes.</p>
 <h5 id="children">Children<a class="headerlink" href="#children" title="Permanent link">&para;</a></h5>
-<p><code>children</code> is a normal prop — also a reactive accessor.  Most layouts
+<p><code>children</code> is a normal prop, also a reactive accessor.  Most layouts
 read children once at setup, so wrap with <code>untrack</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h3</span><span class="p">,</span> <span class="n">section</span><span class="p">,</span> <span class="n">untrack</span><span class="p">,</span> <span class="n">dynamic</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
@@ -2934,7 +2936,7 @@ read children once at setup, so wrap with <code>untrack</code>:</p>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">h3</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">title</span><span class="p">())),</span> <span class="o">*</span><span class="n">kids</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h5 id="direct-calls-no-h">Direct calls (no <code>h</code>)<a class="headerlink" href="#direct-calls-no-h" title="Permanent link">&para;</a></h5>
-<p><code>@component</code> also enables a sugar form for tree authoring — calling the
+<p><code>@component</code> also enables a sugar form for tree authoring; calling the
 component directly with kwargs returns a <code>VNode</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Counter</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                          <span class="c1"># → h(Counter, {&quot;initial&quot;: 5})</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">Card</span><span class="p">(</span><span class="s2">&quot;child1&quot;</span><span class="p">,</span> <span class="s2">&quot;child2&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Card&quot;</span><span class="p">)</span>   <span class="c1"># positional args become children</span>
@@ -2968,9 +2970,9 @@ decorated function's signature:</p>
 </tbody>
 </table>
 <p>In other words: if your component looks like <code>def Foo(props):</code> (one
-bare positional parameter), you get the proxy.  Anything else —
-<code>def Foo(name="world")</code>, <code>def Foo(name, age=0)</code>, <code>def Foo(**props)</code>,
-<code>def Foo()</code> — uses the named-accessor mode.</p>
+bare positional parameter), you get the proxy.  Anything else, such as
+<code>def Foo(name="world")</code>, <code>def Foo(name, age=0)</code>, <code>def Foo(**props)</code>, or
+<code>def Foo()</code>, uses the named-accessor mode.</p>
 <p>Proxy mode is the right choice for <strong>generic wrappers</strong> that don't
 know their props' names ahead of time:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">p</span>
@@ -2981,7 +2983,7 @@ know their props' names ahead of time:</p>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="c1"># ``props.x`` → reactive accessor; ``props.x()`` → current value.</span>
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">props</span><span class="p">)))</span>
 </span></code></pre></div>
-<p>For ordinary components, prefer named accessors — they're easier to
+<p>For ordinary components, prefer named accessors; they're easier to
 read, type, and refactor:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@component</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Hello</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">):</span>    <span class="c1"># ← named accessor: ``name`` is a getter</span>
@@ -3014,7 +3016,7 @@ example a hole returning a VNode that contains its own holes), the
 inner effects are owned by the hole's effect.  When the hole re-runs,
 those inner effects are disposed first (so their <code>on_cleanup</code>
 callbacks fire), then re-created on the next evaluation.</p>
-<p>This distinction is automatic — no special API is needed.  The ownership
+<p>This distinction is automatic; no special API is needed.  The ownership
 tree tracks which owner is active at the time <code>create_effect</code> or
 <code>create_memo</code> is called.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span><span class="p">,</span> <span class="n">untrack</span>
@@ -3041,7 +3043,7 @@ component decorator catches the most common reactive footguns:</p>
 <ul>
 <li><strong>Destructured prop access during setup.</strong> Calling a prop accessor
   inside the component body without wrapping in <code>untrack</code> warns once
-  per component — you almost always want to either pass the accessor
+  per component. You almost always want to either pass the accessor
   directly into the tree (creating a hole) or <code>untrack(prop)</code> for a
   one-shot snapshot.</li>
 <li><strong><code>each=plain_list</code></strong> in <code>For</code> / <code>Index</code> warns that the list will
@@ -3100,7 +3102,7 @@ and <code>ref</code> is <strong>stripped</strong> from props (matching React's <
 semantics).  When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
 <h4 id="create_portal"><code>create_portal</code><a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
 <p>Use <code>create_portal</code> to render children into a DOM node outside the
-parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
+parent component's hierarchy. Ideal for modals, tooltips, and overlays:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="nd">@component</span>
@@ -3116,25 +3118,25 @@ parent component's hierarchy — ideal for modals, tooltips, and overlays:</p>
 <p>The second argument is an <code>Element</code> or a CSS selector string.</p>
 <h4 id="flow-control">Flow control<a class="headerlink" href="#flow-control" title="Permanent link">&para;</a></h4>
 <p>Wybthon provides SolidJS-style <strong>reactive</strong> flow control components.
-Each creates its own reactive scope — only the relevant subtree
+Each creates its own reactive scope, so only the relevant subtree
 re-renders when the tracked condition or list changes.</p>
 <p>Pass <strong>getters</strong> (signal accessors or lambdas) for conditions, lists,
 children, and fallbacks so reads happen inside the flow control's own
 scope rather than the parent's:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Show</span><span class="p">,</span> <span class="n">For</span><span class="p">,</span> <span class="n">Index</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">Match</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1"># Conditional rendering — keyed scope disposes on transition</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1"># Conditional rendering: keyed scope disposes on transition</span>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">is_logged_in</span><span class="p">,</span>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span>
 </span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
 </span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># List rendering — per-item reactive scopes (keyed by identity)</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="c1"># Item and index getters are signal-backed</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># List rendering: per-item reactive scopes (keyed by identity).</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="c1"># Item and index getters are signal-backed.</span>
 </span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
 </span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
 </span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
-</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="c1"># Index-based rendering — per-index reactive scopes</span>
-</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># Item getter updates in place when the value at that position changes</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="c1"># Index-based rendering: per-index reactive scopes.</span>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># Item getter updates in place when the value at that position changes.</span>
 </span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">Index</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
 </span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>      <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
 </span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>

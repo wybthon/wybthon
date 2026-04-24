@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2787,7 +2789,7 @@
 <li><strong>Run-once components.</strong> Function components execute exactly once at mount. They build a virtual DOM tree and return it. The body never re-runs because a prop or signal changed.</li>
 <li><strong>Fine-grained reactivity.</strong> Updates flow through small, isolated subscriptions called <em>reactive holes</em>. Only the DOM nodes that depend on a changed signal are patched.</li>
 <li><strong>Props are accessors.</strong> Every prop a component receives is a zero-argument callable. Calling it inside an effect or as a child creates a subscription; reading it inside the body without an effect captures only the current value.</li>
-<li><strong>Ownership tree, not parent re-renders.</strong> Effects, memos, cleanups, and context all attach to the <em>owner</em> established when a component is mounted. Disposing the owner cleans everything up — there is no "render cycle" to coordinate.</li>
+<li><strong>Ownership tree, not parent re-renders.</strong> Effects, memos, cleanups, and context all attach to the <em>owner</em> established when a component is mounted. Disposing the owner cleans everything up; there is no "render cycle" to coordinate.</li>
 </ol>
 <h2 id="the-data-flow">The data flow<a class="headerlink" href="#the-data-flow" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart LR
@@ -2797,7 +2799,7 @@
 <ul>
 <li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>signal</code></a> is a getter/setter pair. Reading inside a tracking scope subscribes; writing notifies subscribers.</li>
 <li>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>effect</code></a> re-runs when its tracked signals change.</li>
-<li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>memo</code></a> is a derived signal — cached and lazy.</li>
+<li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>memo</code></a> is a derived signal: cached and lazy.</li>
 <li>A <em>reactive hole</em> is the framework's internal effect that wires a signal to a single DOM node (text, attribute, child slot, or component prop).</li>
 <li>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../../api/reconciler/#wybthon.reconciler"><code>reconciler</code></a> turns the resulting patches into batched DOM mutations.</li>
 </ul>
@@ -2827,7 +2829,7 @@
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>name</code> arrives as a callable. Passing it into <code>p(...)</code> creates a reactive hole — when the parent updates <code>name</code>, only that text node changes.</li>
+<li><code>name</code> arrives as a callable. Passing it into <code>p(...)</code> creates a reactive hole, so when the parent updates <code>name</code>, only that text node changes.</li>
 <li>Reading <code>name()</code> inside the body would freeze the value at mount. Read it inside an effect, memo, or callable child to stay reactive.</li>
 </ul>
 <p>See <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component">Components</a> for the full prop story.</p>

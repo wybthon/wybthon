@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2764,7 +2766,7 @@
 <p>Before you ship:</p>
 <ul>
 <li>Serve the HTML entry point (typically <code>index.html</code>) plus the Pyodide runtime and your application files.</li>
-<li>Configure your host to serve <code>.py</code> files with the <code>text/x-python</code> content type — most static hosts do this automatically, but a few default to <code>text/plain</code>.</li>
+<li>Configure your host to serve <code>.py</code> files with the <code>text/x-python</code> content type. Most static hosts do this automatically, but a few default to <code>text/plain</code>.</li>
 <li>Set <a href="https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy"><code>Cross-Origin-Opener-Policy</code></a> and <a href="https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy"><code>Cross-Origin-Embedder-Policy</code></a> headers if you plan to use APIs that require cross-origin isolation (<code>SharedArrayBuffer</code>, threaded WebAssembly, etc.).</li>
 <li>Decide whether to load Pyodide from the official CDN (default, easiest) or to vendor it alongside your app (better caching control, supports offline-first installs).</li>
 <li>Enable long-cache headers for the Pyodide assets and add a content hash to your own assets so users always pick up your latest build.</li>
@@ -2821,7 +2823,7 @@
 </span></code></pre></div>
 <p>Push to your default branch and Netlify will auto-deploy.</p>
 <h2 id="vercel">Vercel<a class="headerlink" href="#vercel" title="Permanent link">&para;</a></h2>
-<p>Vercel works similarly — add a <code>vercel.json</code> at the repo root that points at your output directory:</p>
+<p>Vercel works similarly. Add a <code>vercel.json</code> at the repo root that points at your output directory:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;outputDirectory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;examples/demo&quot;</span><span class="p">,</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;headers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2738,7 +2740,7 @@
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Reactivity API</li>
-<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code> — <code>equals</code> optional: default value equality (<code>==</code>) with identity fast-path, <code>True</code> is equivalent, <code>False</code> to always notify, or <code>(old, new) -&gt; bool</code> “same value” predicate (use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics)</li>
+<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code>. <code>equals</code> is optional: default value equality (<code>==</code>) with identity fast-path, <code>True</code> is equivalent, <code>False</code> to always notify, or <code>(old, new) -&gt; bool</code> "same value" predicate (use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics).</li>
 <li><code>create_memo(fn: Callable[[], T]) -&gt; Callable[[], T]</code></li>
 <li><code>create_effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
 <li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>
@@ -2764,7 +2766,7 @@
 <li>Component typing</li>
 <li>The <code>@component</code> decorator binds each parameter to a reactive
     accessor: <code>Callable[[], T]</code>.  Annotate the parameter with the
-    underlying value type — Wybthon's machinery handles the wrapping.</li>
+    underlying value type; Wybthon's machinery handles the wrapping.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VNode</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>

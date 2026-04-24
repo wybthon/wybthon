@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -5232,13 +5234,13 @@
         <p>Wybthon: a client-side Python SPA framework powered by Pyodide.</p>
 <p>Wybthon brings a SolidJS-inspired, signals-first reactive model to the
 browser using Python. Component bodies run <strong>once</strong> at mount; reactivity
-flows through <em>reactive holes</em> — zero-arg getters embedded in the VNode
+flows through <em>reactive holes</em>: zero-arg getters embedded in the VNode
 tree that update only the DOM nodes that depend on them.</p>
 <p>The package detects its environment at import time:</p>
 <ul>
-<li>In a browser (Pyodide), the full surface is available — DOM helpers,
-  reconciler, router, events, error boundaries, suspense, portals, and
-  the HTML element factories.</li>
+<li>In a browser (Pyodide), the full surface is available, including DOM
+  helpers, reconciler, router, events, error boundaries, suspense,
+  portals, and the HTML element factories.</li>
 <li>Outside a browser, the pure-Python surface (reactivity, VDOM data
   structures, forms, context, flow control, stores) remains importable
   so unit tests and tooling can run anywhere CPython runs.</li>
@@ -6317,7 +6319,7 @@ display until the user has had a chance to respond.</p>
 
 
         <p>Reactive proxy over a component's props dict.</p>
-<p>Every attribute or item access returns a <strong>reactive accessor</strong> — a
+<p>Every attribute or item access returns a <strong>reactive accessor</strong>: a
 zero-arg callable that returns the current value and tracks the read.
 This mirrors SolidJS's <code>props.x</code> semantics, adapted to Python.</p>
 <p>Access patterns:</p>
@@ -6367,7 +6369,7 @@ changes.</p>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@component</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">():</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">props</span> <span class="o">=</span> <span class="n">get_props</span><span class="p">()</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Auto-hole — only the text node updates when ``name`` changes.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Auto-hole: only the text node updates when ``name`` changes.</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
@@ -6471,7 +6473,7 @@ via the internal <code>_update</code> method.</p>
 
         <p>Return the current value for <code>key</code> (tracked, with auto-unwrap).</p>
 <p>If the stored prop value is a getter, it is invoked and the result
-returned — mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
+returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
 returned when <code>key</code> is absent from both the props dict and the
 component's parameter defaults.</p>
 
@@ -6567,12 +6569,12 @@ missing keys yield <code>None</code>.</p>
         <p>Return a callable getter for <code>key</code>, falling back to <code>default</code> if missing.</p>
 <p>When <code>key</code> exists on the prop bag (in raw props, prior signals, or
 component-parameter defaults), the returned getter reads the underlying
-signal — a tracking scope subscribes to it.</p>
+signal: a tracking scope subscribes to it.</p>
 <p>When <code>key</code> is <strong>missing</strong>, the getter returns <code>default</code> on each call
 without creating a tracked signal. This means repeated <code>get(key, x)</code>
 / <code>get(key, y)</code> calls each return their own default (no sticky
 behavior). Components that need reactivity for a possibly-missing
-prop should declare it as a parameter with a default value —
+prop should declare it as a parameter with a default value;
 <code>@component</code> ensures a signal is created up front so future updates
 always propagate.</p>
 
@@ -7181,9 +7183,10 @@ bypass the check entirely).</p>
 
         <p>Virtual node representing an element, text, component, or reactive hole.</p>
 <p>Uses <code>__slots__</code> for a compact memory layout and faster attribute
-access — meaningful when authoring large lists. Internal attributes
-(<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>, <code>_frag_end</code>) are
-populated by the reconciler when the VNode is mounted.</p>
+access, which is meaningful when authoring large lists. Internal
+attributes (<code>el</code>, <code>subtree</code>, <code>render_effect</code>, <code>component_ctx</code>,
+<code>_frag_end</code>) are populated by the reconciler when the VNode is
+mounted.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -9070,7 +9073,7 @@ this route's <code>path</code>.</p>
 
         <p>Opaque context identifier paired with a default value.</p>
 <p>Returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_context&lt;/span&gt;" href="#wybthon.create_context"><code>create_context</code></a>. Treat the
-object as opaque — pass it to a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Provider&lt;/span&gt;" href="#wybthon.Provider"><code>Provider</code></a> and
+object as opaque: pass it to a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Provider&lt;/span&gt;" href="#wybthon.Provider"><code>Provider</code></a> and
 to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_context&lt;/span&gt;" href="#wybthon.use_context"><code>use_context</code></a> but do not rely on its
 fields.</p>
 
@@ -9235,7 +9238,7 @@ and tracebacks are suppressed in <code>log_error</code>.</p>
         <p>Create a component that forwards a <code>ref</code> prop to a child element.</p>
 <p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
 where <code>ref</code> is the value of the <code>ref</code> prop (or <code>None</code>). <code>ref</code> is
-<strong>stripped from props</strong> — matching React's <code>forwardRef</code> semantics —
+<strong>stripped from props</strong> (matching React's <code>forwardRef</code> semantics),
 so the wrapped function only sees its own concerns.</p>
 
 
@@ -11373,8 +11376,8 @@ component, the underlying computation is disposed on unmount.</p>
         <p>Create an async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="#wybthon.Resource"><code>Resource</code></a> with cancellation support.</p>
 <p>Can be called two ways:</p>
 <ul>
-<li><code>create_resource(fetcher)</code> — simple fetcher, no source signal.</li>
-<li><code>create_resource(source, fetcher)</code> — refetches automatically when the
+<li><code>create_resource(fetcher)</code>: simple fetcher, no source signal.</li>
+<li><code>create_resource(source, fetcher)</code>: refetches automatically when the
   <code>source</code> getter's tracked value changes.</li>
 </ul>
 <p>The fetcher should be an async function returning the data value. If it
@@ -11580,7 +11583,7 @@ tears down the root and any effects created inside it.</p>
         <p>Create an <code>O(1)</code> selection signal.</p>
 <p>When <code>source()</code> changes, only computations that previously called the
 returned <code>is_selected(key)</code> with the <strong>old</strong> or <strong>new</strong> key are
-notified — instead of every subscriber re-running.</p>
+notified, instead of every subscriber re-running.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11677,7 +11680,7 @@ notified — instead of every subscriber re-running.</p>
         <p>Create a reactive signal and return <code>(getter, setter)</code>.</p>
 <p>Works inside or outside components. Inside a stateful component the
 signal is captured by the render function's closure and persists
-naturally — there is no cursor system or "rules of hooks".</p>
+naturally; there is no cursor system or "rules of hooks".</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11862,7 +11865,7 @@ proper lifecycle management.</p>
 attribute / index lookup yields a callable getter; call the getter to
 read the current value (tracked when called inside an effect or hole).</p>
 <p>Most components should rely on the destructured parameters provided
-by <code>@component</code>. Use <code>get_props()</code> for advanced cases — generic
+by <code>@component</code>. Use <code>get_props()</code> for advanced cases such as generic
 wrappers, key iteration, or proxy-mode interop.</p>
 
 
@@ -12760,7 +12763,7 @@ to split.</p>
 a dependency, or during component setup to seed local state from a
 prop without subscribing.</p>
 <p>Inside <code>untrack</code> the dev-mode destructured-prop warning is also
-silenced — so <code>count, set_count = create_signal(untrack(initial))</code>
+silenced, so <code>count, set_count = create_signal(untrack(initial))</code>
 cleanly opts out of the noise.</p>
 
 
@@ -13452,7 +13455,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it — fine-grained holes already minimise DOM work.</p>
+do not need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -13967,7 +13970,7 @@ selector string identifying the target DOM container.</p>
 
         <p>Render a VNode tree into a container element.</p>
 <p>Subsequent calls with the same <code>container</code> <em>patch</em> the existing tree
-in place — only the differences are applied. Pass <code>None</code> (via the
+in place; only the differences are applied. Pass <code>None</code> (via the
 internal API) to unmount.</p>
 
 
@@ -14079,7 +14082,7 @@ string identifying an existing DOM node.</p>
 
         <p>Anchor element component that navigates via the History API.</p>
 <p>Wrapped in a reactive hole so the active class flips
-automatically when the route changes — no parent re-render
+automatically when the route changes; no parent re-render is
 required. Modifier-key clicks (Cmd/Ctrl/Shift) and middle-clicks
 are passed through to the browser so users can open links in a
 new tab.</p>
@@ -14180,7 +14183,7 @@ to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="#wybthon.current_path"><code>current_path</code></a> automatically
-re-evaluate the matched route — no parent re-render is required.</p>
+re-evaluate the matched route; no parent re-render is required.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -14905,7 +14908,7 @@ component.</p>
 </span></code></pre></div></p>
 <p>Inside the callback, <code>item</code> is a <strong>signal-backed getter</strong> returning
 the current item value, and <code>index</code> is a signal-backed getter
-returning the current integer index — matching SolidJS <code>&lt;For&gt;</code>.</p>
+returning the current integer index, matching SolidJS <code>&lt;For&gt;</code>.</p>
 <p><code>For</code> maintains <strong>stable per-item reactive scopes</strong> keyed by
 reference identity. The mapping callback runs only once per unique
 item. When an item leaves the list, its scope (including any
@@ -15268,11 +15271,11 @@ over positional values when provided.</p>
 
         <p>Conditionally render <code>children</code> when <code>when</code> is truthy.</p>
 <p>Can be called in two styles:</p>
-<p>Component style (reactive — recommended for dynamic conditions):
+<p>Component style (reactive; recommended for dynamic conditions):
     <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">))</span>
 </span></code></pre></div></p>
-<p>Direct call (evaluated once — fine inside an explicit hole):
+<p>Direct call (evaluated once; fine inside an explicit hole):
     <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Positive&quot;</span><span class="p">),</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Not positive&quot;</span><span class="p">))</span>

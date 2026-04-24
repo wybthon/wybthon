@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2833,7 +2835,7 @@
   <h1>Stores</h1>
 
 <h3 id="stores">Stores<a class="headerlink" href="#stores" title="Permanent link">&para;</a></h3>
-<p>Stores provide reactive state management for nested objects and lists. Inspired by SolidJS <code>createStore</code>, they let you work with complex state while maintaining fine-grained reactivity — each property path is tracked independently.</p>
+<p>Stores provide reactive state management for nested objects and lists. Inspired by SolidJS <code>createStore</code>, they let you work with complex state while maintaining fine-grained reactivity, since each property path is tracked independently.</p>
 <h4 id="creating-a-store">Creating a store<a class="headerlink" href="#creating-a-store" title="Permanent link">&para;</a></h4>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_store</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -2847,7 +2849,7 @@
 </span></code></pre></div>
 <p><code>create_store</code> returns a <code>(store, set_store)</code> tuple, similar to <code>create_signal</code>.</p>
 <h4 id="reading-values">Reading values<a class="headerlink" href="#reading-values" title="Permanent link">&para;</a></h4>
-<p>Access store values via attribute syntax. Reads are reactive — any effect or render function that reads a store property will re-run when that specific property changes:</p>
+<p>Access store values via attribute syntax. Reads are reactive: any effect or render function that reads a store property will re-run when that specific property changes:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span><span class="o">.</span><span class="n">count</span>           <span class="c1"># 0</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">store</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span>       <span class="c1"># &quot;Ada&quot;</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>   <span class="c1"># &quot;Learn Wybthon&quot;</span>
@@ -2873,7 +2875,7 @@
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c1"># Replace an entire list</span>
 </span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">set_store</span><span class="p">(</span><span class="s2">&quot;todos&quot;</span><span class="p">,</span> <span class="p">[])</span>
 </span></code></pre></div>
-<p>The store is <strong>read-only</strong> — writing directly via <code>store.count = 5</code> raises an error. Always use <code>set_store</code>.</p>
+<p>The store is <strong>read-only</strong>: writing directly via <code>store.count = 5</code> raises an error. Always use <code>set_store</code>.</p>
 <h4 id="produce">Produce<a class="headerlink" href="#produce" title="Permanent link">&para;</a></h4>
 <p>For batch mutations, <code>produce</code> provides an Immer-style API. The function receives a mutable draft:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">produce</span>

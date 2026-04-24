@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3004,11 +3006,11 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Counter body running&quot;</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">&quot;count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
 </span></code></pre></div>
-<p>You'll see <code>"Counter body running"</code> exactly once, no matter how many clicks. The <code>count</code> accessor passed into <code>button(...)</code> becomes a <em>reactive hole</em> — only that text node updates. Read <a href="../../concepts/mental-model/">Mental model</a> for the formal definition.</p>
+<p>You'll see <code>"Counter body running"</code> exactly once, no matter how many clicks. The <code>count</code> accessor passed into <code>button(...)</code> becomes a <em>reactive hole</em>, so only that text node updates. Read <a href="../../concepts/mental-model/">Mental model</a> for the formal definition.</p>
 <h3 id="implications">Implications<a class="headerlink" href="#implications" title="Permanent link">&para;</a></h3>
 <ul>
 <li>No dependency arrays. Effects subscribe to whatever signals they read while running.</li>
-<li>No <code>useCallback</code>/<code>useMemo</code> for stability — closures don't get re-created.</li>
+<li>No <code>useCallback</code>/<code>useMemo</code> for stability; closures don't get re-created.</li>
 <li>No "stale closure" bugs from missing deps.</li>
 </ul>
 <h2 id="state-and-effects">State and effects<a class="headerlink" href="#state-and-effects" title="Permanent link">&para;</a></h2>
@@ -3075,14 +3077,14 @@
 <h2 id="things-you-can-stop-doing">Things you can stop doing<a class="headerlink" href="#things-you-can-stop-doing" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>useCallback</code>/<code>useMemo</code> for identity stability.</strong> Closures aren't re-created.</li>
-<li><strong><code>React.memo</code>.</strong> There's nothing to memoize — components don't re-render.</li>
+<li><strong><code>React.memo</code>.</strong> There's nothing to memoize; components don't re-render.</li>
 <li><strong>Hook rules and exhaustive deps lints.</strong> State/effect creation is just a function call.</li>
 <li><strong><code>key</code> on every list item by index.</strong> Keyed identity is automatic via <code>For</code>.</li>
 </ul>
 <h2 id="things-to-watch-out-for">Things to watch out for<a class="headerlink" href="#things-to-watch-out-for" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Don't read props eagerly.</strong> <code>name()</code> inside the body freezes the value. Pass <code>name</code> itself or read inside an effect.</li>
-<li><strong>Don't recreate components inside the body.</strong> Define them at module scope. Components are cheap to mount but creating them inside a render does <em>not</em> re-render anything either way — define them once.</li>
+<li><strong>Don't recreate components inside the body.</strong> Define them at module scope. Components are cheap to mount but creating them inside a render does <em>not</em> re-render anything either way, so just define them once.</li>
 <li><strong><code>if/else</code> in the body short-circuits.</strong> Use <code>Show</code> / <code>Switch</code> for conditional subtrees.</li>
 </ul>
 <h2 id="cheat-sheet">Cheat sheet<a class="headerlink" href="#cheat-sheet" title="Permanent link">&para;</a></h2>

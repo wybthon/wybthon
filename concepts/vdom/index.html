@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2804,12 +2806,12 @@ Primitives</a> for the full mental model.</p>
 <h4 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h4>
 <p>The VDOM implementation is split into focused modules:</p>
 <ul>
-<li><strong><code>vnode</code></strong> — the <code>VNode</code> data structure, <code>h()</code>, <code>Fragment</code>, and <code>memo()</code> (browser-agnostic). <code>Fragment</code> does not insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.</li>
-<li><strong><code>reconciler</code></strong> — the mount/patch/unmount diffing engine</li>
-<li><strong><code>props</code></strong> — DOM property application and diffing (styles, events, datasets)</li>
-<li><strong><code>error_boundary</code></strong> — the <code>ErrorBoundary</code> component</li>
-<li><strong><code>suspense</code></strong> — the <code>Suspense</code> component</li>
-<li><strong><code>portal</code></strong> — the <code>create_portal()</code> function</li>
+<li><strong><code>vnode</code></strong>: the <code>VNode</code> data structure, <code>h()</code>, <code>Fragment</code>, and <code>memo()</code> (browser-agnostic). <code>Fragment</code> does not insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.</li>
+<li><strong><code>reconciler</code></strong>: the mount/patch/unmount diffing engine.</li>
+<li><strong><code>props</code></strong>: DOM property application and diffing (styles, events, datasets).</li>
+<li><strong><code>error_boundary</code></strong>: the <code>ErrorBoundary</code> component.</li>
+<li><strong><code>suspense</code></strong>: the <code>Suspense</code> component.</li>
+<li><strong><code>portal</code></strong>: the <code>create_portal()</code> function.</li>
 </ul>
 <p>All names are re-exported from <code>wybthon.vdom</code> for convenience, and the most
 common ones are available at the top-level <code>wybthon</code> package.</p>

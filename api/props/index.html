@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -3482,8 +3484,8 @@ with reconciler bookkeeping.</p>
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
 <p><code>props</code> contains the prop-level diffing helpers used by the reconciler:
 attribute set/remove, class and style merging, event handler updates,
-and a few utilities for normalizing prop names (<code>class_</code> → <code>class</code>,
-<code>for_</code> → <code>for</code>, etc.).</p>
+and a few utilities for normalizing prop names (<code>class_</code> to <code>class</code>,
+<code>for_</code> to <code>for</code>, etc.).</p>
 <p>You normally interact with props by passing keyword arguments to tag
 helpers in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;html&lt;/span&gt;" href="../html/#wybthon.html"><code>wybthon.html</code></a> or to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a>. The
 helpers here document the semantics and edge cases.</p>
@@ -3518,7 +3520,7 @@ helpers here document the semantics and edge cases.</p>
 </tr>
 <tr>
 <td><code>on_*</code></td>
-<td>Event handlers — see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt;" href="../events/#wybthon.events"><code>events</code></a>.</td>
+<td>Event handlers; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt;" href="../events/#wybthon.events"><code>events</code></a>.</td>
 </tr>
 <tr>
 <td><code>style</code></td>
@@ -3528,9 +3530,9 @@ helpers here document the semantics and edge cases.</p>
 </table>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a> — entry points for rendering and patching.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt;" href="../events/#wybthon.events"><code>events</code></a> — event delegation details.</li>
-<li><a href="../../concepts/dom/">Concepts → DOM Interop</a></li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a>: entry points for rendering and patching.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt;" href="../events/#wybthon.events"><code>events</code></a>: event delegation details.</li>
+<li><a href="../../concepts/dom/">Concepts: DOM Interop</a></li>
 </ul>
 
 

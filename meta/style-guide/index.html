@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2451,15 +2453,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#docstrings-google-style" class="md-nav__link">
+  <a href="#grammar-and-punctuation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Docstrings — Google style
+        Grammar and punctuation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Docstrings — Google style">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstrings-google-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docstrings: Google style
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docstrings: Google style">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2515,7 +2528,7 @@
   <a href="#comments-explain-why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comments — explain why
+        Comments: explain why
       
     </span>
   </a>
@@ -2526,7 +2539,7 @@
   <a href="#markdown-admonitions-over-blockquotes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Markdown — admonitions over blockquotes
+        Markdown: admonitions over blockquotes
       
     </span>
   </a>
@@ -2743,15 +2756,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#docstrings-google-style" class="md-nav__link">
+  <a href="#grammar-and-punctuation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Docstrings — Google style
+        Grammar and punctuation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Docstrings — Google style">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstrings-google-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docstrings: Google style
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docstrings: Google style">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2807,7 +2831,7 @@
   <a href="#comments-explain-why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comments — explain why
+        Comments: explain why
       
     </span>
   </a>
@@ -2818,7 +2842,7 @@
   <a href="#markdown-admonitions-over-blockquotes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Markdown — admonitions over blockquotes
+        Markdown: admonitions over blockquotes
       
     </span>
   </a>
@@ -2912,12 +2936,31 @@ Pyodide REPL.</p>
 <li>Use <strong>Google-style</strong> docstrings everywhere (modules, classes, functions).</li>
 <li>Let type hints carry the types. Don't repeat them inside docstrings.</li>
 <li>Use Material <strong>admonitions</strong> (<code>!!! tip "Title"</code>) for callouts in
-  Markdown — not plain <code>&gt;</code> blockquotes.</li>
+  Markdown, not plain <code>&gt;</code> blockquotes.</li>
 <li>Cross-link API symbols using mkdocstrings autorefs:
   <code>[`create_signal`][wybthon.create_signal]</code>.</li>
 <li>Comments explain <strong>why</strong>, not <strong>what</strong> (the code already says what).</li>
 </ul>
-<h2 id="docstrings-google-style">Docstrings — Google style<a class="headerlink" href="#docstrings-google-style" title="Permanent link">&para;</a></h2>
+<h2 id="grammar-and-punctuation">Grammar and punctuation<a class="headerlink" href="#grammar-and-punctuation" title="Permanent link">&para;</a></h2>
+<p>We follow the <em>Chicago Manual of Style</em> (17<sup>th</sup> edition) for prose. Highlights:</p>
+<ul>
+<li><strong>No em dashes (<code>—</code>).</strong> Use commas, parentheses, semicolons, colons, or
+  full sentences instead. The exact replacement depends on context: use a
+  pair of commas for a brief aside, parentheses for a longer one, a colon
+  before a list or amplification, and a semicolon between two related
+  independent clauses.</li>
+<li><strong>Use straight ASCII quotes and apostrophes</strong> (<code>"</code> and <code>'</code>), not curly
+  quotes (<code>"</code>, <code>"</code>, <code>'</code>, or <code>'</code>). This keeps prose copy-pasteable into
+  source code, terminals, and search.</li>
+<li>Use the <strong>serial (Oxford) comma</strong> in lists of three or more.</li>
+<li>Spell out <strong>e.g.</strong> and <strong>i.e.</strong> with periods and follow them with a
+  comma: <code>e.g., a counter component</code>.</li>
+<li>Hyphenate compound modifiers before a noun (<code>fine-grained reactivity</code>,
+  <code>single-page application</code>) but not after (<code>reactivity is fine grained</code>).</li>
+<li>Use <strong>sentence case</strong> for headings and titles: only the first word and
+  proper nouns are capitalized.</li>
+</ul>
+<h2 id="docstrings-google-style">Docstrings: Google style<a class="headerlink" href="#docstrings-google-style" title="Permanent link">&para;</a></h2>
 <p>Wybthon follows the
 <a href="https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings">Google Python Style Guide</a>.
 The <code>mkdocstrings</code> plugin is configured for Google style and renders
@@ -2958,7 +3001,7 @@ the standard sections as tables.</p>
 <li>Leave one blank line between the summary and the extended description.</li>
 <li>Use these sections in order: <code>Args:</code>, <code>Returns:</code>, <code>Yields:</code>, <code>Raises:</code>,
   <code>Note:</code>, <code>Warning:</code>, <code>Example:</code>. Skip any that don't apply.</li>
-<li><strong>Don't repeat type annotations</strong> inside <code>Args:</code> — the rendered API
+<li><strong>Don't repeat type annotations</strong> inside <code>Args:</code>; the rendered API
   table pulls them from the function signature automatically.</li>
 <li>Inside <code>Example:</code>, use a fenced code block (<code>```python</code>) with the
   imports needed to run the snippet so users can copy it directly.</li>
@@ -2989,7 +3032,7 @@ the standard sections as tables.</p>
 </span></code></pre></div>
 <p>The class summary describes the type's purpose. Document construction in
 <code>__init__</code> only when there is more to say than the signature already conveys
-(set <code>merge_init_into_class: true</code> in mkdocstrings — already configured).</p>
+(set <code>merge_init_into_class: true</code> in mkdocstrings; already configured).</p>
 <h3 id="module">Module<a class="headerlink" href="#module" title="Permanent link">&para;</a></h3>
 <p>Every module should open with a one-line summary, an extended description,
 and (when illustrative) a small example:</p>
@@ -3010,9 +3053,9 @@ and (when illustrative) a small example:</p>
 <h3 id="private-helpers">Private helpers<a class="headerlink" href="#private-helpers" title="Permanent link">&para;</a></h3>
 <p>Underscore-prefixed members (<code>_helper</code>) are filtered out of the public
 API site (mkdocstrings <code>filters: ["!^_"]</code>). Keep their docstrings
-short — one line is usually enough — but do write them: contributors
+short (one line is usually enough), but do write them: contributors
 inspect them in editors and during code review.</p>
-<h2 id="comments-explain-why">Comments — explain <em>why</em><a class="headerlink" href="#comments-explain-why" title="Permanent link">&para;</a></h2>
+<h2 id="comments-explain-why">Comments: explain <em>why</em><a class="headerlink" href="#comments-explain-why" title="Permanent link">&para;</a></h2>
 <div class="admonition quote">
 <p class="admonition-title">Rule of thumb</p>
 <p>Comments are most useful when they explain things the reader cannot
@@ -3029,11 +3072,11 @@ learn from the code itself.</p>
 <ul>
 <li>Narrating what the next line does (<code># increment counter</code>).</li>
 <li>Restating the function name (<code># create the signal</code>).</li>
-<li>TODOs without an owner or issue link — open a tracking issue and link it.</li>
+<li>TODOs without an owner or issue link; open a tracking issue and link it.</li>
 </ul>
 <p>When you find a redundant comment during a refactor, delete it. The
 diff will be smaller and the code will be easier to read.</p>
-<h2 id="markdown-admonitions-over-blockquotes">Markdown — admonitions over blockquotes<a class="headerlink" href="#markdown-admonitions-over-blockquotes" title="Permanent link">&para;</a></h2>
+<h2 id="markdown-admonitions-over-blockquotes">Markdown: admonitions over blockquotes<a class="headerlink" href="#markdown-admonitions-over-blockquotes" title="Permanent link">&para;</a></h2>
 <p>Use Material admonitions for callouts. They render with an icon, a
 colored block, and a collapsible variant:</p>
 <div class="language-markdown highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>!!! note
@@ -3052,41 +3095,41 @@ colored block, and a collapsible variant:</p>
 from the docs, a user, or an upstream project). Don't use them for
 tips or warnings.</p>
 <h2 id="cross-linking">Cross-linking<a class="headerlink" href="#cross-linking" title="Permanent link">&para;</a></h2>
-<p>Mkdocstrings + autorefs lets you link to any documented symbol from
+<p>Mkdocstrings plus autorefs lets you link to any documented symbol from
 plain Markdown. Prefer these short forms:</p>
 <div class="language-markdown highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>The [<span class="sb">`create_signal`</span>][wybthon.create_signal] primitive returns a
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>``(getter, setter)`` tuple. See [<span class="sb">`Resource`</span>][wybthon.Resource] for
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>async data.
 </span></code></pre></div>
 <p>Inside a docstring, plain backticks plus the qualified name are
-typically enough — autorefs picks them up via signature annotations
+typically enough; autorefs picks them up via signature annotations
 (<code>signature_crossrefs: true</code>).</p>
 <h2 id="code-samples">Code samples<a class="headerlink" href="#code-samples" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Always tag the language: <code>```python</code>, <code>```bash</code>, <code>```html</code>,
   <code>```yaml</code>.</li>
-<li>Prefer <strong>runnable</strong> snippets — include the imports that make them
-  copy-pasteable.</li>
+<li>Prefer <strong>runnable</strong> snippets that include the imports needed to
+  copy-paste them.</li>
 <li>For longer multi-step examples, lean on Material's <code>pymdownx.tabbed</code>
-  to show the same example in different forms (e.g., "Component" vs
+  to show the same example in different forms (e.g., "Component" vs.
   "Direct call").</li>
 </ul>
 <h2 id="page-structure">Page structure<a class="headerlink" href="#page-structure" title="Permanent link">&para;</a></h2>
 <p>A typical concept or guide page follows this skeleton:</p>
 <ol>
-<li><code># Title</code> — H1 only on the page itself; the site nav supplies the
+<li><code># Title</code>. H1 only on the page itself; the site nav supplies the
    parent heading.</li>
 <li><strong>One-paragraph summary</strong> of what this page covers and who it's for.</li>
 <li><strong>Sections</strong> (<code>##</code>, <code>###</code>) covering the topic in order of increasing
    depth. Lead with the simplest example.</li>
-<li><strong>Next steps</strong> at the bottom with cross-links to related pages —
-   keep the reader moving.</li>
+<li><strong>Next steps</strong> at the bottom with cross-links to related pages,
+   to keep the reader moving.</li>
 </ol>
 <div class="language-markdown highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gu">## Next steps</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">-</span><span class="w"> </span>Build your first component → [<span class="nt">Components</span>](<span class="na">components.md</span>)
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">-</span><span class="w"> </span>Manage async data → [<span class="sb">`create_resource`</span>][wybthon.create_resource]
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">-</span><span class="w"> </span>Performance tuning → [<span class="nt">Performance guide</span>](<span class="na">../guides/performance.md</span>)
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">-</span><span class="w"> </span>Build your first component: [<span class="nt">Components</span>](<span class="na">components.md</span>)
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">-</span><span class="w"> </span>Manage async data: [<span class="sb">`create_resource`</span>][wybthon.create_resource]
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">-</span><span class="w"> </span>Performance tuning: [<span class="nt">Performance guide</span>](<span class="na">../guides/performance.md</span>)
 </span></code></pre></div>
 <h2 id="linting">Linting<a class="headerlink" href="#linting" title="Permanent link">&para;</a></h2>
 <p>Docstrings are checked by Ruff with the Google convention enabled:</p>

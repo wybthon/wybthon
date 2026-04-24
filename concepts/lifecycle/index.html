@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2784,7 +2786,7 @@
 <p>Wybthon doesn't have lifecycle methods in the React sense. Instead, every component creates an <em>owner</em>, and effects, memos, signals, context lookups, and cleanups attach to that owner. Disposing the owner cleans them all up.</p>
 <p>This page explains what an owner is, when it is created, and how mount/unmount/cleanup hooks fit into the model.</p>
 <h2 id="the-ownership-tree">The ownership tree<a class="headerlink" href="#the-ownership-tree" title="Permanent link">&para;</a></h2>
-<p>When a component mounts, the framework pushes a fresh owner onto the active stack. Anything created during the body — effects, memos, child components — attaches to that owner. When the parent unmounts, the framework walks the tree disposing owners depth-first.</p>
+<p>When a component mounts, the framework pushes a fresh owner onto the active stack. Anything created during the body (effects, memos, child components) attaches to that owner. When the parent unmounts, the framework walks the tree disposing owners depth-first.</p>
 <pre class="mermaid"><code>flowchart TD
     Root[Root owner] --&gt; App[App component]
     App --&gt; Header[Header]
@@ -2795,7 +2797,7 @@
 <ul>
 <li><strong>Owners</strong> form a tree mirroring the component tree.</li>
 <li><strong>Cleanups</strong> registered via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> run when their owner is disposed.</li>
-<li>Disposing a parent disposes all descendants — no orphan effects.</li>
+<li>Disposing a parent disposes all descendants, leaving no orphan effects.</li>
 </ul>
 <h2 id="lifecycle-hooks">Lifecycle hooks<a class="headerlink" href="#lifecycle-hooks" title="Permanent link">&para;</a></h2>
 <table>

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2775,7 +2777,7 @@
 <p>Stores provide fine-grained reactive access to nested objects and
 lists. Each path through the store is backed by its own
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt;" href="../wybthon/#wybthon.Signal"><code>Signal</code></a>, so reading <code>store.user.name</code> only
-subscribes the current computation to that specific leaf — not to the
+subscribes the current computation to that specific leaf, not to the
 entire store.</p>
 <p>Public surface:</p>
 <ul>
@@ -3091,22 +3093,22 @@ reference past the call.</p>
 </div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
 <h5 id="store-creation">Store creation<a class="headerlink" href="#store-creation" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>create_store(initial) -&gt; (store, set_store)</code> — create a reactive store from a dict or list</li>
+<li><code>create_store(initial) -&gt; (store, set_store)</code>. Create a reactive store from a dict or list.</li>
 </ul>
 <h5 id="store-setter">Store setter<a class="headerlink" href="#store-setter" title="Permanent link">&para;</a></h5>
 <p>The <code>set_store</code> setter supports several calling conventions:</p>
 <ul>
-<li><code>set_store("key", value)</code> — set a top-level key</li>
-<li><code>set_store("key", fn)</code> — functional update (fn receives current value)</li>
-<li><code>set_store("a", "b", value)</code> — nested path</li>
-<li><code>set_store("a", 0, "done", True)</code> — path with list index</li>
-<li><code>set_store(produce(fn))</code> — batch mutations via produce</li>
-<li><code>set_store({"a": 1, "b": 2})</code> — update multiple top-level keys</li>
-<li><code>set_store(fn)</code> — functional update on the entire store (fn receives raw data)</li>
+<li><code>set_store("key", value)</code>. Set a top-level key.</li>
+<li><code>set_store("key", fn)</code>. Functional update (fn receives current value).</li>
+<li><code>set_store("a", "b", value)</code>. Nested path.</li>
+<li><code>set_store("a", 0, "done", True)</code>. Path with list index.</li>
+<li><code>set_store(produce(fn))</code>. Batch mutations via produce.</li>
+<li><code>set_store({"a": 1, "b": 2})</code>. Update multiple top-level keys.</li>
+<li><code>set_store(fn)</code>. Functional update on the entire store (fn receives raw data).</li>
 </ul>
 <h5 id="produce">Produce<a class="headerlink" href="#produce" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>produce(fn)</code> — create a producer for batch-mutating store state; pass to <code>set_store</code></li>
+<li><code>produce(fn)</code>. Create a producer for batch-mutating store state; pass to <code>set_store</code>.</li>
 </ul>
 <p>Type hints are provided for all public functions and classes.</p>
 

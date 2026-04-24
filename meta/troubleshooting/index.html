@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2780,7 +2782,7 @@
 <summary><code>mkdocs build --strict</code> fails after updating docs</summary>
 <p><strong>Symptoms:</strong> the docs site builds locally with <code>mkdocs serve</code> but <code>mkdocs build --strict</code> fails.</p>
 <p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link) or an unused <code>nav</code> entry.</p>
-<p><strong>Fix:</strong> read the warning text — <code>mkdocstrings</code> reports the exact symbol it could not find — and update the page or the symbol's docstring. If the broken link is intentional (e.g. while a feature is in flight), turn the link into plain text or remove it.</p>
+<p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it could not find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.</p>
 </details>
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -2793,7 +2795,7 @@
 <summary><code>For</code> or <code>Index</code> rendered once and never updated</summary>
 <p><strong>Symptoms:</strong> the list renders correctly the first time, then stops responding to updates. The console shows <code>[wybthon] Warning: &lt;For&gt; received a plain list for</code>each=<code>.</code></p>
 <p><strong>Likely cause:</strong> you passed a Python list instead of a signal accessor for <code>each=</code>.</p>
-<p><strong>Fix:</strong> make <code>each</code> a signal accessor — typically the getter returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a> — so the list reacts to updates. See <code>warn_each_plain_list</code> in <code>wybthon._warnings</code>.</p>
+<p><strong>Fix:</strong> make <code>each</code> a signal accessor (typically the getter returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>) so the list reacts to updates. See <code>warn_each_plain_list</code> in <code>wybthon._warnings</code>.</p>
 </details>
 <details class="bug">
 <summary>An effect fires more often than expected</summary>
@@ -2817,7 +2819,7 @@
 <summary><code>ref.current</code> is <code>None</code> when I read it</summary>
 <p><strong>Symptoms:</strong> <code>ref.current</code> is <code>None</code> inside the component body, but works inside a click handler.</p>
 <p><strong>Likely cause:</strong> you read the ref before the element mounted.</p>
-<p><strong>Fix:</strong> read the ref inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a>, an effect, or an event handler — all of which run after the first commit.</p>
+<p><strong>Fix:</strong> read the ref inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a>, an effect, or an event handler; all of which run after the first commit.</p>
 </details>
 <h2 id="dev-server">Dev server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h2>
 <details class="bug">

@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/banner.jpg">
+      <link rel="icon" href="../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
@@ -115,7 +115,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Wybthon" class="md-header__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -418,7 +419,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Wybthon" class="md-nav__button md-logo" aria-label="Wybthon" data-md-component="logo">
       
-  <img src="../../assets/banner.jpg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
     Wybthon
@@ -2747,22 +2749,22 @@
 <h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
 <h4 id="the-big-idea">The big idea<a class="headerlink" href="#the-big-idea" title="Permanent link">&para;</a></h4>
 <p>Wybthon component bodies run <strong>once</strong>.  Reactive updates flow through
-<em>reactive holes</em> — a per-binding effect for each callable child or
+<em>reactive holes</em>: a per-binding effect for each callable child or
 prop value.  When a signal changes, only the holes that read it
 re-evaluate, and only the affected DOM nodes are touched.  This is
-fundamentally cheaper than a full component re-render + diff, even
+fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
-the Python ↔ JS bridge.</p>
+the Python and JS bridge.</p>
 <h4 id="authoring-tips">Authoring tips<a class="headerlink" href="#authoring-tips" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Prefer holes over re-rendering.</strong>  Embed a signal accessor (or
   <code>dynamic(lambda: ...)</code>) at the smallest possible spot in the tree
   rather than reading signals eagerly inside the component body.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Slow — eager reads happen during setup; future changes are missed.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Slow: eager reads happen during setup; future changes are missed.</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">, count=</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Fast — only two text nodes update.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Fast: only two text nodes update.</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s2">&quot;, count=&quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">))</span>
 </span></code></pre></div>
 <ul>
@@ -2797,12 +2799,12 @@ the Python ↔ JS bridge.</p>
 </span></code></pre></div>
 <p>The runner measures:</p>
 <ul>
-<li>Standard JS framework benchmark workloads (create / update / swap /
-  remove rows in a 1k–10k row table) — useful as a regression smoke
+<li>Standard JS framework benchmark workloads (create, update, swap, and
+  remove rows in a 1k to 10k row table); useful as a regression smoke
   test for the diffing algorithm.</li>
-<li><strong><code>hole update (1k tree)</code></strong> — change one signal that drives a single
+<li><strong><code>hole update (1k tree)</code></strong>: change one signal that drives a single
   reactive hole inside a 1,000-node tree.</li>
-<li><strong><code>full rerender (1k tree)</code></strong> — re-render the entire tree and let the
+<li><strong><code>full rerender (1k tree)</code></strong>: re-render the entire tree and let the
   diffing algorithm reduce the change set to one text node.</li>
 </ul>
 <p>Both tree benchmarks update the <em>same</em> DOM node; the difference is
