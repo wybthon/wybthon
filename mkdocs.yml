@@ -33,15 +33,13 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: custom
-      accent: custom
+      primary: white
       toggle:
         icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: custom
-      accent: custom
+      primary: black
       toggle:
         icon: material/weather-night
         name: Switch to light mode
@@ -157,8 +155,8 @@ plugins:
             filters: ["!^_"]
   - social:
       cards_layout_options:
-        background_color: "#03abe9"
-        color: "#ffffff"
+        background_color: "#ffffff"
+        color: "#000000"
 
 extra_css:
   - styles/brand.css
