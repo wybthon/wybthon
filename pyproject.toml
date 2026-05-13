@@ -89,6 +89,7 @@ ignore = ["D107", "D105", "D203", "D213"]
 "scripts/**/*.py" = ["D"]
 "benchmarks/**/*.py" = ["D"]
 "docs/**/*.py" = ["D"]
+"snippets/**/*.py" = ["D"]
 "setup.py" = ["D"]
 "conftest.py" = ["D"]
 
