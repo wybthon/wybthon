@@ -1,6 +1,10 @@
 """Unit tests for ErrorBoundary component logic."""
 
-from wybthon.error_boundary import _compute_reset_token, _render_fallback
+import time
+
+from conftest import collect_texts
+
+from wybthon.error_boundary import ErrorBoundary, _compute_reset_token, _render_fallback
 from wybthon.vnode import VNode, to_text_vnode
 
 
@@ -70,3 +74,78 @@ def test_render_fallback_callable_that_raises():
     result = _render_fallback(RuntimeError("boom"), {"fallback": bad_fallback}, lambda: None)
     assert result.tag == "_text"
     assert result.props["nodeValue"] == "Error rendering fallback"
+
+
+# --------------------------------------------------------------------------- #
+# Mount-time behaviour: catching errors thrown while mounting children.
+#
+# Regression coverage for the reconciler routing synchronous child mount/render
+# errors to the nearest ErrorBoundary instead of swallowing them at its
+# defensive try/except sites. Without that routing the fallback never renders.
+# --------------------------------------------------------------------------- #
+
+
+def test_error_boundary_catches_child_mount_error(wyb, root_element):
+    """A child that raises during mount triggers the boundary's fallback."""
+    vdom = wyb["vdom"]
+    reactivity = wyb["reactivity"]
+
+    should_throw = reactivity.signal(True)
+
+    def Bug(props):
+        if should_throw.get():
+            raise RuntimeError("boom")
+        return vdom.h("span", {}, "ok")
+
+    def fallback(err, reset):
+        return vdom.h("span", {}, f"caught: {err}")
+
+    def App(props):
+        return vdom.h(
+            ErrorBoundary,
+            {"fallback": fallback},
+            vdom.h("div", {}, vdom.h(Bug, {})),
+        )
+
+    vdom.render(vdom.h(App, {}), root_element)
+    time.sleep(0.05)
+
+    texts = collect_texts(root_element.element)
+    assert any("caught: boom" in t for t in texts), texts
+    assert not any(t == "ok" for t in texts), texts
+
+
+def test_error_boundary_recovers_after_reset(wyb, root_element):
+    """Fixing the child and bumping ``reset_key`` clears the boundary."""
+    vdom = wyb["vdom"]
+    reactivity = wyb["reactivity"]
+
+    should_throw = reactivity.signal(True)
+    reset_key = reactivity.signal(0)
+
+    def Bug(props):
+        if should_throw.get():
+            raise RuntimeError("boom")
+        return vdom.h("span", {}, "recovered")
+
+    def fallback(err, reset):
+        return vdom.h("span", {}, f"caught: {err}")
+
+    def App(props):
+        return vdom.h(
+            ErrorBoundary,
+            {"fallback": fallback, "reset_key": reset_key.get},
+            vdom.h("div", {}, vdom.h(Bug, {})),
+        )
+
+    vdom.render(vdom.h(App, {}), root_element)
+    time.sleep(0.05)
+    assert any("caught: boom" in t for t in collect_texts(root_element.element))
+
+    should_throw.set(False)
+    reset_key.set(1)
+    time.sleep(0.05)
+
+    texts = collect_texts(root_element.element)
+    assert any("recovered" in t for t in texts), texts
+    assert not any("caught: boom" in t for t in texts), texts

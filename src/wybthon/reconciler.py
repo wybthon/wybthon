@@ -53,6 +53,36 @@ __all__ = ["render", "mount", "unmount", "patch"]
 _container_registry: Dict[int, VNode] = {}
 
 
+def _dispatch_to_error_boundary(exc: BaseException) -> bool:
+    """Route a mount/render error to the nearest ancestor error boundary.
+
+    Walks the active ownership chain (from the current owner upward) looking
+    for the first scope that has an ``_error_handler`` installed by
+    :func:`wybthon.error_boundary.ErrorBoundary`. If one is found it is
+    invoked (which swaps in the boundary's fallback on the next flush) and
+    this returns ``True``. When no boundary exists it returns ``False`` so
+    the caller can log and swallow the error as before.
+
+    This is what makes ``ErrorBoundary`` catch *synchronous* errors thrown
+    while mounting descendant components or evaluating reactive holes -- the
+    reconciler's defensive ``try``/``except`` sites would otherwise swallow
+    them before they could reach a boundary.
+    """
+    import wybthon.reactivity as _rx
+
+    owner = _rx._current_owner
+    while owner is not None:
+        handler = getattr(owner, "_error_handler", None)
+        if handler is not None:
+            try:
+                handler(exc)
+            except Exception as handler_exc:  # pragma: no cover - defensive
+                log_error(f"Error boundary handler raised: {handler_exc}", handler_exc)
+            return True
+        owner = owner._parent
+    return False
+
+
 def render(vnode: VNode, container: Union[Element, str]) -> Element:
     """Render a VNode tree into a container element.
 
@@ -246,7 +276,8 @@ def _mount_dynamic(vnode: VNode, container: Element, anchor: Any = None) -> Elem
         try:
             result = getter()
         except Exception as exc:
-            log_error(f"Reactive hole getter raised: {exc}", exc)
+            if not _dispatch_to_error_boundary(exc):
+                log_error(f"Reactive hole getter raised: {exc}", exc)
             return
         new_node = _coerce_dynamic_result(result)
         prev = vnode.subtree
@@ -255,12 +286,14 @@ def _mount_dynamic(vnode: VNode, container: Element, anchor: Any = None) -> Elem
             try:
                 mount(new_node, container, end_comment)
             except Exception as exc:
-                log_error(f"Reactive hole mount failed: {exc}", exc)
+                if not _dispatch_to_error_boundary(exc):
+                    log_error(f"Reactive hole mount failed: {exc}", exc)
         else:
             try:
                 patch(prev, new_node, container)
             except Exception as exc:
-                log_error(f"Reactive hole patch failed: {exc}", exc)
+                if not _dispatch_to_error_boundary(exc):
+                    log_error(f"Reactive hole patch failed: {exc}", exc)
 
     vnode.render_effect = effect(update)
     return end_el
@@ -302,7 +335,8 @@ def _patch_dynamic(old: VNode, new: VNode, container: Element) -> None:
         try:
             result = new_getter()
         except Exception as exc:
-            log_error(f"Reactive hole getter raised: {exc}", exc)
+            if not _dispatch_to_error_boundary(exc):
+                log_error(f"Reactive hole getter raised: {exc}", exc)
             return
         new_node = _coerce_dynamic_result(result)
         prev = new.subtree
@@ -311,12 +345,14 @@ def _patch_dynamic(old: VNode, new: VNode, container: Element) -> None:
             try:
                 mount(new_node, container, end_comment)
             except Exception as exc:
-                log_error(f"Reactive hole mount failed: {exc}", exc)
+                if not _dispatch_to_error_boundary(exc):
+                    log_error(f"Reactive hole mount failed: {exc}", exc)
         else:
             try:
                 patch(prev, new_node, container)
             except Exception as exc:
-                log_error(f"Reactive hole patch failed: {exc}", exc)
+                if not _dispatch_to_error_boundary(exc):
+                    log_error(f"Reactive hole patch failed: {exc}", exc)
 
     new.render_effect = effect(update)
 
@@ -456,8 +492,7 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
         try:
             result = comp_fn(ctx._reactive_props)
         except Exception as exc:
-            if ctx._error_handler is not None:
-                ctx._error_handler(exc)
+            if _dispatch_to_error_boundary(exc):
                 result = to_text_vnode("")
             else:
                 log_error(f"Render failed in function component {component_name(comp_fn)}", exc)
@@ -476,8 +511,7 @@ def _mount_component(vnode: VNode, container: Element, anchor: Any = None) -> El
             mounted_el = mount(sub_tree, container, anchor)
             vnode.el = mounted_el
         except Exception as exc:
-            if ctx._error_handler is not None:
-                ctx._error_handler(exc)
+            if _dispatch_to_error_boundary(exc):
                 placeholder = to_text_vnode("")
                 vnode.subtree = placeholder
                 vnode.el = mount(placeholder, container, anchor)
@@ -760,7 +794,8 @@ def _patch_fragment(old: VNode, new: VNode, container: Element) -> None:
                 if first is not None:
                     next_anchor_node = first
             except Exception as e:
-                log_error(f"Failed to mount fragment child at index {i}", e)
+                if not _dispatch_to_error_boundary(e):
+                    log_error(f"Failed to mount fragment child at index {i}", e)
         else:
             first_dom = _get_first_dom(new_child)
             if first_dom is not None:
@@ -844,7 +879,8 @@ def _patch_children(old: VNode, new: VNode) -> None:
                 if first is not None:
                     next_anchor_node = first
             except Exception as e:
-                log_error(f"Failed to mount child at index {i}", e)
+                if not _dispatch_to_error_boundary(e):
+                    log_error(f"Failed to mount child at index {i}", e)
         else:
             first_dom = _get_first_dom(new_child)
             if first_dom is not None:
