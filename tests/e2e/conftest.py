@@ -13,6 +13,8 @@ Design goals:
   instead of timing out.
 """
 
+from __future__ import annotations
+
 import contextlib
 import socket
 import subprocess
