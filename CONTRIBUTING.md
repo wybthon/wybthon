@@ -36,6 +36,12 @@ python -m http.server
   - `__init__.py` – public exports
 - `examples/`
   - `demo/` – minimal browser demo (`index.html`, `bootstrap.js`, `demo.py`, `child_component.html`)
+- `tests/`
+  - `test_*.py` – fast CPython unit tests (browser APIs stubbed via `conftest.py`)
+  - `e2e/` – browser end-to-end suite (Playwright + Pyodide):
+    - `app/` – dedicated fixture SPA with one route per framework feature, plus `data-testid` hooks
+    - `test_*.py` – per-feature Playwright tests; `conftest.py` boots Pyodide once and isolates tests via a `/blank` route
+    - `test_pyodide_smoke.py` – demo bootstrap smoke test
 - `README.md`, `pyproject.toml`, `requirements.txt`, `TODO.md`
 
 ## Coding guidelines
@@ -44,7 +50,7 @@ python -m http.server
 - **Naming**: prefer explicit, descriptive names; keep browser/runtime constraints in mind.
 - **Structure**: separate pure logic from DOM interop; keep render/diff paths lean.
 - **Examples**: keep examples minimal and reproducible; avoid large assets.
-- **Tests**: if you add tests, place them under `tests/` and keep them fast (no network/large IO).
+- **Tests**: put fast CPython unit tests directly under `tests/` (browser APIs are stubbed, no network/large IO). Browser-dependent behaviour goes in the Playwright + Pyodide suite under `tests/e2e/`; mark those with the `e2e` pytest marker so they stay out of the fast unit run. See the [Testing guide](docs/guides/testing.md).
 - **Docstrings**: Google-style for all public modules, classes, and functions. See the
   [Documentation style guide](docs/meta/style-guide.md) for the full conventions, or
   the rendered version at <https://docs.wybthon.com/meta/style-guide/>.
@@ -289,7 +295,7 @@ fix/dom-event-delegation
 
 ### CI
 
-- **CI** (`ci.yml`): runs formatter, linter, type checker, and tests on every push and PR.
+- **CI** (`ci.yml`): runs formatter, linter, type checker, and unit tests (the `build` job, across Python 3.9–3.11) on every push and PR. A separate `e2e` job runs the full browser suite under `tests/e2e/` (fixture app + demo smoke test) in headless Chromium with Pyodide, caching the Playwright browser between runs.
 - **PR Lint** (`pr-lint.yml`): validates the PR title against Conventional Commits format (protects squash merges) and checks individual commit messages via commitlint (protects rebase merges). Recommended: add the **PR title** job as a required status check in branch-protection settings.
 - **Release** (`release.yml`): runs on merge to `main`; computes version, generates changelog, tags, creates GitHub Release, and (when `DRAFT_RELEASE` is `"false"`) publishes to PyPI.
 - **Docs** (`docs.yml`): builds the MkDocs site with `--strict` (fail on warning) on every push and PR; on push to `main` it also deploys to GitHub Pages.
