@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v0.23.1 (2026-06-01)
+
+### Bug Fixes
+
+- **reconciler**: Route child render errors to nearest ErrorBoundary
+  ([`c2b3144`](https://github.com/wybthon/wybthon/commit/c2b31449a0e478c9d2bcb53b5167ae21983990c0))
+
+### Documentation
+
+- Adopt CMOS punctuation and refresh site branding
+  ([`f0b7b0e`](https://github.com/wybthon/wybthon/commit/f0b7b0eb5e9b1c1822fcf1e1d1b6e5ba1992aaca))
+
+- Adopt Google-style docstrings; revamp MkDocs site
+  ([`fb7d472`](https://github.com/wybthon/wybthon/commit/fb7d47205626051746853f800e510d347facec4b))
+
+- **mkdocs**: Use neutral light/dark theme for site and social cards
+  ([`d19ed6f`](https://github.com/wybthon/wybthon/commit/d19ed6f6e53958d47937c1e7a60c6ac7642bebf5))
+
+### Testing
+
+- Add comprehensive browser E2E suite, and run it in CI
+  ([`1c70763`](https://github.com/wybthon/wybthon/commit/1c707631bb7b578b280e7fa48f2fff02e4308158))
+
+- Make E2E conftest type-check under Python 3.9
+  ([`4821950`](https://github.com/wybthon/wybthon/commit/482195048080707144cfffd285eed73a30eceea2))
+
+
 ## v0.23.0 (2026-04-23)
 
 ### Features
