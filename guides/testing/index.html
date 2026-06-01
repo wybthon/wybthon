@@ -1271,10 +1271,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pyodide-smoke-test-playwright" class="md-nav__link">
+  <a href="#browser-e2e-suite-playwright-pyodide" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pyodide smoke test (Playwright)
+        Browser E2E suite (Playwright + Pyodide)
       
     </span>
   </a>
@@ -2663,10 +2663,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pyodide-smoke-test-playwright" class="md-nav__link">
+  <a href="#browser-e2e-suite-playwright-pyodide" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pyodide smoke test (Playwright)
+        Browser E2E suite (Playwright + Pyodide)
       
     </span>
   </a>
@@ -2750,23 +2750,59 @@
 <p>Approaches:</p>
 <ul>
 <li>Unit test pure modules (e.g., <code>reactivity</code>) in CPython</li>
-<li>For browser-dependent code, use Pyodide in a headless browser or test via demo pages</li>
+<li>For browser-dependent code, use Pyodide in a headless browser via the end-to-end suite</li>
 </ul>
-<h4 id="pyodide-smoke-test-playwright">Pyodide smoke test (Playwright)<a class="headerlink" href="#pyodide-smoke-test-playwright" title="Permanent link">&para;</a></h4>
-<p>We include a minimal Playwright-based smoke test that loads the demo app in a headless Chromium instance with Pyodide, then asserts that key UI elements render.</p>
+<h4 id="browser-e2e-suite-playwright-pyodide">Browser E2E suite (Playwright + Pyodide)<a class="headerlink" href="#browser-e2e-suite-playwright-pyodide" title="Permanent link">&para;</a></h4>
+<p>The <code>e2e</code> job in CI runs the full browser suite under <code>tests/e2e/</code>. It has two
+parts, both marked with the <code>e2e</code> pytest marker and both exercising the real
+Pyodide runtime in headless Chromium:</p>
+<ol>
+<li><strong>Feature fixture app</strong> (<code>tests/e2e/app/</code>) — a dedicated single-page app with
+   <strong>one route per framework feature</strong> (reactivity, reactive holes, props,
+   events, context, flow control, forms, stores, suspense, error boundary,
+   components/lifecycle, portal, lazy loading, and the router). Each
+   per-feature test module (<code>tests/e2e/test_*.py</code>) drives that route and asserts
+   behaviour through stable <code>data-testid</code> selectors.</li>
+<li><strong>Demo smoke test</strong> (<code>tests/e2e/test_pyodide_smoke.py</code>) — loads
+   <code>examples/demo/index.html</code> and verifies the demo boots and renders.</li>
+</ol>
+<p>Design choices that keep the suite fast and deterministic:</p>
 <ul>
-<li>Location: <code>tests/e2e/test_pyodide_smoke.py</code></li>
-<li>What it does: starts a simple HTTP server at the repo root, navigates to <code>examples/demo/index.html</code>, and waits for the demo title and <code>Hello, Python!</code> component to appear.</li>
+<li><strong>Boot Pyodide once.</strong> The fixture app is booted a single time per session
+  (<code>fixture_page</code> in <code>tests/e2e/conftest.py</code>); individual tests navigate between
+  features using the History-API router instead of reloading the page, so the
+  multi-second Pyodide cold start is paid only once.</li>
+<li><strong>Isolation between tests.</strong> The <code>goto_feature</code> helper bounces through a
+  <code>/blank</code> route before navigating to the target feature, forcing the previous
+  feature's component tree to unmount so each test starts from a clean mount.</li>
+<li><strong>Stable selectors.</strong> Components expose <code>data-testid</code> attributes (see the
+  <code>tid</code> helper in <code>tests/e2e/app/testkit.py</code>) rather than relying on text or DOM
+  structure.</li>
+<li><strong>Fail fast on boot errors.</strong> <code>bootstrap.js</code> records any boot failure on
+  <code>window.__WYB_E2E_ERROR</code>; the readiness wait surfaces it as a test error
+  instead of timing out.</li>
 </ul>
 <p>Run locally:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-m<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pytest<span class="w"> </span>-q<span class="w"> </span>-m<span class="w"> </span>e2e<span class="w"> </span>tests/e2e/test_pyodide_smoke.py
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># full browser suite (fixture app + demo smoke test)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pytest<span class="w"> </span>-q<span class="w"> </span>-m<span class="w"> </span>e2e<span class="w"> </span>tests/e2e
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># a single feature module</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>pytest<span class="w"> </span>-q<span class="w"> </span>-m<span class="w"> </span>e2e<span class="w"> </span>tests/e2e/test_error_boundary.py
 </span></code></pre></div>
 <p>Notes:</p>
 <ul>
-<li>The demo bootstrap fetches directly from <code>src/wybthon</code> and <code>examples/demo/app</code> so serving the repo root is required.</li>
-<li>The test uses generous timeouts (up to 120s) since Pyodide initialization can take time in CI.</li>
+<li>The suite serves the repo root via <code>wyb dev</code> so <code>bootstrap.js</code> can fetch
+  <code>src/wybthon</code> and <code>tests/e2e/app</code> and use the <code>/__manifest</code> endpoint to
+  discover Python files.</li>
+<li>Tests use generous timeouts (Pyodide initialization can take time in CI), and
+  the default pytest config (<code>addopts = -m "not e2e"</code>) excludes the browser
+  suite from the fast unit run — pass <code>-m e2e</code> to opt in.</li>
+<li>The fixture app under <code>tests/e2e/app/</code> is Pyodide-runtime code (it uses
+  absolute <code>app.*</code> imports that only resolve inside the Pyodide filesystem), so
+  it is excluded from mypy and is never imported by the CPython unit tests.</li>
 </ul>
 <h4 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h4>
 <p>For Python-only logic (e.g., <code>reactivity</code>, <code>forms</code> helpers), write regular <code>pytest</code> tests under <code>tests/</code>.</p>
