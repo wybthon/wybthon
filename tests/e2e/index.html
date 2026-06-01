@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wybthon E2E Fixture</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5; padding: 1rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+    nav a { padding: 0.2rem 0.5rem; text-decoration: none; color: #2563eb; border-radius: 4px; }
+    nav a.active { background: #dbeafe; font-weight: 600; }
+    button { cursor: pointer; padding: 0.25rem 0.6rem; }
+    .feature { margin-bottom: 1rem; }
+    .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.25rem 0; }
+    ul { padding-left: 1.25rem; }
+    #loading { color: #888; }
+  </style>
+  <script type="module">
+    const v = Date.now();
+    import(`./bootstrap.js?v=${v}`);
+  </script>
+</head>
+<body>
+  <div id="loading">Loading Wybthon E2E fixture...</div>
+</body>
+</html>

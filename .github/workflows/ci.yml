@@ -53,10 +53,10 @@ jobs:
           name: coverage-xml
           path: coverage.xml
 
-  e2e-pyodide-smoke:
-    name: E2E Pyodide Smoke
+  e2e:
+    name: E2E (Pyodide + Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,16 +65,32 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
 
       - name: Install tools
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[ci]"
 
+      # The Pyodide runtime is fetched from the jsdelivr CDN by bootstrap.js at
+      # browser runtime, so it cannot be cached as a build artifact. We cache the
+      # Playwright browser binary instead, which is the expensive install step.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
         run: |
           python -m playwright install --with-deps chromium
 
-      - name: Run Pyodide smoke test (Playwright)
+      # Runs the full browser fixture suite (one route per framework feature)
+      # plus the demo Pyodide smoke test; both live under tests/e2e and are
+      # marked ``e2e``. The fixture suite boots Pyodide once and navigates via
+      # the client-side router, so the whole suite shares a single cold start.
+      - name: Run E2E suite (Playwright)
         run: |
-          pytest -q -m e2e tests/e2e/test_pyodide_smoke.py
+          pytest -q -m e2e tests/e2e
