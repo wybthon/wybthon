@@ -2,7 +2,7 @@
 
 Wybthon ships two complementary primitives for asynchronous UI:
 
-- [`Suspense`][wybthon.Suspense] renders a fallback (e.g. spinner) while a subtree is loading.
+- [`Suspense`][wybthon.Suspense] renders a fallback (e.g., spinner) while a subtree is loading.
 - [`lazy`][wybthon.lazy] defers loading a component module until it actually mounts.
 
 Together they let you split big apps into smaller chunks and present a polished loading experience.
@@ -93,7 +93,7 @@ def Dashboard():
 
 - `load` returns either a coroutine that resolves to the component, or a module from which an attribute is read.
 - Pair `lazy` with `Suspense` so users see a fallback instead of an empty space.
-- Use [`preload_component`][wybthon.preload_component] to warm the cache (e.g. on hover) before the user actually navigates.
+- Use [`preload_component`][wybthon.preload_component] to warm the cache (e.g., on hover) before the user actually navigates.
 
 ### Lazy routes
 

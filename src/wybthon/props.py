@@ -43,7 +43,7 @@ def to_kebab(name: str) -> str:
         name: A camelCase string such as `"backgroundColor"`.
 
     Returns:
-        The kebab-cased equivalent (e.g. `"background-color"`).
+        The kebab-cased equivalent (e.g., `"background-color"`).
     """
     return CAMEL_TO_KEBAB.sub("-", name).lower()
 
@@ -72,7 +72,7 @@ def event_name_from_prop(name: str) -> str:
         name: Event handler prop name.
 
     Returns:
-        The DOM event name (e.g. `"click"`, `"mouseover"`).
+        The DOM event name (e.g., `"click"`, `"mouseover"`).
     """
     if name.startswith("on_"):
         return name[3:]

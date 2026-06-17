@@ -11,13 +11,13 @@ The `e2e` job in CI runs the full browser suite under `tests/e2e/`. It has two
 parts, both marked with the `e2e` pytest marker and both exercising the real
 Pyodide runtime in headless Chromium:
 
-1. **Feature fixture app** (`tests/e2e/app/`) — a dedicated single-page app with
+1. **Feature fixture app** (`tests/e2e/app/`): a dedicated single-page app with
    **one route per framework feature** (reactivity, reactive holes, props,
    events, context, flow control, forms, stores, suspense, error boundary,
    components/lifecycle, portal, lazy loading, and the router). Each
    per-feature test module (`tests/e2e/test_*.py`) drives that route and asserts
    behaviour through stable `data-testid` selectors.
-2. **Demo smoke test** (`tests/e2e/test_pyodide_smoke.py`) — loads
+2. **Demo smoke test** (`tests/e2e/test_pyodide_smoke.py`): loads
    `examples/demo/index.html` and verifies the demo boots and renders.
 
 Design choices that keep the suite fast and deterministic:
@@ -56,10 +56,10 @@ Notes:
   discover Python files.
 - Tests use generous timeouts (Pyodide initialization can take time in CI), and
   the default pytest config (`addopts = -m "not e2e"`) excludes the browser
-  suite from the fast unit run — pass `-m e2e` to opt in.
+  suite from the fast unit run; pass `-m e2e` to opt in.
 - The fixture app under `tests/e2e/app/` is Pyodide-runtime code (it uses
   absolute `app.*` imports that only resolve inside the Pyodide filesystem), so
-  it is excluded from mypy and is never imported by the CPython unit tests.
+  it's excluded from mypy and is never imported by the CPython unit tests.
 
 #### Unit tests
 

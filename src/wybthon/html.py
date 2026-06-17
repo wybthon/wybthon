@@ -21,9 +21,9 @@ Prop name mapping (Python keyword to HTML attribute):
 - `html_for` → `for` (Python reserved word).
 - All other kwargs pass through unchanged.
 
-Each helper exported here (e.g. `div`, `p`, `button`, `input_`) is a
+Each helper exported here (e.g., `div`, `p`, `button`, `input_`) is a
 thin wrapper that returns a [`VNode`][wybthon.VNode]. Two element
-names collide with Python builtins, so they are exposed with a trailing
+names collide with Python builtins, so they're exposed with a trailing
 underscore: `main_` and `input_`.
 
 See Also:
@@ -132,7 +132,7 @@ def _el(tag: str) -> Callable[..., VNode]:
     """Create a helper function for the given HTML tag name.
 
     Args:
-        tag: HTML tag name (e.g. `"div"`, `"section"`).
+        tag: HTML tag name (e.g., `"div"`, `"section"`).
 
     Returns:
         A callable `element_fn(*children, **props) -> VNode` that

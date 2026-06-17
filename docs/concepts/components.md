@@ -35,7 +35,7 @@ Each parameter is bound to a **reactive accessor**:
 * Wrap it with [`untrack`](primitives.md#untrack) to read once
   without subscribing, which is useful for seeding local state from a prop.
 
-The body of an `@component` runs **once** per mount.  There is no
+The body of an `@component` runs **once** per mount.  There's no
 re-render: the only things that update later are the holes embedded
 in the tree.
 
@@ -56,7 +56,7 @@ def Counter(initial=0):
 
 `count` is a zero-arg accessor.  When you place it in the VNode
 tree, the reconciler wraps it in its own effect so only that text
-node updates; the surrounding component body does not re-run.
+node updates; the surrounding component body doesn't re-run.
 
 ##### Static or getter, same call site
 
@@ -175,7 +175,7 @@ _ComponentContext (Counter)       ← created when Counter mounts (body runs onc
 
 **Setup effects** (created in the component body, before `return`) and
 **reactive hole effects** are both owned by the `_ComponentContext`.
-They are disposed when the component unmounts.
+They're disposed when the component unmounts.
 
 When a hole returns a sub-tree containing further effects (for
 example a hole returning a VNode that contains its own holes), the
@@ -227,7 +227,7 @@ behaviour is intentional.
 
 #### Fragment
 
-Use `Fragment` to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses **empty comment nodes** as start/end markers (not a `display: contents` wrapper), so fragments do not pollute the DOM or break CSS selectors that expect a certain element structure.
+Use `Fragment` to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses **empty comment nodes** as start/end markers (not a `display: contents` wrapper), so fragments don't pollute the DOM or break CSS selectors that expect a certain element structure.
 
 ```python
 from wybthon import Fragment, h1, p
@@ -243,7 +243,7 @@ def PageContent():
 #### `memo`
 
 Wrap a function component with `memo` to skip re-mounts when its props
-have not changed (shallow identity comparison by default):
+haven't changed (shallow identity comparison by default):
 
 ```python
 from wybthon import component, memo, h
@@ -266,7 +266,7 @@ MemoList = memo(ExpensiveList, are_props_equal=lambda old, new: old["items"] == 
     Because props are reactive and the body runs once, `memo` is only
     useful when you want to **skip re-mounting** the component on a
     prop change (for example, an expensive setup phase). Most ordinary
-    components do not need it.
+    components don't need it.
 
 #### `forward_ref`
 

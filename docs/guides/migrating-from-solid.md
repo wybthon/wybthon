@@ -83,7 +83,7 @@ count, set_count = create_signal(0)
 create_effect(lambda: print("count =", count()))
 ```
 
-`create_effect` re-runs whenever signals it tracked during the previous run change. There is no manual dep array.
+`create_effect` re-runs whenever signals it tracked during the previous run change. There's no manual dep array.
 
 ## Stores
 

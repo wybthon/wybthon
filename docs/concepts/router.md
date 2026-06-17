@@ -105,7 +105,7 @@ Notes for Pyodide:
 
 Migration notes:
 
-- Prior versions did not include `Link` active styling. If you previously computed active state manually, you can remove that logic and rely on `Link`'s built-in active class.
+- Prior versions didn't include `Link` active styling. If you previously computed active state manually, you can remove that logic and rely on `Link`'s built-in active class.
 - Use the new `replace=True` option on both `Link` and `navigate()` when you want to update the URL without adding a history entry (e.g., tab switches).
 
 ## Next steps

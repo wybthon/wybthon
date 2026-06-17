@@ -1,6 +1,6 @@
 # Deployment
 
-Wybthon apps run entirely in the browser, so deployment is just *static hosting*. There is no Python server, no Node build step, and nothing to keep online beyond the HTML, JavaScript, and Python files you serve.
+Wybthon apps run entirely in the browser, so deployment is just *static hosting*. There's no Python server, no Node build step, and nothing to keep online beyond the HTML, JavaScript, and Python files you serve.
 
 ## Checklist
 
@@ -98,7 +98,7 @@ The `rewrites` rule serves `index.html` for unknown paths, which lets the [route
 ## Production tuning
 
 - **Pre-compress assets.** Pre-build `.gz` and `.br` versions of `index.html` and your application files; most CDNs serve them automatically.
-- **Pin Pyodide's version.** Wybthon does not ship Pyodide; reference the version you tested against from a CDN or self-host so users get the same runtime.
+- **Pin Pyodide's version.** Wybthon doesn't ship Pyodide; reference the version you tested against from a CDN or self-host so users get the same runtime.
 - **Use `set_dev_mode(False)`** (from `wybthon._warnings`) at startup in production builds to silence development warnings and skip optional bookkeeping.
 
 ## Next steps

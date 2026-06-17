@@ -83,7 +83,7 @@ class Element:
 
     @value.setter
     def value(self, new_value: Any) -> None:
-        """Set the underlying DOM `value`, ignoring elements that do not support it."""
+        """Set the underlying DOM `value`, ignoring elements that don't support it."""
         try:
             self.element.value = new_value
         except Exception:
@@ -201,7 +201,7 @@ class Element:
         Args:
             class_name: Class to toggle.
             force: Pass `True` to ensure the class is added, `False`
-                to ensure it is removed; `None` toggles based on the
+                to ensure it's removed; `None` toggles based on the
                 current state.
         """
         if force is None:
@@ -222,10 +222,10 @@ class Element:
         a Pyodide proxy so it can be released on removal.
 
         Args:
-            event_type: DOM event name (e.g. `"click"`, `"input"`).
+            event_type: DOM event name (e.g., `"click"`, `"input"`).
             handler: Callback invoked with the DOM event object.
             options: Optional `addEventListener` options
-                (e.g. `{"capture": True}`).
+                (e.g., `{"capture": True}`).
         """
         try:
             from pyodide.ffi import create_proxy

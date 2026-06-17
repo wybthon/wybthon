@@ -74,7 +74,7 @@ render(h("div", {}, "world"), root)  # updates the same text node
 `ErrorBoundary` catches render errors from its subtree and renders a `fallback`.
 
 - Props:
-  - `fallback` – VNode/str/callable. When callable, it is invoked as `fallback(error, reset)`; if the callable only accepts one argument, it is invoked as `fallback(error)`.
+  - `fallback` – VNode/str/callable. When callable, it's invoked as `fallback(error, reset)`; if the callable only accepts one argument, it's invoked as `fallback(error)`.
   - `on_error` – optional callback called with the thrown error when the boundary captures it.
   - `reset_key` – any value; when this value changes, the boundary automatically resets (clears the error) on the next render.
   - `reset_keys` – list/tuple of values; when the tuple of values changes, the boundary automatically resets.
@@ -128,7 +128,7 @@ MemoList = memo(ExpensiveList)
 Because Wybthon components run **once** and then update via reactive
 holes, `memo` is only useful when you want to skip **re-mounting** on
 prop changes (for example, an expensive setup phase).  Most components
-do not need it.
+don't need it.
 
 #### create_portal
 

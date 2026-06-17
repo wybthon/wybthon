@@ -105,7 +105,7 @@ def _is_inside_untrack() -> bool:
 
 
 def _has_current_computation() -> bool:
-    """Return True when there is an active reactive computation (effect/memo).
+    """Return True when there's an active reactive computation (effect/memo).
 
     Used by the dev-mode "destructured prop" warning to suppress noise when a
     prop accessor is read inside an effect / memo body during setup; those
@@ -541,8 +541,8 @@ class ReactiveProps:
     def value(self, key: str, default: Any = _MISSING) -> Any:
         """Return the current value for `key` (tracked, with auto-unwrap).
 
-        If the stored prop value is a getter, it is invoked and the result
-        returned, mirroring `_make_getter`. If `default` is provided, it is
+        If the stored prop value is a getter, it's invoked and the result
+        returned, mirroring `_make_getter`. If `default` is provided, it's
         returned when `key` is absent from both the props dict and the
         component's parameter defaults.
 
@@ -625,7 +625,7 @@ class ReactiveProps:
     def keys(self) -> Any:
         """Return the prop names currently set on this instance.
 
-        The result reflects the latest props pushed into the proxy (it is
+        The result reflects the latest props pushed into the proxy (it's
         not tracked as a reactive read).
         """
         raw = object.__getattribute__(self, "_raw")
@@ -704,14 +704,14 @@ def iter_prop_keys(props: Any) -> List[str]:
     """Return the list of prop keys present on `props`.
 
     Same uniform shim as [`read_prop`][wybthon.reactivity.read_prop] for
-    components that iterate over an unknown prop bag (e.g. `Link`
+    components that iterate over an unknown prop bag (e.g., `Link`
     forwarding extra attributes onto the rendered `<a>`).
 
     Args:
         props: A `ReactiveProps` proxy or any object with `.keys()`.
 
     Returns:
-        A list of present keys, or an empty list when `props` is not
+        A list of present keys, or an empty list when `props` isn't
         dict-like.
     """
     if isinstance(props, ReactiveProps):
@@ -1173,7 +1173,7 @@ def _get_component_ctx() -> Optional[_ComponentContext]:
 def get_owner() -> Optional[Owner]:
     """Return the current reactive owner scope, if any.
 
-    Capture the owner before crossing async boundaries (e.g. `await`) and
+    Capture the owner before crossing async boundaries (e.g., `await`) and
     restore it with [`run_with_owner`][wybthon.run_with_owner] to maintain
     proper lifecycle management.
 
@@ -1225,7 +1225,7 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 
     Works inside or outside components. Inside a stateful component the
     signal is captured by the render function's closure and persists
-    naturally; there is no cursor system or "rules of hooks".
+    naturally; there's no cursor system or "rules of hooks".
 
     Args:
         value: Initial value stored in the signal.
@@ -1385,7 +1385,7 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
 def children(fn: Callable[[], Any]) -> Callable[[], List[Any]]:
     """Resolve and memoize reactive children, returning a memo getter.
 
-    Wraps a getter that returns children (e.g. `lambda: props.children()`)
+    Wraps a getter that returns children (e.g., `lambda: props.children()`)
     and returns a memo that flattens nested lists and unwraps callables.
     Matches SolidJS's `children()` helper.
 
@@ -1520,7 +1520,7 @@ def on(
 def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
     """Run `fn` inside an independent reactive root.
 
-    Useful for spawning long-lived reactive work that should not be tied
+    Useful for spawning long-lived reactive work that shouldn't be tied
     to the surrounding component's lifecycle (e.g., global stores).
 
     Args:
@@ -1550,7 +1550,7 @@ def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
 
 
 def _resolve_source(src: Any) -> Any:
-    """Call `src` if it is a callable getter; otherwise return as-is."""
+    """Call `src` if it's a callable getter; otherwise return as-is."""
     if src is None:
         return None
     if callable(src) and not isinstance(src, dict):
@@ -1562,7 +1562,7 @@ class _MergedProps:
     """Reactive merged-props proxy returned by [`merge_props`][wybthon.merge_props].
 
     Reading a key lazily checks sources right-to-left. When a source is a
-    callable (e.g. a signal getter returning a dict), it is called on each
+    callable (e.g., a signal getter returning a dict), it's called on each
     access, so reads inside reactive computations are tracked automatically.
     """
 
@@ -1764,7 +1764,7 @@ def merge_props(*sources: Any) -> "_MergedProps":
     override earlier ones on key conflicts.
 
     The returned object supports dict-like access (`[]`, `.get`, `in`,
-    iteration). When a source is a callable, it is called on each property
+    iteration). When a source is a callable, it's called on each property
     access, so signal reads inside the getter are tracked by the current
     reactive computation.
 
@@ -2010,7 +2010,7 @@ def create_selector(
         source: Zero-arg getter returning the currently-selected key.
 
     Returns:
-        A function `is_selected(key) -> bool` that is reactive to
+        A function `is_selected(key) -> bool` that's reactive to
         selection changes.
 
     Example:

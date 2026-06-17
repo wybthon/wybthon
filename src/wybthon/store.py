@@ -569,7 +569,7 @@ def produce(fn: Callable[..., None]) -> _ProduceResult:
 
     Args:
         fn: A function that mutates the supplied draft. The draft is
-            consumed immediately when applied; do not keep a
+            consumed immediately when applied; don't keep a
             reference past the call.
 
     Returns:

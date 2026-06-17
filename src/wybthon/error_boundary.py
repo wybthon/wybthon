@@ -3,7 +3,7 @@
 [`ErrorBoundary`][wybthon.ErrorBoundary] is a function component that
 installs an error handler on its owner scope. When a child render or
 effect raises, the boundary swaps in a fallback while leaving sibling
-trees untouched. It is the recommended way to surface unexpected
+trees untouched. It's the recommended way to surface unexpected
 errors without crashing the whole app.
 
 See Also:

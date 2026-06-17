@@ -13,6 +13,6 @@
 Notes:
 
 - Wildcard path segment `*` captures the rest of the path into `params["wildcard"]`.
-- Trailing `/*` also matches the base segment; e.g. `/docs/*` matches `/docs` and `/docs/guide`.
+- Trailing `/*` also matches the base segment; e.g., `/docs/*` matches `/docs` and `/docs/guide`.
 - Nested routes use `children` and resolve to the most specific match.
   - `Link` automatically adds an active CSS class (default: `"active"`) when its `href` matches the current pathname. Customize with `class_active`. Use `replace=True` to avoid pushing a new history entry.

@@ -7,7 +7,7 @@ A short tour of how Wybthon thinks. Read this once and the rest of the docs will
 1. **Run-once components.** Function components execute exactly once at mount. They build a virtual DOM tree and return it. The body never re-runs because a prop or signal changed.
 2. **Fine-grained reactivity.** Updates flow through small, isolated subscriptions called *reactive holes*. Only the DOM nodes that depend on a changed signal are patched.
 3. **Props are accessors.** Every prop a component receives is a zero-argument callable. Calling it inside an effect or as a child creates a subscription; reading it inside the body without an effect captures only the current value.
-4. **Ownership tree, not parent re-renders.** Effects, memos, cleanups, and context all attach to the *owner* established when a component is mounted. Disposing the owner cleans everything up; there is no "render cycle" to coordinate.
+4. **Ownership tree, not parent re-renders.** Effects, memos, cleanups, and context all attach to the *owner* established when a component is mounted. Disposing the owner cleans everything up; there's no "render cycle" to coordinate.
 
 ## The data flow
 

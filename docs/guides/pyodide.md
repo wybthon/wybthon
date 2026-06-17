@@ -44,7 +44,7 @@ user = create_resource(lambda: ("u-1",), fetch_user)
 
 ## JavaScript interop tips
 
-- Convert Python collections to JS objects with `pyodide.ffi.to_js(...)` when calling JS APIs that expect plain objects (e.g. `JSON.stringify` or `fetch` request bodies).
+- Convert Python collections to JS objects with `pyodide.ffi.to_js(...)` when calling JS APIs that expect plain objects (e.g., `JSON.stringify` or `fetch` request bodies).
 - Convert JS objects to Python with `.to_py()` (most JS values returned by `await` calls have this method).
 - Wrap Python callbacks in `create_proxy` when handing them to JS APIs that store them long term. Wybthon already does this internally for event handlers and `popstate` listeners, but you'll need to do it manually for direct `addEventListener` calls.
 
@@ -54,7 +54,7 @@ user = create_resource(lambda: ("u-1",), fetch_user)
 
 - Ensure module files exist in the Pyodide filesystem before calling `importlib.import_module`. The demo's `bootstrap.js` copies `examples/demo/app/**` into `/app`, so imports like `"app.about.page"` resolve.
 - For third-party packages, install them with `micropip` before attempting a lazy import.
-- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call [`preload_component()`][wybthon.preload_component] on user intent (e.g. link hover) to warm the import cache.
+- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call [`preload_component()`][wybthon.preload_component] on user intent (e.g., link hover) to warm the import cache.
 - Attribute resolution defaults to `Page` or `default` when unspecified; otherwise pass the export name explicitly.
 
 ```python

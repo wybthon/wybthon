@@ -52,7 +52,7 @@ body, or declare the component with a single positional parameter
 Components are expected to return a [`VNode`][wybthon.VNode]. Use
 [`dynamic`][wybthon.dynamic] for explicit reactive holes when an entire
 subtree needs to swap based on a signal. A callable return is also
-accepted (it is wrapped in a single-root reactive hole) but the
+accepted (it's wrapped in a single-root reactive hole) but the
 canonical style is "return a VNode and embed `dynamic(...)` where you
 need reactive swaps".
 """
@@ -128,7 +128,7 @@ def _make_setup_getter(
     without changing tracking semantics. A warning fires only when **all**
     of the following hold during setup:
 
-    - `in_setup[0]` is True; the component body has not returned yet.
+    - `in_setup[0]` is True; the component body hasn't returned yet.
     - The read is **not** inside [`untrack`][wybthon.untrack] (the
       canonical opt-out).
     - No reactive computation is currently active (i.e., the read is a
