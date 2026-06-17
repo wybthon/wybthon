@@ -21,7 +21,7 @@ Options:
 
 - `--mount /prefix=path`: mount filesystem `path` at the given URL prefix. The longest-prefix match wins.
 - `--open`: open the default browser to the server URL after it starts.
-- `--open-path`: append this path when opening the browser, e.g. `/examples/demo/`.
+- `--open-path`: append this path when opening the browser, e.g., `/examples/demo/`.
 
 #### Advanced usage
 

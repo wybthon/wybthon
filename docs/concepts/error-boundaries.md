@@ -49,7 +49,7 @@ view_keyed = h(
 
 #### on_error hook
 
-Provide `on_error` to observe errors when they are captured by the boundary:
+Provide `on_error` to observe errors when they're captured by the boundary:
 
 ```python
 def on_error(err):

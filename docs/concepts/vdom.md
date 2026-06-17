@@ -46,7 +46,7 @@ Primitives](primitives.md#reactive-holes) for the full mental model.
 
 The VDOM implementation is split into focused modules:
 
-- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `memo()` (browser-agnostic). `Fragment` does not insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `memo()` (browser-agnostic). `Fragment` doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
 - **`reconciler`**: the mount/patch/unmount diffing engine.
 - **`props`**: DOM property application and diffing (styles, events, datasets).
 - **`error_boundary`**: the `ErrorBoundary` component.

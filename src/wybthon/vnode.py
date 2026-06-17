@@ -2,7 +2,7 @@
 
 This module defines the core [`VNode`][wybthon.VNode] type and the
 functions used to build it ([`h`][wybthon.h], [`Fragment`][wybthon.Fragment],
-[`memo`][wybthon.memo], [`dynamic`][wybthon.dynamic]). It is intentionally
+[`memo`][wybthon.memo], [`dynamic`][wybthon.dynamic]). It's intentionally
 free of browser or DOM dependencies, so VNode trees can be constructed
 and inspected anywhere CPython runs.
 
@@ -204,7 +204,7 @@ def is_getter(value: Any) -> bool:
     - Components and providers (marked with `_wyb_component` /
       `_wyb_provider`)
     - `Ref` objects (have a `current` attribute)
-    - Callables that require positional arguments (e.g. event handlers
+    - Callables that require positional arguments (e.g., event handlers
       taking an event object)
 
     Args:
@@ -355,7 +355,7 @@ def memo(
     Because Wybthon component bodies run **once**, `memo` is only useful
     when you want to skip re-mounting on a prop change (for example,
     components with an expensive setup phase). Most ordinary components
-    do not need it; fine-grained holes already minimise DOM work.
+    don't need it; fine-grained holes already minimise DOM work.
 
     Args:
         component: The component callable to memoize.

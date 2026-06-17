@@ -32,11 +32,11 @@ Wybthon is a client-side SPA framework that lets you build interactive web appli
 
 - **Run-once components + reactive holes:** function bodies run a single
   time at mount.  Embed a signal getter anywhere in your VNode tree and
-  the reconciler wires it as a *reactive hole* — only that DOM node
+  the reconciler wires it as a *reactive hole*: only that DOM node
   updates when the signal changes.  No React-style re-renders.
 - **Signals-first reactivity:** Fine-grained updates with `create_signal`,
   `create_effect`, `create_memo`, `batch`, `untrack`, and `on`.
-- **Virtual DOM:** Function components with efficient, batched diffing —
+- **Virtual DOM:** Function components with efficient, batched diffing,
   amortising the Pyodide ↔ JS bridge cost while keeping SolidJS-style
   fine-grained updates above it.
 - **Client-side router:** Path parameters, query parsing, `Link`
@@ -69,7 +69,7 @@ from wybthon import button, component, create_signal, div, p, span
 @component
 def Counter(initial: int = 0):
     count, set_count = create_signal(initial)
-    # The body runs ONCE.  ``count.get`` is a reactive hole — only the
+    # The body runs ONCE.  ``count.get`` is a reactive hole, so only the
     # text node inside the span updates when the signal changes.
     return div(
         p("Count: ", span(count.get)),

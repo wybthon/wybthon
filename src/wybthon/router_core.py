@@ -28,7 +28,7 @@ class RouteSpec:
     """Minimal route spec used for pure-Python resolution in tests and tools.
 
     Attributes:
-        path: Route pattern (e.g. `"/users/:id"`).
+        path: Route pattern (e.g., `"/users/:id"`).
         children: Optional nested routes whose paths are joined with
             this route's `path`.
     """
@@ -49,11 +49,11 @@ def _compile_pattern(path: str) -> Tuple[str, List[str]]:
 
     Patterns may include named params (`:id`), positional wildcards
     (`*`), and a trailing wildcard that also matches the parent path
-    without trailing slash (e.g. `"/docs/*"` matches both `"/docs"`
+    without trailing slash (e.g., `"/docs/*"` matches both `"/docs"`
     and `"/docs/intro"`).
 
     Args:
-        path: Route pattern (e.g. `"/users/:id"`, `"/docs/*"`).
+        path: Route pattern (e.g., `"/users/:id"`, `"/docs/*"`).
 
     Returns:
         A tuple `(regex, names)` where `regex` is the compiled
@@ -98,8 +98,8 @@ def _match_path(pathname: str, pattern: str) -> Optional[Dict[str, str]]:
     """Match `pathname` against `pattern`, returning extracted params.
 
     Args:
-        pathname: Concrete URL path (e.g. `"/users/42"`).
-        pattern: Route pattern (e.g. `"/users/:id"`).
+        pathname: Concrete URL path (e.g., `"/users/42"`).
+        pattern: Route pattern (e.g., `"/users/:id"`).
 
     Returns:
         A dict of captured params on a successful match, or `None`.
@@ -147,7 +147,7 @@ def resolve(routes: List[Any], pathname: str, base_path: str = "") -> Optional[T
             `path` and optional `children`).
         pathname: The current URL pathname.
         base_path: Optional base path stripped from `pathname` before
-            matching. When `pathname` does not start with `base_path`,
+            matching. When `pathname` doesn't start with `base_path`,
             the function returns `None`.
 
     Returns:

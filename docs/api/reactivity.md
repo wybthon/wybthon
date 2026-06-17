@@ -94,7 +94,7 @@ def Greeting(name="world"):
 
 When a component declares a single positional parameter with no
 default, the decorator passes the proxy in directly (proxy mode);
-otherwise each parameter is bound to its own accessor and there is no
+otherwise each parameter is bound to its own accessor and there's no
 need to call `get_props()`.
 
 `ReactiveProps` is read-only; the parent/reconciler updates underlying

@@ -27,7 +27,7 @@ benefit of the fully-reactive component model.  Both mount a `<div>` of
 
 | # | Name | Description | Warmup |
 |---|------|-------------|--------|
-| 10 | hole update (1k tree) | Single signal write inside `batch(...)` updates one reactive hole — the reconciler is **not** re-invoked | 5 |
+| 10 | hole update (1k tree) | Single signal write inside `batch(...)` updates one reactive hole; the reconciler is **not** re-invoked | 5 |
 | 11 | full rerender (1k tree) | The whole tree is re-built and the reconciler diffs its way to the same single text update | 5 |
 
 The "hole update" path is typically several orders of magnitude faster
@@ -35,13 +35,13 @@ than the "full rerender" path on the stubbed DOM, which is the whole
 point of fine-grained reactivity.
 
 Memory measurements (optional):
-- **ready** — baseline after page/module load
-- **run 1k** — after creating 1,000 rows
-- **create/clear 5×** — after 5 cycles of create-then-clear 1,000 rows
+- **ready**: baseline after page/module load
+- **run 1k**: after creating 1,000 rows
+- **create/clear 5×**: after 5 cycles of create-then-clear 1,000 rows
 
 ---
 
-## Quick start — stubbed-DOM benchmark
+## Quick start: stubbed-DOM benchmark
 
 Runs all nine operations against a lightweight DOM stub.
 No browser or Pyodide required.

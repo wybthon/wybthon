@@ -134,7 +134,7 @@ def email(message: str = "Invalid email address") -> Validator:
     "missing" case explicitly).
 
     Args:
-        message: Error message used when the value does not match.
+        message: Error message used when the value doesn't match.
 
     Returns:
         A validator returning `message` on bad input, otherwise
@@ -411,13 +411,13 @@ def rules_from_schema(schema: Dict[str, Dict[str, Any]]) -> Dict[str, List[Valid
 
     Supported per-field keys:
 
-    - `required`: `bool` or `str` (if a string, it is used as the
+    - `required`: `bool` or `str` (if a string, it's used as the
       custom message).
     - `min_length`: `int`. Optional custom message via
       `min_length_message`.
     - `max_length`: `int`. Optional custom message via
       `max_length_message`.
-    - `email`: `bool` or `str` (if a string, it is used as the
+    - `email`: `bool` or `str` (if a string, it's used as the
       custom message).
 
     Args:

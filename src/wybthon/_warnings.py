@@ -136,7 +136,7 @@ def warn_destructured_prop(component: Any, prop_name: str) -> None:
 
     Calling `my_prop()` in the component body **before** returning the
     VNode tree captures the *current* value into the closure, so
-    subsequent parent updates will not propagate. Use the bare
+    subsequent parent updates won't propagate. Use the bare
     accessor inside the tree (`span(my_prop)`) or wrap the dependent
     expression in [`dynamic`][wybthon.dynamic]
     (`span(dynamic(lambda: f"v={my_prop()}"))`) to keep it reactive.
@@ -167,6 +167,6 @@ def warn_each_plain_list(component: Any) -> None:
         "each_plain_list",
         id(component),
         f"{name} received a plain list for `each=`.  Pass a signal accessor "
-        f"(e.g. `each=items` where `items, set_items = create_signal([])`) "
+        f"(e.g., `each=items` where `items, set_items = create_signal([])`) "
         f"so the list reacts to updates.  A static list will only render once.",
     )

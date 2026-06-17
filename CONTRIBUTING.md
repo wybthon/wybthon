@@ -203,7 +203,7 @@ feat(vdom,component): expose keyed fragments; adapt component mount flow
   - Prefer one primary scope; use comma-separated scopes only when necessary.
 - **PR description**: include brief sections: What, Why, How (brief), Testing, Risks/Impact, Docs/Follow-ups.
   - Link issues with keywords (e.g., `Closes #123`).
-- **Merging**: prefer “Squash and merge” with “Pull request title and description”.
+- **Merging**: prefer "Squash and merge" with "Pull request title and description".
 - Keep PRs focused; avoid unrelated changes in the same PR.
 
 Conventional Commits applies to the subject line (your PR title) and optional footers. The PR body is free-form; when squashing, it becomes the commit body. Place any footers at the bottom of the description.
@@ -259,7 +259,7 @@ Co-authored-by: Name <email>
 - **Draft / published toggle**: the `DRAFT_RELEASE` variable at the top of `.github/workflows/release.yml` controls release mode. Set to `"true"` (the default) for draft GitHub Releases with PyPI publishing skipped; flip to `"false"` to publish releases and upload to PyPI immediately.
 - Commit types that trigger a release: `feat` (minor), `fix` and `perf` (patch), `BREAKING CHANGE` (major). All other types (`build`, `chore`, `ci`, `docs`, `refactor`, `revert`, `style`, `test`) are recorded in the changelog but do **not** trigger a release on their own.
 - Tag format: `v`-prefixed (e.g., `v0.9.0`).
-- Manual version bumps are no longer needed — just merge PRs with valid Conventional Commit titles. For ad-hoc runs, use the workflow's **Run workflow** button (`workflow_dispatch`).
+- Manual version bumps are no longer needed; just merge PRs with valid Conventional Commit titles. For ad-hoc runs, use the workflow's **Run workflow** button (`workflow_dispatch`).
 
 ### Branching rules
 
@@ -302,9 +302,9 @@ fix/dom-event-delegation
 
 ## Security and provenance
 
-- Do not commit secrets or credentials.
+- Don't commit secrets or credentials.
 - Keep browser examples safe-by-default; avoid remote code execution patterns.
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the repository’s MIT License.
+By contributing, you agree that your contributions are licensed under the repository's MIT License.

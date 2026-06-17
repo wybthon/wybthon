@@ -124,7 +124,7 @@ class Route:
     """Declarative route definition mapping a path to a component.
 
     Attributes:
-        path: Route pattern (e.g. `"/users/:id"`, `"/docs/*"`).
+        path: Route pattern (e.g., `"/users/:id"`, `"/docs/*"`).
         component: A function component or class to render when the
             path matches.
         children: Optional nested routes whose paths are joined with

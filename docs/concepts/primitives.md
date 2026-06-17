@@ -183,7 +183,7 @@ def Counter(initial=0):
 ```
 
 `untrack` also suppresses dev-mode warnings about destructured prop
-access; it is the explicit "I know what I'm doing" escape hatch.
+access; it's the explicit "I know what I'm doing" escape hatch.
 
 ---
 

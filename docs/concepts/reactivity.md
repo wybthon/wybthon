@@ -46,7 +46,7 @@ on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
 `merge_props(*sources)` merges multiple prop sources into a **reactive
 proxy**.  Each source may be a plain dict or a callable getter (e.g., a
 signal accessor that returns a dict).  Reads on the proxy are lazy:
-when a source is callable, it is called on each property access, so
+when a source is callable, it's called on each property access, so
 signal reads inside a reactive computation are tracked automatically.
 
 ```python
@@ -147,10 +147,10 @@ Every reactive computation belongs to an **ownership tree** (inspired by
 SolidJS).  Two base classes form the hierarchy:
 
 - `Owner`: tracks child owners and cleanup callbacks.
-- `Computation(Owner)`: a reactive computation that is also an ownership scope.
+- `Computation(Owner)`: a reactive computation that's also an ownership scope.
 
-When a new effect or memo is created, it is automatically registered as a
-child of `_current_owner`, the owner that is active at the time of
+When a new effect or memo is created, it's automatically registered as a
+child of `_current_owner`, the owner that's active at the time of
 creation.  This forms a tree:
 
 ```
@@ -192,7 +192,7 @@ are children of that hole's effect.
 | **Setup** (component body, before `return`) | `_ComponentContext` | Component unmounts |
 | **Reactive hole** (inside a hole getter or a child it created) | Hole's `Computation` | Next hole re-run or unmount |
 
-Setup effects survive across hole re-runs because they are not children
+Setup effects survive across hole re-runs because they aren't children
 of any hole.  Effects created inside a hole are torn down every time
 the hole re-runs (so their `on_cleanup` callbacks fire).
 

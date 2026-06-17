@@ -25,7 +25,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** an unresolved cross-reference (for example a typo in a `[label][wybthon.symbol]` link) or an unused `nav` entry.
 
-    **Fix:** read the warning text. `mkdocstrings` reports the exact symbol it could not find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.
+    **Fix:** read the warning text. `mkdocstrings` reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.
 
 ## Reactive bugs
 
@@ -65,7 +65,7 @@ If something isn't working as expected, scan this page for the symptom you're se
     - The element is covered by another element with `pointer-events: auto`.
     - The handler returns a coroutine without scheduling it; nothing happens but no error is raised.
 
-    **Fix:** confirm the prop name (Wybthon does not coerce `onclick` to `on_click`), inspect the DOM tree for overlays, and ensure async handlers are scheduled with `asyncio.create_task(...)` if they should run.
+    **Fix:** confirm the prop name (Wybthon doesn't coerce `onclick` to `on_click`), inspect the DOM tree for overlays, and ensure async handlers are scheduled with `asyncio.create_task(...)` if they should run.
 
 ??? bug "`ref.current` is `None` when I read it"
 
@@ -98,7 +98,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
 - Re-run `python -m pytest` to confirm the framework itself still works in your environment.
 - Capture a minimal reproduction (preferably under `examples/`) and [open an issue](https://github.com/wybthon/wybthon/issues/new).
-- Toggle `set_dev_mode(False)` (from `wybthon._warnings`) only after you've confirmed the warnings are not pointing at a real bug.
+- Toggle `set_dev_mode(False)` (from `wybthon._warnings`) only after you've confirmed the warnings aren't pointing at a real bug.
 
 ## Next steps
 

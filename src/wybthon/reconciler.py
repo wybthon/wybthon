@@ -58,13 +58,13 @@ def _dispatch_to_error_boundary(exc: BaseException) -> bool:
 
     Walks the active ownership chain (from the current owner upward) looking
     for the first scope that has an ``_error_handler`` installed by
-    :func:`wybthon.error_boundary.ErrorBoundary`. If one is found it is
+    :func:`wybthon.error_boundary.ErrorBoundary`. If one is found it's
     invoked (which swaps in the boundary's fallback on the next flush) and
     this returns ``True``. When no boundary exists it returns ``False`` so
     the caller can log and swallow the error as before.
 
     This is what makes ``ErrorBoundary`` catch *synchronous* errors thrown
-    while mounting descendant components or evaluating reactive holes -- the
+    while mounting descendant components or evaluating reactive holes; the
     reconciler's defensive ``try``/``except`` sites would otherwise swallow
     them before they could reach a boundary.
     """
@@ -302,9 +302,9 @@ def _mount_dynamic(vnode: VNode, container: Element, anchor: Any = None) -> Elem
 def _patch_dynamic(old: VNode, new: VNode, container: Element) -> None:
     """Patch one reactive hole against another.
 
-    If the getter object is the same instance, no work is needed -- the
+    If the getter object is the same instance, no work is needed; the
     existing effect already tracks the same dependencies and will fire
-    on its own.  If the getter changed (e.g. a parent re-rendered with
+    on its own.  If the getter changed (e.g., a parent re-rendered with
     a new lambda), dispose the old effect and install a new one,
     re-using the existing end-anchor and any currently-mounted subtree.
     """
@@ -543,7 +543,7 @@ def _normalize_component_result(result: Any, ctx: _ComponentContext, comp_fn: An
 def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     """Patch a function component: update props on the existing context.
 
-    Components do not re-render on patch -- the existing reactive props
+    Components don't re-render on patch; the existing reactive props
     proxy is updated in place, and any reactive holes inside the
     subtree that read those props will re-fire automatically.
     """

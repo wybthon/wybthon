@@ -61,7 +61,7 @@ Root Owner
 
 This ownership-based lookup means context is available at any point
 during a component's lifecycle (setup phase, render function, or
-inside effects) as long as the code runs under an owner that is a
+inside effects) as long as the code runs under an owner that's a
 descendant of the provider.
 
 #### Provider scoping

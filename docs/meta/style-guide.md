@@ -114,7 +114,7 @@ class Resource(Generic[R]):
 ```
 
 The class summary describes the type's purpose. Document construction in
-`__init__` only when there is more to say than the signature already conveys
+`__init__` only when there's more to say than the signature already conveys
 (set `merge_init_into_class: true` in mkdocstrings; already configured).
 
 ### Module

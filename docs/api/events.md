@@ -43,15 +43,15 @@ You can attach handlers for any standard DOM event that bubbles. Commonly used t
 - Composition/IME: `compositionstart`, `compositionupdate`, `compositionend`
 - Drag and drop: `dragstart`, `dragend`, `dragenter`, `dragleave`, `dragover`, `drop`
 
-Wybthon does not restrict event type names; if the browser fires it and it bubbles, the delegated listener will see it.
+Wybthon doesn't restrict event type names; if the browser fires it and it bubbles, the delegated listener will see it.
 
 #### Non-bubbling and special-case events
 
-Because Wybthon uses document-level delegation, event types that do not bubble will not trigger handlers when attached via props. Use the suggested alternatives or attach a direct listener via `wybthon.dom.Element.on` using a `Ref`.
+Because Wybthon uses document-level delegation, event types that don't bubble won't trigger handlers when attached via props. Use the suggested alternatives or attach a direct listener via `wybthon.dom.Element.on` using a `Ref`.
 
-- Use `focusin`/`focusout` instead of `focus`/`blur` (which do not bubble).
-- Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave` (which do not bubble).
-- Many media events (e.g., `play`, `pause`) and `scroll` do not bubble; attach direct listeners to the element or use `window`/`document` as appropriate.
+- Use `focusin`/`focusout` instead of `focus`/`blur` (which don't bubble).
+- Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave` (which don't bubble).
+- Many media events (e.g., `play`, `pause`) and `scroll` don't bubble; attach direct listeners to the element or use `window`/`document` as appropriate.
 
 Direct listeners example (when you need non-bubbling events or options like `passive`: False):
 

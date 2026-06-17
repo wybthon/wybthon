@@ -79,10 +79,10 @@ def _event_prop_to_type(name: str) -> str:
     """Normalize a prop name like `on_click` or `onClick` to a plain event type.
 
     Args:
-        name: Prop key as seen on a `VNode` (e.g. `"on_click"`).
+        name: Prop key as seen on a `VNode` (e.g., `"on_click"`).
 
     Returns:
-        The lower-cased event type (e.g. `"click"`).
+        The lower-cased event type (e.g., `"click"`).
     """
     if name.startswith("on_"):
         return name[3:]
@@ -95,7 +95,7 @@ class DomEvent:
     """Thin wrapper around a JS event with convenience helpers.
 
     Attributes:
-        type: Event type string (e.g. `"click"`).
+        type: Event type string (e.g., `"click"`).
         target: The original event target as an
             [`Element`][wybthon.Element], or `None` if unavailable.
         current_target: The currently-dispatched element while
@@ -128,7 +128,7 @@ class DomEvent:
 
         Sets an internal flag that causes Wybthon's dispatcher to stop
         walking the DOM ancestors, and also calls the native
-        `stopPropagation` so other JS listeners do not fire.
+        `stopPropagation` so other JS listeners don't fire.
         """
         self._stopped = True
         try:

@@ -2,7 +2,7 @@
 
 Wybthon doesn't have lifecycle methods in the React sense. Instead, every component creates an *owner*, and effects, memos, signals, context lookups, and cleanups attach to that owner. Disposing the owner cleans them all up.
 
-This page explains what an owner is, when it is created, and how mount/unmount/cleanup hooks fit into the model.
+This page explains what an owner is, when it's created, and how mount/unmount/cleanup hooks fit into the model.
 
 ## The ownership tree
 

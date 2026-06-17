@@ -30,7 +30,7 @@ class Context:
 
     Returned by [`create_context`][wybthon.create_context]. Treat the
     object as opaque: pass it to a [`Provider`][wybthon.Provider] and
-    to [`use_context`][wybthon.use_context] but do not rely on its
+    to [`use_context`][wybthon.use_context] but don't rely on its
     fields.
 
     Attributes:

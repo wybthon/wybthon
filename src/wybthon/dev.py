@@ -81,7 +81,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
             `GET /__manifest?dir=examples/demo/app`
 
         The response is a sorted list of paths relative to the
-        requested directory (e.g. `["app/__init__.py",
+        requested directory (e.g., `["app/__init__.py",
         "app/main.py"]`). Bootstrap scripts can fetch this list to
         discover modules without maintaining a hardcoded manifest.
 
@@ -384,7 +384,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Mount additional static paths as /prefix=path. Can be repeated.",
     )
     pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
-    pdev.add_argument("--open-path", default=None, help="Path to open (e.g. /examples/demo/)")
+    pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /examples/demo/)")
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":
