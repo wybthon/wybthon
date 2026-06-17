@@ -2888,7 +2888,7 @@ annotations work as you would expect:</p>
 <li>Wrap it with <a href="../primitives/#untrack"><code>untrack</code></a> to read once
   without subscribing, which is useful for seeding local state from a prop.</li>
 </ul>
-<p>The body of an <code>@component</code> runs <strong>once</strong> per mount.  There is no
+<p>The body of an <code>@component</code> runs <strong>once</strong> per mount.  There's no
 re-render: the only things that update later are the holes embedded
 in the tree.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">untrack</span>
@@ -2906,7 +2906,7 @@ in the tree.</p>
 </span></code></pre></div>
 <p><code>count</code> is a zero-arg accessor.  When you place it in the VNode
 tree, the reconciler wraps it in its own effect so only that text
-node updates; the surrounding component body does not re-run.</p>
+node updates; the surrounding component body doesn't re-run.</p>
 <h5 id="static-or-getter-same-call-site">Static or getter, same call site<a class="headerlink" href="#static-or-getter-same-call-site" title="Permanent link">&para;</a></h5>
 <p>A child component never has to care whether the parent passed a
 constant or a signal; both are unwrapped uniformly:</p>
@@ -3010,7 +3010,7 @@ component's setup phase, including the per-hole effects.</p>
 </span></code></pre></div>
 <p><strong>Setup effects</strong> (created in the component body, before <code>return</code>) and
 <strong>reactive hole effects</strong> are both owned by the <code>_ComponentContext</code>.
-They are disposed when the component unmounts.</p>
+They're disposed when the component unmounts.</p>
 <p>When a hole returns a sub-tree containing further effects (for
 example a hole returning a VNode that contains its own holes), the
 inner effects are owned by the hole's effect.  When the hole re-runs,
@@ -3053,7 +3053,7 @@ component decorator catches the most common reactive footguns:</p>
 <code>untrack(...)</code> call, so you can opt out explicitly when the static
 behaviour is intentional.</p>
 <h4 id="fragment">Fragment<a class="headerlink" href="#fragment" title="Permanent link">&para;</a></h4>
-<p>Use <code>Fragment</code> to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses <strong>empty comment nodes</strong> as start/end markers (not a <code>display: contents</code> wrapper), so fragments do not pollute the DOM or break CSS selectors that expect a certain element structure.</p>
+<p>Use <code>Fragment</code> to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses <strong>empty comment nodes</strong> as start/end markers (not a <code>display: contents</code> wrapper), so fragments don't pollute the DOM or break CSS selectors that expect a certain element structure.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nd">@component</span>
@@ -3065,7 +3065,7 @@ behaviour is intentional.</p>
 </span></code></pre></div>
 <h4 id="memo"><code>memo</code><a class="headerlink" href="#memo" title="Permanent link">&para;</a></h4>
 <p>Wrap a function component with <code>memo</code> to skip re-mounts when its props
-have not changed (shallow identity comparison by default):</p>
+haven't changed (shallow identity comparison by default):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">memo</span><span class="p">,</span> <span class="n">h</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="nd">@component</span>
@@ -3083,7 +3083,7 @@ have not changed (shallow identity comparison by default):</p>
 <p>Because props are reactive and the body runs once, <code>memo</code> is only
 useful when you want to <strong>skip re-mounting</strong> the component on a
 prop change (for example, an expensive setup phase). Most ordinary
-components do not need it.</p>
+components don't need it.</p>
 </div>
 <h4 id="forward_ref"><code>forward_ref</code><a class="headerlink" href="#forward_ref" title="Permanent link">&para;</a></h4>
 <p>Use <code>forward_ref</code> to create a component that can receive a <code>ref</code> prop

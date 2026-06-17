@@ -6472,8 +6472,8 @@ via the internal <code>_update</code> method.</p>
     <div class="doc doc-contents ">
 
         <p>Return the current value for <code>key</code> (tracked, with auto-unwrap).</p>
-<p>If the stored prop value is a getter, it is invoked and the result
-returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
+<p>If the stored prop value is a getter, it's invoked and the result
+returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it's
 returned when <code>key</code> is absent from both the props dict and the
 component's parameter defaults.</p>
 
@@ -6678,7 +6678,7 @@ missing.</p>
     <div class="doc doc-contents ">
 
         <p>Return the prop names currently set on this instance.</p>
-<p>The result reflects the latest props pushed into the proxy (it is
+<p>The result reflects the latest props pushed into the proxy (it's
 not tracked as a reactive read).</p>
 
 
@@ -8198,7 +8198,7 @@ if a key appears in both).</p>
             <td>
               <div class="doc-md-description">
                 <p>Pass <code>True</code> to ensure the class is added, <code>False</code>
-to ensure it is removed; <code>None</code> toggles based on the
+to ensure it's removed; <code>None</code> toggles based on the
 current state.</p>
               </div>
             </td>
@@ -8274,7 +8274,7 @@ a Pyodide proxy so it can be released on removal.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>DOM event name (e.g. <code>"click"</code>, <code>"input"</code>).</p>
+                <p>DOM event name (e.g., <code>"click"</code>, <code>"input"</code>).</p>
               </div>
             </td>
             <td>
@@ -8307,7 +8307,7 @@ a Pyodide proxy so it can be released on removal.</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional <code>addEventListener</code> options
-(e.g. <code>{"capture": True}</code>).</p>
+(e.g., <code>{"capture": True}</code>).</p>
               </div>
             </td>
             <td>
@@ -8776,7 +8776,7 @@ is reset to <code>None</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Event type string (e.g. <code>"click"</code>).</p>
+                <p>Event type string (e.g., <code>"click"</code>).</p>
               </div>
             </td>
           </tr>
@@ -8931,7 +8931,7 @@ dispatcher.</p>
         <p>Stop propagation through both the JS and the delegated chains.</p>
 <p>Sets an internal flag that causes Wybthon's dispatcher to stop
 walking the DOM ancestors, and also calls the native
-<code>stopPropagation</code> so other JS listeners do not fire.</p>
+<code>stopPropagation</code> so other JS listeners don't fire.</p>
 
 
     </div>
@@ -8986,7 +8986,7 @@ walking the DOM ancestors, and also calls the native
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Route pattern (e.g. <code>"/users/:id"</code>, <code>"/docs/*"</code>).</p>
+                <p>Route pattern (e.g., <code>"/users/:id"</code>, <code>"/docs/*"</code>).</p>
               </div>
             </td>
           </tr>
@@ -9074,7 +9074,7 @@ this route's <code>path</code>.</p>
         <p>Opaque context identifier paired with a default value.</p>
 <p>Returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_context&lt;/span&gt;" href="#wybthon.create_context"><code>create_context</code></a>. Treat the
 object as opaque: pass it to a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Provider&lt;/span&gt;" href="#wybthon.Provider"><code>Provider</code></a> and
-to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_context&lt;/span&gt;" href="#wybthon.use_context"><code>use_context</code></a> but do not rely on its
+to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_context&lt;/span&gt;" href="#wybthon.use_context"><code>use_context</code></a> but don't rely on its
 fields.</p>
 
 
@@ -9778,7 +9778,7 @@ be combined with <a class="autorefs autorefs-internal" title="&lt;code class=&qu
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Error message used when the value does not match.</p>
+                <p>Error message used when the value doesn't match.</p>
               </div>
             </td>
             <td>
@@ -10551,13 +10551,13 @@ blank.</p>
         <p>Build a validators map from a small declarative schema.</p>
 <p>Supported per-field keys:</p>
 <ul>
-<li><code>required</code>: <code>bool</code> or <code>str</code> (if a string, it is used as the
+<li><code>required</code>: <code>bool</code> or <code>str</code> (if a string, it's used as the
   custom message).</li>
 <li><code>min_length</code>: <code>int</code>. Optional custom message via
   <code>min_length_message</code>.</li>
 <li><code>max_length</code>: <code>int</code>. Optional custom message via
   <code>max_length_message</code>.</li>
-<li><code>email</code>: <code>bool</code> or <code>str</code> (if a string, it is used as the
+<li><code>email</code>: <code>bool</code> or <code>str</code> (if a string, it's used as the
   custom message).</li>
 </ul>
 
@@ -11093,7 +11093,7 @@ manager.</p>
     <div class="doc doc-contents ">
 
         <p>Resolve and memoize reactive children, returning a memo getter.</p>
-<p>Wraps a getter that returns children (e.g. <code>lambda: props.children()</code>)
+<p>Wraps a getter that returns children (e.g., <code>lambda: props.children()</code>)
 and returns a memo that flattens nested lists and unwraps callables.
 Matches SolidJS's <code>children()</code> helper.</p>
 
@@ -11498,7 +11498,7 @@ source getter.</p>
     <div class="doc doc-contents ">
 
         <p>Run <code>fn</code> inside an independent reactive root.</p>
-<p>Useful for spawning long-lived reactive work that should not be tied
+<p>Useful for spawning long-lived reactive work that shouldn't be tied
 to the surrounding component's lifecycle (e.g., global stores).</p>
 
 
@@ -11632,7 +11632,7 @@ notified, instead of every subscriber re-running.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A function <code>is_selected(key) -&gt; bool</code> that is reactive to</p>
+                <p>A function <code>is_selected(key) -&gt; bool</code> that's reactive to</p>
               </div>
             </td>
           </tr>
@@ -11680,7 +11680,7 @@ notified, instead of every subscriber re-running.</p>
         <p>Create a reactive signal and return <code>(getter, setter)</code>.</p>
 <p>Works inside or outside components. Inside a stateful component the
 signal is captured by the render function's closure and persists
-naturally; there is no cursor system or "rules of hooks".</p>
+naturally; there's no cursor system or "rules of hooks".</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11805,7 +11805,7 @@ Accepts:</p>
     <div class="doc doc-contents ">
 
         <p>Return the current reactive owner scope, if any.</p>
-<p>Capture the owner before crossing async boundaries (e.g. <code>await</code>) and
+<p>Capture the owner before crossing async boundaries (e.g., <code>await</code>) and
 restore it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run_with_owner&lt;/span&gt;" href="#wybthon.run_with_owner"><code>run_with_owner</code></a> to maintain
 proper lifecycle management.</p>
 
@@ -12167,7 +12167,7 @@ returns its current position.</p>
 dict, or another <code>_MergedProps</code> / <code>_SplitProps</code>. Later sources
 override earlier ones on key conflicts.</p>
 <p>The returned object supports dict-like access (<code>[]</code>, <code>.get</code>, <code>in</code>,
-iteration). When a source is a callable, it is called on each property
+iteration). When a source is a callable, it's called on each property
 access, so signal reads inside the getter are tracked by the current
 reactive computation.</p>
 
@@ -12993,7 +12993,7 @@ store setter created by <a class="autorefs autorefs-internal" title="&lt;code cl
             <td>
               <div class="doc-md-description">
                 <p>A function that mutates the supplied draft. The draft is
-consumed immediately when applied; do not keep a
+consumed immediately when applied; don't keep a
 reference past the call.</p>
               </div>
             </td>
@@ -13375,7 +13375,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <li>Components and providers (marked with <code>_wyb_component</code> /
   <code>_wyb_provider</code>)</li>
 <li><code>Ref</code> objects (have a <code>current</code> attribute)</li>
-<li>Callables that require positional arguments (e.g. event handlers
+<li>Callables that require positional arguments (e.g., event handlers
   taking an event object)</li>
 </ul>
 
@@ -13455,7 +13455,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it; fine-grained holes already minimise DOM work.</p>
+don't need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

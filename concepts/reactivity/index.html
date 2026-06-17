@@ -2850,7 +2850,7 @@ tracking.  The body of <code>fn</code> is automatically untracked:</p>
 <p><code>merge_props(*sources)</code> merges multiple prop sources into a <strong>reactive
 proxy</strong>.  Each source may be a plain dict or a callable getter (e.g., a
 signal accessor that returns a dict).  Reads on the proxy are lazy:
-when a source is callable, it is called on each property access, so
+when a source is callable, it's called on each property access, so
 signal reads inside a reactive computation are tracked automatically.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_props</span><span class="p">,</span> <span class="n">create_signal</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
@@ -2926,10 +2926,10 @@ Only computations that called <code>is_selected()</code> with the <em>previous</
 SolidJS).  Two base classes form the hierarchy:</p>
 <ul>
 <li><code>Owner</code>: tracks child owners and cleanup callbacks.</li>
-<li><code>Computation(Owner)</code>: a reactive computation that is also an ownership scope.</li>
+<li><code>Computation(Owner)</code>: a reactive computation that's also an ownership scope.</li>
 </ul>
-<p>When a new effect or memo is created, it is automatically registered as a
-child of <code>_current_owner</code>, the owner that is active at the time of
+<p>When a new effect or memo is created, it's automatically registered as a
+child of <code>_current_owner</code>, the owner that's active at the time of
 creation.  This forms a tree:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Root Owner
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>├── ComponentContext (MyApp)
@@ -2979,7 +2979,7 @@ are children of that hole's effect.</p>
 </tr>
 </tbody>
 </table>
-<p>Setup effects survive across hole re-runs because they are not children
+<p>Setup effects survive across hole re-runs because they aren't children
 of any hole.  Effects created inside a hole are torn down every time
 the hole re-runs (so their <code>on_cleanup</code> callbacks fire).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">,</span> <span class="n">p</span>

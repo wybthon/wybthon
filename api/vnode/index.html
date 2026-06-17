@@ -2952,7 +2952,7 @@
         <p>Virtual node data structure and tree-building helpers.</p>
 <p>This module defines the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> type and the
 functions used to build it (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a>,
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;memo&lt;/span&gt;" href="../wybthon/#wybthon.memo"><code>memo</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>). It is intentionally
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;memo&lt;/span&gt;" href="../wybthon/#wybthon.memo"><code>memo</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>). It's intentionally
 free of browser or DOM dependencies, so VNode trees can be constructed
 and inspected anywhere CPython runs.</p>
 <p>A <code>_dynamic</code> VNode (created via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a> or implicitly
@@ -3385,7 +3385,7 @@ trigger re-evaluation.</p>
 <li>Components and providers (marked with <code>_wyb_component</code> /
   <code>_wyb_provider</code>)</li>
 <li><code>Ref</code> objects (have a <code>current</code> attribute)</li>
-<li>Callables that require positional arguments (e.g. event handlers
+<li>Callables that require positional arguments (e.g., event handlers
   taking an event object)</li>
 </ul>
 
@@ -3774,7 +3774,7 @@ single dict containing a <code>children</code> key (the form used when
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it; fine-grained holes already minimise DOM work.</p>
+don't need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

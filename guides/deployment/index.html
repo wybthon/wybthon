@@ -2761,7 +2761,7 @@
 
 
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
-<p>Wybthon apps run entirely in the browser, so deployment is just <em>static hosting</em>. There is no Python server, no Node build step, and nothing to keep online beyond the HTML, JavaScript, and Python files you serve.</p>
+<p>Wybthon apps run entirely in the browser, so deployment is just <em>static hosting</em>. There's no Python server, no Node build step, and nothing to keep online beyond the HTML, JavaScript, and Python files you serve.</p>
 <h2 id="checklist">Checklist<a class="headerlink" href="#checklist" title="Permanent link">&para;</a></h2>
 <p>Before you ship:</p>
 <ul>
@@ -2841,7 +2841,7 @@
 <h2 id="production-tuning">Production tuning<a class="headerlink" href="#production-tuning" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Pre-compress assets.</strong> Pre-build <code>.gz</code> and <code>.br</code> versions of <code>index.html</code> and your application files; most CDNs serve them automatically.</li>
-<li><strong>Pin Pyodide's version.</strong> Wybthon does not ship Pyodide; reference the version you tested against from a CDN or self-host so users get the same runtime.</li>
+<li><strong>Pin Pyodide's version.</strong> Wybthon doesn't ship Pyodide; reference the version you tested against from a CDN or self-host so users get the same runtime.</li>
 <li><strong>Use <code>set_dev_mode(False)</code></strong> (from <code>wybthon._warnings</code>) at startup in production builds to silence development warnings and skip optional bookkeeping.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

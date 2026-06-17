@@ -4829,8 +4829,8 @@ via the internal <code>_update</code> method.</p>
     <div class="doc doc-contents ">
 
         <p>Return the current value for <code>key</code> (tracked, with auto-unwrap).</p>
-<p>If the stored prop value is a getter, it is invoked and the result
-returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it is
+<p>If the stored prop value is a getter, it's invoked and the result
+returned, mirroring <code>_make_getter</code>. If <code>default</code> is provided, it's
 returned when <code>key</code> is absent from both the props dict and the
 component's parameter defaults.</p>
 
@@ -5035,7 +5035,7 @@ missing.</p>
     <div class="doc doc-contents ">
 
         <p>Return the prop names currently set on this instance.</p>
-<p>The result reflects the latest props pushed into the proxy (it is
+<p>The result reflects the latest props pushed into the proxy (it's
 not tracked as a reactive read).</p>
 
 
@@ -5491,7 +5491,7 @@ behavior of <code>ReactiveProps.value</code>.</p>
 
         <p>Return the list of prop keys present on <code>props</code>.</p>
 <p>Same uniform shim as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;read_prop&lt;/span&gt;" href="#wybthon.reactivity.read_prop"><code>read_prop</code></a> for
-components that iterate over an unknown prop bag (e.g. <code>Link</code>
+components that iterate over an unknown prop bag (e.g., <code>Link</code>
 forwarding extra attributes onto the rendered <code>&lt;a&gt;</code>).</p>
 
 
@@ -5541,7 +5541,7 @@ forwarding extra attributes onto the rendered <code>&lt;a&gt;</code>).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A list of present keys, or an empty list when <code>props</code> is not</p>
+                <p>A list of present keys, or an empty list when <code>props</code> isn't</p>
               </div>
             </td>
           </tr>
@@ -6108,7 +6108,7 @@ source getter.</p>
     <div class="doc doc-contents ">
 
         <p>Return the current reactive owner scope, if any.</p>
-<p>Capture the owner before crossing async boundaries (e.g. <code>await</code>) and
+<p>Capture the owner before crossing async boundaries (e.g., <code>await</code>) and
 restore it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run_with_owner&lt;/span&gt;" href="../wybthon/#wybthon.run_with_owner"><code>run_with_owner</code></a> to maintain
 proper lifecycle management.</p>
 
@@ -6268,7 +6268,7 @@ to disable ownership tracking entirely.</p>
         <p>Create a reactive signal and return <code>(getter, setter)</code>.</p>
 <p>Works inside or outside components. Inside a stateful component the
 signal is captured by the render function's closure and persists
-naturally; there is no cursor system or "rules of hooks".</p>
+naturally; there's no cursor system or "rules of hooks".</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6744,7 +6744,7 @@ component, the underlying computation is disposed on unmount.</p>
     <div class="doc doc-contents ">
 
         <p>Resolve and memoize reactive children, returning a memo getter.</p>
-<p>Wraps a getter that returns children (e.g. <code>lambda: props.children()</code>)
+<p>Wraps a getter that returns children (e.g., <code>lambda: props.children()</code>)
 and returns a memo that flattens nested lists and unwraps callables.
 Matches SolidJS's <code>children()</code> helper.</p>
 
@@ -7035,7 +7035,7 @@ on subsequent changes, not the initial read).</p>
     <div class="doc doc-contents ">
 
         <p>Run <code>fn</code> inside an independent reactive root.</p>
-<p>Useful for spawning long-lived reactive work that should not be tied
+<p>Useful for spawning long-lived reactive work that shouldn't be tied
 to the surrounding component's lifecycle (e.g., global stores).</p>
 
 
@@ -7122,7 +7122,7 @@ tears down the root and any effects created inside it.</p>
 dict, or another <code>_MergedProps</code> / <code>_SplitProps</code>. Later sources
 override earlier ones on key conflicts.</p>
 <p>The returned object supports dict-like access (<code>[]</code>, <code>.get</code>, <code>in</code>,
-iteration). When a source is a callable, it is called on each property
+iteration). When a source is a callable, it's called on each property
 access, so signal reads inside the getter are tracked by the current
 reactive computation.</p>
 
@@ -7604,7 +7604,7 @@ notified, instead of every subscriber re-running.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A function <code>is_selected(key) -&gt; bool</code> that is reactive to</p>
+                <p>A function <code>is_selected(key) -&gt; bool</code> that's reactive to</p>
               </div>
             </td>
           </tr>
@@ -7773,7 +7773,7 @@ every prop:</p>
 </span></code></pre></div>
 <p>When a component declares a single positional parameter with no
 default, the decorator passes the proxy in directly (proxy mode);
-otherwise each parameter is bound to its own accessor and there is no
+otherwise each parameter is bound to its own accessor and there's no
 need to call <code>get_props()</code>.</p>
 <p><code>ReactiveProps</code> is read-only; the parent/reconciler updates underlying
 values.  When a parent passes a getter (e.g., <code>name=my_signal</code>), the

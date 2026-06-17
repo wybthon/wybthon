@@ -2789,7 +2789,7 @@
 <li><strong>Run-once components.</strong> Function components execute exactly once at mount. They build a virtual DOM tree and return it. The body never re-runs because a prop or signal changed.</li>
 <li><strong>Fine-grained reactivity.</strong> Updates flow through small, isolated subscriptions called <em>reactive holes</em>. Only the DOM nodes that depend on a changed signal are patched.</li>
 <li><strong>Props are accessors.</strong> Every prop a component receives is a zero-argument callable. Calling it inside an effect or as a child creates a subscription; reading it inside the body without an effect captures only the current value.</li>
-<li><strong>Ownership tree, not parent re-renders.</strong> Effects, memos, cleanups, and context all attach to the <em>owner</em> established when a component is mounted. Disposing the owner cleans everything up; there is no "render cycle" to coordinate.</li>
+<li><strong>Ownership tree, not parent re-renders.</strong> Effects, memos, cleanups, and context all attach to the <em>owner</em> established when a component is mounted. Disposing the owner cleans everything up; there's no "render cycle" to coordinate.</li>
 </ol>
 <h2 id="the-data-flow">The data flow<a class="headerlink" href="#the-data-flow" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart LR

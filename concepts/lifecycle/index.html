@@ -2784,7 +2784,7 @@
 
 <h1 id="lifecycle-and-ownership">Lifecycle and Ownership<a class="headerlink" href="#lifecycle-and-ownership" title="Permanent link">&para;</a></h1>
 <p>Wybthon doesn't have lifecycle methods in the React sense. Instead, every component creates an <em>owner</em>, and effects, memos, signals, context lookups, and cleanups attach to that owner. Disposing the owner cleans them all up.</p>
-<p>This page explains what an owner is, when it is created, and how mount/unmount/cleanup hooks fit into the model.</p>
+<p>This page explains what an owner is, when it's created, and how mount/unmount/cleanup hooks fit into the model.</p>
 <h2 id="the-ownership-tree">The ownership tree<a class="headerlink" href="#the-ownership-tree" title="Permanent link">&para;</a></h2>
 <p>When a component mounts, the framework pushes a fresh owner onto the active stack. Anything created during the body (effects, memos, child components) attaches to that owner. When the parent unmounts, the framework walks the tree disposing owners depth-first.</p>
 <pre class="mermaid"><code>flowchart TD

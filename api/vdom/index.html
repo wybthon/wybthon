@@ -4590,7 +4590,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <li>Components and providers (marked with <code>_wyb_component</code> /
   <code>_wyb_provider</code>)</li>
 <li><code>Ref</code> objects (have a <code>current</code> attribute)</li>
-<li>Callables that require positional arguments (e.g. event handlers
+<li>Callables that require positional arguments (e.g., event handlers
   taking an event object)</li>
 </ul>
 
@@ -4670,7 +4670,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
 <p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
 when you want to skip re-mounting on a prop change (for example,
 components with an expensive setup phase). Most ordinary components
-do not need it; fine-grained holes already minimise DOM work.</p>
+don't need it; fine-grained holes already minimise DOM work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4871,7 +4871,7 @@ across every key.</p>
 <p><code>ErrorBoundary</code> catches render errors from its subtree and renders a <code>fallback</code>.</p>
 <ul>
 <li>Props:</li>
-<li><code>fallback</code> – VNode/str/callable. When callable, it is invoked as <code>fallback(error, reset)</code>; if the callable only accepts one argument, it is invoked as <code>fallback(error)</code>.</li>
+<li><code>fallback</code> – VNode/str/callable. When callable, it's invoked as <code>fallback(error, reset)</code>; if the callable only accepts one argument, it's invoked as <code>fallback(error)</code>.</li>
 <li><code>on_error</code> – optional callback called with the thrown error when the boundary captures it.</li>
 <li><code>reset_key</code> – any value; when this value changes, the boundary automatically resets (clears the error) on the next render.</li>
 <li>
@@ -4929,7 +4929,7 @@ skip re-mounting when props are unchanged.</p>
 <p>Because Wybthon components run <strong>once</strong> and then update via reactive
 holes, <code>memo</code> is only useful when you want to skip <strong>re-mounting</strong> on
 prop changes (for example, an expensive setup phase).  Most components
-do not need it.</p>
+don't need it.</p>
 <h4 id="create_portal">create_portal<a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
 <p><code>create_portal(children, container)</code> renders children into a different DOM container.</p>
 <ul>

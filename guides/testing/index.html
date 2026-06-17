@@ -2757,13 +2757,13 @@
 parts, both marked with the <code>e2e</code> pytest marker and both exercising the real
 Pyodide runtime in headless Chromium:</p>
 <ol>
-<li><strong>Feature fixture app</strong> (<code>tests/e2e/app/</code>) — a dedicated single-page app with
+<li><strong>Feature fixture app</strong> (<code>tests/e2e/app/</code>): a dedicated single-page app with
    <strong>one route per framework feature</strong> (reactivity, reactive holes, props,
    events, context, flow control, forms, stores, suspense, error boundary,
    components/lifecycle, portal, lazy loading, and the router). Each
    per-feature test module (<code>tests/e2e/test_*.py</code>) drives that route and asserts
    behaviour through stable <code>data-testid</code> selectors.</li>
-<li><strong>Demo smoke test</strong> (<code>tests/e2e/test_pyodide_smoke.py</code>) — loads
+<li><strong>Demo smoke test</strong> (<code>tests/e2e/test_pyodide_smoke.py</code>): loads
    <code>examples/demo/index.html</code> and verifies the demo boots and renders.</li>
 </ol>
 <p>Design choices that keep the suite fast and deterministic:</p>
@@ -2799,10 +2799,10 @@ Pyodide runtime in headless Chromium:</p>
   discover Python files.</li>
 <li>Tests use generous timeouts (Pyodide initialization can take time in CI), and
   the default pytest config (<code>addopts = -m "not e2e"</code>) excludes the browser
-  suite from the fast unit run — pass <code>-m e2e</code> to opt in.</li>
+  suite from the fast unit run; pass <code>-m e2e</code> to opt in.</li>
 <li>The fixture app under <code>tests/e2e/app/</code> is Pyodide-runtime code (it uses
   absolute <code>app.*</code> imports that only resolve inside the Pyodide filesystem), so
-  it is excluded from mypy and is never imported by the CPython unit tests.</li>
+  it's excluded from mypy and is never imported by the CPython unit tests.</li>
 </ul>
 <h4 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h4>
 <p>For Python-only logic (e.g., <code>reactivity</code>, <code>forms</code> helpers), write regular <code>pytest</code> tests under <code>tests/</code>.</p>

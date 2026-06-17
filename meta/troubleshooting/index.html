@@ -2782,7 +2782,7 @@
 <summary><code>mkdocs build --strict</code> fails after updating docs</summary>
 <p><strong>Symptoms:</strong> the docs site builds locally with <code>mkdocs serve</code> but <code>mkdocs build --strict</code> fails.</p>
 <p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link) or an unused <code>nav</code> entry.</p>
-<p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it could not find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.</p>
+<p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.</p>
 </details>
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -2813,7 +2813,7 @@
 <li>The element is covered by another element with <code>pointer-events: auto</code>.</li>
 <li>The handler returns a coroutine without scheduling it; nothing happens but no error is raised.</li>
 </ul>
-<p><strong>Fix:</strong> confirm the prop name (Wybthon does not coerce <code>onclick</code> to <code>on_click</code>), inspect the DOM tree for overlays, and ensure async handlers are scheduled with <code>asyncio.create_task(...)</code> if they should run.</p>
+<p><strong>Fix:</strong> confirm the prop name (Wybthon doesn't coerce <code>onclick</code> to <code>on_click</code>), inspect the DOM tree for overlays, and ensure async handlers are scheduled with <code>asyncio.create_task(...)</code> if they should run.</p>
 </details>
 <details class="bug">
 <summary><code>ref.current</code> is <code>None</code> when I read it</summary>
@@ -2841,7 +2841,7 @@
 <ul>
 <li>Re-run <code>python -m pytest</code> to confirm the framework itself still works in your environment.</li>
 <li>Capture a minimal reproduction (preferably under <code>examples/</code>) and <a href="https://github.com/wybthon/wybthon/issues/new">open an issue</a>.</li>
-<li>Toggle <code>set_dev_mode(False)</code> (from <code>wybthon._warnings</code>) only after you've confirmed the warnings are not pointing at a real bug.</li>
+<li>Toggle <code>set_dev_mode(False)</code> (from <code>wybthon._warnings</code>) only after you've confirmed the warnings aren't pointing at a real bug.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

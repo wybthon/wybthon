@@ -3043,7 +3043,7 @@ ref-counting utilities are exercised by the renderer.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Event type string (e.g. <code>"click"</code>).</p>
+                <p>Event type string (e.g., <code>"click"</code>).</p>
               </div>
             </td>
           </tr>
@@ -3198,7 +3198,7 @@ dispatcher.</p>
         <p>Stop propagation through both the JS and the delegated chains.</p>
 <p>Sets an internal flag that causes Wybthon's dispatcher to stop
 walking the DOM ancestors, and also calls the native
-<code>stopPropagation</code> so other JS listeners do not fire.</p>
+<code>stopPropagation</code> so other JS listeners don't fire.</p>
 
 
     </div>
@@ -3367,13 +3367,13 @@ listeners are released.</p>
 <li>Composition/IME: <code>compositionstart</code>, <code>compositionupdate</code>, <code>compositionend</code></li>
 <li>Drag and drop: <code>dragstart</code>, <code>dragend</code>, <code>dragenter</code>, <code>dragleave</code>, <code>dragover</code>, <code>drop</code></li>
 </ul>
-<p>Wybthon does not restrict event type names; if the browser fires it and it bubbles, the delegated listener will see it.</p>
+<p>Wybthon doesn't restrict event type names; if the browser fires it and it bubbles, the delegated listener will see it.</p>
 <h4 id="non-bubbling-and-special-case-events">Non-bubbling and special-case events<a class="headerlink" href="#non-bubbling-and-special-case-events" title="Permanent link">&para;</a></h4>
-<p>Because Wybthon uses document-level delegation, event types that do not bubble will not trigger handlers when attached via props. Use the suggested alternatives or attach a direct listener via <code>wybthon.dom.Element.on</code> using a <code>Ref</code>.</p>
+<p>Because Wybthon uses document-level delegation, event types that don't bubble won't trigger handlers when attached via props. Use the suggested alternatives or attach a direct listener via <code>wybthon.dom.Element.on</code> using a <code>Ref</code>.</p>
 <ul>
-<li>Use <code>focusin</code>/<code>focusout</code> instead of <code>focus</code>/<code>blur</code> (which do not bubble).</li>
-<li>Use <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code> (which do not bubble).</li>
-<li>Many media events (e.g., <code>play</code>, <code>pause</code>) and <code>scroll</code> do not bubble; attach direct listeners to the element or use <code>window</code>/<code>document</code> as appropriate.</li>
+<li>Use <code>focusin</code>/<code>focusout</code> instead of <code>focus</code>/<code>blur</code> (which don't bubble).</li>
+<li>Use <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code> (which don't bubble).</li>
+<li>Many media events (e.g., <code>play</code>, <code>pause</code>) and <code>scroll</code> don't bubble; attach direct listeners to the element or use <code>window</code>/<code>document</code> as appropriate.</li>
 </ul>
 <p>Direct listeners example (when you need non-bubbling events or options like <code>passive</code>: False):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">on_mount</span><span class="p">,</span> <span class="n">Ref</span>
