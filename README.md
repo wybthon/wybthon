@@ -12,13 +12,13 @@
   <a href="https://pypi.org/project/wybthon/"><img src="https://img.shields.io/pypi/v/wybthon" alt="PyPI Version" /></a>
   <a href="https://pypi.org/project/wybthon/"><img src="https://img.shields.io/pypi/pyversions/wybthon" alt="Python Versions" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/pypi/l/wybthon" alt="License: MIT" /></a>
-  <a href="https://docs.wybthon.com/"><img src="https://img.shields.io/website?url=https%3A%2F%2Fdocs.wybthon.com&label=docs" alt="Docs" /></a>
+  <a href="https://wybthon.com/"><img src="https://img.shields.io/website?url=https%3A%2F%2Fwybthon.com&label=docs" alt="Docs" /></a>
 </p>
 
 <p align="center">
-  <a href="https://docs.wybthon.com/">Documentation</a> ·
-  <a href="https://docs.wybthon.com/getting-started/">Getting Started</a> ·
-  <a href="https://docs.wybthon.com/examples/">Examples</a> ·
+  <a href="https://wybthon.com/">Documentation</a> ·
+  <a href="https://wybthon.com/getting-started/">Getting Started</a> ·
+  <a href="https://wybthon.com/examples/">Examples</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -79,7 +79,7 @@ def Counter(initial: int = 0):
 
 ## Documentation
 
-Visit [docs.wybthon.com](https://docs.wybthon.com/) for the full documentation, including getting started guides, core concepts, API reference, and working examples.
+Visit [wybthon.com](https://wybthon.com/) for the full documentation, including getting started guides, core concepts, API reference, and working examples.
 
 ## Contributing
 

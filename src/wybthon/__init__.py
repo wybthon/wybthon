@@ -28,9 +28,9 @@ Example:
             )
 
 See Also:
-    * [Getting started](https://docs.wybthon.com/getting-started/)
-    * [Mental model](https://docs.wybthon.com/concepts/mental-model/)
-    * [API reference](https://docs.wybthon.com/api/wybthon/)
+    * [Getting started](https://wybthon.com/getting-started/)
+    * [Mental model](https://wybthon.com/concepts/mental-model/)
+    * [API reference](https://wybthon.com/api/wybthon/)
 """
 
 import importlib
