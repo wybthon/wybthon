@@ -1,7 +1,7 @@
 site_name: Wybthon
 site_description: Client-side Python SPA framework via Pyodide
 site_author: Owen Carey
-site_url: https://docs.wybthon.com/
+site_url: https://wybthon.com/
 repo_url: https://github.com/wybthon/wybthon
 repo_name: wybthon/wybthon
 edit_uri: edit/main/docs/

@@ -53,7 +53,7 @@ python -m http.server
 - **Tests**: put fast CPython unit tests directly under `tests/` (browser APIs are stubbed, no network/large IO). Browser-dependent behaviour goes in the Playwright + Pyodide suite under `tests/e2e/`; mark those with the `e2e` pytest marker so they stay out of the fast unit run. See the [Testing guide](docs/guides/testing.md).
 - **Docstrings**: Google-style for all public modules, classes, and functions. See the
   [Documentation style guide](docs/meta/style-guide.md) for the full conventions, or
-  the rendered version at <https://docs.wybthon.com/meta/style-guide/>.
+  the rendered version at <https://wybthon.com/meta/style-guide/>.
 - **Comments**: explain *why*, not *what*. Delete redundant comments during refactors.
 
 Common commands:
