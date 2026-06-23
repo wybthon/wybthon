@@ -23,15 +23,23 @@ Base reactive ownership scope.  Tracks child owners and cleanup callbacks.
 
 ##### `Computation(Owner)`
 
-Reactive computation that tracks `Signal` reads and re-runs when they
-change.  Also an ownership scope: child computations created during
-execution are disposed before each re-run.
+Reactive computation (an **effect** or a **memo**) that tracks its sources
+(signals and other memos) and re-runs when they change.  Also an ownership
+scope: child computations created during execution are disposed before each
+re-run.
+
+Each computation carries a state for the push-mark / pull-recompute scheduler:
+`CLEAN` (current), `CHECK` (a transitive source *may* have changed), or
+`DIRTY` (a direct source *did* change).  A signal write pushes `DIRTY`/`CHECK`
+markers out to dependents and queues affected effects; effects then *pull*
+their sources up to date, which keeps updates glitch-free.
 
 | Method | Description |
 |--------|-------------|
-| `run()` | Dispose children and cleanups, clear deps, re-execute the function under `_current_owner = self`. |
-| `schedule()` | Enqueue a re-run on the next flush. |
-| `dispose()` | Cancel subscriptions, clear deps, remove from pending queue, run cleanups. |
+| `_stale(state)` | Mark `CHECK`/`DIRTY` and propagate a `CHECK` to observers; queue the node when it's an effect transitioning from `CLEAN`. |
+| `_update_if_necessary()` | Resolve `CHECK` by pulling sources, then recompute if `DIRTY`. Marked `CLEAN` before recompute so a re-entrant self-write reschedules it. |
+| `_update()` | Dispose children and cleanups, rebuild the dependency set, and re-execute the function under `_current_owner = _current_observer = self`. For memos, store the new value and escalate observers to `DIRTY` only when it changed. |
+| `dispose()` | Unsubscribe from all sources, drop self as a source for any observers, dispose children, run cleanups. |
 
 #### Public API
 
@@ -39,7 +47,7 @@ execution are disposed before each re-run.
 
 - `create_signal(value, *, equals=...) -> (getter, setter)`. Optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.
 - `create_effect(fn) -> Computation`. The returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
-- `create_memo(fn) -> getter`. Creates a `Computation` under the current owner; disposed when the owner is disposed.
+- `create_memo(fn) -> getter`. Creates a lazy memo `Computation` under the current owner; recomputes only when read after a source changed, and is disposed when the owner is disposed.
 - `on_mount(fn)`. Run after first render.
 - `on_cleanup(fn)`. Appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
 - `batch() -> context manager` or `batch(fn) -> result`. The callback form flushes synchronously.
@@ -149,8 +157,13 @@ def Card(title=""):
 
 ##### Global state
 
-A single `_current_owner` global tracks the active ownership scope.
-When a `Computation.run()` executes, it sets `_current_owner = self` so
-that any effects or memos created during execution become its children.
+Two module globals drive tracking. `_current_owner` is the active ownership
+scope: effects and memos created while it's set become its children.
+`_current_observer` is the computation currently recording dependencies: a
+signal or memo read while it's set subscribes that observer. `Computation._update()`
+sets both to `self` while it executes, so reads link to the running
+computation and newly created scopes are owned by it. Effects flush
+synchronously through a shared queue; `batch()` defers that flush to the
+outermost batch boundary.
 
 Type hints are provided for all public functions and classes.

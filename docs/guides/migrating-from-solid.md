@@ -85,6 +85,27 @@ create_effect(lambda: print("count =", count()))
 
 `create_effect` re-runs whenever signals it tracked during the previous run change. There's no manual dep array.
 
+### Execution semantics carry over
+
+The behaviors you rely on in Solid hold in Wybthon too:
+
+- **Synchronous updates.** Outside a `batch`, a `set` propagates before it
+  returns. After `set_count(1)`, both `count()` and any derived memo read the
+  new value immediately. (No `await`, no microtask, no test `sleep`.)
+- **Glitch-free.** An effect reading several memos derived from one signal
+  always sees a consistent combination and runs once per change, never on an
+  intermediate state.
+- **Lazy memos.** `create_memo` recomputes only when read after a dependency
+  changed, and skips notifying consumers when its value is unchanged (same
+  `equals`-based short-circuit as Solid).
+- **`batch`** coalesces writes and flushes once at the outermost boundary.
+
+One deliberate Python-flavored difference: because there's no JSX compiler to
+defer reads, `For`/`Index` re-run their mapping callback when the list
+changes, so natural eager expressions like `str(item())` work without an
+explicit accessor hole. Use `dynamic(...)` (or pass the accessor itself) where
+you want a value to stay live without a list change.
+
 ## Stores
 
 ```python

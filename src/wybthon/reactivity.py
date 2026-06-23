@@ -1,17 +1,28 @@
 """Signal-based reactive primitives with an ownership tree.
 
-This module is the heart of Wybthon's SolidJS-inspired reactivity. Every
-reactive computation (effect, memo) is **owned** by a parent scope. When
-that scope re-runs or is disposed, all child computations are torn down
-automatically, preventing leaks and giving lifecycle semantics that
-match component mount/unmount boundaries.
+This module is the heart of Wybthon's SolidJS-inspired reactivity. It
+implements a **synchronous, glitch-free, pull-based** reactive graph that
+matches SolidJS's observable semantics:
+
+- Writing a signal synchronously propagates to dependents before the
+  setter returns (outside an explicit :func:`batch`).
+- Memos are **lazy**: they recompute only when read after a dependency
+  changed, and they skip notifying their own observers when the
+  recomputed value is unchanged (the glitch-free "equality short-circuit").
+- Effects run in a second phase after pure computations have settled, so
+  an effect never observes a half-updated graph.
+
+Every reactive computation (effect, memo) is also **owned** by a parent
+scope. When that scope re-runs or is disposed, all child computations are
+torn down automatically, preventing leaks and giving lifecycle semantics
+that match component mount/unmount boundaries.
 
 Core types:
 
 - [`Signal`][wybthon.Signal]: mutable reactive container.
 - [`Owner`][wybthon.reactivity.Owner]: base ownership scope (cleanups + children).
 - [`Computation`][wybthon.reactivity.Computation]: a reactive computation
-  that is itself an ownership scope.
+  (effect or memo) that is itself an ownership scope.
 - [`Resource`][wybthon.Resource]: async data wrapper with `data`/`error`/`loading`.
 
 Public primitives:
@@ -37,14 +48,13 @@ Example:
         doubled = create_memo(lambda: count() * 2)
         create_effect(lambda: print("doubled:", doubled()))
 
-        set_count(2)  # logs "doubled: 4" on the next microtask flush
+        set_count(2)  # synchronously prints "doubled: 4"
 """
 
 from __future__ import annotations
 
-from collections import deque
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Deque, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
 
 __all__ = [
     "Owner",
@@ -82,15 +92,36 @@ _DEFAULT_EQUALS = object()
 _MISSING = object()
 
 # ---------------------------------------------------------------------------
+# Reactive node states (graph coloring)
+#
+# The scheduler is a push-mark / pull-recompute graph (the "reactively"
+# algorithm, also used by modern SolidJS):
+#
+# - ``CLEAN``: value is current.
+# - ``CHECK``: a *transitive* source may have changed; resolve sources
+#   before deciding whether to recompute.
+# - ``DIRTY``: a *direct* source definitely changed; must recompute.
+# ---------------------------------------------------------------------------
+
+_CLEAN = 0
+_CHECK = 1
+_DIRTY = 2
+
+# Safety valve: the maximum number of effect runs in a single flush before
+# we assume a runaway cyclic update and bail out (instead of hanging).
+_MAX_FLUSH_ITER = 100000
+
+# ---------------------------------------------------------------------------
 # Global reactive state
 # ---------------------------------------------------------------------------
 
 _current_owner: Optional["Owner"] = None
-_current_computation: Optional["Computation"] = None
+_current_observer: Optional["Computation"] = None
 
-_pending_queue: Deque["Computation"] = deque()
-_pending_set: Set["Computation"] = set()
-_flush_scheduled: bool = False
+# Effects pending execution in the current flush. Pure computations (memos)
+# are *not* queued; they recompute lazily on read.
+_effect_queue: List["Computation"] = []
+_running_effects: bool = False
 _batch_depth: int = 0
 
 # Re-entrant counter incremented while inside :func:`untrack`.  Used by
@@ -112,51 +143,74 @@ def _has_current_computation() -> bool:
     are the canonical "subscribe to this prop" patterns, not the footgun the
     warning is trying to flag.
     """
-    return _current_computation is not None
+    return _current_observer is not None
 
 
-# ---------------------------------------------------------------------------
-# Microtask scheduling
-# ---------------------------------------------------------------------------
+def _changed(equals: Any, old: Any, new: Any) -> bool:
+    """Return True when `new` should be considered a change from `old`.
 
+    Implements the `equals` policy shared by signals and memos:
 
-def _schedule_flush() -> None:
-    global _flush_scheduled
-    if _flush_scheduled:
-        return
-    _flush_scheduled = True
-
-    try:
-        from js import queueMicrotask
-        from pyodide.ffi import create_once_callable
-
-        queueMicrotask(create_once_callable(lambda: _flush()))
-    except Exception:  # pragma: no cover
+    - `equals=False`: always changed (notify on every write).
+    - callable `equals`: changed when `equals(old, new)` is falsy.
+    - default / `equals=True`: value equality with an identity fast-path
+      (`is` first, then `==`).
+    """
+    if equals is False:
+        return True
+    if callable(equals):
         try:
-            from js import setTimeout
-            from pyodide.ffi import create_once_callable
-
-            setTimeout(create_once_callable(lambda: _flush()), 0)
+            return not bool(equals(old, new))
         except Exception:
-            try:
-                import threading
+            return True
+    if new is old:
+        return False
+    try:
+        return not bool(new == old)
+    except Exception:
+        return True
 
-                threading.Timer(0, _flush).start()
-            except Exception:
-                _flush()
+
+# ---------------------------------------------------------------------------
+# Synchronous flush
+# ---------------------------------------------------------------------------
 
 
-def _flush() -> None:
-    global _flush_scheduled
-    _flush_scheduled = False
-    initial_count = len(_pending_queue)
-    for _ in range(initial_count):
-        comp = _pending_queue.popleft()
-        if comp not in _pending_set:
-            continue
-        _pending_set.discard(comp)
-        if not comp._disposed:
-            comp.run()
+def _run_effects_if_idle() -> None:
+    """Flush the effect queue unless we're batching or already flushing."""
+    if _batch_depth == 0 and not _running_effects:
+        _flush_effects()
+
+
+def _flush_effects() -> None:
+    """Run all queued effects to completion (the "effects" phase).
+
+    Effects pull their dependencies via ``_update_if_necessary`` so they
+    always observe a fully-settled graph. Effects enqueued *during* the
+    flush (because an effect wrote a signal) are drained in the same loop,
+    giving synchronous settling within one logical update.
+    """
+    global _running_effects
+    if _running_effects:
+        return
+    _running_effects = True
+    try:
+        i = 0
+        guard = 0
+        queue = _effect_queue
+        while i < len(queue):
+            comp = queue[i]
+            i += 1
+            guard += 1
+            if guard > _MAX_FLUSH_ITER:
+                raise RuntimeError(
+                    "Wybthon: reactive update did not stabilize " "(possible cyclic effect writing its own dependency)."
+                )
+            if not comp._disposed:
+                comp._update_if_necessary()
+    finally:
+        _effect_queue.clear()
+        _running_effects = False
 
 
 # ---------------------------------------------------------------------------
@@ -240,38 +294,135 @@ class Owner:
 
 
 # ---------------------------------------------------------------------------
-# Computation -- reactive computation (extends Owner)
+# Computation -- reactive computation (effect or memo), extends Owner
 # ---------------------------------------------------------------------------
 
 
 class Computation(Owner):
-    """Reactive computation that tracks signals and re-runs when they change.
+    """Reactive computation that tracks sources and re-runs when they change.
 
-    Also serves as an ownership scope: child computations created during
-    execution are disposed before each re-run, preventing leaks from
+    A computation is either an **effect** (run for its side effects) or a
+    **memo** (a lazily-recomputed derived value that other computations can
+    observe). It is also an ownership scope: child computations created
+    during execution are disposed before each re-run, preventing leaks from
     conditionally-created effects.
 
     Attributes:
-        _fn: The callback executed by `run()`.
-        _deps: Set of signals this computation currently subscribes to.
-            Cleared and rebuilt on every `run()`.
+        _fn: The callback executed by `_update()`.
+        _sources: Sources (signals or memos) read during the last run.
+        _state: One of `_CLEAN` / `_CHECK` / `_DIRTY`.
+        _is_effect: True for effects (scheduled in the effects phase).
+        _is_memo: True for memos (carry a value and observers).
     """
 
-    __slots__ = ("_fn", "_deps")
+    __slots__ = (
+        "_fn",
+        "_sources",
+        "_sources_set",
+        "_state",
+        "_is_effect",
+        "_is_memo",
+        "_value",
+        "_observers",
+        "_observer_set",
+        "_equals",
+    )
 
-    def __init__(self, fn: Callable[[], Any]) -> None:
+    def __init__(
+        self,
+        fn: Callable[[], Any],
+        *,
+        is_effect: bool = False,
+        is_memo: bool = False,
+        value: Any = None,
+        equals: Any = _DEFAULT_EQUALS,
+    ) -> None:
         super().__init__()
         self._fn = fn
-        self._deps: Set[Signal[Any]] = set()
+        self._sources: List[Any] = []
+        self._sources_set: Set[Any] = set()
+        self._state: int = _DIRTY
+        self._is_effect = is_effect
+        self._is_memo = is_memo
+        self._value: Any = value
+        self._observers: List[Computation] = []
+        self._observer_set: Set[Computation] = set()
+        self._equals = equals
 
-    def _track(self, signal: "Signal[Any]") -> None:
+    # -- source side (memos act as sources for other computations) ----------
+
+    def _add_observer(self, comp: "Computation") -> None:
+        if comp not in self._observer_set:
+            self._observer_set.add(comp)
+            self._observers.append(comp)
+
+    def _remove_observer(self, comp: "Computation") -> None:
+        if comp in self._observer_set:
+            self._observer_set.discard(comp)
+            try:
+                self._observers.remove(comp)
+            except ValueError:
+                pass
+
+    # -- observer side -------------------------------------------------------
+
+    def _add_source(self, source: Any) -> None:
+        if source in self._sources_set:
+            return
+        self._sources_set.add(source)
+        self._sources.append(source)
+        source._add_observer(self)
+
+    def _clear_sources(self) -> None:
+        for src in self._sources:
+            src._remove_observer(self)
+        self._sources.clear()
+        self._sources_set.clear()
+
+    # -- scheduling ----------------------------------------------------------
+
+    def _stale(self, state: int) -> None:
+        """Mark this node stale (CHECK or DIRTY) and propagate to observers.
+
+        On the first transition away from CLEAN we enqueue effects and push
+        a CHECK marker to observers. Subsequent escalations (CHECK -> DIRTY)
+        don't need to re-notify observers, which are already marked.
+        """
         if self._disposed:
             return
-        if signal not in self._deps:
-            self._deps.add(signal)
-            signal._add_subscriber(self)
+        if self._state < state:
+            was_clean = self._state == _CLEAN
+            self._state = state
+            if was_clean:
+                if self._is_effect:
+                    _effect_queue.append(self)
+                if self._observers:
+                    for o in list(self._observers):
+                        o._stale(_CHECK)
 
-    def run(self) -> None:
+    def _update_if_necessary(self) -> None:
+        """Bring this node up to date by pulling sources (glitch-free).
+
+        The node is marked CLEAN *before* recomputing so that a write to one
+        of its own dependencies made *during* the recompute (for example, an
+        ``ErrorBoundary`` setting its error signal while mounting a throwing
+        child) re-dirties it and schedules another run, rather than being
+        swallowed. True cycles are bounded by the flush safety valve.
+        """
+        if self._disposed or self._state == _CLEAN:
+            return
+        if self._state == _CHECK:
+            for src in list(self._sources):
+                src._update_if_necessary()
+                if self._state == _DIRTY:
+                    break
+        if self._state == _DIRTY:
+            self._state = _CLEAN
+            self._update()
+        else:
+            self._state = _CLEAN
+
+    def _update(self) -> None:
         """Re-execute the tracked function, refreshing its dependency set.
 
         Disposes child owners and runs cleanups before each re-run so that
@@ -282,56 +433,52 @@ class Computation(Owner):
             return
         self._dispose_children()
         self._run_cleanups()
-        for s in list(self._deps):
-            s._remove_subscriber(self)
-        self._deps.clear()
-        global _current_owner, _current_computation
+        self._clear_sources()
+        global _current_owner, _current_observer
         prev_owner = _current_owner
-        prev_comp = _current_computation
+        prev_obs = _current_observer
         _current_owner = self
-        _current_computation = self
+        _current_observer = self
         try:
-            self._fn()
+            new_value = self._fn()
         finally:
             _current_owner = prev_owner
-            _current_computation = prev_comp
+            _current_observer = prev_obs
+        if self._is_memo:
+            if _changed(self._equals, self._value, new_value):
+                self._value = new_value
+                # A real value change escalates observers from CHECK to
+                # DIRTY so they recompute; an unchanged value leaves them
+                # CHECK (and they may resolve to CLEAN without work).
+                for o in self._observers:
+                    o._state = _DIRTY
 
-    def schedule(self) -> None:
-        """Enqueue this computation for the next flush.
-
-        Called by `Signal.set` when a tracked dependency changes. When no
-        batch is active a microtask flush is scheduled; otherwise the
-        computation is held until the outermost batch completes.
-        """
-        if self._disposed:
-            return
-        if self not in _pending_set:
-            _pending_set.add(self)
-            _pending_queue.append(self)
-        if _batch_depth == 0:
-            _schedule_flush()
+    def _read(self) -> Any:
+        """Read a memo's value: ensure it's current, then subscribe the reader."""
+        self._update_if_necessary()
+        obs = _current_observer
+        if obs is not None and obs is not self and not self._disposed:
+            obs._add_source(self)
+        return self._value
 
     def dispose(self) -> None:
         """Dispose the computation and unsubscribe from all dependencies.
 
-        Removes this computation from any pending flush queue, clears
-        dependency edges, and tears down child owners and cleanups.
+        Removes dependency edges, drops this node as a source for any of its
+        observers, tears down child owners, and runs cleanups.
         """
         if self._disposed:
             return
-        self._disposed = True
-        self._dispose_children()
-        for s in list(self._deps):
-            s._remove_subscriber(self)
-        self._deps.clear()
-        _pending_set.discard(self)
-        self._run_cleanups()
-        if self._parent is not None:
+        self._clear_sources()
+        for o in list(self._observers):
+            o._sources_set.discard(self)
             try:
-                self._parent._children.remove(self)
+                o._sources.remove(self)
             except ValueError:
                 pass
-            self._parent = None
+        self._observers.clear()
+        self._observer_set.clear()
+        super().dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -340,7 +487,7 @@ class Computation(Owner):
 
 
 class Signal(Generic[T]):
-    """Mutable reactive container that notifies subscribed computations on change.
+    """Mutable reactive container that notifies observers on change.
 
     Most code uses [`create_signal`][wybthon.create_signal] which returns a
     `(getter, setter)` tuple instead of exposing `Signal` instances directly.
@@ -355,22 +502,26 @@ class Signal(Generic[T]):
 
     def __init__(self, value: T, *, equals: Any = _DEFAULT_EQUALS) -> None:
         self._value: T = value
-        self._subscribers: List[Computation] = []
-        self._subscriber_set: Set[Computation] = set()
+        self._observers: List[Computation] = []
+        self._observer_set: Set[Computation] = set()
         self._equals = equals
 
-    def _add_subscriber(self, comp: "Computation") -> None:
-        if comp not in self._subscriber_set:
-            self._subscriber_set.add(comp)
-            self._subscribers.append(comp)
+    def _add_observer(self, comp: "Computation") -> None:
+        if comp not in self._observer_set:
+            self._observer_set.add(comp)
+            self._observers.append(comp)
 
-    def _remove_subscriber(self, comp: "Computation") -> None:
-        if comp in self._subscriber_set:
-            self._subscriber_set.discard(comp)
+    def _remove_observer(self, comp: "Computation") -> None:
+        if comp in self._observer_set:
+            self._observer_set.discard(comp)
             try:
-                self._subscribers.remove(comp)
+                self._observers.remove(comp)
             except ValueError:
                 pass
+
+    def _update_if_necessary(self) -> None:
+        """Source-interface no-op; a signal's value is always current."""
+        return
 
     def get(self) -> T:
         """Return the current value and subscribe the active computation.
@@ -382,46 +533,35 @@ class Signal(Generic[T]):
         Returns:
             The current value held by the signal.
         """
-        if _current_computation is not None:
-            _current_computation._track(self)
+        obs = _current_observer
+        if obs is not None:
+            obs._add_source(self)
+        return self._value
+
+    def peek(self) -> T:
+        """Return the current value without subscribing the active computation."""
         return self._value
 
     def set(self, value: T) -> None:
-        """Write a new value and notify subscribers if it changed.
+        """Write a new value and synchronously notify observers if it changed.
 
         Equality is determined by the `equals` policy passed to the
         constructor (default: `is` then `==`, with `equals=False` to
-        bypass the check entirely).
+        bypass the check entirely). Outside a [`batch`][wybthon.batch],
+        dependent memos become readable immediately and effects run before
+        this call returns.
 
         Args:
             value: The new value to store.
         """
-        if self._equals is not False:
-            if callable(self._equals):
-                if self._equals(self._value, value):
-                    return
-            else:
-                # Default / ``equals=True`` -- value equality with an
-                # identity fast-path.  ``is`` first (cheap and short-
-                # circuits for the common "same reference" case, e.g.
-                # mutate-then-set with no fresh allocation), then ``==``
-                # so a new container with equal contents still skips
-                # notification.  This matches Python's natural intuition
-                # (``data.append(x); set_data(data)`` is a no-op because
-                # the value didn't change) while letting users opt into
-                # identity-only semantics with
-                # ``equals=lambda a, b: a is b`` or skip altogether with
-                # ``equals=False``.
-                if value is self._value:
-                    return
-                try:
-                    if value == self._value:
-                        return
-                except Exception:
-                    pass
+        if not _changed(self._equals, self._value, value):
+            return
         self._value = value
-        for comp in list(self._subscribers):
-            comp.schedule()
+        observers = self._observers
+        if observers:
+            for o in list(observers):
+                o._stale(_DIRTY)
+            _run_effects_if_idle()
 
 
 def signal(value: T) -> Signal[T]:
@@ -565,13 +705,18 @@ class ReactiveProps:
         return default
 
     def _update(self, new_props: dict) -> None:
-        """Update props from parent (called by reconciler on re-render)."""
+        """Update props from parent (called by reconciler on re-render).
+
+        All prop signals are written inside a single batch so a parent
+        update flushes dependent holes exactly once.
+        """
         signals = object.__getattribute__(self, "_signals")
         defaults = object.__getattribute__(self, "_defaults")
         object.__setattr__(self, "_raw", dict(new_props))
-        for key, sig in signals.items():
-            new_val = new_props.get(key, defaults.get(key))
-            sig.set(new_val)
+        with _Batch():
+            for key, sig in signals.items():
+                new_val = new_props.get(key, defaults.get(key))
+                sig.set(new_val)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -727,26 +872,24 @@ def iter_prop_keys(props: Any) -> List[str]:
 
 
 class _Computed(Generic[T]):
-    """Read-only signal whose value is derived from other signals.
+    """Read-only, lazily-recomputed signal derived from other signals.
 
     Backs [`create_memo`][wybthon.create_memo] and the public type
-    alias `Computed`. The internal `Computation` re-runs whenever any
-    of its tracked signals change, recomputing the value.
+    alias `Computed`. The underlying `Computation` recomputes only when
+    read after one of its tracked sources changed, and it notifies its own
+    observers only when the recomputed value actually differs.
     """
 
-    def __init__(self, fn: Callable[[], T]) -> None:
-        self._value_signal: Signal[T] = Signal(cast(T, None))
+    __slots__ = ("_comp",)
 
-        def runner() -> None:
-            self._value_signal.set(fn())
-
-        self._comp = Computation(runner)
+    def __init__(self, fn: Callable[[], T], *, equals: Any = _DEFAULT_EQUALS) -> None:
+        comp = Computation(fn, is_memo=True, equals=equals)
+        self._comp = comp
         if _current_owner is not None:
-            _current_owner._add_child(self._comp)
-        self._comp.run()
+            _current_owner._add_child(comp)
 
     def get(self) -> T:
-        return self._value_signal.get()
+        return cast(T, self._comp._read())
 
     def dispose(self) -> None:
         self._comp.dispose()
@@ -789,10 +932,10 @@ def effect(fn: Callable[[], Any]) -> Computation:
     Returns:
         The underlying `Computation`. Call `.dispose()` to stop the effect.
     """
-    comp = Computation(fn)
+    comp = Computation(fn, is_effect=True)
     if _current_owner is not None:
         _current_owner._add_child(comp)
-    comp.run()
+    comp._update_if_necessary()
     return comp
 
 
@@ -816,7 +959,7 @@ class _Batch:
 
     Returned by [`batch()`][wybthon.batch] when called with no arguments.
     Increments a depth counter on `__enter__` and flushes pending
-    computations exactly once when the outermost batch exits.
+    effects exactly once when the outermost batch exits.
     """
 
     def __enter__(self) -> None:
@@ -826,12 +969,12 @@ class _Batch:
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         global _batch_depth
         _batch_depth -= 1
-        if _batch_depth == 0 and _pending_set:
-            _flush()
+        if _batch_depth == 0:
+            _flush_effects()
 
 
 def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
-    """Batch signal updates so subscribers flush once at the end.
+    """Batch signal updates so dependent effects flush once at the end.
 
     Two call shapes are supported:
 
@@ -847,8 +990,8 @@ def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
        ```
 
     When called with a function, the function's return value is returned.
-    Effects are flushed synchronously before `batch` returns, matching
-    SolidJS semantics.
+    Effects are flushed synchronously when the outermost batch exits,
+    matching SolidJS semantics.
 
     Args:
         fn: Optional zero-arg callable. When omitted, returns a context
@@ -866,8 +1009,8 @@ def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
         result = fn()
     finally:
         _batch_depth -= 1
-        if _batch_depth == 0 and _pending_set:
-            _flush()
+        if _batch_depth == 0:
+            _flush_effects()
     return result
 
 
@@ -893,15 +1036,15 @@ def untrack(fn: Callable[[], T]) -> T:
         create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
         ```
     """
-    global _current_computation, _untrack_depth
-    prev = _current_computation
-    _current_computation = None
+    global _current_observer, _untrack_depth
+    prev = _current_observer
+    _current_observer = None
     _untrack_depth += 1
     try:
         return fn()
     finally:
         _untrack_depth -= 1
-        _current_computation = prev
+        _current_observer = prev
 
 
 # ---------------------------------------------------------------------------
@@ -1311,18 +1454,18 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
         else:
             fn()
 
-    comp = Computation(wrapped)
+    comp = Computation(wrapped, is_effect=True)
     if _current_owner is not None:
         _current_owner._add_child(comp)
-    comp.run()
+    comp._update_if_necessary()
     return comp
 
 
 def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
     """Create an auto-tracking computed value and return its getter.
 
-    Re-computes only when signals read inside `fn` change. Inside a
-    component, the underlying computation is disposed on unmount.
+    Re-computes lazily, only when read after a tracked source changed.
+    Inside a component, the underlying computation is disposed on unmount.
 
     Args:
         fn: Zero-arg callable producing the derived value.
@@ -1506,13 +1649,13 @@ def on(
             else:
                 fn(*values)
 
-        global _current_computation
-        prev = _current_computation
-        _current_computation = None
+        global _current_observer
+        prev = _current_observer
+        _current_observer = None
         try:
             call_fn()
         finally:
-            _current_computation = prev
+            _current_observer = prev
 
     return create_effect(tracked)
 
@@ -1826,6 +1969,25 @@ def split_props(
 _map_key_counter: int = 0
 
 
+def _run_owned_untracked(owner: "Owner", fn: Callable[[], T]) -> T:
+    """Run `fn` owned by `owner` with signal tracking suppressed.
+
+    Used by the list primitives so a per-item mapping body owns the
+    computations it creates (for correct disposal) while not subscribing
+    the surrounding list computation to the item's reads.
+    """
+    global _current_owner, _current_observer
+    prev_owner = _current_owner
+    prev_obs = _current_observer
+    _current_owner = owner
+    _current_observer = None
+    try:
+        return fn()
+    finally:
+        _current_owner = prev_owner
+        _current_observer = prev_obs
+
+
 def map_array(
     source: Callable[[], Optional[List[Any]]],
     map_fn: Callable[[Callable[[], Any], Callable[[], int]], T],
@@ -1859,7 +2021,7 @@ def map_array(
     _cache: List[Dict[str, Any]] = []
 
     def _compute() -> List[T]:
-        global _map_key_counter, _current_owner, _current_computation
+        global _map_key_counter
         items = source()
         if not items:
             for entry in _cache:
@@ -1890,15 +2052,7 @@ def map_array(
                 item_sig: Signal[Any] = Signal(item)
                 idx_sig: Signal[int] = Signal(idx)
 
-                prev_owner = _current_owner
-                prev_comp = _current_computation
-                _current_owner = owner
-                _current_computation = None
-                try:
-                    result = map_fn(item_sig.get, idx_sig.get)
-                finally:
-                    _current_owner = prev_owner
-                    _current_computation = prev_comp
+                result = _run_owned_untracked(owner, lambda: map_fn(item_sig.get, idx_sig.get))
 
                 _map_key_counter += 1
                 new_cache.append(
@@ -1952,7 +2106,6 @@ def index_array(
     _slots: List[Dict[str, Any]] = []
 
     def _compute() -> List[T]:
-        global _current_owner, _current_computation
         items = source()
         if not items:
             for slot in _slots:
@@ -1975,15 +2128,9 @@ def index_array(
 
                 item_sig: Signal[Any] = Signal(items_list[i])
 
-                prev_owner = _current_owner
-                prev_comp = _current_computation
-                _current_owner = owner
-                _current_computation = None
-                try:
-                    result = map_fn(item_sig.get, i)
-                finally:
-                    _current_owner = prev_owner
-                    _current_computation = prev_comp
+                # ``_run_owned_untracked`` calls the thunk synchronously within
+                # this iteration, so closing over ``i``/``item_sig`` is safe.
+                result = _run_owned_untracked(owner, lambda: map_fn(item_sig.get, i))
 
                 _slots.append({"owner": owner, "result": result, "item_signal": item_sig})
 
@@ -2039,21 +2186,19 @@ def create_selector(
             return
 
         for comp in list(_subs.get(old_key, [])):
-            comp.schedule()
+            comp._stale(_DIRTY)
         for comp in list(_subs.get(new_key, [])):
-            comp.schedule()
+            comp._stale(_DIRTY)
+        _run_effects_if_idle()
 
-    _effect = Computation(_tracker)
-    if _current_owner is not None:
-        _current_owner._add_child(_effect)
-    _effect.run()
+    effect(_tracker)
 
     def is_selected(key: Any) -> bool:
-        if _current_computation is not None:
+        obs = _current_observer
+        if obs is not None:
             subs = _subs.setdefault(key, [])
-            comp = _current_computation
-            if comp not in subs:
-                subs.append(comp)
+            if obs not in subs:
+                subs.append(obs)
         return _prev_key[0] == key
 
     return is_selected

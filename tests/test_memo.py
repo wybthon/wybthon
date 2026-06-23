@@ -1,7 +1,5 @@
 """Tests for memo() – memoized function components (new reactive-prop model)."""
 
-import time
-
 from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
@@ -55,7 +53,6 @@ def test_memo_skips_rerender_same_props(wyb, root_element):
     assert child_renders[0] == 1
 
     parent_setter[0](1)
-    time.sleep(0.05)
 
     assert child_renders[0] == 1
 
@@ -87,7 +84,6 @@ def test_memo_rerenders_on_changed_props(wyb, root_element):
     assert "0" in collect_texts(root_element.element)
 
     parent_setter[0](1)
-    time.sleep(0.05)
 
     assert child_setup_runs[0] == 1, "child setup runs once; updates flow through the hole"
     assert "1" in collect_texts(root_element.element)
@@ -118,7 +114,6 @@ def test_memo_custom_comparison(wyb, root_element):
     assert child_renders[0] == 1
 
     parent_setter[0](1)
-    time.sleep(0.05)
 
     assert child_renders[0] == 1
 
@@ -141,6 +136,5 @@ def test_memo_with_signals(wyb, root_element):
     assert "0" in collect_texts(root_element.element)
 
     child_setter[0](5)
-    time.sleep(0.05)
 
     assert "5" in collect_texts(root_element.element)

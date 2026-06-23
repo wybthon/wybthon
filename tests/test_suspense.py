@@ -1,5 +1,4 @@
 import importlib
-import time
 
 import pytest
 
@@ -37,8 +36,6 @@ def test_suspense_keeps_previous_on_reload(monkeypatch):
         Content({}),
     )
     render(vnode, container)
-    # Allow microtasks
-    time.sleep(0.05)
 
     # After first load, content should be present and not fallback
     html = container.element.innerHTML
@@ -46,7 +43,6 @@ def test_suspense_keeps_previous_on_reload(monkeypatch):
 
     # Trigger reload and ensure previous content remains
     res.reload()
-    time.sleep(0.005)
     html2 = container.element.innerHTML
     assert "Loading" not in html2
 
@@ -80,10 +76,6 @@ def test_error_boundary_reset_and_on_error(monkeypatch):
     container = Element("div")
     vnode = h(ErrorBoundary, {"fallback": fallback, "on_error": on_error}, Boom({}))
     render(vnode, container)
-    # Allow microtasks
-    import time
-
-    time.sleep(0.01)
 
     html = container.element.innerHTML
     assert "Oops" in html
@@ -94,7 +86,6 @@ def test_error_boundary_reset_and_on_error(monkeypatch):
     reset_fn = observed["reset"]
     assert callable(reset_fn)
     reset_fn()
-    time.sleep(0.005)
     # Since Boom always throws, it should re-enter fallback again; but reset call shouldn't error
     html2 = container.element.innerHTML
     assert "Oops" in html2

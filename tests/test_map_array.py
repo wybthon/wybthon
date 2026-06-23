@@ -1,7 +1,5 @@
 """Tests for map_array / index_array / create_selector reactive primitives."""
 
-import time
-
 from conftest import collect_texts
 
 from wybthon.reactivity import (
@@ -43,7 +41,6 @@ def test_map_array_reactive_update():
     assert mapped() == ["X", "Y"]
 
     set_items(["A", "B", "C"])
-    time.sleep(0.05)
     assert mapped() == ["A", "B", "C"]
 
 
@@ -56,7 +53,6 @@ def test_map_array_item_removal():
     assert len(initial) == 3
 
     set_items([a, c])
-    time.sleep(0.05)
     result = mapped()
     assert len(result) == 2
     assert result[0] == id(a)
@@ -78,7 +74,6 @@ def test_map_array_item_reorder_preserves_identity():
     assert call_count[0] == 3
 
     set_items([c, a, b])
-    time.sleep(0.05)
 
     reordered = mapped()
     assert set(reordered) == set(initial)
@@ -99,7 +94,6 @@ def test_map_array_index_updates_on_reorder():
     mapped()
 
     set_items([c, a, b])
-    time.sleep(0.05)
     mapped()
 
     assert index_signals[0]() == 1
@@ -125,7 +119,6 @@ def test_map_array_disposes_removed_items():
     result()
 
     set_items([a])
-    time.sleep(0.05)
     result()
 
     assert 1 in disposed
@@ -145,7 +138,6 @@ def test_map_array_disposes_all_on_empty():
     result()
 
     set_items([])
-    time.sleep(0.05)
     result()
 
     assert disposed[0] == 2
@@ -190,7 +182,6 @@ def test_index_array_item_value_update():
     assert item_getters[1]() == "B"
 
     set_items(["X", "Y"])
-    time.sleep(0.05)
     mapped()
 
     assert item_getters[0]() == "X"
@@ -210,7 +201,6 @@ def test_index_array_grow():
     assert call_count[0] == 1
 
     set_items(["A", "B", "C"])
-    time.sleep(0.05)
     mapped()
     assert call_count[0] == 3
 
@@ -227,7 +217,6 @@ def test_index_array_shrink_disposes():
     result()
 
     set_items(["A"])
-    time.sleep(0.05)
     result()
 
     assert disposed[0] == 2
@@ -255,7 +244,6 @@ def test_create_selector_updates():
     assert is_selected(2) is False
 
     set_selected(2)
-    time.sleep(0.05)
 
     assert is_selected(1) is False
     assert is_selected(2) is True
@@ -278,7 +266,6 @@ def test_create_selector_notifies_only_affected_keys():
     assert runs == {"a": 1, "b": 1, "c": 1}
 
     set_selected("b")
-    time.sleep(0.05)
 
     assert runs["a"] == 2
     assert runs["b"] == 2
@@ -298,7 +285,6 @@ def test_create_selector_same_value_no_op():
     assert runs[0] == 1
 
     set_selected(1)
-    time.sleep(0.05)
     assert runs[0] == 1
 
 

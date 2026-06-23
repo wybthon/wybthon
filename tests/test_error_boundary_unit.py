@@ -1,7 +1,5 @@
 """Unit tests for ErrorBoundary component logic."""
 
-import time
-
 from conftest import collect_texts
 
 from wybthon.error_boundary import ErrorBoundary, _compute_reset_token, _render_fallback
@@ -108,7 +106,6 @@ def test_error_boundary_catches_child_mount_error(wyb, root_element):
         )
 
     vdom.render(vdom.h(App, {}), root_element)
-    time.sleep(0.05)
 
     texts = collect_texts(root_element.element)
     assert any("caught: boom" in t for t in texts), texts
@@ -139,12 +136,10 @@ def test_error_boundary_recovers_after_reset(wyb, root_element):
         )
 
     vdom.render(vdom.h(App, {}), root_element)
-    time.sleep(0.05)
     assert any("caught: boom" in t for t in collect_texts(root_element.element))
 
     should_throw.set(False)
     reset_key.set(1)
-    time.sleep(0.05)
 
     texts = collect_texts(root_element.element)
     assert any("recovered" in t for t in texts), texts

@@ -1,7 +1,5 @@
 """Tests for reactive utilities (untrack, on, create_root, merge_props, split_props)."""
 
-import time
-
 from wybthon.reactivity import (
     create_effect,
     create_root,
@@ -29,11 +27,9 @@ def test_untrack_prevents_dependency():
     assert log == [(0, 0)]
 
     b.set(10)
-    time.sleep(0.05)
     assert log == [(0, 0)]
 
     a.set(1)
-    time.sleep(0.05)
     assert log[-1] == (1, 10)
 
 
@@ -50,7 +46,6 @@ def test_on_single_dep():
     assert log == [0]
 
     a.set(5)
-    time.sleep(0.05)
     assert log[-1] == 5
 
 
@@ -61,7 +56,6 @@ def test_on_defer():
     assert log == []
 
     a.set(1)
-    time.sleep(0.05)
     assert log == [1]
 
 
@@ -73,7 +67,6 @@ def test_on_multiple_deps():
     assert log == [(1, 2)]
 
     a.set(10)
-    time.sleep(0.05)
     assert log[-1] == (10, 2)
 
 

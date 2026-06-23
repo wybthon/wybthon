@@ -45,7 +45,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Sequence, Tuple, TypeVar
 
-from .reactivity import Signal
+from .reactivity import Signal, batch
 
 __all__ = ["create_store", "produce"]
 
@@ -361,6 +361,13 @@ class _StoreSetter:
         if len(args) == 0:
             raise TypeError("set_store() requires at least one argument")
 
+        # All signal writes from a single ``set_store`` call are coalesced into
+        # one flush so that a consumer reading several paths in one effect sees
+        # a single, fully-settled update (glitch-free), matching SolidJS stores.
+        with batch():
+            self._apply(*args)
+
+    def _apply(self, *args: Any) -> None:
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, _ProduceResult):

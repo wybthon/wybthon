@@ -1,7 +1,5 @@
 """Tests for reactive merge_props and split_props proxy objects."""
 
-import time
-
 from wybthon.reactivity import (
     _MergedProps,
     _SplitProps,
@@ -119,7 +117,6 @@ def test_merge_props_reactive_tracking():
     assert log == [2]
 
     set_source({"b": 99})
-    time.sleep(0.05)
     assert log[-1] == 99
     dispose()
 
@@ -219,7 +216,6 @@ def test_split_props_reactive_tracking():
     assert log == [1]
 
     set_source({"x": 99, "y": 2})
-    time.sleep(0.05)
     assert log[-1] == 99
     dispose()
 
