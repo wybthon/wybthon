@@ -5,8 +5,6 @@ scopes.  These tests verify both the VNode structure and the reactive
 behaviour (re-rendering only when dependencies change).
 """
 
-import time
-
 from conftest import collect_texts
 
 from wybthon.flow import Dynamic, For, Index, Match, Show, Switch, _MatchResult
@@ -106,11 +104,9 @@ def test_show_reactive_toggle(wyb, root_element):
     assert "on" in collect_texts(root_element.element)
 
     set_visible(False)
-    time.sleep(0.05)
     assert "off" in collect_texts(root_element.element)
 
     set_visible(True)
-    time.sleep(0.05)
     assert "on" in collect_texts(root_element.element)
 
 
@@ -205,7 +201,6 @@ def test_for_reactive_list(wyb, root_element):
     assert "X" in texts and "Y" in texts
 
     set_items(["A", "B", "C"])
-    time.sleep(0.05)
     texts = collect_texts(root_element.element)
     assert "A" in texts and "B" in texts and "C" in texts
 
@@ -279,7 +274,6 @@ def test_index_reactive_list(wyb, root_element):
     assert "1" in texts and "2" in texts
 
     set_items([10, 20, 30])
-    time.sleep(0.05)
     texts = collect_texts(root_element.element)
     assert "10" in texts and "20" in texts and "30" in texts
 
@@ -379,11 +373,9 @@ def test_switch_reactive(wyb, root_element):
     assert "Loading..." in collect_texts(root_element.element)
 
     set_status("ready")
-    time.sleep(0.05)
     assert "Ready" in collect_texts(root_element.element)
 
     set_status("other")
-    time.sleep(0.05)
     assert "Unknown" in collect_texts(root_element.element)
 
 

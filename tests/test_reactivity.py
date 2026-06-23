@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 from wybthon.reactivity import batch, computed, effect, signal, use_resource
 
@@ -15,8 +14,6 @@ def test_signal_and_effect():
     # Initial run
     assert seen == [0]
     s.set(1)
-    # Allow async scheduler to run
-    time.sleep(0.05)
     assert seen[-1] == 1
     eff.dispose()
 
@@ -26,7 +23,6 @@ def test_computed_updates():
     b = computed(lambda: a.get() * 5)
     assert b.get() == 10
     a.set(3)
-    time.sleep(0.05)
     assert b.get() == 15
 
 
@@ -43,7 +39,6 @@ def test_batch_coalesces():
         a.set(1)
         a.set(2)
         a.set(3)
-    time.sleep(0.05)
     # Only the final value should be observed after batch
     assert seen[-1] == 3
 
@@ -61,7 +56,6 @@ def test_effect_dispose_cancels_pending():
     with batch():
         s.set(1)
         eff.dispose()
-    time.sleep(0.05)
     assert seen == [0]
 
 
@@ -80,7 +74,6 @@ def test_flush_deterministic_order():
     # Initial runs should be in subscription order
     assert seen[:2] == [("A", 0), ("B", 0)]
     s.set(1)
-    time.sleep(0.05)
     # Next runs should preserve FIFO order
     assert seen[-2:] == [("A", 1), ("B", 1)]
 
@@ -94,5 +87,4 @@ def test_resource_cancel_sets_loading_false():
     res = use_resource(fetcher)
     # Immediately cancel; loading should become False soon after
     res.cancel()
-    time.sleep(0.05)
     assert res.loading.get() is False

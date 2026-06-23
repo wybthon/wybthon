@@ -17,7 +17,7 @@ set_count(1)
   fast-path; pass `equals=False` to fire on every set, or a custom
   comparator (e.g., `equals=lambda a, b: a is b` for SolidJS-style
   identity-only semantics). See [Reactivity API](../api/reactivity.md).
-- `create_memo(fn)` returns a derived getter; re-computes only when deps change.
+- `create_memo(fn)` returns a derived getter; recomputes **lazily** on read after a dependency changes.
 - `create_effect(fn)` runs and re-runs on dependencies; supports previous value.
 - `batch()` batches updates as a context manager, or `batch(fn)` with callback.
 - `create_resource(fetcher)` returns an async data primitive with loading/error signals.
@@ -127,9 +127,35 @@ result = create_root(lambda dispose: ...)
 
 #### Scheduling semantics
 
-Effects are scheduled on a microtask in Pyodide via `queueMicrotask` when available, with fallbacks to `setTimeout(0)` and a pure-Python timer in non-browser environments. Wybthon guarantees deterministic FIFO ordering for effect re-runs: subscribers are notified in subscription order, and any updates scheduled during a flush are deferred to the next microtask to avoid reentrancy.
+Wybthon's scheduler is **synchronous and glitch-free**, matching SolidJS's
+observable behavior:
 
-`batch()` coalesces multiple setter operations into a single flush at the end of the batch. It can be used as a context manager or with a callback:
+- **Writes propagate synchronously.** Outside a `batch`, setting a signal
+  updates dependent memos and runs affected effects *before the setter
+  returns*. There's no microtask delay, and there's nothing to `await` or
+  sleep on: a read immediately after a write reflects the new value.
+- **Two phases per update.** A write first marks the graph stale (the "pure"
+  phase), then effects run (the "effect" phase) and *pull* their
+  dependencies. Because effects pull a fully-settled graph, an effect reading
+  several memos derived from the same signal never observes an inconsistent,
+  half-updated combination, and it runs **once** per logical change rather
+  than once per intermediate edge.
+- **Memos are lazy (pull-based).** A `create_memo` recomputes only when it's
+  *read* after one of its sources changed. A memo that's never read never
+  runs, and several writes before the next read coalesce into a single
+  recompute.
+- **Equality short-circuits downstream work.** When a memo recomputes to a
+  value equal to its previous one (per its `equals` policy), its consumers
+  are *not* re-run. A `create_memo(lambda: n() > 0)` that stays `True` as `n`
+  changes from `1` to `2` re-runs nothing downstream.
+- **Deterministic order.** Effects run in the order they were first marked
+  dirty (subscription order for a shared source). Effects enqueued while the
+  graph settles are drained within the same flush, so one logical update
+  fully settles before control returns.
+
+`batch()` defers the effect phase until the outermost batch exits, coalescing
+many writes into a single flush. It works as a context manager or with a
+callback:
 
 ```python
 # Context manager (Pythonic)
@@ -137,9 +163,11 @@ with batch():
     set_a(1)
     set_b(2)
 
-# Callback (SolidJS-style); effects flush synchronously before returning
+# Callback (SolidJS-style)
 batch(lambda: (set_a(1), set_b(2)))
 ```
+
+Both forms flush dependent effects synchronously when the batch exits.
 
 #### Ownership tree
 
@@ -215,7 +243,7 @@ def Timer(interval=1000):
 
 #### Disposal
 
-Calling `dispose()` on a computation cancels its subscriptions and removes any pending re-runs from the queue. Cleanup functions registered via `on_cleanup` inside effects are executed during disposal.
+Calling `dispose()` on a computation unsubscribes it from every dependency and drops it as a source for its own observers; a disposed effect is skipped if it's still sitting in the current flush queue. Cleanup functions registered via `on_cleanup` inside effects are executed during disposal.
 
 Disposing an `Owner` (or any subclass) walks the tree depth-first:
 children are disposed before the owner's own cleanups run.  After

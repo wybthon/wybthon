@@ -4,8 +4,6 @@ Verifies that For/Index create per-item/per-index reactive scopes,
 and that Show uses keyed conditional rendering.
 """
 
-import time
-
 from conftest import collect_texts
 
 from wybthon.flow import For, Index, Show
@@ -62,7 +60,6 @@ def test_for_index_getter_is_signal(wyb, root_element):
     assert captured_idx_getters[2]() == 2
 
     set_items([c, a, b])
-    time.sleep(0.05)
 
     assert captured_idx_getters[0]() == 1
     assert captured_idx_getters[1]() == 2
@@ -90,7 +87,6 @@ def test_for_disposes_scope_on_item_removal(wyb, root_element):
     assert cleanup_log == []
 
     set_items([a])
-    time.sleep(0.05)
 
     assert 1 in cleanup_log
     assert 2 in cleanup_log
@@ -122,7 +118,6 @@ def test_index_item_getter_updates_in_place(wyb, root_element):
     assert captured_getters[1]() == "B"
 
     set_items(["X", "Y"])
-    time.sleep(0.05)
 
     assert captured_getters[0]() == "X"
     assert captured_getters[1]() == "Y"
@@ -148,7 +143,6 @@ def test_index_disposes_on_shrink(wyb, root_element):
     assert cleanup_log == []
 
     set_items(["A"])
-    time.sleep(0.05)
 
     assert 1 in cleanup_log
     assert 2 in cleanup_log
@@ -181,11 +175,9 @@ def test_show_keyed_scope_disposal(wyb, root_element):
     assert "visible" in collect_texts(root_element.element)
 
     set_visible(False)
-    time.sleep(0.05)
     assert "hidden" in collect_texts(root_element.element)
 
     set_visible(True)
-    time.sleep(0.05)
     assert "visible" in collect_texts(root_element.element)
 
 
@@ -207,5 +199,4 @@ def test_show_stable_when_condition_unchanged(wyb, root_element):
     assert "count=1" in collect_texts(root_element.element)
 
     set_count(5)
-    time.sleep(0.05)
     assert "count=5" in collect_texts(root_element.element)

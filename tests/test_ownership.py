@@ -8,8 +8,6 @@ Verifies that:
 - Context values propagate through the ownership tree.
 """
 
-import time
-
 from conftest import collect_texts
 
 import wybthon as _wyb  # noqa: F401
@@ -95,7 +93,6 @@ def test_nested_effect_disposed_on_parent_rerun(wyb, root_element):
     assert inner_cleanups[0] == 0
 
     setter_ref[0](1)
-    time.sleep(0.05)
 
     # Inner effect from prev render was disposed (cleanup ran),
     # and a new one was created
@@ -131,7 +128,6 @@ def test_setup_effects_survive_rerender(wyb, root_element):
     assert setup_effect_cleanups[0] == 0
 
     setter_ref[0](1)
-    time.sleep(0.05)
 
     # Setup effect re-ran (it tracks count) but was NOT disposed
     assert setup_effect_runs[0] == 2
@@ -153,7 +149,6 @@ def test_create_root_disposes_all_effects():
         count, set_count = create_signal(0)
         create_effect(lambda: log.append(f"effect:{count()}"))
         set_count(1)
-        time.sleep(0.05)
         return dispose
 
     dispose_fn = create_root(body)

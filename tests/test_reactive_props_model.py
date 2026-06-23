@@ -14,8 +14,6 @@ These tests cover the headline features of the unified component model:
 
 from __future__ import annotations
 
-import time
-
 from conftest import collect_texts
 
 # ---------------------------------------------------------------------------
@@ -46,7 +44,6 @@ def test_prop_accessor_passed_into_tree_is_auto_hole(wyb, root_element):
     assert child_runs[0] == 1
 
     parent_setter[0]("Bob")
-    time.sleep(0.05)
 
     assert "Bob" in collect_texts(root_element.element)
     assert child_runs[0] == 1, "child setup must run only once"
@@ -73,7 +70,6 @@ def test_prop_accessor_can_be_called_for_static_value(wyb, root_element):
     assert "Hello, Alice!" in collect_texts(root_element.element)
 
     parent_setter[0]("Bob")
-    time.sleep(0.05)
 
     assert "Hello, Alice!" in collect_texts(root_element.element)
 
@@ -116,7 +112,6 @@ def test_props_accept_static_value_or_getter(wyb, root_element):
     assert "v=dynamic" in txt
 
     set_src("updated")
-    time.sleep(0.05)
     assert "updated" in "".join(collect_texts(root_element.element))
 
 
@@ -154,7 +149,6 @@ def test_provider_value_updates_fine_grainedly(wyb, root_element):
     assert consumer_runs[0] == 1
 
     parent_setter[0]("dark")
-    time.sleep(0.05)
 
     assert "theme=dark" in "".join(collect_texts(root_element.element))
     assert consumer_runs[0] == 1, "consumer body must run only once; hole updates the DOM"
@@ -195,7 +189,6 @@ def test_signal_default_value_equality_skips_same_reference():
     assert log == [items]
 
     set_s(items)
-    time.sleep(0.05)
     assert log == [items], "same reference → must skip via identity fast-path"
 
 
@@ -215,11 +208,9 @@ def test_signal_default_value_equality_skips_equal_value():
     assert len(log) == 1
 
     set_s([1, 2, 3])
-    time.sleep(0.05)
     assert len(log) == 1, "value-equal new object → must skip by default"
 
     set_s([1, 2, 4])
-    time.sleep(0.05)
     assert len(log) == 2, "value-different → must notify"
 
 
@@ -234,7 +225,6 @@ def test_signal_identity_equality_via_explicit_equals():
     assert len(log) == 1
 
     set_s([1, 2, 3])
-    time.sleep(0.05)
     assert len(log) == 2, "different identity → must notify under identity-equals"
 
 
@@ -249,7 +239,6 @@ def test_signal_equals_true_is_value_equality():
     assert len(log) == 1
 
     set_s({"a": 1})
-    time.sleep(0.05)
     assert len(log) == 1, "equals=True must skip on value-equal set"
 
 
@@ -263,7 +252,6 @@ def test_signal_equals_false_always_notifies():
 
     assert len(log) == 1
     set_s(0)
-    time.sleep(0.05)
     assert len(log) == 2
 
 

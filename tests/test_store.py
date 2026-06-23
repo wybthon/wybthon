@@ -1,7 +1,5 @@
 """Tests for create_store, produce, and the batch(fn) enhancement."""
 
-import time
-
 import pytest
 
 from wybthon.reactivity import batch, create_effect, create_signal, effect
@@ -137,7 +135,6 @@ class TestStoreReactivity:
         assert seen == [0]
 
         set_store("count", 5)
-        time.sleep(0.05)
         assert seen == [0, 5]
         eff.dispose()
 
@@ -152,7 +149,6 @@ class TestStoreReactivity:
         assert seen == ["Ada"]
 
         set_store("user", "name", "Jane")
-        time.sleep(0.05)
         assert seen == ["Ada", "Jane"]
         eff.dispose()
 
@@ -167,7 +163,6 @@ class TestStoreReactivity:
         assert seen == ["a"]
 
         set_store("items", 0, "z")
-        time.sleep(0.05)
         assert seen == ["a", "z"]
         eff.dispose()
 
@@ -182,7 +177,6 @@ class TestStoreReactivity:
         assert seen == [0]
 
         set_store("count", lambda c: c + 10)
-        time.sleep(0.05)
         assert seen == [0, 10]
         eff.dispose()
 
@@ -197,7 +191,6 @@ class TestStoreReactivity:
         assert seen == [3]
 
         set_store("items", lambda items: [*items, 4])
-        time.sleep(0.05)
         assert seen[-1] == 4
         eff.dispose()
 
@@ -209,7 +202,6 @@ class TestStoreReactivity:
         assert log == ["hello"]
 
         set_store("value", "world")
-        time.sleep(0.05)
         assert log == ["hello", "world"]
         comp.dispose()
 
@@ -258,7 +250,6 @@ class TestProduce:
         assert seen == [0]
 
         set_store(produce(lambda s: setattr(s, "count", 99)))
-        time.sleep(0.05)
         assert seen == [0, 99]
         eff.dispose()
 
@@ -308,7 +299,6 @@ class TestProduce:
         assert seen == ["A", "B", "C"]
 
         set_store(produce(lambda s: s.items.pop(0)))
-        time.sleep(0.05)
         assert seen == ["B", "C"]
         eff.dispose()
 
@@ -363,7 +353,6 @@ class TestBatchFunction:
             set_count(1)
             set_count(2)
             set_count(3)
-        time.sleep(0.05)
         assert seen[-1] == 3
         eff.dispose()
 
@@ -504,11 +493,9 @@ class TestStoreEdgeCases:
         assert texts == ["A", "B", "C"]
 
         set_store("todos", lambda ts: [t for t in ts if t["id"] != 1])
-        time.sleep(0.05)
         assert texts == ["B", "C"]
 
         set_store("todos", lambda ts: [t for t in ts if t["id"] != 3])
-        time.sleep(0.05)
         assert texts == ["B"]
         eff.dispose()
 
