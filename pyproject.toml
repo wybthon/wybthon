@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wybthon"
-version = "0.23.1"
+version = "0.24.0"
 description = "Client-side Python SPA framework via Pyodide"
 authors = [
   { name = "Owen Carey" }
@@ -61,6 +61,7 @@ Homepage = "https://github.com/wybthon/wybthon"
 Repository = "https://github.com/wybthon/wybthon"
 Issues = "https://github.com/wybthon/wybthon/issues"
 Changelog = "https://github.com/wybthon/wybthon/blob/main/CHANGELOG.md"
+
 
 
 [tool.setuptools.packages.find]

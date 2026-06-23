@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.24.0 (2026-06-23)
+
+### Documentation
+
+- Add AGENTS.md with documentation style guidelines
+  ([`8586870`](https://github.com/wybthon/wybthon/commit/8586870a5dd5c59f190562f362713dad226fc782))
+
+- Adopt CMOS punctuation and use contractions ([#2](https://github.com/wybthon/wybthon/pull/2),
+  [`57dbb14`](https://github.com/wybthon/wybthon/commit/57dbb145e60fdff762e2220b22fe16f4bc9f4fb9))
+
+- Serve documentation site from the apex domain ([#3](https://github.com/wybthon/wybthon/pull/3),
+  [`5cdfac6`](https://github.com/wybthon/wybthon/commit/5cdfac6604bfa683bd330f43d42a291a4ed14ed6))
+
+### Features
+
+- **reactivity**: Make core synchronous and glitch-free with lazy memos
+  ([#4](https://github.com/wybthon/wybthon/pull/4),
+  [`2e83560`](https://github.com/wybthon/wybthon/commit/2e8356036f9f9c1f4c589ef23254e88f4b2aa400))
+
+
 ## v0.23.1 (2026-06-01)
 
 ### Bug Fixes
