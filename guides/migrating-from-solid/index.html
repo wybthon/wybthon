@@ -1416,6 +1416,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Signals and effects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execution-semantics-carry-over" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution semantics carry over
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2736,6 +2753,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Signals and effects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execution-semantics-carry-over" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution semantics carry over
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2959,6 +2993,25 @@
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count =&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
 </span></code></pre></div>
 <p><code>create_effect</code> re-runs whenever signals it tracked during the previous run change. There's no manual dep array.</p>
+<h3 id="execution-semantics-carry-over">Execution semantics carry over<a class="headerlink" href="#execution-semantics-carry-over" title="Permanent link">&para;</a></h3>
+<p>The behaviors you rely on in Solid hold in Wybthon too:</p>
+<ul>
+<li><strong>Synchronous updates.</strong> Outside a <code>batch</code>, a <code>set</code> propagates before it
+  returns. After <code>set_count(1)</code>, both <code>count()</code> and any derived memo read the
+  new value immediately. (No <code>await</code>, no microtask, no test <code>sleep</code>.)</li>
+<li><strong>Glitch-free.</strong> An effect reading several memos derived from one signal
+  always sees a consistent combination and runs once per change, never on an
+  intermediate state.</li>
+<li><strong>Lazy memos.</strong> <code>create_memo</code> recomputes only when read after a dependency
+  changed, and skips notifying consumers when its value is unchanged (same
+  <code>equals</code>-based short-circuit as Solid).</li>
+<li><strong><code>batch</code></strong> coalesces writes and flushes once at the outermost boundary.</li>
+</ul>
+<p>One deliberate Python-flavored difference: because there's no JSX compiler to
+defer reads, <code>For</code>/<code>Index</code> re-run their mapping callback when the list
+changes, so natural eager expressions like <code>str(item())</code> work without an
+explicit accessor hole. Use <code>dynamic(...)</code> (or pass the accessor itself) where
+you want a value to stay live without a list change.</p>
 <h2 id="stores">Stores<a class="headerlink" href="#stores" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">produce</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>

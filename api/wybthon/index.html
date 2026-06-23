@@ -1967,6 +1967,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.Signal.peek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.Signal.set" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4076,6 +4087,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.Signal.peek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.Signal.set" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5494,7 +5516,7 @@ tree that update only the DOM nodes that depend on them.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt; (&lt;code&gt;wybthon.Signal&lt;/code&gt;)" href="#wybthon.Signal">Signal</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Mutable reactive container that notifies subscribed computations on change.</p>
+                <p>Mutable reactive container that notifies observers on change.</p>
               </div>
             </td>
           </tr>
@@ -5727,7 +5749,7 @@ tree that update only the DOM nodes that depend on them.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch&lt;/span&gt; (&lt;code&gt;wybthon.batch&lt;/code&gt;)" href="#wybthon.batch">batch</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Batch signal updates so subscribers flush once at the end.</p>
+                  <p>Batch signal updates so dependent effects flush once at the end.</p>
                 </div>
               </td>
             </tr>
@@ -6948,7 +6970,7 @@ touching <code>data</code> or <code>error</code>.</p>
 
 
 
-        <p>Mutable reactive container that notifies subscribed computations on change.</p>
+        <p>Mutable reactive container that notifies observers on change.</p>
 <p>Most code uses <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="#wybthon.create_signal"><code>create_signal</code></a> which returns a
 <code>(getter, setter)</code> tuple instead of exposing <code>Signal</code> instances directly.
 This class is part of the public surface so <code>Signal[T]</code> can be used in
@@ -7031,10 +7053,18 @@ for the full semantics.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;peek&lt;/span&gt; (&lt;code&gt;wybthon.Signal.peek&lt;/code&gt;)" href="#wybthon.Signal.peek">peek</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the current value without subscribing the active computation.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set&lt;/span&gt; (&lt;code&gt;wybthon.Signal.set&lt;/code&gt;)" href="#wybthon.Signal.set">set</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Write a new value and notify subscribers if it changed.</p>
+                  <p>Write a new value and synchronously notify observers if it changed.</p>
                 </div>
               </td>
             </tr>
@@ -7106,6 +7136,26 @@ future writes. Outside a tracking context the read is untracked.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="wybthon.Signal.peek" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">peek</span>
+
+
+<a href="#wybthon.Signal.peek" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">peek</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current value without subscribing the active computation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="wybthon.Signal.set" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set</span>
 
@@ -7116,10 +7166,12 @@ future writes. Outside a tracking context the read is untracked.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Write a new value and notify subscribers if it changed.</p>
+        <p>Write a new value and synchronously notify observers if it changed.</p>
 <p>Equality is determined by the <code>equals</code> policy passed to the
 constructor (default: <code>is</code> then <code>==</code>, with <code>equals=False</code> to
-bypass the check entirely).</p>
+bypass the check entirely). Outside a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch&lt;/span&gt;" href="#wybthon.batch"><code>batch</code></a>,
+dependent memos become readable immediately and effects run before
+this call returns.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10993,7 +11045,7 @@ Unknown field names are ignored.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Batch signal updates so subscribers flush once at the end.</p>
+        <p>Batch signal updates so dependent effects flush once at the end.</p>
 <p>Two call shapes are supported:</p>
 <ol>
 <li><strong>Context manager</strong> (Pythonic):
@@ -11006,8 +11058,8 @@ Unknown field names are ignored.</p>
 </span></code></pre></div></li>
 </ol>
 <p>When called with a function, the function's return value is returned.
-Effects are flushed synchronously before <code>batch</code> returns, matching
-SolidJS semantics.</p>
+Effects are flushed synchronously when the outermost batch exits,
+matching SolidJS semantics.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11281,8 +11333,8 @@ previous return value is forwarded.</p>
     <div class="doc doc-contents ">
 
         <p>Create an auto-tracking computed value and return its getter.</p>
-<p>Re-computes only when signals read inside <code>fn</code> change. Inside a
-component, the underlying computation is disposed on unmount.</p>
+<p>Re-computes lazily, only when read after a tracked source changed.
+Inside a component, the underlying computation is disposed on unmount.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

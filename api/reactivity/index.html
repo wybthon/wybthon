@@ -1868,28 +1868,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.reactivity.Computation.run" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;run
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.reactivity.Computation.schedule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;schedule
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.reactivity.Computation.dispose" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1922,6 +1900,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.Signal.peek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
       
     </span>
   </a>
@@ -3212,28 +3201,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.reactivity.Computation.run" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;run
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.reactivity.Computation.schedule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;schedule
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.reactivity.Computation.dispose" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3266,6 +3233,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.Signal.peek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
       
     </span>
   </a>
@@ -3758,17 +3736,28 @@
     <div class="doc doc-contents first">
 
         <p>Signal-based reactive primitives with an ownership tree.</p>
-<p>This module is the heart of Wybthon's SolidJS-inspired reactivity. Every
-reactive computation (effect, memo) is <strong>owned</strong> by a parent scope. When
-that scope re-runs or is disposed, all child computations are torn down
-automatically, preventing leaks and giving lifecycle semantics that
-match component mount/unmount boundaries.</p>
+<p>This module is the heart of Wybthon's SolidJS-inspired reactivity. It
+implements a <strong>synchronous, glitch-free, pull-based</strong> reactive graph that
+matches SolidJS's observable semantics:</p>
+<ul>
+<li>Writing a signal synchronously propagates to dependents before the
+  setter returns (outside an explicit :func:<code>batch</code>).</li>
+<li>Memos are <strong>lazy</strong>: they recompute only when read after a dependency
+  changed, and they skip notifying their own observers when the
+  recomputed value is unchanged (the glitch-free "equality short-circuit").</li>
+<li>Effects run in a second phase after pure computations have settled, so
+  an effect never observes a half-updated graph.</li>
+</ul>
+<p>Every reactive computation (effect, memo) is also <strong>owned</strong> by a parent
+scope. When that scope re-runs or is disposed, all child computations are
+torn down automatically, preventing leaks and giving lifecycle semantics
+that match component mount/unmount boundaries.</p>
 <p>Core types:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt;" href="../wybthon/#wybthon.Signal"><code>Signal</code></a>: mutable reactive container.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="#wybthon.reactivity.Owner"><code>Owner</code></a>: base ownership scope (cleanups + children).</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Computation&lt;/span&gt;" href="#wybthon.reactivity.Computation"><code>Computation</code></a>: a reactive computation
-  that is itself an ownership scope.</li>
+  (effect or memo) that is itself an ownership scope.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a>: async data wrapper with <code>data</code>/<code>error</code>/<code>loading</code>.</li>
 </ul>
 <p>Public primitives:</p>
@@ -3796,7 +3785,7 @@ match component mount/unmount boundaries.</p>
 <span class="n">doubled</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;doubled:&quot;</span><span class="p">,</span> <span class="n">doubled</span><span class="p">()))</span>
 
-<span class="n">set_count</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># logs &quot;doubled: 4&quot; on the next microtask flush</span>
+<span class="n">set_count</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># synchronously prints &quot;doubled: 4&quot;</span>
 </code></pre></div>
 </details>
 
@@ -3829,7 +3818,7 @@ match component mount/unmount boundaries.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Computation&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Computation&lt;/code&gt;)" href="#wybthon.reactivity.Computation">Computation</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Reactive computation that tracks signals and re-runs when they change.</p>
+                <p>Reactive computation that tracks sources and re-runs when they change.</p>
               </div>
             </td>
           </tr>
@@ -3837,7 +3826,7 @@ match component mount/unmount boundaries.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Signal&lt;/code&gt;)" href="#wybthon.reactivity.Signal">Signal</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Mutable reactive container that notifies subscribed computations on change.</p>
+                <p>Mutable reactive container that notifies observers on change.</p>
               </div>
             </td>
           </tr>
@@ -3892,7 +3881,7 @@ match component mount/unmount boundaries.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.batch&lt;/code&gt;)" href="#wybthon.reactivity.batch">batch</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Batch signal updates so subscribers flush once at the end.</p>
+                  <p>Batch signal updates so dependent effects flush once at the end.</p>
                 </div>
               </td>
             </tr>
@@ -4235,7 +4224,7 @@ Subsequent calls are no-ops.</p>
 
 
 <a href="#wybthon.reactivity.Computation" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Computation</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Computation</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_effect</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_memo</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">equals</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._DEFAULT_EQUALS">_DEFAULT_EQUALS</span></span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4244,9 +4233,11 @@ Subsequent calls are no-ops.</p>
 
 
 
-        <p>Reactive computation that tracks signals and re-runs when they change.</p>
-<p>Also serves as an ownership scope: child computations created during
-execution are disposed before each re-run, preventing leaks from
+        <p>Reactive computation that tracks sources and re-runs when they change.</p>
+<p>A computation is either an <strong>effect</strong> (run for its side effects) or a
+<strong>memo</strong> (a lazily-recomputed derived value that other computations can
+observe). It is also an ownership scope: child computations created
+during execution are disposed before each re-run, preventing leaks from
 conditionally-created effects.</p>
 
 
@@ -4266,19 +4257,49 @@ conditionally-created effects.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The callback executed by <code>run()</code>.</p>
+                <p>The callback executed by <code>_update()</code>.</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code><span title="wybthon.reactivity.Computation._deps">_deps</span></code></td>
+            <td><code><span title="wybthon.reactivity.Computation._sources">_sources</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Set&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Set">Set</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Signal&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Signal&lt;/code&gt;)" href="#wybthon.reactivity.Signal">Signal</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Set of signals this computation currently subscribes to.
-Cleared and rebuilt on every <code>run()</code>.</p>
+                <p>Sources (signals or memos) read during the last run.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.reactivity.Computation._state">_state</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One of <code>_CLEAN</code> / <code>_CHECK</code> / <code>_DIRTY</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.reactivity.Computation._is_effect">_is_effect</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True for effects (scheduled in the effects phase).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.reactivity.Computation._is_memo">_is_memo</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True for memos (carry a value and observers).</p>
               </div>
             </td>
           </tr>
@@ -4305,22 +4326,6 @@ Cleared and rebuilt on every <code>run()</code>.</p>
         </tr>
       </thead>
       <tbody>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Computation.run&lt;/code&gt;)" href="#wybthon.reactivity.Computation.run">run</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Re-execute the tracked function, refreshing its dependency set.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;schedule&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Computation.schedule&lt;/code&gt;)" href="#wybthon.reactivity.Computation.schedule">schedule</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Enqueue this computation for the next flush.</p>
-                </div>
-              </td>
-            </tr>
             <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dispose&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Computation.dispose&lt;/code&gt;)" href="#wybthon.reactivity.Computation.dispose">dispose</a></code></td>
               <td>
@@ -4351,52 +4356,6 @@ Cleared and rebuilt on every <code>run()</code>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="wybthon.reactivity.Computation.run" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">run</span>
-
-
-<a href="#wybthon.reactivity.Computation.run" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Re-execute the tracked function, refreshing its dependency set.</p>
-<p>Disposes child owners and runs cleanups before each re-run so that
-conditional effects don't leak. The previous dependency edges are
-torn down and rebuilt while the body executes under this owner.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="wybthon.reactivity.Computation.schedule" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">schedule</span>
-
-
-<a href="#wybthon.reactivity.Computation.schedule" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">schedule</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Enqueue this computation for the next flush.</p>
-<p>Called by <code>Signal.set</code> when a tracked dependency changes. When no
-batch is active a microtask flush is scheduled; otherwise the
-computation is held until the outermost batch completes.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h4 id="wybthon.reactivity.Computation.dispose" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">dispose</span>
 
@@ -4408,8 +4367,8 @@ computation is held until the outermost batch completes.</p>
     <div class="doc doc-contents ">
 
         <p>Dispose the computation and unsubscribe from all dependencies.</p>
-<p>Removes this computation from any pending flush queue, clears
-dependency edges, and tears down child owners and cleanups.</p>
+<p>Removes dependency edges, drops this node as a source for any of its
+observers, tears down child owners, and runs cleanups.</p>
 
 
     </div>
@@ -4442,7 +4401,7 @@ dependency edges, and tears down child owners and cleanups.</p>
 
 
 
-        <p>Mutable reactive container that notifies subscribed computations on change.</p>
+        <p>Mutable reactive container that notifies observers on change.</p>
 <p>Most code uses <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../wybthon/#wybthon.create_signal"><code>create_signal</code></a> which returns a
 <code>(getter, setter)</code> tuple instead of exposing <code>Signal</code> instances directly.
 This class is part of the public surface so <code>Signal[T]</code> can be used in
@@ -4525,10 +4484,18 @@ for the full semantics.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;peek&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Signal.peek&lt;/code&gt;)" href="#wybthon.reactivity.Signal.peek">peek</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the current value without subscribing the active computation.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Signal.set&lt;/code&gt;)" href="#wybthon.reactivity.Signal.set">set</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Write a new value and notify subscribers if it changed.</p>
+                  <p>Write a new value and synchronously notify observers if it changed.</p>
                 </div>
               </td>
             </tr>
@@ -4600,6 +4567,26 @@ future writes. Outside a tracking context the read is untracked.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="wybthon.reactivity.Signal.peek" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">peek</span>
+
+
+<a href="#wybthon.reactivity.Signal.peek" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">peek</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the current value without subscribing the active computation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="wybthon.reactivity.Signal.set" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set</span>
 
@@ -4610,10 +4597,12 @@ future writes. Outside a tracking context the read is untracked.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Write a new value and notify subscribers if it changed.</p>
+        <p>Write a new value and synchronously notify observers if it changed.</p>
 <p>Equality is determined by the <code>equals</code> policy passed to the
 constructor (default: <code>is</code> then <code>==</code>, with <code>equals=False</code> to
-bypass the check entirely).</p>
+bypass the check entirely). Outside a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch&lt;/span&gt;" href="../wybthon/#wybthon.batch"><code>batch</code></a>,
+dependent memos become readable immediately and effects run before
+this call returns.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5798,7 +5787,7 @@ receiving the previous return value as an argument.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Batch signal updates so subscribers flush once at the end.</p>
+        <p>Batch signal updates so dependent effects flush once at the end.</p>
 <p>Two call shapes are supported:</p>
 <ol>
 <li><strong>Context manager</strong> (Pythonic):
@@ -5811,8 +5800,8 @@ receiving the previous return value as an argument.</p>
 </span></code></pre></div></li>
 </ol>
 <p>When called with a function, the function's return value is returned.
-Effects are flushed synchronously before <code>batch</code> returns, matching
-SolidJS semantics.</p>
+Effects are flushed synchronously when the outermost batch exits,
+matching SolidJS semantics.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6493,8 +6482,8 @@ previous return value is forwarded.</p>
     <div class="doc doc-contents ">
 
         <p>Create an auto-tracking computed value and return its getter.</p>
-<p>Re-computes only when signals read inside <code>fn</code> change. Inside a
-component, the underlying computation is disposed on unmount.</p>
+<p>Re-computes lazily, only when read after a tracked source changed.
+Inside a component, the underlying computation is disposed on unmount.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7694,9 +7683,15 @@ notified, instead of every subscriber re-running.</p>
 </tbody>
 </table>
 <h5 id="computationowner"><code>Computation(Owner)</code><a class="headerlink" href="#computationowner" title="Permanent link">&para;</a></h5>
-<p>Reactive computation that tracks <code>Signal</code> reads and re-runs when they
-change.  Also an ownership scope: child computations created during
-execution are disposed before each re-run.</p>
+<p>Reactive computation (an <strong>effect</strong> or a <strong>memo</strong>) that tracks its sources
+(signals and other memos) and re-runs when they change.  Also an ownership
+scope: child computations created during execution are disposed before each
+re-run.</p>
+<p>Each computation carries a state for the push-mark / pull-recompute scheduler:
+<code>CLEAN</code> (current), <code>CHECK</code> (a transitive source <em>may</em> have changed), or
+<code>DIRTY</code> (a direct source <em>did</em> change).  A signal write pushes <code>DIRTY</code>/<code>CHECK</code>
+markers out to dependents and queues affected effects; effects then <em>pull</em>
+their sources up to date, which keeps updates glitch-free.</p>
 <table>
 <thead>
 <tr>
@@ -7706,16 +7701,20 @@ execution are disposed before each re-run.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>run()</code></td>
-<td>Dispose children and cleanups, clear deps, re-execute the function under <code>_current_owner = self</code>.</td>
+<td><code>_stale(state)</code></td>
+<td>Mark <code>CHECK</code>/<code>DIRTY</code> and propagate a <code>CHECK</code> to observers; queue the node when it's an effect transitioning from <code>CLEAN</code>.</td>
 </tr>
 <tr>
-<td><code>schedule()</code></td>
-<td>Enqueue a re-run on the next flush.</td>
+<td><code>_update_if_necessary()</code></td>
+<td>Resolve <code>CHECK</code> by pulling sources, then recompute if <code>DIRTY</code>. Marked <code>CLEAN</code> before recompute so a re-entrant self-write reschedules it.</td>
+</tr>
+<tr>
+<td><code>_update()</code></td>
+<td>Dispose children and cleanups, rebuild the dependency set, and re-execute the function under <code>_current_owner = _current_observer = self</code>. For memos, store the new value and escalate observers to <code>DIRTY</code> only when it changed.</td>
 </tr>
 <tr>
 <td><code>dispose()</code></td>
-<td>Cancel subscriptions, clear deps, remove from pending queue, run cleanups.</td>
+<td>Unsubscribe from all sources, drop self as a source for any observers, dispose children, run cleanups.</td>
 </tr>
 </tbody>
 </table>
@@ -7724,7 +7723,7 @@ execution are disposed before each re-run.</p>
 <ul>
 <li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code>. Optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.</li>
 <li><code>create_effect(fn) -&gt; Computation</code>. The returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.</li>
-<li><code>create_memo(fn) -&gt; getter</code>. Creates a <code>Computation</code> under the current owner; disposed when the owner is disposed.</li>
+<li><code>create_memo(fn) -&gt; getter</code>. Creates a lazy memo <code>Computation</code> under the current owner; recomputes only when read after a source changed, and is disposed when the owner is disposed.</li>
 <li><code>on_mount(fn)</code>. Run after first render.</li>
 <li><code>on_cleanup(fn)</code>. Appends <code>fn</code> to the current owner's cleanup list.  Inside <code>create_effect</code>: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.</li>
 <li><code>batch() -&gt; context manager</code> or <code>batch(fn) -&gt; result</code>. The callback form flushes synchronously.</li>
@@ -7817,9 +7816,14 @@ proxy unwraps it transparently, and children always read with <code>props.name()
 <li><code>create_selector(source)</code>. Efficient selection signal.  Returns <code>is_selected(key) -&gt; bool</code>.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).</li>
 </ul>
 <h5 id="global-state">Global state<a class="headerlink" href="#global-state" title="Permanent link">&para;</a></h5>
-<p>A single <code>_current_owner</code> global tracks the active ownership scope.
-When a <code>Computation.run()</code> executes, it sets <code>_current_owner = self</code> so
-that any effects or memos created during execution become its children.</p>
+<p>Two module globals drive tracking. <code>_current_owner</code> is the active ownership
+scope: effects and memos created while it's set become its children.
+<code>_current_observer</code> is the computation currently recording dependencies: a
+signal or memo read while it's set subscribes that observer. <code>Computation._update()</code>
+sets both to <code>self</code> while it executes, so reads link to the running
+computation and newly created scopes are owned by it. Effects flush
+synchronously through a shared queue; <code>batch()</code> defers that flush to the
+outermost batch boundary.</p>
 <p>Type hints are provided for all public functions and classes.</p>
 
 
