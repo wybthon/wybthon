@@ -35,3 +35,44 @@ jobs:
         with:
           name: benchmark-results
           path: bench_results.json
+
+  browser-benchmark:
+    name: Browser Benchmark (Pyodide)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and Playwright
+        run: |
+          pip install -e .
+          pip install playwright
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-bench-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-bench-
+
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run browser benchmark
+        run: python benchmarks/browser_bench.py --json | tee browser_bench_results.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-benchmark-results
+          path: browser_bench_results.json

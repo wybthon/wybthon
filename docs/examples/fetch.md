@@ -3,7 +3,7 @@
 Fetch data with `create_resource`.
 
 ```python
-from wybthon import Suspense, h, create_resource
+from wybthon import Suspense, component, dynamic, h, create_resource
 
 async def load_data(signal=None):
     # e.g., using js.fetch with AbortSignal
@@ -11,17 +11,24 @@ async def load_data(signal=None):
 
 res = create_resource(load_data)
 
-def Content(props):
-    if res.error.get():
-        return h("div", {}, f"Error: {res.error.get()}")
-    return h("pre", {}, str(res.data.get()))
+@component
+def Content():
+    def render():
+        if res.error:
+            return h("div", {}, f"Error: {res.error}")
+        return h("pre", {}, str(res()))
 
-View = lambda props: h(
-    Suspense,
-    {"resource": res, "fallback": h("div", {}, "Loading..."), "keep_previous": True},
-    Content({}),
+    return dynamic(render)
+
+view = Suspense(
+    fallback=h("div", {}, "Loading..."),
+    children=lambda: h(Content, {}),
 )
 ```
+
+Reading `res()` inside the boundary is what wires it to `Suspense`;
+while the resource is pending, the boundary shows the fallback
+automatically.
 
 #### With source signal
 

@@ -10,6 +10,21 @@ fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
 the Python and JS bridge.
 
+#### Template-based mounting
+
+Under Pyodide, mount cost is dominated by Python-to-JS FFI round trips,
+not by the DOM operations themselves.  The reconciler therefore
+serializes the static parts of each host-element subtree into one HTML
+string, parses it through a single `<template>` element, and wires
+reactive bindings, event handlers, and dynamic children onto the cloned
+nodes in one pass.  Mounting N static nodes costs roughly one FFI call
+instead of N.
+
+You get this for free; there's no opt-in.  Subtrees that can't be
+expressed as HTML (form-control `value`/`checked`, raw-text elements,
+and similar) fall back to node-by-node mounting with identical
+behavior.  See the [`template`][wybthon.template] API page.
+
 #### Authoring tips
 
 - **Prefer holes over re-rendering.**  Embed a signal accessor (or
@@ -40,8 +55,17 @@ the Python and JS bridge.
   affected holes flush together.
 
 - **Use `For` / `Index` for dynamic lists.**  These maintain stable
-  per-item (or per-index) reactive scopes so the mapping callback
-  runs once per unique item, not per re-render.
+  per-item (or per-index) reactive scopes and **cache the rendered
+  subtree per item**: on a list change, only added items map, removed
+  items dispose, and reorders move the existing DOM nodes.
+
+- **Use `create_selector` for selection state.**  A selector notifies
+  only the previously-selected and newly-selected rows, so selecting a
+  row in a 10,000-row table touches two rows instead of all of them.
+
+- **Use `reconcile` for server data.**  Diffing fresh data into a store
+  (rather than replacing it) keeps identities stable, so `For` rows for
+  unchanged items keep their DOM.
 
 #### Micro-benchmarking
 
@@ -51,11 +75,14 @@ Run the included benchmarks against the stubbed DOM:
 python benchmarks/bench_runner.py
 ```
 
-The runner measures:
+The app under test is built the idiomatic fine-grained way (mount once,
+then drive everything through signal writes with `For` and
+`create_selector`), so the numbers reflect what a well-written Wybthon
+app pays. The runner measures:
 
 - Standard JS framework benchmark workloads (create, update, swap, and
   remove rows in a 1k to 10k row table); useful as a regression smoke
-  test for the diffing algorithm.
+  test for the list primitives and the template mount path.
 - **`hole update (1k tree)`**: change one signal that drives a single
   reactive hole inside a 1,000-node tree.
 - **`full rerender (1k tree)`**: re-render the entire tree and let the
@@ -69,14 +96,20 @@ real browser DOM mutations) the gap is dramatic:
 | Benchmark              | Mean   |
 |------------------------|-------:|
 | `hole update (1k tree)` | ~0.01 ms |
-| `full rerender (1k tree)` | ~25 ms  |
+| `full rerender (1k tree)` | ~9 ms  |
 
-In real Pyodide deployments the absolute numbers shift, but the
-relative ordering is the same: skipping the diff entirely is always a
-win.
+Fine-grained operations show the same pattern in the table workloads:
+selecting a row is ~0.02 ms (two class flips via `create_selector`) and
+a partial update of every 10th label is under a millisecond, while
+creating 1,000 rows from scratch, which must build and mount 1,000
+subtrees, sits in the hundreds of milliseconds.
 
 Use `--bench=<name>` to run a single benchmark or `--json` to emit
 machine-readable output.
+
+`benchmarks/browser_bench.py` runs the real browser app (Pyodide +
+headless Chromium) for end-to-end numbers that include FFI and layout;
+see `benchmarks/README.md`.
 
 ## Next steps
 

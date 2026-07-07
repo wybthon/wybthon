@@ -62,13 +62,18 @@ from .reactivity import (
     Resource,
     Signal,
     batch,
+    catch_error,
     children,
+    create_computed,
+    create_deferred,
     create_effect,
     create_memo,
+    create_render_effect,
     create_resource,
     create_root,
     create_selector,
     create_signal,
+    create_unique_id,
     get_owner,
     get_props,
     index_array,
@@ -81,10 +86,10 @@ from .reactivity import (
     split_props,
     untrack,
 )
-from .store import create_store, produce
+from .store import create_mutable, create_store, produce, reconcile, unwrap
 
 # Pure-Python VDOM data structures are available in any environment.
-from .vnode import Fragment, VNode, dynamic, h, is_getter, memo
+from .vnode import Fragment, VNode, dynamic, h, is_getter
 
 __version__ = "0.24.0"
 
@@ -177,16 +182,20 @@ if _IN_BROWSER:
         "render",
         "ErrorBoundary",
         "Suspense",
-        "memo",
         "create_portal",
         "dynamic",
         "is_getter",
         # Reactivity
         "create_signal",
         "create_effect",
+        "create_render_effect",
+        "create_computed",
+        "create_deferred",
         "create_memo",
         "create_resource",
         "create_root",
+        "create_unique_id",
+        "catch_error",
         "batch",
         "on_mount",
         "on_cleanup",
@@ -245,7 +254,10 @@ if _IN_BROWSER:
         "error_message_attrs",
         # Stores
         "create_store",
+        "create_mutable",
         "produce",
+        "reconcile",
+        "unwrap",
         # Lazy loading
         "lazy",
         "load_component",
@@ -321,15 +333,19 @@ else:
         "VNode",
         "h",
         "Fragment",
-        "memo",
         "dynamic",
         "is_getter",
         # Reactivity
         "create_signal",
         "create_effect",
+        "create_render_effect",
+        "create_computed",
+        "create_deferred",
         "create_memo",
         "create_resource",
         "create_root",
+        "create_unique_id",
+        "catch_error",
         "batch",
         "on_mount",
         "on_cleanup",
@@ -362,7 +378,10 @@ else:
         "Dynamic",
         # Stores
         "create_store",
+        "create_mutable",
         "produce",
+        "reconcile",
+        "unwrap",
         # Forms
         "bind_text",
         "bind_checkbox",

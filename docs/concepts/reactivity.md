@@ -13,14 +13,21 @@ set_count(1)
 ```
 
 - `create_signal(value, *, equals=...)` returns a `(getter, setter)` tuple.
-  By default `equals` uses **value equality** (`==`) with an identity
-  fast-path; pass `equals=False` to fire on every set, or a custom
-  comparator (e.g., `equals=lambda a, b: a is b` for SolidJS-style
-  identity-only semantics). See [Reactivity API](../api/reactivity.md).
+  The setter accepts either a new value or an **updater function**
+  (`set_count(lambda n: n + 1)`). By default `equals` uses **value
+  equality** (`==`) with an identity fast-path; pass `equals=False` to
+  fire on every set, or a custom comparator (e.g.,
+  `equals=lambda a, b: a is b` for SolidJS-style identity-only
+  semantics). See [Reactivity API](../api/reactivity.md).
 - `create_memo(fn)` returns a derived getter; recomputes **lazily** on read after a dependency changes.
 - `create_effect(fn)` runs and re-runs on dependencies; supports previous value.
+- `create_render_effect(fn)` is like `create_effect` but runs in the **render phase**, before user effects (the framework's own DOM bindings live here).
+- `create_computed(fn)` runs eagerly in the render phase; use it to push derived state into another signal.
 - `batch()` batches updates as a context manager, or `batch(fn)` with callback.
-- `create_resource(fetcher)` returns an async data primitive with loading/error signals.
+- `create_resource(fetcher)` returns an async data primitive with loading/error state.
+- `create_deferred(source)` returns a getter that trails `source` by one event-loop tick, decoupling expensive consumers from rapid updates.
+- `create_unique_id()` returns a stable unique string for `id`/`for`/`aria-*` wiring.
+- `catch_error(fn, handler)` runs `fn` under a scope whose errors (now or from effects created inside) route to `handler`.
 
 #### Reactive utilities
 
@@ -251,7 +258,7 @@ disposal, the owner is removed from its parent's children list.
 
 #### Resources, cancellation, and Suspense
 
-`create_resource(fetcher)` creates a `Resource` with `data`, `error`, and `loading` signals. Calling `reload()` starts a new fetch and sets `loading=True`. Calling `cancel()` aborts any in-flight JS fetch (via `AbortController` when available), cancels the Python task, invalidates the current version to ignore late results, and sets `loading=False`.
+`create_resource(fetcher)` creates a `Resource`, a callable accessor with tracked `loading`, `error`, `latest`, and `state` properties. Calling `refetch()` starts a new fetch. Calling `cancel()` aborts any in-flight JS fetch (via `AbortController` when available), cancels the Python task, invalidates the current version to ignore late results, and resets `loading`. `mutate(value)` writes the data directly for optimistic updates.
 
 You can also pass a source signal to automatically refetch when it changes:
 
@@ -260,15 +267,15 @@ from wybthon import create_resource, create_signal
 
 user_id, set_user_id = create_signal(1)
 
-async def load_user(signal=None):
-    resp = await fetch(f"/api/users/{user_id()}")
+async def load_user(uid, signal=None):
+    resp = await fetch(f"/api/users/{uid}")
     return await resp.json()
 
 res = create_resource(user_id, load_user)
 # Changing user_id will automatically refetch
 ```
 
-To render a loading UI declaratively, wrap UI with `Suspense` and pass a `resource` (or `resources=[...]`) and a `fallback`:
+To render a loading UI declaratively, wrap the UI in `Suspense`. Reading a pending resource inside the boundary registers it automatically; no manual wiring is needed:
 
 ```python
 from wybthon import Suspense, h, create_resource
@@ -279,14 +286,13 @@ async def load_user(signal=None):
 
 res = create_resource(load_user)
 
-view = h(
-    Suspense,
-    {"resource": res, "fallback": h("p", {}, "Loading user...")},
-    h("pre", {}, lambda p: str(res.data.get())),
+view = Suspense(
+    fallback=h("p", {}, "Loading user..."),
+    children=lambda: h("pre", {}, lambda: str(res())),
 )
 ```
 
-- Pass `keep_previous=True` to keep previously rendered children visible during subsequent reloads while still showing new data once ready.
+- Refetches (`state == "refreshing"`) don't re-trigger `Suspense`; the previous data stays readable through the accessor and `latest`, matching SolidJS.
 
 ## Next steps
 

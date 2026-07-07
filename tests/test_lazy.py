@@ -79,7 +79,7 @@ def test_load_component_mounts_resolved_module(wyb, monkeypatch, root_element):
         load_component = importlib.import_module("wybthon.lazy").load_component
 
     comp = load_component("_wyb_test_loaded_page", "Page")
-    wyb["vdom"].render(h(comp, {}), root_element)
+    wyb["reconciler"].render(h(comp, {}), root_element)
 
     texts = collect_texts(root_element.element)
     assert "hello from loaded page" in texts
@@ -105,7 +105,7 @@ def test_lazy_mounts_resolved_module(wyb, monkeypatch, root_element):
         return ("_wyb_test_team_page", "Page")
 
     LazyComp = lazy(_Loader)
-    wyb["vdom"].render(h(LazyComp, {}), root_element)
+    wyb["reconciler"].render(h(LazyComp, {}), root_element)
 
     texts = collect_texts(root_element.element)
     assert "Our Team" in texts
@@ -121,7 +121,7 @@ def test_lazy_renders_error_state_on_import_failure(wyb, root_element):
         return ("__definitely_not_a_real_module__", "Page")
 
     LazyComp = lazy(_BrokenLoader)
-    wyb["vdom"].render(h(LazyComp, {}), root_element)
+    wyb["reconciler"].render(h(LazyComp, {}), root_element)
 
     texts = collect_texts(root_element.element)
     assert any("Failed to load" in (t or "") for t in texts), f"Expected lazy error fallback, got: {texts!r}"

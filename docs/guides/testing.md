@@ -68,7 +68,7 @@ For Python-only logic (e.g., `reactivity`, `forms` helpers), write regular `pyte
 Several core modules are browser-agnostic and can be tested without any
 stubs:
 
-- `wybthon.vnode`: VNode creation, `h()`, `Fragment`, `memo()`
+- `wybthon.vnode`: VNode creation, `h()`, `Fragment`, `dynamic()`
 - `wybthon.error_boundary`: ErrorBoundary component logic
 - `wybthon.suspense`: Suspense component logic
 - `wybthon._warnings`: dev-mode error reporting

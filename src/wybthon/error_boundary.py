@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from .reactivity import _get_component_ctx, create_signal, read_prop
+from .reactivity import _get_component_ctx, create_signal
 from .vnode import Fragment, VNode, dynamic, to_text_vnode
 
 __all__ = ["ErrorBoundary"]
@@ -24,9 +24,9 @@ def _compute_reset_token(props: Any) -> str:
     """Derive a stable token from `reset_keys` / `reset_key` for auto-clear."""
     try:
         if "reset_keys" in props:
-            rk: Any = read_prop(props, "reset_keys")
+            rk: Any = props.value("reset_keys")
         elif "reset_key" in props:
-            rk = read_prop(props, "reset_key")
+            rk = props.value("reset_key")
         else:
             return ""
         if callable(rk):
@@ -51,7 +51,7 @@ def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
         node when the prop is missing or when the user-supplied
         callable raises.
     """
-    fb = read_prop(props, "fallback")
+    fb = props.value("fallback")
     if callable(fb) and not isinstance(fb, VNode):
         try:
             try:
@@ -97,7 +97,7 @@ def ErrorBoundary(props: Any) -> Any:
 
     def _handle_error(err: Any) -> None:
         set_error(err)
-        handler = read_prop(props, "on_error")
+        handler = props.value("on_error")
         if callable(handler):
             try:
                 handler(err)
@@ -119,7 +119,7 @@ def ErrorBoundary(props: Any) -> Any:
         if err is not None:
             return _render_fallback(err, props, reset)
 
-        children = read_prop(props, "children", [])
+        children = props.value("children", [])
         if children is None:
             children = []
         if not isinstance(children, list):

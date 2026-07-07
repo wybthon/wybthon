@@ -16,13 +16,15 @@ def test_fallback_then_content(goto_feature):
     expect(page.get_by_test_id("susp-fallback")).to_have_count(0)
 
 
-def test_reload_shows_fallback_again(goto_feature):
+def test_reload_keeps_content_until_new_data(goto_feature):
+    """Refetches don't re-trigger Suspense; previous data stays visible."""
     page = goto_feature("suspense")
     page.get_by_test_id("susp-resolve").click()
     expect(page.get_by_test_id("susp-content")).to_have_text("payload-1")
 
     page.get_by_test_id("susp-reload").click()
-    expect(page.get_by_test_id("susp-fallback")).to_have_text("loading")
+    expect(page.get_by_test_id("susp-content")).to_have_text("payload-1")
+    expect(page.get_by_test_id("susp-fallback")).to_have_count(0)
 
     page.get_by_test_id("susp-resolve").click()
     expect(page.get_by_test_id("susp-content")).to_have_text("payload-2")

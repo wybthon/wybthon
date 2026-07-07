@@ -8,7 +8,7 @@ import asyncio
 
 from app.testkit import tid
 
-from wybthon import Suspense, button, component, create_resource, div, dynamic, h, h2, span
+from wybthon import Suspense, button, component, create_resource, div, dynamic, h2, span
 
 
 @component
@@ -28,14 +28,13 @@ def Page():
 
     def reload(_e):
         gate.clear()
-        res.reload()
+        res.refetch()
 
     return div(
         h2("Suspense"),
-        h(
-            Suspense,
-            {"resource": res, "fallback": lambda: span("loading", **tid("susp-fallback"))},
-            span(dynamic(lambda: res.data.get() or ""), **tid("susp-content")),
+        Suspense(
+            fallback=lambda: span("loading", **tid("susp-fallback")),
+            children=lambda: span(dynamic(lambda: res() or ""), **tid("susp-content")),
         ),
         button("resolve", on_click=resolve, **tid("susp-resolve")),
         button("reload", on_click=reload, **tid("susp-reload")),

@@ -240,34 +240,6 @@ def PageContent():
     )
 ```
 
-#### `memo`
-
-Wrap a function component with `memo` to skip re-mounts when its props
-haven't changed (shallow identity comparison by default):
-
-```python
-from wybthon import component, memo, h
-
-@component
-def ExpensiveList(items=None):
-    its = items() or []
-    return h("ul", {}, *[h("li", {}, str(i)) for i in its])
-
-MemoList = memo(ExpensiveList)
-```
-
-Pass a custom comparison function for deeper control:
-
-```python
-MemoList = memo(ExpensiveList, are_props_equal=lambda old, new: old["items"] == new["items"])
-```
-
-!!! note "When `memo` actually helps"
-    Because props are reactive and the body runs once, `memo` is only
-    useful when you want to **skip re-mounting** the component on a
-    prop change (for example, an expensive setup phase). Most ordinary
-    components don't need it.
-
 #### `forward_ref`
 
 Use `forward_ref` to create a component that can receive a `ref` prop
@@ -328,14 +300,16 @@ Show(when=is_logged_in,
      fallback=lambda: p("Please log in"))
 
 # List rendering: per-item reactive scopes (keyed by identity).
-# Item and index getters are signal-backed.
+# The mapping runs once per unique item; the subtree is cached and
+# moved (not rebuilt) on reorders.
 For(each=items,
-    children=lambda item, idx: li(item(), key=idx()))
+    children=lambda item, idx: li(item()))
 
 # Index-based rendering: per-index reactive scopes.
-# Item getter updates in place when the value at that position changes.
+# The slot renders once; pass the ``item`` getter so the content
+# updates in place when the value at that position changes.
 Index(each=items,
-      children=lambda item, idx: li(f"[{idx}] {item()}"))
+      children=lambda item, idx: li(item))
 
 # Multi-branch matching (reactive)
 Switch(

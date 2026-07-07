@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .context import Provider, create_context, use_context
-from .reactivity import Signal, iter_prop_keys, read_prop
+from .reactivity import Signal
 from .router_core import resolve as _resolve_core
 from .vnode import VNode, dynamic, h
 
@@ -136,61 +136,9 @@ class Route:
     children: Optional[List["Route"]] = None
 
 
-def _compile(path: str) -> Tuple[str, List[str]]:
-    """Compile a route path into a regex and list of param names (legacy)."""
-    parts = path.strip("/").split("/") if path != "/" else [""]
-    names: List[str] = []
-    regex_parts: List[str] = []
-    for p in parts:
-        if p.startswith(":") and len(p) > 1:
-            names.append(p[1:])
-            regex_parts.append(r"([^/]+)")
-        elif p == "*":
-            names.append("wildcard")
-            regex_parts.append(r"(.*)")
-        else:
-            regex_parts.append(_escape_re(p))
-    regex = r"^/" + "/".join(x for x in regex_parts if x)
-    regex += r"$"
-    return regex, names
-
-
-def _escape_re(s: str) -> str:
-    """Escape literal path segments for regex use."""
-    import re as _re
-
-    return _re.escape(s)
-
-
-def _match(pathname: str, route: Route) -> Optional[Tuple[Dict[str, str], Route]]:
-    """Match `pathname` against `route.path`, returning `(params, route)`."""
-    import re
-
-    regex, names = _compile(route.path)
-    m = re.match(regex, pathname)
-    if not m:
-        return None
-    params: Dict[str, str] = {}
-    for i, name in enumerate(names, start=1):
-        params[name] = m.group(i)
-    return params, route
-
-
 def _resolve(routes: List[Route], pathname: str, base_path: str = "") -> Optional[Tuple[Route, Dict[str, Any]]]:
-    """Resolve the current route using core resolution with a safe fallback."""
-    try:
-        res = _resolve_core(routes, pathname, base_path)
-        if res is None:
-            return None
-        route, info = res
-        return route, info
-    except Exception:
-        for r in routes:
-            m = _match(pathname, r)
-            if m is not None:
-                params, route = m
-                return route, {"params": params}
-        return None
+    """Resolve the current route via [`router_core.resolve`][wybthon.router_core.resolve]."""
+    return _resolve_core(routes, pathname, base_path)
 
 
 BasePath = create_context("")
@@ -226,8 +174,8 @@ def Router(props: Any) -> Any:
     """
 
     def render() -> VNode:
-        routes: List[Route] = read_prop(props, "routes", []) or []
-        base_path: str = read_prop(props, "base_path", "") or ""
+        routes: List[Route] = props.value("routes", []) or []
+        base_path: str = props.value("base_path", "") or ""
         path = current_path.get()
 
         if "?" in path:
@@ -239,7 +187,7 @@ def Router(props: Any) -> Any:
 
         resolved = _resolve(routes, pathname, base_path)
         if resolved is None:
-            not_found = read_prop(props, "not_found")
+            not_found = props.value("not_found")
             if not_found is not None:
                 return h(not_found, {"query": query, "params": {}})
             return h("div", {}, "Not Found")
@@ -320,10 +268,10 @@ def Link(props: Any) -> Any:
     }
 
     def render() -> VNode:
-        to = read_prop(props, "to", "/")
-        replace = bool(read_prop(props, "replace", False))
-        class_active = read_prop(props, "class_active", "active")
-        base_path = read_prop(props, "base_path") or base_path_ctx or ""
+        to = props.value("to", "/")
+        replace = bool(props.value("replace", False))
+        class_active = props.value("class_active", "active")
+        base_path = props.value("base_path") or base_path_ctx or ""
 
         def handle_click(evt: DomEvent) -> None:
             try:
@@ -353,7 +301,7 @@ def Link(props: Any) -> Any:
 
         is_active = current_no_search == href_no_search
 
-        existing_class = read_prop(props, "class") or read_prop(props, "class_") or read_prop(props, "className")
+        existing_class = props.value("class") or props.value("class_") or props.value("className")
         classes: List[str] = []
         if isinstance(existing_class, str) and existing_class.strip():
             classes.append(existing_class)
@@ -366,11 +314,11 @@ def Link(props: Any) -> Any:
         if classes:
             attrs["class"] = " ".join(classes)
 
-        for k in iter_prop_keys(props):
+        for k in list(props):
             if k in _reserved:
                 continue
-            attrs[k] = read_prop(props, k)
-        children = read_prop(props, "children", [])
+            attrs[k] = props.value(k)
+        children = props.value("children", [])
         if children is None:
             children = []
         if not isinstance(children, list):

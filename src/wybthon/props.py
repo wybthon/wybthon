@@ -186,6 +186,15 @@ def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None
         if name in ("key", "ref"):
             continue
         old_val = old_props.get(name, _UNSET)
+        # Skip untouched props. Identity covers handlers/getters; scalar
+        # equality covers the common attribute case. `value`/`checked`
+        # are always re-asserted because the live DOM property can
+        # diverge from the last-applied prop (user input).
+        if name not in ("value", "checked"):
+            if old_val is new_val and old_val is not _UNSET:
+                continue
+            if isinstance(new_val, (str, int, float, bool)) and type(old_val) is type(new_val) and old_val == new_val:
+                continue
         _apply_single_prop(el, name, old_val, new_val)
 
 

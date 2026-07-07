@@ -5,21 +5,22 @@ from conftest import StubNode, texts_of_children
 
 # Import wybthon BEFORE stubs so __init__.py runs with _IN_BROWSER=False
 import wybthon  # noqa: F401
+from wybthon.vnode import h
 
 
 def test_keyed_reorder_reverse(browser_stubs):
     dom_mod = importlib.import_module("wybthon.dom")
     importlib.reload(dom_mod)
-    vdom_mod = importlib.import_module("wybthon.vdom")
+    vdom_mod = importlib.import_module("wybthon.reconciler")
     importlib.reload(vdom_mod)
 
     root = dom_mod.Element(node=StubNode(tag="div"))
 
     def make_view(order):
-        return vdom_mod.h(
+        return h(
             "ul",
             {},
-            *[vdom_mod.h("li", {"key": k}, k) for k in order],
+            *[h("li", {"key": k}, k) for k in order],
         )
 
     initial = ["A", "B", "C", "D"]
@@ -46,16 +47,16 @@ def test_keyed_reorder_reverse(browser_stubs):
 def test_keyed_reorder_move_middle_to_front_and_insert_remove(browser_stubs):
     dom_mod = importlib.import_module("wybthon.dom")
     importlib.reload(dom_mod)
-    vdom_mod = importlib.import_module("wybthon.vdom")
+    vdom_mod = importlib.import_module("wybthon.reconciler")
     importlib.reload(vdom_mod)
 
     root = dom_mod.Element(node=StubNode(tag="div"))
 
     def make_view(order):
-        return vdom_mod.h(
+        return h(
             "ul",
             {},
-            *[vdom_mod.h("li", {"key": k}, k) for k in order],
+            *[h("li", {"key": k}, k) for k in order],
         )
 
     initial = ["A", "B", "C", "D", "E"]
@@ -84,7 +85,7 @@ def test_keyed_reorder_micro_time_smoke(browser_stubs):
     # A tiny smoke micro-benchmark asserting it runs fast enough in our stubbed env
     dom_mod = importlib.import_module("wybthon.dom")
     importlib.reload(dom_mod)
-    vdom_mod = importlib.import_module("wybthon.vdom")
+    vdom_mod = importlib.import_module("wybthon.reconciler")
     importlib.reload(vdom_mod)
 
     root = dom_mod.Element(node=StubNode(tag="div"))
@@ -92,7 +93,7 @@ def test_keyed_reorder_micro_time_smoke(browser_stubs):
     keys = [f"k{i}" for i in range(N)]
 
     def make_view(order):
-        return vdom_mod.h("ul", {}, *[vdom_mod.h("li", {"key": k}, k) for k in order])
+        return h("ul", {}, *[h("li", {"key": k}, k) for k in order])
 
     vdom_mod.render(make_view(keys), root)
     start = time.time()

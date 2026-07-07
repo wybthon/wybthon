@@ -16,7 +16,7 @@ Guidelines:
 #### Examples
 
 - Reactivity API
-  - `create_signal(value: T, *, equals: Any = ...) -> tuple[Callable[[], T], Callable[[T], None]]`. `equals` is optional: default value equality (`==`) with identity fast-path, `True` is equivalent, `False` to always notify, or `(old, new) -> bool` "same value" predicate (use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics).
+  - `create_signal(value: T, *, equals: Any = ...) -> tuple[Callable[[], T], Callable[[Union[T, Callable[[T], T]]], T]]`. The setter accepts a new value or an updater function and returns the stored value. `equals` is optional: default value equality (`==`) with identity fast-path, `True` is equivalent, `False` to always notify, or `(old, new) -> bool` "same value" predicate (use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics).
   - `create_memo(fn: Callable[[], T]) -> Callable[[], T]`
   - `create_effect(fn: Callable[[], Any]) -> Computation`
   - `create_resource(fetcher: Callable[..., Awaitable[R]]) -> Resource[R]`

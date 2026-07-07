@@ -1,9 +1,24 @@
 """`Suspense` component for rendering fallback UI during async loading.
 
-[`Suspense`][wybthon.Suspense] subscribes to one or more
-[`Resource`][wybthon.Resource]s and shows a fallback while any of
-them are loading. Set `keep_previous=True` to keep showing the
-previously-resolved children when refetching.
+[`Suspense`][wybthon.Suspense] tracks resources **automatically**,
+matching SolidJS: any [`Resource`][wybthon.Resource] read (called) under
+the boundary while it's still `"pending"` registers itself, and the
+boundary shows its fallback until every registered resource resolves.
+No `resources` prop wiring is needed.
+
+Refetches don't re-trigger the boundary. A resource that already has
+data enters the `"refreshing"` state and keeps serving its previous
+value, so content stays visible during reloads.
+
+Example:
+    ```python
+    user = create_resource(fetch_user)
+
+    Suspense(
+        fallback=lambda: p("Loading..."),
+        children=[div(lambda: (user() or {}).get("name", ""))],
+    )
+    ```
 
 See Also:
     - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
@@ -11,69 +26,77 @@ See Also:
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, Set
 
-from .reactivity import create_signal, read_prop
-from .vnode import Fragment, VNode, dynamic, to_text_vnode
+from .reactivity import SUSPENSE_CONTEXT_KEY, Signal, _get_component_ctx
+from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
 
 __all__ = ["Suspense"]
 
 
-def Suspense(props: Any) -> Any:
-    """Render a fallback while one or more resources are loading.
+class _SuspenseCollector:
+    """Tracks pending resources read under one Suspense boundary."""
+
+    __slots__ = ("_version", "_pending")
+
+    def __init__(self) -> None:
+        self._version: Signal[int] = Signal(0)
+        self._pending: Set[Any] = set()
+
+    def register(self, resource: Any) -> None:
+        """Called by `Resource.__call__` when read while pending."""
+        if resource in self._pending:
+            return
+        self._pending.add(resource)
+        self._version.set(self._version.peek() + 1)
+
+    def is_loading(self) -> bool:
+        """Tracked read: True while any registered resource is loading.
+
+        Resolved resources are pruned so a later refetch (which doesn't
+        go through the pending state) can't re-trigger the boundary.
+        """
+        self._version.get()
+        done = [r for r in self._pending if not r._loading.get()]
+        for r in done:
+            self._pending.discard(r)
+        return bool(self._pending)
+
+
+def Suspense(fallback: Any = None, children: Any = None) -> VNode:
+    """Show a fallback while resources read under the boundary are pending.
 
     Args:
-        props: The component's props with the following keys:
-
-            - `resources` / `resource`: A single
-              [`Resource`][wybthon.Resource] or a list of resources.
-              When omitted, the component just renders its children.
-            - `fallback`: `VNode`, string, or callable returning
-              one of those. Shown while any resource is loading.
-            - `keep_previous` (`bool`, default `False`): When `True`,
-              show previously-resolved children during refetches
-              instead of replacing them with the fallback.
-            - `children`: Children rendered when no resource is
-              loading.
+        fallback: `VNode`, string, or callable returning one of those.
+            Shown while any registered resource is pending.
+        children: Children rendered when nothing is pending. Resources
+            called anywhere in this subtree self-register with the
+            boundary while they're in their initial `"pending"` state.
 
     Returns:
-        A reactive [`VNode`][wybthon.VNode] subtree that toggles
-        between fallback and children.
+        A component [`VNode`][wybthon.VNode] that toggles between
+        fallback and children.
     """
-    has_completed, set_completed = create_signal(False)
+    return h(_SuspenseComponent, {"fallback": fallback, "children": children})
 
-    def _normalize_resources(p: Any) -> List[Any]:
-        res = read_prop(p, "resources")
-        if res is None:
-            res = read_prop(p, "resource")
-        if res is None:
-            return []
-        if not isinstance(res, list):
-            res = [res]
-        return [r for r in res if r is not None]
 
-    def _is_loading(resources: List[Any]) -> bool:
-        for r in resources:
-            try:
-                loading_sig = getattr(r, "loading", None)
-                if loading_sig is None:
-                    continue
-                if callable(getattr(loading_sig, "get", None)) and loading_sig.get():
-                    return True
-            except Exception:
-                continue
-        return False
+def _SuspenseComponent(props: Any) -> Any:
+    """Internal component backing [`Suspense`][wybthon.Suspense]."""
+    collector = _SuspenseCollector()
+    ctx = _get_component_ctx()
+    if ctx is not None:
+        ctx._set_context(SUSPENSE_CONTEXT_KEY, collector)
 
-    def _render_children(p: Any) -> VNode:
-        children = read_prop(p, "children", [])
+    def _render_children() -> VNode:
+        children = props.value("children")
         if children is None:
             children = []
         if not isinstance(children, list):
             children = [children]
         return Fragment(*children)
 
-    def _render_fallback(p: Any) -> VNode:
-        fb = read_prop(p, "fallback")
+    def _render_fallback() -> VNode:
+        fb = props.value("fallback")
         vnode: Any
         if callable(fb) and not isinstance(fb, VNode):
             try:
@@ -87,20 +110,11 @@ def Suspense(props: Any) -> Any:
         return vnode
 
     def render() -> VNode:
-        resources = _normalize_resources(props)
-        if not resources:
-            return _render_children(props)
-        keep_previous = bool(read_prop(props, "keep_previous", False))
-        loading = _is_loading(resources)
-        if loading:
-            if keep_previous and has_completed():
-                return _render_children(props)
-            return _render_fallback(props)
-        if not has_completed():
-            set_completed(True)
-        return _render_children(props)
+        if collector.is_loading():
+            return _render_fallback()
+        return _render_children()
 
     return dynamic(render)
 
 
-Suspense._wyb_component = True  # type: ignore[attr-defined]
+_SuspenseComponent._wyb_component = True  # type: ignore[attr-defined]

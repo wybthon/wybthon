@@ -27,6 +27,6 @@ helpers here document the semantics and edge cases.
 
 #### See also
 
-- [`vdom`][wybthon.vdom]: entry points for rendering and patching.
+- [`reconciler`][wybthon.reconciler]: entry points for rendering and patching.
 - [`events`][wybthon.events]: event delegation details.
 - [Concepts: DOM Interop](../concepts/dom.md)

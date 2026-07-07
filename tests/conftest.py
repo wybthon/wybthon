@@ -8,6 +8,7 @@ modules without a real browser environment.
 
 import importlib
 import sys
+from html.parser import HTMLParser
 from types import ModuleType
 
 import pytest
@@ -67,6 +68,10 @@ class StubNode:
             return None
         return self.parentNode.childNodes[idx + 1] if idx + 1 < len(self.parentNode.childNodes) else None
 
+    @property
+    def firstChild(self):
+        return self.childNodes[0] if self.childNodes else None
+
     def appendChild(self, node):
         if getattr(node, "parentNode", None) is not None:
             try:
@@ -113,6 +118,89 @@ class StubNode:
         self.attributes.pop(name, None)
 
 
+_VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
+
+
+class _StubHTMLParser(HTMLParser):
+    """Minimal HTML parser building StubNode trees (backs template.innerHTML)."""
+
+    def __init__(self, root):
+        super().__init__(convert_charrefs=True)
+        self._stack = [root]
+
+    def _add_element(self, tag, attrs):
+        node = StubNode(tag=tag)
+        for name, value in attrs:
+            value = "" if value is None else value
+            node.setAttribute(name, value)
+            if name == "class":
+                for cls in value.split():
+                    node.classList.add(cls)
+            elif name == "style":
+                for decl in value.split(";"):
+                    if ":" in decl:
+                        k, v = decl.split(":", 1)
+                        node.style.setProperty(k.strip(), v.strip())
+        self._stack[-1].appendChild(node)
+        return node
+
+    def handle_starttag(self, tag, attrs):
+        node = self._add_element(tag, attrs)
+        if tag not in _VOID_TAGS:
+            self._stack.append(node)
+
+    def handle_startendtag(self, tag, attrs):
+        self._add_element(tag, attrs)
+
+    def handle_endtag(self, tag):
+        if len(self._stack) > 1:
+            self._stack.pop()
+
+    def handle_data(self, data):
+        if data:
+            self._stack[-1].appendChild(StubNode(text=data))
+
+    def handle_comment(self, data):
+        node = StubNode(text=data)
+        node._is_comment = True
+        self._stack[-1].appendChild(node)
+
+
+class StubTemplate(StubNode):
+    """Stub for `<template>`: parses innerHTML into a content fragment."""
+
+    def __init__(self):
+        super().__init__(tag="template")
+        self.content = StubNode(tag="#fragment")
+
+    @property
+    def innerHTML(self):
+        return ""
+
+    @innerHTML.setter
+    def innerHTML(self, html):
+        self.content.childNodes = []
+        if html:
+            parser = _StubHTMLParser(self.content)
+            parser.feed(html)
+            parser.close()
+
+
 class StubDocument:
     """In-memory stub for the browser ``document`` object."""
 
@@ -120,6 +208,8 @@ class StubDocument:
         self._listeners = {}
 
     def createElement(self, tag):
+        if tag == "template":
+            return StubTemplate()
         return StubNode(tag=tag)
 
     def createTextNode(self, text):
@@ -188,15 +278,16 @@ def restore_modules(saved):
 def reload_wybthon_modules():
     """Reload all browser-dependent wybthon submodules against current stubs.
 
-    Returns a dict with keys ``vdom``, ``dom``, ``component``, ``events``,
-    ``context``, ``reactivity`` pointing to the freshly reloaded module objects.
+    Returns a dict with keys ``dom``, ``reconciler``, ``component``,
+    ``events``, ``context``, ``reactivity`` pointing to the freshly
+    reloaded module objects.
     """
     mods = {}
-    for name in ("dom", "events", "reconciler", "vdom"):
+    for name in ("dom", "events", "reconciler"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
-    for name in ("component", "context", "reactivity", "props", "vnode", "flow"):
+    for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template"):
         mods[name] = importlib.import_module(f"wybthon.{name}")
     return mods
 

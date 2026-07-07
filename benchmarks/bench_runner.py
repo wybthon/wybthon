@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """Wybthon benchmark runner — js-framework-benchmark compatible operations.
 
-Measures VDOM reconciler performance for all 9 standard operations from
-krausest/js-framework-benchmark using a lightweight DOM stub. This isolates
-the Python-side VDOM cost from browser/Pyodide overhead.
+Measures the idiomatic fine-grained rendering path (signals + ``For`` +
+``create_selector``) for all 9 standard operations from
+krausest/js-framework-benchmark using a lightweight DOM stub. This
+isolates the Python-side framework cost from browser/Pyodide overhead.
+
+The app under test is built the way a real Wybthon app should be: the
+table mounts **once**; every operation is a signal write. Rows are cached
+per item, row labels are per-row signals, and selection flows through a
+selector, so each operation touches only the DOM it must.
+
+The stub DOM implements ``<template>`` + ``innerHTML`` parsing (via
+``html.parser``) so the template-based mount fast path is exercised the
+same way it is in a real browser.
 
 Usage:
     python benchmarks/bench_runner.py                    # table output
@@ -22,6 +32,7 @@ import random
 import sys
 import time
 import tracemalloc
+from html.parser import HTMLParser
 from math import sqrt
 from statistics import mean, stdev
 from types import ModuleType
@@ -138,6 +149,8 @@ class _Node:
         "classList",
         "style",
         "textContent",
+        "value",
+        "checked",
     )
 
     def __init__(self, tag=None, text=None):
@@ -149,6 +162,8 @@ class _Node:
         self.classList = _ClassList()
         self.style = _Style()
         self.textContent = None
+        self.value = ""
+        self.checked = False
 
     @property
     def nextSibling(self):
@@ -161,6 +176,10 @@ class _Node:
         except ValueError:
             return None
         return children[idx + 1] if idx + 1 < len(children) else None
+
+    @property
+    def firstChild(self):
+        return self.childNodes[0] if self.childNodes else None
 
     def appendChild(self, node):
         if getattr(node, "parentNode", None) is not None:
@@ -208,11 +227,96 @@ class _Node:
         self.attributes.pop(name, None)
 
 
+_VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
+
+
+class _StubHTMLParser(HTMLParser):
+    """Minimal HTML parser building _Node trees (backs template.innerHTML)."""
+
+    def __init__(self, root):
+        super().__init__(convert_charrefs=True)
+        self._stack = [root]
+
+    def _add_element(self, tag, attrs):
+        node = _Node(tag=tag)
+        for name, value in attrs:
+            value = "" if value is None else value
+            node.setAttribute(name, value)
+            if name == "class":
+                for cls in value.split():
+                    node.classList.add(cls)
+            elif name == "style":
+                for decl in value.split(";"):
+                    if ":" in decl:
+                        k, v = decl.split(":", 1)
+                        node.style.setProperty(k.strip(), v.strip())
+        self._stack[-1].appendChild(node)
+        return node
+
+    def handle_starttag(self, tag, attrs):
+        node = self._add_element(tag, attrs)
+        if tag not in _VOID_TAGS:
+            self._stack.append(node)
+
+    def handle_startendtag(self, tag, attrs):
+        self._add_element(tag, attrs)
+
+    def handle_endtag(self, tag):
+        if len(self._stack) > 1:
+            self._stack.pop()
+
+    def handle_data(self, data):
+        if data:
+            self._stack[-1].appendChild(_Node(text=data))
+
+    def handle_comment(self, data):
+        self._stack[-1].appendChild(_Node(text=data))
+
+
+class _Template(_Node):
+    """Stub for `<template>`: parses innerHTML into a content fragment."""
+
+    __slots__ = ("content",)
+
+    def __init__(self):
+        super().__init__(tag="template")
+        self.content = _Node(tag="#fragment")
+
+    @property
+    def innerHTML(self):
+        return ""
+
+    @innerHTML.setter
+    def innerHTML(self, html):
+        self.content.childNodes = []
+        if html:
+            parser = _StubHTMLParser(self.content)
+            parser.feed(html)
+            parser.close()
+
+
 class _Document:
     def __init__(self):
         self._listeners = {}
 
     def createElement(self, tag):
+        if tag == "template":
+            return _Template()
         return _Node(tag=tag)
 
     def createTextNode(self, text):
@@ -298,11 +402,12 @@ def _load_wybthon():
         "wybthon.props",
         "wybthon.reactivity",
         "wybthon.context",
+        "wybthon.template",
         "wybthon.error_boundary",
         "wybthon.suspense",
         "wybthon.portal",
         "wybthon.reconciler",
-        "wybthon.vdom",
+        "wybthon.flow",
     ):
         mod = importlib.import_module(name)
         importlib.reload(mod)
@@ -311,24 +416,62 @@ def _load_wybthon():
 
 
 # ---------------------------------------------------------------------------
-# Benchmark state
+# Benchmark app — idiomatic fine-grained Wybthon
 # ---------------------------------------------------------------------------
 
 
 class BenchState:
-    """Holds data, rendering context, and DOM root for one benchmark run."""
+    """One instance of the benchmark app, mounted once.
 
-    def __init__(self, h_fn, render_fn, dom_mod, registry):
-        self._h = h_fn
-        self._render_fn = render_fn
-        self._dom_mod = dom_mod
+    The DOM mounts a single time in ``__init__``; every benchmark
+    operation afterwards is a signal write, exactly as a real Wybthon
+    app would do it.
+    """
+
+    def __init__(self, mods, registry):
         self._registry = registry
-        self.root = dom_mod.Element(node=_Node(tag="div"))
-        self.data = []
-        self.selected = -1
+        rx = mods["wybthon.reactivity"]
+        h = mods["wybthon.vnode"].h
+        For = mods["wybthon.flow"].For
+        self._rx = rx
+        self._h = h
+        self.root = mods["wybthon.dom"].Element(node=_Node(tag="div"))
         self._next_id = 1
 
+        self.data, self.set_data = rx.create_signal([])
+        self.selected, self.set_selected = rx.create_signal(None)
+        self._is_selected = rx.create_selector(self.selected)
+
+        app = h(
+            "table",
+            {"class": "table table-hover table-striped test-data"},
+            h("tbody", {"id": "tbody"}, For(each=self.data, children=self._row)),
+        )
+        mods["wybthon.reconciler"].render(app, self.root)
+
+    def _row(self, item, idx):
+        h = self._h
+        d = item()
+        iid = d["id"]
+        return h(
+            "tr",
+            {"class": lambda: "danger" if self._is_selected(iid) else ""},
+            h("td", {"class": "col-md-1"}, str(iid)),
+            h("td", {"class": "col-md-4"}, h("a", {"on_click": lambda e: self.set_selected(iid)}, d["label"])),
+            h(
+                "td",
+                {"class": "col-md-1"},
+                h(
+                    "a",
+                    {"on_click": lambda e: self.remove(iid)},
+                    h("span", {"class": "glyphicon glyphicon-remove", "aria-hidden": "true"}),
+                ),
+            ),
+            h("td", {"class": "col-md-6"}),
+        )
+
     def build_data(self, count):
+        rx = self._rx
         result = []
         nid = self._next_id
         for _ in range(count):
@@ -337,39 +480,14 @@ class BenchState:
                 f"{COLOURS[random.randint(0, len(COLOURS) - 1)]} "
                 f"{NOUNS[random.randint(0, len(NOUNS) - 1)]}"
             )
-            result.append({"id": nid, "label": label})
+            label_get, label_set = rx.create_signal(label)
+            result.append({"id": nid, "label": label_get, "set_label": label_set})
             nid += 1
         self._next_id = nid
         return result
 
-    def build_tree(self):
-        h = self._h
-        sel = self.selected
-        rows = []
-        for item in self.data:
-            iid = item["id"]
-            rows.append(
-                h(
-                    "tr",
-                    {"key": iid, "class": "danger" if iid == sel else ""},
-                    h("td", {"class": "col-md-1"}, str(iid)),
-                    h("td", {"class": "col-md-4"}, h("a", {}, item["label"])),
-                    h(
-                        "td",
-                        {"class": "col-md-1"},
-                        h("a", {}, h("span", {"class": "glyphicon glyphicon-remove", "aria-hidden": "true"})),
-                    ),
-                    h("td", {"class": "col-md-6"}),
-                )
-            )
-        return h(
-            "table",
-            {"class": "table table-hover table-striped test-data"},
-            h("tbody", {"id": "tbody"}, *rows),
-        )
-
-    def do_render(self):
-        self._render_fn(self.build_tree(), self.root)
+    def remove(self, iid):
+        self.set_data(lambda rows: [r for r in rows if r["id"] != iid])
 
     def cleanup(self):
         self._registry.pop(id(self.root.element), None)
@@ -385,13 +503,11 @@ def _setup_empty(state):
 
 
 def _setup_1k(state):
-    state.data = state.build_data(1000)
-    state.do_render()
+    state.set_data(state.build_data(1000))
 
 
 def _setup_10k(state):
-    state.data = state.build_data(10000)
-    state.do_render()
+    state.set_data(state.build_data(10000))
 
 
 # ---------------------------------------------------------------------------
@@ -401,67 +517,70 @@ def _setup_10k(state):
 
 def op_create_rows(state):
     """Create 1,000 rows."""
-    state.data = state.build_data(1000)
-    state.do_render()
+    state.set_data(state.build_data(1000))
 
 
 def op_replace_all(state):
     """Replace all 1,000 rows with new data."""
-    state.data = state.build_data(1000)
-    state.do_render()
+    state.set_data(state.build_data(1000))
 
 
 def op_partial_update(state):
-    """Update every 10th row's label."""
-    for i in range(0, len(state.data), 10):
-        state.data[i] = {**state.data[i], "label": state.data[i]["label"] + " !!!"}
-    state.do_render()
+    """Update every 10th row's label signal."""
+    rows = state.data()
+
+    def update():
+        for i in range(0, len(rows), 10):
+            rows[i]["set_label"](lambda label: label + " !!!")
+
+    state._rx.batch(update)
 
 
 def op_select_row(state):
-    """Highlight a selected row."""
-    if state.data:
-        state.selected = state.data[len(state.data) // 2]["id"]
-    state.do_render()
+    """Highlight a selected row (selector: touches two rows at most)."""
+    rows = state.data()
+    if rows:
+        state.set_selected(rows[len(rows) // 2]["id"])
 
 
 def op_swap_rows(state):
-    """Swap rows at indices 1 and 998."""
-    if len(state.data) > 998:
-        state.data[1], state.data[998] = state.data[998], state.data[1]
-    state.do_render()
+    """Swap rows at indices 1 and 998 (cached rows: two DOM moves)."""
+    rows = list(state.data())
+    if len(rows) > 998:
+        rows[1], rows[998] = rows[998], rows[1]
+    state.set_data(rows)
 
 
 def op_remove_row(state):
     """Remove one row from the middle."""
-    if state.data:
-        mid = len(state.data) // 2
-        target_id = state.data[mid]["id"]
-        state.data = [d for d in state.data if d["id"] != target_id]
-    state.do_render()
+    rows = state.data()
+    if rows:
+        target_id = rows[len(rows) // 2]["id"]
+        state.set_data([d for d in rows if d["id"] != target_id])
 
 
 def op_create_many(state):
     """Create 10,000 rows."""
-    state.data = state.build_data(10000)
-    state.do_render()
+    state.set_data(state.build_data(10000))
 
 
 def op_append_rows(state):
-    """Append 1,000 rows to existing table."""
-    state.data = state.data + state.build_data(1000)
-    state.do_render()
+    """Append 1,000 rows to the existing table."""
+    state.set_data(state.data() + state.build_data(1000))
 
 
 def op_clear_rows(state):
     """Clear all rows."""
-    state.data = []
-    state.selected = -1
-    state.do_render()
+
+    def update():
+        state.set_data([])
+        state.set_selected(None)
+
+    state._rx.batch(update)
 
 
 # ---------------------------------------------------------------------------
-# Reactive-hole microbenchmarks (new-model "headline" comparison)
+# Reactive-hole microbenchmarks
 #
 # Both benchmarks update a single text node inside a tree of 1,000 spans.
 # The "hole" version uses a reactive hole — one effect, one DOM mutation.
@@ -476,14 +595,12 @@ _HOLE_TREE_SIZE = 1000
 class _HoleState:
     """State for the hole-vs-rerender microbenchmarks."""
 
-    def __init__(self, h_fn, render_fn, dom_mod, registry, reactivity, vnode):
-        self._h = h_fn
-        self._render_fn = render_fn
-        self._dom_mod = dom_mod
+    def __init__(self, mods, registry):
+        self._h = mods["wybthon.vnode"].h
+        self._render_fn = mods["wybthon.reconciler"].render
         self._registry = registry
-        self._reactivity = reactivity
-        self._vnode = vnode
-        self.root = dom_mod.Element(node=_Node(tag="div"))
+        self._reactivity = mods["wybthon.reactivity"]
+        self.root = mods["wybthon.dom"].Element(node=_Node(tag="div"))
 
     def cleanup(self):
         self._registry.pop(id(self.root.element), None)
@@ -561,16 +678,6 @@ HOLE_BENCHMARKS = [
 # ---------------------------------------------------------------------------
 
 
-def _make_state(h_fn, render_fn, dom_mod, registry):
-    registry.clear()
-    return BenchState(h_fn, render_fn, dom_mod, registry)
-
-
-def _make_hole_state(h_fn, render_fn, dom_mod, registry, reactivity, vnode):
-    registry.clear()
-    return _HoleState(h_fn, render_fn, dom_mod, registry, reactivity, vnode)
-
-
 def _bench_loop(make_state, setup_fn, op_fn, warmup, iterations):
     times = []
     for i in range(warmup + iterations):
@@ -606,69 +713,56 @@ def _summarise(name, times):
 def run_benchmarks(warmup_override=None, iterations=10, include_memory=False, name_filter=None):
     _install_stubs()
     mods = _load_wybthon()
-
-    h_fn = mods["wybthon.vdom"].h
-    render_fn = mods["wybthon.vdom"].render
-    dom_mod = mods["wybthon.dom"]
     registry = mods["wybthon.reconciler"]._container_registry
-    reactivity = mods["wybthon.reactivity"]
-    vnode = mods["wybthon.vnode"]
 
     def _accept(name):
         return name_filter is None or name_filter in name
+
+    def _make_state():
+        registry.clear()
+        return BenchState(mods, registry)
+
+    def _make_hole_state():
+        registry.clear()
+        return _HoleState(mods, registry)
 
     results = []
     for name, setup_fn, op_fn, default_warmup in BENCHMARKS:
         if not _accept(name):
             continue
         warmup = warmup_override if warmup_override is not None else default_warmup
-        times = _bench_loop(
-            lambda: _make_state(h_fn, render_fn, dom_mod, registry),
-            setup_fn,
-            op_fn,
-            warmup,
-            iterations,
-        )
+        times = _bench_loop(_make_state, setup_fn, op_fn, warmup, iterations)
         results.append(_summarise(name, times))
 
     for name, setup_fn, op_fn, default_warmup in HOLE_BENCHMARKS:
         if not _accept(name):
             continue
         warmup = warmup_override if warmup_override is not None else default_warmup
-        times = _bench_loop(
-            lambda: _make_hole_state(h_fn, render_fn, dom_mod, registry, reactivity, vnode),
-            setup_fn,
-            op_fn,
-            warmup,
-            iterations,
-        )
+        times = _bench_loop(_make_hole_state, setup_fn, op_fn, warmup, iterations)
         results.append(_summarise(name, times))
 
     memory = None
     if include_memory and (name_filter is None or "memory" in name_filter):
-        memory = _measure_memory(h_fn, render_fn, dom_mod, registry)
+        memory = _measure_memory(_make_state)
 
     return results, memory
 
 
-def _measure_memory(h_fn, render_fn, dom_mod, registry):
+def _measure_memory(make_state):
     tracemalloc.start()
 
-    state = _make_state(h_fn, render_fn, dom_mod, registry)
+    state = make_state()
     ready_cur, _ = tracemalloc.get_traced_memory()
 
-    state.data = state.build_data(1000)
-    state.do_render()
+    state.set_data(state.build_data(1000))
     run_cur, _ = tracemalloc.get_traced_memory()
 
     state.cleanup()
-    state2 = _make_state(h_fn, render_fn, dom_mod, registry)
+    state2 = make_state()
     for _ in range(5):
-        state2.data = state2.build_data(1000)
-        state2.do_render()
-        state2.data = []
-        state2.selected = -1
-        state2.do_render()
+        state2.set_data(state2.build_data(1000))
+        state2.set_data([])
+        state2.set_selected(None)
     cycle_cur, _ = tracemalloc.get_traced_memory()
 
     tracemalloc.stop()
@@ -688,7 +782,7 @@ def _measure_memory(h_fn, render_fn, dom_mod, registry):
 def format_table(results, memory=None):
     lines = []
     lines.append("")
-    lines.append("Wybthon Framework Benchmark (stubbed DOM)")
+    lines.append("Wybthon Framework Benchmark (stubbed DOM, fine-grained app)")
     lines.append("=" * 78)
     lines.append(
         f"{'Benchmark':<24} {'Mean (ms)':>10} {'± 95% CI':>10} "
@@ -697,9 +791,11 @@ def format_table(results, memory=None):
     lines.append("-" * 78)
 
     fastest = min(r["mean_ms"] for r in results) if results else 1.0
+    if fastest <= 0:
+        fastest = 0.01
 
     for r in results:
-        slowdown = r["mean_ms"] / fastest if fastest > 0 else 0
+        slowdown = r["mean_ms"] / fastest
         lines.append(
             f"{r['name']:<24} {r['mean_ms']:>10.2f} {r['ci95_ms']:>9.2f} "
             f"{r['stdev_ms']:>10.2f} {r['min_ms']:>10.2f} {r['max_ms']:>10.2f} "

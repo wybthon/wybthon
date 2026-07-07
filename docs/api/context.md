@@ -31,3 +31,13 @@ Props:
 - `children`: child VNodes.
 
 Nested providers for the same context shadow outer ones.
+
+#### `Context.Provider(value=None, children=None) -> VNode`
+
+SolidJS-style shorthand on the context object itself. Equivalent to
+`h(Provider, {"context": ctx, "value": value, "children": children})`:
+
+```python
+Theme = create_context("light")
+view = Theme.Provider(value="dark", children=[h(Label, {})])
+```

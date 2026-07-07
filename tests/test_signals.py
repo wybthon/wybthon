@@ -4,6 +4,7 @@ import pytest
 from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
+from wybthon.vnode import h
 
 # --------------------------------------------------------------------------- #
 # create_signal
@@ -11,7 +12,7 @@ import wybthon as _wybthon_pkg  # noqa: F401
 
 
 def test_create_signal_initial_render(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     render_log = []
 
     def Counter(props):
@@ -20,17 +21,17 @@ def test_create_signal_initial_render(wyb, root_element):
         def render():
             val = count()
             render_log.append(val)
-            return vdom.h("p", {}, f"Count: {val}")
+            return h("p", {}, f"Count: {val}")
 
         return render
 
-    vdom.render(vdom.h(Counter, {}), root_element)
+    vdom.render(h(Counter, {}), root_element)
     assert render_log == [0]
     assert "Count: 0" in collect_texts(root_element.element)
 
 
 def test_create_signal_re_renders_on_set(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     setter_ref = [None]
     render_log = []
 
@@ -41,11 +42,11 @@ def test_create_signal_re_renders_on_set(wyb, root_element):
         def render():
             val = count()
             render_log.append(val)
-            return vdom.h("p", {}, f"Count: {val}")
+            return h("p", {}, f"Count: {val}")
 
         return render
 
-    vdom.render(vdom.h(Counter, {}), root_element)
+    vdom.render(h(Counter, {}), root_element)
     assert render_log == [0]
     assert "Count: 0" in collect_texts(root_element.element)
 
@@ -56,7 +57,7 @@ def test_create_signal_re_renders_on_set(wyb, root_element):
 
 
 def test_create_signal_updater_function(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     setter_ref = [None]
     render_log = []
 
@@ -67,11 +68,11 @@ def test_create_signal_updater_function(wyb, root_element):
         def render():
             val = count()
             render_log.append(val)
-            return vdom.h("p", {}, f"{val}")
+            return h("p", {}, f"{val}")
 
         return render
 
-    vdom.render(vdom.h(Counter, {}), root_element)
+    vdom.render(h(Counter, {}), root_element)
     assert render_log == [10]
 
     setter_ref[0](15)
@@ -80,7 +81,7 @@ def test_create_signal_updater_function(wyb, root_element):
 
 def test_create_signal_lazy_initializer(wyb, root_element):
     """Signals are created once during setup – no lazy initializer needed."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     values = []
 
     def MyComp(props):
@@ -89,11 +90,11 @@ def test_create_signal_lazy_initializer(wyb, root_element):
         def render():
             v = val()
             values.append(v)
-            return vdom.h("p", {}, str(v))
+            return h("p", {}, str(v))
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert values == [42]
 
 
@@ -103,37 +104,37 @@ def test_create_signal_lazy_initializer(wyb, root_element):
 
 
 def test_create_effect_runs_on_mount(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     log = []
 
     def MyComp(props):
         reactivity.create_effect(lambda: log.append("mounted"))
-        return vdom.h("p", {}, "hello")
+        return h("p", {}, "hello")
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert "mounted" in log
 
 
 def test_on_cleanup_runs_on_unmount(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     log = []
 
     def MyComp(props):
         log.append("setup")
         reactivity.on_cleanup(lambda: log.append("cleanup"))
-        return vdom.h("p", {}, "hello")
+        return h("p", {}, "hello")
 
-    tree = vdom.h(MyComp, {})
+    tree = h(MyComp, {})
     vdom.render(tree, root_element)
     assert "setup" in log
     assert "cleanup" not in log
 
-    vdom._unmount(tree)
+    vdom.unmount(tree)
     assert "cleanup" in log
 
 
 def test_create_effect_auto_tracks_signals(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     effect_log = []
     setter_ref = [None]
 
@@ -143,11 +144,11 @@ def test_create_effect_auto_tracks_signals(wyb, root_element):
         reactivity.create_effect(lambda: effect_log.append(count()))
 
         def render():
-            return vdom.h("p", {}, f"{count()}")
+            return h("p", {}, f"{count()}")
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert effect_log == [0]
 
     setter_ref[0](1)
@@ -159,7 +160,7 @@ def test_create_effect_auto_tracks_signals(wyb, root_element):
 
 def test_create_effect_cleanup_per_run(wyb, root_element):
     """on_cleanup inside create_effect runs before each re-execution."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     log = []
     setter_ref = [None]
 
@@ -175,11 +176,11 @@ def test_create_effect_cleanup_per_run(wyb, root_element):
         reactivity.create_effect(tracked_effect)
 
         def render():
-            return vdom.h("p", {}, f"{count()}")
+            return h("p", {}, f"{count()}")
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert log == ["run:0"]
 
     setter_ref[0](1)
@@ -193,18 +194,18 @@ def test_create_effect_cleanup_per_run(wyb, root_element):
 
 
 def test_on_mount_runs_after_mount(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     log = []
 
     def MyComp(props):
         reactivity.on_mount(lambda: log.append("mounted"))
 
         def render():
-            return vdom.h("p", {}, "hello")
+            return h("p", {}, "hello")
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert "mounted" in log
 
 
@@ -230,7 +231,7 @@ def test_on_cleanup_error_outside_component():
 
 
 def test_create_memo(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     compute_calls = [0]
     setter_ref = [None]
 
@@ -245,11 +246,11 @@ def test_create_memo(wyb, root_element):
         result = reactivity.create_memo(expensive)
 
         def render():
-            return vdom.h("p", {}, f"{result()}")
+            return h("p", {}, f"{result()}")
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     assert compute_calls[0] == 1
     assert "0" in collect_texts(root_element.element)
 
@@ -264,7 +265,7 @@ def test_create_memo(wyb, root_element):
 
 
 def test_multiple_signals(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     setter_a_ref = [None]
     setter_b_ref = [None]
 
@@ -275,11 +276,11 @@ def test_multiple_signals(wyb, root_element):
         setter_b_ref[0] = set_b
 
         def render():
-            return vdom.h("div", {}, vdom.h("p", {}, a()), vdom.h("p", {}, str(b())))
+            return h("div", {}, h("p", {}, a()), h("p", {}, str(b())))
 
         return render
 
-    vdom.render(vdom.h(MyComp, {}), root_element)
+    vdom.render(h(MyComp, {}), root_element)
     texts = collect_texts(root_element.element)
     assert "hello" in texts
     assert "42" in texts
@@ -301,7 +302,7 @@ def test_multiple_signals(wyb, root_element):
 
 
 def test_nested_components(wyb, root_element):
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     child_setter_ref = [None]
 
     def Child(props):
@@ -309,7 +310,7 @@ def test_nested_components(wyb, root_element):
         child_setter_ref[0] = set_count
 
         def render():
-            return vdom.h("span", {}, f"child:{count()}")
+            return h("span", {}, f"child:{count()}")
 
         return render
 
@@ -317,11 +318,11 @@ def test_nested_components(wyb, root_element):
         label, _ = reactivity.create_signal("parent")
 
         def render():
-            return vdom.h("div", {}, vdom.h("p", {}, label()), vdom.h(Child, {}))
+            return h("div", {}, h("p", {}, label()), h(Child, {}))
 
         return render
 
-    vdom.render(vdom.h(Parent, {}), root_element)
+    vdom.render(h(Parent, {}), root_element)
     texts = collect_texts(root_element.element)
     assert "parent" in texts
     assert "child:0" in texts
@@ -350,7 +351,7 @@ def test_function_component_runs_once_for_static_signal_read(wyb, root_element):
     itself (``external_sig.get``) into the VNode tree.  See
     ``test_function_component_signal_via_hole`` below.
     """
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     external_sig = reactivity.signal("initial")
@@ -359,9 +360,9 @@ def test_function_component_runs_once_for_static_signal_read(wyb, root_element):
     def Display(props):
         render_count[0] += 1
         val = external_sig.get()
-        return vdom.h("p", {}, val)
+        return h("p", {}, val)
 
-    vdom.render(vdom.h(Display, {}), root_element)
+    vdom.render(h(Display, {}), root_element)
     assert render_count[0] == 1
     assert "initial" in collect_texts(root_element.element)
 
@@ -372,7 +373,7 @@ def test_function_component_runs_once_for_static_signal_read(wyb, root_element):
 
 def test_function_component_signal_via_hole(wyb, root_element):
     """Passing a signal getter as a child creates a reactive hole that updates the DOM."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     external_sig = reactivity.signal("initial")
@@ -380,9 +381,9 @@ def test_function_component_signal_via_hole(wyb, root_element):
 
     def Display(props):
         render_count[0] += 1
-        return vdom.h("p", {}, external_sig.get)
+        return h("p", {}, external_sig.get)
 
-    vdom.render(vdom.h(Display, {}), root_element)
+    vdom.render(h(Display, {}), root_element)
     assert render_count[0] == 1
     assert "initial" in collect_texts(root_element.element)
 

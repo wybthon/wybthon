@@ -59,7 +59,8 @@
       'dev.py', 'dom.py', 'error_boundary.py', 'events.py',
       'flow.py', 'forms.py', 'html.py', 'lazy.py',
       'portal.py', 'props.py', 'reactivity.py', 'reconciler.py',
-      'router.py', 'router_core.py', 'suspense.py', 'vdom.py', 'vnode.py',
+      'router.py', 'router_core.py', 'store.py', 'suspense.py',
+      'template.py', 'vnode.py',
     ];
 
     async function main() {
@@ -135,9 +136,9 @@
         { name: 'create_1k',   setup: 'clear()',                bench: 'run()' },
         { name: 'replace_all', setup: null,                     bench: 'run()' },
         { name: 'update_10th', setup: null,                     bench: 'update()' },
-        { name: 'select_row',  setup: null,                     bench: 'select(data[0]["id"])' },
+        { name: 'select_row',  setup: null,                     bench: 'select(data()[0]["id"])' },
         { name: 'swap_rows',   setup: null,                     bench: 'swap_rows()' },
-        { name: 'remove_row',  setup: 'run()',                  bench: 'delete(data[0]["id"])' },
+        { name: 'remove_row',  setup: 'run()',                  bench: 'delete(data()[0]["id"])' },
         { name: 'create_10k',  setup: 'clear()',                bench: 'run_lots()' },
         { name: 'append_1k',   setup: 'clear(); run()',         bench: 'add()' },
         { name: 'clear_rows',  setup: 'run()',                  bench: 'clear()' },

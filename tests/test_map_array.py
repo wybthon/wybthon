@@ -11,6 +11,7 @@ from wybthon.reactivity import (
     map_array,
     on_cleanup,
 )
+from wybthon.vnode import h
 
 # ---------------------------------------------------------------------------
 # map_array — basic behaviour
@@ -295,7 +296,7 @@ def test_create_selector_same_value_no_op():
 
 def test_map_array_in_component(wyb, root_element):
     """map_array works inside a component's setup phase."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     a, b, c = object(), object(), object()
     items, set_items = reactivity.create_signal([a, b, c])
 
@@ -305,11 +306,11 @@ def test_map_array_in_component(wyb, root_element):
         mapped = reactivity.map_array(items, lambda item, idx: labels.get(id(item()), "?"))
 
         def render():
-            return vdom.h("ul", {}, *[vdom.h("li", {}, v) for v in mapped()])
+            return h("ul", {}, *[h("li", {}, v) for v in mapped()])
 
         return render
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     texts = collect_texts(root_element.element)
     assert "alpha" in texts
     assert "beta" in texts
@@ -318,18 +319,18 @@ def test_map_array_in_component(wyb, root_element):
 
 def test_index_array_in_component(wyb, root_element):
     """index_array works inside a component's setup phase."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B"])
 
     def App(props):
         mapped = reactivity.index_array(items, lambda item, idx: f"[{idx}] {item()}")
 
         def render():
-            return vdom.h("ul", {}, *[vdom.h("li", {}, v) for v in mapped()])
+            return h("ul", {}, *[h("li", {}, v) for v in mapped()])
 
         return render
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     texts = collect_texts(root_element.element)
     assert "[0] A" in texts
     assert "[1] B" in texts

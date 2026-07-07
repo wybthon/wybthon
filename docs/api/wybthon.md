@@ -6,12 +6,12 @@
 
 - Core rendering
   - `Element`, `Ref`
-  - `VNode`, `h`, `render`, `Fragment`, `dynamic`, `is_getter`, `memo`
+  - `VNode`, `h`, `render`, `Fragment`, `dynamic`, `is_getter`
 - Components
   - `component`, `forward_ref`, `ErrorBoundary`, `Suspense`
 - Reactivity
-  - `create_signal` (optional `equals=`), `create_effect`, `create_memo`, `batch`, `untrack`, `on`, `create_root`, `create_selector`
-  - `on_mount`, `on_cleanup`
+  - `create_signal` (optional `equals=`; the setter also accepts an updater function), `create_effect`, `create_render_effect`, `create_computed`, `create_memo`, `create_deferred`, `batch`, `untrack`, `on`, `create_root`, `create_selector`
+  - `on_mount`, `on_cleanup`, `create_unique_id`, `catch_error`
   - `ReactiveProps`, `get_props`, `children` (memoized children helper), `get_owner`, `run_with_owner`
   - `Resource`, `create_resource`
   - `merge_props`, `split_props`, `map_array`, `index_array`
@@ -19,7 +19,7 @@
 - Context
   - `Context`, `create_context`, `use_context`, `Provider`
 - Stores
-  - `create_store`, `produce`
+  - `create_store`, `create_mutable`, `produce`, `reconcile`, `unwrap`
 - Flow control
   - `Show`, `For`, `Index`, `Switch`, `Match`, `Dynamic`
 - Router
@@ -39,6 +39,6 @@
 !!! note "Browser vs non-browser"
     DOM/VDOM rendering (`Element`, `render`, router, etc.) requires a
     Pyodide/browser environment. In non-browser contexts the
-    reactivity primitives, forms, lazy utilities, and pure-Python VDOM
-    constructs (`VNode`, `h`, `Fragment`, `dynamic`, `memo`,
+    reactivity primitives, stores, forms, context, flow control, and
+    pure-Python VDOM constructs (`VNode`, `h`, `Fragment`, `dynamic`,
     `is_getter`) are still available.

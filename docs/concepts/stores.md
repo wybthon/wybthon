@@ -134,6 +134,52 @@ def TodoApp():
     )
 ```
 
+#### Reconciling external data
+
+When fresh data arrives from a server, replacing whole subtrees would
+re-run every effect under them. `reconcile` diffs the new data into the
+store instead, updating only the paths that actually changed. List items
+are matched by a key (default `"id"`) so their proxies keep a stable
+identity across updates, which is exactly what `For` needs:
+
+```python
+from wybthon import reconcile
+
+set_store("todos", reconcile(fetched_todos))          # match by "id"
+set_store("todos", reconcile(fetched_todos, key="uuid"))
+```
+
+#### Unwrap
+
+`unwrap(value)` returns the raw data underneath a store proxy (untracked),
+for example to serialize it or hand it to a non-reactive API:
+
+```python
+from wybthon import unwrap
+
+raw = unwrap(store.todos)   # plain list of dicts
+```
+
+#### Mutable stores
+
+`create_mutable(initial)` returns a single directly-writable proxy
+instead of a `(store, setter)` pair, mirroring Solid's `createMutable`.
+Top-level writes go through plain attribute or item assignment and
+notify subscribers of the touched key only:
+
+```python
+from wybthon import create_mutable
+
+state = create_mutable({"count": 0, "label": "hi"})
+state.count += 1
+state["label"] = "hello"
+```
+
+Nested containers remain read-only proxies. Prefer `create_store` for
+most app state; the explicit setter keeps mutation sites easy to find.
+Reach for `create_mutable` for small, flat objects that are easier to
+update in place.
+
 #### Stores vs signals
 
 | | `create_signal` | `create_store` |

@@ -45,9 +45,14 @@ their sources up to date, which keeps updates glitch-free.
 
 ##### Signals-first API (recommended)
 
-- `create_signal(value, *, equals=...) -> (getter, setter)`. Optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.
-- `create_effect(fn) -> Computation`. The returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.
+- `create_signal(value, *, equals=...) -> (getter, setter)`. Optional **`equals`**: default uses **value equality** (`==`) with an identity (`is`) fast-path; `equals=True` is equivalent to the default; `equals=False` notifies on every `set()`; `equals=fn` with `fn(old, new) -> bool` skips notification when `fn` returns `True` (custom comparator).  Use `equals=lambda a, b: a is b` for SolidJS-style identity-only semantics.  The setter also accepts an **updater function**: `set_count(lambda n: n + 1)` computes the new value from the previous one and returns the value it stored.
+- `create_effect(fn) -> Computation`. The returned `Computation` is added as a child of the current owner.  Inside a component's setup phase the owner is the `_ComponentContext` (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render `Computation` (effect disposed on re-render).  Supports previous value: `create_effect(lambda prev: ...)`.  User effects run **after** render effects in each flush.
+- `create_render_effect(fn) -> Computation`. Like `create_effect`, but queued in the render phase: it runs before user effects in each flush.  The framework uses this internally for DOM bindings; use it when an effect must observe the DOM before user effects do.
+- `create_computed(fn) -> Computation`. An eager computation that runs during the render phase, mirroring Solid's `createComputed`.  Prefer `create_memo` for derived values; use `create_computed` to push a signal write that later work depends on.
 - `create_memo(fn) -> getter`. Creates a lazy memo `Computation` under the current owner; recomputes only when read after a source changed, and is disposed when the owner is disposed.
+- `create_deferred(source) -> getter`. Returns a read-only getter that trails `source`: the new value is published on the next event-loop tick (immediately when no asyncio loop is running) so expensive consumers can lag behind rapid-fire updates, mirroring Solid's `createDeferred`.
+- `create_unique_id() -> str`. Returns a unique, stable ID string (`"wyb-0"`, `"wyb-1"`, ...) for wiring `for`/`aria-*` attributes, mirroring Solid's `createUniqueId`.
+- `catch_error(fn, handler) -> result | None`. Runs `fn` under a scope whose errors (including errors thrown later by effects created inside it) route to `handler` instead of propagating.  Mirrors Solid's `catchError`.
 - `on_mount(fn)`. Run after first render.
 - `on_cleanup(fn)`. Appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
 - `batch() -> context manager` or `batch(fn) -> result`. The callback form flushes synchronously.
@@ -140,6 +145,33 @@ def Card(title=""):
 
 - `create_resource(fetcher) -> Resource`
 - `create_resource(source, fetcher) -> Resource`. Refetches when the source changes.
+
+A `Resource` is **callable**, mirroring Solid's `createResource` accessor:
+
+- `res()` reads the resolved data (tracked). Reading it inside a
+  `Suspense` boundary automatically registers the resource with that
+  boundary while it's pending.
+- `res.loading` and `res.error` are tracked reads of the loading flag and
+  last error.
+- `res.latest` returns the most recent resolved value even while a
+  refetch is in flight (useful for keep-previous UIs).
+- `res.state` is one of `"unresolved"`, `"pending"`, `"ready"`,
+  `"refreshing"`, or `"errored"`.
+- `res.mutate(value)` writes the resolved value directly (optimistic
+  updates); `res.refetch()` re-runs the fetcher; `res.cancel()` abandons
+  an in-flight fetch.
+
+```python
+from wybthon import Suspense, create_resource, create_signal, h
+
+user_id, set_user_id = create_signal(1)
+user = create_resource(user_id, fetch_user)   # refetches when user_id changes
+
+view = Suspense(
+    fallback="Loading...",
+    children=lambda: h("p", {}, lambda: user()["name"]),
+)
+```
 
 ##### Reactive utilities
 

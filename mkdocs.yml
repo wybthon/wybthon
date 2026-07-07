@@ -102,9 +102,9 @@ nav:
     - Package: api/wybthon.md
     - Reactivity: api/reactivity.md
     - Component: api/component.md
-    - VDOM: api/vdom.md
     - VNode: api/vnode.md
     - Reconciler: api/reconciler.md
+    - Template: api/template.md
     - Props: api/props.md
     - DOM: api/dom.md
     - HTML helpers: api/html.md

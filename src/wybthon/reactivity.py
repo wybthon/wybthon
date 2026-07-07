@@ -53,6 +53,7 @@ Example:
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Awaitable as AbcAwaitable
 from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
 
@@ -67,7 +68,12 @@ __all__ = [
     "create_resource",
     "create_signal",
     "create_effect",
+    "create_render_effect",
+    "create_computed",
+    "create_deferred",
     "create_memo",
+    "create_unique_id",
+    "catch_error",
     "on_mount",
     "on_cleanup",
     "untrack",
@@ -76,8 +82,6 @@ __all__ = [
     "get_owner",
     "run_with_owner",
     "get_props",
-    "read_prop",
-    "iter_prop_keys",
     "children",
     "merge_props",
     "split_props",
@@ -119,7 +123,10 @@ _current_owner: Optional["Owner"] = None
 _current_observer: Optional["Computation"] = None
 
 # Effects pending execution in the current flush. Pure computations (memos)
-# are *not* queued; they recompute lazily on read.
+# are *not* queued; they recompute lazily on read. Render effects (created
+# by ``create_render_effect`` / ``create_computed``) run in an earlier
+# phase than user effects, matching SolidJS's update ordering.
+_render_effect_queue: List["Computation"] = []
 _effect_queue: List["Computation"] = []
 _running_effects: bool = False
 _batch_depth: int = 0
@@ -185,30 +192,41 @@ def _run_effects_if_idle() -> None:
 def _flush_effects() -> None:
     """Run all queued effects to completion (the "effects" phase).
 
-    Effects pull their dependencies via ``_update_if_necessary`` so they
-    always observe a fully-settled graph. Effects enqueued *during* the
-    flush (because an effect wrote a signal) are drained in the same loop,
-    giving synchronous settling within one logical update.
+    Render effects (``create_render_effect`` / ``create_computed``) are
+    drained before user effects, and re-drained whenever a user effect
+    writes a signal, so user effects always observe DOM/render state
+    that has settled. Effects pull their dependencies via
+    ``_update_if_necessary`` so they always observe a fully-settled
+    graph. Effects enqueued *during* the flush (because an effect wrote
+    a signal) are drained in the same loop, giving synchronous settling
+    within one logical update.
     """
     global _running_effects
     if _running_effects:
         return
     _running_effects = True
     try:
-        i = 0
+        ri = 0
+        ei = 0
         guard = 0
+        render_queue = _render_effect_queue
         queue = _effect_queue
-        while i < len(queue):
-            comp = queue[i]
-            i += 1
+        while ri < len(render_queue) or ei < len(queue):
             guard += 1
             if guard > _MAX_FLUSH_ITER:
                 raise RuntimeError(
                     "Wybthon: reactive update did not stabilize " "(possible cyclic effect writing its own dependency)."
                 )
+            if ri < len(render_queue):
+                comp = render_queue[ri]
+                ri += 1
+            else:
+                comp = queue[ei]
+                ei += 1
             if not comp._disposed:
                 comp._update_if_necessary()
     finally:
+        _render_effect_queue.clear()
         _effect_queue.clear()
         _running_effects = False
 
@@ -232,16 +250,20 @@ class Owner:
         _disposed: True after `dispose()` has run; further calls are no-ops.
         _context_map: Lazily-allocated dict of context values stored at
             this owner (used by `Provider`).
+        _error_handler: Optional callback receiving exceptions raised by
+            descendant computations (installed by `ErrorBoundary` and
+            [`catch_error`][wybthon.catch_error]).
     """
 
-    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map")
+    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map", "_error_handler")
 
     def __init__(self) -> None:
         self._parent: Optional[Owner] = None
         self._children: List[Owner] = []
         self._cleanups: List[Callable[[], Any]] = []
         self._disposed: bool = False
-        self._context_map: Optional[Dict[int, Any]] = None
+        self._context_map: Optional[Dict[Any, Any]] = None
+        self._error_handler: Optional[Callable[..., Any]] = None
 
     def _add_child(self, child: "Owner") -> None:
         child._parent = self
@@ -260,12 +282,12 @@ class Owner:
             except Exception:
                 pass
 
-    def _set_context(self, ctx_id: int, value: Any) -> None:
+    def _set_context(self, ctx_id: Any, value: Any) -> None:
         if self._context_map is None:
             self._context_map = {}
         self._context_map[ctx_id] = value
 
-    def _lookup_context(self, ctx_id: int, default: Any) -> Any:
+    def _lookup_context(self, ctx_id: Any, default: Any) -> Any:
         owner: Optional[Owner] = self
         while owner is not None:
             if owner._context_map is not None and ctx_id in owner._context_map:
@@ -321,6 +343,7 @@ class Computation(Owner):
         "_sources_set",
         "_state",
         "_is_effect",
+        "_is_render",
         "_is_memo",
         "_value",
         "_observers",
@@ -333,6 +356,7 @@ class Computation(Owner):
         fn: Callable[[], Any],
         *,
         is_effect: bool = False,
+        is_render: bool = False,
         is_memo: bool = False,
         value: Any = None,
         equals: Any = _DEFAULT_EQUALS,
@@ -343,6 +367,7 @@ class Computation(Owner):
         self._sources_set: Set[Any] = set()
         self._state: int = _DIRTY
         self._is_effect = is_effect
+        self._is_render = is_render
         self._is_memo = is_memo
         self._value: Any = value
         self._observers: List[Computation] = []
@@ -395,7 +420,10 @@ class Computation(Owner):
             self._state = state
             if was_clean:
                 if self._is_effect:
-                    _effect_queue.append(self)
+                    if self._is_render:
+                        _render_effect_queue.append(self)
+                    else:
+                        _effect_queue.append(self)
                 if self._observers:
                     for o in list(self._observers):
                         o._stale(_CHECK)
@@ -422,12 +450,34 @@ class Computation(Owner):
         else:
             self._state = _CLEAN
 
+    def _handle_error(self, exc: BaseException) -> bool:
+        """Route `exc` to the nearest ancestor owner with an error handler.
+
+        Returns True when a handler was found and invoked (the error is
+        considered handled); False when the caller should re-raise.
+        """
+        owner: Optional[Owner] = self._parent
+        while owner is not None:
+            handler = owner._error_handler
+            if handler is not None:
+                try:
+                    handler(exc)
+                except Exception:
+                    pass
+                return True
+            owner = owner._parent
+        return False
+
     def _update(self) -> None:
         """Re-execute the tracked function, refreshing its dependency set.
 
         Disposes child owners and runs cleanups before each re-run so that
         conditional effects don't leak. The previous dependency edges are
         torn down and rebuilt while the body executes under this owner.
+
+        Exceptions raised by effect bodies are routed to the nearest
+        ancestor error handler (`ErrorBoundary` / `catch_error`); when no
+        handler exists, the exception propagates to the caller.
         """
         if self._disposed:
             return
@@ -441,6 +491,10 @@ class Computation(Owner):
         _current_observer = self
         try:
             new_value = self._fn()
+        except Exception as exc:
+            if self._is_effect and self._handle_error(exc):
+                return
+            raise
         finally:
             _current_owner = prev_owner
             _current_observer = prev_obs
@@ -817,56 +871,6 @@ class ReactiveProps:
 
 
 # ---------------------------------------------------------------------------
-# Prop-reading helpers (work uniformly on ReactiveProps and plain dicts)
-# ---------------------------------------------------------------------------
-
-
-def read_prop(props: Any, key: str, default: Any = None) -> Any:
-    """Return the current value for `key` from `props`.
-
-    Works with both [`ReactiveProps`][wybthon.ReactiveProps] (the common
-    case inside the reconciler) and plain dicts (test paths and a few
-    legacy call sites). When called inside a tracking scope, the read is
-    tracked against the underlying signal, mirroring the auto-unwrap
-    behavior of `ReactiveProps.value`.
-
-    Args:
-        props: A `ReactiveProps` proxy or any dict-like object.
-        key: Prop name to read.
-        default: Returned when `key` is absent. Defaults to `None`.
-
-    Returns:
-        The current value, with auto-unwrap applied for `ReactiveProps`.
-    """
-    if isinstance(props, ReactiveProps):
-        return props.value(key, default)
-    if hasattr(props, "get"):
-        return props.get(key, default)
-    return default
-
-
-def iter_prop_keys(props: Any) -> List[str]:
-    """Return the list of prop keys present on `props`.
-
-    Same uniform shim as [`read_prop`][wybthon.reactivity.read_prop] for
-    components that iterate over an unknown prop bag (e.g., `Link`
-    forwarding extra attributes onto the rendered `<a>`).
-
-    Args:
-        props: A `ReactiveProps` proxy or any object with `.keys()`.
-
-    Returns:
-        A list of present keys, or an empty list when `props` isn't
-        dict-like.
-    """
-    if isinstance(props, ReactiveProps):
-        return list(props)
-    if hasattr(props, "keys"):
-        return list(props.keys())
-    return []
-
-
-# ---------------------------------------------------------------------------
 # Computed (memo)
 # ---------------------------------------------------------------------------
 
@@ -1055,35 +1059,41 @@ R = TypeVar("R")
 
 FetchFn = Callable[..., Union[Awaitable[R], R]]
 
+# Sentinel key under which ``Suspense`` stores its collector on the owner
+# context map. Kept here (rather than in ``suspense.py``) so ``Resource``
+# can look it up without importing browser-facing modules.
+SUSPENSE_CONTEXT_KEY = "__wyb_suspense__"
+
 
 class Resource(Generic[R]):
-    """Async resource with reactive `data`, `error`, and `loading` signals.
+    """Async data accessor with reactive loading/error state.
 
-    Wraps an awaitable fetcher and exposes signal-backed state so consumers
-    can render loading and error UIs declaratively (typically with
-    [`Suspense`][wybthon.Suspense]).
+    Matches SolidJS's resource shape: the resource **is** the accessor.
+    Call it to read the current data (tracked); read `loading`, `error`,
+    `latest`, and `state` as properties (also tracked).
 
-    Use `reload()` to (re)fetch and `cancel()` to abort the in-flight
-    request.
+    While a resource is in its initial `"pending"` state, reading it
+    under a [`Suspense`][wybthon.Suspense] boundary automatically
+    registers it with that boundary; no manual wiring is needed.
+    Refetches (`"refreshing"` state) don't re-trigger Suspense; the
+    previous data stays available, matching SolidJS.
 
-    When constructed with a `source` getter, the resource automatically
-    refetches when the source's tracked value changes (skipping the very
-    first read so it doesn't double-fetch on creation).
+    States:
 
-    Attributes:
-        data: Reactive accessor for the most recent successful payload, or
-            `None` before any fetch completes.
-        error: Reactive accessor for the most recent exception, or `None`.
-        loading: Reactive accessor; `True` while a fetch is in flight.
+    - `"unresolved"`: never fetched (source was `None`/`False`).
+    - `"pending"`: first fetch in flight, no data yet.
+    - `"ready"`: data available.
+    - `"refreshing"`: refetch in flight, previous data still readable.
+    - `"errored"`: last fetch raised.
 
     Example:
         ```python
-        async def load_user(signal=None):
-            resp = await fetch("/api/users/1")
+        async def load_user(user_id, signal=None):
+            resp = await fetch(f"/api/users/{user_id}")
             return await resp.json()
 
-        user = create_resource(load_user)
-        h("p", {}, dynamic(lambda: "Loading..." if user.loading() else user.data().get("name")))
+        user = create_resource(user_id, load_user)
+        p("Name: ", span(lambda: (user() or {}).get("name", "...")))
         ```
     """
 
@@ -1092,36 +1102,103 @@ class Resource(Generic[R]):
         import inspect
 
         self._asyncio = asyncio
-        self._inspect = inspect
         self._fetcher: FetchFn = fetcher
         self._source = source
         self._task: Optional[asyncio.Task[Any]] = None
         self._abort_controller: Any = None
         self._version: int = 0
 
-        self.data: Signal[Optional[R]] = Signal(None)
-        self.error: Signal[Optional[Any]] = Signal(None)
-        self.loading: Signal[bool] = Signal(False)
+        try:
+            params = inspect.signature(fetcher).parameters
+            self._fetcher_takes_signal = "signal" in params
+            self._fetcher_takes_source = any(
+                p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                and p.name != "signal"
+                for p in params.values()
+            )
+        except (ValueError, TypeError):
+            self._fetcher_takes_signal = False
+            self._fetcher_takes_source = False
 
-        self.reload()
+        self._data: Signal[Optional[R]] = Signal(None)
+        self._error: Signal[Optional[Any]] = Signal(None)
+        self._loading: Signal[bool] = Signal(False)
+        self._state: Signal[str] = Signal("unresolved")
+        self._has_value: bool = False
 
-        if source is not None:
-            self._source_effect: Optional[Computation] = None
+        if source is None:
+            self.refetch()
+        else:
             self._setup_source_tracking()
 
-    def _setup_source_tracking(self) -> None:
-        """Watch the `source` getter and call `reload()` whenever it changes."""
-        first_run = [True]
+    # -- reading ------------------------------------------------------------
 
-        def watcher() -> None:
-            assert self._source is not None
-            self._source()
-            if first_run[0]:
-                first_run[0] = False
-                return
-            self.reload()
+    def __call__(self) -> Optional[R]:
+        """Return the current data (tracked read).
 
-        self._source_effect = effect(watcher)
+        While the resource is `"pending"`, this registers it with the
+        nearest enclosing [`Suspense`][wybthon.Suspense] boundary.
+        """
+        self._register_with_suspense()
+        return self._data.get()
+
+    @property
+    def loading(self) -> bool:
+        """`True` while a fetch is in flight (tracked read)."""
+        return bool(self._loading.get())
+
+    @property
+    def error(self) -> Optional[Any]:
+        """The most recent exception, or `None` (tracked read)."""
+        return self._error.get()
+
+    @property
+    def latest(self) -> Optional[R]:
+        """The most recent data, even while refreshing (tracked read).
+
+        Unlike calling the resource, reading `latest` never registers
+        with a Suspense boundary.
+        """
+        return self._data.get()
+
+    @property
+    def state(self) -> str:
+        """The current lifecycle state string (tracked read)."""
+        return self._state.get()
+
+    def _register_with_suspense(self) -> None:
+        if self._state.peek() != "pending":
+            return
+        owner = _current_owner
+        if owner is None:
+            return
+        collector = owner._lookup_context(SUSPENSE_CONTEXT_KEY, None)
+        if collector is not None:
+            collector.register(self)
+
+    # -- writing ------------------------------------------------------------
+
+    def mutate(self, value: Union[R, Callable[[Optional[R]], R]]) -> Optional[R]:
+        """Set the resource's data directly, without fetching.
+
+        Supports functional updates like a signal setter. Clears any
+        error and marks the resource `"ready"`.
+
+        Args:
+            value: The new data, or a callable receiving the current data.
+
+        Returns:
+            The stored value.
+        """
+        if callable(value):
+            value = value(self._data.peek())
+        with _Batch():
+            self._has_value = True
+            self._data.set(value)
+            self._error.set(None)
+            self._loading.set(False)
+            self._state.set("ready")
+        return self._data.peek()
 
     def _make_abort_controller(self) -> Any:
         try:
@@ -1131,12 +1208,27 @@ class Resource(Generic[R]):
         except Exception:
             return None
 
-    async def _run(self, current_version: int, controller: Any) -> None:
+    def _setup_source_tracking(self) -> None:
+        """Watch the `source` getter; fetch when it yields a usable value."""
+
+        def watcher() -> None:
+            assert self._source is not None
+            value = self._source()
+            if value is None or value is False:
+                return
+            self._refetch_with(value)
+
+        effect(watcher)
+
+    async def _run(self, current_version: int, controller: Any, source_value: Any) -> None:
         try:
-            if self._inspect.signature(self._fetcher).parameters.get("signal") is not None:
-                coro_or_val = self._fetcher(signal=getattr(controller, "signal", None))
-            else:
-                coro_or_val = self._fetcher()
+            args: List[Any] = []
+            kwargs: Dict[str, Any] = {}
+            if self._fetcher_takes_source and self._source is not None:
+                args.append(source_value)
+            if self._fetcher_takes_signal:
+                kwargs["signal"] = getattr(controller, "signal", None)
+            coro_or_val = self._fetcher(*args, **kwargs)
 
             if isinstance(coro_or_val, AbcAwaitable):
                 result = await coro_or_val
@@ -1144,32 +1236,44 @@ class Resource(Generic[R]):
                 result = cast(R, coro_or_val)
 
             if current_version == self._version:
-                self.error.set(None)
-                self.data.set(result)
-                self.loading.set(False)
+                with _Batch():
+                    self._has_value = True
+                    self._error.set(None)
+                    self._data.set(result)
+                    self._loading.set(False)
+                    self._state.set("ready")
         except Exception as e:
             if current_version != self._version:
                 return
-            self.error.set(e)
-            self.loading.set(False)
+            with _Batch():
+                self._error.set(e)
+                self._loading.set(False)
+                self._state.set("errored")
 
-    def reload(self) -> None:
+    def refetch(self) -> None:
         """Cancel any in-flight request and start a new fetch.
 
-        Bumps the internal version, sets `loading` to `True`, clears
-        `error`, and dispatches the fetcher on the asyncio loop. Older
-        in-flight tasks are ignored when they resolve.
+        The resource enters `"pending"` (first fetch) or `"refreshing"`
+        (data already present). Older in-flight tasks are ignored when
+        they resolve.
         """
+        source_value = untrack(self._source) if self._source is not None else None
+        self._refetch_with(source_value)
+
+    def _refetch_with(self, source_value: Any) -> None:
         self.cancel()
         self._version += 1
-        self.loading.set(True)
-        self.error.set(None)
+        with _Batch():
+            self._loading.set(True)
+            self._error.set(None)
+            self._state.set("refreshing" if self._has_value else "pending")
 
         controller = self._make_abort_controller()
         self._abort_controller = controller
+        version = self._version
 
         async def runner() -> None:
-            await self._run(self._version, controller)
+            await self._run(version, controller, source_value)
 
         try:
             self._task = self._asyncio.create_task(runner())
@@ -1181,7 +1285,7 @@ class Resource(Generic[R]):
 
         Calls `AbortController.abort()` on the wrapped browser controller,
         cancels the asyncio task, and resets `loading` to `False` without
-        touching `data` or `error`.
+        touching the data or error state.
         """
         self._version += 1
         try:
@@ -1197,7 +1301,10 @@ class Resource(Generic[R]):
             pass
         self._task = None
         try:
-            self.loading.set(False)
+            if self._loading.peek():
+                with _Batch():
+                    self._loading.set(False)
+                    self._state.set("ready" if self._has_value else "unresolved")
         except Exception:
             pass
 
@@ -1206,17 +1313,19 @@ def create_resource(
     source_or_fetcher: Union[Callable[[], Any], Callable[..., Awaitable[R]]],
     fetcher: Optional[Callable[..., Awaitable[R]]] = None,
 ) -> Resource[R]:
-    """Create an async [`Resource`][wybthon.Resource] with cancellation support.
+    """Create an async [`Resource`][wybthon.Resource] accessor.
 
     Can be called two ways:
 
-    - `create_resource(fetcher)`: simple fetcher, no source signal.
-    - `create_resource(source, fetcher)`: refetches automatically when the
-      `source` getter's tracked value changes.
+    - `create_resource(fetcher)`: simple fetcher, fetches immediately.
+    - `create_resource(source, fetcher)`: fetches whenever the `source`
+      getter's tracked value changes; when the source yields `None` or
+      `False` the fetch is skipped (the resource stays unresolved).
 
-    The fetcher should be an async function returning the data value. If it
-    accepts a `signal` keyword argument, an `AbortSignal` is passed for
-    cancellation support when running in a browser.
+    The fetcher may be sync or async. When it declares a positional
+    parameter, the current source value is passed as the first argument.
+    When it accepts a `signal` keyword argument, an `AbortSignal` is
+    passed for cancellation support in the browser.
 
     Args:
         source_or_fetcher: When called with one argument, this is the
@@ -1226,15 +1335,15 @@ def create_resource(
             source getter.
 
     Returns:
-        A `Resource[R]` whose `data`, `error`, and `loading` signals can
-        be read inside reactive scopes.
+        A `Resource[R]`. Call it to read the data; read `.loading`,
+        `.error`, `.latest`, and `.state` for the surrounding UI state.
 
     Example:
         ```python
         user_id, set_user_id = create_signal(1)
 
-        async def load_user(signal=None):
-            resp = await fetch(f"/api/users/{user_id()}")
+        async def load_user(uid, signal=None):
+            resp = await fetch(f"/api/users/{uid}")
             return await resp.json()
 
         user = create_resource(user_id, load_user)
@@ -1243,9 +1352,6 @@ def create_resource(
     if fetcher is None:
         return Resource(source_or_fetcher)
     return Resource(fetcher, source=source_or_fetcher)
-
-
-use_resource = create_resource
 
 
 # ---------------------------------------------------------------------------
@@ -1268,7 +1374,6 @@ class _ComponentContext(Owner):
         "_props",
         "_reactive_props",
         "_vnode",
-        "_error_handler",
         "_provider_value_signals",
     )
 
@@ -1278,7 +1383,6 @@ class _ComponentContext(Owner):
         self._props: dict = {}
         self._reactive_props: Optional[ReactiveProps] = None
         self._vnode: Any = None
-        self._error_handler: Optional[Callable[..., Any]] = None
         # Maps ``Context.id -> Signal`` for any contexts this component
         # provides via ``Provider``.  Used by the reconciler to update
         # the context value reactively without re-mounting subtrees.
@@ -1370,6 +1474,11 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
     signal is captured by the render function's closure and persists
     naturally; there's no cursor system or "rules of hooks".
 
+    The setter supports **functional updates**, matching SolidJS: when
+    called with a callable, the callable receives the current value and
+    its return value becomes the new value. To *store* a callable as the
+    signal's value, wrap it: `set_fn(lambda _prev: my_callable)`.
+
     Args:
         value: Initial value stored in the signal.
         equals: Equality policy controlling when subscribers are notified.
@@ -1390,18 +1499,82 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 
     Returns:
         A `(getter, setter)` tuple. The getter is a zero-arg callable
-        suitable for embedding as a reactive hole.
+        suitable for embedding as a reactive hole. The setter returns
+        the value that was stored.
 
     Example:
         ```python
         count, set_count = create_signal(0)
-        print(count())          # 0
+        print(count())              # 0
         set_count(5)
-        print(count())          # 5
+        print(count())              # 5
+        set_count(lambda c: c + 1)  # functional update
+        print(count())              # 6
         ```
     """
     sig: Signal[Any] = Signal(value, equals=equals)
-    return sig.get, sig.set
+
+    def setter(new_value: Any) -> Any:
+        if callable(new_value):
+            new_value = new_value(sig._value)
+        sig.set(new_value)
+        return sig._value
+
+    return sig.get, setter
+
+
+# Cache of "does fn accept a previous-value positional arg" results, keyed
+# weakly so short-lived lambdas don't pin memory or recycle ids.
+_accepts_prev_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDictionary()
+
+
+def _accepts_prev_arg(fn: Callable[..., Any]) -> bool:
+    """Return True when `fn` declares a required positional parameter.
+
+    `inspect.signature` is expensive and effects are created in hot paths
+    (holes, list rows), so results are cached per function object.
+    """
+    try:
+        cached = _accepts_prev_cache.get(fn)
+        if cached is not None:
+            return cached
+    except TypeError:
+        cached = None
+    import inspect as _inspect
+
+    try:
+        sig = _inspect.signature(fn)
+        result = any(
+            p.kind in (_inspect.Parameter.POSITIONAL_ONLY, _inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            and p.default is _inspect.Parameter.empty
+            for p in sig.parameters.values()
+        )
+    except (ValueError, TypeError):
+        result = False
+    try:
+        _accepts_prev_cache[fn] = result
+    except TypeError:
+        pass
+    return result
+
+
+def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool) -> Computation:
+    """Shared implementation for `create_effect` and `create_render_effect`."""
+    if _accepts_prev_arg(fn):
+        _prev: List[Any] = [None]
+
+        def wrapped() -> None:
+            _prev[0] = fn(_prev[0])
+
+        body: Callable[[], Any] = wrapped
+    else:
+        body = fn
+
+    comp = Computation(body, is_effect=True, is_render=is_render)
+    if _current_owner is not None:
+        _current_owner._add_child(comp)
+    comp._update_if_necessary()
+    return comp
 
 
 def create_effect(fn: Callable[..., Any]) -> Computation:
@@ -1432,33 +1605,140 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
         create_effect(lambda prev: (print("was", prev), count())[1])
         ```
     """
-    import inspect as _inspect
+    return _create_effect_impl(fn, is_render=False)
 
-    try:
-        _sig = _inspect.signature(fn)
-        _positional = [
-            p
-            for p in _sig.parameters.values()
-            if p.kind in (_inspect.Parameter.POSITIONAL_ONLY, _inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            and p.default is _inspect.Parameter.empty
-        ]
-        _accepts_prev = len(_positional) > 0
-    except (ValueError, TypeError):
-        _accepts_prev = False
 
-    _prev: List[Any] = [None]
+def create_render_effect(fn: Callable[..., Any]) -> Computation:
+    """Create an effect that runs in the **render phase**, before user effects.
 
-    def wrapped() -> None:
-        if _accepts_prev:
-            _prev[0] = fn(_prev[0])
-        else:
-            fn()
+    Matches SolidJS's `createRenderEffect`: within one flush, all pending
+    render effects execute before any [`create_effect`][wybthon.create_effect]
+    callbacks. Wybthon's internal reactive holes and prop bindings run in
+    this phase, so a render effect observes the DOM in the same state the
+    framework's own bindings do.
 
-    comp = Computation(wrapped, is_effect=True)
+    Args:
+        fn: Zero- or one-arg callable (the previous return value is
+            forwarded when accepted, as with `create_effect`).
+
+    Returns:
+        The underlying `Computation`.
+    """
+    return _create_effect_impl(fn, is_render=True)
+
+
+def create_computed(fn: Callable[..., Any]) -> Computation:
+    """Create an eagerly-run computation in the pure (pre-render) phase.
+
+    Matches SolidJS's `createComputed`: use it to derive state by writing
+    other signals *before* rendering happens. Prefer
+    [`create_memo`][wybthon.create_memo] for plain derived values; reach
+    for `create_computed` only when you must push a value into another
+    signal.
+
+    Args:
+        fn: Zero- or one-arg callable.
+
+    Returns:
+        The underlying `Computation`.
+    """
+    return _create_effect_impl(fn, is_render=True)
+
+
+_unique_id_counter: int = 0
+
+
+def create_unique_id() -> str:
+    """Return a process-unique id string (e.g., for `for`/`id` attribute pairs).
+
+    Matches SolidJS's `createUniqueId`.
+
+    Returns:
+        A short unique string like `"wyb-7"`.
+    """
+    global _unique_id_counter
+    _unique_id_counter += 1
+    return f"wyb-{_unique_id_counter}"
+
+
+def catch_error(fn: Callable[[], T], handler: Callable[[Any], Any]) -> Optional[T]:
+    """Run `fn` with an error handler, catching errors thrown now or later.
+
+    Matches SolidJS's `catchError`. The handler receives exceptions
+    raised synchronously by `fn` **and** exceptions raised later by any
+    effect created inside `fn` (they route up the ownership tree to the
+    nearest handler).
+
+    Args:
+        fn: Zero-arg callable to execute under the error scope.
+        handler: Callback receiving the exception.
+
+    Returns:
+        The return value of `fn`, or `None` when `fn` raised.
+
+    Example:
+        ```python
+        result = catch_error(lambda: risky_setup(), lambda e: report(e))
+        ```
+    """
+    scope = Owner()
+    scope._error_handler = handler
+    global _current_owner
     if _current_owner is not None:
-        _current_owner._add_child(comp)
-    comp._update_if_necessary()
-    return comp
+        _current_owner._add_child(scope)
+    prev = _current_owner
+    _current_owner = scope
+    try:
+        return fn()
+    except Exception as exc:
+        try:
+            handler(exc)
+        except Exception:
+            pass
+        return None
+    finally:
+        _current_owner = prev
+
+
+def create_deferred(source: Callable[[], T]) -> Callable[[], T]:
+    """Return a getter that trails `source`, updating on the next event-loop tick.
+
+    A lightweight analogue of SolidJS's `createDeferred`: reads of the
+    returned getter don't recompute synchronously when `source` changes;
+    instead, the new value is published asynchronously (via the running
+    asyncio loop when one exists, else immediately). Use it to decouple
+    expensive consumers from rapid-fire updates.
+
+    Args:
+        source: Zero-arg tracked getter.
+
+    Returns:
+        A zero-arg getter for the deferred value.
+    """
+    deferred: Signal[Any] = Signal(untrack(source))
+    pending: List[Any] = []
+
+    def _publish() -> None:
+        if pending:
+            value = pending.pop()
+            pending.clear()
+            deferred.set(value)
+
+    def _track() -> None:
+        value = source()
+        if not pending and value == deferred.peek():
+            return
+        pending.append(value)
+        try:
+            import asyncio
+
+            loop = asyncio.get_running_loop()
+            loop.call_soon(_publish)
+        except Exception:
+            _publish()
+
+    _create_effect_impl(_track, is_render=False)
+    return deferred.get
 
 
 def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
@@ -2032,12 +2312,24 @@ def map_array(
         new_cache: List[Dict[str, Any]] = []
         used = [False] * len(_cache)
 
+        # Identity index: id(item) -> cache positions, consumed in order
+        # so duplicate items resolve stably. Keeps matching O(n).
+        by_id: Dict[int, List[int]] = {}
+        for ci in range(len(_cache)):
+            by_id.setdefault(id(_cache[ci]["item"]), []).append(ci)
+        by_id_pos: Dict[int, int] = {}
+
         for idx, item in enumerate(items):
             found = -1
-            for ci in range(len(_cache)):
-                if not used[ci] and item is _cache[ci]["item"]:
-                    found = ci
-                    break
+            positions = by_id.get(id(item))
+            if positions is not None:
+                p = by_id_pos.get(id(item), 0)
+                while p < len(positions) and used[positions[p]]:
+                    p += 1
+                by_id_pos[id(item)] = p
+                if p < len(positions):
+                    found = positions[p]
+                    by_id_pos[id(item)] = p + 1
 
             if found >= 0:
                 used[found] = True

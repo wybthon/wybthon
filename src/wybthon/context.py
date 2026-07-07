@@ -43,6 +43,34 @@ class Context:
     id: int
     default: Any
 
+    def Provider(self, value: Any = None, children: Any = None) -> Any:
+        """Build a provider VNode for this context (SolidJS-style shorthand).
+
+        Equivalent to `h(Provider, {"context": self, "value": value,
+        "children": children})`.
+
+        Args:
+            value: The value to expose to descendants.
+            children: A `VNode` or list of `VNode`s rendered
+                transparently.
+
+        Returns:
+            A provider component [`VNode`][wybthon.VNode].
+
+        Example:
+            ```python
+            Theme = create_context("light")
+            Theme.Provider(value="dark", children=[App()])
+            ```
+        """
+        from .vnode import h
+
+        if children is None:
+            children = []
+        if not isinstance(children, list):
+            children = [children]
+        return h(Provider, {"context": self, "value": value, "children": children})
+
 
 def create_context(default: Any) -> Context:
     """Create a new [`Context`][wybthon.Context] with the given default value.
@@ -118,15 +146,9 @@ def Provider(props: Any) -> Any:
         A reactive [`VNode`][wybthon.VNode] subtree containing the
         provider's children.
     """
-    from .reactivity import ReactiveProps
     from .vnode import Fragment, dynamic
 
-    if isinstance(props, ReactiveProps):
-        children_getter = props.children
-    else:
-
-        def children_getter() -> Any:
-            return props.get("children", [])
+    children_getter = props.children
 
     def _render() -> Any:
         kids = children_getter()

@@ -10,9 +10,21 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | --- | --- |
 | `createSignal(initial)` | [`create_signal(initial)`][wybthon.create_signal] |
 | `createEffect(fn)` | [`create_effect(fn)`][wybthon.create_effect] |
+| `createRenderEffect(fn)` | [`create_render_effect(fn)`][wybthon.create_render_effect] |
+| `createComputed(fn)` | [`create_computed(fn)`][wybthon.create_computed] |
 | `createMemo(fn)` | [`create_memo(fn)`][wybthon.create_memo] |
+| `createDeferred(source)` | [`create_deferred(source)`][wybthon.create_deferred] |
+| `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
+| `catchError(fn, handler)` | [`catch_error(fn, handler)`][wybthon.catch_error] |
+| `createSelector(source)` | [`create_selector(source)`][wybthon.create_selector] |
+| `mapArray` / `indexArray` | [`map_array`][wybthon.map_array] / [`index_array`][wybthon.index_array] |
+| `mergeProps` / `splitProps` | [`merge_props`][wybthon.merge_props] / [`split_props`][wybthon.split_props] |
+| `children(fn)` | [`children(fn)`][wybthon.children] |
+| `getOwner` / `runWithOwner` | [`get_owner`][wybthon.get_owner] / [`run_with_owner`][wybthon.run_with_owner] |
+| `createRoot(fn)` | [`create_root(fn)`][wybthon.create_root] |
 | `createResource(source, fetcher)` | [`create_resource(source, fetcher)`][wybthon.create_resource] |
 | `createContext(default)` / `useContext` | [`create_context`][wybthon.create_context] / [`use_context`][wybthon.use_context] |
+| `Ctx.Provider` | `ctx.Provider(value=..., children=[...])` |
 | `<Show when={...} fallback={...}>` | [`Show(when=..., fallback=...)`][wybthon.Show] |
 | `<For each={...}>` | [`For(each=..., children=...)`][wybthon.For] |
 | `<Index each={...}>` | [`Index(each=..., children=...)`][wybthon.Index] |
@@ -28,7 +40,10 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | `untrack(fn)` | [`untrack(fn)`][wybthon.untrack] |
 | `on(deps, fn)` | [`on(deps, fn)`][wybthon.on] |
 | `createStore(initial)` | [`create_store(initial)`][wybthon.create_store] |
+| `createMutable(initial)` | [`create_mutable(initial)`][wybthon.create_mutable] |
 | `produce(fn)` | [`produce(fn)`][wybthon.produce] |
+| `reconcile(data)` | [`reconcile(data, key="id")`][wybthon.reconcile] |
+| `unwrap(store)` | [`unwrap(store)`][wybthon.unwrap] |
 
 ## Templates
 
@@ -63,15 +78,17 @@ def Card(title, body):
 
 You can pass `title` straight through (creating a reactive hole) or read `title()` inside an effect. Destructuring (assigning the value to a local) freezes it at mount, just like Solid.
 
-For ergonomic prop manipulation Wybthon offers [`get_props`][wybthon.get_props] (analogous to Solid's `splitProps`):
+For ergonomic prop manipulation Wybthon offers [`merge_props`][wybthon.merge_props] and [`split_props`][wybthon.split_props], matching Solid's helpers of the same name:
 
 ```python
-from wybthon import get_props
+from wybthon import component, merge_props, split_props
+from wybthon.html import button
 
 @component
-def Button(label, **rest):
-    props, others = get_props(rest, ["disabled"])
-    return button(label, disabled=props["disabled"], **others)
+def Button(props):
+    final = merge_props({"variant": "solid"}, props)
+    local, rest = split_props(final, ["label", "variant"])
+    return button(local["label"], class_=lambda: f"btn-{local['variant']}")
 ```
 
 ## Signals and effects
@@ -100,23 +117,36 @@ The behaviors you rely on in Solid hold in Wybthon too:
   `equals`-based short-circuit as Solid).
 - **`batch`** coalesces writes and flushes once at the outermost boundary.
 
-One deliberate Python-flavored difference: because there's no JSX compiler to
-defer reads, `For`/`Index` re-run their mapping callback when the list
-changes, so natural eager expressions like `str(item())` work without an
-explicit accessor hole. Use `dynamic(...)` (or pass the accessor itself) where
-you want a value to stay live without a list change.
+`For` and `Index` match Solid exactly: the mapping callback runs **once
+per unique item** (or per index slot), and its result is cached. On list
+changes only added items map, removed items dispose, and reorders move
+existing DOM nodes. That means eager reads like `str(item())` inside the
+callback freeze at creation, just like destructuring props: pass the
+accessor itself (or `dynamic(lambda: ...)`) where the value should stay
+live.
 
 ## Stores
 
 ```python
-from wybthon import create_store, produce
+from wybthon import create_store, produce, reconcile, unwrap
 
 state, set_state = create_store({"count": 0, "items": []})
 
-# atomic update:
-with produce(state) as draft:
-    draft["count"] += 1
-    draft["items"].append("new")
+# Path-based writes:
+set_state("count", lambda c: c + 1)
+
+# Atomic multi-mutation update (Immer-style draft):
+def update(s):
+    s.count += 1
+    s.items.append("new")
+
+set_state(produce(update))
+
+# Diff fresh server data in, preserving identity for unchanged items:
+set_state("items", reconcile(fetched_items))
+
+# Get the raw data back out:
+raw = unwrap(state.items)
 ```
 
 Stores wrap nested data in lazy proxies so reads are tracked at the leaf level, exactly like Solid.

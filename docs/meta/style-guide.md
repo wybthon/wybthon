@@ -97,9 +97,9 @@ class Resource(Generic[R]):
     ``Suspense``).
 
     Attributes:
-        data: Reactive accessor for the most recent successful payload.
-        error: Reactive accessor for the most recent error, or ``None``.
-        loading: Reactive accessor; ``True`` while a fetch is in flight.
+        latest: The most recent successful payload (tracked read).
+        error: The most recent error, or ``None`` (tracked read).
+        loading: ``True`` while a fetch is in flight (tracked read).
 
     Example:
         ```python
@@ -108,7 +108,7 @@ class Resource(Generic[R]):
             return await resp.json()
 
         user = create_resource(load_user)
-        h("p", {}, dynamic(lambda: "Loading..." if user.loading() else user.data().get("name")))
+        h("p", {}, dynamic(lambda: "Loading..." if user.loading else (user() or {}).get("name")))
         ```
     """
 ```

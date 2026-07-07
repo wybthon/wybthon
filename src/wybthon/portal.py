@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Union
 
-from .reactivity import on_cleanup, on_mount, read_prop
+from .reactivity import on_cleanup, on_mount
 from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
 
 __all__ = ["create_portal"]
@@ -25,11 +25,11 @@ def _PortalComponent(props: Any) -> Any:
         from .dom import Element
         from .reconciler import mount, patch
 
-        container = read_prop(props, "_portal_container")
+        container = props.value("_portal_container")
         if isinstance(container, str):
             container = Element(container, existing=True)
 
-        children = read_prop(props, "children", [])
+        children = props.value("children", [])
         if children is None:
             children = []
         if not isinstance(children, list):
@@ -56,7 +56,7 @@ def _PortalComponent(props: Any) -> Any:
     on_cleanup(_cleanup)
 
     def render() -> VNode:
-        _ = read_prop(props, "children")
+        _ = props.value("children")
         if portal_tree[0] is not None:
             _do_render()
         return to_text_vnode("")

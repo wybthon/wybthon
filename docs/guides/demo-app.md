@@ -79,11 +79,12 @@ def Nav(base_path=None):
 #### Suspense for loading UI
 
 The Fetch page uses `Suspense` to show a fallback while its
-`create_resource` is loading, and keeps the previous content visible
-on reloads:
+`create_resource` is loading. Reading the resource inside the boundary
+registers it automatically, and `res.latest` keeps the previous content
+visible on reloads:
 
 ```python
-from wybthon import Suspense, component, create_resource, dynamic, h, p
+from wybthon import Suspense, component, create_resource, dynamic, p
 
 
 @component
@@ -91,17 +92,14 @@ def FetchPage():
     res = create_resource(fetcher)
 
     def display_text():
-        err = res.error.get()
-        if err:
-            return str(err)
-        return res.data.get() or "No data"
+        if res.error:
+            return str(res.error)
+        return res() or "No data"
 
-    return h(Suspense, {
-        "resource": res,
-        "fallback": p("Loading..."),
-        "keep_previous": True,
-        "children": [p(dynamic(display_text))],
-    })
+    return Suspense(
+        fallback=p("Loading..."),
+        children=lambda: p(dynamic(display_text)),
+    )
 ```
 
 This mirrors how you'd code-split larger apps and warm the import

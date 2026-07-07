@@ -3,20 +3,22 @@
 from conftest import StubNode, collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
+from wybthon.portal import create_portal
+from wybthon.vnode import h
 
 
 def test_portal_renders_into_target_container(wyb, root_element):
     portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
 
     def App(props):
-        return wyb["vdom"].h(
+        return h(
             "div",
             {},
-            wyb["vdom"].h("p", {}, "In parent"),
-            wyb["vdom"].create_portal(wyb["vdom"].h("p", {}, "In portal"), portal_target),
+            h("p", {}, "In parent"),
+            create_portal(h("p", {}, "In portal"), portal_target),
         )
 
-    wyb["vdom"].render(wyb["vdom"].h(App, {}), root_element)
+    wyb["reconciler"].render(h(App, {}), root_element)
 
     parent_texts = collect_texts(root_element.element)
     portal_texts = collect_texts(portal_target.element)
@@ -30,18 +32,18 @@ def test_portal_renders_list_of_children(wyb, root_element):
     portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
 
     children = [
-        wyb["vdom"].h("p", {}, "Child A"),
-        wyb["vdom"].h("p", {}, "Child B"),
+        h("p", {}, "Child A"),
+        h("p", {}, "Child B"),
     ]
 
     def App(props):
-        return wyb["vdom"].h(
+        return h(
             "div",
             {},
-            wyb["vdom"].create_portal(children, portal_target),
+            create_portal(children, portal_target),
         )
 
-    wyb["vdom"].render(wyb["vdom"].h(App, {}), root_element)
+    wyb["reconciler"].render(h(App, {}), root_element)
 
     portal_texts = collect_texts(portal_target.element)
     assert "Child A" in portal_texts
@@ -52,18 +54,18 @@ def test_portal_unmount_cleans_up(wyb, root_element):
     portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
 
     def App(props):
-        return wyb["vdom"].h(
+        return h(
             "div",
             {},
-            wyb["vdom"].create_portal(wyb["vdom"].h("span", {}, "Portal content"), portal_target),
+            create_portal(h("span", {}, "Portal content"), portal_target),
         )
 
-    tree = wyb["vdom"].h(App, {})
-    wyb["vdom"].render(tree, root_element)
+    tree = h(App, {})
+    wyb["reconciler"].render(tree, root_element)
 
     assert "Portal content" in collect_texts(portal_target.element)
 
-    wyb["vdom"]._unmount(tree)
+    wyb["reconciler"].unmount(tree)
     assert "Portal content" not in collect_texts(portal_target.element)
 
 
@@ -72,15 +74,15 @@ def test_portal_placeholder_in_parent(wyb, root_element):
     portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
 
     def App(props):
-        return wyb["vdom"].h(
+        return h(
             "div",
             {},
-            wyb["vdom"].h("p", {}, "Before"),
-            wyb["vdom"].create_portal(wyb["vdom"].h("p", {}, "Modal"), portal_target),
-            wyb["vdom"].h("p", {}, "After"),
+            h("p", {}, "Before"),
+            create_portal(h("p", {}, "Modal"), portal_target),
+            h("p", {}, "After"),
         )
 
-    wyb["vdom"].render(wyb["vdom"].h(App, {}), root_element)
+    wyb["reconciler"].render(h(App, {}), root_element)
 
     parent_texts = collect_texts(root_element.element)
     assert "Before" in parent_texts
