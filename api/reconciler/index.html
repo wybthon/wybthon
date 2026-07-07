@@ -18,7 +18,7 @@
         <link rel="prev" href="../vnode/">
       
       
-        <link rel="next" href="../props/">
+        <link rel="next" href="../template/">
       
       
         
@@ -1805,34 +1805,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../vnode/" class="md-nav__link">
         
   
@@ -2031,6 +2003,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3086,6 +3086,9 @@ string identifying an existing DOM node.</p>
     <div class="doc doc-contents ">
 
         <p>Mount a VNode (or string) into <code>container</code>, returning its DOM element.</p>
+<p>When the VNode carries an <code>owner_scope</code> (set by <code>For</code>/<code>Index</code> for
+cached rows), mounting runs under that reactive owner so the row's
+effects survive later list updates.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3248,8 +3251,10 @@ nodes (becomes a no-op).</p>
     <div class="doc doc-contents ">
 
         <p>Diff <code>old</code> against <code>new</code> and apply minimal DOM changes inside <code>container</code>.</p>
-<p>Same-type VNodes are patched in place (props and children diffed);
-different types are unmounted and remounted at the same anchor.</p>
+<p>Identical VNode instances (<code>old is new</code>, e.g. cached <code>For</code> rows) are
+skipped entirely. Same-type VNodes are patched in place (props and
+children diffed); different types are unmounted and remounted at the
+same anchor.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3344,12 +3349,16 @@ curious how holes plug into the patching loop.</p>
 </thead>
 <tbody>
 <tr>
+<td>Mounting</td>
+<td>Static subtrees mount through the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../template/#wybthon.template"><code>template</code></a> fast path: one <code>innerHTML</code> parse plus a wiring pass, instead of one FFI call per node.</td>
+</tr>
+<tr>
 <td>Element diffing</td>
 <td>Matches by <code>tag</code>. If tags differ, the old subtree unmounts.</td>
 </tr>
 <tr>
 <td>Children</td>
-<td>Keyed lists use a longest-increasing-subsequence move pass; unkeyed children diff by index.</td>
+<td>A three-pass O(n) match (identity, then key, then type) with a longest-increasing-subsequence move pass keeps DOM moves minimal.</td>
 </tr>
 <tr>
 <td>Components</td>
@@ -3367,7 +3376,7 @@ curious how holes plug into the patching loop.</p>
 </table>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a>: entry points for rendering and patching.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../template/#wybthon.template"><code>template</code></a>: the template-based mounting fast path.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vnode&lt;/span&gt;" href="../vnode/#wybthon.vnode"><code>vnode</code></a>: the data structure being diffed.</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 <li><a href="../../concepts/lifecycle/">Concepts: Lifecycle and Ownership</a></li>

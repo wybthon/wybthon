@@ -1898,34 +1898,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/vnode/" class="md-nav__link">
         
   
@@ -1962,6 +1934,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2740,7 +2740,7 @@
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Reactivity API</li>
-<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[T], None]]</code>. <code>equals</code> is optional: default value equality (<code>==</code>) with identity fast-path, <code>True</code> is equivalent, <code>False</code> to always notify, or <code>(old, new) -&gt; bool</code> "same value" predicate (use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics).</li>
+<li><code>create_signal(value: T, *, equals: Any = ...) -&gt; tuple[Callable[[], T], Callable[[Union[T, Callable[[T], T]]], T]]</code>. The setter accepts a new value or an updater function and returns the stored value. <code>equals</code> is optional: default value equality (<code>==</code>) with identity fast-path, <code>True</code> is equivalent, <code>False</code> to always notify, or <code>(old, new) -&gt; bool</code> "same value" predicate (use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics).</li>
 <li><code>create_memo(fn: Callable[[], T]) -&gt; Callable[[], T]</code></li>
 <li><code>create_effect(fn: Callable[[], Any]) -&gt; Computation</code></li>
 <li><code>create_resource(fetcher: Callable[..., Awaitable[R]]) -&gt; Resource[R]</code></li>

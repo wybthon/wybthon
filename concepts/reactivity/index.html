@@ -1942,34 +1942,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/vnode/" class="md-nav__link">
         
   
@@ -2006,6 +1978,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2824,14 +2824,21 @@
 </span></code></pre></div>
 <ul>
 <li><code>create_signal(value, *, equals=...)</code> returns a <code>(getter, setter)</code> tuple.
-  By default <code>equals</code> uses <strong>value equality</strong> (<code>==</code>) with an identity
-  fast-path; pass <code>equals=False</code> to fire on every set, or a custom
-  comparator (e.g., <code>equals=lambda a, b: a is b</code> for SolidJS-style
-  identity-only semantics). See <a href="../../api/reactivity/">Reactivity API</a>.</li>
+  The setter accepts either a new value or an <strong>updater function</strong>
+  (<code>set_count(lambda n: n + 1)</code>). By default <code>equals</code> uses <strong>value
+  equality</strong> (<code>==</code>) with an identity fast-path; pass <code>equals=False</code> to
+  fire on every set, or a custom comparator (e.g.,
+  <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only
+  semantics). See <a href="../../api/reactivity/">Reactivity API</a>.</li>
 <li><code>create_memo(fn)</code> returns a derived getter; recomputes <strong>lazily</strong> on read after a dependency changes.</li>
 <li><code>create_effect(fn)</code> runs and re-runs on dependencies; supports previous value.</li>
+<li><code>create_render_effect(fn)</code> is like <code>create_effect</code> but runs in the <strong>render phase</strong>, before user effects (the framework's own DOM bindings live here).</li>
+<li><code>create_computed(fn)</code> runs eagerly in the render phase; use it to push derived state into another signal.</li>
 <li><code>batch()</code> batches updates as a context manager, or <code>batch(fn)</code> with callback.</li>
-<li><code>create_resource(fetcher)</code> returns an async data primitive with loading/error signals.</li>
+<li><code>create_resource(fetcher)</code> returns an async data primitive with loading/error state.</li>
+<li><code>create_deferred(source)</code> returns a getter that trails <code>source</code> by one event-loop tick, decoupling expensive consumers from rapid updates.</li>
+<li><code>create_unique_id()</code> returns a stable unique string for <code>id</code>/<code>for</code>/<code>aria-*</code> wiring.</li>
+<li><code>catch_error(fn, handler)</code> runs <code>fn</code> under a scope whose errors (now or from effects created inside) route to <code>handler</code>.</li>
 </ul>
 <h4 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h4>
 <p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads, which is
@@ -3031,20 +3038,20 @@ the hole re-runs (so their <code>on_cleanup</code> callbacks fire).</p>
 children are disposed before the owner's own cleanups run.  After
 disposal, the owner is removed from its parent's children list.</p>
 <h4 id="resources-cancellation-and-suspense">Resources, cancellation, and Suspense<a class="headerlink" href="#resources-cancellation-and-suspense" title="Permanent link">&para;</a></h4>
-<p><code>create_resource(fetcher)</code> creates a <code>Resource</code> with <code>data</code>, <code>error</code>, and <code>loading</code> signals. Calling <code>reload()</code> starts a new fetch and sets <code>loading=True</code>. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and sets <code>loading=False</code>.</p>
+<p><code>create_resource(fetcher)</code> creates a <code>Resource</code>, a callable accessor with tracked <code>loading</code>, <code>error</code>, <code>latest</code>, and <code>state</code> properties. Calling <code>refetch()</code> starts a new fetch. Calling <code>cancel()</code> aborts any in-flight JS fetch (via <code>AbortController</code> when available), cancels the Python task, invalidates the current version to ignore late results, and resets <code>loading</code>. <code>mutate(value)</code> writes the data directly for optimistic updates.</p>
 <p>You can also pass a source signal to automatically refetch when it changes:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_resource</span><span class="p">,</span> <span class="n">create_signal</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">user_id</span><span class="p">,</span> <span class="n">set_user_id</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/api/users/</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/api/users/</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">load_user</span><span class="p">)</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="c1"># Changing user_id will automatically refetch</span>
 </span></code></pre></div>
-<p>To render a loading UI declaratively, wrap UI with <code>Suspense</code> and pass a <code>resource</code> (or <code>resources=[...]</code>) and a <code>fallback</code>:</p>
+<p>To render a loading UI declaratively, wrap the UI in <code>Suspense</code>. Reading a pending resource inside the boundary registers it automatically; no manual wiring is needed:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">create_resource</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">(</span><span class="n">signal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -3053,14 +3060,13 @@ disposal, the owner is removed from its parent's children list.</p>
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
 </span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="n">res</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="n">Suspense</span><span class="p">,</span>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="p">{</span><span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">,</span> <span class="s2">&quot;fallback&quot;</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading user...&quot;</span><span class="p">)},</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="n">h</span><span class="p">(</span><span class="s2">&quot;pre&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">())),</span>
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">)</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">view</span> <span class="o">=</span> <span class="n">Suspense</span><span class="p">(</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Loading user...&quot;</span><span class="p">),</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;pre&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">res</span><span class="p">())),</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li>Pass <code>keep_previous=True</code> to keep previously rendered children visible during subsequent reloads while still showing new data once ready.</li>
+<li>Refetches (<code>state == "refreshing"</code>) don't re-trigger <code>Suspense</code>; the previous data stays readable through the accessor and <code>latest</code>, matching SolidJS.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

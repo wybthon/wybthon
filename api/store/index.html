@@ -1805,34 +1805,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../vnode/" class="md-nav__link">
         
   
@@ -1869,6 +1841,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2140,6 +2140,39 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;reconcile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.create_mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_mutable
       
     </span>
   </a>
@@ -2691,6 +2724,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.store.reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;reconcile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.create_mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_mutable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.store.produce" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2785,6 +2851,12 @@ entire store.</p>
   initial value.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;produce&lt;/span&gt;" href="../wybthon/#wybthon.produce"><code>produce</code></a>: batch mutations through a mutable
   draft.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a>: diff external data into a store,
+  preserving object identity for unchanged items.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unwrap&lt;/span&gt;" href="../wybthon/#wybthon.unwrap"><code>unwrap</code></a>: read the raw (non-reactive) data behind
+  a store proxy.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_mutable&lt;/span&gt;" href="../wybthon/#wybthon.create_mutable"><code>create_mutable</code></a>: a directly-writable
+  store proxy (no separate setter).</li>
 </ul>
 
 
@@ -2844,6 +2916,30 @@ entire store.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Create a reactive store from an initial value.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt; (&lt;code&gt;wybthon.store.reconcile&lt;/code&gt;)" href="#wybthon.store.reconcile">reconcile</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Diff external data into a store, keeping identity for unchanged items.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unwrap&lt;/span&gt; (&lt;code&gt;wybthon.store.unwrap&lt;/code&gt;)" href="#wybthon.store.unwrap">unwrap</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the raw data behind a store proxy (non-reactive).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_mutable&lt;/span&gt; (&lt;code&gt;wybthon.store.create_mutable&lt;/code&gt;)" href="#wybthon.store.create_mutable">create_mutable</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Create a directly-writable reactive store proxy.</p>
                 </div>
               </td>
             </tr>
@@ -2996,6 +3092,283 @@ conventions.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.store.reconcile" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">reconcile</span>
+
+
+<a href="#wybthon.store.reconcile" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reconcile</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.store._ReconcileResult">_ReconcileResult</span></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Diff external data into a store, keeping identity for unchanged items.</p>
+<p>Matches SolidJS's <code>reconcile</code>. Pass the result to a store setter;
+instead of replacing the state wholesale, the incoming data is
+merged: dicts update key by key, and lists of dicts are matched by
+<code>key</code> so existing item objects are <strong>updated in place</strong> rather than
+replaced. Only the leaf signals whose values actually changed
+notify, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../wybthon/#wybthon.For"><code>For</code></a> rows for unchanged items keep
+their DOM.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The incoming plain data (dict, list, or scalar).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>key</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dict key used to match list items. Defaults to <code>"id"</code>.
+Pass <code>None</code> to disable key matching (positional replace).</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;id&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="wybthon.store._ReconcileResult">_ReconcileResult</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A marker object recognized by the store setter.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">set_store</span><span class="p">(</span><span class="s2">&quot;todos&quot;</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_todos</span><span class="p">))</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.store.unwrap" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">unwrap</span>
+
+
+<a href="#wybthon.store.unwrap" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the raw data behind a store proxy (non-reactive).</p>
+<p>Matches SolidJS's <code>unwrap</code>. Reading the result doesn't subscribe
+to anything; mutations to it bypass reactivity entirely.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A store proxy (or any value).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The underlying dict/list for proxies; <code>value</code> unchanged</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>otherwise.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.store.create_mutable" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">create_mutable</span>
+
+
+<a href="#wybthon.store.create_mutable" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_mutable</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a directly-writable reactive store proxy.</p>
+<p>Matches SolidJS's <code>createMutable</code>: reads are tracked per path like
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../wybthon/#wybthon.create_store"><code>create_store</code></a>, but top-level writes go
+through plain attribute or item assignment instead of a setter.
+Nested containers remain read-only proxies; prefer <code>create_store</code>
+for anything beyond simple mutable state.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>initial</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Initial dict state.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A mutable reactive proxy.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">count</span><span class="p">))</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">state</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># effect re-runs</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.store.produce" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">produce</span>
 
@@ -3094,6 +3467,7 @@ reference past the call.</p>
 <h5 id="store-creation">Store creation<a class="headerlink" href="#store-creation" title="Permanent link">&para;</a></h5>
 <ul>
 <li><code>create_store(initial) -&gt; (store, set_store)</code>. Create a reactive store from a dict or list.</li>
+<li><code>create_mutable(initial) -&gt; proxy</code>. Create a directly-writable store proxy (Solid's <code>createMutable</code>); top-level attribute and item assignment notify the touched key. Nested containers remain read-only proxies.</li>
 </ul>
 <h5 id="store-setter">Store setter<a class="headerlink" href="#store-setter" title="Permanent link">&para;</a></h5>
 <p>The <code>set_store</code> setter supports several calling conventions:</p>
@@ -3110,6 +3484,14 @@ reference past the call.</p>
 <ul>
 <li><code>produce(fn)</code>. Create a producer for batch-mutating store state; pass to <code>set_store</code>.</li>
 </ul>
+<h5 id="reconcile-and-unwrap">Reconcile and unwrap<a class="headerlink" href="#reconcile-and-unwrap" title="Permanent link">&para;</a></h5>
+<ul>
+<li><code>reconcile(data, key="id")</code>. Create a reconcile marker for <code>set_store</code>: the new data is <strong>diffed</strong> into the existing state so only changed paths notify. List items are matched by <code>key</code>, preserving proxy identity across updates (important for <code>For</code>).</li>
+<li><code>unwrap(value)</code>. Return the raw data underneath a store proxy without tracking. Plain values pass through unchanged.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">set_store</span><span class="p">(</span><span class="s2">&quot;todos&quot;</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_todos</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">)</span>
+</span></code></pre></div>
 <p>Type hints are provided for all public functions and classes.</p>
 
 

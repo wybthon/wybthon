@@ -1805,34 +1805,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../vnode/" class="md-nav__link">
         
   
@@ -1869,6 +1841,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2116,6 +2116,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.context.Context.Provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;Provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2179,6 +2196,17 @@
     <span class="md-ellipsis">
       
         Provider(props) -&gt; VNode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contextprovidervaluenone-childrennone-vnode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context.Provider(value=None, children=None) -&gt; VNode
       
     </span>
   </a>
@@ -2732,6 +2760,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.context.Context.Provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;Provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2795,6 +2840,17 @@
     <span class="md-ellipsis">
       
         Provider(props) -&gt; VNode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contextprovidervaluenone-childrennone-vnode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context.Provider(value=None, children=None) -&gt; VNode
       
     </span>
   </a>
@@ -3045,6 +3101,27 @@ provider is found.</p>
 
 
 
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Provider&lt;/span&gt; (&lt;code&gt;wybthon.context.Context.Provider&lt;/code&gt;)" href="#wybthon.context.Context.Provider">Provider</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Build a provider VNode for this context (SolidJS-style shorthand).</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -3059,6 +3136,106 @@ provider is found.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.context.Context.Provider" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">Provider</span>
+
+
+<a href="#wybthon.context.Context.Provider" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Provider</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a provider VNode for this context (SolidJS-style shorthand).</p>
+<p>Equivalent to <code>h(Provider, {"context": self, "value": value,
+"children": children})</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value to expose to descendants.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>children</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <code>VNode</code> or list of <code>VNode</code>s rendered
+transparently.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A provider component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">Theme</span><span class="o">.</span><span class="n">Provider</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;dark&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">App</span><span class="p">()])</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
 
 
 
@@ -3408,6 +3585,12 @@ reconciler sets the value on the provider's <code>_ComponentContext</code> via
 <li><code>children</code>: child VNodes.</li>
 </ul>
 <p>Nested providers for the same context shadow outer ones.</p>
+<h4 id="contextprovidervaluenone-childrennone-vnode"><code>Context.Provider(value=None, children=None) -&gt; VNode</code><a class="headerlink" href="#contextprovidervaluenone-childrennone-vnode" title="Permanent link">&para;</a></h4>
+<p>SolidJS-style shorthand on the context object itself. Equivalent to
+<code>h(Provider, {"context": ctx, "value": value, "children": children})</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">view</span> <span class="o">=</span> <span class="n">Theme</span><span class="o">.</span><span class="n">Provider</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;dark&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">h</span><span class="p">(</span><span class="n">Label</span><span class="p">,</span> <span class="p">{})])</span>
+</span></code></pre></div>
 
 
 

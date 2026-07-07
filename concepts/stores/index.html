@@ -946,6 +946,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#reconciling-external-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reconciling external data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutable-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutable stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stores-vs-signals" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1953,34 +1986,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/vnode/" class="md-nav__link">
         
   
@@ -2017,6 +2022,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2773,6 +2806,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#reconciling-external-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reconciling external data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutable-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutable stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stores-vs-signals" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2941,6 +3007,39 @@
 </span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>        <span class="p">),</span>
 </span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="p">)</span>
 </span></code></pre></div>
+<h4 id="reconciling-external-data">Reconciling external data<a class="headerlink" href="#reconciling-external-data" title="Permanent link">&para;</a></h4>
+<p>When fresh data arrives from a server, replacing whole subtrees would
+re-run every effect under them. <code>reconcile</code> diffs the new data into the
+store instead, updating only the paths that actually changed. List items
+are matched by a key (default <code>"id"</code>) so their proxies keep a stable
+identity across updates, which is exactly what <code>For</code> needs:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">reconcile</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">set_store</span><span class="p">(</span><span class="s2">&quot;todos&quot;</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_todos</span><span class="p">))</span>          <span class="c1"># match by &quot;id&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">set_store</span><span class="p">(</span><span class="s2">&quot;todos&quot;</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_todos</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;uuid&quot;</span><span class="p">))</span>
+</span></code></pre></div>
+<h4 id="unwrap">Unwrap<a class="headerlink" href="#unwrap" title="Permanent link">&para;</a></h4>
+<p><code>unwrap(value)</code> returns the raw data underneath a store proxy (untracked),
+for example to serialize it or hand it to a non-reactive API:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">unwrap</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">)</span>   <span class="c1"># plain list of dicts</span>
+</span></code></pre></div>
+<h4 id="mutable-stores">Mutable stores<a class="headerlink" href="#mutable-stores" title="Permanent link">&para;</a></h4>
+<p><code>create_mutable(initial)</code> returns a single directly-writable proxy
+instead of a <code>(store, setter)</code> pair, mirroring Solid's <code>createMutable</code>.
+Top-level writes go through plain attribute or item assignment and
+notify subscribers of the touched key only:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_mutable</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;hi&quot;</span><span class="p">})</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">state</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">state</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hello&quot;</span>
+</span></code></pre></div>
+<p>Nested containers remain read-only proxies. Prefer <code>create_store</code> for
+most app state; the explicit setter keeps mutation sites easy to find.
+Reach for <code>create_mutable</code> for small, flat objects that are easier to
+update in place.</p>
 <h4 id="stores-vs-signals">Stores vs signals<a class="headerlink" href="#stores-vs-signals" title="Permanent link">&para;</a></h4>
 <table>
 <thead>

@@ -1310,6 +1310,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#template-based-mounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template-based mounting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#authoring-tips" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1909,34 +1920,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/vnode/" class="md-nav__link">
         
   
@@ -1973,6 +1956,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2674,6 +2685,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#template-based-mounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template-based mounting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#authoring-tips" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2755,6 +2777,18 @@ re-evaluate, and only the affected DOM nodes are touched.  This is
 fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
 the Python and JS bridge.</p>
+<h4 id="template-based-mounting">Template-based mounting<a class="headerlink" href="#template-based-mounting" title="Permanent link">&para;</a></h4>
+<p>Under Pyodide, mount cost is dominated by Python-to-JS FFI round trips,
+not by the DOM operations themselves.  The reconciler therefore
+serializes the static parts of each host-element subtree into one HTML
+string, parses it through a single <code>&lt;template&gt;</code> element, and wires
+reactive bindings, event handlers, and dynamic children onto the cloned
+nodes in one pass.  Mounting N static nodes costs roughly one FFI call
+instead of N.</p>
+<p>You get this for free; there's no opt-in.  Subtrees that can't be
+expressed as HTML (form-control <code>value</code>/<code>checked</code>, raw-text elements,
+and similar) fall back to node-by-node mounting with identical
+behavior.  See the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../../api/template/#wybthon.template"><code>template</code></a> API page.</p>
 <h4 id="authoring-tips">Authoring tips<a class="headerlink" href="#authoring-tips" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Prefer holes over re-rendering.</strong>  Embed a signal accessor (or
@@ -2789,19 +2823,33 @@ the Python and JS bridge.</p>
 </li>
 <li>
 <p><strong>Use <code>For</code> / <code>Index</code> for dynamic lists.</strong>  These maintain stable
-  per-item (or per-index) reactive scopes so the mapping callback
-  runs once per unique item, not per re-render.</p>
+  per-item (or per-index) reactive scopes and <strong>cache the rendered
+  subtree per item</strong>: on a list change, only added items map, removed
+  items dispose, and reorders move the existing DOM nodes.</p>
+</li>
+<li>
+<p><strong>Use <code>create_selector</code> for selection state.</strong>  A selector notifies
+  only the previously-selected and newly-selected rows, so selecting a
+  row in a 10,000-row table touches two rows instead of all of them.</p>
+</li>
+<li>
+<p><strong>Use <code>reconcile</code> for server data.</strong>  Diffing fresh data into a store
+  (rather than replacing it) keeps identities stable, so <code>For</code> rows for
+  unchanged items keep their DOM.</p>
 </li>
 </ul>
 <h4 id="micro-benchmarking">Micro-benchmarking<a class="headerlink" href="#micro-benchmarking" title="Permanent link">&para;</a></h4>
 <p>Run the included benchmarks against the stubbed DOM:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>benchmarks/bench_runner.py
 </span></code></pre></div>
-<p>The runner measures:</p>
+<p>The app under test is built the idiomatic fine-grained way (mount once,
+then drive everything through signal writes with <code>For</code> and
+<code>create_selector</code>), so the numbers reflect what a well-written Wybthon
+app pays. The runner measures:</p>
 <ul>
 <li>Standard JS framework benchmark workloads (create, update, swap, and
   remove rows in a 1k to 10k row table); useful as a regression smoke
-  test for the diffing algorithm.</li>
+  test for the list primitives and the template mount path.</li>
 <li><strong><code>hole update (1k tree)</code></strong>: change one signal that drives a single
   reactive hole inside a 1,000-node tree.</li>
 <li><strong><code>full rerender (1k tree)</code></strong>: re-render the entire tree and let the
@@ -2825,15 +2873,20 @@ real browser DOM mutations) the gap is dramatic:</p>
 </tr>
 <tr>
 <td><code>full rerender (1k tree)</code></td>
-<td style="text-align: right;">~25 ms</td>
+<td style="text-align: right;">~9 ms</td>
 </tr>
 </tbody>
 </table>
-<p>In real Pyodide deployments the absolute numbers shift, but the
-relative ordering is the same: skipping the diff entirely is always a
-win.</p>
+<p>Fine-grained operations show the same pattern in the table workloads:
+selecting a row is ~0.02 ms (two class flips via <code>create_selector</code>) and
+a partial update of every 10<sup>th</sup> label is under a millisecond, while
+creating 1,000 rows from scratch, which must build and mount 1,000
+subtrees, sits in the hundreds of milliseconds.</p>
 <p>Use <code>--bench=&lt;name&gt;</code> to run a single benchmark or <code>--json</code> to emit
 machine-readable output.</p>
+<p><code>benchmarks/browser_bench.py</code> runs the real browser app (Pyodide +
+headless Chromium) for end-to-end numbers that include FFI and layout;
+see <code>benchmarks/README.md</code>.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../../concepts/mental-model/">Mental model</a> for the underlying ideas.</li>

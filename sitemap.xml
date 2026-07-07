@@ -2,238 +2,238 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://wybthon.com/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/getting-started/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/component/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/context/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/dev/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/dom/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/error_boundary/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/events/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/flow/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/forms/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/html/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/lazy/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/portal/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/props/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/reactivity/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/reconciler/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/router/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/router_core/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/store/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/suspense/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
-         <loc>https://wybthon.com/api/vdom/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <loc>https://wybthon.com/api/template/</loc>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/vnode/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/api/wybthon/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/components/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/context/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/dom/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/error-boundaries/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/events/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/forms/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/lifecycle/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/mental-model/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/primitives/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/reactivity/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/router/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/stores/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/suspense-lazy/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/concepts/vdom/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/authoring-patterns/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/counter/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/errors/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/fetch/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/forms/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/examples/router/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/authoring-patterns/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/demo-app/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/deployment/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/dev-server/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/migrating-from-react/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/migrating-from-solid/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/performance/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/pyodide/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/testing/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/guides/typing/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/meta/changelog/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/meta/contributing/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/meta/faq/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/meta/style-guide/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
     <url>
          <loc>https://wybthon.com/meta/troubleshooting/</loc>
-         <lastmod>2026-06-23</lastmod>
+         <lastmod>2026-07-07</lastmod>
     </url>
 </urlset>

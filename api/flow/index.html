@@ -1805,34 +1805,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../vnode/" class="md-nav__link">
         
   
@@ -1869,6 +1841,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2908,11 +2908,10 @@
         <p>SolidJS-style reactive flow control components.</p>
 <p>These components create <strong>isolated reactive scopes</strong> so that only the
 relevant subtree re-renders when the tracked condition or list changes.</p>
-<p>Each flow control is implemented as a proper function component
-(returning <code>dynamic(...)</code>) rather than a plain helper. Conditions,
-sources, children, and fallbacks are accepted as <strong>getters</strong> (zero-arg
-callables) so that reads happen inside the flow control's own reactive
-effect, not the parent's.</p>
+<p>Each flow control is a factory function returning a component VNode;
+conditions, sources, children, and fallbacks are accepted as <strong>getters</strong>
+(zero-arg callables) so that reads happen inside the flow control's own
+reactive effect, not the parent's.</p>
 <p>API rules:</p>
 <ul>
 <li><code>when</code> / <code>each</code>: pass a <em>getter</em> (the signal accessor itself) or a raw
@@ -2923,12 +2922,14 @@ effect, not the parent's.</p>
 </ul>
 <p>Fine-grained list primitives:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../wybthon/#wybthon.For"><code>For</code></a> maintains <strong>stable per-item reactive scopes</strong>
-  (keyed by reference identity); the mapping callback runs only once
-  per unique item.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Index&lt;/span&gt;" href="../wybthon/#wybthon.Index"><code>Index</code></a> maintains <strong>stable per-index scopes</strong> with a
-  reactive item signal that updates when the value at that position
-  changes.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../wybthon/#wybthon.For"><code>For</code></a> maintains <strong>stable per-item rendered subtrees</strong>
+  (keyed by reference identity) on top of
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../wybthon/#wybthon.map_array"><code>map_array</code></a>. The mapping callback runs exactly
+  once per unique item; on list changes, existing rows keep their DOM
+  and are only <em>moved</em>, never re-diffed.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Index&lt;/span&gt;" href="../wybthon/#wybthon.Index"><code>Index</code></a> maintains <strong>stable per-index subtrees</strong> on
+  top of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;index_array&lt;/span&gt;" href="../wybthon/#wybthon.index_array"><code>index_array</code></a>, with a reactive item
+  signal that updates when the value at that position changes.</li>
 </ul>
 
 
@@ -2939,7 +2940,7 @@ effect, not the parent's.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">))</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">()))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">()))</span>
 </span></code></pre></div>
 </details>
 
@@ -2974,7 +2975,7 @@ effect, not the parent's.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt; (&lt;code&gt;wybthon.flow.For&lt;/code&gt;)" href="#wybthon.flow.For">For</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Render a list of items using a keyed mapping function.</p>
+                  <p>Render a list of items using a per-item mapping function.</p>
                 </div>
               </td>
             </tr>
@@ -3036,22 +3037,15 @@ effect, not the parent's.</p>
 
 
 <a href="#wybthon.flow.Show" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Show</span><span class="p">(</span><span class="n">props_or_when</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Show</span><span class="p">(</span><span class="n">when</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Conditionally render <code>children</code> when <code>when</code> is truthy.</p>
-<p>Can be called in two styles:</p>
-<p>Component style (reactive; recommended for dynamic conditions):
-    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">))</span>
-</span></code></pre></div></p>
-<p>Direct call (evaluated once; fine inside an explicit hole):
-    <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Show</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>     <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Positive&quot;</span><span class="p">),</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>     <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Not positive&quot;</span><span class="p">))</span>
-</span></code></pre></div></p>
+</span></code></pre></div>
 <p>Behavior:</p>
 <ul>
 <li><code>when</code> may be a zero-arg getter or a plain value.</li>
@@ -3080,15 +3074,14 @@ transitions.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>props_or_when</code>
+                <code>when</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A props dict (component style) or the <code>when</code>
-value (direct call form).</p>
+                <p>Condition value or zero-arg getter.</p>
               </div>
             </td>
             <td>
@@ -3097,14 +3090,14 @@ value (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>children_pos</code>
+                <code>children</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Positional <code>children</code> slot (direct call form).</p>
+                <p>Slot rendered when the condition is truthy.</p>
               </div>
             </td>
             <td>
@@ -3113,18 +3106,18 @@ value (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>**kwargs</code>
+                <code>fallback</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>when</code>, <code>children</code>, and optional <code>fallback</code>.</p>
+                <p>Slot rendered when the condition is falsy.</p>
               </div>
             </td>
             <td>
-                  <code>{}</code>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3142,21 +3135,21 @@ value (direct call form).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> tree that re-renders when</p>
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> that re-renders when the</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>the condition's truthiness changes.</p>
+                <p>condition's truthiness changes.</p>
               </div>
             </td>
           </tr>
@@ -3176,22 +3169,24 @@ value (direct call form).</p>
 
 
 <a href="#wybthon.flow.For" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">For</span><span class="p">(</span><span class="n">props_or_each</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">For</span><span class="p">(</span><span class="n">each</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Render a list of items using a keyed mapping function.</p>
-<p>Component style (reactive):
-    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">index</span><span class="p">()))</span>
-</span></code></pre></div></p>
+        <p>Render a list of items using a per-item mapping function.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">()))</span>
+</span></code></pre></div>
 <p>Inside the callback, <code>item</code> is a <strong>signal-backed getter</strong> returning
 the current item value, and <code>index</code> is a signal-backed getter
 returning the current integer index, matching SolidJS <code>&lt;For&gt;</code>.</p>
-<p><code>For</code> maintains <strong>stable per-item reactive scopes</strong> keyed by
-reference identity. The mapping callback runs only once per unique
-item. When an item leaves the list, its scope (including any
+<p><code>For</code> is built on <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../wybthon/#wybthon.map_array"><code>map_array</code></a>: the mapping
+callback runs <strong>exactly once per unique item</strong> (keyed by reference
+identity), and the rendered subtree is cached. When the list
+changes, unchanged rows keep their DOM untouched; the reconciler
+only mounts additions, unmounts removals, and moves reordered rows.
+When an item leaves the list, its reactive scope (including any
 effects or cleanups created inside the callback) is disposed.</p>
 
 
@@ -3208,15 +3203,14 @@ effects or cleanups created inside the callback) is disposed.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>props_or_each</code>
+                <code>each</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A props dict (component style) or the <code>each</code>
-getter / list (direct call form).</p>
+                <p>List getter (typically a signal accessor) or plain list.</p>
               </div>
             </td>
             <td>
@@ -3225,14 +3219,14 @@ getter / list (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>children_pos</code>
+                <code>children</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Positional <code>children</code> callback (direct call form).</p>
+                <p>A <code>(item_getter, index_getter) -&gt; VNode</code> callable.</p>
               </div>
             </td>
             <td>
@@ -3241,19 +3235,18 @@ getter / list (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>**kwargs</code>
+                <code>fallback</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>each</code>, <code>children</code> (a <code>(item, index_getter) -&gt; VNode</code>
-callable), and optional <code>fallback</code>.</p>
+                <p>Slot rendered when the list is empty.</p>
               </div>
             </td>
             <td>
-                  <code>{}</code>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3271,21 +3264,11 @@ callable), and optional <code>fallback</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> tree that diffs the list by</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>item identity.</p>
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -3305,19 +3288,19 @@ callable), and optional <code>fallback</code>.</p>
 
 
 <a href="#wybthon.flow.Index" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Index</span><span class="p">(</span><span class="n">props_or_each</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children_pos</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Index</span><span class="p">(</span><span class="n">each</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Render a list by index with a stable item getter.</p>
 <p>Unlike <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../wybthon/#wybthon.For"><code>For</code></a>, the <code>children</code> callback receives
-<code>(item_getter, index)</code> so that the DOM node for each index is reused
-even when the underlying data changes.</p>
-<p><code>Index</code> maintains <strong>stable per-index reactive scopes</strong>. Each slot
-has a signal-backed <code>item_getter</code> that updates when the value at
-that position changes. Growing the list creates new scopes;
-shrinking disposes excess scopes.</p>
+<code>(item_getter, index)</code> so that the DOM subtree for each index is
+reused even when the underlying data changes.</p>
+<p><code>Index</code> is built on <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;index_array&lt;/span&gt;" href="../wybthon/#wybthon.index_array"><code>index_array</code></a>: each slot
+renders <strong>once</strong> and owns a signal-backed <code>item_getter</code> that updates
+when the value at that position changes. Growing the list creates
+and mounts new slots; shrinking disposes and unmounts excess slots.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3333,15 +3316,14 @@ shrinking disposes excess scopes.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>props_or_each</code>
+                <code>each</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A props dict (component style) or the <code>each</code>
-getter / list (direct call form).</p>
+                <p>List getter (typically a signal accessor) or plain list.</p>
               </div>
             </td>
             <td>
@@ -3350,14 +3332,14 @@ getter / list (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>children_pos</code>
+                <code>children</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Positional <code>children</code> callback (direct call form).</p>
+                <p>A <code>(item_getter, index: int) -&gt; VNode</code> callable.</p>
               </div>
             </td>
             <td>
@@ -3366,19 +3348,18 @@ getter / list (direct call form).</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>**kwargs</code>
+                <code>fallback</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>each</code>, <code>children</code> (a <code>(item_getter, index: int) -&gt;
-VNode</code> callable), and optional <code>fallback</code>.</p>
+                <p>Slot rendered when the list is empty.</p>
               </div>
             </td>
             <td>
-                  <code>{}</code>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3396,21 +3377,11 @@ VNode</code> callable), and optional <code>fallback</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> tree that diffs the list by</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>index.</p>
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -3430,16 +3401,14 @@ VNode</code> callable), and optional <code>fallback</code>.</p>
 
 
 <a href="#wybthon.flow.Match" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Match</span><span class="p">(</span><span class="n">when</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.flow._MatchResult">_MatchResult</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Match</span><span class="p">(</span><span class="n">when</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.flow._MatchResult">_MatchResult</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Declare a branch inside a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../wybthon/#wybthon.Switch"><code>Switch</code></a>.</p>
-<p><code>when</code> may be a getter or a plain value. Supports both positional
-and keyword calling styles:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Match</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;yes&quot;</span><span class="p">))</span>                                <span class="c1"># positional</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">x</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;positive&quot;</span><span class="p">))</span>   <span class="c1"># keyword</span>
+<p><code>when</code> may be a getter or a plain value:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">x</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;positive&quot;</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Must be used inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../wybthon/#wybthon.Switch"><code>Switch()</code></a>.</p>
 
@@ -3488,23 +3457,6 @@ value to coerce to text.</p>
                   <code>None</code>
             </td>
           </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>**kwargs</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Same keys as the explicit parameters; takes priority
-over positional values when provided.</p>
-              </div>
-            </td>
-            <td>
-                  <code>{}</code>
-            </td>
-          </tr>
       </tbody>
     </table>
 
@@ -3544,21 +3496,20 @@ over positional values when provided.</p>
 
 
 <a href="#wybthon.flow.Switch" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Switch</span><span class="p">(</span><span class="o">*</span><span class="n">branches</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Switch</span><span class="p">(</span><span class="o">*</span><span class="n">branches</span><span class="p">:</span> <span class="n"><span title="wybthon.flow._MatchResult">_MatchResult</span></span><span class="p">,</span> <span class="n">fallback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Render the first matching <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Match&lt;/span&gt;" href="../wybthon/#wybthon.Match"><code>Match</code></a> branch, or <code>fallback</code>.</p>
-<p>Component style (reactive):
-    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Switch</span><span class="p">(</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Switch</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;loading&quot;</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>          <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">)),</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">Match</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>          <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Ready&quot;</span><span class="p">)),</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Unknown&quot;</span><span class="p">),</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
-</span></code></pre></div></p>
+</span></code></pre></div>
 <p>Each <code>Match</code> <code>when</code> is evaluated lazily inside the <code>Switch</code>
 component's reactive scope.</p>
 
@@ -3579,7 +3530,7 @@ component's reactive scope.</p>
                 <code>*branches</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><span title="wybthon.flow._MatchResult">_MatchResult</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3607,22 +3558,6 @@ component's reactive scope.</p>
                   <code>None</code>
             </td>
           </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>**kwargs</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional <code>fallback</code> override.</p>
-              </div>
-            </td>
-            <td>
-                  <code>{}</code>
-            </td>
-          </tr>
       </tbody>
     </table>
 
@@ -3638,17 +3573,17 @@ component's reactive scope.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> for the first matching</p>
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> for the first matching</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3672,7 +3607,7 @@ component's reactive scope.</p>
 
 
 <a href="#wybthon.flow.Dynamic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">props</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">props</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3758,17 +3693,17 @@ component.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> that re-mounts whenever</p>
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> that re-mounts whenever</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3849,13 +3784,18 @@ re-renders when the tracked condition or list changes.</p>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="s2">&quot;Welcome!&quot;</span><span class="p">),</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="s2">&quot;Please log in&quot;</span><span class="p">),</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">),</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">idx</span><span class="p">())),</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">For</span><span class="p">(</span><span class="n">each</span><span class="o">=</span><span class="n">items</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">())),</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li>Pass <em>getters</em> (the signal accessor itself) to <code>when</code> / <code>each</code>.</li>
 <li><code>children</code> may be a <code>VNode</code>, a callable returning a <code>VNode</code>, or the
   per-item mapping callback for <code>For</code> / <code>Index</code>.</li>
+<li>The mapping callback runs <strong>once per unique item</strong> (<code>For</code>) or per
+  index slot (<code>Index</code>) and the resulting subtree is cached: list changes
+  mount added items, dispose removed ones, and move existing DOM for
+  reorders. Inside <code>Index</code>, pass the <code>item</code> getter (not <code>item()</code>) where
+  the slot's value should stay live.</li>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>

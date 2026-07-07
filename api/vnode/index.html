@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/vnode/">
       
       
-        <link rel="prev" href="../vdom/">
+        <link rel="prev" href="../component/">
       
       
         <link rel="next" href="../reconciler/">
@@ -1802,34 +1802,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    VDOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1997,18 +1969,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.vnode.memo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;memo
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" memo">
+    <nav class="md-nav" aria-label=" Fragment">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2067,6 +2028,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
   
 
     
@@ -2853,18 +2842,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.vnode.memo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;memo
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" memo">
+    <nav class="md-nav" aria-label=" Fragment">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2952,9 +2930,9 @@
         <p>Virtual node data structure and tree-building helpers.</p>
 <p>This module defines the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> type and the
 functions used to build it (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a>,
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;memo&lt;/span&gt;" href="../wybthon/#wybthon.memo"><code>memo</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>). It's intentionally
-free of browser or DOM dependencies, so VNode trees can be constructed
-and inspected anywhere CPython runs.</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>). It's intentionally free of browser or DOM
+dependencies, so VNode trees can be constructed and inspected anywhere
+CPython runs.</p>
 <p>A <code>_dynamic</code> VNode (created via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a> or implicitly
 when a zero-argument callable appears in a child position) represents a
 <strong>reactive hole</strong>: the reconciler wraps the getter in its own effect that
@@ -3046,14 +3024,6 @@ fine-grained" rendering.</p>
                 </div>
               </td>
             </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;memo&lt;/span&gt; (&lt;code&gt;wybthon.vnode.memo&lt;/code&gt;)" href="#wybthon.vnode.memo">memo</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Wrap a function component to skip re-mounts when its props are unchanged.</p>
-                </div>
-              </td>
-            </tr>
       </tbody>
     </table>
 
@@ -3130,6 +3100,7 @@ and reactive accessors all live here.</p>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.vnode.VNode.children">children</span></code></td>
             <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3145,6 +3116,20 @@ normalization).</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional stable identity used for keyed list reconciliation.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.vnode.VNode.owner_scope">owner_scope</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional reactive <code>Owner</code> under which this VNode
+should be mounted. Set by <code>For</code>/<code>Index</code> so effects created
+while mounting a cached row belong to the row's scope rather
+than to the list's re-running effect.</p>
               </div>
             </td>
           </tr>
@@ -3757,129 +3742,6 @@ single dict containing a <code>children</code> key (the form used when
 
 </div>
 
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.vnode.memo" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">memo</span>
-
-
-<a href="#wybthon.vnode.memo" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">memo</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">are_props_equal</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><span title="wybthon.vnode.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n"><span title="wybthon.vnode.PropsDict">PropsDict</span></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Wrap a function component to skip re-mounts when its props are unchanged.</p>
-<p>Because Wybthon component bodies run <strong>once</strong>, <code>memo</code> is only useful
-when you want to skip re-mounting on a prop change (for example,
-components with an expensive setup phase). Most ordinary components
-don't need it; fine-grained holes already minimise DOM work.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>component</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The component callable to memoize.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>are_props_equal</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<span title="wybthon.vnode.PropsDict">PropsDict</span>, <span title="wybthon.vnode.PropsDict">PropsDict</span>], <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional <code>(old_props, new_props) -&gt; bool</code>
-comparator. Defaults to a shallow identity check (<code>is</code>)
-across every key.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A wrapped component callable. Identity is preserved across</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>renders so the reconciler can detect "same component, same</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>props".</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MemoList</span> <span class="o">=</span> <span class="n">memo</span><span class="p">(</span><span class="n">ExpensiveList</span><span class="p">,</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                <span class="n">are_props_equal</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">])</span>
-</span></code></pre></div>
-</details>
-
-    </div>
-
-</div>
-
 
 
   </div>
@@ -3918,8 +3780,7 @@ with a few pure helpers for marker nodes (<code>Fragment</code>) and reactive ho
 directly.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vdom&lt;/span&gt;" href="../vdom/#wybthon.vdom"><code>vdom</code></a>: render and patch primitives.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../reconciler/#wybthon.reconciler"><code>reconciler</code></a>: keyed list and child diffing.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../reconciler/#wybthon.reconciler"><code>reconciler</code></a>: render, patch, and keyed child diffing.</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 </ul>
 
