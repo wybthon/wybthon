@@ -28,3 +28,28 @@ def test_context_via_ownership_tree():
         assert use_context(Theme) == "contrast"
     finally:
         _rx._current_owner = prev
+
+
+def test_context_provider_method_builds_provider_vnode():
+    """``ctx.Provider(value=..., children=...)`` is shorthand for h(Provider, ...)."""
+    from wybthon.context import Provider
+    from wybthon.vnode import VNode, h
+
+    Theme = create_context("light")
+    child = h("p", {}, "content")
+    vnode = Theme.Provider(value="dark", children=[child])
+
+    assert isinstance(vnode, VNode)
+    assert vnode.tag is Provider
+    assert vnode.props["context"] is Theme
+    assert vnode.props["value"] == "dark"
+    assert vnode.props["children"] == [child]
+
+
+def test_context_provider_method_normalizes_single_child():
+    from wybthon.vnode import h
+
+    Theme = create_context("light")
+    child = h("p", {}, "x")
+    vnode = Theme.Provider(value="v", children=child)
+    assert vnode.props["children"] == [child]

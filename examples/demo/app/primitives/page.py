@@ -3,6 +3,7 @@ from wybthon import (
     Ref,
     button,
     component,
+    create_memo,
     create_portal,
     create_signal,
     div,
@@ -10,36 +11,37 @@ from wybthon import (
     h,
     h2,
     h3,
-    memo,
     on_mount,
     p,
     span,
 )
 
-_child_render_count = [0]
-
-
-@component
-def _ExpensiveChild(label=None):
-    _child_render_count[0] += 1
-    runs = _child_render_count[0]
-    return p(dynamic(lambda: f"Child rendered {runs} time(s). label={label()}"))
-
-
-MemoChild = memo(_ExpensiveChild)
+_memo_run_count = [0]
 
 
 @component
 def MemoDemo():
     count, set_count = create_signal(0)
 
+    def compute_parity():
+        _memo_run_count[0] += 1
+        return "even" if count() % 2 == 0 else "odd"
+
+    parity = create_memo(compute_parity)
+
+    def memo_runs():
+        parity()  # subscribe so this hole re-runs when the memo recomputes
+        return f"Memo has computed {_memo_run_count[0]} time(s)."
+
     return div(
-        h3("memo - Memoized Component"),
-        p("Parent render count trigger: ", count),
-        button("Re-render parent", on_click=lambda e: set_count(count() + 1)),
-        h(MemoChild, {"label": "stable"}),
+        h3("create_memo - Derived Value"),
+        p("Count: ", count),
+        button("Increment", on_click=lambda e: set_count(count() + 1)),
+        p("Parity (memoized): ", parity),
+        p(dynamic(memo_runs)),
         p(
-            "Child only renders once because its 'label' prop never changes.",
+            "The memo recomputes lazily when count changes, and downstream "
+            "consumers only re-run when its value actually changes.",
             style={"color": "var(--text-3)", "fontSize": "0.85rem"},
         ),
         class_="demo-section",
@@ -68,7 +70,7 @@ def TodoDemo():
         div(
             For(
                 each=items,
-                children=lambda item, idx: p(dynamic(lambda: f"  {item()}"), key=idx()),
+                children=lambda item, idx: p(item),
             ),
         ),
         class_="demo-section",
@@ -143,7 +145,7 @@ def Page():
     return div(
         div(
             h2("Primitives"),
-            p("Core reactive primitives: memo, signals, on_mount, and create_portal."),
+            p("Core reactive primitives: create_memo, signals, on_mount, and create_portal."),
             class_="page-header",
         ),
         h(MemoDemo, {}),

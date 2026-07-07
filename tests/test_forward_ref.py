@@ -1,6 +1,7 @@
 """Tests for forward_ref – ref forwarding for function components."""
 
 import wybthon as _wybthon_pkg  # noqa: F401
+from wybthon.vnode import h
 
 
 class SimpleRef:
@@ -11,61 +12,61 @@ class SimpleRef:
 
 
 def test_forward_ref_renders_normally(wyb, root_element):
-    vdom, comp_mod = wyb["vdom"], wyb["component"]
+    vdom, comp_mod = wyb["reconciler"], wyb["component"]
 
     def _render(props, ref):
         # ``props`` is a ReactiveProps proxy.  Accessors are callable.
-        return vdom.h("input", {"type": "text", "value": props.value("value", "")})
+        return h("input", {"type": "text", "value": props.value("value", "")})
 
     FancyInput = comp_mod.forward_ref(_render)
-    vdom.render(vdom.h(FancyInput, {"value": "hello"}), root_element)
+    vdom.render(h(FancyInput, {"value": "hello"}), root_element)
 
     inner = root_element.element.childNodes[0]
     assert inner.tag == "input"
 
 
 def test_forward_ref_passes_ref(wyb, root_element):
-    vdom, comp_mod = wyb["vdom"], wyb["component"]
+    vdom, comp_mod = wyb["reconciler"], wyb["component"]
 
     captured_ref = [None]
 
     def _render(props, ref):
         captured_ref[0] = ref
-        return vdom.h("input", {"type": "text"})
+        return h("input", {"type": "text"})
 
     FancyInput = comp_mod.forward_ref(_render)
     my_ref = SimpleRef(None)
-    vdom.render(vdom.h(FancyInput, {"ref": my_ref}), root_element)
+    vdom.render(h(FancyInput, {"ref": my_ref}), root_element)
 
     assert captured_ref[0] is my_ref
 
 
 def test_forward_ref_none_when_no_ref(wyb, root_element):
-    vdom, comp_mod = wyb["vdom"], wyb["component"]
+    vdom, comp_mod = wyb["reconciler"], wyb["component"]
 
     captured_ref = ["sentinel"]
 
     def _render(props, ref):
         captured_ref[0] = ref
-        return vdom.h("span", {}, "no ref")
+        return h("span", {}, "no ref")
 
     FancySpan = comp_mod.forward_ref(_render)
-    vdom.render(vdom.h(FancySpan, {"class": "styled"}), root_element)
+    vdom.render(h(FancySpan, {"class": "styled"}), root_element)
 
     assert captured_ref[0] is None
 
 
 def test_forward_ref_strips_ref_from_props(wyb, root_element):
-    vdom, comp_mod = wyb["vdom"], wyb["component"]
+    vdom, comp_mod = wyb["reconciler"], wyb["component"]
 
     received_props = [None]
 
     def _render(props, ref):
         received_props[0] = props
-        return vdom.h("div", {}, "child")
+        return h("div", {}, "child")
 
     Wrapper = comp_mod.forward_ref(_render)
-    vdom.render(vdom.h(Wrapper, {"ref": "some_ref", "name": "test"}), root_element)
+    vdom.render(h(Wrapper, {"ref": "some_ref", "name": "test"}), root_element)
 
     assert "ref" not in received_props[0]
     assert received_props[0].value("name") == "test"

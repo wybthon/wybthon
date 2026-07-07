@@ -1,6 +1,6 @@
-"""Tests for the vnode module (VNode, h, Fragment, memo)."""
+"""Tests for the vnode module (VNode, h, Fragment)."""
 
-from wybthon.vnode import Fragment, VNode, flatten_children, h, memo, normalize_children, to_text_vnode
+from wybthon.vnode import Fragment, VNode, flatten_children, h, normalize_children, to_text_vnode
 
 
 def test_vnode_creation():
@@ -115,58 +115,3 @@ def test_normalize_children_flattens_fragments():
     frag = Fragment(VNode(tag="p"), VNode(tag="span"))
     result = normalize_children([VNode(tag="div"), frag, VNode(tag="a")])
     assert [v.tag for v in result] == ["div", "p", "span", "a"]
-
-
-def test_memo_basic():
-    call_count = [0]
-
-    def MyComp(props):
-        call_count[0] += 1
-        return VNode(tag="div")
-
-    Memoized = memo(MyComp)
-    assert getattr(Memoized, "_wyb_memo", False) is True
-    assert "memo(" in Memoized.__name__
-
-
-def test_memo_compare_same_props():
-    compare_fn = None
-
-    def MyComp(props):
-        return VNode(tag="div")
-
-    Memoized = memo(MyComp)
-    compare_fn = Memoized._wyb_memo_compare
-
-    assert compare_fn({"a": 1}, {"a": 1}) is True
-
-
-def test_memo_compare_different_props():
-    def MyComp(props):
-        return VNode(tag="div")
-
-    Memoized = memo(MyComp)
-    compare_fn = Memoized._wyb_memo_compare
-
-    assert compare_fn({"a": 1}, {"a": 2}) is False
-
-
-def test_memo_compare_different_keys():
-    def MyComp(props):
-        return VNode(tag="div")
-
-    Memoized = memo(MyComp)
-    compare_fn = Memoized._wyb_memo_compare
-
-    assert compare_fn({"a": 1}, {"b": 1}) is False
-
-
-def test_memo_custom_compare():
-    def always_equal(old, new):
-        return True
-
-    def MyComp(props):
-        return VNode(tag="div")
-
-    Memoized = memo(MyComp, are_props_equal=always_equal)
-    assert Memoized._wyb_memo_compare({"a": 1}, {"a": 999}) is True

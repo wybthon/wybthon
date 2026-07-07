@@ -2,9 +2,9 @@
 
 This module defines the core [`VNode`][wybthon.VNode] type and the
 functions used to build it ([`h`][wybthon.h], [`Fragment`][wybthon.Fragment],
-[`memo`][wybthon.memo], [`dynamic`][wybthon.dynamic]). It's intentionally
-free of browser or DOM dependencies, so VNode trees can be constructed
-and inspected anywhere CPython runs.
+[`dynamic`][wybthon.dynamic]). It's intentionally free of browser or DOM
+dependencies, so VNode trees can be constructed and inspected anywhere
+CPython runs.
 
 A `_dynamic` VNode (created via [`dynamic`][wybthon.dynamic] or implicitly
 when a zero-argument callable appears in a child position) represents a
@@ -46,7 +46,6 @@ __all__ = [
     "VNode",
     "h",
     "Fragment",
-    "memo",
     "dynamic",
     "is_getter",
 ]
@@ -72,6 +71,10 @@ class VNode:
         children: List of child `VNode` instances (or strings, before
             normalization).
         key: Optional stable identity used for keyed list reconciliation.
+        owner_scope: Optional reactive `Owner` under which this VNode
+            should be mounted. Set by `For`/`Index` so effects created
+            while mounting a cached row belong to the row's scope rather
+            than to the list's re-running effect.
     """
 
     __slots__ = (
@@ -83,6 +86,7 @@ class VNode:
         "subtree",
         "render_effect",
         "component_ctx",
+        "owner_scope",
         "_frag_end",
     )
 
@@ -95,12 +99,13 @@ class VNode:
     ) -> None:
         self.tag = tag
         self.props = props if props is not None else {}
-        self.children = children if children is not None else []
+        self.children: List[Any] = children if children is not None else []
         self.key = key
         self.el: Optional[Element] = None
         self.subtree: Optional[VNode] = None
         self.render_effect: Optional[Computation] = None
         self.component_ctx: Optional[Any] = None
+        self.owner_scope: Optional[Any] = None
         self._frag_end: Optional[Element] = None
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
@@ -304,7 +309,7 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
         ```
     """
     props = props or {}
-    key = props.get("key") if "key" in props else None
+    key = props.get("key")
     flat_children = flatten_children(children)
     if callable(tag):
         if "children" not in props and flat_children:
@@ -344,50 +349,3 @@ def Fragment(*args: Any) -> VNode:
     else:
         children = list(args)
     return VNode(tag="_fragment", props={}, children=children)
-
-
-def memo(
-    component: Callable[..., Any],
-    are_props_equal: Optional[Callable[[PropsDict, PropsDict], bool]] = None,
-) -> Callable[..., Any]:
-    """Wrap a function component to skip re-mounts when its props are unchanged.
-
-    Because Wybthon component bodies run **once**, `memo` is only useful
-    when you want to skip re-mounting on a prop change (for example,
-    components with an expensive setup phase). Most ordinary components
-    don't need it; fine-grained holes already minimise DOM work.
-
-    Args:
-        component: The component callable to memoize.
-        are_props_equal: Optional `(old_props, new_props) -> bool`
-            comparator. Defaults to a shallow identity check (`is`)
-            across every key.
-
-    Returns:
-        A wrapped component callable. Identity is preserved across
-        renders so the reconciler can detect "same component, same
-        props".
-
-    Example:
-        ```python
-        MemoList = memo(ExpensiveList,
-                        are_props_equal=lambda a, b: a["items"] == b["items"])
-        ```
-    """
-
-    def _default_compare(old_props: PropsDict, new_props: PropsDict) -> bool:
-        if set(old_props.keys()) != set(new_props.keys()):
-            return False
-        return all(old_props[k] is new_props[k] for k in old_props)
-
-    compare = are_props_equal if are_props_equal is not None else _default_compare
-
-    def MemoWrapper(props: Any) -> Any:
-        return component(props)
-
-    MemoWrapper._wyb_memo = True  # type: ignore[attr-defined]
-    MemoWrapper._wyb_memo_compare = compare  # type: ignore[attr-defined]
-    MemoWrapper._wyb_wrapped = component  # type: ignore[attr-defined]
-    MemoWrapper.__name__ = f"memo({getattr(component, '__name__', 'Component')})"
-    MemoWrapper.__qualname__ = MemoWrapper.__name__
-    return MemoWrapper

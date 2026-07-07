@@ -6,13 +6,14 @@ from conftest import StubNode
 
 # Import wybthon BEFORE stubs so __init__.py runs with _IN_BROWSER=False
 import wybthon  # noqa: F401
+from wybthon.vnode import Fragment, h
 
 
 def _load_modules():
-    """Reload dom, vdom, html modules against current stubs. Returns (dom_mod, vdom_mod, html_mod)."""
+    """Reload dom, reconciler, html modules against current stubs. Returns (dom_mod, vdom_mod, html_mod)."""
     dom_mod = importlib.import_module("wybthon.dom")
     importlib.reload(dom_mod)
-    vdom_mod = importlib.import_module("wybthon.vdom")
+    vdom_mod = importlib.import_module("wybthon.reconciler")
     importlib.reload(vdom_mod)
     html_mod = importlib.import_module("wybthon.html")
     importlib.reload(html_mod)
@@ -120,9 +121,9 @@ def test_select_with_options(browser_stubs):
 
 def test_fragment_creates_fragment_vnode(browser_stubs):
     _, vdom_mod, _ = _load_modules()
-    frag = vdom_mod.Fragment(
-        vdom_mod.h("p", {}, "A"),
-        vdom_mod.h("p", {}, "B"),
+    frag = Fragment(
+        h("p", {}, "A"),
+        h("p", {}, "B"),
     )
     assert frag.tag == "_fragment"
     assert frag.props == {}
@@ -131,7 +132,7 @@ def test_fragment_creates_fragment_vnode(browser_stubs):
 
 def test_fragment_with_no_children(browser_stubs):
     _, vdom_mod, _ = _load_modules()
-    frag = vdom_mod.Fragment()
+    frag = Fragment()
     assert frag.tag == "_fragment"
     assert frag.props == {}
     assert len(frag.children) == 0
@@ -140,9 +141,9 @@ def test_fragment_with_no_children(browser_stubs):
 def test_fragment_called_as_component(browser_stubs):
     """When Fragment is used via h(Fragment, {}, ...) it receives a props dict."""
     _, vdom_mod, _ = _load_modules()
-    child_a = vdom_mod.h("p", {}, "A")
-    child_b = vdom_mod.h("p", {}, "B")
-    frag = vdom_mod.Fragment({"children": [child_a, child_b]})
+    child_a = h("p", {}, "A")
+    child_b = h("p", {}, "B")
+    frag = Fragment({"children": [child_a, child_b]})
     assert frag.tag == "_fragment"
     assert frag.props == {}
     assert len(frag.children) == 2
@@ -151,9 +152,9 @@ def test_fragment_called_as_component(browser_stubs):
 def test_fragment_renders_to_dom(browser_stubs):
     dom_mod, vdom_mod, _ = _load_modules()
     root = dom_mod.Element(node=StubNode(tag="div"))
-    tree = vdom_mod.Fragment(
-        vdom_mod.h("p", {}, "First"),
-        vdom_mod.h("p", {}, "Second"),
+    tree = Fragment(
+        h("p", {}, "First"),
+        h("p", {}, "Second"),
     )
     vdom_mod.render(tree, root)
     children = root.element.childNodes
@@ -171,12 +172,12 @@ def test_fragment_in_function_component(browser_stubs):
     root = dom_mod.Element(node=StubNode(tag="div"))
 
     def MyComp(_props):
-        return vdom_mod.Fragment(
-            vdom_mod.h("h1", {}, "Title"),
-            vdom_mod.h("p", {}, "Body"),
+        return Fragment(
+            h("h1", {}, "Title"),
+            h("p", {}, "Body"),
         )
 
-    tree = vdom_mod.h(MyComp, {})
+    tree = h(MyComp, {})
     vdom_mod.render(tree, root)
     children = root.element.childNodes
     assert len(children) == 4  # comment_start, h1, p, comment_end
@@ -190,26 +191,32 @@ def test_fragment_in_function_component(browser_stubs):
 
 
 def test_is_event_prop_snake_case(browser_stubs):
+    import wybthon.props as props_mod
+
     _, vdom_mod, _ = _load_modules()
-    assert vdom_mod._is_event_prop("on_click") is True
-    assert vdom_mod._is_event_prop("on_submit") is True
-    assert vdom_mod._is_event_prop("on_mouseover") is True
+    assert props_mod.is_event_prop("on_click") is True
+    assert props_mod.is_event_prop("on_submit") is True
+    assert props_mod.is_event_prop("on_mouseover") is True
 
 
 def test_is_event_prop_camel_case(browser_stubs):
+    import wybthon.props as props_mod
+
     _, vdom_mod, _ = _load_modules()
-    assert vdom_mod._is_event_prop("onClick") is True
-    assert vdom_mod._is_event_prop("onSubmit") is True
-    assert vdom_mod._is_event_prop("onChange") is True
+    assert props_mod.is_event_prop("onClick") is True
+    assert props_mod.is_event_prop("onSubmit") is True
+    assert props_mod.is_event_prop("onChange") is True
 
 
 def test_is_event_prop_rejects_non_events(browser_stubs):
+    import wybthon.props as props_mod
+
     _, vdom_mod, _ = _load_modules()
-    assert vdom_mod._is_event_prop("one") is False
-    assert vdom_mod._is_event_prop("only") is False
-    assert vdom_mod._is_event_prop("onset") is False
-    assert vdom_mod._is_event_prop("on") is False
-    assert vdom_mod._is_event_prop("online") is False
+    assert props_mod.is_event_prop("one") is False
+    assert props_mod.is_event_prop("only") is False
+    assert props_mod.is_event_prop("onset") is False
+    assert props_mod.is_event_prop("on") is False
+    assert props_mod.is_event_prop("online") is False
 
 
 # ── HTML helpers render to DOM ──

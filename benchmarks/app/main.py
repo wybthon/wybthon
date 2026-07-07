@@ -1,7 +1,12 @@
 """Wybthon benchmark app — js-framework-benchmark keyed implementation.
 
-This module implements the standard benchmark table using Wybthon's VDOM
-reconciler.  It is loaded by index.html inside Pyodide.
+This module implements the standard benchmark table the idiomatic
+Wybthon way: the table mounts once, and every operation is a signal
+write. Rows are cached per item via ``For``, row labels are per-row
+signals, and selection flows through ``create_selector`` so each
+operation touches only the DOM it must.
+
+It is loaded by index.html inside Pyodide.
 
 Reference: https://github.com/krausest/js-framework-benchmark
 """
@@ -12,6 +17,8 @@ from js import document
 from pyodide.ffi import create_proxy
 
 from wybthon.dom import Element
+from wybthon.flow import For
+from wybthon.reactivity import batch, create_selector, create_signal
 from wybthon.reconciler import render
 from wybthon.vnode import h
 
@@ -76,12 +83,14 @@ NOUNS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Application state
+# Application state — plain signals, mounted once
 # ---------------------------------------------------------------------------
 
-data: list = []
-selected = -1
 _next_id = 1
+
+data, set_data = create_signal([])
+selected, set_selected = create_signal(None)
+_is_selected = create_selector(selected)
 
 container = Element(node=document.getElementById("table-container"))
 
@@ -99,130 +108,112 @@ def build_data(count):
             f"{COLOURS[_random(len(COLOURS))]} "
             f"{NOUNS[_random(len(NOUNS))]}"
         )
-        result.append({"id": _next_id, "label": label})
+        label_get, label_set = create_signal(label)
+        result.append({"id": _next_id, "label": label_get, "set_label": label_set})
         _next_id += 1
     return result
 
 
 # ---------------------------------------------------------------------------
-# VNode tree builder
+# Row template — built once per item, updated through signals
 # ---------------------------------------------------------------------------
 
 
-def _select_handler(item_id):
-    def handler(e):
-        select(item_id)
-
-    return handler
-
-
-def _delete_handler(item_id):
-    def handler(e):
-        delete(item_id)
-
-    return handler
-
-
-def build_tree():
-    sel = selected
-    rows = []
-    for item in data:
-        iid = item["id"]
-        rows.append(
-            h(
-                "tr",
-                {"key": iid, "class": "danger" if iid == sel else ""},
-                h("td", {"class": "col-md-1"}, str(iid)),
-                h(
-                    "td",
-                    {"class": "col-md-4"},
-                    h("a", {"on_click": _select_handler(iid)}, item["label"]),
-                ),
-                h(
-                    "td",
-                    {"class": "col-md-1"},
-                    h(
-                        "a",
-                        {"on_click": _delete_handler(iid)},
-                        h(
-                            "span",
-                            {
-                                "class": "glyphicon glyphicon-remove",
-                                "aria-hidden": "true",
-                            },
-                        ),
-                    ),
-                ),
-                h("td", {"class": "col-md-6"}),
-            )
-        )
+def _row(item, idx):
+    d = item()
+    iid = d["id"]
     return h(
-        "table",
-        {"class": "table table-hover table-striped test-data"},
-        h("tbody", {"id": "tbody"}, *rows),
+        "tr",
+        {"class": lambda: "danger" if _is_selected(iid) else ""},
+        h("td", {"class": "col-md-1"}, str(iid)),
+        h(
+            "td",
+            {"class": "col-md-4"},
+            h("a", {"on_click": lambda e: set_selected(iid)}, d["label"]),
+        ),
+        h(
+            "td",
+            {"class": "col-md-1"},
+            h(
+                "a",
+                {"on_click": lambda e: delete(iid)},
+                h(
+                    "span",
+                    {
+                        "class": "glyphicon glyphicon-remove",
+                        "aria-hidden": "true",
+                    },
+                ),
+            ),
+        ),
+        h("td", {"class": "col-md-6"}),
     )
 
 
-def _render():
-    render(build_tree(), container)
+app = h(
+    "table",
+    {"class": "table table-hover table-striped test-data"},
+    h("tbody", {"id": "tbody"}, For(each=data, children=_row)),
+)
+render(app, container)
 
 
 # ---------------------------------------------------------------------------
-# Benchmark operations
+# Benchmark operations — every one is a signal write
 # ---------------------------------------------------------------------------
 
 
 def run(e=None):
-    global data, selected
-    data = build_data(1000)
-    selected = -1
-    _render()
+    def update_state():
+        set_data(build_data(1000))
+        set_selected(None)
+
+    batch(update_state)
 
 
 def run_lots(e=None):
-    global data, selected
-    data = build_data(10000)
-    selected = -1
-    _render()
+    def update_state():
+        set_data(build_data(10000))
+        set_selected(None)
+
+    batch(update_state)
 
 
 def add(e=None):
-    global data
-    data = data + build_data(1000)
-    _render()
+    set_data(lambda rows: rows + build_data(1000))
 
 
 def update(e=None):
-    global data
-    for i in range(0, len(data), 10):
-        data[i] = {**data[i], "label": data[i]["label"] + " !!!"}
-    _render()
+    rows = data()
+
+    def update_state():
+        for i in range(0, len(rows), 10):
+            rows[i]["set_label"](lambda label: label + " !!!")
+
+    batch(update_state)
 
 
 def clear(e=None):
-    global data, selected
-    data = []
-    selected = -1
-    _render()
+    def update_state():
+        set_data([])
+        set_selected(None)
+
+    batch(update_state)
 
 
 def swap_rows(e=None):
-    global data
-    if len(data) > 998:
-        data[1], data[998] = data[998], data[1]
-    _render()
+    rows = list(data())
+    if len(rows) > 998:
+        rows[1], rows[998] = rows[998], rows[1]
+    set_data(rows)
 
 
 def select(item_id):
-    global selected
-    selected = item_id
-    _render()
+    set_selected(item_id)
 
 
 def delete(item_id):
-    global data
-    data = [d for d in data if d["id"] != item_id]
-    _render()
+    set_data(lambda rows: [d for d in rows if d["id"] != item_id])
 
 
 # ---------------------------------------------------------------------------

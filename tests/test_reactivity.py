@@ -1,6 +1,6 @@
 import asyncio
 
-from wybthon.reactivity import batch, computed, effect, signal, use_resource
+from wybthon.reactivity import batch, computed, create_resource, effect, signal
 
 
 def test_signal_and_effect():
@@ -84,7 +84,7 @@ def test_resource_cancel_sets_loading_false():
         await asyncio.sleep(0.01)
         return 42
 
-    res = use_resource(fetcher)
+    res = create_resource(fetcher)
     # Immediately cancel; loading should become False soon after
     res.cancel()
-    assert res.loading.get() is False
+    assert res.loading is False

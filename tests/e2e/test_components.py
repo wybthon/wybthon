@@ -1,4 +1,4 @@
-"""E2E: components (reactive props without remount, memo, forward_ref, lifecycle)."""
+"""E2E: components (reactive props without remount, forward_ref, lifecycle)."""
 
 import pytest
 from playwright.sync_api import expect
@@ -15,23 +15,6 @@ def test_reactive_prop_no_remount(goto_feature):
     expect(page.get_by_test_id("comp-display")).to_have_text("world")
     # Prop change updates the child in place; it is not remounted.
     expect(page.get_by_test_id("comp-display-mounts")).to_have_text("1")
-
-
-def test_memo_skips_updates(goto_feature):
-    page = goto_feature("components")
-    expect(page.get_by_test_id("comp-tick")).to_have_text("0")
-    expect(page.get_by_test_id("comp-memo")).to_have_text("0")
-    expect(page.get_by_test_id("comp-plain")).to_have_text("0")
-
-    page.get_by_test_id("comp-tick-btn").click()
-    expect(page.get_by_test_id("comp-tick")).to_have_text("1")
-    expect(page.get_by_test_id("comp-plain")).to_have_text("1")
-    # The always-equal memo comparator keeps the child frozen.
-    expect(page.get_by_test_id("comp-memo")).to_have_text("0")
-
-    page.get_by_test_id("comp-tick-btn").click()
-    expect(page.get_by_test_id("comp-plain")).to_have_text("2")
-    expect(page.get_by_test_id("comp-memo")).to_have_text("0")
 
 
 def test_forward_ref(goto_feature):

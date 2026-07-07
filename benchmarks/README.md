@@ -5,6 +5,14 @@ Performance benchmarks modelled on the
 suite by Stefan Krause.  The same nine operations and data-generation
 approach are used so results are directly comparable.
 
+The app under test is built the idiomatic fine-grained way: the table
+mounts once, and every operation afterwards is a signal write.  Rows
+are cached per item via `For`, row labels are per-row signals, and
+selection flows through `create_selector`, so each operation touches
+only the DOM it must.  The stubbed DOM implements `<template>` +
+`innerHTML` parsing so the template-based mount fast path is exercised
+the same way it is in a real browser.
+
 ## Benchmarked operations
 
 | # | Name | Description | Warmup |
@@ -82,6 +90,18 @@ open http://localhost:8000/benchmarks/app/index.html
 The page loads Pyodide from CDN, copies the Wybthon source into Pyodide's
 virtual filesystem, and runs `main.py`.
 
+### Running headlessly
+
+`browser_bench.py` serves the repo, loads the app in headless Chromium
+via Playwright, clicks "Run Full Benchmark," and prints the medians:
+
+```bash
+pip install playwright
+python -m playwright install chromium
+python benchmarks/browser_bench.py          # table output
+python benchmarks/browser_bench.py --json   # JSON output
+```
+
 ### Submitting to js-framework-benchmark
 
 To add Wybthon to the official benchmark:
@@ -97,6 +117,13 @@ To add Wybthon to the official benchmark:
 
 ## CI integration
 
-The `.github/workflows/bench.yml` workflow runs the stubbed-DOM
-benchmark on every push and PR, printing a results table in the Actions
-log.  This makes it easy to spot performance regressions.
+The `.github/workflows/bench.yml` workflow runs two jobs on every push
+and PR to `main`:
+
+- **Framework Benchmark** runs the stubbed-DOM benchmark
+  (`bench_runner.py`) and uploads `bench_results.json`.
+- **Browser Benchmark (Pyodide)** runs the real browser app headlessly
+  (`browser_bench.py`) and uploads `browser_bench_results.json`.
+
+Both print results tables in the Actions log, which makes it easy to
+spot performance regressions.

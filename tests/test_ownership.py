@@ -11,6 +11,7 @@ Verifies that:
 from conftest import collect_texts
 
 import wybthon as _wyb  # noqa: F401
+from wybthon.vnode import h
 
 # ---------------------------------------------------------------------------
 # Owner basics
@@ -67,7 +68,7 @@ def test_owner_child_removed_from_parent_on_dispose():
 
 def test_nested_effect_disposed_on_parent_rerun(wyb, root_element):
     """Effects created inside a render function are disposed on re-render."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     setter_ref = [None]
     inner_runs = [0]
     inner_cleanups = [0]
@@ -84,11 +85,11 @@ def test_nested_effect_disposed_on_parent_rerun(wyb, root_element):
                 reactivity.on_cleanup(lambda: inner_cleanups.__setitem__(0, inner_cleanups[0] + 1))
 
             reactivity.create_effect(inner_effect)
-            return vdom.h("p", {}, f"count:{val}")
+            return h("p", {}, f"count:{val}")
 
         return render
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert inner_runs[0] == 1
     assert inner_cleanups[0] == 0
 
@@ -102,7 +103,7 @@ def test_nested_effect_disposed_on_parent_rerun(wyb, root_element):
 
 def test_setup_effects_survive_rerender(wyb, root_element):
     """Effects created during component setup persist across re-renders."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     setter_ref = [None]
     setup_effect_runs = [0]
     setup_effect_cleanups = [0]
@@ -119,11 +120,11 @@ def test_setup_effects_survive_rerender(wyb, root_element):
         reactivity.create_effect(setup_eff)
 
         def render():
-            return vdom.h("p", {}, f"count:{count()}")
+            return h("p", {}, f"count:{count()}")
 
         return render
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert setup_effect_runs[0] == 1
     assert setup_effect_cleanups[0] == 0
 
@@ -180,7 +181,7 @@ def test_create_root_cleanup():
 
 def test_unmount_disposes_component_context(wyb, root_element):
     """Unmounting a component disposes its context and all owned effects."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     cleanup_log = []
 
     def MyComp(props):
@@ -192,15 +193,15 @@ def test_unmount_disposes_component_context(wyb, root_element):
         reactivity.create_effect(eff)
 
         def render():
-            return vdom.h("p", {}, "hello")
+            return h("p", {}, "hello")
 
         return render
 
-    tree = vdom.h(MyComp, {})
+    tree = h(MyComp, {})
     vdom.render(tree, root_element)
     assert cleanup_log == []
 
-    vdom._unmount(tree)
+    vdom.unmount(tree)
     assert "comp_cleanup" in cleanup_log
     assert "effect_cleanup" in cleanup_log
 
@@ -212,7 +213,7 @@ def test_unmount_disposes_component_context(wyb, root_element):
 
 def test_context_propagation_through_ownership(wyb, root_element):
     """Context values are accessible through the ownership tree."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     from wybthon.context import Provider, create_context, use_context
 
     Theme = create_context("light")
@@ -220,9 +221,9 @@ def test_context_propagation_through_ownership(wyb, root_element):
 
     def Child(props):
         captured_value[0] = use_context(Theme)
-        return vdom.h("p", {}, f"theme={captured_value[0]}")
+        return h("p", {}, f"theme={captured_value[0]}")
 
-    tree = vdom.h(Provider, {"context": Theme, "value": "dark"}, vdom.h(Child, {}))
+    tree = h(Provider, {"context": Theme, "value": "dark"}, h(Child, {}))
     vdom.render(tree, root_element)
 
     assert captured_value[0] == "dark"

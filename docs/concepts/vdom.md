@@ -42,19 +42,34 @@ and `ref`).  Each prop has its own effect, so unrelated reactive
 attributes update independently.  See the [Reactive Holes section in
 Primitives](primitives.md#reactive-holes) for the full mental model.
 
+#### Template-based mounting
+
+Under Pyodide, every DOM call crosses the Python-to-JS bridge, so mount
+cost is dominated by FFI round trips rather than the DOM work itself.
+To amortize that cost, the reconciler serializes the **static parts** of
+a host-element subtree into one HTML string, parses it through a single
+`<template>` element, and then wires reactive bindings, event handlers,
+and dynamic children onto the cloned nodes in one pass. Mounting a
+subtree of N static nodes costs roughly one FFI call instead of N.
+
+This happens automatically; subtrees that can't be expressed faithfully
+as HTML (form control `value`/`checked`, raw-text elements, and so on)
+fall back to node-by-node mounting with identical behavior. See the
+[`template`][wybthon.template] API page for details.
+
 #### Architecture
 
 The VDOM implementation is split into focused modules:
 
-- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `memo()` (browser-agnostic). `Fragment` doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `dynamic()` (browser-agnostic). `Fragment` doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`template`**: the template-based mounting fast path (HTML serialization plus binding wiring).
 - **`reconciler`**: the mount/patch/unmount diffing engine.
 - **`props`**: DOM property application and diffing (styles, events, datasets).
 - **`error_boundary`**: the `ErrorBoundary` component.
 - **`suspense`**: the `Suspense` component.
 - **`portal`**: the `create_portal()` function.
 
-All names are re-exported from `wybthon.vdom` for convenience, and the most
-common ones are available at the top-level `wybthon` package.
+The most common names are available at the top-level `wybthon` package.
 
 #### Keyed diffing
 
@@ -73,4 +88,4 @@ to suppress verbose tracebacks.
 
 - See [Primitives](primitives.md) for the reactive hole mental model.
 - Read [Lifecycle and Ownership](lifecycle.md) for mount/unmount semantics.
-- Browse the [`vdom`][wybthon.vdom] and [`reconciler`][wybthon.reconciler] APIs.
+- Browse the [`reconciler`][wybthon.reconciler] and [`template`][wybthon.template] APIs.

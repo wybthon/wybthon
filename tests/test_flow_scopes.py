@@ -16,7 +16,7 @@ from wybthon.vnode import h
 
 def test_for_item_getter_is_signal(wyb, root_element):
     """For provides signal-backed item getters."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B", "C"])
     captured_getters: list = []
 
@@ -39,7 +39,7 @@ def test_for_item_getter_is_signal(wyb, root_element):
 
 def test_for_index_getter_is_signal(wyb, root_element):
     """For provides signal-backed index getters that update on reorder."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     a, b, c = ["A"], ["B"], ["C"]
     items, set_items = reactivity.create_signal([a, b, c])
     captured_idx_getters: list = []
@@ -68,7 +68,7 @@ def test_for_index_getter_is_signal(wyb, root_element):
 
 def test_for_disposes_scope_on_item_removal(wyb, root_element):
     """When an item leaves a For list, its scope is disposed."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     a, b, c = ["A"], ["B"], ["C"]
     items, set_items = reactivity.create_signal([a, b, c])
     cleanup_log: list = []
@@ -99,7 +99,7 @@ def test_for_disposes_scope_on_item_removal(wyb, root_element):
 
 def test_index_item_getter_updates_in_place(wyb, root_element):
     """Index item getters update when the value at that position changes."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B"])
     captured_getters: list = []
 
@@ -125,7 +125,7 @@ def test_index_item_getter_updates_in_place(wyb, root_element):
 
 def test_index_disposes_on_shrink(wyb, root_element):
     """Index disposes scopes for excess positions when the list shrinks."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B", "C"])
     cleanup_log: list = []
 
@@ -155,7 +155,7 @@ def test_index_disposes_on_shrink(wyb, root_element):
 
 def test_show_keyed_scope_disposal(wyb, root_element):
     """Show disposes the branch scope when truthiness changes."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     visible, set_visible = reactivity.create_signal(True)
 
     def child_fn():
@@ -183,7 +183,7 @@ def test_show_keyed_scope_disposal(wyb, root_element):
 
 def test_show_stable_when_condition_unchanged(wyb, root_element):
     """Show does not dispose the branch scope when truthiness is unchanged."""
-    vdom, reactivity = wyb["vdom"], wyb["reactivity"]
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     count, set_count = reactivity.create_signal(1)
 
     def App(props):

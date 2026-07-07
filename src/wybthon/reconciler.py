@@ -32,25 +32,66 @@ Public surface:
 from __future__ import annotations
 
 from bisect import bisect_left
-from typing import Any, Dict, List, Optional, Set, Union, cast
+from typing import Any, Dict, List, Optional, Set, Union
 
 from js import document
 
 from ._warnings import component_name, log_error
 from .dom import Element
-from .events import remove_all_for
-from .props import apply_initial_props, apply_props, attach_ref, detach_ref
+from .events import remove_all_for, set_handler
+from .props import _apply_single_prop, _bind_reactive_prop, apply_initial_props, apply_props, attach_ref, detach_ref
 from .reactivity import (
     ReactiveProps,
     _ComponentContext,
     _get_component_ctx,
     effect,
 )
-from .vnode import ChildType, VNode, dynamic, normalize_children, to_text_vnode
+from .template import (
+    ANCHOR_HOLE,
+    BIND_EVENT,
+    BIND_PROP,
+    BIND_REACTIVE,
+    BIND_REF,
+    build_plan,
+    wire_tree,
+)
+from .vnode import VNode, dynamic, normalize_children, to_text_vnode
 
 __all__ = ["render", "mount", "unmount", "patch"]
 
 _container_registry: Dict[int, VNode] = {}
+
+# ---------------------------------------------------------------------------
+# Template support detection
+#
+# The fast mount path parses static HTML through a scratch <template>
+# element. Detected once; environments without template support (some
+# test stubs) transparently use the per-node path.
+# ---------------------------------------------------------------------------
+
+_scratch_template: Any = None
+_template_supported: Optional[bool] = None
+
+
+def _get_scratch_template() -> Any:
+    """Return a reusable `<template>` element, or `None` when unsupported."""
+    global _scratch_template, _template_supported
+    if _template_supported is False:
+        return None
+    if _scratch_template is None:
+        try:
+            tpl = document.createElement("template")
+            tpl.innerHTML = "<div>a</div>"
+            first = tpl.content.firstChild
+            if first is None or first.firstChild is None:
+                raise RuntimeError("template parsing unavailable")
+            tpl.innerHTML = ""
+            _scratch_template = tpl
+            _template_supported = True
+        except Exception:
+            _template_supported = False
+            return None
+    return _scratch_template
 
 
 def _dispatch_to_error_boundary(exc: BaseException) -> bool:
@@ -134,12 +175,72 @@ def _create_dom(vnode: VNode) -> Element:
     el = Element(vnode.tag)
     apply_initial_props(el, vnode.props, vnode)
     norm_children = normalize_children(vnode.children)
-    vnode.children = cast(List[ChildType], norm_children)
+    vnode.children = norm_children
     for child in norm_children:
         mount(child, el)
     vnode.el = el
     attach_ref(vnode.props, el)
     return el
+
+
+def _mount_template(vnode: VNode, container: Element, anchor: Any) -> Optional[Element]:
+    """Mount an element subtree through the template fast path.
+
+    Serializes the static skeleton to HTML, parses it in one bridge
+    crossing via a scratch `<template>`, walks the parsed DOM in tandem
+    with the VNode tree to populate `el` wrappers, wires dynamic
+    bindings, and mounts dynamic children (holes, fragments, components)
+    at their placeholder anchors.
+
+    Returns:
+        The mounted root `Element`, or `None` when the subtree isn't
+        eligible (the caller falls back to per-node creation).
+    """
+    tpl = _get_scratch_template()
+    if tpl is None:
+        return None
+    plan = build_plan(vnode)
+    if plan is None:
+        return None
+
+    tpl.innerHTML = plan.html
+    root = tpl.content.firstChild
+
+    # Move the root out of the scratch template *before* wiring so that
+    # nested component mounts can safely reuse the same template.
+    if anchor is None:
+        container.element.appendChild(root)
+    else:
+        container.element.insertBefore(root, anchor)
+
+    anchors: List[Any] = []
+    wire_tree(vnode, root, _wrap_node, anchors)
+
+    for target, kind, name, value in plan.bindings:
+        el = target.el
+        assert el is not None
+        if kind == BIND_EVENT:
+            set_handler(el, name, value if callable(value) else None)
+        elif kind == BIND_REACTIVE:
+            _bind_reactive_prop(el, name, value)
+        elif kind == BIND_PROP:
+            _apply_single_prop(el, name, None, value)
+        elif kind == BIND_REF:
+            attach_ref({name: value}, el)
+
+    for kind, child, parent_el, comment in anchors:
+        if kind == ANCHOR_HOLE:
+            _mount_dynamic(child, parent_el, None, end_node=comment)
+        else:
+            mount(child, parent_el, comment)
+            parent_el.element.removeChild(comment)
+
+    return vnode.el
+
+
+def _wrap_node(node: Any) -> Element:
+    """Wrap a raw DOM node in an `Element` (tandem-walk callback)."""
+    return Element(node=node)
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +333,7 @@ def _mount_fragment(vnode: VNode, container: Element, anchor: Any = None) -> Ele
         container.element.insertBefore(end_comment, anchor)
 
     norm_children = normalize_children(vnode.children)
-    vnode.children = cast(List[ChildType], norm_children)
+    vnode.children = norm_children
     for child in norm_children:
         mount(child, container, end_comment)
 
@@ -257,14 +358,23 @@ def _coerce_dynamic_result(value: Any) -> VNode:
     return to_text_vnode(value)
 
 
-def _mount_dynamic(vnode: VNode, container: Element, anchor: Any = None) -> Element:
-    """Mount a reactive hole: an effect re-evaluates *getter* and patches the DOM region."""
-    end_comment = document.createComment("")
-    end_el = Element(node=end_comment)
-    if anchor is None:
-        container.element.appendChild(end_comment)
+def _mount_dynamic(vnode: VNode, container: Element, anchor: Any = None, end_node: Any = None) -> Element:
+    """Mount a reactive hole: an effect re-evaluates *getter* and patches the DOM region.
+
+    When `end_node` is provided (the template fast path), the existing
+    comment node is adopted as the hole's end anchor instead of creating
+    and inserting a new one.
+    """
+    if end_node is not None:
+        end_comment = end_node
+        end_el = Element(node=end_comment)
     else:
-        container.element.insertBefore(end_comment, anchor)
+        end_comment = document.createComment("")
+        end_el = Element(node=end_comment)
+        if anchor is None:
+            container.element.appendChild(end_comment)
+        else:
+            container.element.insertBefore(end_comment, anchor)
     vnode.el = end_el
     vnode._frag_end = end_el
 
@@ -387,6 +497,10 @@ def _unmount_dynamic(vnode: VNode) -> None:
 def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> Element:
     """Mount a VNode (or string) into `container`, returning its DOM element.
 
+    When the VNode carries an `owner_scope` (set by `For`/`Index` for
+    cached rows), mounting runs under that reactive owner so the row's
+    effects survive later list updates.
+
     Args:
         vnode: The VNode to mount. Strings are coerced to text VNodes.
         container: The parent element wrapper.
@@ -399,6 +513,19 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
 
+    if vnode.owner_scope is not None:
+        import wybthon.reactivity as _rx
+
+        scope = vnode.owner_scope
+        prev_owner = _rx._current_owner
+        _rx._current_owner = scope
+        try:
+            vnode.owner_scope = None
+            return mount(vnode, container, anchor)
+        finally:
+            vnode.owner_scope = scope
+            _rx._current_owner = prev_owner
+
     if vnode.tag == "_dynamic":
         return _mount_dynamic(vnode, container, anchor)
 
@@ -407,6 +534,10 @@ def mount(vnode: Union[VNode, str], container: Element, anchor: Any = None) -> E
 
     if callable(vnode.tag):
         return _mount_component(vnode, container, anchor)
+
+    templated = _mount_template(vnode, container, anchor)
+    if templated is not None:
+        return templated
 
     el = _create_dom(vnode)
     if anchor is None:
@@ -550,18 +681,6 @@ def _patch_component(old: VNode, new: VNode, container: Element) -> None:
     ctx = old.component_ctx
     is_provider = getattr(new.tag, "_wyb_provider", False)
 
-    if getattr(new.tag, "_wyb_memo", False):
-        compare_fn = getattr(new.tag, "_wyb_memo_compare", None)
-        old_props = ctx._props if ctx is not None else {}
-        if compare_fn is not None and compare_fn(old_props, new.props):
-            new.component_ctx = ctx
-            new.render_effect = old.render_effect
-            new.subtree = old.subtree
-            new.el = old.el
-            if ctx is not None:
-                ctx._vnode = new
-            return
-
     if ctx is None:
         anchor = _get_next_sibling(old)
         unmount(old)
@@ -677,8 +796,10 @@ def _same_type(a: VNode, b: VNode) -> bool:
 def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
     """Diff `old` against `new` and apply minimal DOM changes inside `container`.
 
-    Same-type VNodes are patched in place (props and children diffed);
-    different types are unmounted and remounted at the same anchor.
+    Identical VNode instances (`old is new`, e.g. cached `For` rows) are
+    skipped entirely. Same-type VNodes are patched in place (props and
+    children diffed); different types are unmounted and remounted at the
+    same anchor.
 
     Args:
         old: The previously-rendered VNode, or `None` for the initial
@@ -688,6 +809,9 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
     """
     if old is None:
         mount(new, container)
+        return
+
+    if old is new:
         return
 
     if not _same_type(old, new):
@@ -722,7 +846,11 @@ def patch(old: Optional[VNode], new: VNode, container: Element) -> None:
 
     apply_props(new.el, old.props, new.props)
     attach_ref(new.props, new.el)
-    _patch_children(old, new)
+
+    old_children = normalize_children(old.children)
+    new_children = normalize_children(new.children)
+    new.children = new_children
+    _reconcile_children(old_children, new_children, new.el, None)
 
 
 def _patch_fragment(old: VNode, new: VNode, container: Element) -> None:
@@ -732,35 +860,102 @@ def _patch_fragment(old: VNode, new: VNode, container: Element) -> None:
 
     old_children = normalize_children(old.children)
     new_children = normalize_children(new.children)
-    new.children = cast(List[ChildType], new_children)
+    new.children = new_children
 
     end_marker = new._frag_end.element if new._frag_end is not None else None
+    _reconcile_children(old_children, new_children, container, end_marker)
 
-    old_key_to_index: Dict[Union[str, int], int] = {}
-    for i, ch in enumerate(old_children):
-        if ch.key is not None:
-            old_key_to_index[ch.key] = i
 
-    used_old: List[bool] = [False] * len(old_children)
-    sources: List[int] = [-1] * len(new_children)
+def _reconcile_children(
+    old_children: List[VNode],
+    new_children: List[VNode],
+    container: Element,
+    end_marker: Any,
+) -> None:
+    """Diff two child lists and apply mounts, patches, moves, and removals.
 
-    for i, new_child in enumerate(new_children):
-        if new_child.key is not None and new_child.key in old_key_to_index:
-            idx = old_key_to_index[new_child.key]
-            sources[i] = idx
-            used_old[idx] = True
-            patch(old_children[idx], new_child, container)
-        else:
-            for j, oc in enumerate(old_children):
-                if used_old[j]:
-                    continue
-                if oc.key is None and _same_type(oc, new_child):
-                    sources[i] = j
-                    used_old[j] = True
-                    patch(oc, new_child, container)
-                    break
+    Matching runs in three passes, all `O(n)`:
 
+    1. **Identity**: the same VNode instance in both lists (cached `For`
+       rows) is reused with no patching at all.
+    2. **Key**: children with equal `key` values are patched in place.
+    3. **Type**: remaining unkeyed children are matched against unused
+       old children of the same tag in document order.
+
+    DOM moves are minimized with a longest-increasing-subsequence pass:
+    only children outside the LIS are repositioned.
+
+    Args:
+        old_children: Normalized previous children.
+        new_children: Normalized next children.
+        container: Element that directly contains the children's DOM.
+        end_marker: Exclusive end anchor (a fragment's end comment), or
+            `None` when children occupy the whole container.
+    """
+    n_old = len(old_children)
     n = len(new_children)
+    used_old: List[bool] = [False] * n_old
+    sources: List[int] = [-1] * n
+    needs_patch: List[bool] = [False] * n
+
+    old_ids: Dict[int, int] = {}
+    old_keys: Dict[Union[str, int], int] = {}
+    for j, oc in enumerate(old_children):
+        old_ids[id(oc)] = j
+        if oc.key is not None:
+            old_keys[oc.key] = j
+
+    # Pass 1 + 2: identity and key matches (reserved before type matching
+    # so an unkeyed scan can't steal a child that matches later by
+    # identity or key).
+    unmatched: List[int] = []
+    for i, nc in enumerate(new_children):
+        j = old_ids.get(id(nc))
+        if j is not None and not used_old[j]:
+            used_old[j] = True
+            sources[i] = j
+            continue
+        if nc.key is not None:
+            j = old_keys.get(nc.key)
+            if j is not None and not used_old[j]:
+                used_old[j] = True
+                sources[i] = j
+                needs_patch[i] = True
+                continue
+        unmatched.append(i)
+
+    # Pass 3: unkeyed children match unused old children of the same tag
+    # in order. Per-tag index queues keep this linear.
+    if unmatched:
+        type_queues: Dict[Any, List[int]] = {}
+        type_pos: Dict[Any, int] = {}
+        for j, oc in enumerate(old_children):
+            if not used_old[j] and oc.key is None:
+                type_queues.setdefault(oc.tag, []).append(j)
+        for i in unmatched:
+            nc = new_children[i]
+            if nc.key is not None:
+                continue
+            queue = type_queues.get(nc.tag)
+            if queue is None:
+                continue
+            pos = type_pos.get(nc.tag, 0)
+            while pos < len(queue) and used_old[queue[pos]]:
+                pos += 1
+            type_pos[nc.tag] = pos
+            if pos < len(queue):
+                j = queue[pos]
+                type_pos[nc.tag] = pos + 1
+                used_old[j] = True
+                sources[i] = j
+                needs_patch[i] = True
+
+    for i in range(n):
+        if needs_patch[i]:
+            patch(old_children[sources[i]], new_children[i], container)
+
+    # Longest increasing subsequence over matched source indices; children
+    # inside the LIS keep their DOM position.
     tails: List[int] = []
     tails_idx: List[int] = []
     prev_idx: List[int] = [-1] * n
@@ -795,91 +990,6 @@ def _patch_fragment(old: VNode, new: VNode, container: Element) -> None:
                     next_anchor_node = first
             except Exception as e:
                 if not _dispatch_to_error_boundary(e):
-                    log_error(f"Failed to mount fragment child at index {i}", e)
-        else:
-            first_dom = _get_first_dom(new_child)
-            if first_dom is not None:
-                if i not in lis_set:
-                    for dom_node in _get_dom_nodes(new_child):
-                        try:
-                            container.element.insertBefore(dom_node, next_anchor_node)
-                        except Exception as e:
-                            log_error(f"Failed to reorder fragment child at index {i}", e)
-                next_anchor_node = first_dom
-
-    for j, oc in enumerate(old_children):
-        if not used_old[j]:
-            unmount(oc)
-
-
-def _patch_children(old: VNode, new: VNode) -> None:
-    """Diff and apply changes for a node's children using key-aware reordering."""
-    parent = new.el
-    assert parent is not None
-
-    old_children = normalize_children(old.children)
-    new_children = normalize_children(new.children)
-    new.children = cast(List[ChildType], new_children)
-
-    old_key_to_index: Dict[Union[str, int], int] = {}
-    for i, ch in enumerate(old_children):
-        if ch.key is not None:
-            old_key_to_index[ch.key] = i
-
-    used_old: List[bool] = [False] * len(old_children)
-    sources: List[int] = [-1] * len(new_children)
-
-    for i, new_child in enumerate(new_children):
-        if new_child.key is not None and new_child.key in old_key_to_index:
-            idx = old_key_to_index[new_child.key]
-            sources[i] = idx
-            used_old[idx] = True
-            patch(old_children[idx], new_child, parent)
-        else:
-            for j, oc in enumerate(old_children):
-                if used_old[j]:
-                    continue
-                if oc.key is None and _same_type(oc, new_child):
-                    sources[i] = j
-                    used_old[j] = True
-                    patch(oc, new_child, parent)
-                    break
-
-    n = len(new_children)
-    tails: List[int] = []
-    tails_idx: List[int] = []
-    prev_idx: List[int] = [-1] * n
-    for i in range(n):
-        s = sources[i]
-        if s == -1:
-            continue
-        pos = bisect_left(tails, s)
-        if pos == len(tails):
-            tails.append(s)
-            tails_idx.append(i)
-        else:
-            tails[pos] = s
-            tails_idx[pos] = i
-        prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
-
-    lis_set: Set[int] = set()
-    k = tails_idx[-1] if tails_idx else -1
-    while k != -1:
-        lis_set.add(k)
-        k = prev_idx[k]
-
-    next_anchor_node = None
-    for i in range(n - 1, -1, -1):
-        new_child = new_children[i]
-        s = sources[i]
-        if s == -1:
-            try:
-                mount(new_child, parent, next_anchor_node)
-                first = _get_first_dom(new_child)
-                if first is not None:
-                    next_anchor_node = first
-            except Exception as e:
-                if not _dispatch_to_error_boundary(e):
                     log_error(f"Failed to mount child at index {i}", e)
         else:
             first_dom = _get_first_dom(new_child)
@@ -887,7 +997,7 @@ def _patch_children(old: VNode, new: VNode) -> None:
                 if i not in lis_set:
                     for dom_node in _get_dom_nodes(new_child):
                         try:
-                            parent.element.insertBefore(dom_node, next_anchor_node)
+                            container.element.insertBefore(dom_node, next_anchor_node)
                         except Exception as e:
                             log_error(f"Failed to reorder child at index {i}", e)
                 next_anchor_node = first_dom

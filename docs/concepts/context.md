@@ -16,6 +16,17 @@ def Label():
 view = h(Provider, {"context": Theme, "value": "dark"}, h(Label, {}))
 ```
 
+#### `Context.Provider` shorthand
+
+Every context also carries a SolidJS-style `Provider` method, which is
+often more readable than the explicit `h(Provider, ...)` form:
+
+```python
+view = Theme.Provider(value="dark", children=[h(Label, {})])
+```
+
+Both forms are equivalent; use whichever reads better in context.
+
 #### Reactive `value`
 
 `Provider`'s `value` prop is **signal-backed**: passing a getter (or a

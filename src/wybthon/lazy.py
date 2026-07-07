@@ -24,7 +24,7 @@ from __future__ import annotations
 import importlib
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 
-from .reactivity import ReactiveProps, Signal, read_prop
+from .reactivity import ReactiveProps, Signal
 from .vnode import VNode, dynamic, h
 
 __all__ = ["lazy", "load_component", "preload_component"]
@@ -108,7 +108,7 @@ def load_component(module_path: str, attr: Optional[str] = None) -> Callable[[An
             comp = loaded.get()
             err = error_sig.get()
             if comp is None and err is None:
-                fallback = read_prop(props, "fallback", "Loading...")
+                fallback = props.value("fallback", "Loading...")
                 return h("div", {"class": "lazy-loading"}, fallback)
             if err is not None:
                 return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")
@@ -163,7 +163,7 @@ def lazy(loader: Callable[[], Tuple[str, Optional[str]]]) -> Callable[[Any], VNo
             comp = loaded.get()
             err = error_sig.get()
             if comp is None and err is None:
-                fallback = read_prop(props, "fallback", "Loading...")
+                fallback = props.value("fallback", "Loading...")
                 return h("div", {"class": "lazy-loading"}, fallback)
             if err is not None:
                 return h("div", {"class": "lazy-error"}, f"Failed to load: {err}")

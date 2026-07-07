@@ -1,4 +1,4 @@
-"""Components: reactive props (no remount), memo, forward_ref, children, lifecycle."""
+"""Components: reactive props (no remount), forward_ref, children, lifecycle."""
 
 from app.testkit import tid
 
@@ -14,7 +14,6 @@ from wybthon import (
     h,
     h2,
     input_,
-    memo,
     on_cleanup,
     on_mount,
     p,
@@ -32,18 +31,6 @@ def Page():
     def Display(text=""):
         on_mount(lambda: set_display_mounts(untrack(display_mounts) + 1))
         return span(dynamic(lambda: str(text())), **tid("comp-display"))
-
-    tick, set_tick = create_signal(0)
-
-    @component
-    def MemoBody(n=0):
-        return span(dynamic(lambda: str(n())), **tid("comp-memo"))
-
-    @component
-    def PlainBody(n=0):
-        return span(dynamic(lambda: str(n())), **tid("comp-plain"))
-
-    Memoized = memo(MemoBody, lambda old, new: True)
 
     input_ref = Ref()
     ref_attached, set_ref_attached = create_signal(False)
@@ -75,12 +62,6 @@ def Page():
             h(Display, {"text": label}),
             span(display_mounts, **tid("comp-display-mounts")),
             button("change label", on_click=lambda e: set_label("world"), **tid("comp-label-btn")),
-        ),
-        div(
-            span(tick, **tid("comp-tick")),
-            dynamic(lambda: h(Memoized, {"n": tick()})),
-            dynamic(lambda: h(PlainBody, {"n": tick()})),
-            button("tick", on_click=lambda e: set_tick(tick() + 1), **tid("comp-tick-btn")),
         ),
         div(
             h(Fancy, {"ref": input_ref}),

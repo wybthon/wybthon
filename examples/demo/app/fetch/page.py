@@ -1,4 +1,4 @@
-from wybthon import Suspense, button, code, component, create_resource, div, dynamic, h, h2, h3, on_cleanup, p, pre
+from wybthon import Suspense, button, code, component, create_resource, div, dynamic, h2, h3, on_cleanup, p, pre
 
 
 @component
@@ -20,10 +20,9 @@ def FetchPage():
     on_cleanup(lambda: res.cancel())
 
     def display_text() -> str:
-        err = res.error.get()
-        if err:
-            return str(err)
-        return res.data.get() or "No data"
+        if res.error:
+            return str(res.error)
+        return res() or "No data"
 
     return div(
         div(
@@ -33,17 +32,12 @@ def FetchPage():
         ),
         div(
             h3("JSONPlaceholder API"),
-            h(
-                Suspense,
-                {
-                    "resource": res,
-                    "fallback": p("Loading..."),
-                    "keep_previous": True,
-                    "children": [p(dynamic(display_text))],
-                },
+            Suspense(
+                fallback=p("Loading..."),
+                children=lambda: p(dynamic(display_text)),
             ),
             div(
-                button("Reload", on_click=lambda e: res.reload()),
+                button("Refetch", on_click=lambda e: res.refetch()),
                 button("Cancel", on_click=lambda e: res.cancel()),
             ),
             class_="demo-section",
@@ -59,10 +53,10 @@ def FetchPage():
                     "\n"
                     "res = create_resource(fetcher)\n"
                     "\n"
-                    "h(Suspense, {\n"
-                    '    "resource": res,\n'
-                    '    "fallback": p("Loading..."),\n'
-                    "}, content)"
+                    "Suspense(\n"
+                    '    fallback=p("Loading..."),\n'
+                    '    children=lambda: p(dynamic(lambda: res() or "")),\n'
+                    ")"
                 ),
                 class_="code-block",
             ),

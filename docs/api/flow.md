@@ -36,13 +36,18 @@ def Demo():
             children=lambda: li("Welcome!"),
             fallback=lambda: li("Please log in"),
         ),
-        For(each=items, children=lambda item, idx: li(item(), key=idx())),
+        For(each=items, children=lambda item, idx: li(item())),
     )
 ```
 
 - Pass *getters* (the signal accessor itself) to `when` / `each`.
 - `children` may be a `VNode`, a callable returning a `VNode`, or the
   per-item mapping callback for `For` / `Index`.
+- The mapping callback runs **once per unique item** (`For`) or per
+  index slot (`Index`) and the resulting subtree is cached: list changes
+  mount added items, dispose removed ones, and move existing DOM for
+  reorders. Inside `Index`, pass the `item` getter (not `item()`) where
+  the slot's value should stay live.
 
 #### See also
 

@@ -12,6 +12,8 @@ batched VDOM for Pyodide's bridge-overhead constraints.
 
 from conftest import collect_texts
 
+from wybthon.vnode import Fragment, dynamic, h
+
 # --------------------------------------------------------------------------- #
 # Reactive hole basics
 # --------------------------------------------------------------------------- #
@@ -19,15 +21,15 @@ from conftest import collect_texts
 
 def test_signal_getter_as_child_creates_hole(wyb, root_element):
     """Passing a signal getter as a child auto-wraps it as a reactive hole."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal("hello")
 
     def App(props):
-        return vdom.h("p", {}, sig.get)
+        return h("p", {}, sig.get)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert "hello" in collect_texts(root_element.element)
 
     sig.set("world")
@@ -36,15 +38,15 @@ def test_signal_getter_as_child_creates_hole(wyb, root_element):
 
 def test_explicit_dynamic_helper(wyb, root_element):
     """``dynamic(getter)`` explicitly wraps a getter as a reactive hole."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal(0)
 
     def App(props):
-        return vdom.h("p", {}, vdom.dynamic(lambda: f"value={sig.get()}"))
+        return h("p", {}, dynamic(lambda: f"value={sig.get()}"))
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert "value=0" in collect_texts(root_element.element)
 
     sig.set(42)
@@ -53,7 +55,7 @@ def test_explicit_dynamic_helper(wyb, root_element):
 
 def test_component_body_runs_once(wyb, root_element):
     """The component body must run exactly once during mount."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal(0)
@@ -61,9 +63,9 @@ def test_component_body_runs_once(wyb, root_element):
 
     def Counter(props):
         body_runs[0] += 1
-        return vdom.h("p", {}, sig.get)
+        return h("p", {}, sig.get)
 
-    vdom.render(vdom.h(Counter, {}), root_element)
+    vdom.render(h(Counter, {}), root_element)
     assert body_runs[0] == 1
 
     for v in (1, 2, 3, 4, 5):
@@ -75,7 +77,7 @@ def test_component_body_runs_once(wyb, root_element):
 
 def test_hole_runs_independently(wyb, root_element):
     """Each hole has its own effect — only the changed hole re-runs."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     a = reactivity.signal("A0")
@@ -92,14 +94,14 @@ def test_hole_runs_independently(wyb, root_element):
         return b.get()
 
     def App(props):
-        return vdom.h(
+        return h(
             "div",
             {},
-            vdom.h("span", {}, get_a),
-            vdom.h("span", {}, get_b),
+            h("span", {}, get_a),
+            h("span", {}, get_b),
         )
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert a_runs[0] == 1
     assert b_runs[0] == 1
 
@@ -114,7 +116,7 @@ def test_hole_runs_independently(wyb, root_element):
 
 def test_hole_with_memo(wyb, root_element):
     """A memo can be used as a reactive hole getter."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal(2)
@@ -127,9 +129,9 @@ def test_hole_with_memo(wyb, root_element):
     doubled = reactivity.create_memo(expensive)
 
     def App(props):
-        return vdom.h("p", {}, doubled)
+        return h("p", {}, doubled)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert "20" in collect_texts(root_element.element)
     assert compute_runs[0] == 1
 
@@ -145,15 +147,15 @@ def test_hole_with_memo(wyb, root_element):
 
 def test_reactive_class_prop(wyb, root_element):
     """A callable ``class`` prop becomes a reactive hole for the attribute."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     cls = reactivity.signal("foo")
 
     def App(props):
-        return vdom.h("p", {"class": cls.get}, "hi")
+        return h("p", {"class": cls.get}, "hi")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.attributes.get("class") == "foo"
 
@@ -163,15 +165,15 @@ def test_reactive_class_prop(wyb, root_element):
 
 def test_reactive_style_prop(wyb, root_element):
     """A callable ``style`` prop reactively updates style properties."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     color = reactivity.signal("red")
 
     def App(props):
-        return vdom.h("p", {"style": lambda: {"color": color.get()}}, "hi")
+        return h("p", {"style": lambda: {"color": color.get()}}, "hi")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.style._props.get("color") == "red"
 
@@ -181,15 +183,15 @@ def test_reactive_style_prop(wyb, root_element):
 
 def test_reactive_dataset_prop(wyb, root_element):
     """A callable ``dataset`` prop updates ``data-*`` attributes reactively."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     state = reactivity.signal({"role": "button", "id": "1"})
 
     def App(props):
-        return vdom.h("p", {"dataset": state.get}, "hi")
+        return h("p", {"dataset": state.get}, "hi")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.attributes.get("data-role") == "button"
     assert el.attributes.get("data-id") == "1"
@@ -201,15 +203,15 @@ def test_reactive_dataset_prop(wyb, root_element):
 
 def test_reactive_value_prop(wyb, root_element):
     """A callable ``value`` prop sets the DOM property reactively."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     val = reactivity.signal("a")
 
     def App(props):
-        return vdom.h("input", {"value": val.get})
+        return h("input", {"value": val.get})
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.value == "a"
 
@@ -219,15 +221,15 @@ def test_reactive_value_prop(wyb, root_element):
 
 def test_reactive_attr_prop(wyb, root_element):
     """A callable plain attribute is reactively applied."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     title = reactivity.signal("first")
 
     def App(props):
-        return vdom.h("p", {"title": title.get}, "hi")
+        return h("p", {"title": title.get}, "hi")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.attributes.get("title") == "first"
 
@@ -237,7 +239,7 @@ def test_reactive_attr_prop(wyb, root_element):
 
 def test_event_handlers_are_not_holes(wyb, root_element):
     """``on_*`` props must NOT be treated as reactive getters."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     handler_calls = [0]
@@ -249,21 +251,21 @@ def test_event_handlers_are_not_holes(wyb, root_element):
 
     def App(props):
         body_runs[0] += 1
-        return vdom.h("button", {"on_click": my_handler}, "click me")
+        return h("button", {"on_click": my_handler}, "click me")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert body_runs[0] == 1
 
     sig = reactivity.signal(0)
 
     def App2(props):
-        return vdom.h(
+        return h(
             "button",
             {"on_click": my_handler, "title": lambda: f"clicked {sig.get()}"},
             "x",
         )
 
-    vdom.render(vdom.h(App2, {}), wyb["dom"].Element(node=type(root_element.element)(tag="div")))
+    vdom.render(h(App2, {}), wyb["dom"].Element(node=type(root_element.element)(tag="div")))
 
 
 # --------------------------------------------------------------------------- #
@@ -273,15 +275,15 @@ def test_event_handlers_are_not_holes(wyb, root_element):
 
 def test_mixed_static_and_reactive_children(wyb, root_element):
     """A node with both static text and a reactive hole interleaves correctly."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     name = reactivity.signal("Alice")
 
     def App(props):
-        return vdom.h("p", {}, "Hello, ", name.get, "!")
+        return h("p", {}, "Hello, ", name.get, "!")
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     texts = "".join(collect_texts(root_element.element))
     assert "Hello, Alice!" in texts
 
@@ -292,20 +294,20 @@ def test_mixed_static_and_reactive_children(wyb, root_element):
 
 def test_hole_returning_vnode(wyb, root_element):
     """A reactive hole can return a ``VNode`` instead of text."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     show_emphasis = reactivity.signal(False)
 
     def render_text():
         if show_emphasis.get():
-            return vdom.h("strong", {}, "important")
-        return vdom.h("span", {}, "normal")
+            return h("strong", {}, "important")
+        return h("span", {}, "normal")
 
     def App(props):
-        return vdom.h("p", {}, render_text)
+        return h("p", {}, render_text)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.childNodes[0].tag == "span"
 
@@ -318,19 +320,19 @@ def test_hole_returning_vnode(wyb, root_element):
 
 def test_hole_returning_fragment(wyb, root_element):
     """A reactive hole can return a Fragment (multiple roots)."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     count = reactivity.signal(2)
 
     def render_items():
         n = count.get()
-        return vdom.Fragment(*[vdom.h("li", {}, f"item {i}") for i in range(n)])
+        return Fragment(*[h("li", {}, f"item {i}") for i in range(n)])
 
     def App(props):
-        return vdom.h("ul", {}, render_items)
+        return h("ul", {}, render_items)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     ul = root_element.element.childNodes[0]
     li_count = sum(1 for c in ul.childNodes if c.tag == "li")
     assert li_count == 2
@@ -342,20 +344,20 @@ def test_hole_returning_fragment(wyb, root_element):
 
 def test_hole_returning_none_renders_nothing(wyb, root_element):
     """A hole returning ``None`` renders nothing visible."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     visible = reactivity.signal(False)
 
     def render_msg():
         if visible.get():
-            return vdom.h("span", {}, "I'm here")
+            return h("span", {}, "I'm here")
         return None
 
     def App(props):
-        return vdom.h("div", {}, render_msg)
+        return h("div", {}, render_msg)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     div = root_element.element.childNodes[0]
     text_content = "".join(collect_texts(div))
     assert "I'm here" not in text_content
@@ -376,7 +378,7 @@ def test_hole_returning_none_renders_nothing(wyb, root_element):
 
 def test_show_works_with_holes(wyb, root_element):
     """``Show`` continues to work; its children may use reactive holes."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
     flow = wyb["flow"]
 
@@ -386,11 +388,11 @@ def test_show_works_with_holes(wyb, root_element):
     def App(props):
         return flow.Show(
             when=visible.get,
-            children=lambda: vdom.h("p", {}, "name: ", name.get),
-            fallback=lambda: vdom.h("p", {}, "(hidden)"),
+            children=lambda: h("p", {}, "name: ", name.get),
+            fallback=lambda: h("p", {}, "(hidden)"),
         )
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     texts = "".join(collect_texts(root_element.element))
     assert "name: alice" in texts
 
@@ -406,7 +408,7 @@ def test_show_works_with_holes(wyb, root_element):
 
 def test_for_works_with_holes(wyb, root_element):
     """``For`` mapping callbacks may use reactive holes."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
     flow = wyb["flow"]
 
@@ -414,12 +416,12 @@ def test_for_works_with_holes(wyb, root_element):
     suffix = reactivity.signal("!")
 
     def App(props):
-        return vdom.h(
+        return h(
             "ul",
             {},
             flow.For(
                 each=items_sig.get,
-                children=lambda item, idx: vdom.h(
+                children=lambda item, idx: h(
                     "li",
                     {},
                     item,
@@ -428,7 +430,7 @@ def test_for_works_with_holes(wyb, root_element):
             ),
         )
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     texts = "".join(collect_texts(root_element.element))
     assert "a!" in texts
     assert "b!" in texts
@@ -448,7 +450,7 @@ def test_for_works_with_holes(wyb, root_element):
 
 def test_hole_effect_disposed_on_unmount(wyb, root_element):
     """A reactive hole's effect is disposed when its parent unmounts."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal(0)
@@ -459,23 +461,23 @@ def test_hole_effect_disposed_on_unmount(wyb, root_element):
         return sig.get()
 
     def App(props):
-        return vdom.h("p", {}, get_value)
+        return h("p", {}, get_value)
 
-    tree = vdom.h(App, {})
+    tree = h(App, {})
     vdom.render(tree, root_element)
     assert runs[0] == 1
 
     sig.set(1)
     assert runs[0] == 2
 
-    vdom._unmount(tree)
+    vdom.unmount(tree)
     sig.set(2)
     assert runs[0] == 2, "hole effect must be disposed after unmount"
 
 
 def test_hole_inside_show_fallback_disposed(wyb, root_element):
     """When ``Show`` flips branches, the inactive branch's holes are disposed."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
     flow = wyb["flow"]
 
@@ -490,11 +492,11 @@ def test_hole_inside_show_fallback_disposed(wyb, root_element):
     def App(props):
         return flow.Show(
             when=cond.get,
-            children=lambda: vdom.h("p", {}, get_branch_val),
-            fallback=lambda: vdom.h("p", {}, "no"),
+            children=lambda: h("p", {}, get_branch_val),
+            fallback=lambda: h("p", {}, "no"),
         )
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert branch_runs[0] == 1
 
     branch_sig.set(1)
@@ -514,7 +516,7 @@ def test_hole_inside_show_fallback_disposed(wyb, root_element):
 
 def test_on_cleanup_inside_hole_runs_on_dependency_change(wyb, root_element):
     """An ``on_cleanup`` registered inside a hole runs before the hole re-runs."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     sig = reactivity.signal(0)
@@ -527,9 +529,9 @@ def test_on_cleanup_inside_hole_runs_on_dependency_change(wyb, root_element):
         return str(v)
 
     def App(props):
-        return vdom.h("p", {}, get_value)
+        return h("p", {}, get_value)
 
-    tree = vdom.h(App, {})
+    tree = h(App, {})
     vdom.render(tree, root_element)
     assert log == ["run:0"]
 
@@ -537,7 +539,7 @@ def test_on_cleanup_inside_hole_runs_on_dependency_change(wyb, root_element):
     assert "cleanup:0" in log
     assert "run:1" in log
 
-    vdom._unmount(tree)
+    vdom.unmount(tree)
     assert "cleanup:1" in log
 
 
@@ -553,7 +555,7 @@ def test_reactive_props_via_getter(wyb, root_element):
     accessor itself, not the value.  Inside the child, calling the getter
     inside a reactive hole creates a dependency on the parent's signal.
     """
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     parent_count = reactivity.signal(0)
@@ -562,12 +564,12 @@ def test_reactive_props_via_getter(wyb, root_element):
     def Greeting(props):
         child_runs[0] += 1
         get_count = props["count"]
-        return vdom.h("span", {}, lambda: f"count={get_count()}")
+        return h("span", {}, lambda: f"count={get_count()}")
 
     def Parent(props):
-        return vdom.h("div", {}, vdom.h(Greeting, {"count": parent_count.get}))
+        return h("div", {}, h(Greeting, {"count": parent_count.get}))
 
-    vdom.render(vdom.h(Parent, {}), root_element)
+    vdom.render(h(Parent, {}), root_element)
     assert child_runs[0] == 1
     assert "count=0" in "".join(collect_texts(root_element.element))
 
@@ -583,7 +585,7 @@ def test_reactive_props_via_getter(wyb, root_element):
 
 def test_untrack_inside_hole(wyb, root_element):
     """``untrack`` inside a hole prevents that read from being a dependency."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     a = reactivity.signal(0)
@@ -597,9 +599,9 @@ def test_untrack_inside_hole(wyb, root_element):
         return f"{with_a}:{with_b}"
 
     def App(props):
-        return vdom.h("p", {}, get_value)
+        return h("p", {}, get_value)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert runs[0] == 1
     assert "0:0" in "".join(collect_texts(root_element.element))
 
@@ -618,16 +620,16 @@ def test_untrack_inside_hole(wyb, root_element):
 
 def test_multiple_holes_on_same_element(wyb, root_element):
     """An element can have multiple reactive holes (props + children)."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
 
     title = reactivity.signal("t1")
     body = reactivity.signal("b1")
 
     def App(props):
-        return vdom.h("p", {"title": title.get}, body.get)
+        return h("p", {"title": title.get}, body.get)
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
     assert el.attributes.get("title") == "t1"
     assert "b1" in collect_texts(el)
@@ -655,29 +657,29 @@ def test_provider_swaps_child_component_via_parent_hole(wyb, root_element):
     subtree so the new component actually mounts.  This is the regression
     that broke ``wyb dev`` route navigation when components became run-once.
     """
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
     context_mod = wyb["context"]
 
     Theme = context_mod.create_context("light")
 
     def HomePage(props):
-        return vdom.h("section", {"data-page": "home"}, "home-page")
+        return h("section", {"data-page": "home"}, "home-page")
 
     def AboutPage(props):
-        return vdom.h("section", {"data-page": "about"}, "about-page")
+        return h("section", {"data-page": "about"}, "about-page")
 
     pages = {"home": HomePage, "about": AboutPage}
     current = reactivity.signal("home")
 
     def Outer(props):
-        return lambda: vdom.h(
+        return lambda: h(
             context_mod.Provider,
             {"context": Theme, "value": "dark"},
-            vdom.h(pages[current.get()], {}),
+            h(pages[current.get()], {}),
         )
 
-    vdom.render(vdom.h(Outer, {}), root_element)
+    vdom.render(h(Outer, {}), root_element)
     texts = collect_texts(root_element.element)
     assert "home-page" in texts
     assert "about-page" not in texts
@@ -695,7 +697,7 @@ def test_provider_swaps_child_component_via_parent_hole(wyb, root_element):
 
 def test_provider_keeps_context_after_children_change(wyb, root_element):
     """A Provider keeps providing its context value across children changes."""
-    vdom = wyb["vdom"]
+    vdom = wyb["reconciler"]
     reactivity = wyb["reactivity"]
     context_mod = wyb["context"]
 
@@ -703,23 +705,23 @@ def test_provider_keeps_context_after_children_change(wyb, root_element):
 
     def HomeReader(props):
         theme = context_mod.use_context(Theme)
-        return vdom.h("p", {}, f"home:{theme}")
+        return h("p", {}, f"home:{theme}")
 
     def AboutReader(props):
         theme = context_mod.use_context(Theme)
-        return vdom.h("p", {}, f"about:{theme}")
+        return h("p", {}, f"about:{theme}")
 
     pages = {"home": HomeReader, "about": AboutReader}
     current = reactivity.signal("home")
 
     def App(props):
-        return lambda: vdom.h(
+        return lambda: h(
             context_mod.Provider,
             {"context": Theme, "value": "dark"},
-            vdom.h(pages[current.get()], {}),
+            h(pages[current.get()], {}),
         )
 
-    vdom.render(vdom.h(App, {}), root_element)
+    vdom.render(h(App, {}), root_element)
     assert "home:dark" in "".join(collect_texts(root_element.element))
 
     current.set("about")
