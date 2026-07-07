@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.25.0 (2026-07-07)
+
+### Features
+
+- **reconciler,reactivity**: Add template mounting and Solid-parity API
+  ([#5](https://github.com/wybthon/wybthon/pull/5),
+  [`9fa81d2`](https://github.com/wybthon/wybthon/commit/9fa81d2f7da91b415bafa4698c42df7f9269478e))
+
+
 ## v0.24.0 (2026-06-23)
 
 ### Documentation
