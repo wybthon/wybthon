@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.26.0 (2026-07-10)
+
+### Performance Improvements
+
+- **kernel**: Batch DOM mutations through a JS-kernel wire protocol
+  ([#6](https://github.com/wybthon/wybthon/pull/6),
+  [`50841de`](https://github.com/wybthon/wybthon/commit/50841de35825f4d3a352bff123107be598ad9a82))
+
+
 ## v0.25.0 (2026-07-07)
 
 ### Features
