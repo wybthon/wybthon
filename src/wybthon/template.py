@@ -4,54 +4,66 @@ This module is the runtime analogue of SolidJS's compiled templates. A
 run-once component returns a VNode tree whose *structure* is static; only
 reactive holes, event handlers, refs, and reactive prop bindings change
 after mount. That means the static skeleton can be serialized to an HTML
-string in Python (cheap), parsed by the browser in a **single**
-`template.innerHTML` assignment (one crossing of the Pyodide-JS bridge
-instead of one `createElement`/`setAttribute`/`appendChild` call per
-node), and then walked once to wire up the dynamic parts.
+string in Python (cheap) and registered with the rendering kernel once;
+every mount of the same skeleton is a single `CLONE_TPL` op that clones
+the pre-parsed tree natively. The kernel then walks the clone in
+document order, assigning a dense block of node ids.
+
+Because the Python serializer counts nodes in exactly the same pre-order
+the kernel walks, every element, text node, and placeholder comment gets
+a *predictable* id with zero extra communication: the mount simply
+assigns `first_id + k` to the k-th serialized node.
+
+Static **text content is hoisted out of the HTML**: the serializer emits
+a one-space placeholder text node and records the real value as a
+`SET_TEXT` binding applied after the clone. Hoisting is what makes
+templates shared: a thousand list rows that differ only in their text
+(ids, labels) produce the *same* skeleton string, so the browser parses
+it once and clones it a thousand times.
 
 The pipeline:
 
 1. [`build_plan`][wybthon.template.build_plan] walks a VNode tree and
-   produces a `MountPlan`: the serialized HTML plus the list of dynamic
-   bindings (events, reactive props, refs, DOM-property writes) and
-   anchor placeholders (holes, fragments, child components), or `None`
-   when the tree isn't eligible for the fast path.
-2. The reconciler parses the HTML through a scratch `<template>` element
-   and calls [`wire_tree`][wybthon.template.wire_tree] to walk the
-   cloned DOM and the VNode tree in tandem, populating `VNode.el` and
-   collecting anchor positions.
-3. Bindings are applied and dynamic children mounted at their anchors.
+   produces a `MountPlan`: the serialized HTML, the pre-order node
+   list (for id assignment and text bindings), the dynamic bindings
+   (events, reactive props, refs, DOM-property writes), or `None` when
+   the tree isn't eligible for the fast path.
+2. The reconciler registers the HTML (once per unique skeleton),
+   allocates the id block, emits the `CLONE_TPL` op, applies bindings
+   by id, and mounts dynamic children (holes, fragments, components)
+   at their placeholder comments.
 
-Trees fall back to the classic per-node mount when they contain
-constructs the HTML parser would mangle (adjacent or empty text nodes,
-raw text elements, invalid attribute names) or when they're too small
-for the template overhead to pay off.
+Trees fall back to per-node ops (still batched, still one bridge
+crossing) when they contain constructs the HTML parser would mangle:
+adjacent or empty text nodes, raw text elements, invalid attribute
+names, or element nestings the parser rewrites (implied `<tbody>`,
+auto-closed `<p>`, and similar).
 """
 
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast
 
 from .props import is_event_prop, to_kebab
 from .vnode import ChildType, VNode, is_getter, normalize_children
 
-__all__ = ["MountPlan", "build_plan", "wire_tree"]
+__all__ = ["MountPlan", "build_plan"]
 
 # Binding kinds collected by the serializer.
 BIND_EVENT = 0
 BIND_REACTIVE = 1
 BIND_REF = 2
 BIND_PROP = 3
+BIND_TEXT = 4
 
-# Anchor kinds: a hole reuses its placeholder comment as its end anchor;
-# fragments and components mount before the placeholder, which is then
-# removed.
-ANCHOR_HOLE = 0
-ANCHOR_MOUNT = 1
+# Node kinds in the pre-order ``MountPlan.order`` list.
+NODE_STATIC = 0  # element or text: assign the id to ``vnode.el``
+NODE_HOLE = 1  # placeholder comment adopted as a reactive hole's end anchor
+NODE_MOUNT = 2  # placeholder comment replaced by a component/fragment mount
 
 # Minimum number of serialized nodes before the template path is used;
-# below this, per-node creation is at least as fast as an HTML parse.
+# below this, per-node ops are at least as fast as an HTML parse.
 MIN_TEMPLATE_NODES = 3
 
 _VOID_ELEMENTS = frozenset(
@@ -66,17 +78,63 @@ _RAW_TEXT_ELEMENTS = frozenset({"script", "style", "textarea", "title", "xmp", "
 # would foster-parent the text outside the table).
 _NO_TEXT_CONTENT = frozenset({"table", "thead", "tbody", "tfoot", "tr", "colgroup", "select", "optgroup", "html"})
 
+# Content models the parser enforces by *rewriting* the tree (inserting
+# implied elements or dropping illegal ones). Serialized HTML must parse
+# 1:1 into the node list, so trees that violate these fall back.
+_ALLOWED_CHILDREN = {
+    "table": frozenset({"caption", "colgroup", "thead", "tbody", "tfoot"}),
+    "thead": frozenset({"tr"}),
+    "tbody": frozenset({"tr"}),
+    "tfoot": frozenset({"tr"}),
+    "tr": frozenset({"td", "th"}),
+    "select": frozenset({"option", "optgroup"}),
+    "optgroup": frozenset({"option"}),
+    "colgroup": frozenset({"col"}),
+}
+
+# Start tags that implicitly close an open ``<p>`` element.
+_P_CLOSERS = frozenset(
+    {
+        "address",
+        "article",
+        "aside",
+        "blockquote",
+        "details",
+        "div",
+        "dl",
+        "fieldset",
+        "figcaption",
+        "figure",
+        "footer",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "header",
+        "hgroup",
+        "hr",
+        "main",
+        "menu",
+        "nav",
+        "ol",
+        "p",
+        "pre",
+        "section",
+        "table",
+        "ul",
+    }
+)
+
+# Elements the parser auto-closes (or drops) when nested directly in an
+# element of the same tag.
+_NO_SELF_NESTING = frozenset({"a", "button", "form", "li", "dt", "dd", "option"})
+
 _VALID_ATTR_NAME = re.compile(r"^[a-zA-Z_:][-a-zA-Z0-9_:.]*$")
 
-_ESCAPE_TEXT = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
 _ESCAPE_ATTR = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}
-
-
-def _escape_text(value: str) -> str:
-    if "&" in value or "<" in value or ">" in value:
-        for ch, rep in _ESCAPE_TEXT.items():
-            value = value.replace(ch, rep)
-    return value
 
 
 def _escape_attr(value: str) -> str:
@@ -94,20 +152,35 @@ class MountPlan:
     """Serialized mount plan for a static-skeleton VNode subtree.
 
     Attributes:
-        html: The serialized HTML string for the skeleton.
+        html: The serialized HTML string for the skeleton. Static text
+            content is hoisted (each text node appears as a single-space
+            placeholder), so structurally-identical trees share the same
+            string regardless of their text.
+        order: Pre-order list of `(kind, vnode, parent_vnode)` entries,
+            one per serialized DOM node, in exactly the order the
+            kernel assigns ids. `parent_vnode` is the enclosing element
+            VNode (needed to mount placeholders), or `None` for the
+            root.
         bindings: List of `(vnode, kind, name, value)` tuples to apply
-            after the DOM exists (`vnode.el` is populated by
-            [`wire_tree`][wybthon.template.wire_tree] first).
-        node_count: Number of serialized DOM nodes (used for the
-            eligibility threshold).
+            after ids are assigned.
     """
 
-    __slots__ = ("html", "bindings", "node_count")
+    __slots__ = ("html", "order", "bindings")
 
-    def __init__(self, html: str, bindings: List[Tuple[VNode, int, str, Any]], node_count: int) -> None:
+    def __init__(
+        self,
+        html: str,
+        order: List[Tuple[int, VNode, Optional[VNode]]],
+        bindings: List[Tuple[VNode, int, str, Any]],
+    ) -> None:
         self.html = html
+        self.order = order
         self.bindings = bindings
-        self.node_count = node_count
+
+    @property
+    def node_count(self) -> int:
+        """Number of serialized DOM nodes (length of the id block)."""
+        return len(self.order)
 
 
 def build_plan(vnode: VNode) -> Optional[MountPlan]:
@@ -116,7 +189,7 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     Eligible trees have an element root and contain only element/text
     nodes plus dynamic placeholders (holes, fragments, components). The
     VNode tree is normalized in place (children lists become `VNode`
-    lists) as a side effect, exactly as the classic mount path does.
+    lists) as a side effect, exactly as the per-node mount path does.
 
     Args:
         vnode: An element VNode (string tag, not `_text`/`_dynamic`/
@@ -128,28 +201,29 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     if not isinstance(vnode.tag, str) or vnode.tag.startswith("_"):
         return None
     parts: List[str] = []
+    order: List[Tuple[int, VNode, Optional[VNode]]] = []
     bindings: List[Tuple[VNode, int, str, Any]] = []
-    counter = [0]
     try:
-        _serialize_element(vnode, parts, bindings, counter)
+        _serialize_element(vnode, None, parts, order, bindings)
     except _NotEligible:
         return None
-    if counter[0] < MIN_TEMPLATE_NODES:
+    if len(order) < MIN_TEMPLATE_NODES:
         return None
-    return MountPlan("".join(parts), bindings, counter[0])
+    return MountPlan("".join(parts), order, bindings)
 
 
 def _serialize_element(
     vnode: VNode,
+    parent: Optional[VNode],
     parts: List[str],
+    order: List[Tuple[int, VNode, Optional[VNode]]],
     bindings: List[Tuple[VNode, int, str, Any]],
-    counter: List[int],
 ) -> None:
     tag = cast(str, vnode.tag)
     lower = tag.lower()
     if lower in _RAW_TEXT_ELEMENTS:
         raise _NotEligible
-    counter[0] += 1
+    order.append((NODE_STATIC, vnode, parent))
 
     parts.append("<")
     parts.append(tag)
@@ -169,7 +243,7 @@ def _serialize_element(
             continue
         if name in ("value", "checked"):
             # DOM properties, not attributes; applied post-clone so the
-            # semantics match the classic mount path exactly.
+            # semantics match the per-node mount path exactly.
             bindings.append((vnode, BIND_PROP, name, value))
             continue
         _serialize_attr(name, value, parts)
@@ -187,26 +261,36 @@ def _serialize_element(
     vnode.children = cast(List[ChildType], norm_children)
 
     no_text = lower in _NO_TEXT_CONTENT
+    allowed_children = _ALLOWED_CHILDREN.get(lower)
     prev_was_text = False
     for child in norm_children:
         ctag = child.tag
         if ctag == "_text":
             if prev_was_text or no_text:
                 raise _NotEligible
-            text = child.props.get("nodeValue", "")
-            if text == "":
-                raise _NotEligible
-            counter[0] += 1
-            parts.append(_escape_text(str(text)))
+            # Hoist the content: serialize a one-space placeholder and set
+            # the real text after the clone. Trees that differ only in
+            # text then share one template (parse once, clone per mount).
+            order.append((NODE_STATIC, child, vnode))
+            bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
+            parts.append(" ")
             prev_was_text = True
             continue
         prev_was_text = False
         if isinstance(ctag, str) and not ctag.startswith("_"):
-            _serialize_element(child, parts, bindings, counter)
+            clower = ctag.lower()
+            if allowed_children is not None and clower not in allowed_children:
+                raise _NotEligible
+            if lower == "p" and clower in _P_CLOSERS:
+                raise _NotEligible
+            if clower == lower and lower in _NO_SELF_NESTING:
+                raise _NotEligible
+            _serialize_element(child, vnode, parts, order, bindings)
         else:
             # Hole, fragment, or component: a comment placeholder marks
-            # its position; the reconciler mounts it during wiring.
-            counter[0] += 1
+            # its position; the reconciler mounts it after id assignment.
+            kind = NODE_HOLE if ctag == "_dynamic" else NODE_MOUNT
+            order.append((kind, child, vnode))
             parts.append("<!---->")
 
     parts.append("</")
@@ -238,6 +322,8 @@ def _serialize_attr(name: str, value: Any, parts: List[str]) -> None:
                 parts.append(_escape_attr(str(dv)))
                 parts.append('"')
         return
+    if value is None:
+        return
     parts.append(" ")
     parts.append(name)
     parts.append('="')
@@ -246,7 +332,7 @@ def _serialize_attr(name: str, value: Any, parts: List[str]) -> None:
 
 
 def _class_string(value: Any) -> str:
-    """Match `props._apply_class` semantics for serialization."""
+    """Match `props._class_string` semantics for serialization."""
     if value is None:
         return ""
     if isinstance(value, str):
@@ -256,40 +342,3 @@ def _class_string(value: Any) -> str:
     if isinstance(value, dict):
         return " ".join(str(k) for k, v in value.items() if v)
     return str(value)
-
-
-def wire_tree(
-    vnode: VNode,
-    dom_node: Any,
-    wrap: Callable[[Any], Any],
-    anchors: List[Tuple[int, VNode, Any, Any]],
-) -> None:
-    """Walk the VNode tree and the parsed DOM tree in tandem.
-
-    Populates `vnode.el` for every element and text node and records
-    dynamic-child anchors (comment placeholders) for the reconciler to
-    process after the walk.
-
-    Args:
-        vnode: The element VNode whose plan produced `dom_node`.
-        dom_node: The corresponding real DOM element.
-        wrap: Factory wrapping a raw node in an `Element` (kept as a
-            parameter so this module stays browser-agnostic).
-        anchors: Output list receiving `(kind, child_vnode, parent_el,
-            comment_node)` tuples.
-    """
-    el = wrap(dom_node)
-    vnode.el = el
-    child_dom = dom_node.firstChild
-    for child in vnode.children:
-        assert isinstance(child, VNode)
-        ctag = child.tag
-        if ctag == "_text":
-            child.el = wrap(child_dom)
-        elif isinstance(ctag, str) and not ctag.startswith("_"):
-            wire_tree(child, child_dom, wrap, anchors)
-        elif ctag == "_dynamic":
-            anchors.append((ANCHOR_HOLE, child, el, child_dom))
-        else:
-            anchors.append((ANCHOR_MOUNT, child, el, child_dom))
-        child_dom = child_dom.nextSibling

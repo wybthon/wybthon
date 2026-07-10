@@ -42,19 +42,38 @@ and `ref`).  Each prop has its own effect, so unrelated reactive
 attributes update independently.  See the [Reactive Holes section in
 Primitives](primitives.md#reactive-holes) for the full mental model.
 
+#### The batched rendering kernel
+
+Under Pyodide, every DOM call crosses the Python-to-JS bridge, so
+rendering cost is dominated by FFI round trips rather than the DOM work
+itself. Wybthon therefore never calls DOM APIs directly. The reconciler
+and prop appliers *emit* compact operations (create, insert, set-text,
+set-attr, listen, and so on) against integer node ids into a command
+buffer. At each commit point (end of a `render`, end of an effect
+flush, end of an event handler) the whole buffer is serialized once and
+handed to a small JavaScript kernel that applies every operation
+natively. A mount of a 1,000-row table becomes one bridge crossing
+instead of tens of thousands. See `wybthon.kernel` for the wire
+protocol.
+
 #### Template-based mounting
 
-Under Pyodide, every DOM call crosses the Python-to-JS bridge, so mount
-cost is dominated by FFI round trips rather than the DOM work itself.
-To amortize that cost, the reconciler serializes the **static parts** of
-a host-element subtree into one HTML string, parses it through a single
-`<template>` element, and then wires reactive bindings, event handlers,
-and dynamic children onto the cloned nodes in one pass. Mounting a
-subtree of N static nodes costs roughly one FFI call instead of N.
+On top of the command buffer, the reconciler serializes the **static
+skeleton** of a host-element subtree into one HTML string with text
+content hoisted out, registers it with the kernel once, and mounts each
+occurrence with a single *clone* op. The kernel clones the pre-parsed
+`<template>` and assigns a dense block of node ids in a deterministic
+pre-order, so Python knows every node's id without reading anything
+back. Text, reactive bindings, event handlers, and dynamic children are
+then wired by id in the same batch.
+
+Because text is hoisted, structurally-identical subtrees (like list
+rows) share one template: the browser parses the skeleton once and
+clones it per row, exactly like SolidJS's compiled templates.
 
 This happens automatically; subtrees that can't be expressed faithfully
-as HTML (form control `value`/`checked`, raw-text elements, and so on)
-fall back to node-by-node mounting with identical behavior. See the
+as HTML (raw-text elements, adjacent text nodes, and so on) fall back
+to per-node ops, still batched in the same commit. See the
 [`template`][wybthon.template] API page for details.
 
 #### Architecture
@@ -62,9 +81,10 @@ fall back to node-by-node mounting with identical behavior. See the
 The VDOM implementation is split into focused modules:
 
 - **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `dynamic()` (browser-agnostic). `Fragment` doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`kernel`**: the batched command buffer, the embedded JS kernel that applies ops natively, and the reference Python interpreter used by tests.
 - **`template`**: the template-based mounting fast path (HTML serialization plus binding wiring).
-- **`reconciler`**: the mount/patch/unmount diffing engine.
-- **`props`**: DOM property application and diffing (styles, events, datasets).
+- **`reconciler`**: the mount/patch/unmount diffing engine (emits ops).
+- **`props`**: DOM property application and diffing (styles, events, datasets), also op-based.
 - **`error_boundary`**: the `ErrorBoundary` component.
 - **`suspense`**: the `Suspense` component.
 - **`portal`**: the `create_portal()` function.

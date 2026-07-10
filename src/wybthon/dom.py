@@ -2,13 +2,20 @@
 
 This module exposes a thin Pythonic facade over the browser's DOM API,
 designed to feel familiar to JavaScript developers while integrating
-cleanly with Wybthon's reactive renderer:
+cleanly with Wybthon's batched renderer:
 
 - [`Element`][wybthon.Element] wraps a single DOM node and offers
   ergonomic helpers for attributes, classes, styles, events, and
   queries.
 - [`Ref`][wybthon.Ref] is a mutable container used by the renderer to
   hand out a reference to a mounted element.
+
+The renderer itself never touches raw DOM nodes; it refers to nodes by
+integer ids and batches mutations through `wybthon.kernel`. `Element`
+is the *escape hatch* for imperative work: it can be backed by either a
+raw node or a kernel node id, and materializes the underlying node on
+first access (committing any pending batched ops first, so the node is
+guaranteed to exist and be up to date).
 
 The wrapper deliberately mirrors familiar DOM property names (e.g.
 `value`, `checked`, `files`) so that event handlers can read state
@@ -28,28 +35,39 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from js import document, fetch
 
+from . import kernel
+
 __all__ = ["Element", "Ref"]
 
 
 class Element:
     """Thin wrapper around a DOM node with convenience methods.
 
-    `Element` can be constructed in three ways:
+    `Element` can be constructed in four ways:
 
     - With a tag name to create a brand-new node
       (`Element("div")`).
     - With a CSS selector and `existing=True` to wrap an existing
       node (`Element("#root", existing=True)`).
     - With an opaque `node` value to wrap a node returned by another
-      API (used internally by query helpers).
+      API.
+    - With a kernel `node_id` (used internally by the renderer for
+      refs and event targets); the raw node is materialized lazily on
+      first access.
 
     The wrapper proxies common form-input properties (`value`,
     `checked`, `files`) so handlers can read state from
     `e.target.value` exactly as in React or SolidJS.
     """
 
-    def __init__(self, tag: Optional[str] = None, existing: bool = False, node: Any = None) -> None:
-        """Create a new element, wrap an existing one, or wrap a raw node.
+    def __init__(
+        self,
+        tag: Optional[str] = None,
+        existing: bool = False,
+        node: Any = None,
+        node_id: Optional[int] = None,
+    ) -> None:
+        """Create a new element, wrap an existing one, or wrap a node handle.
 
         Args:
             tag: Tag name (`"div"`) or, when `existing=True`, a CSS
@@ -58,23 +76,46 @@ class Element:
                 of creating a new element.
             node: Raw underlying DOM node to wrap. When provided,
                 `tag` and `existing` are ignored.
+            node_id: Kernel node id to wrap. The raw node is fetched
+                on first `element` access.
 
         Raises:
-            ValueError: If neither `node` nor a usable `tag` is
-                provided.
+            ValueError: If neither `node`, `node_id`, nor a usable
+                `tag` is provided.
         """
         self._event_listeners: List[Dict[str, Any]] = []
+        self._node: Any = None
+        self._id: Optional[int] = node_id
+        if node_id is not None:
+            return
         if node is not None:
-            self.element = node
+            self._node = node
+        elif existing:
+            if tag is None:
+                raise ValueError("When existing=True, provide a CSS selector in 'tag'.")
+            self._node = document.querySelector(tag)
         else:
-            if existing:
-                if tag is None:
-                    raise ValueError("When existing=True, provide a CSS selector in 'tag'.")
-                self.element = document.querySelector(tag)
-            else:
-                if tag is None:
-                    raise ValueError("Provide a tag name when creating a new element.")
-                self.element = document.createElement(tag)
+            if tag is None:
+                raise ValueError("Provide a tag name when creating a new element.")
+            self._node = document.createElement(tag)
+
+    @property
+    def element(self) -> Any:
+        """The raw underlying DOM node, materialized on first access.
+
+        For id-backed elements this commits pending batched DOM ops
+        first, so the node exists and reflects every queued mutation.
+        """
+        if self._node is None and self._id is not None:
+            self._node = kernel.get_node(self._id)
+        return self._node
+
+    @property
+    def node_id(self) -> int:
+        """This element's kernel node id, registering the raw node if needed."""
+        if self._id is None:
+            self._id = kernel.adopt(self._node)
+        return self._id
 
     @property
     def value(self) -> Any:
@@ -214,10 +255,11 @@ class Element:
         return bool(self.element.classList.contains(class_name))
 
     def on(self, event_type: str, handler: Callable[[Any], Any], *, options: Optional[Dict[str, Any]] = None) -> None:
-        """Add an event listener and track it for later cleanup.
+        """Add a native event listener and track it for later cleanup.
 
-        Listeners attached through `on` are remembered and removed by
-        [`off`][wybthon.Element.off] or
+        Listeners attached through `on` bypass the renderer's delegated
+        event system and talk to the DOM directly. They are remembered
+        and removed by [`off`][wybthon.Element.off] or
         [`cleanup`][wybthon.Element.cleanup]. The handler is wrapped in
         a Pyodide proxy so it can be released on removal.
 
@@ -272,6 +314,9 @@ class Element:
     def query(cls, selector: str, within: Optional["Element"] = None) -> Optional["Element"]:
         """Query a single element by CSS selector.
 
+        Commits pending batched DOM ops first so nodes created earlier
+        in the same update are visible to the query.
+
         Args:
             selector: CSS selector string.
             within: Optional parent `Element` to scope the query to.
@@ -280,6 +325,7 @@ class Element:
         Returns:
             The first matching `Element`, or `None` if no node matches.
         """
+        kernel.commit()
         ctx = within.element if within is not None else document
         node = ctx.querySelector(selector)
         if node is None:
@@ -298,17 +344,20 @@ class Element:
         Returns:
             A list of wrapped `Element` instances (possibly empty).
         """
+        kernel.commit()
         ctx = within.element if within is not None else document
         nodes = ctx.querySelectorAll(selector)
         return [cls(node=n) for n in nodes]
 
     def find(self, selector: str) -> Optional["Element"]:
         """Return the first matching descendant `Element`, or `None`."""
+        kernel.commit()
         node = self.element.querySelector(selector)
         return Element(node=node) if node is not None else None
 
     def find_all(self, selector: str) -> List["Element"]:
         """Return all matching descendant elements as a list."""
+        kernel.commit()
         nodes = self.element.querySelectorAll(selector)
         return [Element(node=n) for n in nodes]
 

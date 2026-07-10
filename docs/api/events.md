@@ -2,9 +2,9 @@
 
 ::: wybthon.events
 
-Wybthon's event system provides delegated event handling and a thin `DomEvent` wrapper.
+Wybthon's event system provides kernel-delegated event handling and a payload-backed `DomEvent` object.
 
-- `DomEvent`: wrapper with `type`, `target` (`Element|None`), `current_target` (`Element|None`), `prevent_default()`, `stop_propagation()`.
+- `DomEvent`: built from a JSON payload assembled natively at dispatch time, with `type`, `target` (payload-backed view with `value`/`checked`/`files`/`element`), `current_target` (an id-backed `Element`), keyboard and mouse fields (`key`, `code`, modifier flags, `button`, `client_x`, `client_y`), `prevent_default()`, `stop_propagation()`, and `raw` (the native event, escape hatch).
 - Handlers can be attached via props like `on_click`, `on_input`, or `onChange`. Names are normalized to DOM event types.
 - Delegation is automatic and handlers are cleaned up on unmount. Document-level delegated listeners are installed on first use per event type and are automatically removed when no handlers remain for that type (e.g., after unmount/diff removes all handlers).
 
@@ -19,15 +19,15 @@ Wybthon's event system provides delegated event handling and a thin `DomEvent` w
 
 Handler signature:
 
-- All handlers receive a `DomEvent` object. Use `evt.prevent_default()` and `evt.stop_propagation()` as needed. Access the original JS event via `evt._js_event` only if absolutely necessary.
+- All handlers receive a `DomEvent` object. Use `evt.prevent_default()` and `evt.stop_propagation()` as needed. Access the original JS event via `evt.raw` only if absolutely necessary, and only synchronously during dispatch.
 
 #### Delegation and bubbling
 
-Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers registered for that `event_type`. `stop_propagation()` prevents further bubbling within Wybthon's dispatcher.
+Delegation runs inside the rendering kernel: one native document-level listener per event type walks up from the original `target`, and calls into Python once per node that registered a handler for that type, passing the payload as a single JSON string. Handler registration (`LISTEN`/`UNLISTEN`) rides the batched op buffer, so wiring thousands of handlers costs no extra bridge crossings. `stop_propagation()` prevents further delegated bubbling and stops native propagation.
 
 Cleanup guarantees:
 
-- When a node is unmounted, all of its event handlers are removed from the delegation map.
+- When a node is unmounted, its handlers are dropped on the Python side, and the kernel's listener bookkeeping is cleared by the `RELEASE` op that retires the subtree's node ids.
 - When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to `None`), the document-level listener for that event type is automatically removed.
 
 #### Common event types
@@ -76,4 +76,4 @@ def Video():
 - Event delegation relies on bubbling to `document`. For non-bubbling types, prefer the alternatives above or attach direct listeners via `Element.on`.
 - Chrome/Edge may treat `touchstart`/`touchmove` listeners on `document` as passive by default, making `preventDefault()` a no-op. If you need to prevent scrolling, attach a direct listener with `options={"passive": False}` using `Element.on` and a `Ref`.
 - `keypress` is deprecated and may behave inconsistently across browsers; prefer `keydown`/`keyup`.
-- The `DomEvent` wrapper exposes a stable, Python-friendly surface. Accessing `evt._js_event` is possible but not recommended for portability across Pyodide and non-browser tests.
+- The `DomEvent` object exposes a stable, Python-friendly surface backed by the dispatch payload. Accessing `evt.raw` is possible but not recommended for portability across Pyodide and non-browser tests.

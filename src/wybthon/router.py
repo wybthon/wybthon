@@ -274,17 +274,9 @@ def Link(props: Any) -> Any:
         base_path = props.value("base_path") or base_path_ctx or ""
 
         def handle_click(evt: DomEvent) -> None:
-            try:
-                js_evt = evt._js_event
-                if (
-                    getattr(js_evt, "metaKey", False)
-                    or getattr(js_evt, "ctrlKey", False)
-                    or getattr(js_evt, "shiftKey", False)
-                    or getattr(js_evt, "button", 0) != 0
-                ):
-                    return
-            except Exception:
-                pass
+            # Let the browser handle modified clicks (new tab, etc.).
+            if evt.meta_key or evt.ctrl_key or evt.shift_key or evt.button != 0:
+                return
             evt.prevent_default()
             href = _with_base(to, base_path)
             navigate(href, replace=replace)

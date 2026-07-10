@@ -39,7 +39,6 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .dom import Element
     from .reactivity import Computation
 
 __all__ = [
@@ -71,6 +70,8 @@ class VNode:
         children: List of child `VNode` instances (or strings, before
             normalization).
         key: Optional stable identity used for keyed list reconciliation.
+        el: Kernel node id of this VNode's DOM node once mounted (for
+            fragments, the start marker; for holes, the end marker).
         owner_scope: Optional reactive `Owner` under which this VNode
             should be mounted. Set by `For`/`Index` so effects created
             while mounting a cached row belong to the row's scope rather
@@ -101,12 +102,12 @@ class VNode:
         self.props = props if props is not None else {}
         self.children: List[Any] = children if children is not None else []
         self.key = key
-        self.el: Optional[Element] = None
+        self.el: Optional[int] = None
         self.subtree: Optional[VNode] = None
         self.render_effect: Optional[Computation] = None
         self.component_ctx: Optional[Any] = None
         self.owner_scope: Optional[Any] = None
-        self._frag_end: Optional[Element] = None
+        self._frag_end: Optional[int] = None
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         tag = self.tag
@@ -156,22 +157,34 @@ def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None)
 
 
 # ---------------------------------------------------------------------------
-# is_getter: cached signature inspection for callable children / props
+# is_getter: signature inspection for callable children / props
 # ---------------------------------------------------------------------------
 
-# Cache callables → bool using weak references.  ``inspect.signature``
-# is one of the hottest calls in the rendering path; caching the result
-# is essential.  Weak refs avoid the id-reuse hazard plain ``dict[id]``
-# has when short-lived test functions go out of scope.
+# Cache for callables that need the slow ``inspect.signature`` path.
+# Weak refs avoid the id-reuse hazard plain ``dict[id]`` has when
+# short-lived test functions go out of scope.
 _required_pos_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDictionary()
 
 
 def _signature_has_required_positional(fn: Any) -> bool:
     """Return True when `fn` declares at least one required positional parameter.
 
-    Result is cached via weak references so the per-call cost is amortised
-    while staying safe across test runs that recycle `id` values.
+    Plain functions, lambdas, and bound methods are answered from their
+    code object directly; this is one of the hottest calls in the
+    rendering path (every callable child or prop goes through it, and
+    list rows create fresh lambdas), and ``inspect.signature`` is two
+    orders of magnitude slower. Exotic callables fall back to
+    ``inspect.signature`` with a weak-ref cache.
     """
+    code = getattr(fn, "__code__", None)
+    if code is not None:
+        defaults = getattr(fn, "__defaults__", None)
+        n_defaults = len(defaults) if defaults else 0
+        argcount = code.co_argcount
+        if getattr(fn, "__self__", None) is not None:
+            argcount -= 1  # bound method: self is already applied
+        return argcount - n_defaults > 0
+
     try:
         cached = _required_pos_cache.get(fn)
         if cached is not None:

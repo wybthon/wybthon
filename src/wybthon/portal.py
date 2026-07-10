@@ -21,13 +21,19 @@ def _PortalComponent(props: Any) -> Any:
     """Internal stateful component that mounts children into another container."""
     portal_tree: List[Optional[VNode]] = [None]
 
-    def _do_render() -> None:
+    def _resolve_container_id(container: Any) -> int:
         from .dom import Element
-        from .reconciler import mount, patch
 
-        container = props.value("_portal_container")
+        if isinstance(container, int):
+            return container
         if isinstance(container, str):
             container = Element(container, existing=True)
+        return container.node_id
+
+    def _do_render() -> None:
+        from .reconciler import mount, patch
+
+        container_id = _resolve_container_id(props.value("_portal_container"))
 
         children = props.value("children", [])
         if children is None:
@@ -40,9 +46,9 @@ def _PortalComponent(props: Any) -> Any:
         portal_tree[0] = new_tree
 
         if old_tree is None:
-            mount(new_tree, container)
+            mount(new_tree, container_id)
         else:
-            patch(old_tree, new_tree, container)
+            patch(old_tree, new_tree, container_id)
 
     on_mount(_do_render)
 
@@ -73,8 +79,9 @@ def create_portal(children: Union[VNode, List[VNode]], container: Any) -> VNode:
     Args:
         children: A single [`VNode`][wybthon.VNode] or a list of
             them.
-        container: An [`Element`][wybthon.Element] instance or a CSS
-            selector string identifying the target DOM container.
+        container: An [`Element`][wybthon.Element] instance, a CSS
+            selector string, or a kernel node id identifying the
+            target DOM container.
 
     Returns:
         A `VNode` that, when mounted, mounts `children` into

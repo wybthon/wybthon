@@ -104,6 +104,7 @@ nav:
     - Component: api/component.md
     - VNode: api/vnode.md
     - Reconciler: api/reconciler.md
+    - Kernel: api/kernel.md
     - Template: api/template.md
     - Props: api/props.md
     - DOM: api/dom.md

@@ -36,15 +36,17 @@ def AutoFocusInput():
 
 Because the ref is populated after mount, never read `ref.current` from the component body during initial render. Use [`on_mount`][wybthon.on_mount], an effect, or an event handler instead.
 
-## How the VDOM uses `Element`
+## How the renderer relates to `Element`
 
-Every host VNode the reconciler renders is backed by an `Element`. When the reconciler creates a node, it:
+The renderer itself never touches raw DOM nodes or `Element` wrappers. Every host VNode is identified by an integer node id, and all mutations (create, insert, set-attr, listen) are emitted as compact operations into a command buffer that a small JavaScript kernel applies in one bridge crossing per commit.
 
-1. Calls `Element(tag)` (or wraps an existing node).
-2. Applies initial props through `apply_initial_props`, which delegates to `Element.set_attr`, `Element.set_style`, `Element.add_class`, and the event-delegation helpers.
-3. Recursively mounts children and `appendChild`s them via `Element.append_to`.
+`Element` sits *on top* of that system as the escape hatch for imperative work:
 
-On update, the reconciler diffs old vs. new props through `apply_props` and either patches the existing element in place or unmounts it (calling `Element.remove`) when the type changes. Because the wrapper holds the underlying node directly, even imperative effects you trigger from a ref stay in sync with the framework's bookkeeping.
+- An `Element` can be backed by a raw DOM node (when you construct one yourself) or by a kernel node id (what the renderer hands out through `ref=` and `evt.current_target`).
+- Id-backed elements materialize the raw node lazily: the first `element` access commits any pending batched ops, then fetches the node from the kernel's registry, so what you see always reflects every queued mutation.
+- Query helpers (`Element.query`, `find`, ...) also commit pending ops first, so nodes created earlier in the same update are visible.
+
+Because commits happen automatically at these boundaries, imperative work through a ref stays in sync with the framework's bookkeeping.
 
 ## Styles and dataset via VDOM
 

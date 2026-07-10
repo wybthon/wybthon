@@ -95,6 +95,11 @@ T = TypeVar("T")
 _DEFAULT_EQUALS = object()
 _MISSING = object()
 
+# The DOM command buffer's commit function. Effects emit batched DOM ops;
+# committing at the end of each flush ships them across the bridge in one
+# crossing. A no-op when the buffer is empty (e.g. pure-CPython usage).
+from .kernel import commit as _kernel_commit  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Reactive node states (graph coloring)
 #
@@ -229,6 +234,8 @@ def _flush_effects() -> None:
         _render_effect_queue.clear()
         _effect_queue.clear()
         _running_effects = False
+    # Ship every DOM op the flush produced across the bridge in one batch.
+    _kernel_commit()
 
 
 # ---------------------------------------------------------------------------
@@ -245,7 +252,7 @@ class Owner:
 
     Attributes:
         _parent: Parent `Owner`, or `None` for roots.
-        _children: List of child owners.
+        _children: Child owners, keyed by `id(child)` (insertion-ordered).
         _cleanups: Callbacks invoked LIFO during disposal.
         _disposed: True after `dispose()` has run; further calls are no-ops.
         _context_map: Lazily-allocated dict of context values stored at
@@ -259,7 +266,10 @@ class Owner:
 
     def __init__(self) -> None:
         self._parent: Optional[Owner] = None
-        self._children: List[Owner] = []
+        # Keyed by ``id(child)`` so a child can detach itself in O(1) when
+        # disposed individually (a ``For`` row leaving a 10k-row list would
+        # otherwise pay a linear list.remove against its parent).
+        self._children: Dict[int, Owner] = {}
         self._cleanups: List[Callable[[], Any]] = []
         self._disposed: bool = False
         self._context_map: Optional[Dict[Any, Any]] = None
@@ -267,12 +277,17 @@ class Owner:
 
     def _add_child(self, child: "Owner") -> None:
         child._parent = self
-        self._children.append(child)
+        self._children[id(child)] = child
 
     def _dispose_children(self) -> None:
-        for child in list(self._children):
-            child.dispose()
+        if not self._children:
+            return
+        children = list(self._children.values())
         self._children.clear()
+        for child in children:
+            # Already detached wholesale above; skip the per-child pop.
+            child._parent = None
+            child.dispose()
 
     def _run_cleanups(self) -> None:
         while self._cleanups:
@@ -308,10 +323,7 @@ class Owner:
         self._dispose_children()
         self._run_cleanups()
         if self._parent is not None:
-            try:
-                self._parent._children.remove(self)
-            except ValueError:
-                pass
+            self._parent._children.pop(id(self), None)
             self._parent = None
 
 
@@ -2461,9 +2473,15 @@ def create_selector(
         create_effect(lambda: print("active:", is_selected(item_id)))
         ```
     """
-    _subs: Dict[Any, List["Computation"]] = {}
+    _subs: Dict[Any, Set["Computation"]] = {}
     _prev_key: List[Any] = [None]
     _first = [True]
+
+    def _notify(key: Any) -> None:
+        subs = _subs.get(key)
+        if subs:
+            for comp in list(subs):
+                comp._stale(_DIRTY)
 
     def _tracker() -> None:
         new_key = source()
@@ -2477,10 +2495,8 @@ def create_selector(
         if old_key == new_key:
             return
 
-        for comp in list(_subs.get(old_key, [])):
-            comp._stale(_DIRTY)
-        for comp in list(_subs.get(new_key, [])):
-            comp._stale(_DIRTY)
+        _notify(old_key)
+        _notify(new_key)
         _run_effects_if_idle()
 
     effect(_tracker)
@@ -2488,9 +2504,23 @@ def create_selector(
     def is_selected(key: Any) -> bool:
         obs = _current_observer
         if obs is not None:
-            subs = _subs.setdefault(key, [])
+            subs = _subs.get(key)
+            if subs is None:
+                subs = set()
+                _subs[key] = subs
             if obs not in subs:
-                subs.append(obs)
+                subs.add(obs)
+                # Unsubscribe when the computation re-runs or is disposed,
+                # so the map holds only live subscribers (rows leaving a
+                # list would otherwise accumulate forever).
+                bucket = subs
+
+                def _unsubscribe(comp: "Computation" = obs, key: Any = key) -> None:
+                    bucket.discard(comp)
+                    if not bucket and _subs.get(key) is bucket:
+                        del _subs[key]
+
+                obs._cleanups.append(_unsubscribe)
         return _prev_key[0] == key
 
     return is_selected

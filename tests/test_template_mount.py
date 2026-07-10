@@ -15,8 +15,19 @@ def test_build_plan_static_tree(wyb):
     tree = h("div", {"class": "box"}, h("p", {}, "hello"), h("span", {"id": "x"}, "world"))
     plan = template.build_plan(tree)
     assert plan is not None
-    assert plan.html == '<div class="box"><p>hello</p><span id="x">world</span></div>'
-    assert plan.bindings == []
+    # Text content is hoisted to SET_TEXT bindings (one-space placeholders)
+    # so structurally-identical trees share one template.
+    assert plan.html == '<div class="box"><p> </p><span id="x"> </span></div>'
+    texts = [(k, val) for (_v, k, _n, val) in plan.bindings]
+    assert texts == [(template.BIND_TEXT, "hello"), (template.BIND_TEXT, "world")]
+
+
+def test_build_plan_shares_html_across_texts(wyb):
+    template = wyb["template"]
+    plan_a = template.build_plan(h("div", {}, h("p", {}, "one"), h("p", {}, "two")))
+    plan_b = template.build_plan(h("div", {}, h("p", {}, "three"), h("p", {}, "four")))
+    assert plan_a is not None and plan_b is not None
+    assert plan_a.html == plan_b.html
 
 
 def test_build_plan_collects_event_and_reactive_bindings(wyb):
@@ -26,7 +37,7 @@ def test_build_plan_collects_event_and_reactive_bindings(wyb):
     tree = h("div", {}, h("button", {"on_click": handler}, "go"), h("span", {"title": getter}, "x"))
     plan = template.build_plan(tree)
     assert plan is not None
-    kinds = sorted(k for (_v, k, _n, _val) in plan.bindings)
+    kinds = sorted(k for (_v, k, _n, _val) in plan.bindings if k != template.BIND_TEXT)
     assert kinds == [template.BIND_EVENT, template.BIND_REACTIVE]
     assert "on_click" not in plan.html
     assert "title" not in plan.html
@@ -37,7 +48,7 @@ def test_build_plan_placeholders_for_dynamic_children(wyb):
     tree = h("p", {}, "Count: ", dynamic(lambda: "0"), h("b", {}, "!"))
     plan = template.build_plan(tree)
     assert plan is not None
-    assert plan.html == "<p>Count: <!----><b>!</b></p>"
+    assert plan.html == "<p> <!----><b> </b></p>"
 
 
 def test_build_plan_value_checked_become_prop_bindings(wyb):
@@ -78,7 +89,9 @@ def test_build_plan_escapes_html(wyb):
     plan = template.build_plan(tree)
     assert plan is not None
     assert 'title="a&quot;b&lt;c"' in plan.html
-    assert "1 &lt; 2 &amp; 3 &gt; 2" in plan.html
+    # Text is hoisted, never serialized: no escaping concerns in content.
+    texts = [val for (_v, k, _n, val) in plan.bindings if k == template.BIND_TEXT]
+    assert "1 < 2 & 3 > 2" in texts
 
 
 def test_build_plan_serializes_style_and_dataset(wyb):
@@ -123,14 +136,15 @@ def test_template_mount_produces_working_tree(wyb, root_element):
 
 def test_template_mount_wires_events(wyb, root_element):
     rec = wyb["reconciler"]
-    events = wyb["events"]
+    kernel = wyb["kernel"]
     clicks = []
 
     tree = h("div", {}, h("button", {"on_click": lambda e: clicks.append(1)}, "go"), h("span", {}, "x"))
     rec.render(tree, root_element)
 
     button_node = root_element.element.childNodes[0].childNodes[0]
-    assert button_node.attributes.get(events._NODE_ID_ATTR) is not None
+    kernel._backend.dispatch("click", button_node)
+    assert clicks == [1]
 
 
 def test_template_mount_populates_all_els(wyb, root_element):
@@ -160,9 +174,9 @@ def test_template_mount_components_inside_static_tree(wyb, root_element):
 
 
 def test_template_fallback_when_unsupported(wyb, root_element):
-    """Without template support, mounting falls back to per-node creation."""
+    """Without template support, mounting falls back to per-node ops."""
     rec = wyb["reconciler"]
-    rec._template_supported = False
+    wyb["kernel"]._backend.supports_html = lambda: False
 
     reactivity = wyb["reactivity"]
     count, set_count = reactivity.create_signal(1)
