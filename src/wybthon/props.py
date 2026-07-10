@@ -1,6 +1,6 @@
 """DOM property application and diffing for element VNodes.
 
-Translates VNode props into DOM attribute, style, and event mutations,
+Translates VNode props into batched DOM ops (see `wybthon.kernel`),
 including:
 
 - **Controlled form elements** (`value`, `checked`) via DOM properties.
@@ -12,6 +12,10 @@ including:
   own effect so updates re-apply only the affected prop, never the
   surrounding component.
 
+Nothing here touches the DOM directly; every applier emits ops against
+an integer node id, and the kernel applies the whole batch in one
+bridge crossing at commit time.
+
 This module is consumed by the reconciler; most application code never
 imports from it directly.
 """
@@ -21,9 +25,10 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Optional
 
-from ._warnings import component_name, log_error
-from .dom import Element
+from . import kernel
+from ._warnings import log_error
 from .events import set_handler
+from .kernel import OP_SET_ATTR, OP_SET_PROP, OP_SET_STYLE
 from .vnode import is_getter
 
 __all__: list = []
@@ -81,11 +86,13 @@ def event_name_from_prop(name: str) -> str:
     return name
 
 
-def attach_ref(props: PropsDict, el: Element) -> None:
-    """Assign `el` to `props["ref"].current` when a `ref` prop is present."""
+def attach_ref(props: PropsDict, node_id: int) -> None:
+    """Point `props["ref"].current` at an id-backed `Element` when present."""
     ref = props.get("ref")
     if ref is not None and hasattr(ref, "current"):
-        ref.current = el
+        from .dom import Element
+
+        ref.current = Element(node_id=node_id)
 
 
 def detach_ref(props: PropsDict) -> None:
@@ -100,8 +107,8 @@ def detach_ref(props: PropsDict) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _apply_single_prop(el: Element, name: str, old_val: Any, new_val: Any) -> None:
-    """Apply (or diff) a single prop on a real DOM element.
+def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> None:
+    """Emit ops applying (or diffing) a single prop on a DOM node.
 
     `old_val` may be the sentinel `_UNSET` for an initial application; in
     that case the prop is written unconditionally with no diff against
@@ -113,50 +120,50 @@ def _apply_single_prop(el: Element, name: str, old_val: Any, new_val: Any) -> No
     if is_event_prop(name):
         if old_val is not _UNSET and old_val is new_val:
             return
-        set_handler(el, name, new_val if callable(new_val) else None)
+        set_handler(node_id, name, new_val if callable(new_val) else None)
         return
 
     if name in ("class", "className"):
-        _apply_class(el, new_val)
+        kernel.emit((OP_SET_ATTR, node_id, "class", _class_string(new_val)))
         return
 
     if name == "style":
-        _apply_style(el, None if old_val is _UNSET else old_val, new_val)
+        _apply_style(node_id, None if old_val is _UNSET else old_val, new_val)
         return
 
     if name == "dataset":
-        _apply_dataset(el, None if old_val is _UNSET else old_val, new_val)
+        _apply_dataset(node_id, None if old_val is _UNSET else old_val, new_val)
         return
 
     if name == "value":
-        _set_dom_property(el, "value", "" if new_val is None else str(new_val))
+        kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
         return
 
     if name == "checked":
-        _set_dom_property(el, "checked", bool(new_val))
+        kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
         return
 
-    el.set_attr(name, new_val)
+    kernel.emit((OP_SET_ATTR, node_id, name, None if new_val is None else str(new_val)))
 
 
-def _remove_single_prop(el: Element, name: str, old_val: Any) -> None:
-    """Remove a single prop from a real DOM element."""
+def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
+    """Emit ops removing a single prop from a DOM node."""
     if name in ("key", "ref"):
         return
     if is_event_prop(name):
-        set_handler(el, name, None)
+        set_handler(node_id, name, None)
     elif name in ("class", "className"):
-        el.set_attr("class", "")
+        kernel.emit((OP_SET_ATTR, node_id, "class", ""))
     elif name == "style":
-        _remove_styles(el, old_val)
+        _remove_styles(node_id, old_val)
     elif name == "dataset":
-        _remove_dataset(el, old_val)
+        _remove_dataset(node_id, old_val)
     elif name == "value":
-        _set_dom_property(el, "value", "")
+        kernel.emit((OP_SET_PROP, node_id, "value", ""))
     elif name == "checked":
-        _set_dom_property(el, "checked", False)
+        kernel.emit((OP_SET_PROP, node_id, "checked", False))
     else:
-        el.remove_attr(name)
+        kernel.emit((OP_SET_ATTR, node_id, name, None))
 
 
 # ---------------------------------------------------------------------------
@@ -164,23 +171,23 @@ def _remove_single_prop(el: Element, name: str, old_val: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
-def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None:
-    """Apply prop diffs to a concrete DOM element, including events and styles.
+def apply_props(node_id: int, old_props: PropsDict, new_props: PropsDict) -> None:
+    """Emit ops for prop diffs on a node, including events and styles.
 
     Used by the patch path; both old and new props are static (already-
     resolved) values. For initial mount with potentially reactive prop
     values, use [`apply_initial_props`][wybthon.props.apply_initial_props].
 
     Args:
-        el: The target DOM element wrapper.
+        node_id: The target node id.
         old_props: Previously-applied prop dict.
         new_props: Newly-resolved prop dict.
     """
-    for name, old_val in list(old_props.items()):
+    for name, old_val in old_props.items():
         if name in ("key", "ref"):
             continue
         if name not in new_props:
-            _remove_single_prop(el, name, old_val)
+            _remove_single_prop(node_id, name, old_val)
 
     for name, new_val in new_props.items():
         if name in ("key", "ref"):
@@ -195,11 +202,11 @@ def apply_props(el: Element, old_props: PropsDict, new_props: PropsDict) -> None
                 continue
             if isinstance(new_val, (str, int, float, bool)) and type(old_val) is type(new_val) and old_val == new_val:
                 continue
-        _apply_single_prop(el, name, old_val, new_val)
+        _apply_single_prop(node_id, name, old_val, new_val)
 
 
-def apply_initial_props(el: Element, new_props: PropsDict, owner_vnode: Optional[Any] = None) -> None:
-    """Apply a fresh set of props on initial mount, wiring reactive bindings.
+def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
+    """Emit ops for a fresh set of props on initial mount, wiring reactive bindings.
 
     Callable prop values (excluding event handlers and `ref`) are treated
     as **reactive bindings**: each is wrapped in its own effect so that
@@ -207,30 +214,22 @@ def apply_initial_props(el: Element, new_props: PropsDict, owner_vnode: Optional
     surrounding component. Static values are applied once.
 
     Args:
-        el: The target DOM element wrapper.
+        node_id: The target node id.
         new_props: Initial prop dict.
-        owner_vnode: Currently unused. Accepted for forward compatibility
-            with reconciler bookkeeping.
     """
-    from .reactivity import _current_owner, effect
-
     for name, value in new_props.items():
         if name in ("key", "ref"):
             continue
         if is_event_prop(name):
-            set_handler(el, name, value if callable(value) else None)
+            set_handler(node_id, name, value if callable(value) else None)
             continue
         if is_getter(value):
-            _bind_reactive_prop(el, name, value)
+            _bind_reactive_prop(node_id, name, value)
         else:
-            _apply_single_prop(el, name, _UNSET, value)
-
-    # Re-export to silence unused-import warnings if this function is
-    # invoked outside an active reactive scope.
-    _ = (_current_owner, effect)
+            _apply_single_prop(node_id, name, _UNSET, value)
 
 
-def _bind_reactive_prop(el: Element, name: str, getter: Any) -> Any:
+def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
     """Wrap `getter` in an effect that re-applies prop `name` on changes.
 
     Returns the underlying `Computation` so callers can dispose it when
@@ -248,94 +247,67 @@ def _bind_reactive_prop(el: Element, name: str, getter: Any) -> Any:
             return
         old_val = last[0]
         last[0] = new_val
-        _apply_single_prop(el, name, old_val, new_val)
+        _apply_single_prop(node_id, name, old_val, new_val)
 
     return effect(update)
 
 
 # ---------------------------------------------------------------------------
-# Class / Style / Dataset helpers (unchanged; used by single-prop appliers)
+# Class / Style / Dataset helpers
 # ---------------------------------------------------------------------------
 
 
-def _apply_class(el: Element, value: Any) -> None:
-    """Set the class attribute from a string, list, or other value."""
-    class_str: str
+def _class_string(value: Any) -> str:
+    """Normalize a class prop (string, list, or dict) to a class string."""
     if value is None:
-        class_str = ""
-    elif isinstance(value, str):
-        class_str = value
-    elif isinstance(value, (list, tuple)):
-        class_str = " ".join(str(x) for x in value if x)
-    elif isinstance(value, dict):
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return " ".join(str(x) for x in value if x)
+    if isinstance(value, dict):
         # Accept {"name": truthy} mapping for conditional classes
-        class_str = " ".join(str(k) for k, v in value.items() if v)
-    else:
-        class_str = str(value)
-    el.set_attr("class", class_str)
+        return " ".join(str(k) for k, v in value.items() if v)
+    return str(value)
 
 
-def _remove_styles(el: Element, old_val: Any) -> None:
-    """Remove previously applied inline styles."""
-    if isinstance(old_val, dict):
-        style_obj = el.element.style
-        for sk in old_val.keys():
-            style_obj.removeProperty(to_kebab(sk))
+def _remove_styles(node_id: int, old_val: Any) -> None:
+    """Emit ops removing previously applied inline styles."""
+    if isinstance(old_val, dict) and old_val:
+        kernel.emit((OP_SET_STYLE, node_id, {to_kebab(k): None for k in old_val}))
 
 
-def _apply_style(el: Element, old_val: Any, new_val: Any) -> None:
-    """Diff and apply inline style changes."""
-    style_obj = el.element.style
+def _apply_style(node_id: int, old_val: Any, new_val: Any) -> None:
+    """Diff style dicts and emit a single style op with the changes."""
     old_styles = old_val if isinstance(old_val, dict) else {}
     if isinstance(new_val, dict):
-        if isinstance(old_styles, dict):
-            for sk in old_styles.keys():
-                if sk not in new_val:
-                    style_obj.removeProperty(to_kebab(sk))
+        decls: Dict[str, Optional[str]] = {}
+        for sk in old_styles:
+            if sk not in new_val:
+                decls[to_kebab(sk)] = None
         for sk, sv in new_val.items():
-            style_obj.setProperty(to_kebab(sk), str(sv))
+            decls[to_kebab(sk)] = str(sv)
+        if decls:
+            kernel.emit((OP_SET_STYLE, node_id, decls))
     else:
-        if isinstance(old_styles, dict):
-            for sk in old_styles.keys():
-                style_obj.removeProperty(to_kebab(sk))
+        _remove_styles(node_id, old_styles)
 
 
-def _remove_dataset(el: Element, old_val: Any) -> None:
-    """Remove previously applied data-* attributes."""
+def _remove_dataset(node_id: int, old_val: Any) -> None:
+    """Emit ops removing previously applied data-* attributes."""
     if isinstance(old_val, dict):
-        for dk in old_val.keys():
-            el.remove_attr(f"data-{dk}")
+        for dk in old_val:
+            kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", None))
 
 
-def _apply_dataset(el: Element, old_val: Any, new_val: Any) -> None:
+def _apply_dataset(node_id: int, old_val: Any, new_val: Any) -> None:
     """Diff and apply data-* attribute changes."""
     old_ds = old_val if isinstance(old_val, dict) else {}
     if isinstance(new_val, dict):
-        if isinstance(old_ds, dict):
-            for dk in old_ds.keys():
-                if dk not in new_val:
-                    el.remove_attr(f"data-{dk}")
+        for dk in old_ds:
+            if dk not in new_val:
+                kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", None))
         for dk, dv in new_val.items():
-            el.set_attr(f"data-{dk}", dv)
+            kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", str(dv)))
     else:
-        if isinstance(old_ds, dict):
-            for dk in old_ds.keys():
-                el.remove_attr(f"data-{dk}")
-
-
-def _set_dom_property(el: Element, name: str, value: Any) -> None:
-    """Set a DOM property (value/checked) with attribute fallback."""
-    try:
-        setattr(el.element, name, value)
-    except Exception as exc:
-        log_error(
-            f"Failed to set DOM property '{name}' on {component_name(getattr(el, 'element', el))}: {exc}",
-            exc,
-        )
-        if isinstance(value, bool):
-            if value:
-                el.set_attr(name, name)
-            else:
-                el.remove_attr(name)
-        else:
-            el.set_attr(name, "" if value is None else str(value))
+        _remove_dataset(node_id, old_ds)

@@ -151,6 +151,7 @@ class _Node:
         "textContent",
         "value",
         "checked",
+        "_wyb_id",
     )
 
     def __init__(self, tag=None, text=None):
@@ -393,9 +394,12 @@ def _install_stubs():
 
 
 def _load_wybthon():
+    import js
+
     modules = {}
     for name in (
         "wybthon._warnings",
+        "wybthon.kernel",
         "wybthon.dom",
         "wybthon.vnode",
         "wybthon.events",
@@ -412,6 +416,8 @@ def _load_wybthon():
         mod = importlib.import_module(name)
         importlib.reload(mod)
         modules[name] = mod
+    kernel = modules["wybthon.kernel"]
+    kernel.set_backend(kernel.PythonBackend(js.document))
     return modules
 
 
@@ -490,7 +496,7 @@ class BenchState:
         self.set_data(lambda rows: [r for r in rows if r["id"] != iid])
 
     def cleanup(self):
-        self._registry.pop(id(self.root.element), None)
+        self._registry.pop(self.root.node_id, None)
 
 
 # ---------------------------------------------------------------------------
@@ -603,7 +609,7 @@ class _HoleState:
         self.root = mods["wybthon.dom"].Element(node=_Node(tag="div"))
 
     def cleanup(self):
-        self._registry.pop(id(self.root.element), None)
+        self._registry.pop(self.root.node_id, None)
 
 
 def _setup_hole(state):

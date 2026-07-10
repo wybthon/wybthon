@@ -275,20 +275,27 @@ def restore_modules(saved):
             sys.modules[name] = mod
 
 
-def reload_wybthon_modules():
+def reload_wybthon_modules(doc=None):
     """Reload all browser-dependent wybthon submodules against current stubs.
 
-    Returns a dict with keys ``dom``, ``reconciler``, ``component``,
-    ``events``, ``context``, ``reactivity`` pointing to the freshly
-    reloaded module objects.
+    Reloading ``kernel`` resets the op buffer, id counter, and backend;
+    when `doc` is provided a fresh :class:`wybthon.kernel.PythonBackend`
+    is installed so ops apply to the current stub document.
+
+    Returns a dict with keys ``kernel``, ``dom``, ``reconciler``,
+    ``component``, ``events``, ``context``, ``reactivity`` (and more)
+    pointing to the freshly reloaded module objects.
     """
     mods = {}
-    for name in ("dom", "events", "reconciler"):
+    for name in ("kernel", "dom", "events", "reconciler"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
     for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template"):
         mods[name] = importlib.import_module(f"wybthon.{name}")
+    if doc is not None:
+        kernel = mods["kernel"]
+        kernel.set_backend(kernel.PythonBackend(doc))
     return mods
 
 
@@ -344,10 +351,13 @@ def browser_stubs():
 def wyb(browser_stubs):
     """Install browser stubs, reload wybthon modules, and yield a namespace.
 
-    The yielded dict has keys: ``vdom``, ``dom``, ``component``, ``events``,
-    ``context``, ``reactivity``, ``props``, ``reconciler``.
+    The yielded dict has keys: ``kernel``, ``dom``, ``component``,
+    ``events``, ``context``, ``reactivity``, ``props``, ``reconciler``.
+    A fresh ``PythonBackend`` over the stub document is installed so
+    batched DOM ops apply to the in-memory tree.
     """
-    return reload_wybthon_modules()
+    _saved, doc = browser_stubs
+    return reload_wybthon_modules(doc)
 
 
 @pytest.fixture()

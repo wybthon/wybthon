@@ -26,7 +26,6 @@ class DummyTarget:
 
 class DummyEvent:
     def __init__(self, value=None, checked=False):
-        self._js_event = None
         self.type = None
         self.target = DummyTarget(value=value, checked=checked)
         self.current_target = None

@@ -28,10 +28,13 @@ python -m http.server
 - `src/wybthon/`
   - `component.py` – component model and base classes
   - `dom.py` – DOM interop and element helpers
-  - `events.py` – DOM events and event utilities
+  - `events.py` – delegated DOM events and the `DomEvent` payload object
+  - `kernel.py` – batched DOM command buffer, JS kernel, and backends
   - `context.py` – context creation, providers, and consumption
   - `router.py` – client-side router, routes, links, navigation
-  - `vdom.py` – virtual DOM nodes and renderer
+  - `vnode.py` – virtual DOM nodes (`h`, `Fragment`, `dynamic`)
+  - `reconciler.py` – mounting, patching, and unmounting (emits kernel ops)
+  - `template.py` – template-based mounting fast path
   - `reactivity.py` – signals, effects, and batching
   - `__init__.py` – public exports
 - `examples/`
@@ -113,6 +116,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `flow` – control-flow components (Show, For, Index, Switch, Match, Dynamic)
   - `forms` – form state, validators, and bindings
   - `html` – Pythonic HTML element helpers and Fragment
+  - `kernel` – batched DOM command buffer, JS kernel, and rendering backends
   - `lazy` – lazy loading and preloading utilities
   - `package` – `src/wybthon/__init__.py` exports and package boundary
   - `portal` – portal rendering to out-of-tree DOM containers
@@ -123,6 +127,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `router_core` – core route resolution helpers
   - `store` – reactive stores (`create_store`, `produce`) for nested state management
   - `suspense` – suspense boundaries and async fallback UI
+  - `template` – template-based mounting fast path (serialization and plans)
   - `vdom` – virtual DOM and renderer
   - `vnode` – virtual node data structure and creation utilities
   - `warnings` – development mode warnings and error reporting

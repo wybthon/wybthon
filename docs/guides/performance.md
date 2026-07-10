@@ -10,19 +10,30 @@ fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
 the Python and JS bridge.
 
+#### One bridge crossing per update
+
+Under Pyodide, rendering cost is dominated by Python-to-JS FFI round
+trips, not by the DOM operations themselves.  Wybthon therefore never
+calls DOM APIs directly: the renderer emits compact operations against
+integer node ids into a command buffer, and each commit serializes the
+whole buffer once for a small JavaScript kernel to apply natively.  A
+logical update (a `render`, an effect flush, an event handler) costs
+one bridge crossing regardless of how many nodes it touches.  Event
+delegation also lives in the kernel, so a click dispatches to Python
+once, carrying its payload as a single JSON string.
+
 #### Template-based mounting
 
-Under Pyodide, mount cost is dominated by Python-to-JS FFI round trips,
-not by the DOM operations themselves.  The reconciler therefore
-serializes the static parts of each host-element subtree into one HTML
-string, parses it through a single `<template>` element, and wires
-reactive bindings, event handlers, and dynamic children onto the cloned
-nodes in one pass.  Mounting N static nodes costs roughly one FFI call
-instead of N.
+On top of the command buffer, the reconciler serializes each static
+host-element skeleton to HTML with text content hoisted out, registers
+it with the kernel once, and mounts every occurrence with a single
+clone op.  Structurally-identical subtrees (list rows) share one
+template, so the browser parses the skeleton once and clones it per
+row, like SolidJS's compiled templates.
 
 You get this for free; there's no opt-in.  Subtrees that can't be
-expressed as HTML (form-control `value`/`checked`, raw-text elements,
-and similar) fall back to node-by-node mounting with identical
+expressed as HTML (raw-text elements, adjacent text nodes, and
+similar) fall back to per-node ops in the same batch, with identical
 behavior.  See the [`template`][wybthon.template] API page.
 
 #### Authoring tips
@@ -95,8 +106,8 @@ real browser DOM mutations) the gap is dramatic:
 
 | Benchmark              | Mean   |
 |------------------------|-------:|
-| `hole update (1k tree)` | ~0.01 ms |
-| `full rerender (1k tree)` | ~9 ms  |
+| `hole update (1k tree)` | ~0.02 ms |
+| `full rerender (1k tree)` | ~12 ms  |
 
 Fine-grained operations show the same pattern in the table workloads:
 selecting a row is ~0.02 ms (two class flips via `create_selector`) and

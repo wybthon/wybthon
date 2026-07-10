@@ -13,13 +13,17 @@ Supported prop names: `on_click`, `on_input`, `on_change`, etc. Both `on_foo` an
 
 #### DomEvent
 
-Handlers receive a `DomEvent` object that wraps the browser event and provides a small, Python-friendly surface:
+Handlers receive a `DomEvent` object built from a small payload the
+dispatcher assembles natively, so reading it never crosses the
+Python-to-JS bridge:
 
 - `type`: the event type string (e.g., `"click"`, `"input"`).
-- `target`: an `Element` for the original event target node (or `None`). Common form-input properties (`value`, `checked`, `files`) are exposed directly on the wrapper, mirroring the JS DOM API. The raw JS node is also available via `target.element`.
+- `target`: a payload-backed view of the original event target. The properties handlers actually read (`value`, `checked`, `files`) are exposed directly, mirroring the JS DOM API. The raw JS node is available via `target.element` as an escape hatch.
 - `current_target`: an `Element` for the node whose handler is currently running during delegated bubbling. This is set for you before your handler is called.
-- `prevent_default()`: calls `preventDefault()` on the underlying JS event, if available. Safe to call in non-browser tests.
-- `stop_propagation()`: stops delegated propagation within Wybthon's dispatcher for this event. It also attempts to call the underlying JS `stopPropagation()` when available.
+- `key`, `code`, `alt_key`, `ctrl_key`, `meta_key`, `shift_key`, `button`, `client_x`, `client_y`: keyboard and mouse fields, straight from the payload.
+- `prevent_default()`: marks the event so the dispatcher calls `preventDefault()` on the native event. Safe to call in non-browser tests.
+- `stop_propagation()`: stops delegated propagation for this event, including native propagation above the handled node.
+- `raw`: the native browser event object, for anything not covered by the payload. Only valid synchronously during dispatch.
 
 Read input values exactly like in JS/React/SolidJS:
 
@@ -47,11 +51,20 @@ def Form(props):
 
 #### Delegation model
 
-Wybthon installs one document-level listener per event type on first use and walks up from the original `target` to parent nodes, invoking any handlers that were registered on matching virtual nodes. `stop_propagation()` prevents further bubbling within Wybthon's dispatcher.
+Delegation lives in the rendering kernel (the JavaScript side of the
+batched renderer). The kernel installs one document-level listener per
+event type on first use, walks up from the original `target` natively,
+and calls into Python once per node that actually registered a handler
+for that type. The payload crosses the bridge as one JSON string, so a
+click on a row in a 10,000-row table costs a single Python call.
+
+Registering a handler is itself a batched op (`LISTEN`), riding the
+same command buffer as the DOM mutations; mounting a list with
+thousands of handlers adds nothing to the bridge-crossing count.
 
 Cleanup guarantees:
 
-- When a node is unmounted, all of its event handlers are removed from the delegation map.
+- When a node is unmounted, its handlers are dropped on the Python side and the kernel's listener bookkeeping is cleared by the same `RELEASE` op that retires the node ids.
 - When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to `None`), the document-level listener for that event type is automatically removed.
 
 #### Naming and normalization

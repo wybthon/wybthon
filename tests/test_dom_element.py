@@ -71,20 +71,7 @@ def test_dom_event_target_value_matches_js_pattern(wyb):
     """``evt.target.value`` should "just work" inside an event handler."""
     events = wyb["events"]
 
-    captured = []
-    target_node = StubNode(tag="input")
-    target_node.value = "typed text"
-    target_node.checked = True
+    evt = events.DomEvent({"type": "input", "value": "typed text", "checked": True})
 
-    js_evt = SimpleNamespace(
-        type="input",
-        target=target_node,
-        preventDefault=lambda: None,
-        stopPropagation=lambda: None,
-    )
-
-    evt = events.DomEvent(js_evt)
-    captured.append(evt.target.value)
-    captured.append(evt.target.checked)
-
-    assert captured == ["typed text", True]
+    assert evt.target.value == "typed text"
+    assert evt.target.checked is True

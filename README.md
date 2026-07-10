@@ -69,10 +69,10 @@ from wybthon import button, component, create_signal, div, p, span
 @component
 def Counter(initial: int = 0):
     count, set_count = create_signal(initial)
-    # The body runs ONCE.  ``count.get`` is a reactive hole, so only the
+    # The body runs ONCE.  ``count`` is a reactive hole, so only the
     # text node inside the span updates when the signal changes.
     return div(
-        p("Count: ", span(count.get)),
+        p("Count: ", span(count)),
         button("Increment", on_click=lambda e: set_count(count() + 1)),
     )
 ```
