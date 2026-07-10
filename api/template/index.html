@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/template/">
       
       
-        <link rel="prev" href="../reconciler/">
+        <link rel="prev" href="../kernel/">
       
       
         <link rel="next" href="../props/">
@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -1858,6 +1860,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1948,6 +1978,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" MountPlan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.template.MountPlan.node_count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_count
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1959,18 +2006,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.template.wire_tree" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;wire_tree
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" wire_tree">
+    <nav class="md-nav" aria-label=" build_plan">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2732,6 +2768,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" MountPlan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.template.MountPlan.node_count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_count
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2743,18 +2796,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.template.wire_tree" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;wire_tree
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" wire_tree">
+    <nav class="md-nav" aria-label=" build_plan">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2866,27 +2908,37 @@
 run-once component returns a VNode tree whose <em>structure</em> is static; only
 reactive holes, event handlers, refs, and reactive prop bindings change
 after mount. That means the static skeleton can be serialized to an HTML
-string in Python (cheap), parsed by the browser in a <strong>single</strong>
-<code>template.innerHTML</code> assignment (one crossing of the Pyodide-JS bridge
-instead of one <code>createElement</code>/<code>setAttribute</code>/<code>appendChild</code> call per
-node), and then walked once to wire up the dynamic parts.</p>
+string in Python (cheap) and registered with the rendering kernel once;
+every mount of the same skeleton is a single <code>CLONE_TPL</code> op that clones
+the pre-parsed tree natively. The kernel then walks the clone in
+document order, assigning a dense block of node ids.</p>
+<p>Because the Python serializer counts nodes in exactly the same pre-order
+the kernel walks, every element, text node, and placeholder comment gets
+a <em>predictable</em> id with zero extra communication: the mount simply
+assigns <code>first_id + k</code> to the k-th serialized node.</p>
+<p>Static <strong>text content is hoisted out of the HTML</strong>: the serializer emits
+a one-space placeholder text node and records the real value as a
+<code>SET_TEXT</code> binding applied after the clone. Hoisting is what makes
+templates shared: a thousand list rows that differ only in their text
+(ids, labels) produce the <em>same</em> skeleton string, so the browser parses
+it once and clones it a thousand times.</p>
 <p>The pipeline:</p>
 <ol>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;build_plan&lt;/span&gt;" href="#wybthon.template.build_plan"><code>build_plan</code></a> walks a VNode tree and
-   produces a <code>MountPlan</code>: the serialized HTML plus the list of dynamic
-   bindings (events, reactive props, refs, DOM-property writes) and
-   anchor placeholders (holes, fragments, child components), or <code>None</code>
-   when the tree isn't eligible for the fast path.</li>
-<li>The reconciler parses the HTML through a scratch <code>&lt;template&gt;</code> element
-   and calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;wire_tree&lt;/span&gt;" href="#wybthon.template.wire_tree"><code>wire_tree</code></a> to walk the
-   cloned DOM and the VNode tree in tandem, populating <code>VNode.el</code> and
-   collecting anchor positions.</li>
-<li>Bindings are applied and dynamic children mounted at their anchors.</li>
+   produces a <code>MountPlan</code>: the serialized HTML, the pre-order node
+   list (for id assignment and text bindings), the dynamic bindings
+   (events, reactive props, refs, DOM-property writes), or <code>None</code> when
+   the tree isn't eligible for the fast path.</li>
+<li>The reconciler registers the HTML (once per unique skeleton),
+   allocates the id block, emits the <code>CLONE_TPL</code> op, applies bindings
+   by id, and mounts dynamic children (holes, fragments, components)
+   at their placeholder comments.</li>
 </ol>
-<p>Trees fall back to the classic per-node mount when they contain
-constructs the HTML parser would mangle (adjacent or empty text nodes,
-raw text elements, invalid attribute names) or when they're too small
-for the template overhead to pay off.</p>
+<p>Trees fall back to per-node ops (still batched, still one bridge
+crossing) when they contain constructs the HTML parser would mangle:
+adjacent or empty text nodes, raw text elements, invalid attribute
+names, or element nestings the parser rewrites (implied <code>&lt;tbody&gt;</code>,
+auto-closed <code>&lt;p&gt;</code>, and similar).</p>
 
 
 
@@ -2937,14 +2989,6 @@ for the template overhead to pay off.</p>
                 </div>
               </td>
             </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;wire_tree&lt;/span&gt; (&lt;code&gt;wybthon.template.wire_tree&lt;/code&gt;)" href="#wybthon.template.wire_tree">wire_tree</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Walk the VNode tree and the parsed DOM tree in tandem.</p>
-                </div>
-              </td>
-            </tr>
       </tbody>
     </table>
 
@@ -2971,7 +3015,7 @@ for the template overhead to pay off.</p>
 
 
 <a href="#wybthon.template.MountPlan" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MountPlan</span><span class="p">(</span><span class="n">html</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">bindings</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]],</span> <span class="n">node_count</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MountPlan</span><span class="p">(</span><span class="n">html</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">]]],</span> <span class="n">bindings</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]])</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2997,7 +3041,24 @@ for the template overhead to pay off.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The serialized HTML string for the skeleton.</p>
+                <p>The serialized HTML string for the skeleton. Static text
+content is hoisted (each text node appears as a single-space
+placeholder), so structurally-identical trees share the same
+string regardless of their text.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.template.MountPlan.order">order</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pre-order list of <code>(kind, vnode, parent_vnode)</code> entries,
+one per serialized DOM node, in exactly the order the
+kernel assigns ids. <code>parent_vnode</code> is the enclosing element
+VNode (needed to mount placeholders), or <code>None</code> for the
+root.</p>
               </div>
             </td>
           </tr>
@@ -3008,19 +3069,7 @@ for the template overhead to pay off.</p>
             <td>
               <div class="doc-md-description">
                 <p>List of <code>(vnode, kind, name, value)</code> tuples to apply
-after the DOM exists (<code>vnode.el</code> is populated by
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;wire_tree&lt;/span&gt;" href="#wybthon.template.wire_tree"><code>wire_tree</code></a> first).</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="wybthon.template.MountPlan.node_count">node_count</span></code></td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Number of serialized DOM nodes (used for the
-eligibility threshold).</p>
+after ids are assigned.</p>
               </div>
             </td>
           </tr>
@@ -3049,6 +3098,30 @@ eligibility threshold).</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.template.MountPlan.node_count" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">node_count</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.template.MountPlan.node_count" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">node_count</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Number of serialized DOM nodes (length of the id block).</p>
+
+    </div>
+
+</div>
 
 
 
@@ -3079,7 +3152,7 @@ eligibility threshold).</p>
 <p>Eligible trees have an element root and contain only element/text
 nodes plus dynamic placeholders (holes, fragments, components). The
 VNode tree is normalized in place (children lists become <code>VNode</code>
-lists) as a side effect, exactly as the classic mount path does.</p>
+lists) as a side effect, exactly as the per-node mount path does.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3141,110 +3214,6 @@ lists) as a side effect, exactly as the classic mount path does.</p>
 
 </div>
 
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.template.wire_tree" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">wire_tree</span>
-
-
-<a href="#wybthon.template.wire_tree" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">wire_tree</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">dom_node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">wrap</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">anchors</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Walk the VNode tree and the parsed DOM tree in tandem.</p>
-<p>Populates <code>vnode.el</code> for every element and text node and records
-dynamic-child anchors (comment placeholders) for the reconciler to
-process after the walk.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>vnode</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The element VNode whose plan produced <code>dom_node</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>dom_node</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The corresponding real DOM element.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>wrap</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Factory wrapping a raw node in an <code>Element</code> (kept as a
-parameter so this module stays browser-agnostic).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>anchors</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Output list receiving <code>(kind, child_vnode, parent_el,
-comment_node)</code> tuples.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
 
 
   </div>
@@ -3254,32 +3223,43 @@ comment_node)</code> tuples.</p>
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
 <p><code>template</code> implements the template-based mounting fast path. When the
 reconciler mounts a host-element subtree, it first asks <code>build_plan</code> to
-serialize the static parts of the tree into a single HTML string. The
-string is parsed once by the browser via a <code>&lt;template&gt;</code> element, cloned,
-and then <code>wire_tree</code> walks the cloned DOM and the VNode tree in tandem to
-attach element wrappers, reactive bindings, and event handlers.</p>
-<p>This turns what would be one Python-to-JS FFI call per DOM node into a
-single <code>innerHTML</code> assignment plus one short wiring pass, which is the
-single biggest lever for mount performance under Pyodide.</p>
+serialize the static skeleton of the tree into a single HTML string
+(with text content hoisted out). The skeleton is registered with the
+rendering kernel once, parsed by the browser via a <code>&lt;template&gt;</code>
+element, and every mount is a single <em>clone</em> op. The kernel walks the
+clone in a deterministic pre-order, assigning a dense block of node
+ids, so Python can address every node with no read-backs; text,
+bindings, and dynamic children are then wired by id in the same
+batched commit.</p>
+<p>Hoisting text is what makes templates shared: a thousand list rows
+that differ only in their ids and labels serialize to the <em>same</em>
+skeleton, so the browser parses it once and clones it a thousand
+times, exactly like SolidJS's compiled templates.</p>
 <h4 id="how-a-plan-is-built">How a plan is built<a class="headerlink" href="#how-a-plan-is-built" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Static tags, attributes, classes, styles, datasets, and text become part
+<li>Static tags, attributes, classes, styles, and datasets become part
   of the HTML string directly.</li>
-<li>Reactive props (getter callables) are recorded as bindings with a path
-  to their node; they're applied during wiring and wrapped in effects.</li>
-<li>Event handlers (<code>on_*</code>) are recorded as bindings and attached during
-  wiring through the delegated event system.</li>
+<li>Static text serializes as a one-space placeholder; the real value is
+  recorded as a <code>SET_TEXT</code> binding applied after the clone.</li>
+<li>Reactive props (getter callables) are recorded as bindings; they're
+  wrapped in per-prop effects after id assignment.</li>
+<li>Event handlers (<code>on_*</code>) are recorded as bindings and registered
+  through the kernel's delegated event system (<code>LISTEN</code> ops).</li>
+<li><code>value</code>/<code>checked</code> are recorded as DOM-property bindings and assigned
+  post-clone, matching the per-node mount path exactly.</li>
 <li>Dynamic children (holes, components, fragments) are serialized as
   comment placeholders; the reconciler mounts them at the placeholder
-  position during wiring.</li>
+  position after id assignment.</li>
 </ul>
 <h4 id="when-the-fast-path-is-skipped">When the fast path is skipped<a class="headerlink" href="#when-the-fast-path-is-skipped" title="Permanent link">&para;</a></h4>
-<p><code>build_plan</code> refuses (and the reconciler falls back to node-by-node
-mounting) when the subtree can't be represented faithfully as HTML, for
-example: <code>value</code>/<code>checked</code> props on form controls, raw-text elements like
-<code>&lt;script&gt;</code>, adjacent text nodes that would merge during parsing, or
-environments whose DOM stub has no <code>&lt;template&gt;</code> support. The fallback is
-purely a performance difference; behavior is identical.</p>
+<p><code>build_plan</code> refuses (and the reconciler falls back to per-node ops,
+still batched in the same commit) when the subtree can't be
+represented faithfully as HTML, for example: raw-text elements like
+<code>&lt;script&gt;</code>, adjacent text nodes that would merge during parsing,
+element nestings the parser rewrites (bare text in <code>&lt;table&gt;</code>,
+auto-closed <code>&lt;p&gt;</code>, and similar), or environments whose DOM stub has no
+<code>&lt;template&gt;</code> support. The fallback is purely a performance difference;
+behavior is identical.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>

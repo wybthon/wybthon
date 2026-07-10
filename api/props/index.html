@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -1841,6 +1843,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2928,7 +2958,7 @@
     <div class="doc doc-contents first">
 
         <p>DOM property application and diffing for element VNodes.</p>
-<p>Translates VNode props into DOM attribute, style, and event mutations,
+<p>Translates VNode props into batched DOM ops (see <code>wybthon.kernel</code>),
 including:</p>
 <ul>
 <li><strong>Controlled form elements</strong> (<code>value</code>, <code>checked</code>) via DOM properties.</li>
@@ -2940,6 +2970,9 @@ including:</p>
   own effect so updates re-apply only the affected prop, never the
   surrounding component.</li>
 </ul>
+<p>Nothing here touches the DOM directly; every applier emits ops against
+an integer node id, and the kernel applies the whole batch in one
+bridge crossing at commit time.</p>
 <p>This module is consumed by the reconciler; most application code never
 imports from it directly.</p>
 
@@ -2991,7 +3024,7 @@ imports from it directly.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;attach_ref&lt;/span&gt; (&lt;code&gt;wybthon.props.attach_ref&lt;/code&gt;)" href="#wybthon.props.attach_ref">attach_ref</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Assign <code>el</code> to <code>props["ref"].current</code> when a <code>ref</code> prop is present.</p>
+                  <p>Point <code>props["ref"].current</code> at an id-backed <code>Element</code> when present.</p>
                 </div>
               </td>
             </tr>
@@ -3007,7 +3040,7 @@ imports from it directly.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;apply_props&lt;/span&gt; (&lt;code&gt;wybthon.props.apply_props&lt;/code&gt;)" href="#wybthon.props.apply_props">apply_props</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Apply prop diffs to a concrete DOM element, including events and styles.</p>
+                  <p>Emit ops for prop diffs on a node, including events and styles.</p>
                 </div>
               </td>
             </tr>
@@ -3015,7 +3048,7 @@ imports from it directly.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;apply_initial_props&lt;/span&gt; (&lt;code&gt;wybthon.props.apply_initial_props&lt;/code&gt;)" href="#wybthon.props.apply_initial_props">apply_initial_props</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Apply a fresh set of props on initial mount, wiring reactive bindings.</p>
+                  <p>Emit ops for a fresh set of props on initial mount, wiring reactive bindings.</p>
                 </div>
               </td>
             </tr>
@@ -3269,12 +3302,12 @@ recognised.</p>
 
 
 <a href="#wybthon.props.attach_ref" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">attach_ref</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n">el</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">attach_ref</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Assign <code>el</code> to <code>props["ref"].current</code> when a <code>ref</code> prop is present.</p>
+        <p>Point <code>props["ref"].current</code> at an id-backed <code>Element</code> when present.</p>
 
 
     </div>
@@ -3309,12 +3342,12 @@ recognised.</p>
 
 
 <a href="#wybthon.props.apply_props" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">apply_props</span><span class="p">(</span><span class="n">el</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n">old_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n">new_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">apply_props</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">old_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n">new_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Apply prop diffs to a concrete DOM element, including events and styles.</p>
+        <p>Emit ops for prop diffs on a node, including events and styles.</p>
 <p>Used by the patch path; both old and new props are static (already-
 resolved) values. For initial mount with potentially reactive prop
 values, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;apply_initial_props&lt;/span&gt;" href="#wybthon.props.apply_initial_props"><code>apply_initial_props</code></a>.</p>
@@ -3333,14 +3366,14 @@ values, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;do
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>el</code>
+                <code>node_id</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The target DOM element wrapper.</p>
+                <p>The target node id.</p>
               </div>
             </td>
             <td>
@@ -3395,12 +3428,12 @@ values, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;do
 
 
 <a href="#wybthon.props.apply_initial_props" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">apply_initial_props</span><span class="p">(</span><span class="n">el</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n">new_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">,</span> <span class="n">owner_vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">apply_initial_props</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">new_props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Apply a fresh set of props on initial mount, wiring reactive bindings.</p>
+        <p>Emit ops for a fresh set of props on initial mount, wiring reactive bindings.</p>
 <p>Callable prop values (excluding event handlers and <code>ref</code>) are treated
 as <strong>reactive bindings</strong>: each is wrapped in its own effect so that
 updates re-apply only that single prop, with no re-render of the
@@ -3420,14 +3453,14 @@ surrounding component. Static values are applied once.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>el</code>
+                <code>node_id</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The target DOM element wrapper.</p>
+                <p>The target node id.</p>
               </div>
             </td>
             <td>
@@ -3448,23 +3481,6 @@ surrounding component. Static values are applied once.</p>
             </td>
             <td>
                 <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>owner_vnode</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Currently unused. Accepted for forward compatibility
-with reconciler bookkeeping.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
             </td>
           </tr>
       </tbody>

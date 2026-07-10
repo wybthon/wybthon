@@ -1793,6 +1793,8 @@
       
         
       
+        
+      
     
     
     
@@ -1967,6 +1969,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2799,13 +2829,17 @@
 </span></code></pre></div>
 <p>Supported prop names: <code>on_click</code>, <code>on_input</code>, <code>on_change</code>, etc. Both <code>on_foo</code> and <code>onFoo</code> styles are supported; they normalize to DOM event names.</p>
 <h4 id="domevent">DomEvent<a class="headerlink" href="#domevent" title="Permanent link">&para;</a></h4>
-<p>Handlers receive a <code>DomEvent</code> object that wraps the browser event and provides a small, Python-friendly surface:</p>
+<p>Handlers receive a <code>DomEvent</code> object built from a small payload the
+dispatcher assembles natively, so reading it never crosses the
+Python-to-JS bridge:</p>
 <ul>
 <li><code>type</code>: the event type string (e.g., <code>"click"</code>, <code>"input"</code>).</li>
-<li><code>target</code>: an <code>Element</code> for the original event target node (or <code>None</code>). Common form-input properties (<code>value</code>, <code>checked</code>, <code>files</code>) are exposed directly on the wrapper, mirroring the JS DOM API. The raw JS node is also available via <code>target.element</code>.</li>
+<li><code>target</code>: a payload-backed view of the original event target. The properties handlers actually read (<code>value</code>, <code>checked</code>, <code>files</code>) are exposed directly, mirroring the JS DOM API. The raw JS node is available via <code>target.element</code> as an escape hatch.</li>
 <li><code>current_target</code>: an <code>Element</code> for the node whose handler is currently running during delegated bubbling. This is set for you before your handler is called.</li>
-<li><code>prevent_default()</code>: calls <code>preventDefault()</code> on the underlying JS event, if available. Safe to call in non-browser tests.</li>
-<li><code>stop_propagation()</code>: stops delegated propagation within Wybthon's dispatcher for this event. It also attempts to call the underlying JS <code>stopPropagation()</code> when available.</li>
+<li><code>key</code>, <code>code</code>, <code>alt_key</code>, <code>ctrl_key</code>, <code>meta_key</code>, <code>shift_key</code>, <code>button</code>, <code>client_x</code>, <code>client_y</code>: keyboard and mouse fields, straight from the payload.</li>
+<li><code>prevent_default()</code>: marks the event so the dispatcher calls <code>preventDefault()</code> on the native event. Safe to call in non-browser tests.</li>
+<li><code>stop_propagation()</code>: stops delegated propagation for this event, including native propagation above the handled node.</li>
+<li><code>raw</code>: the native browser event object, for anything not covered by the payload. Only valid synchronously during dispatch.</li>
 </ul>
 <p>Read input values exactly like in JS/React/SolidJS:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">input_</span><span class="p">(</span>
@@ -2826,10 +2860,18 @@
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>             <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;submit&quot;</span><span class="p">},</span> <span class="s2">&quot;Go&quot;</span><span class="p">))</span>
 </span></code></pre></div>
 <h4 id="delegation-model">Delegation model<a class="headerlink" href="#delegation-model" title="Permanent link">&para;</a></h4>
-<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers that were registered on matching virtual nodes. <code>stop_propagation()</code> prevents further bubbling within Wybthon's dispatcher.</p>
+<p>Delegation lives in the rendering kernel (the JavaScript side of the
+batched renderer). The kernel installs one document-level listener per
+event type on first use, walks up from the original <code>target</code> natively,
+and calls into Python once per node that actually registered a handler
+for that type. The payload crosses the bridge as one JSON string, so a
+click on a row in a 10,000-row table costs a single Python call.</p>
+<p>Registering a handler is itself a batched op (<code>LISTEN</code>), riding the
+same command buffer as the DOM mutations; mounting a list with
+thousands of handlers adds nothing to the bridge-crossing count.</p>
 <p>Cleanup guarantees:</p>
 <ul>
-<li>When a node is unmounted, all of its event handlers are removed from the delegation map.</li>
+<li>When a node is unmounted, its handlers are dropped on the Python side and the kernel's listener bookkeeping is cleared by the same <code>RELEASE</code> op that retires the node ids.</li>
 <li>When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to <code>None</code>), the document-level listener for that event type is automatically removed.</li>
 </ul>
 <h4 id="naming-and-normalization">Naming and normalization<a class="headerlink" href="#naming-and-normalization" title="Permanent link">&para;</a></h4>

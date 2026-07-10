@@ -1310,6 +1310,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#one-bridge-crossing-per-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One bridge crossing per update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#template-based-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1782,6 +1793,8 @@
       
         
       
+        
+      
     
     
     
@@ -1956,6 +1969,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2685,6 +2726,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#one-bridge-crossing-per-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One bridge crossing per update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#template-based-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2777,17 +2829,26 @@ re-evaluate, and only the affected DOM nodes are touched.  This is
 fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
 the Python and JS bridge.</p>
+<h4 id="one-bridge-crossing-per-update">One bridge crossing per update<a class="headerlink" href="#one-bridge-crossing-per-update" title="Permanent link">&para;</a></h4>
+<p>Under Pyodide, rendering cost is dominated by Python-to-JS FFI round
+trips, not by the DOM operations themselves.  Wybthon therefore never
+calls DOM APIs directly: the renderer emits compact operations against
+integer node ids into a command buffer, and each commit serializes the
+whole buffer once for a small JavaScript kernel to apply natively.  A
+logical update (a <code>render</code>, an effect flush, an event handler) costs
+one bridge crossing regardless of how many nodes it touches.  Event
+delegation also lives in the kernel, so a click dispatches to Python
+once, carrying its payload as a single JSON string.</p>
 <h4 id="template-based-mounting">Template-based mounting<a class="headerlink" href="#template-based-mounting" title="Permanent link">&para;</a></h4>
-<p>Under Pyodide, mount cost is dominated by Python-to-JS FFI round trips,
-not by the DOM operations themselves.  The reconciler therefore
-serializes the static parts of each host-element subtree into one HTML
-string, parses it through a single <code>&lt;template&gt;</code> element, and wires
-reactive bindings, event handlers, and dynamic children onto the cloned
-nodes in one pass.  Mounting N static nodes costs roughly one FFI call
-instead of N.</p>
+<p>On top of the command buffer, the reconciler serializes each static
+host-element skeleton to HTML with text content hoisted out, registers
+it with the kernel once, and mounts every occurrence with a single
+clone op.  Structurally-identical subtrees (list rows) share one
+template, so the browser parses the skeleton once and clones it per
+row, like SolidJS's compiled templates.</p>
 <p>You get this for free; there's no opt-in.  Subtrees that can't be
-expressed as HTML (form-control <code>value</code>/<code>checked</code>, raw-text elements,
-and similar) fall back to node-by-node mounting with identical
+expressed as HTML (raw-text elements, adjacent text nodes, and
+similar) fall back to per-node ops in the same batch, with identical
 behavior.  See the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../../api/template/#wybthon.template"><code>template</code></a> API page.</p>
 <h4 id="authoring-tips">Authoring tips<a class="headerlink" href="#authoring-tips" title="Permanent link">&para;</a></h4>
 <ul>
@@ -2869,11 +2930,11 @@ real browser DOM mutations) the gap is dramatic:</p>
 <tbody>
 <tr>
 <td><code>hole update (1k tree)</code></td>
-<td style="text-align: right;">~0.01 ms</td>
+<td style="text-align: right;">~0.02 ms</td>
 </tr>
 <tr>
 <td><code>full rerender (1k tree)</code></td>
-<td style="text-align: right;">~9 ms</td>
+<td style="text-align: right;">~12 ms</td>
 </tr>
 </tbody>
 </table>

@@ -807,6 +807,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-batched-rendering-kernel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The batched rendering kernel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#template-based-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1793,6 +1804,8 @@
       
         
       
+        
+      
     
     
     
@@ -1967,6 +1980,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2696,6 +2737,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-batched-rendering-kernel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The batched rendering kernel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#template-based-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2825,25 +2877,42 @@ updates while keeping the VDOM as a batching layer.</p>
 and <code>ref</code>).  Each prop has its own effect, so unrelated reactive
 attributes update independently.  See the <a href="../primitives/#reactive-holes">Reactive Holes section in
 Primitives</a> for the full mental model.</p>
+<h4 id="the-batched-rendering-kernel">The batched rendering kernel<a class="headerlink" href="#the-batched-rendering-kernel" title="Permanent link">&para;</a></h4>
+<p>Under Pyodide, every DOM call crosses the Python-to-JS bridge, so
+rendering cost is dominated by FFI round trips rather than the DOM work
+itself. Wybthon therefore never calls DOM APIs directly. The reconciler
+and prop appliers <em>emit</em> compact operations (create, insert, set-text,
+set-attr, listen, and so on) against integer node ids into a command
+buffer. At each commit point (end of a <code>render</code>, end of an effect
+flush, end of an event handler) the whole buffer is serialized once and
+handed to a small JavaScript kernel that applies every operation
+natively. A mount of a 1,000-row table becomes one bridge crossing
+instead of tens of thousands. See <code>wybthon.kernel</code> for the wire
+protocol.</p>
 <h4 id="template-based-mounting">Template-based mounting<a class="headerlink" href="#template-based-mounting" title="Permanent link">&para;</a></h4>
-<p>Under Pyodide, every DOM call crosses the Python-to-JS bridge, so mount
-cost is dominated by FFI round trips rather than the DOM work itself.
-To amortize that cost, the reconciler serializes the <strong>static parts</strong> of
-a host-element subtree into one HTML string, parses it through a single
-<code>&lt;template&gt;</code> element, and then wires reactive bindings, event handlers,
-and dynamic children onto the cloned nodes in one pass. Mounting a
-subtree of N static nodes costs roughly one FFI call instead of N.</p>
+<p>On top of the command buffer, the reconciler serializes the <strong>static
+skeleton</strong> of a host-element subtree into one HTML string with text
+content hoisted out, registers it with the kernel once, and mounts each
+occurrence with a single <em>clone</em> op. The kernel clones the pre-parsed
+<code>&lt;template&gt;</code> and assigns a dense block of node ids in a deterministic
+pre-order, so Python knows every node's id without reading anything
+back. Text, reactive bindings, event handlers, and dynamic children are
+then wired by id in the same batch.</p>
+<p>Because text is hoisted, structurally-identical subtrees (like list
+rows) share one template: the browser parses the skeleton once and
+clones it per row, exactly like SolidJS's compiled templates.</p>
 <p>This happens automatically; subtrees that can't be expressed faithfully
-as HTML (form control <code>value</code>/<code>checked</code>, raw-text elements, and so on)
-fall back to node-by-node mounting with identical behavior. See the
+as HTML (raw-text elements, adjacent text nodes, and so on) fall back
+to per-node ops, still batched in the same commit. See the
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../../api/template/#wybthon.template"><code>template</code></a> API page for details.</p>
 <h4 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h4>
 <p>The VDOM implementation is split into focused modules:</p>
 <ul>
 <li><strong><code>vnode</code></strong>: the <code>VNode</code> data structure, <code>h()</code>, <code>Fragment</code>, and <code>dynamic()</code> (browser-agnostic). <code>Fragment</code> doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.</li>
+<li><strong><code>kernel</code></strong>: the batched command buffer, the embedded JS kernel that applies ops natively, and the reference Python interpreter used by tests.</li>
 <li><strong><code>template</code></strong>: the template-based mounting fast path (HTML serialization plus binding wiring).</li>
-<li><strong><code>reconciler</code></strong>: the mount/patch/unmount diffing engine.</li>
-<li><strong><code>props</code></strong>: DOM property application and diffing (styles, events, datasets).</li>
+<li><strong><code>reconciler</code></strong>: the mount/patch/unmount diffing engine (emits ops).</li>
+<li><strong><code>props</code></strong>: DOM property application and diffing (styles, events, datasets), also op-based.</li>
 <li><strong><code>error_boundary</code></strong>: the <code>ErrorBoundary</code> component.</li>
 <li><strong><code>suspense</code></strong>: the <code>Suspense</code> component.</li>
 <li><strong><code>portal</code></strong>: the <code>create_portal()</code> function.</li>

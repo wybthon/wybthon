@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -2520,6 +2522,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -4292,11 +4322,11 @@ mirrors SolidJS's ownership model.</p>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.reactivity.Owner._children">_children</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Owner&lt;/code&gt;)" href="#wybthon.reactivity.Owner">Owner</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Owner&lt;/code&gt;)" href="#wybthon.reactivity.Owner">Owner</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of child owners.</p>
+                <p>Child owners, keyed by <code>id(child)</code> (insertion-ordered).</p>
               </div>
             </td>
           </tr>

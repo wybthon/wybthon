@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -2072,6 +2074,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.Element.element" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;element
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.Element.node_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.Element.value" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2373,6 +2397,17 @@
   
     <nav class="md-nav" aria-label=" DomEvent">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.DomEvent.raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;raw
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#wybthon.DomEvent.prevent_default" class="md-nav__link">
@@ -3340,6 +3375,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -4341,6 +4404,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.Element.element" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;element
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.Element.node_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.Element.value" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4642,6 +4727,17 @@
   
     <nav class="md-nav" aria-label=" DomEvent">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.DomEvent.raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;raw
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#wybthon.DomEvent.prevent_default" class="md-nav__link">
@@ -5648,7 +5744,7 @@ tree that update only the DOM nodes that depend on them.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt; (&lt;code&gt;wybthon.events&lt;/code&gt;)" href="../events/#wybthon.events">events</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Event delegation utilities for VDOM event handling in the browser.</p>
+                <p>Delegated event handling for the batched renderer.</p>
               </div>
             </td>
           </tr>
@@ -5673,6 +5769,14 @@ tree that update only the DOM nodes that depend on them.</p>
             <td>
               <div class="doc-md-description">
                 <p>Pythonic HTML element helpers that wrap <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="#wybthon.h"><code>h()</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;kernel&lt;/span&gt; (&lt;code&gt;wybthon.kernel&lt;/code&gt;)" href="../kernel/#wybthon.kernel">kernel</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>Batched DOM command buffer and rendering backends.</p>
               </div>
             </td>
           </tr>
@@ -5846,7 +5950,7 @@ tree that update only the DOM nodes that depend on them.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt; (&lt;code&gt;wybthon.DomEvent&lt;/code&gt;)" href="#wybthon.DomEvent">DomEvent</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Thin wrapper around a JS event with convenience helpers.</p>
+                <p>The event object Wybthon passes to delegated handlers.</p>
               </div>
             </td>
           </tr>
@@ -7870,6 +7974,18 @@ normalization).</p>
             </td>
           </tr>
           <tr class="doc-section-item">
+            <td><code><span title="wybthon.VNode.el">el</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kernel node id of this VNode's DOM node once mounted (for
+fragments, the start marker; for holes, the end marker).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
             <td><code><span title="wybthon.VNode.owner_scope">owner_scope</span></code></td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
@@ -7929,7 +8045,7 @@ than to the list's re-running effect.</p>
 
 
 <a href="#wybthon.Element" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Element</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">existing</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Element</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">existing</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7937,20 +8053,23 @@ than to the list's re-running effect.</p>
 
 
         <p>Thin wrapper around a DOM node with convenience methods.</p>
-<p><code>Element</code> can be constructed in three ways:</p>
+<p><code>Element</code> can be constructed in four ways:</p>
 <ul>
 <li>With a tag name to create a brand-new node
   (<code>Element("div")</code>).</li>
 <li>With a CSS selector and <code>existing=True</code> to wrap an existing
   node (<code>Element("#root", existing=True)</code>).</li>
 <li>With an opaque <code>node</code> value to wrap a node returned by another
-  API (used internally by query helpers).</li>
+  API.</li>
+<li>With a kernel <code>node_id</code> (used internally by the renderer for
+  refs and event targets); the raw node is materialized lazily on
+  first access.</li>
 </ul>
 <p>The wrapper proxies common form-input properties (<code>value</code>,
 <code>checked</code>, <code>files</code>) so handlers can read state from
 <code>e.target.value</code> exactly as in React or SolidJS.</p>
 
-        <p>Create a new element, wrap an existing one, or wrap a raw node.</p>
+        <p>Create a new element, wrap an existing one, or wrap a node handle.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8015,6 +8134,23 @@ of creating a new element.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>node_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kernel node id to wrap. The raw node is fetched
+on first <code>element</code> access.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -8034,8 +8170,8 @@ of creating a new element.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If neither <code>node</code> nor a usable <code>tag</code> is
-provided.</p>
+                <p>If neither <code>node</code>, <code>node_id</code>, nor a usable
+<code>tag</code> is provided.</p>
               </div>
             </td>
           </tr>
@@ -8183,7 +8319,7 @@ provided.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on&lt;/span&gt; (&lt;code&gt;wybthon.Element.on&lt;/code&gt;)" href="#wybthon.Element.on">on</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Add an event listener and track it for later cleanup.</p>
+                  <p>Add a native event listener and track it for later cleanup.</p>
                 </div>
               </td>
             </tr>
@@ -8270,6 +8406,38 @@ provided.</p>
       </thead>
       <tbody>
           <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;element&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.Element.element&lt;/code&gt;)" href="#wybthon.Element.element">element</a></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The raw underlying DOM node, materialized on first access.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;node_id&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.Element.node_id&lt;/code&gt;)" href="#wybthon.Element.node_id">node_id</a></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>This element's kernel node id, registering the raw node if needed.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;value&lt;/span&gt;
 
 
@@ -8332,6 +8500,56 @@ provided.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.Element.element" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">element</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.Element.element" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">element</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The raw underlying DOM node, materialized on first access.</p>
+<p>For id-backed elements this commits pending batched DOM ops
+first, so the node exists and reflects every queued mutation.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.Element.node_id" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">node_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.Element.node_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>This element's kernel node id, registering the raw node if needed.</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -8888,9 +9106,10 @@ current state.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Add an event listener and track it for later cleanup.</p>
-<p>Listeners attached through <code>on</code> are remembered and removed by
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;off&lt;/span&gt;" href="#wybthon.Element.off"><code>off</code></a> or
+        <p>Add a native event listener and track it for later cleanup.</p>
+<p>Listeners attached through <code>on</code> bypass the renderer's delegated
+event system and talk to the DOM directly. They are remembered
+and removed by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;off&lt;/span&gt;" href="#wybthon.Element.off"><code>off</code></a> or
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;cleanup&lt;/span&gt;" href="#wybthon.Element.cleanup"><code>cleanup</code></a>. The handler is wrapped in
 a Pyodide proxy so it can be released on removal.</p>
 
@@ -9071,6 +9290,8 @@ removed.</p>
     <div class="doc doc-contents ">
 
         <p>Query a single element by CSS selector.</p>
+<p>Commits pending batched DOM ops first so nodes created earlier
+in the same update are visible to the query.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9391,14 +9612,23 @@ is reset to <code>None</code>.</p>
 
 
 <a href="#wybthon.DomEvent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DomEvent</span><span class="p">(</span><span class="n">js_event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DomEvent</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Thin wrapper around a JS event with convenience helpers.</p>
+        <p>The event object Wybthon passes to delegated handlers.</p>
+<p>Built from the kernel's dispatch payload rather than a <code>JsProxy</code>,
+so reading it is free of bridge crossings. Use
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;raw&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="#wybthon.DomEvent.raw"><code>raw</code></a> to reach the native event object for
+anything not covered by the payload.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -9427,28 +9657,116 @@ is reset to <code>None</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The original event target as an
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a>, or <code>None</code> if unavailable.</p>
+                <p>Payload-backed view of the original event target,
+exposing <code>value</code>, <code>checked</code>, <code>files</code>, and <code>element</code>.</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.DomEvent.current_target">current_target</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<span title="wybthon.events.Element">Element</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The currently-dispatched element while
-bubbling through delegated handlers; updated by the
-dispatcher.</p>
+                <p>The element whose handler is currently running
+(an id-backed <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a>).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.key">key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>KeyboardEvent.key</code>, or <code>None</code> for non-keyboard events.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.code">code</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>KeyboardEvent.code</code>, or <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.alt_key">alt_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Alt was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.ctrl_key">ctrl_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Ctrl was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.meta_key">meta_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Meta/Cmd was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.shift_key">shift_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Shift was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.button">button</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>MouseEvent.button</code> (0 for primary).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.client_x">client_x</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pointer x position, when applicable.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.DomEvent.client_y">client_y</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pointer y position, when applicable.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
-        <p>Wrap a raw JS event object.</p>
+        <p>Build an event from a dispatch payload dict.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9464,18 +9782,35 @@ dispatcher.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>js_event</code>
+                <code>payload</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The native browser event object.</p>
+                <p>Parsed dispatch payload from the kernel.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>current_target</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a> whose
+handler is being invoked.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -9505,7 +9840,7 @@ dispatcher.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prevent_default&lt;/span&gt; (&lt;code&gt;wybthon.DomEvent.prevent_default&lt;/code&gt;)" href="#wybthon.DomEvent.prevent_default">prevent_default</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Prevent the default browser action for this event, if possible.</p>
+                  <p>Prevent the default browser action for this event.</p>
                 </div>
               </td>
             </tr>
@@ -9513,7 +9848,7 @@ dispatcher.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;stop_propagation&lt;/span&gt; (&lt;code&gt;wybthon.DomEvent.stop_propagation&lt;/code&gt;)" href="#wybthon.DomEvent.stop_propagation">stop_propagation</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Stop propagation through both the JS and the delegated chains.</p>
+                  <p>Stop the delegated dispatch from walking further up the tree.</p>
                 </div>
               </td>
             </tr>
@@ -9533,6 +9868,32 @@ dispatcher.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.DomEvent.raw" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">raw</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.DomEvent.raw" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">raw</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The native browser event object (escape hatch).</p>
+<p>Only valid synchronously during dispatch; returns <code>None</code>
+afterwards.</p>
+
+    </div>
+
+</div>
+
 
 
 
@@ -9549,7 +9910,7 @@ dispatcher.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prevent the default browser action for this event, if possible.</p>
+        <p>Prevent the default browser action for this event.</p>
 
 
     </div>
@@ -9569,10 +9930,9 @@ dispatcher.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Stop propagation through both the JS and the delegated chains.</p>
-<p>Sets an internal flag that causes Wybthon's dispatcher to stop
-walking the DOM ancestors, and also calls the native
-<code>stopPropagation</code> so other JS listeners don't fire.</p>
+        <p>Stop the delegated dispatch from walking further up the tree.</p>
+<p>Also stops native propagation so other JS listeners above don't
+fire.</p>
 
 
     </div>
@@ -15202,8 +15562,9 @@ them.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a> instance or a CSS
-selector string identifying the target DOM container.</p>
+                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a> instance, a CSS
+selector string, or a kernel node id identifying the
+target DOM container.</p>
               </div>
             </td>
             <td>
@@ -15279,15 +15640,15 @@ selector string identifying the target DOM container.</p>
 
 
 <a href="#wybthon.render" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Render a VNode tree into a container element.</p>
 <p>Subsequent calls with the same <code>container</code> <em>patch</em> the existing tree
-in place; only the differences are applied. Pass <code>None</code> (via the
-internal API) to unmount.</p>
+in place; only the differences are applied. All emitted DOM ops are
+committed to the backend in one batch before this returns.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -15322,12 +15683,12 @@ internal API) to unmount.</p>
                 <code>container</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a> wrapper or a CSS selector
-string identifying an existing DOM node.</p>
+                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="#wybthon.Element"><code>Element</code></a> wrapper, a CSS selector
+string identifying an existing DOM node, or a kernel node id.</p>
               </div>
             </td>
             <td>

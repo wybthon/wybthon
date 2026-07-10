@@ -967,10 +967,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-vdom-uses-element" class="md-nav__link">
+  <a href="#how-the-renderer-relates-to-element" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the VDOM uses Element
+        How the renderer relates to Element
       
     </span>
   </a>
@@ -1758,6 +1758,8 @@
       
         
       
+        
+      
     
     
     
@@ -1932,6 +1934,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2651,10 +2681,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-vdom-uses-element" class="md-nav__link">
+  <a href="#how-the-renderer-relates-to-element" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the VDOM uses Element
+        How the renderer relates to Element
       
     </span>
   </a>
@@ -2744,14 +2774,15 @@
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;Focus me&quot;</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Because the ref is populated after mount, never read <code>ref.current</code> from the component body during initial render. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a>, an effect, or an event handler instead.</p>
-<h2 id="how-the-vdom-uses-element">How the VDOM uses <code>Element</code><a class="headerlink" href="#how-the-vdom-uses-element" title="Permanent link">&para;</a></h2>
-<p>Every host VNode the reconciler renders is backed by an <code>Element</code>. When the reconciler creates a node, it:</p>
-<ol>
-<li>Calls <code>Element(tag)</code> (or wraps an existing node).</li>
-<li>Applies initial props through <code>apply_initial_props</code>, which delegates to <code>Element.set_attr</code>, <code>Element.set_style</code>, <code>Element.add_class</code>, and the event-delegation helpers.</li>
-<li>Recursively mounts children and <code>appendChild</code>s them via <code>Element.append_to</code>.</li>
-</ol>
-<p>On update, the reconciler diffs old vs. new props through <code>apply_props</code> and either patches the existing element in place or unmounts it (calling <code>Element.remove</code>) when the type changes. Because the wrapper holds the underlying node directly, even imperative effects you trigger from a ref stay in sync with the framework's bookkeeping.</p>
+<h2 id="how-the-renderer-relates-to-element">How the renderer relates to <code>Element</code><a class="headerlink" href="#how-the-renderer-relates-to-element" title="Permanent link">&para;</a></h2>
+<p>The renderer itself never touches raw DOM nodes or <code>Element</code> wrappers. Every host VNode is identified by an integer node id, and all mutations (create, insert, set-attr, listen) are emitted as compact operations into a command buffer that a small JavaScript kernel applies in one bridge crossing per commit.</p>
+<p><code>Element</code> sits <em>on top</em> of that system as the escape hatch for imperative work:</p>
+<ul>
+<li>An <code>Element</code> can be backed by a raw DOM node (when you construct one yourself) or by a kernel node id (what the renderer hands out through <code>ref=</code> and <code>evt.current_target</code>).</li>
+<li>Id-backed elements materialize the raw node lazily: the first <code>element</code> access commits any pending batched ops, then fetches the node from the kernel's registry, so what you see always reflects every queued mutation.</li>
+<li>Query helpers (<code>Element.query</code>, <code>find</code>, ...) also commit pending ops first, so nodes created earlier in the same update are visible.</li>
+</ul>
+<p>Because commits happen automatically at these boundaries, imperative work through a ref stays in sync with the framework's bookkeeping.</p>
 <h2 id="styles-and-dataset-via-vdom">Styles and dataset via VDOM<a class="headerlink" href="#styles-and-dataset-via-vdom" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Use the <code>style</code> prop with a dict of camelCase keys; the VDOM converts to kebab-case and calls <code>style.setProperty</code>. Missing keys on update are removed. Passing <code>None</code> clears previous styles.</li>

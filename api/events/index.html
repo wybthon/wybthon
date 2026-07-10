@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -1841,6 +1843,34 @@
     
   
     Reconciler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
   
 
     
@@ -2064,6 +2094,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.DomEvent.raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.DomEvent.prevent_default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2102,15 +2143,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.events.remove_all_for" class="md-nav__link">
+  <a href="#wybthon.events.remove_handlers_for" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_all_for
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_handlers_for
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" remove_all_for">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.dispatch_event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dispatch_event
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" dispatch_event">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2775,6 +2827,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.DomEvent.raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.DomEvent.prevent_default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2813,15 +2876,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.events.remove_all_for" class="md-nav__link">
+  <a href="#wybthon.events.remove_handlers_for" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_all_for
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;remove_handlers_for
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" remove_all_for">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.dispatch_event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dispatch_event
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" dispatch_event">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2939,22 +3013,29 @@
 
     <div class="doc doc-contents first">
 
-        <p>Event delegation utilities for VDOM event handling in the browser.</p>
-<p>Wybthon installs <strong>one</strong> root listener per event type on <code>document</code>
-and dispatches to per-node handlers using a stable <code>data-wybid</code>
-attribute. This keeps the number of native listeners small even for
-large trees and lets the renderer add or remove handlers cheaply
-during reconciliation.</p>
+        <p>Delegated event handling for the batched renderer.</p>
+<p>Event delegation lives in the rendering kernel: one native listener per
+event type is installed on <code>document</code>, walks the ancestor chain of the
+event target natively, and calls into Python once per matched handler.
+The call carries a small JSON payload (event type, target value/checked
+state, key, mouse buttons, modifiers), so the common handler patterns
+(<code>evt.target.value</code>, <code>evt.key</code>, <code>evt.prevent_default()</code>) never touch a
+<code>JsProxy</code> at all.</p>
+<p>Registering a handler is itself a batched op (<code>LISTEN</code>), so mounting a
+list with thousands of handlers adds nothing to the bridge-crossing
+count.</p>
 <p>Public surface:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a>: a thin wrapper passed to handlers
-  exposing <code>type</code>, <code>target</code>, <code>current_target</code>, and helpers like
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prevent_default&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent.prevent_default"><code>prevent_default</code></a> and
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;stop_propagation&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent.stop_propagation"><code>stop_propagation</code></a>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a>: the event object passed to handlers,
+  exposing <code>type</code>, <code>target</code>, <code>current_target</code>, key and mouse fields,
+  and helpers like <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prevent_default&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent.prevent_default"><code>prevent_default</code></a>
+  and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;stop_propagation&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent.stop_propagation"><code>stop_propagation</code></a>.</li>
 </ul>
-<p>The remaining helpers are internal: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_handler&lt;/span&gt;" href="#wybthon.events.set_handler"><code>set_handler</code></a>,
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;remove_all_for&lt;/span&gt;" href="#wybthon.events.remove_all_for"><code>remove_all_for</code></a>, and the listener
-ref-counting utilities are exercised by the renderer.</p>
+<p>The remaining helpers are internal:
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_handler&lt;/span&gt;" href="#wybthon.events.set_handler"><code>set_handler</code></a> and
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;remove_handlers_for&lt;/span&gt;" href="#wybthon.events.remove_handlers_for"><code>remove_handlers_for</code></a> are called
+by the renderer, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dispatch_event&lt;/span&gt;" href="#wybthon.events.dispatch_event"><code>dispatch_event</code></a>
+is the entry point the kernel invokes when a native event fires.</p>
 
 
 <details class="see-also" open>
@@ -2985,7 +3066,7 @@ ref-counting utilities are exercised by the renderer.</p>
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt; (&lt;code&gt;wybthon.events.DomEvent&lt;/code&gt;)" href="#wybthon.events.DomEvent">DomEvent</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Thin wrapper around a JS event with convenience helpers.</p>
+                <p>The event object Wybthon passes to delegated handlers.</p>
               </div>
             </td>
           </tr>
@@ -3017,14 +3098,23 @@ ref-counting utilities are exercised by the renderer.</p>
 
 
 <a href="#wybthon.events.DomEvent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DomEvent</span><span class="p">(</span><span class="n">js_event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DomEvent</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
 
 
-        <p>Thin wrapper around a JS event with convenience helpers.</p>
+        <p>The event object Wybthon passes to delegated handlers.</p>
+<p>Built from the kernel's dispatch payload rather than a <code>JsProxy</code>,
+so reading it is free of bridge crossings. Use
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;raw&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../wybthon/#wybthon.DomEvent.raw"><code>raw</code></a> to reach the native event object for
+anything not covered by the payload.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -3053,28 +3143,116 @@ ref-counting utilities are exercised by the renderer.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The original event target as an
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>, or <code>None</code> if unavailable.</p>
+                <p>Payload-backed view of the original event target,
+exposing <code>value</code>, <code>checked</code>, <code>files</code>, and <code>element</code>.</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.events.DomEvent.current_target">current_target</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<span title="wybthon.events.Element">Element</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The currently-dispatched element while
-bubbling through delegated handlers; updated by the
-dispatcher.</p>
+                <p>The element whose handler is currently running
+(an id-backed <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.key">key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>KeyboardEvent.key</code>, or <code>None</code> for non-keyboard events.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.code">code</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>KeyboardEvent.code</code>, or <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.alt_key">alt_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Alt was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.ctrl_key">ctrl_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Ctrl was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.meta_key">meta_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Meta/Cmd was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.shift_key">shift_key</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether Shift was held.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.button">button</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>MouseEvent.button</code> (0 for primary).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.client_x">client_x</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pointer x position, when applicable.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.events.DomEvent.client_y">client_y</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pointer y position, when applicable.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
-        <p>Wrap a raw JS event object.</p>
+        <p>Build an event from a dispatch payload dict.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3090,18 +3268,35 @@ dispatcher.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>js_event</code>
+                <code>payload</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The native browser event object.</p>
+                <p>Parsed dispatch payload from the kernel.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>current_target</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a> whose
+handler is being invoked.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3131,7 +3326,7 @@ dispatcher.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prevent_default&lt;/span&gt; (&lt;code&gt;wybthon.events.DomEvent.prevent_default&lt;/code&gt;)" href="#wybthon.events.DomEvent.prevent_default">prevent_default</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Prevent the default browser action for this event, if possible.</p>
+                  <p>Prevent the default browser action for this event.</p>
                 </div>
               </td>
             </tr>
@@ -3139,7 +3334,7 @@ dispatcher.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;stop_propagation&lt;/span&gt; (&lt;code&gt;wybthon.events.DomEvent.stop_propagation&lt;/code&gt;)" href="#wybthon.events.DomEvent.stop_propagation">stop_propagation</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Stop propagation through both the JS and the delegated chains.</p>
+                  <p>Stop the delegated dispatch from walking further up the tree.</p>
                 </div>
               </td>
             </tr>
@@ -3159,6 +3354,32 @@ dispatcher.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.events.DomEvent.raw" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">raw</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.events.DomEvent.raw" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">raw</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The native browser event object (escape hatch).</p>
+<p>Only valid synchronously during dispatch; returns <code>None</code>
+afterwards.</p>
+
+    </div>
+
+</div>
+
 
 
 
@@ -3175,7 +3396,7 @@ dispatcher.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prevent the default browser action for this event, if possible.</p>
+        <p>Prevent the default browser action for this event.</p>
 
 
     </div>
@@ -3195,10 +3416,9 @@ dispatcher.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Stop propagation through both the JS and the delegated chains.</p>
-<p>Sets an internal flag that causes Wybthon's dispatcher to stop
-walking the DOM ancestors, and also calls the native
-<code>stopPropagation</code> so other JS listeners don't fire.</p>
+        <p>Stop the delegated dispatch from walking further up the tree.</p>
+<p>Also stops native propagation so other JS listeners above don't
+fire.</p>
 
 
     </div>
@@ -3222,12 +3442,15 @@ walking the DOM ancestors, and also calls the native
 
 
 <a href="#wybthon.events.set_handler" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_handler</span><span class="p">(</span><span class="n">el</span><span class="p">:</span> <span class="n"><span title="wybthon.events.Element">Element</span></span><span class="p">,</span> <span class="n">event_prop_name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_handler</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">event_prop_name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Attach, update, or remove a handler for an event property on an element.</p>
+        <p>Attach, update, or remove a handler for an event property on a node.</p>
+<p>Registration is batched: the kernel-side <code>LISTEN</code>/<code>UNLISTEN</code> ops
+ride the same command buffer as the DOM mutations, so wiring
+handlers costs no extra bridge crossings.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3243,14 +3466,14 @@ walking the DOM ancestors, and also calls the native
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>el</code>
+                <code>node_id</code>
             </td>
             <td>
-                  <code><span title="wybthon.events.Element">Element</span></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Wrapped element to attach to.</p>
+                <p>Kernel node id to attach to.</p>
               </div>
             </td>
             <td>
@@ -3285,7 +3508,7 @@ walking the DOM ancestors, and also calls the native
             <td>
               <div class="doc-md-description">
                 <p>Callback to invoke. Pass <code>None</code> to remove an existing
-handler for this event type on this element.</p>
+handler for this event type on this node.</p>
               </div>
             </td>
             <td>
@@ -3303,20 +3526,138 @@ handler for this event type on this element.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.events.remove_all_for" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">remove_all_for</span>
+<h3 id="wybthon.events.remove_handlers_for" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">remove_handlers_for</span>
 
 
-<a href="#wybthon.events.remove_all_for" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_all_for</span><span class="p">(</span><span class="n">el</span><span class="p">:</span> <span class="n"><span title="wybthon.events.Element">Element</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a href="#wybthon.events.remove_handlers_for" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_handlers_for</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove every delegated handler registered for <code>el</code>.</p>
-<p>Called by the renderer during unmount to drop the handler table
-and decrement the active-listener counters so unused root
-listeners are released.</p>
+        <p>Drop every handler registered for <code>node_id</code> (Python side only).</p>
+<p>Called by the renderer during unmount. The kernel-side listener
+bookkeeping is cleared by the <code>RELEASE</code> op that accompanies the
+subtree removal, so no per-handler ops are needed.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.events.dispatch_event" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">dispatch_event</span>
+
+
+<a href="#wybthon.events.dispatch_event" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dispatch_event</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">payload_json</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Invoke the handler for <code>(node_id, event_type)</code> with a payload.</p>
+<p>This is the entry point the kernel's native root listener calls,
+once per matched node while walking the ancestor chain.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>node_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Id of the node whose handler should run.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_type</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>DOM event type (e.g., <code>"click"</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>payload_json</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>JSON-encoded payload built natively by the kernel.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Flag bits for the kernel: bit 1 stops the delegated walk and</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>native propagation, bit 2 calls <code>preventDefault</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -3329,9 +3670,9 @@ listeners are released.</p>
 
     </div>
 
-</div><p>Wybthon's event system provides delegated event handling and a thin <code>DomEvent</code> wrapper.</p>
+</div><p>Wybthon's event system provides kernel-delegated event handling and a payload-backed <code>DomEvent</code> object.</p>
 <ul>
-<li><code>DomEvent</code>: wrapper with <code>type</code>, <code>target</code> (<code>Element|None</code>), <code>current_target</code> (<code>Element|None</code>), <code>prevent_default()</code>, <code>stop_propagation()</code>.</li>
+<li><code>DomEvent</code>: built from a JSON payload assembled natively at dispatch time, with <code>type</code>, <code>target</code> (payload-backed view with <code>value</code>/<code>checked</code>/<code>files</code>/<code>element</code>), <code>current_target</code> (an id-backed <code>Element</code>), keyboard and mouse fields (<code>key</code>, <code>code</code>, modifier flags, <code>button</code>, <code>client_x</code>, <code>client_y</code>), <code>prevent_default()</code>, <code>stop_propagation()</code>, and <code>raw</code> (the native event, escape hatch).</li>
 <li>Handlers can be attached via props like <code>on_click</code>, <code>on_input</code>, or <code>onChange</code>. Names are normalized to DOM event types.</li>
 <li>Delegation is automatic and handlers are cleaned up on unmount. Document-level delegated listeners are installed on first use per event type and are automatically removed when no handlers remain for that type (e.g., after unmount/diff removes all handlers).</li>
 </ul>
@@ -3346,13 +3687,13 @@ listeners are released.</p>
 </ul>
 <p>Handler signature:</p>
 <ul>
-<li>All handlers receive a <code>DomEvent</code> object. Use <code>evt.prevent_default()</code> and <code>evt.stop_propagation()</code> as needed. Access the original JS event via <code>evt._js_event</code> only if absolutely necessary.</li>
+<li>All handlers receive a <code>DomEvent</code> object. Use <code>evt.prevent_default()</code> and <code>evt.stop_propagation()</code> as needed. Access the original JS event via <code>evt.raw</code> only if absolutely necessary, and only synchronously during dispatch.</li>
 </ul>
 <h4 id="delegation-and-bubbling">Delegation and bubbling<a class="headerlink" href="#delegation-and-bubbling" title="Permanent link">&para;</a></h4>
-<p>Wybthon installs one document-level listener per event type on first use and walks up from the original <code>target</code> to parent nodes, invoking any handlers registered for that <code>event_type</code>. <code>stop_propagation()</code> prevents further bubbling within Wybthon's dispatcher.</p>
+<p>Delegation runs inside the rendering kernel: one native document-level listener per event type walks up from the original <code>target</code>, and calls into Python once per node that registered a handler for that type, passing the payload as a single JSON string. Handler registration (<code>LISTEN</code>/<code>UNLISTEN</code>) rides the batched op buffer, so wiring thousands of handlers costs no extra bridge crossings. <code>stop_propagation()</code> prevents further delegated bubbling and stops native propagation.</p>
 <p>Cleanup guarantees:</p>
 <ul>
-<li>When a node is unmounted, all of its event handlers are removed from the delegation map.</li>
+<li>When a node is unmounted, its handlers are dropped on the Python side, and the kernel's listener bookkeeping is cleared by the <code>RELEASE</code> op that retires the subtree's node ids.</li>
 <li>When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to <code>None</code>), the document-level listener for that event type is automatically removed.</li>
 </ul>
 <h4 id="common-event-types">Common event types<a class="headerlink" href="#common-event-types" title="Permanent link">&para;</a></h4>
@@ -3395,7 +3736,7 @@ listeners are released.</p>
 <li>Event delegation relies on bubbling to <code>document</code>. For non-bubbling types, prefer the alternatives above or attach direct listeners via <code>Element.on</code>.</li>
 <li>Chrome/Edge may treat <code>touchstart</code>/<code>touchmove</code> listeners on <code>document</code> as passive by default, making <code>preventDefault()</code> a no-op. If you need to prevent scrolling, attach a direct listener with <code>options={"passive": False}</code> using <code>Element.on</code> and a <code>Ref</code>.</li>
 <li><code>keypress</code> is deprecated and may behave inconsistently across browsers; prefer <code>keydown</code>/<code>keyup</code>.</li>
-<li>The <code>DomEvent</code> wrapper exposes a stable, Python-friendly surface. Accessing <code>evt._js_event</code> is possible but not recommended for portability across Pyodide and non-browser tests.</li>
+<li>The <code>DomEvent</code> object exposes a stable, Python-friendly surface backed by the dispatch payload. Accessing <code>evt.raw</code> is possible but not recommended for portability across Pyodide and non-browser tests.</li>
 </ul>
 
 
