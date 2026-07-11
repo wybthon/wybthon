@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.27.0 (2026-07-11)
+
+### Features
+
+- **reactivity,template**: Add Solid parity and cache mount plans
+  ([#7](https://github.com/wybthon/wybthon/pull/7),
+  [`7ebc7d2`](https://github.com/wybthon/wybthon/commit/7ebc7d2cde41fcdc76d35ef6586c5e9956a9bf4c))
+
+
 ## v0.26.0 (2026-07-10)
 
 ### Performance Improvements

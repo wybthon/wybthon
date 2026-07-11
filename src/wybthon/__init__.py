@@ -93,7 +93,7 @@ from .store import create_mutable, create_store, modify_mutable, produce, reconc
 # Pure-Python VDOM data structures are available in any environment.
 from .vnode import Fragment, VNode, dynamic, h, is_getter
 
-__version__ = "0.26.0"
+__version__ = "0.27.0"
 
 _IN_BROWSER = False
 try:
