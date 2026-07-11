@@ -14,20 +14,23 @@ set_count(1)
 
 - `create_signal(value, *, equals=...)` returns a `(getter, setter)` tuple.
   The setter accepts either a new value or an **updater function**
-  (`set_count(lambda n: n + 1)`). By default `equals` uses **value
-  equality** (`==`) with an identity fast-path; pass `equals=False` to
-  fire on every set, or a custom comparator (e.g.,
-  `equals=lambda a, b: a is b` for SolidJS-style identity-only
-  semantics). See [Reactivity API](../api/reactivity.md).
-- `create_memo(fn)` returns a derived getter; recomputes **lazily** on read after a dependency changes.
-- `create_effect(fn)` runs and re-runs on dependencies; supports previous value.
-- `create_render_effect(fn)` is like `create_effect` but runs in the **render phase**, before user effects (the framework's own DOM bindings live here).
-- `create_computed(fn)` runs eagerly in the render phase; use it to push derived state into another signal.
+  (`set_count(lambda n: n + 1)`). The getter exposes `.peek()` for
+  untracked reads. By default `equals` uses **value equality** (`==`)
+  with an identity fast-path; pass `equals=False` to fire on every set,
+  or a custom comparator (e.g., `equals=lambda a, b: a is b` for
+  SolidJS-style identity-only semantics). See
+  [Reactivity API](../api/reactivity.md).
+- `create_memo(fn, *, equals=...)` returns a derived getter; recomputes **lazily** on read after a dependency changes. `equals` controls when its observers are notified; the getter also exposes `.peek()`.
+- `create_effect(fn)` runs and re-runs on dependencies; supports previous value. User effects run after the DOM commit in each flush.
+- `create_render_effect(fn)` is like `create_effect` but runs in the **render phase**, before the DOM commit and before user effects (the framework's own DOM bindings live here).
+- `create_computed(fn)` runs eagerly, **before** render effects; use it to push derived state into another signal.
+- `create_reaction(on_invalidate)` returns a `track(fn)` function; the first change to a dependency tracked by `fn` fires `on_invalidate` once, then tracking stops until you call `track` again.
 - `batch()` batches updates as a context manager, or `batch(fn)` with callback.
-- `create_resource(fetcher)` returns an async data primitive with loading/error state.
+- `create_resource(fetcher)` returns an async data primitive with loading/error state; `initial_value=...` seeds it with data.
 - `create_deferred(source)` returns a getter that trails `source` by one event-loop tick, decoupling expensive consumers from rapid updates.
 - `create_unique_id()` returns a stable unique string for `id`/`for`/`aria-*` wiring.
 - `catch_error(fn, handler)` runs `fn` under a scope whose errors (now or from effects created inside) route to `handler`.
+- `on_error(handler)` registers an error handler on the **current** scope; errors from child computations route to the nearest ancestor handler.
 
 #### Reactive utilities
 

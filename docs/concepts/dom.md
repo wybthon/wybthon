@@ -1,6 +1,6 @@
 # DOM interop
 
-[`Element`][wybthon.Element] is Wybthon's thin wrapper around browser DOM nodes. It provides ergonomic helpers for attributes, classes, styles, events, and queries while still giving you the raw `element` for any escape hatches you need.
+[`Element`][wybthon.Element] is Wybthon's thin wrapper around browser DOM nodes. It provides ergonomic helpers for attributes, classes, styles, and queries while still giving you the raw `element` for any escape hatches you need. For events, use the delegated `on_*` props (see [Events](events.md)); for non-bubbling event types, attach a native listener via `ref.current.element.addEventListener` with a Pyodide proxy.
 
 ```python
 from wybthon.dom import Element

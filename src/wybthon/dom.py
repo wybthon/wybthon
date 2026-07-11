@@ -5,8 +5,7 @@ designed to feel familiar to JavaScript developers while integrating
 cleanly with Wybthon's batched renderer:
 
 - [`Element`][wybthon.Element] wraps a single DOM node and offers
-  ergonomic helpers for attributes, classes, styles, events, and
-  queries.
+  ergonomic helpers for attributes, classes, styles, and queries.
 - [`Ref`][wybthon.Ref] is a mutable container used by the renderer to
   hand out a reference to a mounted element.
 
@@ -31,7 +30,7 @@ See Also:
     - [Forms guide](../concepts/forms.md)
 """
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from js import document, fetch
 
@@ -83,7 +82,6 @@ class Element:
             ValueError: If neither `node`, `node_id`, nor a usable
                 `tag` is provided.
         """
-        self._event_listeners: List[Dict[str, Any]] = []
         self._node: Any = None
         self._id: Optional[int] = node_id
         if node_id is not None:
@@ -253,62 +251,6 @@ class Element:
     def has_class(self, class_name: str) -> bool:
         """Return `True` if the element currently has the given class."""
         return bool(self.element.classList.contains(class_name))
-
-    def on(self, event_type: str, handler: Callable[[Any], Any], *, options: Optional[Dict[str, Any]] = None) -> None:
-        """Add a native event listener and track it for later cleanup.
-
-        Listeners attached through `on` bypass the renderer's delegated
-        event system and talk to the DOM directly. They are remembered
-        and removed by [`off`][wybthon.Element.off] or
-        [`cleanup`][wybthon.Element.cleanup]. The handler is wrapped in
-        a Pyodide proxy so it can be released on removal.
-
-        Args:
-            event_type: DOM event name (e.g., `"click"`, `"input"`).
-            handler: Callback invoked with the DOM event object.
-            options: Optional `addEventListener` options
-                (e.g., `{"capture": True}`).
-        """
-        try:
-            from pyodide.ffi import create_proxy
-        except Exception:  # pragma: no cover
-
-            def create_proxy(fn: Callable[[Any], Any]) -> Any:
-                return fn
-
-        proxy = create_proxy(handler)
-        if options is None:
-            self.element.addEventListener(event_type, proxy)
-        else:
-            self.element.addEventListener(event_type, proxy, options)
-        self._event_listeners.append({"type": event_type, "proxy": proxy, "handler": handler, "options": options})
-
-    def off(self, event_type: Optional[str] = None, handler: Optional[Callable[[Any], Any]] = None) -> None:
-        """Remove matching event listeners previously attached via `on`.
-
-        Args:
-            event_type: If given, only remove listeners of this type.
-            handler: If given, only remove listeners with this exact
-                callback identity.
-
-        When both arguments are `None`, all tracked listeners are
-        removed.
-        """
-        remaining: List[Dict[str, Any]] = []
-        for rec in self._event_listeners:
-            match_type = (event_type is None) or (rec["type"] == event_type)
-            match_handler = (handler is None) or (rec["handler"] == handler)
-            if match_type and match_handler:
-                self.element.removeEventListener(rec["type"], rec["proxy"])
-            else:
-                remaining.append(rec)
-        self._event_listeners = remaining
-
-    def cleanup(self) -> None:
-        """Remove all tracked event listeners from this element."""
-        for rec in self._event_listeners:
-            self.element.removeEventListener(rec["type"], rec["proxy"])
-        self._event_listeners.clear()
 
     @classmethod
     def query(cls, selector: str, within: Optional["Element"] = None) -> Optional["Element"]:

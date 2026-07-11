@@ -68,6 +68,7 @@ from .reactivity import (
     create_deferred,
     create_effect,
     create_memo,
+    create_reaction,
     create_render_effect,
     create_resource,
     create_root,
@@ -81,12 +82,13 @@ from .reactivity import (
     merge_props,
     on,
     on_cleanup,
+    on_error,
     on_mount,
     run_with_owner,
     split_props,
     untrack,
 )
-from .store import create_mutable, create_store, produce, reconcile, unwrap
+from .store import create_mutable, create_store, modify_mutable, produce, reconcile, unwrap
 
 # Pure-Python VDOM data structures are available in any environment.
 from .vnode import Fragment, VNode, dynamic, h, is_getter
@@ -162,11 +164,11 @@ if _IN_BROWSER:
         ul,
         video,
     )
-    from .lazy import lazy, load_component, preload_component
-    from .portal import create_portal
+    from .lazy import lazy
+    from .portal import Portal
     from .reconciler import render
     from .router import Link, Route, Router, current_path, navigate
-    from .suspense import Suspense
+    from .suspense import Suspense, SuspenseList
 
     __all__ = [
         # DOM
@@ -182,7 +184,8 @@ if _IN_BROWSER:
         "render",
         "ErrorBoundary",
         "Suspense",
-        "create_portal",
+        "SuspenseList",
+        "Portal",
         "dynamic",
         "is_getter",
         # Reactivity
@@ -192,6 +195,7 @@ if _IN_BROWSER:
         "create_computed",
         "create_deferred",
         "create_memo",
+        "create_reaction",
         "create_resource",
         "create_root",
         "create_unique_id",
@@ -199,6 +203,7 @@ if _IN_BROWSER:
         "batch",
         "on_mount",
         "on_cleanup",
+        "on_error",
         "untrack",
         "on",
         "get_props",
@@ -255,13 +260,12 @@ if _IN_BROWSER:
         # Stores
         "create_store",
         "create_mutable",
+        "modify_mutable",
         "produce",
         "reconcile",
         "unwrap",
         # Lazy loading
         "lazy",
-        "load_component",
-        "preload_component",
         # Dev mode
         "DEV_MODE",
         "set_dev_mode",
@@ -342,6 +346,7 @@ else:
         "create_computed",
         "create_deferred",
         "create_memo",
+        "create_reaction",
         "create_resource",
         "create_root",
         "create_unique_id",
@@ -349,6 +354,7 @@ else:
         "batch",
         "on_mount",
         "on_cleanup",
+        "on_error",
         "untrack",
         "on",
         "get_props",
@@ -379,6 +385,7 @@ else:
         # Stores
         "create_store",
         "create_mutable",
+        "modify_mutable",
         "produce",
         "reconcile",
         "unwrap",

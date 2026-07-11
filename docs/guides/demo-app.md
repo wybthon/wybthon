@@ -17,7 +17,7 @@ passed directly; the new `@component` decorator handles the
 from app.errors.page import Page as ErrorsPage
 from app.fetch.page import FetchPage
 from app.page import Page as HomePage
-from wybthon import Route, lazy, load_component
+from wybthon import Route, lazy
 
 
 def _AboutLazy():
@@ -28,8 +28,8 @@ def _TeamLazy():
     return ("app.about.team.page", "Page")
 
 
-# Eager dynamic loader (resolves at route creation time).
-Docs = load_component("app.docs.page", "Page")
+Team = lazy(_TeamLazy)
+Docs = lazy(lambda: ("app.docs.page", "Page"))
 
 
 def create_routes():
@@ -39,7 +39,7 @@ def create_routes():
             path="/about",
             component=lazy(_AboutLazy),
             children=[
-                Route(path="team", component=lazy(_TeamLazy)),
+                Route(path="team", component=Team),
             ],
         ),
         Route(path="/fetch", component=FetchPage),
@@ -48,11 +48,11 @@ def create_routes():
     ]
 ```
 
-The demo also preloads the Team route on hover for snappier
-transitions:
+Every lazy component has a `.preload()` method, so you can warm the
+import cache on user intent (e.g., hover) for snappier transitions:
 
 ```python
-from wybthon import Link, component, h, nav, preload_component, untrack
+from wybthon import Link, component, h, nav, untrack
 
 
 @component
@@ -61,10 +61,7 @@ def Nav(base_path=None):
     lp = {"base_path": bp, "class_": "nav-link", "class_active": "active"}
 
     def preload_team(_evt):
-        try:
-            preload_component("app.about.team.page", "Page")
-        except Exception:
-            pass
+        Team.preload()
 
     return nav(
         h(Link, {**lp, "to": "/"}, "Home"),

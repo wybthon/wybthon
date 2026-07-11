@@ -1,48 +1,21 @@
-"""Tests for ``load_component`` and ``lazy`` helpers.
+"""Tests for the async, Suspense-integrated ``lazy`` helper.
 
-These cover:
-
-* The pre-existing smoke checks (importable via Pyodide-only paths).
-* A regression for a bug where ``lazy()`` and ``load_component()`` returned
-  a render function as the *value* of an outer reactive hole, so the hole
-  coerced the callable to text and the user saw a Python ``<function ...>``
-  repr in the DOM instead of the actual page.  See git history for the
-  full story; the fix is to have the inner ``render`` return
-  ``h(comp, props)`` so the reconciler mounts the resolved component
-  through the normal function-component path.
+``lazy(loader)`` wraps a sync or async loader that returns a component,
+a module, a module-path string, or a ``(module_path, attr)`` tuple. The
+load is backed by a Resource, so pending loads register with the nearest
+Suspense boundary and failures raise into the nearest ErrorBoundary.
 """
 
+import asyncio
 import importlib
 import sys
 from types import ModuleType
 
-import pytest
 from conftest import collect_texts
 
-try:
-    importlib.import_module("js")
-    HAS_JS = True
-except Exception:
-    HAS_JS = False
-
-
-@pytest.mark.skipif(not HAS_JS, reason="requires Pyodide/js module")
-def test_load_component_imports(monkeypatch):
-    """Smoke test: ``load_component`` returns a callable for a real module."""
-    wyb = importlib.import_module("wybthon")
-    load_component = getattr(wyb, "load_component")
-
-    comp = load_component("examples.demo.app.about.page", "Page")
-    vnode = comp({})
-    assert vnode is not None
-
-
-@pytest.mark.skipif(not HAS_JS, reason="requires Pyodide/js module")
-def test_preload_component_no_throw():
-    """Preloading a known-importable module must never raise."""
-    wyb = importlib.import_module("wybthon")
-    preload = getattr(wyb, "preload_component")
-    preload("examples.demo.app.about.page", "Page")
+import wybthon as _wybthon_pkg  # noqa: F401
+from wybthon.error_boundary import ErrorBoundary
+from wybthon.suspense import Suspense
 
 
 def _install_fake_module(monkeypatch, module_name: str, page_factory) -> None:
@@ -57,39 +30,8 @@ def _install_fake_module(monkeypatch, module_name: str, page_factory) -> None:
     monkeypatch.setitem(sys.modules, module_name, mod)
 
 
-def test_load_component_mounts_resolved_module(wyb, monkeypatch, root_element):
-    """``load_component`` must actually render the resolved component's tree.
-
-    Regression: previously the inner ``render`` returned ``comp_fn(props)``
-    where ``comp_fn`` was itself another function component, so the outer
-    reactive hole stringified the callable and rendered ``<function ... at
-    0x...>`` as text.
-    """
-    component = wyb["component"].component
-    h = wyb["vnode"].h
-
-    @component
-    def Page():
-        return h("p", {"class": "loaded-page"}, "hello from loaded page")
-
-    _install_fake_module(monkeypatch, "_wyb_test_loaded_page", lambda: Page)
-
-    load_component = wyb["lazy"].load_component if "lazy" in wyb else None
-    if load_component is None:
-        load_component = importlib.import_module("wybthon.lazy").load_component
-
-    comp = load_component("_wyb_test_loaded_page", "Page")
-    wyb["reconciler"].render(h(comp, {}), root_element)
-
-    texts = collect_texts(root_element.element)
-    assert "hello from loaded page" in texts
-    assert not any(
-        "<function" in (t or "") for t in texts
-    ), f"Reactive hole stringified a callable instead of mounting it: {texts!r}"
-
-
 def test_lazy_mounts_resolved_module(wyb, monkeypatch, root_element):
-    """Same regression coverage for the ``lazy()`` wrapper."""
+    """A tuple loader resolves through importlib and mounts the component."""
     component = wyb["component"].component
     h = wyb["vnode"].h
 
@@ -101,27 +43,164 @@ def test_lazy_mounts_resolved_module(wyb, monkeypatch, root_element):
 
     lazy = importlib.import_module("wybthon.lazy").lazy
 
-    def _Loader():
-        return ("_wyb_test_team_page", "Page")
+    LazyComp = lazy(lambda: ("_wyb_test_team_page", "Page"))
 
-    LazyComp = lazy(_Loader)
-    wyb["reconciler"].render(h(LazyComp, {}), root_element)
+    async def run() -> None:
+        wyb["reconciler"].render(h(LazyComp, {}), root_element)
+        await asyncio.sleep(0.01)
+
+    asyncio.run(run())
 
     texts = collect_texts(root_element.element)
     assert "Our Team" in texts
     assert not any("<function" in (t or "") for t in texts), f"Lazy reactive hole stringified a callable: {texts!r}"
 
 
-def test_lazy_renders_error_state_on_import_failure(wyb, root_element):
-    """When the loader points at a missing module, render the error fallback."""
+def test_lazy_accepts_direct_component(wyb, root_element):
+    """A loader may return the component callable directly."""
+    component = wyb["component"].component
     h = wyb["vnode"].h
+
+    @component
+    def Page():
+        return h("p", {}, "direct component")
+
+    lazy = importlib.import_module("wybthon.lazy").lazy
+    LazyComp = lazy(lambda: Page)
+
+    async def run() -> None:
+        wyb["reconciler"].render(h(LazyComp, {}), root_element)
+        await asyncio.sleep(0.01)
+
+    asyncio.run(run())
+
+    assert "direct component" in collect_texts(root_element.element)
+
+
+def test_lazy_async_loader(wyb, monkeypatch, root_element):
+    """Async loaders may await work before returning the component."""
+    component = wyb["component"].component
+    h = wyb["vnode"].h
+
+    @component
+    def Page():
+        return h("p", {}, "async loaded")
+
+    _install_fake_module(monkeypatch, "_wyb_test_async_page", lambda: Page)
+
     lazy = importlib.import_module("wybthon.lazy").lazy
 
-    def _BrokenLoader():
-        return ("__definitely_not_a_real_module__", "Page")
+    async def loader():
+        await asyncio.sleep(0)
+        return ("_wyb_test_async_page", "Page")
 
-    LazyComp = lazy(_BrokenLoader)
-    wyb["reconciler"].render(h(LazyComp, {}), root_element)
+    LazyComp = lazy(loader)
+
+    async def run() -> None:
+        wyb["reconciler"].render(h(LazyComp, {}), root_element)
+        await asyncio.sleep(0.01)
+
+    asyncio.run(run())
+
+    assert "async loaded" in collect_texts(root_element.element)
+
+
+def test_lazy_shows_suspense_fallback_while_loading(wyb, monkeypatch, root_element):
+    """A pending lazy load triggers the nearest Suspense fallback."""
+    component = wyb["component"].component
+    h = wyb["vnode"].h
+
+    @component
+    def Page():
+        return h("p", {}, "lazy page ready")
+
+    _install_fake_module(monkeypatch, "_wyb_test_slow_page", lambda: Page)
+
+    lazy = importlib.import_module("wybthon.lazy").lazy
+
+    release = None
+
+    async def loader():
+        await release.wait()
+        return ("_wyb_test_slow_page", "Page")
+
+    LazyComp = lazy(loader)
+
+    async def run() -> None:
+        nonlocal release
+        release = asyncio.Event()
+        wyb["reconciler"].render(
+            Suspense(fallback="Loading...", children=[h(LazyComp, {})]),
+            root_element,
+        )
+        await asyncio.sleep(0)
+        assert "Loading..." in collect_texts(root_element.element)
+
+        release.set()
+        await asyncio.sleep(0.01)
+        texts = collect_texts(root_element.element)
+        assert "lazy page ready" in texts
+        assert "Loading..." not in texts
+
+    asyncio.run(run())
+
+
+def test_lazy_raises_into_error_boundary_on_import_failure(wyb, root_element):
+    """When the loader points at a missing module, the error boundary catches it."""
+    h = wyb["vnode"].h
+
+    lazy = importlib.import_module("wybthon.lazy").lazy
+    LazyComp = lazy(lambda: ("__definitely_not_a_real_module__", "Page"))
+
+    async def run() -> None:
+        wyb["reconciler"].render(
+            h(
+                ErrorBoundary,
+                {
+                    "fallback": lambda err, reset: h("p", {}, "Failed to load"),
+                    "children": [h(LazyComp, {})],
+                },
+            ),
+            root_element,
+        )
+        await asyncio.sleep(0.01)
+
+    asyncio.run(run())
 
     texts = collect_texts(root_element.element)
-    assert any("Failed to load" in (t or "") for t in texts), f"Expected lazy error fallback, got: {texts!r}"
+    assert any("Failed to load" in (t or "") for t in texts), f"Expected error fallback, got: {texts!r}"
+
+
+def test_lazy_preload_starts_load_early(wyb, monkeypatch, root_element):
+    """preload() kicks off the loader before the first mount."""
+    component = wyb["component"].component
+    h = wyb["vnode"].h
+
+    calls = []
+
+    @component
+    def Page():
+        return h("p", {}, "preloaded page")
+
+    _install_fake_module(monkeypatch, "_wyb_test_preload_page", lambda: Page)
+
+    lazy = importlib.import_module("wybthon.lazy").lazy
+
+    def loader():
+        calls.append(1)
+        return ("_wyb_test_preload_page", "Page")
+
+    LazyComp = lazy(loader)
+
+    async def run() -> None:
+        LazyComp.preload()
+        await asyncio.sleep(0.01)
+        assert calls == [1]
+
+        wyb["reconciler"].render(h(LazyComp, {}), root_element)
+        await asyncio.sleep(0.01)
+
+    asyncio.run(run())
+
+    assert "preloaded page" in collect_texts(root_element.element)
+    assert calls == [1], "loader must run exactly once"

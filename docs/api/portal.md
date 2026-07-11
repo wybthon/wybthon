@@ -4,9 +4,10 @@
 
 #### What's in this module
 
-[`create_portal`][wybthon.create_portal] renders its children into a
-different DOM container while keeping them logically inside the
-component tree (so context, ownership, and event delegation still work).
+[`Portal`][wybthon.Portal] renders its children into a different DOM
+container while keeping them logically inside the component tree (so
+context, ownership, and event delegation still work). It matches
+SolidJS's `<Portal>` component.
 
 This is the right tool for modals, tooltips, popovers, and toast
 notifications that need to escape the visual layout of their parent.
@@ -14,7 +15,7 @@ notifications that need to escape the visual layout of their parent.
 #### Usage
 
 ```python
-from wybthon import component, create_portal, create_signal
+from wybthon import Portal, Show, component, create_signal
 from wybthon.html import button, div, p
 
 
@@ -29,22 +30,23 @@ def Modal():
         button("Open", on_click=toggle),
         Show(
             when=open_,
-            children=lambda: create_portal(
-                mount=document.body,
-                children=lambda: div(
+            children=lambda: Portal(
+                div(
                     p("I'm in document.body!"),
                     button("Close", on_click=toggle),
                     class_="modal",
                 ),
+                mount="body",
             ),
         ),
     )
 ```
 
-- `mount` accepts a DOM element or a CSS selector string.
+- `mount` accepts an [`Element`][wybthon.Element], a CSS selector
+  string, or a kernel node id. It defaults to `"body"`.
 - The portal cleans up its content when its owner unmounts.
-- Events bubble through the React-like component tree, *not* the DOM
-  tree, which is handy for keeping modal logic close to the trigger.
+- Events bubble through the component tree, *not* the DOM tree, which
+  is handy for keeping modal logic close to the trigger.
 
 #### See also
 

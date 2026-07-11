@@ -72,8 +72,10 @@ __all__ = [
     "create_computed",
     "create_deferred",
     "create_memo",
+    "create_reaction",
     "create_unique_id",
     "catch_error",
+    "on_error",
     "on_mount",
     "on_cleanup",
     "untrack",
@@ -127,10 +129,16 @@ _MAX_FLUSH_ITER = 100000
 _current_owner: Optional["Owner"] = None
 _current_observer: Optional["Computation"] = None
 
-# Effects pending execution in the current flush. Pure computations (memos)
-# are *not* queued; they recompute lazily on read. Render effects (created
-# by ``create_render_effect`` / ``create_computed``) run in an earlier
-# phase than user effects, matching SolidJS's update ordering.
+# Effects pending execution in the current flush. Memos are *not*
+# queued; they recompute lazily on read. Within one flush, the phases
+# match SolidJS's update ordering:
+#
+# 1. **Pure** (``create_computed``): derive state before anything renders.
+# 2. **Render** (internal holes/bindings, ``create_render_effect``):
+#    emit DOM ops.
+# 3. **Commit**: ship the buffered DOM ops across the bridge.
+# 4. **User** (``create_effect``): observe the committed DOM.
+_pure_queue: List["Computation"] = []
 _render_effect_queue: List["Computation"] = []
 _effect_queue: List["Computation"] = []
 _running_effects: bool = False
@@ -197,44 +205,54 @@ def _run_effects_if_idle() -> None:
 def _flush_effects() -> None:
     """Run all queued effects to completion (the "effects" phase).
 
-    Render effects (``create_render_effect`` / ``create_computed``) are
-    drained before user effects, and re-drained whenever a user effect
-    writes a signal, so user effects always observe DOM/render state
-    that has settled. Effects pull their dependencies via
-    ``_update_if_necessary`` so they always observe a fully-settled
-    graph. Effects enqueued *during* the flush (because an effect wrote
-    a signal) are drained in the same loop, giving synchronous settling
-    within one logical update.
+    Pure computations (``create_computed``) drain first, then render
+    effects (internal holes/bindings, ``create_render_effect``). Once
+    both are settled, the buffered DOM ops are committed across the
+    bridge, and only then do user effects (``create_effect``) run --
+    matching SolidJS, where ``createEffect`` callbacks observe the
+    updated DOM. A user effect that writes a signal re-drains the pure
+    and render phases (and re-commits) before the next user effect,
+    giving synchronous settling within one logical update.
     """
     global _running_effects
     if _running_effects:
         return
     _running_effects = True
     try:
+        pi = 0
         ri = 0
         ei = 0
         guard = 0
+        pure_queue = _pure_queue
         render_queue = _render_effect_queue
         queue = _effect_queue
-        while ri < len(render_queue) or ei < len(queue):
+        while pi < len(pure_queue) or ri < len(render_queue) or ei < len(queue):
             guard += 1
             if guard > _MAX_FLUSH_ITER:
                 raise RuntimeError(
                     "Wybthon: reactive update did not stabilize " "(possible cyclic effect writing its own dependency)."
                 )
-            if ri < len(render_queue):
+            if pi < len(pure_queue):
+                comp = pure_queue[pi]
+                pi += 1
+            elif ri < len(render_queue):
                 comp = render_queue[ri]
                 ri += 1
             else:
+                # Pure and render phases are settled: commit the DOM ops
+                # so the next user effect observes the updated DOM.
+                # A no-op when the buffer is empty.
+                _kernel_commit()
                 comp = queue[ei]
                 ei += 1
             if not comp._disposed:
                 comp._update_if_necessary()
     finally:
+        _pure_queue.clear()
         _render_effect_queue.clear()
         _effect_queue.clear()
         _running_effects = False
-    # Ship every DOM op the flush produced across the bridge in one batch.
+    # Ship any remaining DOM ops across the bridge in one batch.
     _kernel_commit()
 
 
@@ -253,7 +271,9 @@ class Owner:
     Attributes:
         _parent: Parent `Owner`, or `None` for roots.
         _children: Child owners, keyed by `id(child)` (insertion-ordered).
-        _cleanups: Callbacks invoked LIFO during disposal.
+            Allocated lazily on the first child.
+        _cleanups: Callbacks invoked LIFO during disposal. Allocated
+            lazily on the first registration.
         _disposed: True after `dispose()` has run; further calls are no-ops.
         _context_map: Lazily-allocated dict of context values stored at
             this owner (used by `Provider`).
@@ -269,15 +289,24 @@ class Owner:
         # Keyed by ``id(child)`` so a child can detach itself in O(1) when
         # disposed individually (a ``For`` row leaving a 10k-row list would
         # otherwise pay a linear list.remove against its parent).
-        self._children: Dict[int, Owner] = {}
-        self._cleanups: List[Callable[[], Any]] = []
+        self._children: Optional[Dict[int, Owner]] = None
+        self._cleanups: Optional[List[Callable[[], Any]]] = None
         self._disposed: bool = False
         self._context_map: Optional[Dict[Any, Any]] = None
         self._error_handler: Optional[Callable[..., Any]] = None
 
     def _add_child(self, child: "Owner") -> None:
         child._parent = self
-        self._children[id(child)] = child
+        if self._children is None:
+            self._children = {id(child): child}
+        else:
+            self._children[id(child)] = child
+
+    def _add_cleanup(self, fn: Callable[[], Any]) -> None:
+        if self._cleanups is None:
+            self._cleanups = [fn]
+        else:
+            self._cleanups.append(fn)
 
     def _dispose_children(self) -> None:
         if not self._children:
@@ -290,12 +319,14 @@ class Owner:
             child.dispose()
 
     def _run_cleanups(self) -> None:
-        while self._cleanups:
-            fn = self._cleanups.pop()
-            try:
-                fn()
-            except Exception:
-                pass
+        cleanups = self._cleanups
+        if cleanups:
+            while cleanups:
+                fn = cleanups.pop()
+                try:
+                    fn()
+                except Exception:
+                    pass
 
     def _set_context(self, ctx_id: Any, value: Any) -> None:
         if self._context_map is None:
@@ -322,8 +353,10 @@ class Owner:
         self._disposed = True
         self._dispose_children()
         self._run_cleanups()
-        if self._parent is not None:
-            self._parent._children.pop(id(self), None)
+        parent = self._parent
+        if parent is not None:
+            if parent._children is not None:
+                parent._children.pop(id(self), None)
             self._parent = None
 
 
@@ -344,6 +377,8 @@ class Computation(Owner):
     Attributes:
         _fn: The callback executed by `_update()`.
         _sources: Sources (signals or memos) read during the last run.
+            An insertion-ordered dict used as an ordered set, allocated
+            lazily on the first tracked read.
         _state: One of `_CLEAN` / `_CHECK` / `_DIRTY`.
         _is_effect: True for effects (scheduled in the effects phase).
         _is_memo: True for memos (carry a value and observers).
@@ -352,14 +387,13 @@ class Computation(Owner):
     __slots__ = (
         "_fn",
         "_sources",
-        "_sources_set",
         "_state",
         "_is_effect",
         "_is_render",
+        "_is_pure",
         "_is_memo",
         "_value",
         "_observers",
-        "_observer_set",
         "_equals",
     )
 
@@ -369,52 +403,54 @@ class Computation(Owner):
         *,
         is_effect: bool = False,
         is_render: bool = False,
+        is_pure: bool = False,
         is_memo: bool = False,
         value: Any = None,
         equals: Any = _DEFAULT_EQUALS,
     ) -> None:
         super().__init__()
         self._fn = fn
-        self._sources: List[Any] = []
-        self._sources_set: Set[Any] = set()
+        self._sources: Optional[Dict[Any, None]] = None
         self._state: int = _DIRTY
         self._is_effect = is_effect
         self._is_render = is_render
+        self._is_pure = is_pure
         self._is_memo = is_memo
         self._value: Any = value
-        self._observers: List[Computation] = []
-        self._observer_set: Set[Computation] = set()
+        self._observers: Optional[Dict[Computation, None]] = None
         self._equals = equals
 
     # -- source side (memos act as sources for other computations) ----------
 
     def _add_observer(self, comp: "Computation") -> None:
-        if comp not in self._observer_set:
-            self._observer_set.add(comp)
-            self._observers.append(comp)
+        obs = self._observers
+        if obs is None:
+            self._observers = {comp: None}
+        else:
+            obs[comp] = None
 
     def _remove_observer(self, comp: "Computation") -> None:
-        if comp in self._observer_set:
-            self._observer_set.discard(comp)
-            try:
-                self._observers.remove(comp)
-            except ValueError:
-                pass
+        obs = self._observers
+        if obs is not None:
+            obs.pop(comp, None)
 
     # -- observer side -------------------------------------------------------
 
     def _add_source(self, source: Any) -> None:
-        if source in self._sources_set:
-            return
-        self._sources_set.add(source)
-        self._sources.append(source)
-        source._add_observer(self)
+        srcs = self._sources
+        if srcs is None:
+            self._sources = {source: None}
+            source._add_observer(self)
+        elif source not in srcs:
+            srcs[source] = None
+            source._add_observer(self)
 
     def _clear_sources(self) -> None:
-        for src in self._sources:
-            src._remove_observer(self)
-        self._sources.clear()
-        self._sources_set.clear()
+        srcs = self._sources
+        if srcs:
+            for src in srcs:
+                src._remove_observer(self)
+            srcs.clear()
 
     # -- scheduling ----------------------------------------------------------
 
@@ -432,7 +468,9 @@ class Computation(Owner):
             self._state = state
             if was_clean:
                 if self._is_effect:
-                    if self._is_render:
+                    if self._is_pure:
+                        _pure_queue.append(self)
+                    elif self._is_render:
                         _render_effect_queue.append(self)
                     else:
                         _effect_queue.append(self)
@@ -452,10 +490,12 @@ class Computation(Owner):
         if self._disposed or self._state == _CLEAN:
             return
         if self._state == _CHECK:
-            for src in list(self._sources):
-                src._update_if_necessary()
-                if self._state == _DIRTY:
-                    break
+            srcs = self._sources
+            if srcs:
+                for src in list(srcs):
+                    src._update_if_necessary()
+                    if self._state == _DIRTY:
+                        break
         if self._state == _DIRTY:
             self._state = _CLEAN
             self._update()
@@ -516,8 +556,9 @@ class Computation(Owner):
                 # A real value change escalates observers from CHECK to
                 # DIRTY so they recompute; an unchanged value leaves them
                 # CHECK (and they may resolve to CLEAN without work).
-                for o in self._observers:
-                    o._state = _DIRTY
+                if self._observers:
+                    for o in self._observers:
+                        o._state = _DIRTY
 
     def _read(self) -> Any:
         """Read a memo's value: ensure it's current, then subscribe the reader."""
@@ -536,14 +577,13 @@ class Computation(Owner):
         if self._disposed:
             return
         self._clear_sources()
-        for o in list(self._observers):
-            o._sources_set.discard(self)
-            try:
-                o._sources.remove(self)
-            except ValueError:
-                pass
-        self._observers.clear()
-        self._observer_set.clear()
+        obs = self._observers
+        if obs:
+            for o in list(obs):
+                o_srcs = o._sources
+                if o_srcs is not None:
+                    o_srcs.pop(self, None)
+            obs.clear()
         super().dispose()
 
 
@@ -566,24 +606,24 @@ class Signal(Generic[T]):
             for the full semantics.
     """
 
+    __slots__ = ("_value", "_observers", "_equals")
+
     def __init__(self, value: T, *, equals: Any = _DEFAULT_EQUALS) -> None:
         self._value: T = value
-        self._observers: List[Computation] = []
-        self._observer_set: Set[Computation] = set()
+        self._observers: Optional[Dict[Computation, None]] = None
         self._equals = equals
 
     def _add_observer(self, comp: "Computation") -> None:
-        if comp not in self._observer_set:
-            self._observer_set.add(comp)
-            self._observers.append(comp)
+        obs = self._observers
+        if obs is None:
+            self._observers = {comp: None}
+        else:
+            obs[comp] = None
 
     def _remove_observer(self, comp: "Computation") -> None:
-        if comp in self._observer_set:
-            self._observer_set.discard(comp)
-            try:
-                self._observers.remove(comp)
-            except ValueError:
-                pass
+        obs = self._observers
+        if obs is not None:
+            obs.pop(comp, None)
 
     def _update_if_necessary(self) -> None:
         """Source-interface no-op; a signal's value is always current."""
@@ -907,6 +947,11 @@ class _Computed(Generic[T]):
     def get(self) -> T:
         return cast(T, self._comp._read())
 
+    def peek(self) -> T:
+        """Return the current (recomputed if stale) value without subscribing."""
+        self._comp._update_if_necessary()
+        return cast(T, self._comp._value)
+
     def dispose(self) -> None:
         self._comp.dispose()
 
@@ -962,7 +1007,7 @@ def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
         comp: The computation whose disposal should trigger the cleanup.
         fn: Zero-arg cleanup callback.
     """
-    comp._cleanups.append(fn)
+    comp._add_cleanup(fn)
 
 
 # ---------------------------------------------------------------------------
@@ -1109,7 +1154,13 @@ class Resource(Generic[R]):
         ```
     """
 
-    def __init__(self, fetcher: FetchFn, source: Optional[Callable[[], Any]] = None) -> None:
+    def __init__(
+        self,
+        fetcher: FetchFn,
+        source: Optional[Callable[[], Any]] = None,
+        *,
+        initial_value: Any = _MISSING,
+    ) -> None:
         import asyncio
         import inspect
 
@@ -1132,11 +1183,12 @@ class Resource(Generic[R]):
             self._fetcher_takes_signal = False
             self._fetcher_takes_source = False
 
-        self._data: Signal[Optional[R]] = Signal(None)
+        has_initial = initial_value is not _MISSING
+        self._data: Signal[Optional[R]] = Signal(initial_value if has_initial else None)
         self._error: Signal[Optional[Any]] = Signal(None)
         self._loading: Signal[bool] = Signal(False)
-        self._state: Signal[str] = Signal("unresolved")
-        self._has_value: bool = False
+        self._state: Signal[str] = Signal("ready" if has_initial else "unresolved")
+        self._has_value: bool = has_initial
 
         if source is None:
             self.refetch()
@@ -1290,7 +1342,14 @@ class Resource(Generic[R]):
         try:
             self._task = self._asyncio.create_task(runner())
         except Exception:
-            self._asyncio.get_event_loop().create_task(runner())
+            # No running loop (e.g., synchronous test code). Schedule on
+            # the policy loop, creating one if none exists yet.
+            try:
+                loop = self._asyncio.get_event_loop()
+            except Exception:
+                loop = self._asyncio.new_event_loop()
+                self._asyncio.set_event_loop(loop)
+            self._task = loop.create_task(runner())
 
     def cancel(self) -> None:
         """Abort the current in-flight fetch, if any.
@@ -1324,6 +1383,8 @@ class Resource(Generic[R]):
 def create_resource(
     source_or_fetcher: Union[Callable[[], Any], Callable[..., Awaitable[R]]],
     fetcher: Optional[Callable[..., Awaitable[R]]] = None,
+    *,
+    initial_value: Any = _MISSING,
 ) -> Resource[R]:
     """Create an async [`Resource`][wybthon.Resource] accessor.
 
@@ -1345,6 +1406,11 @@ def create_resource(
             (typically a signal accessor).
         fetcher: Optional fetcher. Required when `source_or_fetcher` is a
             source getter.
+        initial_value: Optional seed data. When provided, the resource
+            starts `"ready"` with this value, so reading it never
+            triggers a [`Suspense`][wybthon.Suspense] fallback; the
+            first fetch runs as a `"refreshing"` state instead of
+            `"pending"`, matching SolidJS's `initialValue` option.
 
     Returns:
         A `Resource[R]`. Call it to read the data; read `.loading`,
@@ -1359,11 +1425,12 @@ def create_resource(
             return await resp.json()
 
         user = create_resource(user_id, load_user)
+        cached = create_resource(load_all, initial_value=[])
         ```
     """
     if fetcher is None:
-        return Resource(source_or_fetcher)
-    return Resource(fetcher, source=source_or_fetcher)
+        return Resource(source_or_fetcher, initial_value=initial_value)
+    return Resource(fetcher, source=source_or_fetcher, initial_value=initial_value)
 
 
 # ---------------------------------------------------------------------------
@@ -1511,8 +1578,9 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
 
     Returns:
         A `(getter, setter)` tuple. The getter is a zero-arg callable
-        suitable for embedding as a reactive hole. The setter returns
-        the value that was stored.
+        suitable for embedding as a reactive hole; its `.peek()` method
+        returns the current value without subscribing the caller. The
+        setter returns the value that was stored.
 
     Example:
         ```python
@@ -1522,9 +1590,19 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
         print(count())              # 5
         set_count(lambda c: c + 1)  # functional update
         print(count())              # 6
+        count.peek()                # 6, without subscribing
         ```
     """
     sig: Signal[Any] = Signal(value, equals=equals)
+
+    def getter() -> Any:
+        obs = _current_observer
+        if obs is not None:
+            obs._add_source(sig)
+        return sig._value
+
+    getter.peek = sig.peek  # type: ignore[attr-defined]
+    getter._wyb_getter = True  # type: ignore[attr-defined]
 
     def setter(new_value: Any) -> Any:
         if callable(new_value):
@@ -1532,7 +1610,7 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
         sig.set(new_value)
         return sig._value
 
-    return sig.get, setter
+    return getter, setter
 
 
 # Cache of "does fn accept a previous-value positional arg" results, keyed
@@ -1570,8 +1648,8 @@ def _accepts_prev_arg(fn: Callable[..., Any]) -> bool:
     return result
 
 
-def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool) -> Computation:
-    """Shared implementation for `create_effect` and `create_render_effect`."""
+def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool = False, is_pure: bool = False) -> Computation:
+    """Shared implementation for `create_effect`, `create_render_effect`, and `create_computed`."""
     if _accepts_prev_arg(fn):
         _prev: List[Any] = [None]
 
@@ -1582,7 +1660,7 @@ def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool) -> Computati
     else:
         body = fn
 
-    comp = Computation(body, is_effect=True, is_render=is_render)
+    comp = Computation(body, is_effect=True, is_render=is_render, is_pure=is_pure)
     if _current_owner is not None:
         _current_owner._add_child(comp)
     comp._update_if_necessary()
@@ -1625,9 +1703,10 @@ def create_render_effect(fn: Callable[..., Any]) -> Computation:
 
     Matches SolidJS's `createRenderEffect`: within one flush, all pending
     render effects execute before any [`create_effect`][wybthon.create_effect]
-    callbacks. Wybthon's internal reactive holes and prop bindings run in
-    this phase, so a render effect observes the DOM in the same state the
-    framework's own bindings do.
+    callbacks, and before the batched DOM ops are committed. Wybthon's
+    internal reactive holes and prop bindings run in this phase, so a
+    render effect observes the DOM in the same state the framework's own
+    bindings do (updates emitted but not yet committed).
 
     Args:
         fn: Zero- or one-arg callable (the previous return value is
@@ -1642,11 +1721,12 @@ def create_render_effect(fn: Callable[..., Any]) -> Computation:
 def create_computed(fn: Callable[..., Any]) -> Computation:
     """Create an eagerly-run computation in the pure (pre-render) phase.
 
-    Matches SolidJS's `createComputed`: use it to derive state by writing
-    other signals *before* rendering happens. Prefer
-    [`create_memo`][wybthon.create_memo] for plain derived values; reach
-    for `create_computed` only when you must push a value into another
-    signal.
+    Matches SolidJS's `createComputed`: within one flush, all pending
+    `create_computed` computations run **before** any render effects,
+    so signals they write are fully settled before the DOM updates.
+    Prefer [`create_memo`][wybthon.create_memo] for plain derived
+    values; reach for `create_computed` only when you must push a value
+    into another signal.
 
     Args:
         fn: Zero- or one-arg callable.
@@ -1654,7 +1734,63 @@ def create_computed(fn: Callable[..., Any]) -> Computation:
     Returns:
         The underlying `Computation`.
     """
-    return _create_effect_impl(fn, is_render=True)
+    return _create_effect_impl(fn, is_pure=True)
+
+
+def create_reaction(on_invalidate: Callable[[], Any]) -> Callable[[Callable[[], Any]], None]:
+    """Create an on-change reaction with manual tracking.
+
+    Matches SolidJS's `createReaction`: the returned `track` function
+    runs its argument once with tracking enabled; the **first time** any
+    tracked dependency changes, `on_invalidate` fires (untracked) and
+    tracking stops until `track` is called again. Useful for "notify me
+    once" patterns where the rendering of the change is decoupled from
+    its detection.
+
+    Args:
+        on_invalidate: Zero-arg callback invoked once per tracked change.
+
+    Returns:
+        A `track(fn)` function. Call it with a zero-arg callable whose
+        signal reads should be tracked.
+
+    Example:
+        ```python
+        count, set_count = create_signal(0)
+        track = create_reaction(lambda: print("count changed!"))
+
+        track(count)     # start tracking
+        set_count(1)     # prints "count changed!"
+        set_count(2)     # nothing: tracking stopped
+        track(count)     # re-arm
+        ```
+    """
+    pending: List[Optional[Callable[[], Any]]] = [None]
+
+    def body() -> None:
+        tracked = pending[0]
+        if tracked is not None:
+            pending[0] = None
+            tracked()
+        else:
+            # Invalidation run: sources were already cleared by
+            # ``_update``; report the change without re-tracking.
+            untrack(on_invalidate)
+
+    comp = Computation(body, is_effect=True)
+    if _current_owner is not None:
+        _current_owner._add_child(comp)
+    # Stay idle until the first ``track`` call.
+    comp._state = _CLEAN
+
+    def track(fn: Callable[[], Any]) -> None:
+        if comp._disposed:
+            return
+        pending[0] = fn
+        comp._state = _DIRTY
+        comp._update_if_necessary()
+
+    return track
 
 
 _unique_id_counter: int = 0
@@ -1712,6 +1848,48 @@ def catch_error(fn: Callable[[], T], handler: Callable[[Any], Any]) -> Optional[
         _current_owner = prev
 
 
+def on_error(handler: Callable[[Any], Any]) -> None:
+    """Register an error handler on the current reactive owner scope.
+
+    Matches SolidJS's `onError`: exceptions raised by child computations
+    (effects created under this scope, reactive holes, descendant
+    component setups) route to the nearest ancestor handler. Multiple
+    calls in the same scope chain the handlers; each runs in
+    registration order.
+
+    Unlike [`catch_error`][wybthon.catch_error], which wraps a single
+    function call in its own scope, `on_error` protects everything
+    created under the *current* scope for its remaining lifetime.
+
+    Args:
+        handler: Callback receiving the exception.
+
+    Raises:
+        RuntimeError: If called outside any reactive scope.
+
+    Example:
+        ```python
+        @component
+        def Dashboard():
+            on_error(lambda exc: report_to_sentry(exc))
+            ...
+        ```
+    """
+    owner = _current_owner
+    if owner is None:
+        raise RuntimeError("on_error() must be called inside a component or reactive scope")
+    existing = owner._error_handler
+    if existing is None:
+        owner._error_handler = handler
+    else:
+
+        def chained(exc: Any) -> None:
+            existing(exc)
+            handler(exc)
+
+        owner._error_handler = chained
+
+
 def create_deferred(source: Callable[[], T]) -> Callable[[], T]:
     """Return a getter that trails `source`, updating on the next event-loop tick.
 
@@ -1753,7 +1931,7 @@ def create_deferred(source: Callable[[], T]) -> Callable[[], T]:
     return deferred.get
 
 
-def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
+def create_memo(fn: Callable[[], T], *, equals: Any = _DEFAULT_EQUALS) -> Callable[[], T]:
     """Create an auto-tracking computed value and return its getter.
 
     Re-computes lazily, only when read after a tracked source changed.
@@ -1761,19 +1939,36 @@ def create_memo(fn: Callable[[], T]) -> Callable[[], T]:
 
     Args:
         fn: Zero-arg callable producing the derived value.
+        equals: Equality policy controlling when the memo's own
+            observers are notified after a recompute. Same semantics as
+            [`create_signal`][wybthon.create_signal]: the default is
+            value equality with an identity fast path, `False` always
+            notifies, and a callable `(old, new) -> bool` skips
+            notification when it returns `True`.
 
     Returns:
         A zero-arg callable. Reading it inside a tracking scope creates
-        a dependency on the memoised value.
+        a dependency on the memoised value. Its `.peek()` method returns
+        the (up-to-date) value without subscribing the caller.
 
     Example:
         ```python
         doubled = create_memo(lambda: count() * 2)
-        print(doubled())  # reactive read
+        print(doubled())      # reactive read
+        print(doubled.peek())  # untracked read
+
+        # Notify only when the result list changes length:
+        heads = create_memo(lambda: items()[:5], equals=lambda a, b: len(a) == len(b))
         ```
     """
-    c = _Computed(fn)
-    return c.get
+    c = _Computed(fn, equals=equals)
+
+    def getter() -> T:
+        return c.get()
+
+    getter.peek = c.peek  # type: ignore[attr-defined]
+    getter._wyb_getter = True  # type: ignore[attr-defined]
+    return getter
 
 
 def on_mount(fn: Callable[[], Any]) -> None:
@@ -1812,7 +2007,7 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
         RuntimeError: If called outside any reactive scope.
     """
     if _current_owner is not None:
-        _current_owner._cleanups.append(fn)
+        _current_owner._add_cleanup(fn)
     else:
         raise RuntimeError("on_cleanup() must be called inside a component or create_effect()")
 
@@ -2520,7 +2715,7 @@ def create_selector(
                     if not bucket and _subs.get(key) is bucket:
                         del _subs[key]
 
-                obs._cleanups.append(_unsubscribe)
+                obs._add_cleanup(_unsubscribe)
         return _prev_key[0] == key
 
     return is_selected

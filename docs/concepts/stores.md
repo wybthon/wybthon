@@ -164,21 +164,36 @@ raw = unwrap(store.todos)   # plain list of dicts
 
 `create_mutable(initial)` returns a single directly-writable proxy
 instead of a `(store, setter)` pair, mirroring Solid's `createMutable`.
-Top-level writes go through plain attribute or item assignment and
-notify subscribers of the touched key only:
+Writes go through plain attribute or item assignment at **any depth**
+and notify subscribers of the touched path only:
 
 ```python
 from wybthon import create_mutable
 
-state = create_mutable({"count": 0, "label": "hi"})
+state = create_mutable({"count": 0, "user": {"name": "Ada"}, "tags": []})
 state.count += 1
-state["label"] = "hello"
+state.user.name = "Grace"    # nested write
+state.tags.append("admin")   # tracked list mutation
 ```
 
-Nested containers remain read-only proxies. Prefer `create_store` for
-most app state; the explicit setter keeps mutation sites easy to find.
-Reach for `create_mutable` for small, flat objects that are easier to
-update in place.
+Nested lists support `append`, `insert`, `pop`, `remove`, `clear`, and
+index assignment. To group several writes into one update, use
+`modify_mutable` with `produce` or `reconcile` (mirroring Solid's
+`modifyMutable`):
+
+```python
+from wybthon import modify_mutable, produce
+
+def bump(draft):
+    draft.count += 1
+    draft.user.name = "Hopper"
+
+modify_mutable(state, produce(bump))
+```
+
+Prefer `create_store` for most app state; the explicit setter keeps
+mutation sites easy to find. Reach for `create_mutable` for objects
+that are easier to update in place.
 
 #### Stores vs signals
 

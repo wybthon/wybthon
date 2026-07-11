@@ -2,7 +2,7 @@
 
 from app.testkit import tid
 
-from wybthon import Show, button, component, create_portal, create_signal, div, dynamic, h2, span
+from wybthon import Portal, Show, button, component, create_signal, div, dynamic, h2, span
 
 
 @component
@@ -21,7 +21,7 @@ def Page():
         button("toggle", on_click=lambda e: set_show(not show()), **tid("portal-toggle")),
         button("inc", on_click=lambda e: set_count(count() + 1), **tid("portal-inc")),
         div(
-            Show(when=show, children=lambda: create_portal(content(), "#portal-target-inner")),
+            Show(when=show, children=lambda: Portal(content(), mount="#portal-target-inner")),
             **tid("portal-source"),
         ),
         div(div(id="portal-target-inner", **tid("portal-target-inner")), **tid("portal-target")),

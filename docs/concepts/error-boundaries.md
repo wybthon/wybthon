@@ -52,11 +52,32 @@ view_keyed = h(
 Provide `on_error` to observe errors when they're captured by the boundary:
 
 ```python
-def on_error(err):
+def observe(err):
     print("Captured:", err)
 
-view = h(ErrorBoundary, {"fallback": lambda e, r: "Oops", "on_error": on_error}, h(Failing, {}))
+view = h(ErrorBoundary, {"fallback": lambda e, r: "Oops", "on_error": observe}, h(Failing, {}))
 ```
+
+#### The `on_error` primitive
+
+Separately from the boundary's prop, the top-level
+[`on_error`][wybthon.on_error] primitive registers an error handler on
+the **current reactive scope** (mirroring Solid's `onError`). Errors
+raised by effects and computations created under that scope route to
+the nearest ancestor handler instead of propagating:
+
+```python
+from wybthon import component, on_error
+
+@component
+def Dashboard():
+    on_error(lambda exc: report_to_monitoring(exc))
+    ...
+```
+
+Use `ErrorBoundary` when you need fallback UI, and `on_error` (or
+[`catch_error`][wybthon.catch_error]) when you only need to observe or
+log.
 
 #### Limitations
 

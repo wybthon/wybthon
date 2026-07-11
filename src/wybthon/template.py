@@ -38,15 +38,22 @@ crossing) when they contain constructs the HTML parser would mangle:
 adjacent or empty text nodes, raw text elements, invalid attribute
 names, or element nestings the parser rewrites (implied `<tbody>`,
 auto-closed `<p>`, and similar).
+
+Plans are **cached per shape**: a single walk of the VNode tree
+collects the per-instance data (id order and bindings) while building
+a hashable *shape key* that uniquely determines the serialized HTML.
+Serialization, escaping, and eligibility validation run only on the
+first mount of each shape; every later mount of a structurally
+identical tree (for example, the rows of a list) is a dictionary hit.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 from .props import is_event_prop, to_kebab
-from .vnode import ChildType, VNode, is_getter, normalize_children
+from .vnode import VNode, is_getter, normalize_children
 
 __all__ = ["MountPlan", "build_plan"]
 
@@ -148,6 +155,35 @@ class _NotEligible(Exception):
     """Raised internally when a subtree can't use the template fast path."""
 
 
+class _NoCache(Exception):
+    """Raised internally when a tree contains props the shape key can't hash.
+
+    Non-scalar static prop values (style dicts, class lists, datasets)
+    would need per-value serialization to key correctly, so such trees
+    skip the shape cache and run the full serializer on every mount.
+    """
+
+
+# Sentinel markers used in shape keys. Distinct objects (hashed by id)
+# so they can never collide with user-supplied prop names or values.
+_K_REF = object()  # ref binding
+_K_EVENT = object()  # event handler binding
+_K_GETTER = object()  # reactive prop binding
+_K_PROP = object()  # value/checked DOM-property binding
+_K_TEXT = object()  # text child (content hoisted, not part of the key)
+_K_HOLE = object()  # dynamic-child placeholder
+_K_MOUNT = object()  # component/fragment-child placeholder
+_K_OPEN = object()  # end of props / start of children
+_K_CLOSE = object()  # end of element
+
+# Shape key -> serialized HTML string, or None when the shape is
+# ineligible for the template fast path. Bounded to keep pathological
+# trees (unique static attr values per instance) from growing without
+# limit; entries past the cap simply aren't cached.
+_shape_cache: Dict[Tuple[Any, ...], Optional[str]] = {}
+_SHAPE_CACHE_MAX = 2048
+
+
 class MountPlan:
     """Serialized mount plan for a static-skeleton VNode subtree.
 
@@ -191,6 +227,11 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     VNode tree is normalized in place (children lists become `VNode`
     lists) as a side effect, exactly as the per-node mount path does.
 
+    A single walk collects the per-instance order and bindings while
+    building the shape key. The HTML string (and the eligibility
+    verdict) comes from the shape cache; the full serializer runs only
+    on the first mount of each shape.
+
     Args:
         vnode: An element VNode (string tag, not `_text`/`_dynamic`/
             `_fragment`).
@@ -200,6 +241,33 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     """
     if not isinstance(vnode.tag, str) or vnode.tag.startswith("_"):
         return None
+
+    key_parts: List[Any] = []
+    order: List[Tuple[int, VNode, Optional[VNode]]] = []
+    bindings: List[Tuple[VNode, int, str, Any]] = []
+    try:
+        _walk_shape(vnode, None, key_parts, order, bindings)
+    except _NoCache:
+        return _build_plan_uncached(vnode)
+
+    if len(order) < MIN_TEMPLATE_NODES:
+        return None
+
+    key = tuple(key_parts)
+    if key in _shape_cache:
+        html = _shape_cache[key]
+        if html is None:
+            return None
+        return MountPlan(html, order, bindings)
+
+    plan = _build_plan_uncached(vnode)
+    if len(_shape_cache) < _SHAPE_CACHE_MAX:
+        _shape_cache[key] = plan.html if plan is not None else None
+    return plan
+
+
+def _build_plan_uncached(vnode: VNode) -> Optional[MountPlan]:
+    """Run the full serializer (validation + HTML) for one tree."""
     parts: List[str] = []
     order: List[Tuple[int, VNode, Optional[VNode]]] = []
     bindings: List[Tuple[VNode, int, str, Any]] = []
@@ -212,6 +280,82 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     return MountPlan("".join(parts), order, bindings)
 
 
+# Static prop value types the shape key can represent directly. Two
+# values that compare equal but serialize differently (5 vs 5.0 vs
+# True) are disambiguated by including the type in the key.
+_KEYABLE_TYPES = (str, int, float, bool)
+
+
+def _walk_shape(
+    vnode: VNode,
+    parent: Optional[VNode],
+    key_parts: List[Any],
+    order: List[Tuple[int, VNode, Optional[VNode]]],
+    bindings: List[Tuple[VNode, int, str, Any]],
+) -> None:
+    """Collect order/bindings for one tree while building its shape key.
+
+    Performs no validation and builds no HTML; two trees that produce
+    the same key are guaranteed to serialize to the same HTML string
+    and to have the same fast-path eligibility, so both come from the
+    shape cache.
+    """
+    tag = vnode.tag
+    order.append((NODE_STATIC, vnode, parent))
+    key_parts.append(tag)
+
+    for name, value in vnode.props.items():
+        if name == "key":
+            continue
+        if name == "ref":
+            if value is not None:
+                bindings.append((vnode, BIND_REF, name, value))
+                key_parts.append(_K_REF)
+            continue
+        if is_event_prop(name):
+            bindings.append((vnode, BIND_EVENT, name, value))
+            key_parts.append(_K_EVENT)
+            key_parts.append(name)
+            continue
+        if is_getter(value):
+            bindings.append((vnode, BIND_REACTIVE, name, value))
+            key_parts.append(_K_GETTER)
+            key_parts.append(name)
+            continue
+        if name == "value" or name == "checked":
+            bindings.append((vnode, BIND_PROP, name, value))
+            key_parts.append(_K_PROP)
+            key_parts.append(name)
+            continue
+        if value is None or type(value) in _KEYABLE_TYPES:
+            key_parts.append(name)
+            key_parts.append(type(value))
+            key_parts.append(value)
+        else:
+            raise _NoCache
+
+    key_parts.append(_K_OPEN)
+
+    norm_children = normalize_children(vnode.children)
+    vnode.children = norm_children
+    for child in norm_children:
+        ctag = child.tag
+        if ctag == "_text":
+            order.append((NODE_STATIC, child, vnode))
+            bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
+            key_parts.append(_K_TEXT)
+        elif isinstance(ctag, str) and not ctag.startswith("_"):
+            _walk_shape(child, vnode, key_parts, order, bindings)
+        elif ctag == "_dynamic":
+            order.append((NODE_HOLE, child, vnode))
+            key_parts.append(_K_HOLE)
+        else:
+            order.append((NODE_MOUNT, child, vnode))
+            key_parts.append(_K_MOUNT)
+
+    key_parts.append(_K_CLOSE)
+
+
 def _serialize_element(
     vnode: VNode,
     parent: Optional[VNode],
@@ -219,7 +363,8 @@ def _serialize_element(
     order: List[Tuple[int, VNode, Optional[VNode]]],
     bindings: List[Tuple[VNode, int, str, Any]],
 ) -> None:
-    tag = cast(str, vnode.tag)
+    tag = vnode.tag
+    assert isinstance(tag, str)
     lower = tag.lower()
     if lower in _RAW_TEXT_ELEMENTS:
         raise _NotEligible
@@ -258,7 +403,7 @@ def _serialize_element(
     parts.append(">")
 
     norm_children = normalize_children(vnode.children)
-    vnode.children = cast(List[ChildType], norm_children)
+    vnode.children = norm_children
 
     no_text = lower in _NO_TEXT_CONTENT
     allowed_children = _ALLOWED_CHILDREN.get(lower)

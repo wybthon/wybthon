@@ -1,10 +1,10 @@
 from wybthon import (
     For,
+    Portal,
     Ref,
     button,
     component,
     create_memo,
-    create_portal,
     create_signal,
     div,
     dynamic,
@@ -99,10 +99,10 @@ def PortalDemo():
         target_el = ref.current
         if not show() or target_el is None:
             return span("")
-        return create_portal(
+        return Portal(
             div(
                 div(
-                    p("This content is rendered via create_portal into the target below."),
+                    p("This content is rendered via Portal into the target below."),
                     button("Close", on_click=lambda e: set_show(False)),
                     style={
                         "padding": "12px",
@@ -112,11 +112,11 @@ def PortalDemo():
                     },
                 ),
             ),
-            target_el,
+            mount=target_el,
         )
 
     return div(
-        h3("create_portal"),
+        h3("Portal"),
         button("Toggle portal", on_click=lambda e: set_show(not show())),
         p(
             "Portal target container:",
@@ -145,7 +145,7 @@ def Page():
     return div(
         div(
             h2("Primitives"),
-            p("Core reactive primitives: create_memo, signals, on_mount, and create_portal."),
+            p("Core reactive primitives: create_memo, signals, on_mount, and Portal."),
             class_="page-header",
         ),
         h(MemoDemo, {}),

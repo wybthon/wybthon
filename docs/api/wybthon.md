@@ -32,7 +32,7 @@
 - Events
   - `DomEvent`
 - Lazy loading
-  - `lazy`, `load_component`, `preload_component`
+  - `lazy`
 - Development mode
   - `DEV_MODE`, `set_dev_mode`, `is_dev_mode`
 

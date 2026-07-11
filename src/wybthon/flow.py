@@ -234,8 +234,12 @@ def _ForComponent(props: ReactiveProps) -> Any:
     def source() -> Any:
         return _eval(props.value("each")) or None
 
+    # The mapping callback is fixed at setup (matching SolidJS, where the
+    # <For> children function can't be swapped reactively); resolving it
+    # once keeps the per-row path allocation-free.
+    children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
+
     def map_row(item: Callable[[], Any], index: Callable[[], int]) -> VNode:
-        children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
         if children_fn is None:
             return to_text_vnode("")
         vnode = _to_vnode(children_fn(item, index))
@@ -297,8 +301,9 @@ def _IndexComponent(props: ReactiveProps) -> Any:
     def source() -> Any:
         return _eval(props.value("each")) or None
 
+    children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
+
     def map_slot(item: Callable[[], Any], index: int) -> VNode:
-        children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
         if children_fn is None:
             return to_text_vnode("")
         vnode = _to_vnode(children_fn(item, index))
