@@ -40,6 +40,10 @@ CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 # Sentinel used by reactive prop bindings to detect "first run".
 _UNSET = object()
 
+# Lazily-bound reference to ``wybthon.reactivity.effect`` (a circular
+# import at module load time; binding once avoids a per-binding import).
+_effect: Any = None
+
 
 def to_kebab(name: str) -> str:
     """Convert a camelCase property name to kebab-case.
@@ -235,7 +239,11 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
     Returns the underlying `Computation` so callers can dispose it when
     the element unmounts.
     """
-    from .reactivity import effect
+    global _effect
+    if _effect is None:
+        from .reactivity import effect as _effect_fn
+
+        _effect = _effect_fn
 
     last: list = [_UNSET]
 
@@ -249,7 +257,7 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
         last[0] = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    return effect(update)
+    return _effect(update)
 
 
 # ---------------------------------------------------------------------------

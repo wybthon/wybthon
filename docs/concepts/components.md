@@ -260,26 +260,27 @@ The wrapped function receives `(props, ref)` instead of `(props,)`,
 and `ref` is **stripped** from props (matching React's `forwardRef`
 semantics).  When no `ref` is provided, `ref` is `None`.
 
-#### `create_portal`
+#### `Portal`
 
-Use `create_portal` to render children into a DOM node outside the
-parent component's hierarchy. Ideal for modals, tooltips, and overlays:
+Use `Portal` to render children into a DOM node outside the parent
+component's hierarchy. Ideal for modals, tooltips, and overlays:
 
 ```python
-from wybthon import component, create_portal, h
+from wybthon import Portal, component, h
 
 @component
 def Modal():
     return h("div", {},
         h("p", {}, "Page content"),
-        create_portal(
+        Portal(
             h("div", {"class": "modal"}, "I appear in #modal-root!"),
-            "#modal-root",
+            mount="#modal-root",
         ),
     )
 ```
 
-The second argument is an `Element` or a CSS selector string.
+The `mount` argument is an `Element`, a CSS selector string, or a
+kernel node id; it defaults to `"body"`.
 
 #### Flow control
 

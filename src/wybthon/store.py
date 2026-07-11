@@ -53,7 +53,7 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple, TypeVar
 
 from .reactivity import Signal, batch
 
-__all__ = ["create_store", "produce", "reconcile", "unwrap", "create_mutable"]
+__all__ = ["create_store", "produce", "reconcile", "unwrap", "create_mutable", "modify_mutable"]
 
 T = TypeVar("T")
 
@@ -63,17 +63,19 @@ class _StoreNode:
 
     Child nodes are cached by key so that proxy reads and setter
     writes for the same path always resolve to the same `Signal`
-    instances.
+    instances. The `_mutable` flag (set by `create_mutable`, inherited
+    by children) controls whether wrapped values are writable proxies.
     """
 
-    __slots__ = ("_signals", "_raw", "_children", "_proxy")
+    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_mutable")
 
-    def __init__(self, raw: Any) -> None:
+    def __init__(self, raw: Any, mutable: bool = False) -> None:
         """Wrap `raw` in an empty signal/child cache."""
         object.__setattr__(self, "_signals", {})
         object.__setattr__(self, "_raw", raw)
         object.__setattr__(self, "_children", {})
         object.__setattr__(self, "_proxy", None)
+        object.__setattr__(self, "_mutable", mutable)
 
     def _get_signal(self, key: Any) -> Signal:
         signals: Dict[Any, Signal] = object.__getattribute__(self, "_signals")
@@ -105,7 +107,7 @@ class _StoreNode:
                     child_raw = None
             else:
                 child_raw = getattr(raw, key, None)
-            child_node = _StoreNode(child_raw)
+            child_node = _StoreNode(child_raw, object.__getattribute__(self, "_mutable"))
             children[key] = child_node
         return children[key]
 
@@ -174,18 +176,20 @@ def _wrap_value(value: Any, node: _StoreNode) -> Any:
     """Wrap a raw value in a reactive proxy backed by `node`.
 
     Proxies are cached per node so repeated reads of the same path
-    return the same proxy object (stable identity).
+    return the same proxy object (stable identity). Nodes belonging to
+    a mutable store wrap in directly-writable proxy variants.
     """
     if isinstance(value, (dict, list)):
         cached = object.__getattribute__(node, "_proxy")
+        mutable = object.__getattribute__(node, "_mutable")
         if isinstance(value, dict):
             if isinstance(cached, _StoreProxy):
                 return cached
-            proxy: Any = _StoreProxy(node)
+            proxy: Any = _MutableProxy(node) if mutable else _StoreProxy(node)
         else:
             if isinstance(cached, _StoreListProxy):
                 return cached
-            proxy = _StoreListProxy(node)
+            proxy = _MutableListProxy(node) if mutable else _StoreListProxy(node)
         object.__setattr__(node, "_proxy", proxy)
         return proxy
     return value
@@ -721,14 +725,74 @@ class _MutableProxy(_StoreProxy):
             node._set_value(key, value)
 
 
+class _MutableListProxy(_StoreListProxy):
+    """Directly-writable variant of `_StoreListProxy` used by `create_mutable`."""
+
+    __slots__ = ()
+
+    def _raw_list(self) -> list:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        return object.__getattribute__(node, "_raw")
+
+    def __setitem__(self, index: Any, value: Any) -> None:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        with batch():
+            node._set_value(index, value)
+
+    def append(self, value: Any) -> None:
+        """Append `value`, notifying index and length subscribers."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        with batch():
+            raw.append(value)
+            node._replace_raw(raw)
+
+    def insert(self, index: int, value: Any) -> None:
+        """Insert `value` at `index`, shifting later items."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        with batch():
+            raw.insert(index, value)
+            node._replace_raw(raw)
+
+    def pop(self, index: int = -1) -> Any:
+        """Remove and return the item at `index` (default: last)."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        with batch():
+            value = raw.pop(index)
+            node._replace_raw(raw)
+        return value
+
+    def remove(self, value: Any) -> None:
+        """Remove the first occurrence of `value`."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        with batch():
+            raw.remove(value)
+            node._replace_raw(raw)
+
+    def clear(self) -> None:
+        """Remove every item."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        with batch():
+            raw.clear()
+            node._replace_raw(raw)
+
+
 def create_mutable(initial: Any) -> Any:
     """Create a directly-writable reactive store proxy.
 
     Matches SolidJS's `createMutable`: reads are tracked per path like
-    [`create_store`][wybthon.create_store], but top-level writes go
-    through plain attribute or item assignment instead of a setter.
-    Nested containers remain read-only proxies; prefer `create_store`
-    for anything beyond simple mutable state.
+    [`create_store`][wybthon.create_store], and writes go through plain
+    attribute or item assignment at **any depth**. Nested dicts wrap in
+    writable proxies, and nested lists support `append`, `insert`,
+    `pop`, `remove`, `clear`, and index assignment. Each write batches
+    its notifications; use [`modify_mutable`][wybthon.modify_mutable]
+    with [`produce`][wybthon.produce] or
+    [`reconcile`][wybthon.reconcile] to group several changes into one
+    update.
 
     Args:
         initial: Initial dict state.
@@ -738,17 +802,55 @@ def create_mutable(initial: Any) -> Any:
 
     Example:
         ```python
-        state = create_mutable({"count": 0})
-        create_effect(lambda: print(state.count))
-        state.count = 5   # effect re-runs
+        state = create_mutable({"count": 0, "user": {"name": "Ada"}, "tags": []})
+        create_effect(lambda: print(state.count, state.user.name))
+        state.count = 5             # effect re-runs
+        state.user.name = "Grace"   # nested write, effect re-runs
+        state.tags.append("new")    # list mutation, tracked
         ```
     """
     if not isinstance(initial, dict):
         raise TypeError("create_mutable() requires a dict initial value")
-    node = _StoreNode(initial)
+    node = _StoreNode(initial, mutable=True)
     proxy = _MutableProxy(node)
     object.__setattr__(node, "_proxy", proxy)
     return proxy
+
+
+def modify_mutable(state: Any, modifier: Any) -> None:
+    """Apply a batched modification to a [`create_mutable`][wybthon.create_mutable] proxy.
+
+    Matches SolidJS's `modifyMutable`. The modifier is either a
+    [`produce`][wybthon.produce] draft function, a
+    [`reconcile`][wybthon.reconcile] result, or a plain callable
+    receiving a mutable draft (shorthand for `produce`). All resulting
+    signal notifications flush once, as a single update.
+
+    Args:
+        state: A proxy created by `create_mutable` (or any store
+            proxy).
+        modifier: A `produce(...)` / `reconcile(...)` result, or a
+            callable draft mutator.
+
+    Example:
+        ```python
+        state = create_mutable({"a": 1, "b": 2})
+        modify_mutable(state, produce(lambda s: (
+            setattr(s, "a", 10),
+            setattr(s, "b", 20),
+        )))
+        modify_mutable(state, reconcile(fetched_state))
+        ```
+    """
+    if not isinstance(state, (_StoreProxy, _StoreListProxy)):
+        raise TypeError("modify_mutable() requires a store proxy")
+    node: _StoreNode = object.__getattribute__(state, "_node")
+    if callable(modifier) and not isinstance(modifier, (_ProduceResult, _ReconcileResult)):
+        modifier = _ProduceResult(modifier)
+    if not isinstance(modifier, (_ProduceResult, _ReconcileResult)):
+        raise TypeError("modify_mutable() requires a produce(), reconcile(), or callable modifier")
+    with batch():
+        modifier._apply(node)
 
 
 def produce(fn: Callable[..., None]) -> _ProduceResult:

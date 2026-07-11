@@ -12,8 +12,9 @@ Together they let you split big apps into smaller chunks and present a polished 
 | Situation | Use |
 | --- | --- |
 | Async data fetching with a loading state | [`create_resource`][wybthon.create_resource] + `Suspense` |
-| Code-splitting a heavy route or panel | `lazy(load=...)` inside a route |
+| Code-splitting a heavy route or panel | `lazy(loader)` inside a route |
 | Both at once | `lazy` *inside* a `Suspense` boundary |
+| Coordinating several boundaries | [`SuspenseList`][wybthon.SuspenseList] |
 
 ## Suspense
 
@@ -57,6 +58,33 @@ def Profile():
 
 You can nest `Suspense` boundaries to refine which parts of the page show fallbacks. The closest enclosing boundary always wins for a given pending resource.
 
+### Coordinating boundaries with `SuspenseList`
+
+When several sibling boundaries load in parallel, their contents pop in
+whenever each resolves, which can feel chaotic. Wrap them in
+[`SuspenseList`][wybthon.SuspenseList] to control the reveal order and
+how many fallbacks show at once:
+
+```python
+from wybthon import Suspense, SuspenseList
+from wybthon.html import p
+
+SuspenseList(
+    reveal_order="forwards",
+    tail="collapsed",
+    children=[
+        Suspense(fallback=p("Loading profile…"), children=[ProfilePanel()]),
+        Suspense(fallback=p("Loading feed…"), children=[FeedPanel()]),
+        Suspense(fallback=p("Loading trends…"), children=[TrendsPanel()]),
+    ],
+)
+```
+
+- `reveal_order` is `"forwards"` (top-to-bottom, the default),
+  `"backwards"`, or `"together"` (everything reveals at once).
+- `tail` controls pending fallbacks: `None` (show all), `"collapsed"`
+  (only the next one in reveal order), or `"hidden"` (none).
+
 ### Errors inside a boundary
 
 `Suspense` only handles loading states. Pair it with [`ErrorBoundary`][wybthon.ErrorBoundary] to also catch render errors:
@@ -73,14 +101,18 @@ ErrorBoundary(
 
 ## Lazy components
 
-`lazy(load=...)` returns a placeholder component. The first time it mounts, it awaits `load()` (typically an `await import` or `micropip.install`) and replaces itself with the real component once ready.
+`lazy(loader)` returns a placeholder component backed by a
+[`Resource`][wybthon.Resource]. The first time it mounts, the loader
+runs (awaited when async); while it's in flight the nearest `Suspense`
+boundary shows its fallback, and once resolved the real component
+mounts in place.
 
 ```python
-from wybthon import Suspense, lazy
+from wybthon import Suspense, component, lazy
 from wybthon.html import p
 
 
-HeavyChart = lazy(load=lambda: import_module_async("app.heavy_chart"))
+HeavyChart = lazy(lambda: ("app.heavy_chart", "Chart"))
 
 
 @component
@@ -91,9 +123,11 @@ def Dashboard():
     )
 ```
 
-- `load` returns either a coroutine that resolves to the component, or a module from which an attribute is read.
+- The loader may return a component callable, an imported module, a module-path string, or a `(module_path, attr)` tuple.
+- Async loaders can `await` arbitrary work first (e.g., `micropip.install(...)`) before returning the component.
 - Pair `lazy` with `Suspense` so users see a fallback instead of an empty space.
-- Use [`preload_component`][wybthon.preload_component] to warm the cache (e.g., on hover) before the user actually navigates.
+- Call `.preload()` on the lazy component to warm the cache (e.g., on hover) before the user actually navigates.
+- A loader failure raises into the nearest [`ErrorBoundary`][wybthon.ErrorBoundary].
 
 ### Lazy routes
 
@@ -105,7 +139,7 @@ from wybthon import Route, Router, lazy
 
 routes = [
     Route(path="/", component=Home),
-    Route(path="/settings", component=lazy(load=lambda: import_module_async("app.settings"))),
+    Route(path="/settings", component=lazy(lambda: ("app.settings", "Page"))),
 ]
 
 

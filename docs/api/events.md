@@ -47,33 +47,42 @@ Wybthon doesn't restrict event type names; if the browser fires it and it bubble
 
 #### Non-bubbling and special-case events
 
-Because Wybthon uses document-level delegation, event types that don't bubble won't trigger handlers when attached via props. Use the suggested alternatives or attach a direct listener via `wybthon.dom.Element.on` using a `Ref`.
+Because Wybthon uses document-level delegation, event types that don't bubble won't trigger handlers when attached via props. Use the suggested alternatives or attach a direct native listener through Pyodide using a `Ref`.
 
 - Use `focusin`/`focusout` instead of `focus`/`blur` (which don't bubble).
 - Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave` (which don't bubble).
 - Many media events (e.g., `play`, `pause`) and `scroll` don't bubble; attach direct listeners to the element or use `window`/`document` as appropriate.
 
-Direct listeners example (when you need non-bubbling events or options like `passive`: False):
+Direct listeners example (when you need non-bubbling events or options like `passive`: False). Wrap the handler in `create_proxy` so Pyodide keeps it alive, and remove it on cleanup:
 
 ```python
-from wybthon import component, h, on_mount, Ref
+from pyodide.ffi import create_proxy
+
+from wybthon import Ref, component, h, on_cleanup, on_mount
 
 @component
 def Video():
     ref = Ref()
+    proxy = create_proxy(lambda e: print("playing"))
 
     def setup():
         if ref.current is not None:
-            ref.current.on("play", lambda e: print("playing"))
+            ref.current.element.addEventListener("play", proxy)
+
+    def teardown():
+        if ref.current is not None:
+            ref.current.element.removeEventListener("play", proxy)
+        proxy.destroy()
 
     on_mount(setup)
+    on_cleanup(teardown)
 
     return h("video", {"ref": ref})
 ```
 
 #### Pyodide and cross-browser notes
 
-- Event delegation relies on bubbling to `document`. For non-bubbling types, prefer the alternatives above or attach direct listeners via `Element.on`.
-- Chrome/Edge may treat `touchstart`/`touchmove` listeners on `document` as passive by default, making `preventDefault()` a no-op. If you need to prevent scrolling, attach a direct listener with `options={"passive": False}` using `Element.on` and a `Ref`.
+- Event delegation relies on bubbling to `document`. For non-bubbling types, prefer the alternatives above or attach direct listeners via `addEventListener` and a `Ref`.
+- Chrome/Edge may treat `touchstart`/`touchmove` listeners on `document` as passive by default, making `preventDefault()` a no-op. If you need to prevent scrolling, attach a direct listener with `{"passive": False}` options and a `Ref`.
 - `keypress` is deprecated and may behave inconsistently across browsers; prefer `keydown`/`keyup`.
 - The `DomEvent` object exposes a stable, Python-friendly surface backed by the dispatch payload. Accessing `evt.raw` is possible but not recommended for portability across Pyodide and non-browser tests.

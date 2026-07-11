@@ -8,7 +8,7 @@ from app.patterns.page import Page as PatternsPage
 from app.primitives.page import Page as PrimitivesPage
 from app.props.page import Page as PropsPage
 from app.stores.page import Page as StoresPage
-from wybthon import Route, lazy, load_component
+from wybthon import Route, lazy
 
 
 def _AboutLazy():
@@ -19,7 +19,7 @@ def _TeamLazy():
     return ("app.about.team.page", "Page")
 
 
-Docs = load_component("app.docs.page", "Page")
+Docs = lazy(lambda: ("app.docs.page", "Page"))
 
 
 def create_routes():

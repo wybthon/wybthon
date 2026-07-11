@@ -28,8 +28,8 @@ def test_owner_dispose_children():
     parent._add_child(child2)
 
     log = []
-    child1._cleanups.append(lambda: log.append("c1"))
-    child2._cleanups.append(lambda: log.append("c2"))
+    child1._add_cleanup(lambda: log.append("c1"))
+    child2._add_cleanup(lambda: log.append("c2"))
 
     parent.dispose()
     assert child1._disposed
@@ -43,7 +43,7 @@ def test_owner_dispose_is_idempotent():
 
     parent = Owner()
     log = []
-    parent._cleanups.append(lambda: log.append("cleanup"))
+    parent._add_cleanup(lambda: log.append("cleanup"))
     parent.dispose()
     parent.dispose()
     assert log == ["cleanup"]

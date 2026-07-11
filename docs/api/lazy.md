@@ -4,25 +4,19 @@
 
 #### What's in this module
 
-`lazy` defers loading a component module until the first time it
-mounts. Pair it with [`Suspense`][wybthon.Suspense] so users see a
-fallback while the chunk arrives.
-
-| Helper | Purpose |
-| --- | --- |
-| [`lazy`][wybthon.lazy] | Wrap an async loader and return a placeholder component. |
-| [`load_component`][wybthon.load_component] | Manually load a component module (advanced). |
-| [`preload_component`][wybthon.preload_component] | Warm the cache before a route is visited. |
+[`lazy`][wybthon.lazy] defers loading a component until the first time
+it mounts. The load is backed by a [`Resource`][wybthon.Resource], so
+it integrates with [`Suspense`][wybthon.Suspense] (fallback while
+loading) and [`ErrorBoundary`][wybthon.ErrorBoundary] (load failures)
+automatically, matching SolidJS's `lazy(() => import(...))`.
 
 #### Quick example
 
 ```python
-from wybthon import Route, Router, Suspense, lazy
+from wybthon import Route, Router, Suspense, component, lazy
 from wybthon.html import p
 
-
-HeavyChart = lazy(load=lambda: import_module_async("app.heavy_chart"))
-
+HeavyChart = lazy(lambda: ("app.heavy_chart", "Chart"))
 
 routes = [
     Route(path="/charts", component=HeavyChart),
@@ -37,10 +31,14 @@ def App():
     )
 ```
 
-- `load` returns a coroutine that resolves to the component (or to a
-  module from which an attribute is read, depending on the helper used).
-- `lazy` caches the resolved component automatically.
-- `preload_component(loader)` is handy for hover/focus warm-ups.
+- The loader may return a component callable, an imported module, a
+  module-path string, or a `(module_path, attr)` tuple.
+- Async loaders can `await` arbitrary work first (for example
+  `micropip.install(...)` in Pyodide) before returning the component.
+- The resolved component is cached; the loader runs at most once.
+- `HeavyChart.preload()` starts the load early (handy for hover or
+  focus warm-ups) and returns the backing resource.
+- A loader error raises into the nearest `ErrorBoundary`.
 
 #### See also
 

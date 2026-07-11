@@ -87,7 +87,7 @@ The VDOM implementation is split into focused modules:
 - **`props`**: DOM property application and diffing (styles, events, datasets), also op-based.
 - **`error_boundary`**: the `ErrorBoundary` component.
 - **`suspense`**: the `Suspense` component.
-- **`portal`**: the `create_portal()` function.
+- **`portal`**: the `Portal` component.
 
 The most common names are available at the top-level `wybthon` package.
 

@@ -1,9 +1,9 @@
-"""Tests for create_portal – rendering children into a different container."""
+"""Tests for Portal – rendering children into a different container."""
 
 from conftest import StubNode, collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
-from wybthon.portal import create_portal
+from wybthon.portal import Portal
 from wybthon.vnode import h
 
 
@@ -15,7 +15,7 @@ def test_portal_renders_into_target_container(wyb, root_element):
             "div",
             {},
             h("p", {}, "In parent"),
-            create_portal(h("p", {}, "In portal"), portal_target),
+            Portal(h("p", {}, "In portal"), mount=portal_target),
         )
 
     wyb["reconciler"].render(h(App, {}), root_element)
@@ -40,7 +40,7 @@ def test_portal_renders_list_of_children(wyb, root_element):
         return h(
             "div",
             {},
-            create_portal(children, portal_target),
+            Portal(children, mount=portal_target),
         )
 
     wyb["reconciler"].render(h(App, {}), root_element)
@@ -57,7 +57,7 @@ def test_portal_unmount_cleans_up(wyb, root_element):
         return h(
             "div",
             {},
-            create_portal(h("span", {}, "Portal content"), portal_target),
+            Portal(h("span", {}, "Portal content"), mount=portal_target),
         )
 
     tree = h(App, {})
@@ -78,7 +78,7 @@ def test_portal_placeholder_in_parent(wyb, root_element):
             "div",
             {},
             h("p", {}, "Before"),
-            create_portal(h("p", {}, "Modal"), portal_target),
+            Portal(h("p", {}, "Modal"), mount=portal_target),
             h("p", {}, "After"),
         )
 

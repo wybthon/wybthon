@@ -181,10 +181,11 @@ def _dom_node_ids(vnode: VNode) -> List[int]:
     if vnode.subtree is not None:
         return _dom_node_ids(vnode.subtree)
     if vnode.tag == "_fragment":
-        frag_nodes: List[int] = []
-        if vnode.el is not None:
-            frag_nodes.append(vnode.el)
-        for child in normalize_children(vnode.children):
+        if vnode.el is None:
+            return []
+        # Mounted fragments always carry normalized children.
+        frag_nodes: List[int] = [vnode.el]
+        for child in vnode.children:
             frag_nodes.extend(_dom_node_ids(child))
         if vnode._frag_end is not None:
             frag_nodes.append(vnode._frag_end)
@@ -215,20 +216,23 @@ def mount(vnode: Union[VNode, str], parent_id: int, anchor_id: Optional[int] = N
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
 
-    if vnode.owner_scope is not None:
+    scope = vnode.owner_scope
+    if scope is not None:
         import wybthon.reactivity as _rx
 
-        scope = vnode.owner_scope
         prev_owner = _rx._current_owner
         _rx._current_owner = scope
         try:
-            vnode.owner_scope = None
-            mount(vnode, parent_id, anchor_id)
-            return
+            _mount_dispatch(vnode, parent_id, anchor_id)
         finally:
-            vnode.owner_scope = scope
             _rx._current_owner = prev_owner
+        return
 
+    _mount_dispatch(vnode, parent_id, anchor_id)
+
+
+def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> None:
+    """Route a VNode to the appropriate mount strategy by tag."""
     tag = vnode.tag
 
     if tag == "_text":
@@ -701,7 +705,7 @@ def _dispose_tree(vnode: VNode, released: List[int]) -> None:
         return
 
     if tag == "_fragment":
-        for child in normalize_children(vnode.children):
+        for child in vnode.children:
             if isinstance(child, VNode):
                 _dispose_tree(child, released)
         if vnode.el is not None:
@@ -722,7 +726,7 @@ def _dispose_tree(vnode: VNode, released: List[int]) -> None:
             vnode.render_effect.dispose()
         except Exception as e:
             log_error(f"Effect disposal failed in {component_name(tag)}", e)
-    for child in normalize_children(vnode.children):
+    for child in vnode.children:
         if isinstance(child, VNode):
             _dispose_tree(child, released)
     released.append(vnode.el)
@@ -812,10 +816,11 @@ def patch(old: Optional[VNode], new: VNode, parent_id: int) -> None:
     apply_props(new.el, old.props, new.props)
     attach_ref(new.props, new.el)
 
-    old_children = normalize_children(old.children)
+    # `old` was mounted (or patched) before, so its children are
+    # already normalized; only the new side needs normalization.
     new_children = normalize_children(new.children)
     new.children = new_children
-    _reconcile_children(old_children, new_children, new.el, None)
+    _reconcile_children(old.children, new_children, new.el, None)
 
 
 def _patch_fragment(old: VNode, new: VNode, parent_id: int) -> None:
@@ -823,11 +828,10 @@ def _patch_fragment(old: VNode, new: VNode, parent_id: int) -> None:
     new.el = old.el
     new._frag_end = old._frag_end
 
-    old_children = normalize_children(old.children)
     new_children = normalize_children(new.children)
     new.children = new_children
 
-    _reconcile_children(old_children, new_children, parent_id, new._frag_end)
+    _reconcile_children(old.children, new_children, parent_id, new._frag_end)
 
 
 def _reconcile_children(

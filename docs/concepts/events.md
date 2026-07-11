@@ -88,28 +88,37 @@ Non-bubbling alternatives:
 - Use `focusin`/`focusout` instead of `focus`/`blur`.
 - Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave`.
 
-When you need non-bubbling events or special options (e.g., `passive: False`), attach directly via `Ref` and `Element.on`:
+When you need non-bubbling events or special options (e.g., `passive: False`), attach a native listener directly through Pyodide using a `Ref`. Wrap the handler in `create_proxy` so it survives garbage collection, and remove it on cleanup:
 
 ```python
-from wybthon import component, div, on_mount, Ref
+from pyodide.ffi import create_proxy
+
+from wybthon import Ref, component, div, on_cleanup, on_mount
 
 @component
 def HoverDemo():
     ref = Ref()
+    proxy = create_proxy(lambda e: print("entered"))
 
     def setup():
         if ref.current is not None:
-            ref.current.on("mouseenter", lambda e: print("entered"))
+            ref.current.element.addEventListener("mouseenter", proxy)
+
+    def teardown():
+        if ref.current is not None:
+            ref.current.element.removeEventListener("mouseenter", proxy)
+        proxy.destroy()
 
     on_mount(setup)
+    on_cleanup(teardown)
 
     return div("Hover me", ref=ref, class_="box")
 ```
 
 #### Pyodide cross-browser notes
 
-- Delegation depends on bubbling to `document`. For non-bubbling types, use alternatives or `Element.on`.
-- Chrome/Edge may treat `touchstart`/`touchmove` on `document` as passive, so `preventDefault()` may be ignored. Use a direct listener with `options={"passive": False}` if you need to prevent scrolling.
+- Delegation depends on bubbling to `document`. For non-bubbling types, use the alternatives above or a direct `addEventListener` via `Ref`.
+- Chrome/Edge may treat `touchstart`/`touchmove` on `document` as passive, so `preventDefault()` may be ignored. Use a direct listener with `{"passive": False}` options if you need to prevent scrolling.
 - `keypress` is deprecated; prefer `keydown`/`keyup`.
 
 ## Next steps

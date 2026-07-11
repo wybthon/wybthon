@@ -166,7 +166,7 @@ print(doubled())  # reactive read
 
 ---
 
-#### `untrack`
+#### `untrack` and `.peek()`
 
 Read a getter (signal, memo, or prop accessor) **without** subscribing
 to it.  Use during component setup to capture a one-shot snapshot:
@@ -184,6 +184,14 @@ def Counter(initial=0):
 
 `untrack` also suppresses dev-mode warnings about destructured prop
 access; it's the explicit "I know what I'm doing" escape hatch.
+
+Signal and memo getters also expose a `.peek()` method as a shorthand
+for a single untracked read:
+
+```python
+count, set_count = create_signal(0)
+count.peek()  # read without subscribing
+```
 
 ---
 

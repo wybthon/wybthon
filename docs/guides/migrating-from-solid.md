@@ -12,7 +12,9 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | `createEffect(fn)` | [`create_effect(fn)`][wybthon.create_effect] |
 | `createRenderEffect(fn)` | [`create_render_effect(fn)`][wybthon.create_render_effect] |
 | `createComputed(fn)` | [`create_computed(fn)`][wybthon.create_computed] |
-| `createMemo(fn)` | [`create_memo(fn)`][wybthon.create_memo] |
+| `createMemo(fn, v, { equals })` | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
+| `createReaction(onInvalidate)` | [`create_reaction(on_invalidate)`][wybthon.create_reaction] |
+| `onError(handler)` | [`on_error(handler)`][wybthon.on_error] |
 | `createDeferred(source)` | [`create_deferred(source)`][wybthon.create_deferred] |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
 | `catchError(fn, handler)` | [`catch_error(fn, handler)`][wybthon.catch_error] |
@@ -30,10 +32,11 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | `<Index each={...}>` | [`Index(each=..., children=...)`][wybthon.Index] |
 | `<Switch>` / `<Match>` | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
 | `<Dynamic component={...} />` | [`Dynamic(component=...)`][wybthon.Dynamic] |
-| `<Portal mount={...}>` | [`create_portal(mount=...)`][wybthon.create_portal] |
+| `<Portal mount={...}>` | [`Portal(mount=...)`][wybthon.Portal] |
 | `<ErrorBoundary fallback={...}>` | [`ErrorBoundary(fallback=...)`][wybthon.ErrorBoundary] |
 | `<Suspense fallback={...}>` | [`Suspense(fallback=...)`][wybthon.Suspense] |
-| `lazy(() => import(...))` | [`lazy(load=...)`][wybthon.lazy] |
+| `<SuspenseList revealOrder={...}>` | [`SuspenseList(reveal_order=...)`][wybthon.SuspenseList] |
+| `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
 | `onMount(fn)` | [`on_mount(fn)`][wybthon.on_mount] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
 | `batch(fn)` | [`batch(fn)`][wybthon.batch] |
@@ -41,6 +44,7 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | `on(deps, fn)` | [`on(deps, fn)`][wybthon.on] |
 | `createStore(initial)` | [`create_store(initial)`][wybthon.create_store] |
 | `createMutable(initial)` | [`create_mutable(initial)`][wybthon.create_mutable] |
+| `modifyMutable(state, modifier)` | [`modify_mutable(state, modifier)`][wybthon.modify_mutable] |
 | `produce(fn)` | [`produce(fn)`][wybthon.produce] |
 | `reconcile(data)` | [`reconcile(data, key="id")`][wybthon.reconcile] |
 | `unwrap(store)` | [`unwrap(store)`][wybthon.unwrap] |
@@ -171,6 +175,8 @@ Wybthon's router supports nested routes, dynamic params, query parsing, and lazy
 ## What's intentionally different
 
 - **Naming.** snake_case across the API (`create_signal`, not `createSignal`). Component names stay PascalCase.
+- **Signal equality.** The default `equals` policy is Python value equality (`==` with an identity fast path), not JS `===`. Pass `equals=lambda a, b: a is b` when you want identity-only semantics, or `equals=False` to always notify.
+- **Untracked reads.** Signal and memo getters expose `.peek()` (`count.peek()`), a shorthand for `untrack(count)`.
 - **Imports.** Pull from `wybthon` (and optionally `wybthon.html` for tag helpers).
 - **`Dynamic`.** Use `dynamic(lambda: ...)` to inline a reactive computation; component-style `Dynamic` exists too.
 - **JS interop.** Use `pyodide.ffi` to talk to the host. See [Pyodide guide](pyodide.md).

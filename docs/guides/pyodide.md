@@ -50,15 +50,15 @@ user = create_resource(lambda: ("u-1",), fetch_user)
 
 ## Lazy imports and module loading
 
-[`lazy()`][wybthon.lazy] and [`load_component()`][wybthon.load_component] use Python's regular import system, so the only requirement is that the target module is reachable on `sys.path` at import time:
+[`lazy()`][wybthon.lazy] uses Python's regular import system, so the only requirement is that the target module is reachable on `sys.path` at import time:
 
-- Ensure module files exist in the Pyodide filesystem before calling `importlib.import_module`. The demo's `bootstrap.js` copies `examples/demo/app/**` into `/app`, so imports like `"app.about.page"` resolve.
-- For third-party packages, install them with `micropip` before attempting a lazy import.
-- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call [`preload_component()`][wybthon.preload_component] on user intent (e.g., link hover) to warm the import cache.
+- Ensure module files exist in the Pyodide filesystem before the loader runs. The demo's `bootstrap.js` copies `examples/demo/app/**` into `/app`, so imports like `"app.about.page"` resolve.
+- For third-party packages, use an async loader that `await`s `micropip.install(...)` before importing.
+- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's `.preload()` method on user intent (e.g., link hover) to warm the import cache.
 - Attribute resolution defaults to `Page` or `default` when unspecified; otherwise pass the export name explicitly.
 
 ```python
-from wybthon import lazy, preload_component
+from wybthon import lazy
 
 
 def AboutLazy():
@@ -69,7 +69,7 @@ About = lazy(AboutLazy)
 
 
 def on_hover_about(_evt):
-    preload_component("app.about.page", "Page")
+    About.preload()
 ```
 
 ## Next steps

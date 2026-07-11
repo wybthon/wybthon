@@ -20,10 +20,18 @@ from app.features import stores as stores_feat
 from app.features import suspense as suspense_feat
 from app.testkit import tid
 
-from wybthon import Route, component, div, lazy, load_component
+from wybthon import ErrorBoundary, Route, component, div, h, lazy
 
 LazyPanel = lazy(lambda: ("app.features.lazy_target", "LoadedPanel"))
-LazyMissing = load_component("app.features.does_not_exist", "Missing")
+_LazyMissingInner = lazy(lambda: ("app.features.does_not_exist", "Missing"))
+
+
+@component
+def LazyMissing(query=None, params=None):
+    def fallback(err, reset):
+        return div(f"Failed to load: {err}", class_="lazy-error")
+
+    return h(ErrorBoundary, {"fallback": fallback}, h(_LazyMissingInner, {}))
 
 
 @component

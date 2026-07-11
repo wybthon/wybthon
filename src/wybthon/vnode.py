@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import inspect
 import weakref
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -231,6 +232,19 @@ def is_getter(value: Any) -> bool:
     Returns:
         `True` if the value should be treated as a reactive getter.
     """
+    # Fast path: plain functions and lambdas (the common case in child
+    # positions and list rows). Answered from the code object directly.
+    if type(value) is FunctionType:
+        d = value.__dict__
+        if d:
+            if d.get("_wyb_component") or d.get("_wyb_provider"):
+                return False
+            if d.get("_wyb_getter"):
+                return True
+        code = value.__code__
+        defaults = value.__defaults__
+        return code.co_argcount - (len(defaults) if defaults else 0) <= 0
+
     if value is None:
         return False
     if not callable(value):
@@ -326,10 +340,10 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
     flat_children = flatten_children(children)
     if callable(tag):
         if "children" not in props and flat_children:
-            props["children"] = list(flat_children)
+            props["children"] = flat_children
         vnode_children: List[ChildType] = []
     else:
-        vnode_children = list(flat_children)
+        vnode_children = flat_children
     return VNode(tag=tag, props=props, children=vnode_children, key=key)
 
 

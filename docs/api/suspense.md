@@ -9,6 +9,11 @@
 It's the canonical way to coordinate loading states for async data and
 lazy components.
 
+[`SuspenseList`][wybthon.SuspenseList] coordinates multiple sibling
+`Suspense` boundaries, controlling their reveal order
+(`reveal_order="forwards" | "backwards" | "together"`) and which
+fallbacks show while loading (`tail=None | "collapsed" | "hidden"`).
+
 #### Usage
 
 ```python

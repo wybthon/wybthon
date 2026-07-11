@@ -7,7 +7,8 @@
 ##### Store creation
 
 - `create_store(initial) -> (store, set_store)`. Create a reactive store from a dict or list.
-- `create_mutable(initial) -> proxy`. Create a directly-writable store proxy (Solid's `createMutable`); top-level attribute and item assignment notify the touched key. Nested containers remain read-only proxies.
+- `create_mutable(initial) -> proxy`. Create a directly-writable store proxy (Solid's `createMutable`). Attribute and item assignment work at **any depth**: nested dicts wrap in writable proxies, and nested lists support `append`, `insert`, `pop`, `remove`, `clear`, and index assignment.
+- `modify_mutable(state, modifier)`. Apply a batched modification to a mutable proxy (Solid's `modifyMutable`). The modifier is a `produce(...)` result, a `reconcile(...)` result, or a plain callable receiving a draft; all notifications flush as one update.
 
 ##### Store setter
 

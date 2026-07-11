@@ -2,7 +2,8 @@
 
 Covers functional signal setters, `create_render_effect` /
 `create_computed` phase ordering, `catch_error`, `create_unique_id`,
-`create_deferred`, and the Solid-shaped `Resource` accessor.
+`create_deferred`, `create_reaction`, `on_error`, and the Solid-shaped
+`Resource` accessor.
 """
 
 import asyncio
@@ -13,11 +14,13 @@ from wybthon.reactivity import (
     create_deferred,
     create_effect,
     create_memo,
+    create_reaction,
     create_render_effect,
     create_resource,
     create_root,
     create_signal,
     create_unique_id,
+    on_error,
 )
 
 # ---------------------------------------------------------------------------
@@ -307,3 +310,176 @@ def test_memo_of_resource_data():
         assert total() == 6
 
     asyncio.run(run())
+
+
+def test_resource_initial_value():
+    async def run():
+        release = asyncio.Event()
+
+        async def fetcher():
+            await release.wait()
+            return "fresh"
+
+        res = create_resource(fetcher, initial_value="stale")
+        # Data is available immediately; the fetch refreshes it.
+        assert res.latest == "stale"
+        assert res.state == "refreshing"
+        release.set()
+        await asyncio.sleep(0.01)
+        assert res() == "fresh"
+        assert res.state == "ready"
+
+    asyncio.run(run())
+
+
+# ---------------------------------------------------------------------------
+# create_reaction
+# ---------------------------------------------------------------------------
+
+
+def test_create_reaction_fires_once_per_track():
+    count, set_count = create_signal(0)
+    fired = []
+    track = create_reaction(lambda: fired.append(count.peek()))
+
+    track(count)
+    assert fired == []
+
+    set_count(1)
+    assert len(fired) == 1
+
+    # Tracking stopped: further changes don't fire.
+    set_count(2)
+    assert len(fired) == 1
+
+    # Re-arm.
+    track(count)
+    set_count(3)
+    assert len(fired) == 2
+
+
+def test_create_reaction_tracks_multiple_sources():
+    a, set_a = create_signal(0)
+    b, set_b = create_signal(0)
+    fired = []
+    track = create_reaction(lambda: fired.append("changed"))
+
+    track(lambda: (a(), b()))
+    set_b(1)
+    assert fired == ["changed"]
+    set_a(1)
+    assert fired == ["changed"]
+
+
+# ---------------------------------------------------------------------------
+# on_error
+# ---------------------------------------------------------------------------
+
+
+def test_on_error_catches_child_effect_error():
+    count, set_count = create_signal(0)
+    errors = []
+
+    def root_body(dispose):
+        on_error(lambda exc: errors.append(str(exc)))
+
+        def effect_body():
+            if count() > 0:
+                raise RuntimeError("boom")
+
+        create_effect(effect_body)
+
+    create_root(root_body)
+    assert errors == []
+    set_count(1)
+    assert errors == ["boom"]
+
+
+def test_on_error_chains_multiple_handlers():
+    count, set_count = create_signal(0)
+    order = []
+
+    def root_body(dispose):
+        on_error(lambda exc: order.append("first"))
+        on_error(lambda exc: order.append("second"))
+
+        def effect_body():
+            if count() > 0:
+                raise RuntimeError("boom")
+
+        create_effect(effect_body)
+
+    create_root(root_body)
+    set_count(1)
+    assert order == ["first", "second"]
+
+
+def test_on_error_outside_scope_raises():
+    try:
+        on_error(lambda exc: None)
+        raised = False
+    except RuntimeError:
+        raised = True
+    assert raised
+
+
+# ---------------------------------------------------------------------------
+# create_memo equals=
+# ---------------------------------------------------------------------------
+
+
+def test_memo_custom_equals_suppresses_notification():
+    items, set_items = create_signal([1, 2, 3])
+    # Only notify observers when the length changes.
+    head = create_memo(lambda: list(items()), equals=lambda a, b: len(a) == len(b))
+    runs = []
+    create_effect(lambda: runs.append(head()))
+    assert len(runs) == 1
+
+    set_items([4, 5, 6])  # same length: memo recomputes, observers stay quiet
+    assert len(runs) == 1
+
+    set_items([1, 2])  # length changed: observers re-run
+    assert len(runs) == 2
+
+
+def test_memo_equals_false_always_notifies():
+    count, set_count = create_signal(0)
+    parity = create_memo(lambda: count() % 2, equals=False)
+    runs = []
+    create_effect(lambda: runs.append(parity()))
+    assert len(runs) == 1
+
+    set_count(2)  # parity unchanged (0), but equals=False forces a re-run
+    assert len(runs) == 2
+
+
+# ---------------------------------------------------------------------------
+# Public peek on getters
+# ---------------------------------------------------------------------------
+
+
+def test_signal_getter_peek_does_not_track():
+    count, set_count = create_signal(0)
+    runs = []
+    create_effect(lambda: runs.append(count.peek()))
+    assert runs == [0]
+    set_count(5)
+    # peek didn't subscribe, so the effect never re-runs.
+    assert runs == [0]
+    assert count.peek() == 5
+
+
+def test_memo_getter_peek_recomputes_without_tracking():
+    count, set_count = create_signal(1)
+    doubled = create_memo(lambda: count() * 2)
+    assert doubled.peek() == 2
+
+    runs = []
+    create_effect(lambda: runs.append(doubled.peek()))
+    assert runs == [2]
+
+    set_count(10)
+    # The memo recomputes lazily on peek, but the effect wasn't subscribed.
+    assert doubled.peek() == 20
+    assert runs == [2]
