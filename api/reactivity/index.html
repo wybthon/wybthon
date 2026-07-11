@@ -2245,6 +2245,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_reaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_reaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_unique_id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2260,6 +2271,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;catch_error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;on_error
       
     </span>
   </a>
@@ -3694,6 +3716,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.reactivity.create_reaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_reaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.reactivity.create_unique_id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3709,6 +3742,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;catch_error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reactivity.on_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;on_error
       
     </span>
   </a>
@@ -4140,6 +4184,14 @@ that match component mount/unmount boundaries.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.create_reaction&lt;/code&gt;)" href="#wybthon.reactivity.create_reaction">create_reaction</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Create an on-change reaction with manual tracking.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_unique_id&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.create_unique_id&lt;/code&gt;)" href="#wybthon.reactivity.create_unique_id">create_unique_id</a></code></td>
               <td>
                 <div class="doc-md-description">
@@ -4152,6 +4204,14 @@ that match component mount/unmount boundaries.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Run <code>fn</code> with an error handler, catching errors thrown now or later.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_error&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.on_error&lt;/code&gt;)" href="#wybthon.reactivity.on_error">on_error</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Register an error handler on the current reactive owner scope.</p>
                 </div>
               </td>
             </tr>
@@ -4322,22 +4382,24 @@ mirrors SolidJS's ownership model.</p>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.reactivity.Owner._children">_children</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Owner&lt;/code&gt;)" href="#wybthon.reactivity.Owner">Owner</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Owner&lt;/code&gt;)" href="#wybthon.reactivity.Owner">Owner</a>]]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Child owners, keyed by <code>id(child)</code> (insertion-ordered).</p>
+                <p>Child owners, keyed by <code>id(child)</code> (insertion-ordered).
+Allocated lazily on the first child.</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.reactivity.Owner._cleanups">_cleanups</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Callbacks invoked LIFO during disposal.</p>
+                <p>Callbacks invoked LIFO during disposal. Allocated
+lazily on the first registration.</p>
               </div>
             </td>
           </tr>
@@ -4467,7 +4529,7 @@ Subsequent calls are no-ops.</p>
 
 
 <a href="#wybthon.reactivity.Computation" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Computation</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_effect</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_render</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_memo</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">equals</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._DEFAULT_EQUALS">_DEFAULT_EQUALS</span></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Computation</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_effect</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_render</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_pure</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">is_memo</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">equals</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._DEFAULT_EQUALS">_DEFAULT_EQUALS</span></span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4507,11 +4569,13 @@ conditionally-created effects.</p>
           <tr class="doc-section-item">
             <td><code><span title="wybthon.reactivity.Computation._sources">_sources</span></code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Dict&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, None]]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Sources (signals or memos) read during the last run.</p>
+                <p>Sources (signals or memos) read during the last run.
+An insertion-ordered dict used as an ordered set, allocated
+lazily on the first tracked read.</p>
               </div>
             </td>
           </tr>
@@ -5332,7 +5396,7 @@ not tracked as a reactive read).</p>
 
 
 <a href="#wybthon.reactivity.Resource" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Resource</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n"><span title="wybthon.reactivity.FetchFn">FetchFn</span></span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Resource</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n"><span title="wybthon.reactivity.FetchFn">FetchFn</span></span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">initial_value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._MISSING">_MISSING</span></span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6232,7 +6296,7 @@ cleanly opts out of the noise.</p>
 
 
 <a href="#wybthon.reactivity.create_resource" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_resource</span><span class="p">(</span><span class="n">source_or_fetcher</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Awaitable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Awaitable">Awaitable</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]]],</span> <span class="n">fetcher</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Awaitable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Awaitable">Awaitable</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Resource&lt;/code&gt;)" href="#wybthon.reactivity.Resource">Resource</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_resource</span><span class="p">(</span><span class="n">source_or_fetcher</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Awaitable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Awaitable">Awaitable</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]]],</span> <span class="n">fetcher</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Awaitable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Awaitable">Awaitable</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">initial_value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._MISSING">_MISSING</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt; (&lt;code&gt;wybthon.reactivity.Resource&lt;/code&gt;)" href="#wybthon.reactivity.Resource">Resource</a></span><span class="p">[</span><span class="n"><span title="wybthon.reactivity.R">R</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6297,6 +6361,26 @@ source getter.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>initial_value</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional seed data. When provided, the resource
+starts <code>"ready"</code> with this value, so reading it never
+triggers a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> fallback; the
+first fetch runs as a <code>"refreshing"</code> state instead of
+<code>"pending"</code>, matching SolidJS's <code>initialValue</code> option.</p>
+              </div>
+            </td>
+            <td>
+                  <code><span title="wybthon.reactivity._MISSING">_MISSING</span></code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -6343,6 +6427,7 @@ source getter.</p>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">user</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">load_user</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cached</span> <span class="o">=</span> <span class="n">create_resource</span><span class="p">(</span><span class="n">load_all</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="p">[])</span>
 </span></code></pre></div>
 </details>
 
@@ -6618,7 +6703,7 @@ Accepts:</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>suitable for embedding as a reactive hole. The setter returns</p>
+                <p>suitable for embedding as a reactive hole; its <code>.peek()</code> method</p>
               </div>
             </td>
           </tr>
@@ -6628,7 +6713,17 @@ Accepts:</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>the value that was stored.</p>
+                <p>returns the current value without subscribing the caller. The</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>setter returns the value that was stored.</p>
               </div>
             </td>
           </tr>
@@ -6644,6 +6739,7 @@ Accepts:</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span>              <span class="c1"># 5</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># functional update</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="p">())</span>              <span class="c1"># 6</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">count</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>                <span class="c1"># 6, without subscribing</span>
 </span></code></pre></div>
 </details>
 
@@ -6767,9 +6863,10 @@ previous return value is forwarded.</p>
         <p>Create an effect that runs in the <strong>render phase</strong>, before user effects.</p>
 <p>Matches SolidJS's <code>createRenderEffect</code>: within one flush, all pending
 render effects execute before any <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../wybthon/#wybthon.create_effect"><code>create_effect</code></a>
-callbacks. Wybthon's internal reactive holes and prop bindings run in
-this phase, so a render effect observes the DOM in the same state the
-framework's own bindings do.</p>
+callbacks, and before the batched DOM ops are committed. Wybthon's
+internal reactive holes and prop bindings run in this phase, so a
+render effect observes the DOM in the same state the framework's own
+bindings do (updates emitted but not yet committed).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6845,11 +6942,12 @@ forwarded when accepted, as with <code>create_effect</code>).</p>
     <div class="doc doc-contents ">
 
         <p>Create an eagerly-run computation in the pure (pre-render) phase.</p>
-<p>Matches SolidJS's <code>createComputed</code>: use it to derive state by writing
-other signals <em>before</em> rendering happens. Prefer
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../wybthon/#wybthon.create_memo"><code>create_memo</code></a> for plain derived values; reach
-for <code>create_computed</code> only when you must push a value into another
-signal.</p>
+<p>Matches SolidJS's <code>createComputed</code>: within one flush, all pending
+<code>create_computed</code> computations run <strong>before</strong> any render effects,
+so signals they write are fully settled before the DOM updates.
+Prefer <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../wybthon/#wybthon.create_memo"><code>create_memo</code></a> for plain derived
+values; reach for <code>create_computed</code> only when you must push a value
+into another signal.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6905,6 +7003,108 @@ signal.</p>
       </tbody>
     </table>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.reactivity.create_reaction" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">create_reaction</span>
+
+
+<a href="#wybthon.reactivity.create_reaction" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_reaction</span><span class="p">(</span><span class="n">on_invalidate</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create an on-change reaction with manual tracking.</p>
+<p>Matches SolidJS's <code>createReaction</code>: the returned <code>track</code> function
+runs its argument once with tracking enabled; the <strong>first time</strong> any
+tracked dependency changes, <code>on_invalidate</code> fires (untracked) and
+tracking stops until <code>track</code> is called again. Useful for "notify me
+once" patterns where the rendering of the change is decoupled from
+its detection.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>on_invalidate</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Zero-arg callback invoked once per tracked change.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]], None]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <code>track(fn)</code> function. Call it with a zero-arg callable whose</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]], None]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>signal reads should be tracked.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">track</span> <span class="o">=</span> <span class="n">create_reaction</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;count changed!&quot;</span><span class="p">))</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">track</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>     <span class="c1"># start tracking</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># prints &quot;count changed!&quot;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>     <span class="c1"># nothing: tracking stopped</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">track</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>     <span class="c1"># re-arm</span>
+</span></code></pre></div>
+</details>
 
     </div>
 
@@ -7057,6 +7257,97 @@ nearest handler).</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.reactivity.on_error" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">on_error</span>
+
+
+<a href="#wybthon.reactivity.on_error" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">on_error</span><span class="p">(</span><span class="n">handler</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Register an error handler on the current reactive owner scope.</p>
+<p>Matches SolidJS's <code>onError</code>: exceptions raised by child computations
+(effects created under this scope, reactive holes, descendant
+component setups) route to the nearest ancestor handler. Multiple
+calls in the same scope chain the handlers; each runs in
+registration order.</p>
+<p>Unlike <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;catch_error&lt;/span&gt;" href="../wybthon/#wybthon.catch_error"><code>catch_error</code></a>, which wraps a single
+function call in its own scope, <code>on_error</code> protects everything
+created under the <em>current</em> scope for its remaining lifetime.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>handler</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Callback receiving the exception.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError">RuntimeError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If called outside any reactive scope.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@component</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Dashboard</span><span class="p">():</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">on_error</span><span class="p">(</span><span class="k">lambda</span> <span class="n">exc</span><span class="p">:</span> <span class="n">report_to_sentry</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">...</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.reactivity.create_deferred" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">create_deferred</span>
 
@@ -7141,7 +7432,7 @@ expensive consumers from rapid-fire updates.</p>
 
 
 <a href="#wybthon.reactivity.create_memo" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_memo</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">equals</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="wybthon.reactivity._DEFAULT_EQUALS">_DEFAULT_EQUALS</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><span title="wybthon.reactivity.T">T</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7178,6 +7469,27 @@ Inside a component, the underlying computation is disposed on unmount.</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>equals</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Equality policy controlling when the memo's own
+observers are notified after a recompute. Same semantics as
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../wybthon/#wybthon.create_signal"><code>create_signal</code></a>: the default is
+value equality with an identity fast path, <code>False</code> always
+notifies, and a callable <code>(old, new) -&gt; bool</code> skips
+notification when it returns <code>True</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code><span title="wybthon.reactivity._DEFAULT_EQUALS">_DEFAULT_EQUALS</span></code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -7207,7 +7519,17 @@ Inside a component, the underlying computation is disposed on unmount.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>a dependency on the memoised value.</p>
+                <p>a dependency on the memoised value. Its <code>.peek()</code> method returns</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <span title="wybthon.reactivity.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the (up-to-date) value without subscribing the caller.</p>
               </div>
             </td>
           </tr>
@@ -7218,7 +7540,11 @@ Inside a component, the underlying computation is disposed on unmount.</p>
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="p">())</span>  <span class="c1"># reactive read</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="p">())</span>      <span class="c1"># reactive read</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">peek</span><span class="p">())</span>  <span class="c1"># untracked read</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Notify only when the result list changes length:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">heads</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">items</span><span class="p">()[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">equals</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
 </span></code></pre></div>
 </details>
 
@@ -8386,11 +8712,13 @@ their sources up to date, which keeps updates glitch-free.</p>
 <h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
 <h5 id="signals-first-api-recommended">Signals-first API (recommended)<a class="headerlink" href="#signals-first-api-recommended" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code>. Optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.  The setter also accepts an <strong>updater function</strong>: <code>set_count(lambda n: n + 1)</code> computes the new value from the previous one and returns the value it stored.</li>
-<li><code>create_effect(fn) -&gt; Computation</code>. The returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.  User effects run <strong>after</strong> render effects in each flush.</li>
-<li><code>create_render_effect(fn) -&gt; Computation</code>. Like <code>create_effect</code>, but queued in the render phase: it runs before user effects in each flush.  The framework uses this internally for DOM bindings; use it when an effect must observe the DOM before user effects do.</li>
-<li><code>create_computed(fn) -&gt; Computation</code>. An eager computation that runs during the render phase, mirroring Solid's <code>createComputed</code>.  Prefer <code>create_memo</code> for derived values; use <code>create_computed</code> to push a signal write that later work depends on.</li>
-<li><code>create_memo(fn) -&gt; getter</code>. Creates a lazy memo <code>Computation</code> under the current owner; recomputes only when read after a source changed, and is disposed when the owner is disposed.</li>
+<li><code>create_signal(value, *, equals=...) -&gt; (getter, setter)</code>. Optional <strong><code>equals</code></strong>: default uses <strong>value equality</strong> (<code>==</code>) with an identity (<code>is</code>) fast-path; <code>equals=True</code> is equivalent to the default; <code>equals=False</code> notifies on every <code>set()</code>; <code>equals=fn</code> with <code>fn(old, new) -&gt; bool</code> skips notification when <code>fn</code> returns <code>True</code> (custom comparator).  Use <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only semantics.  The getter exposes <strong><code>.peek()</code></strong> for untracked reads.  The setter also accepts an <strong>updater function</strong>: <code>set_count(lambda n: n + 1)</code> computes the new value from the previous one and returns the value it stored.</li>
+<li><code>create_effect(fn) -&gt; Computation</code>. The returned <code>Computation</code> is added as a child of the current owner.  Inside a component's setup phase the owner is the <code>_ComponentContext</code> (effect survives re-renders, disposed on unmount).  Inside a render function the owner is the render <code>Computation</code> (effect disposed on re-render).  Supports previous value: <code>create_effect(lambda prev: ...)</code>.  User effects run <strong>after</strong> render effects and after the DOM commit in each flush, matching Solid's <code>createEffect</code> timing.</li>
+<li><code>create_render_effect(fn) -&gt; Computation</code>. Like <code>create_effect</code>, but queued in the render phase: it runs before the DOM commit and before user effects in each flush.  The framework uses this internally for DOM bindings; use it when an effect must run during the render phase.</li>
+<li><code>create_computed(fn) -&gt; Computation</code>. An eager, pure computation that runs <strong>before</strong> render effects in each flush, mirroring Solid's <code>createComputed</code>.  Prefer <code>create_memo</code> for derived values; use <code>create_computed</code> to push a signal write that later work depends on.</li>
+<li><code>create_memo(fn, *, equals=...) -&gt; getter</code>. Creates a lazy memo <code>Computation</code> under the current owner; recomputes only when read after a source changed, and is disposed when the owner is disposed.  Optional <strong><code>equals</code></strong> (same semantics as <code>create_signal</code>) controls when the memo's own observers are notified after a recompute.  The getter exposes <strong><code>.peek()</code></strong> for untracked reads.</li>
+<li><code>create_reaction(on_invalidate) -&gt; track</code>. On-change reaction with manual tracking, mirroring Solid's <code>createReaction</code>.  Call <code>track(fn)</code> to run <code>fn</code> with tracking; the <strong>first</strong> change to any tracked dependency fires <code>on_invalidate</code> (untracked) and stops tracking until <code>track</code> is called again.</li>
+<li><code>on_error(handler)</code>. Registers an error handler on the current reactive owner scope, mirroring Solid's <code>onError</code>.  Exceptions raised by child computations route to the nearest ancestor handler; multiple handlers in one scope chain in registration order.</li>
 <li><code>create_deferred(source) -&gt; getter</code>. Returns a read-only getter that trails <code>source</code>: the new value is published on the next event-loop tick (immediately when no asyncio loop is running) so expensive consumers can lag behind rapid-fire updates, mirroring Solid's <code>createDeferred</code>.</li>
 <li><code>create_unique_id() -&gt; str</code>. Returns a unique, stable ID string (<code>"wyb-0"</code>, <code>"wyb-1"</code>, ...) for wiring <code>for</code>/<code>aria-*</code> attributes, mirroring Solid's <code>createUniqueId</code>.</li>
 <li><code>catch_error(fn, handler) -&gt; result | None</code>. Runs <code>fn</code> under a scope whose errors (including errors thrown later by effects created inside it) route to <code>handler</code> instead of propagating.  Mirrors Solid's <code>catchError</code>.</li>
@@ -8470,6 +8798,7 @@ proxy unwraps it transparently, and children always read with <code>props.name()
 <ul>
 <li><code>create_resource(fetcher) -&gt; Resource</code></li>
 <li><code>create_resource(source, fetcher) -&gt; Resource</code>. Refetches when the source changes.</li>
+<li>Both forms accept <strong><code>initial_value=...</code></strong>: the resource starts in the <code>"ready"</code> state with that data, and the first fetch behaves like a refresh (previous data stays readable, Suspense isn't triggered).</li>
 </ul>
 <p>A <code>Resource</code> is <strong>callable</strong>, mirroring Solid's <code>createResource</code> accessor:</p>
 <ul>

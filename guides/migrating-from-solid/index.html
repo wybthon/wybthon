@@ -2919,8 +2919,16 @@
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_computed&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_computed"><code>create_computed(fn)</code></a></td>
 </tr>
 <tr>
-<td><code>createMemo(fn)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo(fn)</code></a></td>
+<td><code>createMemo(fn, v, { equals })</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo(fn, equals=...)</code></a></td>
+</tr>
+<tr>
+<td><code>createReaction(onInvalidate)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_reaction&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_reaction"><code>create_reaction(on_invalidate)</code></a></td>
+</tr>
+<tr>
+<td><code>onError(handler)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_error&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_error"><code>on_error(handler)</code></a></td>
 </tr>
 <tr>
 <td><code>createDeferred(source)</code></td>
@@ -2992,7 +3000,7 @@
 </tr>
 <tr>
 <td><code>&lt;Portal mount={...}&gt;</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_portal"><code>create_portal(mount=...)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal(mount=...)</code></a></td>
 </tr>
 <tr>
 <td><code>&lt;ErrorBoundary fallback={...}&gt;</code></td>
@@ -3003,8 +3011,12 @@
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../../api/wybthon/#wybthon.Suspense"><code>Suspense(fallback=...)</code></a></td>
 </tr>
 <tr>
+<td><code>&lt;SuspenseList revealOrder={...}&gt;</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;SuspenseList&lt;/span&gt;" href="../../api/wybthon/#wybthon.SuspenseList"><code>SuspenseList(reveal_order=...)</code></a></td>
+</tr>
+<tr>
 <td><code>lazy(() =&gt; import(...))</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy(load=...)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy(loader)</code></a></td>
 </tr>
 <tr>
 <td><code>onMount(fn)</code></td>
@@ -3033,6 +3045,10 @@
 <tr>
 <td><code>createMutable(initial)</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_mutable&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_mutable"><code>create_mutable(initial)</code></a></td>
+</tr>
+<tr>
+<td><code>modifyMutable(state, modifier)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;modify_mutable&lt;/span&gt;" href="../../api/wybthon/#wybthon.modify_mutable"><code>modify_mutable(state, modifier)</code></a></td>
 </tr>
 <tr>
 <td><code>produce(fn)</code></td>
@@ -3144,6 +3160,8 @@ live.</p>
 <h2 id="whats-intentionally-different">What's intentionally different<a class="headerlink" href="#whats-intentionally-different" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Naming.</strong> snake_case across the API (<code>create_signal</code>, not <code>createSignal</code>). Component names stay PascalCase.</li>
+<li><strong>Signal equality.</strong> The default <code>equals</code> policy is Python value equality (<code>==</code> with an identity fast path), not JS <code>===</code>. Pass <code>equals=lambda a, b: a is b</code> when you want identity-only semantics, or <code>equals=False</code> to always notify.</li>
+<li><strong>Untracked reads.</strong> Signal and memo getters expose <code>.peek()</code> (<code>count.peek()</code>), a shorthand for <code>untrack(count)</code>.</li>
 <li><strong>Imports.</strong> Pull from <code>wybthon</code> (and optionally <code>wybthon.html</code> for tag helpers).</li>
 <li><strong><code>Dynamic</code>.</strong> Use <code>dynamic(lambda: ...)</code> to inline a reactive computation; component-style <code>Dynamic</code> exists too.</li>
 <li><strong>JS interop.</strong> Use <code>pyodide.ffi</code> to talk to the host. See <a href="../pyodide/">Pyodide guide</a>.</li>

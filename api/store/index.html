@@ -2210,6 +2210,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.store.modify_mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;modify_mutable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.store.produce" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2787,6 +2798,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.store.modify_mutable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;modify_mutable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.store.produce" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2970,6 +2992,14 @@ entire store.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Create a directly-writable reactive store proxy.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;modify_mutable&lt;/span&gt; (&lt;code&gt;wybthon.store.modify_mutable&lt;/code&gt;)" href="#wybthon.store.modify_mutable">modify_mutable</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Apply a batched modification to a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_mutable&lt;/span&gt;" href="../wybthon/#wybthon.create_mutable"><code>create_mutable</code></a> proxy.</p>
                 </div>
               </td>
             </tr>
@@ -3324,10 +3354,14 @@ to anything; mutations to it bypass reactivity entirely.</p>
 
         <p>Create a directly-writable reactive store proxy.</p>
 <p>Matches SolidJS's <code>createMutable</code>: reads are tracked per path like
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../wybthon/#wybthon.create_store"><code>create_store</code></a>, but top-level writes go
-through plain attribute or item assignment instead of a setter.
-Nested containers remain read-only proxies; prefer <code>create_store</code>
-for anything beyond simple mutable state.</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../wybthon/#wybthon.create_store"><code>create_store</code></a>, and writes go through plain
+attribute or item assignment at <strong>any depth</strong>. Nested dicts wrap in
+writable proxies, and nested lists support <code>append</code>, <code>insert</code>,
+<code>pop</code>, <code>remove</code>, <code>clear</code>, and index assignment. Each write batches
+its notifications; use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;modify_mutable&lt;/span&gt;" href="../wybthon/#wybthon.modify_mutable"><code>modify_mutable</code></a>
+with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;produce&lt;/span&gt;" href="../wybthon/#wybthon.produce"><code>produce</code></a> or
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a> to group several changes into one
+update.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3386,9 +3420,96 @@ for anything beyond simple mutable state.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">count</span><span class="p">))</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">state</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># effect re-runs</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">},</span> <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[]})</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">state</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">5</span>             <span class="c1"># effect re-runs</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Grace&quot;</span>   <span class="c1"># nested write, effect re-runs</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">state</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;new&quot;</span><span class="p">)</span>    <span class="c1"># list mutation, tracked</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.store.modify_mutable" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">modify_mutable</span>
+
+
+<a href="#wybthon.store.modify_mutable" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">modify_mutable</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">modifier</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Apply a batched modification to a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_mutable&lt;/span&gt;" href="../wybthon/#wybthon.create_mutable"><code>create_mutable</code></a> proxy.</p>
+<p>Matches SolidJS's <code>modifyMutable</code>. The modifier is either a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;produce&lt;/span&gt;" href="../wybthon/#wybthon.produce"><code>produce</code></a> draft function, a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a> result, or a plain callable
+receiving a mutable draft (shorthand for <code>produce</code>). All resulting
+signal notifications flush once, as a single update.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>state</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A proxy created by <code>create_mutable</code> (or any store
+proxy).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>modifier</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <code>produce(...)</code> / <code>reconcile(...)</code> result, or a
+callable draft mutator.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">modify_mutable</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">produce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="nb">setattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">setattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">modify_mutable</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_state</span><span class="p">))</span>
 </span></code></pre></div>
 </details>
 
@@ -3497,7 +3618,8 @@ reference past the call.</p>
 <h5 id="store-creation">Store creation<a class="headerlink" href="#store-creation" title="Permanent link">&para;</a></h5>
 <ul>
 <li><code>create_store(initial) -&gt; (store, set_store)</code>. Create a reactive store from a dict or list.</li>
-<li><code>create_mutable(initial) -&gt; proxy</code>. Create a directly-writable store proxy (Solid's <code>createMutable</code>); top-level attribute and item assignment notify the touched key. Nested containers remain read-only proxies.</li>
+<li><code>create_mutable(initial) -&gt; proxy</code>. Create a directly-writable store proxy (Solid's <code>createMutable</code>). Attribute and item assignment work at <strong>any depth</strong>: nested dicts wrap in writable proxies, and nested lists support <code>append</code>, <code>insert</code>, <code>pop</code>, <code>remove</code>, <code>clear</code>, and index assignment.</li>
+<li><code>modify_mutable(state, modifier)</code>. Apply a batched modification to a mutable proxy (Solid's <code>modifyMutable</code>). The modifier is a <code>produce(...)</code> result, a <code>reconcile(...)</code> result, or a plain callable receiving a draft; all notifications flush as one update.</li>
 </ul>
 <h5 id="store-setter">Store setter<a class="headerlink" href="#store-setter" title="Permanent link">&para;</a></h5>
 <p>The <code>set_store</code> setter supports several calling conventions:</p>

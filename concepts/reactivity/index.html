@@ -2855,20 +2855,23 @@
 <ul>
 <li><code>create_signal(value, *, equals=...)</code> returns a <code>(getter, setter)</code> tuple.
   The setter accepts either a new value or an <strong>updater function</strong>
-  (<code>set_count(lambda n: n + 1)</code>). By default <code>equals</code> uses <strong>value
-  equality</strong> (<code>==</code>) with an identity fast-path; pass <code>equals=False</code> to
-  fire on every set, or a custom comparator (e.g.,
-  <code>equals=lambda a, b: a is b</code> for SolidJS-style identity-only
-  semantics). See <a href="../../api/reactivity/">Reactivity API</a>.</li>
-<li><code>create_memo(fn)</code> returns a derived getter; recomputes <strong>lazily</strong> on read after a dependency changes.</li>
-<li><code>create_effect(fn)</code> runs and re-runs on dependencies; supports previous value.</li>
-<li><code>create_render_effect(fn)</code> is like <code>create_effect</code> but runs in the <strong>render phase</strong>, before user effects (the framework's own DOM bindings live here).</li>
-<li><code>create_computed(fn)</code> runs eagerly in the render phase; use it to push derived state into another signal.</li>
+  (<code>set_count(lambda n: n + 1)</code>). The getter exposes <code>.peek()</code> for
+  untracked reads. By default <code>equals</code> uses <strong>value equality</strong> (<code>==</code>)
+  with an identity fast-path; pass <code>equals=False</code> to fire on every set,
+  or a custom comparator (e.g., <code>equals=lambda a, b: a is b</code> for
+  SolidJS-style identity-only semantics). See
+  <a href="../../api/reactivity/">Reactivity API</a>.</li>
+<li><code>create_memo(fn, *, equals=...)</code> returns a derived getter; recomputes <strong>lazily</strong> on read after a dependency changes. <code>equals</code> controls when its observers are notified; the getter also exposes <code>.peek()</code>.</li>
+<li><code>create_effect(fn)</code> runs and re-runs on dependencies; supports previous value. User effects run after the DOM commit in each flush.</li>
+<li><code>create_render_effect(fn)</code> is like <code>create_effect</code> but runs in the <strong>render phase</strong>, before the DOM commit and before user effects (the framework's own DOM bindings live here).</li>
+<li><code>create_computed(fn)</code> runs eagerly, <strong>before</strong> render effects; use it to push derived state into another signal.</li>
+<li><code>create_reaction(on_invalidate)</code> returns a <code>track(fn)</code> function; the first change to a dependency tracked by <code>fn</code> fires <code>on_invalidate</code> once, then tracking stops until you call <code>track</code> again.</li>
 <li><code>batch()</code> batches updates as a context manager, or <code>batch(fn)</code> with callback.</li>
-<li><code>create_resource(fetcher)</code> returns an async data primitive with loading/error state.</li>
+<li><code>create_resource(fetcher)</code> returns an async data primitive with loading/error state; <code>initial_value=...</code> seeds it with data.</li>
 <li><code>create_deferred(source)</code> returns a getter that trails <code>source</code> by one event-loop tick, decoupling expensive consumers from rapid updates.</li>
 <li><code>create_unique_id()</code> returns a stable unique string for <code>id</code>/<code>for</code>/<code>aria-*</code> wiring.</li>
 <li><code>catch_error(fn, handler)</code> runs <code>fn</code> under a scope whose errors (now or from effects created inside) route to <code>handler</code>.</li>
+<li><code>on_error(handler)</code> registers an error handler on the <strong>current</strong> scope; errors from child computations route to the nearest ancestor handler.</li>
 </ul>
 <h4 id="reactive-utilities">Reactive utilities<a class="headerlink" href="#reactive-utilities" title="Permanent link">&para;</a></h4>
 <p><code>untrack(fn)</code> runs <code>fn</code> without tracking any signal reads, which is

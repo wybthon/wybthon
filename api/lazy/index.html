@@ -2278,17 +2278,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.lazy.load_component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;load_component
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.lazy.lazy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2297,18 +2286,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.lazy.preload_component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;preload_component
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" preload_component">
+    <nav class="md-nav" aria-label=" lazy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2743,17 +2721,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.lazy.load_component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;load_component
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.lazy.lazy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2762,18 +2729,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.lazy.preload_component" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;preload_component
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" preload_component">
+    <nav class="md-nav" aria-label=" lazy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2869,22 +2825,42 @@
 
     <div class="doc doc-contents first">
 
-        <p>Helpers for lazy-loading components with simple loading/error states.</p>
-<p>Wybthon's lazy loaders use Python's <code>importlib</code> so they work with any
-module that's reachable at import time, including packages bundled
-into the Pyodide image and packages fetched via <code>micropip</code>. Pair them
-with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_component&lt;/span&gt;" href="../wybthon/#wybthon.preload_component"><code>preload_component</code></a> to warm caches
-ahead of navigation.</p>
-<p>Public surface:</p>
+        <p>Lazy-loaded components integrated with Suspense.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="#wybthon.lazy"><code>lazy</code></a> wraps a <strong>loader</strong> callback (sync or async) that
+produces a component. The component loads on first mount, backed by a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a>: while the load is in flight, the
+nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundary shows its fallback, and
+a load failure raises into the nearest
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a>. This matches SolidJS's
+<code>lazy(() =&gt; import(...))</code> semantics, adapted to Python's import system.</p>
+<p>The loader may return:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="#wybthon.lazy"><code>lazy</code></a>: build a component from a <code>loader</code> callback
-  returning <code>(module_path, attr?)</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;load_component&lt;/span&gt;" href="../wybthon/#wybthon.load_component"><code>load_component</code></a>: build a component
-  directly from a known module path / attribute name.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_component&lt;/span&gt;" href="../wybthon/#wybthon.preload_component"><code>preload_component</code></a>: eagerly import a
-  component to populate the module cache.</li>
+<li>a component callable directly,</li>
+<li>an imported module (an export is picked by convention: <code>Page</code>, then
+  <code>default</code>, then the first callable), or</li>
+<li>a module path string, or a <code>(module_path, attr)</code> tuple, imported via
+  <code>importlib</code>.</li>
 </ul>
+<p>Async loaders can <code>await</code> arbitrary work first (for example
+<code>micropip.install(...)</code> in Pyodide) before returning any of the above.</p>
 
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;app.about.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_chart</span><span class="p">():</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">&quot;app-charts&quot;</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">app_charts</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">app_charts</span><span class="o">.</span><span class="n">Chart</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load_chart</span><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">Chart</span><span class="o">.</span><span class="n">preload</span><span class="p">()</span>  <span class="c1"># warm the cache on hover/intent</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">Suspense</span><span class="p">(</span><span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading...&quot;</span><span class="p">),</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">About</span><span class="p">()])</span>
+</span></code></pre></div>
+</details>
 
 <details class="see-also" open>
   <summary>See Also</summary>
@@ -2913,26 +2889,10 @@ ahead of navigation.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;load_component&lt;/span&gt; (&lt;code&gt;wybthon.lazy.load_component&lt;/code&gt;)" href="#wybthon.lazy.load_component">load_component</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Dynamically import a module and return a component wrapping the export.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;lazy&lt;/span&gt; (&lt;code&gt;wybthon.lazy.lazy&lt;/code&gt;)" href="#wybthon.lazy.lazy">lazy</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Create a lazily-loaded component from a <code>loader</code> callback.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_component&lt;/span&gt; (&lt;code&gt;wybthon.lazy.preload_component&lt;/code&gt;)" href="#wybthon.lazy.preload_component">preload_component</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Eagerly import a component to warm caches before navigation.</p>
+                  <p>Create a lazily-loaded component from a loader callback.</p>
                 </div>
               </td>
             </tr>
@@ -2957,123 +2917,23 @@ ahead of navigation.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.lazy.load_component" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">load_component</span>
-
-
-<a href="#wybthon.lazy.load_component" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_component</span><span class="p">(</span><span class="n">module_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Dynamically import a module and return a component wrapping the export.</p>
-<p>The returned function component renders a small loader until the
-module finishes importing. On success it renders the loaded
-component with the forwarded props; on error it renders a minimal
-error message.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>module_path</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Importable Python module path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>attr</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional attribute name on the loaded module. When
-omitted, the loader picks an export by convention
-(<code>Page</code>, <code>Component</code>, <code>Default</code>, or first PascalCase symbol).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A function component that proxies its props to the loaded</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>component once it becomes available.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h3 id="wybthon.lazy.lazy" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">lazy</span>
 
 
 <a href="#wybthon.lazy.lazy" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">lazy</span><span class="p">(</span><span class="n">loader</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">lazy</span><span class="p">(</span><span class="n">loader</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Create a lazily-loaded component from a <code>loader</code> callback.</p>
+        <p>Create a lazily-loaded component from a loader callback.</p>
+<p>The loader runs once, on the first mount (or on
+<a href="#wybthon.lazy.lazy--preload"><code>preload</code></a>); the resolved component is cached for every
+later mount. While loading, the nearest
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundary shows its fallback. A
+loader error raises into the nearest
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3092,14 +2952,13 @@ omitted, the loader picks an export by convention
                 <code>loader</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]]]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Callable returning <code>(module_path, attr_name)</code>. The
-second item may be <code>None</code> to fall back to the standard
-export convention (<code>Page</code>, <code>Component</code>, <code>Default</code>, or first
-PascalCase symbol).</p>
+                <p>Zero-arg callable, sync or async, returning a component
+callable, a module, a module-path string, or a
+<code>(module_path, attr)</code> tuple.</p>
               </div>
             </td>
             <td>
@@ -3121,21 +2980,31 @@ PascalCase symbol).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A function component that imports the target module on first</p>
+                <p>A component callable with a <code>.preload()</code> method that starts the</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>render and forwards props to the resolved component.</p>
+                <p>load early and returns the backing</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -3145,82 +3014,12 @@ PascalCase symbol).</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">UserPageLazy</span><span class="p">():</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;app.users.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/users/:id&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">lazy</span><span class="p">(</span><span class="n">UserPageLazy</span><span class="p">))</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Team</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;app.about.team.page&quot;</span><span class="p">,</span> <span class="s2">&quot;Page&quot;</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/about/team&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Team</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">Link</span><span class="p">(</span><span class="s2">&quot;Team&quot;</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;/about/team&quot;</span><span class="p">,</span> <span class="n">on_mouseenter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">Team</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
 </span></code></pre></div>
 </details>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.lazy.preload_component" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">preload_component</span>
-
-
-<a href="#wybthon.lazy.preload_component" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">preload_component</span><span class="p">(</span><span class="n">module_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Eagerly import a component to warm caches before navigation.</p>
-<p>Errors are swallowed so this helper can be safely called as a
-"best effort" warmup (for example from a hover handler on a
-<code>&lt;Link&gt;</code>).</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>module_path</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Importable Python module path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>attr</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional attribute name on the loaded module.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
 
     </div>
 
@@ -3233,56 +3032,38 @@ PascalCase symbol).</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>lazy</code> defers loading a component module until the first time it
-mounts. Pair it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> so users see a
-fallback while the chunk arrives.</p>
-<table>
-<thead>
-<tr>
-<th>Helper</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="#wybthon.lazy"><code>lazy</code></a></td>
-<td>Wrap an async loader and return a placeholder component.</td>
-</tr>
-<tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;load_component&lt;/span&gt;" href="../wybthon/#wybthon.load_component"><code>load_component</code></a></td>
-<td>Manually load a component module (advanced).</td>
-</tr>
-<tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_component&lt;/span&gt;" href="../wybthon/#wybthon.preload_component"><code>preload_component</code></a></td>
-<td>Warm the cache before a route is visited.</td>
-</tr>
-</tbody>
-</table>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="#wybthon.lazy"><code>lazy</code></a> defers loading a component until the first time
+it mounts. The load is backed by a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a>, so
+it integrates with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> (fallback while
+loading) and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a> (load failures)
+automatically, matching SolidJS's <code>lazy(() =&gt; import(...))</code>.</p>
 <h4 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">lazy</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lazy</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">HeavyChart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">import_module_async</span><span class="p">(</span><span class="s2">&quot;app.heavy_chart&quot;</span><span class="p">))</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/charts&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">HeavyChart</span><span class="p">),</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">]</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nd">@component</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">return</span> <span class="n">Suspense</span><span class="p">(</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading…&quot;</span><span class="p">),</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">),</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">HeavyChart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;app.heavy_chart&quot;</span><span class="p">,</span> <span class="s2">&quot;Chart&quot;</span><span class="p">))</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;/charts&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">HeavyChart</span><span class="p">),</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nd">@component</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">return</span> <span class="n">Suspense</span><span class="p">(</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading…&quot;</span><span class="p">),</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">),</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>load</code> returns a coroutine that resolves to the component (or to a
-  module from which an attribute is read, depending on the helper used).</li>
-<li><code>lazy</code> caches the resolved component automatically.</li>
-<li><code>preload_component(loader)</code> is handy for hover/focus warm-ups.</li>
+<li>The loader may return a component callable, an imported module, a
+  module-path string, or a <code>(module_path, attr)</code> tuple.</li>
+<li>Async loaders can <code>await</code> arbitrary work first (for example
+  <code>micropip.install(...)</code> in Pyodide) before returning the component.</li>
+<li>The resolved component is cached; the loader runs at most once.</li>
+<li><code>HeavyChart.preload()</code> starts the load early (handy for hover or
+  focus warm-ups) and returns the backing resource.</li>
+<li>A loader error raises into the nearest <code>ErrorBoundary</code>.</li>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>

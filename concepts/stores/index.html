@@ -3058,18 +3058,30 @@ for example to serialize it or hand it to a non-reactive API:</p>
 <h4 id="mutable-stores">Mutable stores<a class="headerlink" href="#mutable-stores" title="Permanent link">&para;</a></h4>
 <p><code>create_mutable(initial)</code> returns a single directly-writable proxy
 instead of a <code>(store, setter)</code> pair, mirroring Solid's <code>createMutable</code>.
-Top-level writes go through plain attribute or item assignment and
-notify subscribers of the touched key only:</p>
+Writes go through plain attribute or item assignment at <strong>any depth</strong>
+and notify subscribers of the touched path only:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_mutable</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;hi&quot;</span><span class="p">})</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">state</span> <span class="o">=</span> <span class="n">create_mutable</span><span class="p">({</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Ada&quot;</span><span class="p">},</span> <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[]})</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">state</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">state</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hello&quot;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Grace&quot;</span>    <span class="c1"># nested write</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">state</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>   <span class="c1"># tracked list mutation</span>
 </span></code></pre></div>
-<p>Nested containers remain read-only proxies. Prefer <code>create_store</code> for
-most app state; the explicit setter keeps mutation sites easy to find.
-Reach for <code>create_mutable</code> for small, flat objects that are easier to
-update in place.</p>
+<p>Nested lists support <code>append</code>, <code>insert</code>, <code>pop</code>, <code>remove</code>, <code>clear</code>, and
+index assignment. To group several writes into one update, use
+<code>modify_mutable</code> with <code>produce</code> or <code>reconcile</code> (mirroring Solid's
+<code>modifyMutable</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">modify_mutable</span><span class="p">,</span> <span class="n">produce</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">bump</span><span class="p">(</span><span class="n">draft</span><span class="p">):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Hopper&quot;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">modify_mutable</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">produce</span><span class="p">(</span><span class="n">bump</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Prefer <code>create_store</code> for most app state; the explicit setter keeps
+mutation sites easy to find. Reach for <code>create_mutable</code> for objects
+that are easier to update in place.</p>
 <h4 id="stores-vs-signals">Stores vs signals<a class="headerlink" href="#stores-vs-signals" title="Permanent link">&para;</a></h4>
 <table>
 <thead>

@@ -2342,7 +2342,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Suspense">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.suspense.SuspenseList" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;SuspenseList
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" SuspenseList">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2729,7 +2740,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Suspense">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.suspense.SuspenseList" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;SuspenseList
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" SuspenseList">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2825,7 +2847,7 @@
 
     <div class="doc doc-contents first">
 
-        <p><code>Suspense</code> component for rendering fallback UI during async loading.</p>
+        <p><code>Suspense</code> and <code>SuspenseList</code> for rendering fallback UI during async loading.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> tracks resources <strong>automatically</strong>,
 matching SolidJS: any <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Resource&lt;/span&gt;" href="../wybthon/#wybthon.Resource"><code>Resource</code></a> read (called) under
 the boundary while it's still <code>"pending"</code> registers itself, and the
@@ -2834,6 +2856,9 @@ No <code>resources</code> prop wiring is needed.</p>
 <p>Refetches don't re-trigger the boundary. A resource that already has
 data enters the <code>"refreshing"</code> state and keeps serving its previous
 value, so content stays visible during reloads.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;SuspenseList&lt;/span&gt;" href="../wybthon/#wybthon.SuspenseList"><code>SuspenseList</code></a> coordinates multiple <code>Suspense</code>
+boundaries beneath it, controlling the order their contents reveal
+(<code>reveal_order</code>) and how many fallbacks show at once (<code>tail</code>).</p>
 
 
 <details class="example" open>
@@ -2878,6 +2903,14 @@ value, so content stays visible during reloads.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Show a fallback while resources read under the boundary are pending.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;SuspenseList&lt;/span&gt; (&lt;code&gt;wybthon.suspense.SuspenseList&lt;/code&gt;)" href="#wybthon.suspense.SuspenseList">SuspenseList</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Coordinate the reveal order of multiple <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundaries.</p>
                 </div>
               </td>
             </tr>
@@ -3002,6 +3035,145 @@ boundary while they're in their initial <code>"pending"</code> state.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.suspense.SuspenseList" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">SuspenseList</span>
+
+
+<a href="#wybthon.suspense.SuspenseList" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SuspenseList</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reveal_order</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">&#39;forwards&#39;</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Coordinate the reveal order of multiple <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundaries.</p>
+<p>Matches SolidJS's <code>&lt;SuspenseList&gt;</code>. Each <code>Suspense</code> boundary
+mounted underneath (that isn't nested inside another boundary)
+registers with the list in mount order, and the list decides when
+each may reveal its content and whether it shows its fallback.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>children</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Children containing one or more <code>Suspense</code>
+boundaries.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>reveal_order</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One of <code>"forwards"</code> (default; contents reveal
+top-to-bottom, each waiting for the ones before it),
+<code>"backwards"</code> (bottom-to-top), or <code>"together"</code> (all reveal
+at once when every boundary has loaded).</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;forwards&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>tail</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fallback policy for still-pending boundaries. <code>None</code>
+(default) shows every pending boundary's fallback,
+<code>"collapsed"</code> shows only the next fallback in reveal order,
+and <code>"hidden"</code> shows none.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A component <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SuspenseList</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">reveal_order</span><span class="o">=</span><span class="s2">&quot;forwards&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">tail</span><span class="o">=</span><span class="s2">&quot;collapsed&quot;</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">Suspense</span><span class="p">(</span><span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading A...&quot;</span><span class="p">),</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">PanelA</span><span class="p">()]),</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="n">Suspense</span><span class="p">(</span><span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Loading B...&quot;</span><span class="p">),</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">PanelB</span><span class="p">()]),</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="p">],</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+</span></code></pre></div>
+</details>
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>A boundary whose content hasn't mounted yet doesn't start its
+resource fetches, so <code>"forwards"</code> reveals sequentially-loading
+content as a cascade rather than loading everything in
+parallel. Start fetches outside the boundaries (or pass
+resources down as props) when parallel loading matters.</p>
+</details>
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -3013,6 +3185,10 @@ boundary while they're in their initial <code>"pending"</code> state.</p>
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_resource&lt;/span&gt;" href="../wybthon/#wybthon.create_resource"><code>create_resource</code></a> in its subtree is pending.
 It's the canonical way to coordinate loading states for async data and
 lazy components.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;SuspenseList&lt;/span&gt;" href="../wybthon/#wybthon.SuspenseList"><code>SuspenseList</code></a> coordinates multiple sibling
+<code>Suspense</code> boundaries, controlling their reveal order
+(<code>reveal_order="forwards" | "backwards" | "together"</code>) and which
+fallbacks show while loading (<code>tail=None | "collapsed" | "hidden"</code>).</p>
 <h4 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h4>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suspense</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_resource</span><span class="p">,</span> <span class="n">create_signal</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>

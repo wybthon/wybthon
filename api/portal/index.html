@@ -2362,15 +2362,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.portal.create_portal" class="md-nav__link">
+  <a href="#wybthon.portal.Portal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_portal
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;Portal
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" create_portal">
+    <nav class="md-nav" aria-label=" Portal">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2721,15 +2721,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.portal.create_portal" class="md-nav__link">
+  <a href="#wybthon.portal.Portal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;create_portal
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;Portal
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" create_portal">
+    <nav class="md-nav" aria-label=" Portal">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2826,11 +2826,10 @@
     <div class="doc doc-contents first">
 
         <p>Portal component for rendering children into a different DOM container.</p>
-<p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_portal&lt;/span&gt;" href="../wybthon/#wybthon.create_portal"><code>create_portal</code></a> to render content
-outside of the current component's DOM ancestor while keeping it part
-of the same reactive ownership tree (so signals, effects, and context
-still work). Common use cases include modals, tooltips, and toast
-notifications.</p>
+<p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../wybthon/#wybthon.Portal"><code>Portal</code></a> to render content outside of the
+current component's DOM ancestor while keeping it part of the same
+reactive ownership tree (so signals, effects, and context still work).
+Common use cases include modals, tooltips, and toast notifications.</p>
 
 
 
@@ -2853,7 +2852,7 @@ notifications.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_portal&lt;/span&gt; (&lt;code&gt;wybthon.portal.create_portal&lt;/code&gt;)" href="#wybthon.portal.create_portal">create_portal</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt; (&lt;code&gt;wybthon.portal.Portal&lt;/code&gt;)" href="#wybthon.portal.Portal">Portal</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Render children into a different DOM container.</p>
@@ -2881,17 +2880,21 @@ notifications.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.portal.create_portal" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">create_portal</span>
+<h3 id="wybthon.portal.Portal" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">Portal</span>
 
 
-<a href="#wybthon.portal.create_portal" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_portal</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">]],</span> <span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+<a href="#wybthon.portal.Portal" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Portal</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mount</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="s1">&#39;body&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Render children into a different DOM container.</p>
+<p>Matches SolidJS's <code>&lt;Portal mount={...}&gt;</code>. The children mount into
+<code>mount</code> (by default <code>document.body</code>) while remaining linked to the
+surrounding component's reactive scope, so signals, context, and
+lifecycle hooks still apply.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2910,34 +2913,33 @@ notifications.</p>
                 <code>children</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;typing.List&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>], None]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A single <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> or a list of
-them.</p>
+                <p>A single <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a> or a list of them.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>container</code>
+                <code>mount</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a> instance, a CSS
-selector string, or a kernel node id identifying the
-target DOM container.</p>
+                <p>The target container: an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>
+instance, a CSS selector string, or a kernel node id.
+Defaults to <code>"body"</code>.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>&#39;body&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -2959,43 +2961,25 @@ target DOM container.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A <code>VNode</code> that, when mounted, mounts <code>children</code> into</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>container</code> while remaining linked to the surrounding</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>component's reactive scope (signals, context, and lifecycle</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>hooks still apply).</p>
+                <p>A component <code>VNode</code> whose children render inside <code>mount</code>.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">when</span><span class="o">=</span><span class="n">show_modal</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Portal</span><span class="p">(</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Modal content&quot;</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;modal&quot;</span><span class="p">),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">mount</span><span class="o">=</span><span class="s2">&quot;#modal-root&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">),</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</span></code></pre></div>
+</details>
 
     </div>
 
@@ -3008,13 +2992,14 @@ target DOM container.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_portal&lt;/span&gt;" href="../wybthon/#wybthon.create_portal"><code>create_portal</code></a> renders its children into a
-different DOM container while keeping them logically inside the
-component tree (so context, ownership, and event delegation still work).</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../wybthon/#wybthon.Portal"><code>Portal</code></a> renders its children into a different DOM
+container while keeping them logically inside the component tree (so
+context, ownership, and event delegation still work). It matches
+SolidJS's <code>&lt;Portal&gt;</code> component.</p>
 <p>This is the right tool for modals, tooltips, popovers, and toast
 notifications that need to escape the visual layout of their parent.</p>
 <h4 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">create_signal</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Portal</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
@@ -3029,22 +3014,23 @@ notifications that need to escape the visual layout of their parent.</p>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Open&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">toggle</span><span class="p">),</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">Show</span><span class="p">(</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">when</span><span class="o">=</span><span class="n">open_</span><span class="p">,</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">create_portal</span><span class="p">(</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                <span class="n">mount</span><span class="o">=</span><span class="n">document</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                    <span class="n">p</span><span class="p">(</span><span class="s2">&quot;I&#39;m in document.body!&quot;</span><span class="p">),</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>                    <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Close&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">toggle</span><span class="p">),</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>                    <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;modal&quot;</span><span class="p">,</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                <span class="p">),</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">children</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Portal</span><span class="p">(</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                    <span class="n">p</span><span class="p">(</span><span class="s2">&quot;I&#39;m in document.body!&quot;</span><span class="p">),</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                    <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Close&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">toggle</span><span class="p">),</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>                    <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;modal&quot;</span><span class="p">,</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>                <span class="p">),</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                <span class="n">mount</span><span class="o">=</span><span class="s2">&quot;body&quot;</span><span class="p">,</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            <span class="p">),</span>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="p">),</span>
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>mount</code> accepts a DOM element or a CSS selector string.</li>
+<li><code>mount</code> accepts an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>, a CSS selector
+  string, or a kernel node id. It defaults to <code>"body"</code>.</li>
 <li>The portal cleans up its content when its owner unmounts.</li>
-<li>Events bubble through the React-like component tree, <em>not</em> the DOM
-  tree, which is handy for keeping modal logic close to the trigger.</li>
+<li>Events bubble through the component tree, <em>not</em> the DOM tree, which
+  is handy for keeping modal logic close to the trigger.</li>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>

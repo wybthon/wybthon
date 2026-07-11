@@ -739,10 +739,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#create_portal" class="md-nav__link">
+  <a href="#portal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        create_portal
+        Portal
       
     </span>
   </a>
@@ -2792,10 +2792,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#create_portal" class="md-nav__link">
+  <a href="#portal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        create_portal
+        Portal
       
     </span>
   </a>
@@ -3086,22 +3086,23 @@ and forward it to a child element:</p>
 <p>The wrapped function receives <code>(props, ref)</code> instead of <code>(props,)</code>,
 and <code>ref</code> is <strong>stripped</strong> from props (matching React's <code>forwardRef</code>
 semantics).  When no <code>ref</code> is provided, <code>ref</code> is <code>None</code>.</p>
-<h4 id="create_portal"><code>create_portal</code><a class="headerlink" href="#create_portal" title="Permanent link">&para;</a></h4>
-<p>Use <code>create_portal</code> to render children into a DOM node outside the
-parent component's hierarchy. Ideal for modals, tooltips, and overlays:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_portal</span><span class="p">,</span> <span class="n">h</span>
+<h4 id="portal"><code>Portal</code><a class="headerlink" href="#portal" title="Permanent link">&para;</a></h4>
+<p>Use <code>Portal</code> to render children into a DOM node outside the parent
+component's hierarchy. Ideal for modals, tooltips, and overlays:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Portal</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nd">@component</span>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">Modal</span><span class="p">():</span>
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{},</span>
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Page content&quot;</span><span class="p">),</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        <span class="n">create_portal</span><span class="p">(</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        <span class="n">Portal</span><span class="p">(</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>            <span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;modal&quot;</span><span class="p">},</span> <span class="s2">&quot;I appear in #modal-root!&quot;</span><span class="p">),</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>            <span class="s2">&quot;#modal-root&quot;</span><span class="p">,</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>            <span class="n">mount</span><span class="o">=</span><span class="s2">&quot;#modal-root&quot;</span><span class="p">,</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>        <span class="p">),</span>
 </span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="p">)</span>
 </span></code></pre></div>
-<p>The second argument is an <code>Element</code> or a CSS selector string.</p>
+<p>The <code>mount</code> argument is an <code>Element</code>, a CSS selector string, or a
+kernel node id; it defaults to <code>"body"</code>.</p>
 <h4 id="flow-control">Flow control<a class="headerlink" href="#flow-control" title="Permanent link">&para;</a></h4>
 <p>Wybthon provides SolidJS-style <strong>reactive</strong> flow control components.
 Each creates its own reactive scope, so only the relevant subtree

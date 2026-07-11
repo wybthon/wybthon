@@ -2939,6 +2939,12 @@ crossing) when they contain constructs the HTML parser would mangle:
 adjacent or empty text nodes, raw text elements, invalid attribute
 names, or element nestings the parser rewrites (implied <code>&lt;tbody&gt;</code>,
 auto-closed <code>&lt;p&gt;</code>, and similar).</p>
+<p>Plans are <strong>cached per shape</strong>: a single walk of the VNode tree
+collects the per-instance data (id order and bindings) while building
+a hashable <em>shape key</em> that uniquely determines the serialized HTML.
+Serialization, escaping, and eligibility validation run only on the
+first mount of each shape; every later mount of a structurally
+identical tree (for example, the rows of a list) is a dictionary hit.</p>
 
 
 
@@ -3153,6 +3159,10 @@ after ids are assigned.</p>
 nodes plus dynamic placeholders (holes, fragments, components). The
 VNode tree is normalized in place (children lists become <code>VNode</code>
 lists) as a side effect, exactly as the per-node mount path does.</p>
+<p>A single walk collects the per-instance order and bindings while
+building the shape key. The HTML string (and the eligibility
+verdict) comes from the shape cache; the full serializer runs only
+on the first mount of each shape.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
