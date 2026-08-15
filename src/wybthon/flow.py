@@ -34,7 +34,7 @@ Example:
          fallback=lambda: p("Please log in"))
 
     For(each=items,
-        children=lambda item, idx: li(item()))
+        children=lambda item, idx: li(item))
     ```
 """
 
@@ -44,20 +44,30 @@ from typing import Any, Callable, Dict, List, Optional
 
 from ._warnings import warn_each_plain_list
 from .reactivity import ReactiveProps
-from .vnode import Fragment, VNode, dynamic, h, is_getter, to_text_vnode
+from .vnode import Fragment, VNode, _signature_has_required_positional, dynamic, h, scoped, to_text_vnode
 
 __all__ = ["Show", "For", "Index", "Switch", "Match", "Dynamic"]
 
 
 def _eval(v: Any) -> Any:
-    """If `v` is a zero-arg getter, call it; otherwise return as-is."""
-    return v() if is_getter(v) else v
+    """Evaluate a getter accepted by an explicit flow-control prop."""
+    if (
+        callable(v)
+        and not isinstance(v, type)
+        and not getattr(v, "_wyb_component", False)
+        and not getattr(v, "_wyb_provider", False)
+        and not _signature_has_required_positional(v)
+    ):
+        return v()
+    return v
 
 
 def _to_vnode(v: Any) -> VNode:
     """Coerce an arbitrary value to a `VNode`, defaulting to text content."""
     if isinstance(v, VNode):
         return v
+    if isinstance(v, (list, tuple)):
+        return Fragment(*v)
     return to_text_vnode("" if v is None else str(v))
 
 
@@ -75,8 +85,6 @@ def _render_slot(slot: Any, *args: Any) -> VNode:
         return slot
     if callable(slot):
         if args:
-            from .vnode import _signature_has_required_positional
-
             if _signature_has_required_positional(slot):
                 result = slot(*args)
             else:
@@ -176,12 +184,13 @@ def _ShowComponent(props: ReactiveProps) -> Any:
             children = props.value("children")
             if children is None:
                 return to_text_vnode("")
-            return _render_slot(children, condition)
+            branch = _rx.run_with_owner(_branch_owner[0], lambda: _render_slot(children, condition))
+            return scoped(branch, _branch_owner[0])
 
         fb = props.value("fallback")
         if fb is None:
             return to_text_vnode("")
-        return _render_slot(fb)
+        return scoped(_rx.run_with_owner(_branch_owner[0], lambda: _render_slot(fb)), _branch_owner[0])
 
     return dynamic(render)
 
@@ -194,17 +203,16 @@ _ShowComponent._wyb_component = True  # type: ignore[attr-defined]
 # ---------------------------------------------------------------------------
 
 
-def For(each: Any = None, children: Any = None, fallback: Any = None) -> VNode:
+def For(each: Any = None, children: Any = None, fallback: Any = None, key: Any = None) -> VNode:
     """Render a list of items using a per-item mapping function.
 
     ```python
     For(each=items,
-        children=lambda item, index: li(item()))
+        children=lambda item, index: li(item))
     ```
 
-    Inside the callback, `item` is a **signal-backed getter** returning
-    the current item value, and `index` is a signal-backed getter
-    returning the current integer index, matching SolidJS `<For>`.
+    Inside the callback, ``item`` is the direct item value and ``index``
+    is a signal-backed getter returning its current position.
 
     `For` is built on [`map_array`][wybthon.map_array]: the mapping
     callback runs **exactly once per unique item** (keyed by reference
@@ -216,13 +224,14 @@ def For(each: Any = None, children: Any = None, fallback: Any = None) -> VNode:
 
     Args:
         each: List getter (typically a signal accessor) or plain list.
-        children: A `(item_getter, index_getter) -> VNode` callable.
+        children: An ``(item, index_getter) -> VNode`` callable.
         fallback: Slot rendered when the list is empty.
+        key: Optional stable key selector for reconstructed Python objects.
 
     Returns:
         A component [`VNode`][wybthon.VNode].
     """
-    return h(_ForComponent, {"each": each, "children": children, "fallback": fallback})
+    return h(_ForComponent, {"each": each, "children": children, "fallback": fallback, "key": key})
 
 
 def _ForComponent(props: ReactiveProps) -> Any:
@@ -238,18 +247,16 @@ def _ForComponent(props: ReactiveProps) -> Any:
     # <For> children function can't be swapped reactively); resolving it
     # once keeps the per-row path allocation-free.
     children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
+    key_fn = _rx.untrack(lambda: props.value("key"))
 
-    def map_row(item: Callable[[], Any], index: Callable[[], int]) -> VNode:
+    def map_row(item: Any, index: Callable[[], int]) -> VNode:
         if children_fn is None:
             return to_text_vnode("")
         vnode = _to_vnode(children_fn(item, index))
-        # Mounting happens later, inside the list's re-running render
-        # effect; pin it to the row's owner so row-local effects survive
-        # subsequent list updates.
-        vnode.owner_scope = _rx._current_owner
-        return vnode
+        row_key = key_fn(item) if callable(key_fn) else id(item)
+        return scoped(vnode, _rx._current_owner, key=row_key)
 
-    rows = _rx.map_array(source, map_row)
+    rows = _rx.map_array(source, map_row, key=key_fn if callable(key_fn) else None)
 
     def render() -> VNode:
         vnodes = rows()
@@ -307,8 +314,7 @@ def _IndexComponent(props: ReactiveProps) -> Any:
         if children_fn is None:
             return to_text_vnode("")
         vnode = _to_vnode(children_fn(item, index))
-        vnode.owner_scope = _rx._current_owner
-        return vnode
+        return scoped(vnode, _rx._current_owner, key=index)
 
     slots = _rx.index_array(source, map_slot)
 

@@ -52,10 +52,10 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from .props import is_event_prop, to_kebab
+from .props import is_dom_property, is_event_prop, to_kebab
 from .vnode import VNode, is_getter, normalize_children
 
-__all__ = ["MountPlan", "build_plan"]
+__all__ = ["MountBlueprint", "MountPlan", "build_plan"]
 
 # Binding kinds collected by the serializer.
 BIND_EVENT = 0
@@ -65,7 +65,7 @@ BIND_PROP = 3
 BIND_TEXT = 4
 
 # Node kinds in the pre-order ``MountPlan.order`` list.
-NODE_STATIC = 0  # element or text: assign the id to ``vnode.el``
+NODE_STATIC = 0  # element or text: assign an ID in the mounted tree
 NODE_HOLE = 1  # placeholder comment adopted as a reactive hole's end anchor
 NODE_MOUNT = 2  # placeholder comment replaced by a component/fragment mount
 
@@ -176,47 +176,80 @@ _K_MOUNT = object()  # component/fragment-child placeholder
 _K_OPEN = object()  # end of props / start of children
 _K_CLOSE = object()  # end of element
 
-# Shape key -> serialized HTML string, or None when the shape is
+# Shape key -> compiled blueprint, or None when the shape is
 # ineligible for the template fast path. Bounded to keep pathological
 # trees (unique static attr values per instance) from growing without
 # limit; entries past the cap simply aren't cached.
-_shape_cache: Dict[Tuple[Any, ...], Optional[str]] = {}
+_shape_cache: Dict[Tuple[Any, ...], Optional["MountBlueprint"]] = {}
 _SHAPE_CACHE_MAX = 2048
 
 
-class MountPlan:
-    """Serialized mount plan for a static-skeleton VNode subtree.
+class MountBlueprint:
+    """Immutable compiled instructions shared by equivalent VNode shapes.
 
     Attributes:
         html: The serialized HTML string for the skeleton. Static text
             content is hoisted (each text node appears as a single-space
             placeholder), so structurally-identical trees share the same
             string regardless of their text.
-        order: Pre-order list of `(kind, vnode, parent_vnode)` entries,
-            one per serialized DOM node, in exactly the order the
-            kernel assigns ids. `parent_vnode` is the enclosing element
-            VNode (needed to mount placeholders), or `None` for the
-            root.
-        bindings: List of `(vnode, kind, name, value)` tuples to apply
-            after ids are assigned.
+        kinds: Node instruction kinds in DOM preorder.
+        parents: Parent instruction indexes, or ``-1`` for the root.
+        binding_specs: ``(node_index, kind, name)`` instructions whose
+            values come from each ``MountPlan`` instance.
     """
 
-    __slots__ = ("html", "order", "bindings")
+    __slots__ = ("html", "kinds", "parents", "binding_specs")
 
     def __init__(
         self,
         html: str,
-        order: List[Tuple[int, VNode, Optional[VNode]]],
-        bindings: List[Tuple[VNode, int, str, Any]],
+        kinds: List[int],
+        parents: List[int],
+        binding_specs: List[Tuple[int, int, str]],
     ) -> None:
         self.html = html
-        self.order = order
-        self.bindings = bindings
+        self.kinds = tuple(kinds)
+        self.parents = tuple(parents)
+        self.binding_specs = tuple(binding_specs)
 
     @property
     def node_count(self) -> int:
         """Number of serialized DOM nodes (length of the id block)."""
-        return len(self.order)
+        return len(self.kinds)
+
+
+class MountPlan:
+    """Per-mount VNode occurrences and values for a compiled blueprint."""
+
+    __slots__ = ("blueprint", "nodes", "binding_values")
+
+    def __init__(self, blueprint: MountBlueprint, nodes: List[VNode], binding_values: List[Any]) -> None:
+        self.blueprint = blueprint
+        self.nodes = nodes
+        self.binding_values = binding_values
+
+    @property
+    def html(self) -> str:
+        """The shared serialized HTML skeleton."""
+        return self.blueprint.html
+
+    @property
+    def node_count(self) -> int:
+        """Number of serialized DOM nodes."""
+        return self.blueprint.node_count
+
+    @property
+    def order(self) -> List[Tuple[int, VNode, int]]:
+        """Compatibility view of occurrence-indexed node instructions."""
+        return list(zip(self.blueprint.kinds, self.nodes, self.blueprint.parents))
+
+    @property
+    def bindings(self) -> List[Tuple[int, int, str, Any]]:
+        """Occurrence-indexed binding instructions and instance values."""
+        return [
+            (node_index, kind, name, value)
+            for (node_index, kind, name), value in zip(self.blueprint.binding_specs, self.binding_values)
+        ]
 
 
 def build_plan(vnode: VNode) -> Optional[MountPlan]:
@@ -243,41 +276,48 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
         return None
 
     key_parts: List[Any] = []
-    order: List[Tuple[int, VNode, Optional[VNode]]] = []
-    bindings: List[Tuple[VNode, int, str, Any]] = []
+    nodes: List[VNode] = []
+    kinds: List[int] = []
+    parents: List[int] = []
+    binding_specs: List[Tuple[int, int, str]] = []
+    binding_values: List[Any] = []
     try:
-        _walk_shape(vnode, None, key_parts, order, bindings)
+        _walk_shape(vnode, -1, key_parts, nodes, kinds, parents, binding_specs, binding_values)
     except _NoCache:
         return _build_plan_uncached(vnode)
 
-    if len(order) < MIN_TEMPLATE_NODES:
+    if len(nodes) < MIN_TEMPLATE_NODES:
         return None
 
     key = tuple(key_parts)
     if key in _shape_cache:
-        html = _shape_cache[key]
-        if html is None:
+        blueprint = _shape_cache[key]
+        if blueprint is None:
             return None
-        return MountPlan(html, order, bindings)
+        return MountPlan(blueprint, nodes, binding_values)
 
     plan = _build_plan_uncached(vnode)
     if len(_shape_cache) < _SHAPE_CACHE_MAX:
-        _shape_cache[key] = plan.html if plan is not None else None
+        _shape_cache[key] = plan.blueprint if plan is not None else None
     return plan
 
 
 def _build_plan_uncached(vnode: VNode) -> Optional[MountPlan]:
     """Run the full serializer (validation + HTML) for one tree."""
     parts: List[str] = []
-    order: List[Tuple[int, VNode, Optional[VNode]]] = []
-    bindings: List[Tuple[VNode, int, str, Any]] = []
+    nodes: List[VNode] = []
+    kinds: List[int] = []
+    parents: List[int] = []
+    binding_specs: List[Tuple[int, int, str]] = []
+    binding_values: List[Any] = []
     try:
-        _serialize_element(vnode, None, parts, order, bindings)
+        _serialize_element(vnode, -1, parts, nodes, kinds, parents, binding_specs, binding_values)
     except _NotEligible:
         return None
-    if len(order) < MIN_TEMPLATE_NODES:
+    if len(nodes) < MIN_TEMPLATE_NODES:
         return None
-    return MountPlan("".join(parts), order, bindings)
+    blueprint = MountBlueprint("".join(parts), kinds, parents, binding_specs)
+    return MountPlan(blueprint, nodes, binding_values)
 
 
 # Static prop value types the shape key can represent directly. Two
@@ -288,10 +328,13 @@ _KEYABLE_TYPES = (str, int, float, bool)
 
 def _walk_shape(
     vnode: VNode,
-    parent: Optional[VNode],
+    parent_index: int,
     key_parts: List[Any],
-    order: List[Tuple[int, VNode, Optional[VNode]]],
-    bindings: List[Tuple[VNode, int, str, Any]],
+    nodes: List[VNode],
+    kinds: List[int],
+    parents: List[int],
+    binding_specs: List[Tuple[int, int, str]],
+    binding_values: List[Any],
 ) -> None:
     """Collect order/bindings for one tree while building its shape key.
 
@@ -301,7 +344,10 @@ def _walk_shape(
     shape cache.
     """
     tag = vnode.tag
-    order.append((NODE_STATIC, vnode, parent))
+    node_index = len(nodes)
+    nodes.append(vnode)
+    kinds.append(NODE_STATIC)
+    parents.append(parent_index)
     key_parts.append(tag)
 
     for name, value in vnode.props.items():
@@ -309,21 +355,25 @@ def _walk_shape(
             continue
         if name == "ref":
             if value is not None:
-                bindings.append((vnode, BIND_REF, name, value))
+                binding_specs.append((node_index, BIND_REF, name))
+                binding_values.append(value)
                 key_parts.append(_K_REF)
             continue
         if is_event_prop(name):
-            bindings.append((vnode, BIND_EVENT, name, value))
+            binding_specs.append((node_index, BIND_EVENT, name))
+            binding_values.append(value)
             key_parts.append(_K_EVENT)
             key_parts.append(name)
             continue
         if is_getter(value):
-            bindings.append((vnode, BIND_REACTIVE, name, value))
+            binding_specs.append((node_index, BIND_REACTIVE, name))
+            binding_values.append(value)
             key_parts.append(_K_GETTER)
             key_parts.append(name)
             continue
-        if name == "value" or name == "checked":
-            bindings.append((vnode, BIND_PROP, name, value))
+        if is_dom_property(name):
+            binding_specs.append((node_index, BIND_PROP, name))
+            binding_values.append(value)
             key_parts.append(_K_PROP)
             key_parts.append(name)
             continue
@@ -341,16 +391,33 @@ def _walk_shape(
     for child in norm_children:
         ctag = child.tag
         if ctag == "_text":
-            order.append((NODE_STATIC, child, vnode))
-            bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
+            child_index = len(nodes)
+            nodes.append(child)
+            kinds.append(NODE_STATIC)
+            parents.append(node_index)
+            binding_specs.append((child_index, BIND_TEXT, ""))
+            binding_values.append(str(child.props.get("nodeValue", "")))
             key_parts.append(_K_TEXT)
         elif isinstance(ctag, str) and not ctag.startswith("_"):
-            _walk_shape(child, vnode, key_parts, order, bindings)
+            _walk_shape(
+                child,
+                node_index,
+                key_parts,
+                nodes,
+                kinds,
+                parents,
+                binding_specs,
+                binding_values,
+            )
         elif ctag == "_dynamic":
-            order.append((NODE_HOLE, child, vnode))
+            nodes.append(child)
+            kinds.append(NODE_HOLE)
+            parents.append(node_index)
             key_parts.append(_K_HOLE)
         else:
-            order.append((NODE_MOUNT, child, vnode))
+            nodes.append(child)
+            kinds.append(NODE_MOUNT)
+            parents.append(node_index)
             key_parts.append(_K_MOUNT)
 
     key_parts.append(_K_CLOSE)
@@ -358,17 +425,23 @@ def _walk_shape(
 
 def _serialize_element(
     vnode: VNode,
-    parent: Optional[VNode],
+    parent_index: int,
     parts: List[str],
-    order: List[Tuple[int, VNode, Optional[VNode]]],
-    bindings: List[Tuple[VNode, int, str, Any]],
+    nodes: List[VNode],
+    kinds: List[int],
+    parents: List[int],
+    binding_specs: List[Tuple[int, int, str]],
+    binding_values: List[Any],
 ) -> None:
     tag = vnode.tag
     assert isinstance(tag, str)
     lower = tag.lower()
     if lower in _RAW_TEXT_ELEMENTS:
         raise _NotEligible
-    order.append((NODE_STATIC, vnode, parent))
+    node_index = len(nodes)
+    nodes.append(vnode)
+    kinds.append(NODE_STATIC)
+    parents.append(parent_index)
 
     parts.append("<")
     parts.append(tag)
@@ -378,18 +451,22 @@ def _serialize_element(
             continue
         if name == "ref":
             if value is not None:
-                bindings.append((vnode, BIND_REF, name, value))
+                binding_specs.append((node_index, BIND_REF, name))
+                binding_values.append(value)
             continue
         if is_event_prop(name):
-            bindings.append((vnode, BIND_EVENT, name, value))
+            binding_specs.append((node_index, BIND_EVENT, name))
+            binding_values.append(value)
             continue
         if is_getter(value):
-            bindings.append((vnode, BIND_REACTIVE, name, value))
+            binding_specs.append((node_index, BIND_REACTIVE, name))
+            binding_values.append(value)
             continue
-        if name in ("value", "checked"):
+        if is_dom_property(name):
             # DOM properties, not attributes; applied post-clone so the
             # semantics match the per-node mount path exactly.
-            bindings.append((vnode, BIND_PROP, name, value))
+            binding_specs.append((node_index, BIND_PROP, name))
+            binding_values.append(value)
             continue
         _serialize_attr(name, value, parts)
 
@@ -416,8 +493,12 @@ def _serialize_element(
             # Hoist the content: serialize a one-space placeholder and set
             # the real text after the clone. Trees that differ only in
             # text then share one template (parse once, clone per mount).
-            order.append((NODE_STATIC, child, vnode))
-            bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
+            child_index = len(nodes)
+            nodes.append(child)
+            kinds.append(NODE_STATIC)
+            parents.append(node_index)
+            binding_specs.append((child_index, BIND_TEXT, ""))
+            binding_values.append(str(child.props.get("nodeValue", "")))
             parts.append(" ")
             prev_was_text = True
             continue
@@ -430,12 +511,23 @@ def _serialize_element(
                 raise _NotEligible
             if clower == lower and lower in _NO_SELF_NESTING:
                 raise _NotEligible
-            _serialize_element(child, vnode, parts, order, bindings)
+            _serialize_element(
+                child,
+                node_index,
+                parts,
+                nodes,
+                kinds,
+                parents,
+                binding_specs,
+                binding_values,
+            )
         else:
             # Hole, fragment, or component: a comment placeholder marks
             # its position; the reconciler mounts it after id assignment.
             kind = NODE_HOLE if ctag == "_dynamic" else NODE_MOUNT
-            order.append((kind, child, vnode))
+            nodes.append(child)
+            kinds.append(kind)
+            parents.append(node_index)
             parts.append("<!---->")
 
     parts.append("</")

@@ -126,8 +126,9 @@ def TodoApp():
         button("Add", on_click=add_todo),
         For(
             each=lambda: list(store.todos),
+            key=lambda todo: todo.id,
             children=lambda todo, i: p(
-                dynamic(lambda: f"{'[x]' if todo().done else '[ ]'} {todo().text}"),
+                dynamic(lambda: f"{'[x]' if todo.done else '[ ]'} {todo.text}"),
                 on_click=toggle(i()),
             ),
         ),
@@ -148,6 +149,18 @@ from wybthon import reconcile
 set_store("todos", reconcile(fetched_todos))          # match by "id"
 set_store("todos", reconcile(fetched_todos, key="uuid"))
 ```
+
+Store paths also accept predicate, index-aware predicate, key-list, and
+slice selectors. A selector updates every matching path in one batch:
+
+```python
+set_store("todos", lambda todo: todo["done"], "archived", True)
+set_store("items", lambda value, index: index >= 10, "visible", False)
+set_store("scores", slice(0, 3), lambda score: score + 1)
+```
+
+Iterating a store object, checking membership, and reading its length
+track structural changes such as keys being added or removed.
 
 #### Unwrap
 

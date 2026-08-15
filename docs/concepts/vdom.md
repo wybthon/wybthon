@@ -4,9 +4,9 @@ The VDOM is represented by `VNode` and created via `h(tag, props, *children)`.
 
 - `tag`: string (DOM node) or callable (component)
 - `props`: attributes, event handlers, special props (`key`, `ref`),
-  or **getter callables** that become reactive bindings
-- `children`: strings, `VNode`s, or **getter callables** that become
-  reactive holes
+  or explicit reactive accessors that become bindings
+- `children`: strings, `VNode`s, signal or memo accessors, or
+  [`expr`][wybthon.expr] expressions that become reactive holes
 
 ```python
 from wybthon import h
@@ -16,29 +16,33 @@ view = h("div", {"class": "app"},
           h("p", {}, "Welcome"))
 ```
 
-Rendering is done with `render(view, container)`.
+Rendering is done with `render(view, container)`, which returns a
+[`MountHandle`][wybthon.MountHandle]. Keep the handle when you need to
+update or dispose the application explicitly.
 
 #### Reactive holes (fine-grained updates)
 
-A zero-arg callable placed inside a VNode tree becomes a **reactive
+An explicit accessor placed inside a VNode tree becomes a **reactive
 hole**: the reconciler wraps it in its own effect, so only the hole
 (and not the surrounding component) re-runs when its dependencies
 change.  This is how Wybthon achieves SolidJS-style fine-grained
 updates while keeping the VDOM as a batching layer.
 
 ```python
-from wybthon import create_signal, dynamic, h
+from wybthon import create_signal, dynamic, expr, h
 
 count, set_count = create_signal(0)
 
-view = h("p", {"class": lambda: f"counter {('odd' if count() % 2 else 'even')}"},
+view = h("p", {"class": expr(lambda: f"counter {('odd' if count() % 2 else 'even')}")},
          "Count: ",
          count,                              # text hole (signal accessor)
          dynamic(lambda: f" (×2={count()*2})"))  # text hole (derived expression)
 ```
 
-Holes are also recognised on prop values (except `on_*` event handlers
-and `ref`).  Each prop has its own effect, so unrelated reactive
+Holes are also recognized on prop values. Signal, memo, resource, and
+component-prop accessors are already marked. Wrap a derived Python
+callable in `expr(...)`; ordinary callbacks remain ordinary values and
+are never invoked implicitly. Each prop has its own effect, so unrelated reactive
 attributes update independently.  See the [Reactive Holes section in
 Primitives](primitives.md#reactive-holes) for the full mental model.
 
@@ -58,10 +62,10 @@ protocol.
 
 #### Template-based mounting
 
-On top of the command buffer, the reconciler serializes the **static
-skeleton** of a host-element subtree into one HTML string with text
-content hoisted out, registers it with the kernel once, and mounts each
-occurrence with a single *clone* op. The kernel clones the pre-parsed
+On top of the command buffer, the reconciler compiles the **static
+skeleton** of a host-element subtree into an immutable mount blueprint.
+The blueprint stores one HTML string, occurrence-indexed node instructions,
+and binding slots. Structurally equivalent trees share it. The kernel clones the pre-parsed
 `<template>` and assigns a dense block of node ids in a deterministic
 pre-order, so Python knows every node's id without reading anything
 back. Text, reactive bindings, event handlers, and dynamic children are
@@ -80,7 +84,8 @@ to per-node ops, still batched in the same commit. See the
 
 The VDOM implementation is split into focused modules:
 
-- **`vnode`**: the `VNode` data structure, `h()`, `Fragment`, and `dynamic()` (browser-agnostic). `Fragment` doesn't insert a wrapper element; reconciliation uses comment-node boundaries so the DOM tree stays free of extra spans and CSS selectors stay predictable.
+- **`vnode`**: immutable-by-convention render declarations, `h()`, `Fragment`, `dynamic()`, and `expr()` (browser-agnostic). A VNode never stores DOM or owner state and may be mounted more than once.
+- **`runtime`**: isolated container mounts, `MountHandle` ownership, disposal, and diagnostics.
 - **`kernel`**: the batched command buffer, the embedded JS kernel that applies ops natively, and the reference Python interpreter used by tests.
 - **`template`**: the template-based mounting fast path (HTML serialization plus binding wiring).
 - **`reconciler`**: the mount/patch/unmount diffing engine (emits ops).
@@ -108,4 +113,5 @@ to suppress verbose tracebacks.
 
 - See [Primitives](primitives.md) for the reactive hole mental model.
 - Read [Lifecycle and Ownership](lifecycle.md) for mount/unmount semantics.
+- Read [Runtime and Mounts](runtime.md) for declaration and mounted-state boundaries.
 - Browse the [`reconciler`][wybthon.reconciler] and [`template`][wybthon.template] APIs.

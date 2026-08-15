@@ -61,11 +61,11 @@ def test_portal_unmount_cleans_up(wyb, root_element):
         )
 
     tree = h(App, {})
-    wyb["reconciler"].render(tree, root_element)
+    handle = wyb["reconciler"].render(tree, root_element)
 
     assert "Portal content" in collect_texts(portal_target.element)
 
-    wyb["reconciler"].unmount(tree)
+    handle.dispose()
     assert "Portal content" not in collect_texts(portal_target.element)
 
 

@@ -55,16 +55,18 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, Protocol, Set, Tuple, TypeVar, Union, cast
 
 __all__ = [
     "Owner",
+    "Accessor",
     "Computation",
     "Signal",
     "Computed",
     "ReactiveProps",
     "batch",
     "Resource",
+    "ResourceFetcherInfo",
     "create_resource",
     "create_signal",
     "create_effect",
@@ -90,9 +92,23 @@ __all__ = [
     "map_array",
     "index_array",
     "create_selector",
+    "start_transition",
+    "use_transition",
 ]
 
 T = TypeVar("T")
+R_co = TypeVar("R_co", covariant=True)
+
+
+class Accessor(Protocol[R_co]):
+    """Typed zero-argument reactive value reader."""
+
+    _wyb_getter: bool
+
+    def __call__(self) -> R_co:
+        """Read the current value and subscribe the active computation."""
+        ...
+
 
 _DEFAULT_EQUALS = object()
 _MISSING = object()
@@ -141,8 +157,16 @@ _current_observer: Optional["Computation"] = None
 _pure_queue: List["Computation"] = []
 _render_effect_queue: List["Computation"] = []
 _effect_queue: List["Computation"] = []
+_post_commit_queue: List[Callable[[], Any]] = []
 _running_effects: bool = False
 _batch_depth: int = 0
+_render_depth: int = 0
+
+# Transition state is global to the reactive scheduler, while each
+# ``use_transition`` call receives its own pending signal.
+_transition_depth: int = 0
+_transition_listeners: Set["Signal[bool]"] = set()
+_active_transition: Optional["_TransitionState"] = None
 
 # Re-entrant counter incremented while inside :func:`untrack`.  Used by
 # the dev-mode "destructured prop" warning to detect intentional
@@ -198,8 +222,29 @@ def _changed(equals: Any, old: Any, new: Any) -> bool:
 
 def _run_effects_if_idle() -> None:
     """Flush the effect queue unless we're batching or already flushing."""
-    if _batch_depth == 0 and not _running_effects:
+    if _batch_depth == 0 and _render_depth == 0 and not _running_effects:
         _flush_effects()
+
+
+def _begin_render() -> None:
+    """Enter a synchronous render phase, deferring initial user effects."""
+    global _render_depth
+    _render_depth += 1
+
+
+def _end_render() -> None:
+    """Leave a render phase and flush work after the outermost render."""
+    global _render_depth
+    _render_depth -= 1
+    if _render_depth == 0:
+        _run_effects_if_idle()
+
+
+def _queue_post_commit(fn: Callable[[], Any]) -> None:
+    """Schedule a lifecycle callback after the next DOM commit."""
+    _post_commit_queue.append(fn)
+    if _render_depth == 0:
+        _run_effects_if_idle()
 
 
 def _flush_effects() -> None:
@@ -226,7 +271,9 @@ def _flush_effects() -> None:
         pure_queue = _pure_queue
         render_queue = _render_effect_queue
         queue = _effect_queue
-        while pi < len(pure_queue) or ri < len(render_queue) or ei < len(queue):
+        mi = 0
+        mount_queue = _post_commit_queue
+        while pi < len(pure_queue) or ri < len(render_queue) or mi < len(mount_queue) or ei < len(queue):
             guard += 1
             if guard > _MAX_FLUSH_ITER:
                 raise RuntimeError(
@@ -238,10 +285,16 @@ def _flush_effects() -> None:
             elif ri < len(render_queue):
                 comp = render_queue[ri]
                 ri += 1
-            else:
+            elif mi < len(mount_queue):
                 # Pure and render phases are settled: commit the DOM ops
-                # so the next user effect observes the updated DOM.
+                # so mount callbacks and user effects observe the DOM.
                 # A no-op when the buffer is empty.
+                _kernel_commit()
+                callback = mount_queue[mi]
+                mi += 1
+                callback()
+                continue
+            else:
                 _kernel_commit()
                 comp = queue[ei]
                 ei += 1
@@ -250,6 +303,7 @@ def _flush_effects() -> None:
     finally:
         _pure_queue.clear()
         _render_effect_queue.clear()
+        _post_commit_queue.clear()
         _effect_queue.clear()
         _running_effects = False
     # Ship any remaining DOM ops across the bridge in one batch.
@@ -282,7 +336,7 @@ class Owner:
             [`catch_error`][wybthon.catch_error]).
     """
 
-    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map", "_error_handler")
+    __slots__ = ("_parent", "_children", "_cleanups", "_tasks", "_disposed", "_context_map", "_error_handler")
 
     def __init__(self) -> None:
         self._parent: Optional[Owner] = None
@@ -291,6 +345,7 @@ class Owner:
         # otherwise pay a linear list.remove against its parent).
         self._children: Optional[Dict[int, Owner]] = None
         self._cleanups: Optional[List[Callable[[], Any]]] = None
+        self._tasks: Optional[Dict[int, Any]] = None
         self._disposed: bool = False
         self._context_map: Optional[Dict[Any, Any]] = None
         self._error_handler: Optional[Callable[..., Any]] = None
@@ -307,6 +362,31 @@ class Owner:
             self._cleanups = [fn]
         else:
             self._cleanups.append(fn)
+
+    def _add_task(self, task: Any) -> None:
+        """Own an asyncio task and forget it when it completes."""
+        if self._tasks is None:
+            self._tasks = {id(task): task}
+        else:
+            self._tasks[id(task)] = task
+
+        def _finished(_task: Any) -> None:
+            if self._tasks is not None:
+                self._tasks.pop(id(_task), None)
+
+        task.add_done_callback(_finished)
+
+    def _cancel_tasks(self) -> None:
+        tasks = self._tasks
+        if not tasks:
+            return
+        pending = list(tasks.values())
+        tasks.clear()
+        for task in pending:
+            try:
+                task.cancel()
+            except Exception:
+                pass
 
     def _dispose_children(self) -> None:
         if not self._children:
@@ -351,6 +431,7 @@ class Owner:
         if self._disposed:
             return
         self._disposed = True
+        self._cancel_tasks()
         self._dispose_children()
         self._run_cleanups()
         parent = self._parent
@@ -358,6 +439,47 @@ class Owner:
             if parent._children is not None:
                 parent._children.pop(id(self), None)
             self._parent = None
+
+
+class _SuspenseGate:
+    """Hold primary-tree lifecycle work until a Suspense reveal."""
+
+    __slots__ = ("blocked", "_effects", "_mount_callbacks")
+
+    def __init__(self) -> None:
+        self.blocked = True
+        self._effects: Dict[int, Computation] = {}
+        self._mount_callbacks: List[Callable[[], Any]] = []
+
+    def hold_effect(self, computation: "Computation") -> None:
+        self._effects[id(computation)] = computation
+
+    def hold_mount_callbacks(self, callbacks: List[Callable[[], Any]]) -> None:
+        self._mount_callbacks.extend(callbacks)
+
+    def reveal(self) -> None:
+        """Release held lifecycle work into the normal post-commit phases."""
+        if not self.blocked:
+            return
+        self.blocked = False
+        callbacks = self._mount_callbacks
+        self._mount_callbacks = []
+        for callback in callbacks:
+            _post_commit_queue.append(callback)
+        effects = list(self._effects.values())
+        self._effects.clear()
+        for computation in effects:
+            if not computation._disposed:
+                _effect_queue.append(computation)
+        if _render_depth == 0:
+            _run_effects_if_idle()
+
+
+def _suspense_gate_for(owner: Optional[Owner]) -> Optional[_SuspenseGate]:
+    if owner is None:
+        return None
+    gate = owner._lookup_context(SUSPENSE_GATE_CONTEXT_KEY, None)
+    return gate if isinstance(gate, _SuspenseGate) else None
 
 
 # ---------------------------------------------------------------------------
@@ -749,9 +871,9 @@ class ReactiveProps:
         """Return a stable, cached, callable accessor for `key`.
 
         The accessor reads the prop signal and, when the stored value is itself
-        a getter (callable with no required args), transparently calls it. This
-        means parents can pass either a static value (`count=5`) or a getter
-        (`count=count_signal.get`, `count=lambda: total()`) and children always
+        an explicitly marked getter, transparently calls it. This means
+        parents can pass either a static value (`count=5`) or a getter
+        (`count=count_signal.get`, `count=expr(lambda: total())`) and children always
         read the current value the same way: `props.count()`. Reactivity is
         tracked through both the prop signal and any underlying source.
 
@@ -981,7 +1103,7 @@ def computed(fn: Callable[[], T]) -> _Computed[T]:
 
 
 def effect(fn: Callable[[], Any]) -> Computation:
-    """Run a reactive effect immediately and return its `Computation`.
+    """Run an internal render effect immediately and return its computation.
 
     Low-level helper. Most code should use
     [`create_effect`][wybthon.create_effect] which additionally supports
@@ -993,7 +1115,7 @@ def effect(fn: Callable[[], Any]) -> Computation:
     Returns:
         The underlying `Computation`. Call `.dispose()` to stop the effect.
     """
-    comp = Computation(fn, is_effect=True)
+    comp = Computation(fn, is_effect=True, is_render=True)
     if _current_owner is not None:
         _current_owner._add_child(comp)
     comp._update_if_necessary()
@@ -1120,6 +1242,25 @@ FetchFn = Callable[..., Union[Awaitable[R], R]]
 # context map. Kept here (rather than in ``suspense.py``) so ``Resource``
 # can look it up without importing browser-facing modules.
 SUSPENSE_CONTEXT_KEY = "__wyb_suspense__"
+SUSPENSE_GATE_CONTEXT_KEY = "__wyb_suspense_gate__"
+
+
+class ResourceFetcherInfo(Generic[R]):
+    """Context passed to resource fetchers that request an ``info`` value.
+
+    Attributes:
+        value: Most recently resolved or mutated resource value.
+        refetching: Value supplied to ``refetch``. ``False`` identifies an
+            initial or source-driven load.
+        signal: Browser ``AbortSignal`` when available.
+    """
+
+    __slots__ = ("value", "refetching", "signal")
+
+    def __init__(self, value: Optional[R], refetching: Any, signal: Any) -> None:
+        self.value = value
+        self.refetching = refetching
+        self.signal = signal
 
 
 class Resource(Generic[R]):
@@ -1150,9 +1291,11 @@ class Resource(Generic[R]):
             return await resp.json()
 
         user = create_resource(user_id, load_user)
-        p("Name: ", span(lambda: (user() or {}).get("name", "...")))
+        p("Name: ", span(expr(lambda: (user() or {}).get("name", "..."))))
         ```
     """
+
+    _wyb_getter = True
 
     def __init__(
         self,
@@ -1168,19 +1311,22 @@ class Resource(Generic[R]):
         self._fetcher: FetchFn = fetcher
         self._source = source
         self._task: Optional[asyncio.Task[Any]] = None
+        self._owner: Optional[Owner] = _current_owner
         self._abort_controller: Any = None
         self._version: int = 0
 
         try:
             params = inspect.signature(fetcher).parameters
             self._fetcher_takes_signal = "signal" in params
+            self._fetcher_takes_info = "info" in params
             self._fetcher_takes_source = any(
                 p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-                and p.name != "signal"
+                and p.name not in ("signal", "info")
                 for p in params.values()
             )
         except (ValueError, TypeError):
             self._fetcher_takes_signal = False
+            self._fetcher_takes_info = False
             self._fetcher_takes_source = False
 
         has_initial = initial_value is not _MISSING
@@ -1191,7 +1337,7 @@ class Resource(Generic[R]):
         self._has_value: bool = has_initial
 
         if source is None:
-            self.refetch()
+            self._refetch_with(None, refetching=False)
         else:
             self._setup_source_tracking()
 
@@ -1231,7 +1377,7 @@ class Resource(Generic[R]):
         return self._state.get()
 
     def _register_with_suspense(self) -> None:
-        if self._state.peek() != "pending":
+        if self._state.get() != "pending":
             return
         owner = _current_owner
         if owner is None:
@@ -1279,19 +1425,24 @@ class Resource(Generic[R]):
             assert self._source is not None
             value = self._source()
             if value is None or value is False:
+                self.cancel()
+                self._state.set("unresolved")
                 return
-            self._refetch_with(value)
+            self._refetch_with(value, refetching=False)
 
         effect(watcher)
 
-    async def _run(self, current_version: int, controller: Any, source_value: Any) -> None:
+    async def _run(self, current_version: int, controller: Any, source_value: Any, refetching: Any) -> Optional[R]:
         try:
             args: List[Any] = []
             kwargs: Dict[str, Any] = {}
             if self._fetcher_takes_source and self._source is not None:
                 args.append(source_value)
+            info = ResourceFetcherInfo(self._data.peek(), refetching, getattr(controller, "signal", None))
+            if self._fetcher_takes_info:
+                kwargs["info"] = info
             if self._fetcher_takes_signal:
-                kwargs["signal"] = getattr(controller, "signal", None)
+                kwargs["signal"] = info.signal
             coro_or_val = self._fetcher(*args, **kwargs)
 
             if isinstance(coro_or_val, AbcAwaitable):
@@ -1306,15 +1457,33 @@ class Resource(Generic[R]):
                     self._data.set(result)
                     self._loading.set(False)
                     self._state.set("ready")
+                return result
+            return None
+        except self._asyncio.CancelledError:
+            return None
         except Exception as e:
             if current_version != self._version:
-                return
+                return None
             with _Batch():
                 self._error.set(e)
                 self._loading.set(False)
                 self._state.set("errored")
+            self._report_error(e)
+            return None
 
-    def refetch(self) -> None:
+    def _report_error(self, error: BaseException) -> None:
+        owner = self._owner
+        while owner is not None:
+            handler = owner._error_handler
+            if handler is not None:
+                try:
+                    run_with_owner(owner, lambda: handler(error))
+                except Exception:
+                    pass
+                return
+            owner = owner._parent
+
+    def refetch(self, value: Any = True) -> Optional[Awaitable[R]]:
         """Cancel any in-flight request and start a new fetch.
 
         The resource enters `"pending"` (first fetch) or `"refreshing"`
@@ -1322,9 +1491,9 @@ class Resource(Generic[R]):
         they resolve.
         """
         source_value = untrack(self._source) if self._source is not None else None
-        self._refetch_with(source_value)
+        return self._refetch_with(source_value, refetching=value)
 
-    def _refetch_with(self, source_value: Any) -> None:
+    def _refetch_with(self, source_value: Any, *, refetching: Any) -> Optional[Awaitable[R]]:
         self.cancel()
         self._version += 1
         with _Batch():
@@ -1336,20 +1505,20 @@ class Resource(Generic[R]):
         self._abort_controller = controller
         version = self._version
 
-        async def runner() -> None:
-            await self._run(version, controller, source_value)
-
         try:
-            self._task = self._asyncio.create_task(runner())
-        except Exception:
-            # No running loop (e.g., synchronous test code). Schedule on
-            # the policy loop, creating one if none exists yet.
-            try:
-                loop = self._asyncio.get_event_loop()
-            except Exception:
-                loop = self._asyncio.new_event_loop()
-                self._asyncio.set_event_loop(loop)
-            self._task = loop.create_task(runner())
+            loop = self._asyncio.get_running_loop()
+        except RuntimeError:
+            # A resource created without a running event loop remains pending
+            # until explicitly refetched from asynchronous code. Avoiding a
+            # dormant Task here also avoids leaking an unawaited coroutine.
+            self._task = None
+            return None
+        task = loop.create_task(self._run(version, controller, source_value, refetching))
+        self._task = task
+        _track_transition_task(task)
+        if self._owner is not None:
+            self._owner._add_task(task)
+        return cast(Awaitable[R], task)
 
     def cancel(self) -> None:
         """Abort the current in-flight fetch, if any.
@@ -1467,13 +1636,35 @@ class _ComponentContext(Owner):
         # the context value reactively without re-mounting subtrees.
         self._provider_value_signals: Optional[Dict[int, "Signal[Any]"]] = None
 
-    def _run_mount_callbacks(self) -> None:
-        for fn in self._mount_callbacks:
-            try:
-                fn()
-            except Exception:
-                pass
-        self._mount_callbacks.clear()
+    def _schedule_mount_callbacks(self) -> None:
+        """Move mount callbacks into the post-commit phase or Suspense gate."""
+        if not self._mount_callbacks:
+            return
+        callbacks = self._mount_callbacks
+        self._mount_callbacks = []
+
+        def guarded(fn: Callable[[], Any]) -> Callable[[], Any]:
+            def run() -> None:
+                try:
+                    fn()
+                except Exception as exc:
+                    owner: Optional[Owner] = self
+                    while owner is not None:
+                        if owner._error_handler is not None:
+                            owner._error_handler(exc)
+                            return
+                        owner = owner._parent
+                    raise
+
+            return run
+
+        queued = [guarded(fn) for fn in callbacks]
+        gate = _suspense_gate_for(self)
+        if gate is not None and gate.blocked:
+            gate.hold_mount_callbacks(queued)
+        else:
+            for callback in queued:
+                _queue_post_commit(callback)
 
 
 # ---------------------------------------------------------------------------
@@ -1663,17 +1854,26 @@ def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool = False, is_p
     comp = Computation(body, is_effect=True, is_render=is_render, is_pure=is_pure)
     if _current_owner is not None:
         _current_owner._add_child(comp)
-    comp._update_if_necessary()
+    if is_render or is_pure:
+        comp._update_if_necessary()
+    else:
+        gate = _suspense_gate_for(_current_owner)
+        if gate is not None and gate.blocked:
+            gate.hold_effect(comp)
+        else:
+            _effect_queue.append(comp)
+            if _render_depth == 0:
+                _run_effects_if_idle()
     return comp
 
 
 def create_effect(fn: Callable[..., Any]) -> Computation:
     """Create an auto-tracking reactive effect.
 
-    The effect runs immediately and re-runs whenever any signal read inside
-    `fn` changes. [`on_cleanup`][wybthon.on_cleanup] may be called inside
-    `fn` to register per-run cleanup that runs before re-execution and on
-    disposal.
+    During component setup, the initial run is deferred until rendering has
+    committed and refs are attached. Outside a render phase, it runs before
+    ``create_effect`` returns. Later runs remain synchronous with the signal
+    update that invalidated them.
 
     If `fn` accepts a positional parameter, the **previous return value**
     is passed on each re-execution (`None` on the first run), matching
@@ -2453,8 +2653,6 @@ def split_props(
 # Reactive list mapping primitives
 # ---------------------------------------------------------------------------
 
-_map_key_counter: int = 0
-
 
 def _run_owned_untracked(owner: "Owner", fn: Callable[[], T]) -> T:
     """Run `fn` owned by `owner` with signal tracking suppressed.
@@ -2477,20 +2675,24 @@ def _run_owned_untracked(owner: "Owner", fn: Callable[[], T]) -> T:
 
 def map_array(
     source: Callable[[], Optional[List[Any]]],
-    map_fn: Callable[[Callable[[], Any], Callable[[], int]], T],
+    map_fn: Callable[[Any, Callable[[], int]], T],
+    *,
+    key: Optional[Callable[[Any], Any]] = None,
 ) -> Callable[[], List[T]]:
-    """Map a reactive list with stable per-item scopes (keyed by identity).
+    """Map a reactive list with stable per-item scopes.
 
-    Items are matched by **reference identity**. The mapping callback
-    runs **once** per unique item; when an item leaves the source list,
-    its reactive scope is disposed automatically.
+    By default, items are matched by Python identity. ``key`` may select a
+    stable application key for decoded or reconstructed objects. The mapper
+    receives the item directly and a reactive index accessor, matching
+    Solid's ``mapArray`` contract.
 
     Args:
         source: Zero-arg getter that returns the current list (typically
             a signal accessor).
-        map_fn: Called as `map_fn(item_getter, index_getter)` for each
-            unique item. `item_getter()` returns the item; `index_getter()`
-            returns its current position.
+        map_fn: Called as ``map_fn(item, index_getter)``.
+        key: Optional stable key selector. When a different object arrives
+            with the same key, its row mapping is recreated under a fresh
+            owner while keyed DOM reconciliation may retain compatible DOM.
 
     Returns:
         A zero-arg getter producing the mapped list. Reading it inside a
@@ -2499,16 +2701,14 @@ def map_array(
     Example:
         ```python
         items, set_items = create_signal(["A", "B", "C"])
-        labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+        labels = map_array(items, lambda item, idx: f"{idx()}: {item}")
         # labels() == ["0: A", "1: B", "2: C"]
         ```
     """
-    global _map_key_counter
     _parent = _current_owner
     _cache: List[Dict[str, Any]] = []
 
     def _compute() -> List[T]:
-        global _map_key_counter
         items = source()
         if not items:
             for entry in _cache:
@@ -2519,49 +2719,60 @@ def map_array(
         new_cache: List[Dict[str, Any]] = []
         used = [False] * len(_cache)
 
-        # Identity index: id(item) -> cache positions, consumed in order
-        # so duplicate items resolve stably. Keeps matching O(n).
-        by_id: Dict[int, List[int]] = {}
+        # Token index consumed in occurrence order so duplicate values remain
+        # stable and matching stays O(n).
+        by_token: Dict[Any, List[int]] = {}
         for ci in range(len(_cache)):
-            by_id.setdefault(id(_cache[ci]["item"]), []).append(ci)
-        by_id_pos: Dict[int, int] = {}
+            by_token.setdefault(_cache[ci]["token"], []).append(ci)
+        token_pos: Dict[Any, int] = {}
 
         for idx, item in enumerate(items):
+            token = key(item) if key is not None else id(item)
             found = -1
-            positions = by_id.get(id(item))
+            positions = by_token.get(token)
             if positions is not None:
-                p = by_id_pos.get(id(item), 0)
+                p = token_pos.get(token, 0)
                 while p < len(positions) and used[positions[p]]:
                     p += 1
-                by_id_pos[id(item)] = p
+                token_pos[token] = p
                 if p < len(positions):
                     found = positions[p]
-                    by_id_pos[id(item)] = p + 1
+                    token_pos[token] = p + 1
 
             if found >= 0:
                 used[found] = True
                 entry = _cache[found]
-                entry["index_signal"].set(idx)
+                if key is not None and entry["item"] is not item:
+                    entry["owner"].dispose()
+                    owner = Owner()
+                    if _parent is not None:
+                        _parent._add_child(owner)
+                    idx_sig = Signal(idx)
+                    result = _run_owned_untracked(owner, lambda: map_fn(item, idx_sig.get))
+                    entry = {
+                        "item": item,
+                        "token": token,
+                        "owner": owner,
+                        "result": result,
+                        "index_signal": idx_sig,
+                    }
+                else:
+                    entry["index_signal"].set(idx)
                 new_cache.append(entry)
             else:
                 owner = Owner()
                 if _parent is not None:
                     _parent._add_child(owner)
 
-                item_sig: Signal[Any] = Signal(item)
-                idx_sig: Signal[int] = Signal(idx)
-
-                result = _run_owned_untracked(owner, lambda: map_fn(item_sig.get, idx_sig.get))
-
-                _map_key_counter += 1
+                new_idx_sig: Signal[int] = Signal(idx)
+                result = _run_owned_untracked(owner, lambda: map_fn(item, new_idx_sig.get))
                 new_cache.append(
                     {
                         "item": item,
+                        "token": token,
                         "owner": owner,
                         "result": result,
-                        "item_signal": item_sig,
-                        "index_signal": idx_sig,
-                        "key": _map_key_counter,
+                        "index_signal": new_idx_sig,
                     }
                 )
 
@@ -2719,3 +2930,120 @@ def create_selector(
         return _prev_key[0] == key
 
     return is_selected
+
+
+# ---------------------------------------------------------------------------
+# Transitions
+# ---------------------------------------------------------------------------
+
+
+def _publish_transition_state(pending: bool) -> None:
+    with _Batch():
+        for signal in list(_transition_listeners):
+            signal.set(pending)
+
+
+def _enter_transition() -> None:
+    global _transition_depth
+    _transition_depth += 1
+    if _transition_depth == 1:
+        _publish_transition_state(True)
+
+
+def _leave_transition() -> None:
+    global _transition_depth
+    if _transition_depth == 0:
+        return
+    _transition_depth -= 1
+    if _transition_depth == 0:
+        _publish_transition_state(False)
+
+
+def _is_transition_pending() -> bool:
+    return _transition_depth > 0
+
+
+class _TransitionState:
+    """Async work discovered while a transition callback is running."""
+
+    __slots__ = ("tasks",)
+
+    def __init__(self) -> None:
+        self.tasks: Set[Any] = set()
+
+    def track(self, task: Any) -> None:
+        self.tasks.add(task)
+        task.add_done_callback(self.tasks.discard)
+
+
+def _track_transition_task(task: Any) -> None:
+    """Attach resource work to the currently executing transition."""
+    if _active_transition is not None:
+        _active_transition.track(task)
+
+
+def start_transition(fn: Callable[[], T]) -> Awaitable[T]:
+    """Run ``fn`` as nonurgent work and return an awaitable completion.
+
+    Synchronous signal writes inside ``fn`` are marked as transition work.
+    When an event loop is running, pending state remains true through the
+    next loop turn and through any awaitable returned by ``fn``.
+
+    Args:
+        fn: Synchronous callback that may return an awaitable result.
+
+    Returns:
+        An awaitable resolving to ``fn``'s result.
+    """
+    import asyncio
+
+    global _active_transition
+
+    owner = _current_owner
+    state = _active_transition or _TransitionState()
+    previous_transition = _active_transition
+    _enter_transition()
+    _active_transition = state
+    try:
+        result = fn()
+    except Exception:
+        _leave_transition()
+        raise
+    finally:
+        _active_transition = previous_transition
+
+    async def finish() -> T:
+        try:
+            if isinstance(result, AbcAwaitable):
+                value = await result
+            else:
+                value = result
+            while state.tasks:
+                await asyncio.gather(*list(state.tasks), return_exceptions=True)
+            await asyncio.sleep(0)
+            return cast(T, value)
+        finally:
+            _leave_transition()
+
+    try:
+        task = asyncio.get_running_loop().create_task(finish())
+    except RuntimeError:
+        return finish()
+    if owner is not None:
+        owner._add_task(task)
+    return task
+
+
+def use_transition() -> Tuple[Accessor[bool], Callable[[Callable[[], T]], Awaitable[T]]]:
+    """Return a pending accessor and a scoped ``start_transition`` helper."""
+    signal: Signal[bool] = Signal(_is_transition_pending())
+    _transition_listeners.add(signal)
+    owner = _current_owner
+    if owner is not None:
+        owner._add_cleanup(lambda: _transition_listeners.discard(signal))
+
+    def pending() -> bool:
+        return signal.get()
+
+    pending._wyb_getter = True  # type: ignore[attr-defined]
+    return cast(Accessor[bool], pending), start_transition

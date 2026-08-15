@@ -73,9 +73,8 @@ h(Badge, {"count": 7})         # static value
 h(Badge, {"count": my_signal}) # signal accessor
 ```
 
-Because props are always callable, you can also pass `lambda: a() + b()`
-as a prop and the child will re-evaluate it whenever ``a`` or ``b``
-changes.
+Use `expr(lambda: a() + b())` for a derived prop. The child receives the
+same accessor shape whether the parent passes a signal or expression.
 
 ##### Children
 
@@ -112,7 +111,7 @@ from wybthon import h
 h(Counter, {"initial": 5})
 ```
 
-##### Proxy mode (single positional parameter)
+##### Proxy mode (explicit `props` parameter)
 
 `@component` chooses one of two binding modes by inspecting the
 decorated function's signature:
@@ -120,12 +119,12 @@ decorated function's signature:
 | Signature shape                                          | Mode             | What the parameter receives           |
 |----------------------------------------------------------|------------------|---------------------------------------|
 | zero args, or any kw-args / defaults / `**kwargs`         | named-accessor   | one reactive accessor per declared name |
-| **exactly one** positional-only or positional-or-keyword parameter, **no default**, no `*args`/`**kwargs` | **proxy mode**   | the entire `ReactiveProps` proxy      |
+| exactly one required parameter named `props` or annotated as `ReactiveProps` | **proxy mode** | the entire `ReactiveProps` proxy |
+| any other declared names | named-accessor | one reactive accessor per declared name |
 
-In other words: if your component looks like `def Foo(props):` (one
-bare positional parameter), you get the proxy.  Anything else, such as
-`def Foo(name="world")`, `def Foo(name, age=0)`, `def Foo(**props)`, or
-`def Foo()`, uses the named-accessor mode.
+In other words, `def Foo(props):` asks for the proxy explicitly. A required
+name such as `def Foo(name):` receives the `name` accessor, just like a
+parameter with a default. This keeps the signature predictable.
 
 Proxy mode is the right choice for **generic wrappers** that don't
 know their props' names ahead of time:
@@ -304,7 +303,7 @@ Show(when=is_logged_in,
 # The mapping runs once per unique item; the subtree is cached and
 # moved (not rebuilt) on reorders.
 For(each=items,
-    children=lambda item, idx: li(item()))
+    children=lambda item, idx: li(item))
 
 # Index-based rendering: per-index reactive scopes.
 # The slot renders once; pass the ``item`` getter so the content

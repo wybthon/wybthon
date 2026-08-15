@@ -10,7 +10,8 @@ Wybthon brings a SolidJS-style fine-grained reactive model to Python. You write 
 
 The framework ships with everything you need to build a real app:
 
-- A virtual DOM renderer with batched DOM mutations.
+- A virtual DOM renderer with batched DOM mutations, reusable declarations,
+  and owned mount handles.
 - Reactive primitives ([`create_signal`][wybthon.create_signal], [`create_effect`][wybthon.create_effect], [`create_memo`][wybthon.create_memo], [`create_resource`][wybthon.create_resource]).
 - Reactive [`Provider`][wybthon.Provider] / [`use_context`][wybthon.use_context] for context propagation without forced re-renders.
 - A small client-side router with [`Route`][wybthon.Route] and [`Link`][wybthon.Link].
@@ -59,7 +60,9 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 ## Why Wybthon?
 
 - **Fully reactive props + run-once components**: function components run a single time at mount. Every prop is a zero-argument accessor; pass it into the tree for an automatic *reactive hole* and only that node updates when the prop changes. No React-style re-renders. See [Reactive Holes](concepts/primitives.md#reactive-holes).
-- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`, `dynamic`.
+- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`, `expr`, `dynamic`.
+- **Owned mounts**: `render` returns a `MountHandle`; isolated runtimes expose
+  deterministic update, disposal, task cancellation, and diagnostics.
 - Virtual DOM renderer with function components, with **batched** mutations to amortise the Pyodide and JS bridge cost.
 - Async data: [`create_resource`][wybthon.create_resource] with loading/error signals and a [`Suspense`][wybthon.Suspense] boundary.
 - **Reactive context**: `Provider` values are signal-backed so consumers update without re-mounting the subtree.

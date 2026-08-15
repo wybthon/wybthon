@@ -32,7 +32,6 @@ def test_context_via_ownership_tree():
 
 def test_context_provider_method_builds_provider_vnode():
     """``ctx.Provider(value=..., children=...)`` is shorthand for h(Provider, ...)."""
-    from wybthon.context import Provider
     from wybthon.vnode import VNode, h
 
     Theme = create_context("light")
@@ -40,7 +39,7 @@ def test_context_provider_method_builds_provider_vnode():
     vnode = Theme.Provider(value="dark", children=[child])
 
     assert isinstance(vnode, VNode)
-    assert vnode.tag is Provider
+    assert vnode.tag == "_provider"
     assert vnode.props["context"] is Theme
     assert vnode.props["value"] == "dark"
     assert vnode.props["children"] == [child]

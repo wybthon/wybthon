@@ -1,4 +1,4 @@
-from wybthon import For, button, component, create_store, div, dynamic, h, h2, h3, p, produce, span
+from wybthon import For, button, component, create_store, div, dynamic, expr, h, h2, h3, p, produce, span
 
 
 @component
@@ -36,14 +36,17 @@ def TodoStore():
         p(dynamic(summary)),
         For(
             each=lambda: list(store.todos),
+            key=lambda item: item.id,
             children=lambda item, idx: div(
                 span(
-                    dynamic(lambda: f"{'[x]' if item().done else '[ ]'} {item().text}"),
+                    dynamic(lambda: f"{'[x]' if item.done else '[ ]'} {item.text}"),
                     on_click=toggle(idx()),
-                    style=lambda: {
-                        "cursor": "pointer",
-                        "textDecoration": "line-through" if item().done else "none",
-                    },
+                    style=expr(
+                        lambda: {
+                            "cursor": "pointer",
+                            "textDecoration": "line-through" if item.done else "none",
+                        }
+                    ),
                 ),
                 button(
                     "x",

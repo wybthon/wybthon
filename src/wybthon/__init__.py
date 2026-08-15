@@ -57,9 +57,11 @@ from .forms import (
     validate_form,
 )
 from .reactivity import (
+    Accessor,
     Computed,
     ReactiveProps,
     Resource,
+    ResourceFetcherInfo,
     Signal,
     batch,
     catch_error,
@@ -86,12 +88,15 @@ from .reactivity import (
     on_mount,
     run_with_owner,
     split_props,
+    start_transition,
     untrack,
+    use_transition,
 )
+from .runtime import MountHandle, Runtime, create_runtime
 from .store import create_mutable, create_store, modify_mutable, produce, reconcile, unwrap
 
 # Pure-Python VDOM data structures are available in any environment.
-from .vnode import Fragment, VNode, dynamic, h, is_getter
+from .vnode import Fragment, VNode, dynamic, expr, h, is_getter
 
 __version__ = "0.27.0"
 
@@ -187,7 +192,11 @@ if _IN_BROWSER:
         "SuspenseList",
         "Portal",
         "dynamic",
+        "expr",
         "is_getter",
+        "MountHandle",
+        "Runtime",
+        "create_runtime",
         # Reactivity
         "create_signal",
         "create_effect",
@@ -212,7 +221,11 @@ if _IN_BROWSER:
         "map_array",
         "index_array",
         "create_selector",
+        "start_transition",
+        "use_transition",
         "Resource",
+        "ResourceFetcherInfo",
+        "Accessor",
         "ReactiveProps",
         "Signal",
         "Computed",
@@ -338,7 +351,11 @@ else:
         "h",
         "Fragment",
         "dynamic",
+        "expr",
         "is_getter",
+        "MountHandle",
+        "Runtime",
+        "create_runtime",
         # Reactivity
         "create_signal",
         "create_effect",
@@ -363,7 +380,11 @@ else:
         "map_array",
         "index_array",
         "create_selector",
+        "start_transition",
+        "use_transition",
         "Resource",
+        "ResourceFetcherInfo",
+        "Accessor",
         "ReactiveProps",
         "Signal",
         "Computed",

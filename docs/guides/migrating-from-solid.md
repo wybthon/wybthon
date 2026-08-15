@@ -85,14 +85,14 @@ You can pass `title` straight through (creating a reactive hole) or read `title(
 For ergonomic prop manipulation Wybthon offers [`merge_props`][wybthon.merge_props] and [`split_props`][wybthon.split_props], matching Solid's helpers of the same name:
 
 ```python
-from wybthon import component, merge_props, split_props
+from wybthon import component, expr, merge_props, split_props
 from wybthon.html import button
 
 @component
 def Button(props):
     final = merge_props({"variant": "solid"}, props)
     local, rest = split_props(final, ["label", "variant"])
-    return button(local["label"], class_=lambda: f"btn-{local['variant']}")
+    return button(local["label"], class_=expr(lambda: f"btn-{local['variant']}"))
 ```
 
 ## Signals and effects
@@ -121,13 +121,11 @@ The behaviors you rely on in Solid hold in Wybthon too:
   `equals`-based short-circuit as Solid).
 - **`batch`** coalesces writes and flushes once at the outermost boundary.
 
-`For` and `Index` match Solid exactly: the mapping callback runs **once
-per unique item** (or per index slot), and its result is cached. On list
-changes only added items map, removed items dispose, and reorders move
-existing DOM nodes. That means eager reads like `str(item())` inside the
-callback freeze at creation, just like destructuring props: pass the
-accessor itself (or `dynamic(lambda: ...)`) where the value should stay
-live.
+`For` and `Index` match Solid's callback shapes: the mapping callback runs
+**once per unique item** (or per index slot), and its result is cached. `For`
+passes the item directly and a reactive index accessor. `Index` passes a
+reactive item accessor and a plain integer index. On list changes, only added
+items map, removed items dispose, and reorders move existing DOM nodes.
 
 ## Stores
 

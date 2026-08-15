@@ -2,7 +2,7 @@
 
 Wybthon uses a **signals-first** reactive model inspired by SolidJS.
 Component bodies run **once** at mount.  Reactivity comes from signals
-read inside *reactive holes*, which are zero-arg callables placed
+read inside *reactive holes*, which are explicit accessors placed
 inside the returned VNode tree.  See the [Reactive Holes](#reactive-holes)
 section below.
 
@@ -10,7 +10,7 @@ section below.
 
 #### Reactive Holes
 
-A **reactive hole** is a zero-arg callable embedded in a VNode tree
+A **reactive hole** is an explicit reactive accessor embedded in a VNode tree
 (child or prop value).  The reconciler wraps each hole in its own
 effect, so the surrounding component body runs **once** while the
 hole updates the DOM in place when its dependencies change.
@@ -18,7 +18,7 @@ hole updates the DOM in place when its dependencies change.
 There are three ways to create a hole:
 
 ```python
-from wybthon import button, component, create_signal, div, dynamic, p, span
+from wybthon import button, component, create_signal, div, dynamic, expr, p, span
 
 @component
 def Demo():
@@ -31,13 +31,19 @@ def Demo():
         # 2) Wrap a derived expression with ``dynamic``:
         p(dynamic(lambda: f"Doubled: {count() * 2}")),
 
-        # 3) Reactive prop value (any callable prop except event handlers):
+        # 3) Mark a derived reactive prop expression:
         p("Status",
-          class_=lambda: "danger" if count() > 5 else "ok"),
+          class_=expr(lambda: "danger" if count() > 5 else "ok")),
 
         button("+1", on_click=lambda e: set_count(count() + 1)),
     )
 ```
+
+Signal, memo, resource, and component-prop accessors are recognized
+directly. Wrap a composite expression with `expr(...)` for a child or
+prop binding, or use `dynamic(...)` when the expression can replace a
+subtree. Ordinary zero-argument callbacks are preserved as application
+values and aren't called by the renderer.
 
 A hole's getter may return any of:
 
@@ -120,8 +126,9 @@ component; no cursor system, no "rules of hooks".
 
 #### `create_effect`
 
-Create an auto-tracking reactive effect.  The effect runs immediately and
-re-runs whenever any signal it reads changes.
+Create an auto-tracking reactive effect. During component setup, its
+initial run occurs after the first DOM commit. Later runs are synchronous
+with the signal update that invalidated them.
 
 ```python
 from wybthon import component, create_effect, create_signal, p
@@ -166,7 +173,7 @@ print(doubled())  # reactive read
 
 ---
 
-#### `untrack` and `.peek()`
+#### `untrack`
 
 Read a getter (signal, memo, or prop accessor) **without** subscribing
 to it.  Use during component setup to capture a one-shot snapshot:
@@ -242,7 +249,7 @@ def Greeting(name="world"):
     # ``name`` is a getter.
     return p(
         "Hello, ", name, "!",                     # auto-hole
-        title=dynamic(lambda: f"hi {name()}!"),   # reactive prop binding
+        title=expr(lambda: f"hi {name()}!"),      # reactive prop binding
     )
 
 @component
@@ -255,7 +262,7 @@ def Parent():
 When you need the underlying ``ReactiveProps`` proxy (e.g., for
 introspection or to iterate keys), call ``get_props()`` from inside
 the component body, or declare the component with a single positional
-parameter (proxy mode):
+parameter named `props` or annotated as `ReactiveProps` (proxy mode):
 
 ```python
 from wybthon import component, dynamic, get_props, p
@@ -286,7 +293,7 @@ per unique item.  Removed items have their scopes disposed.
 from wybthon import create_signal, map_array
 
 items, set_items = create_signal(["A", "B", "C"])
-mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+mapped = map_array(items, lambda item, idx: f"{idx()}: {item}")
 # mapped() → ["0: A", "1: B", "2: C"]
 ```
 

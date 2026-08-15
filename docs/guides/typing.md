@@ -10,8 +10,10 @@ Guidelines:
 
 #### mypy configuration
 
-- Config is in `mypy.ini` targeting Python 3.9. Browser shims (e.g., `js`, `pyodide`) are marked as `ignore_missing_imports`.
+- Config is in `mypy.ini` targeting Python 3.10. Browser shims (e.g., `js`, `pyodide`) are marked as `ignore_missing_imports`.
 - Run mypy against `src`, `tests`, `examples`, `bench` per config.
+- The wheel includes `py.typed`, so downstream type checkers inspect
+  Wybthon's inline annotations.
 
 #### Examples
 
@@ -23,10 +25,10 @@ Guidelines:
 
 ```python
 from typing import Awaitable
-from wybthon import create_signal, create_memo, create_effect, create_resource
+from wybthon import Accessor, create_effect, create_memo, create_resource, create_signal
 
 count, set_count = create_signal(0)
-double = create_memo(lambda: count() * 2)
+double: Accessor[int] = create_memo(lambda: count() * 2)
 
 def log() -> None:
     _ = double()  # subscribes

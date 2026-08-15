@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from conftest import collect_texts
 
-from wybthon.vnode import h
+from wybthon.vnode import expr, h
 
 # ---------------------------------------------------------------------------
 # Auto-hole behaviour
@@ -134,7 +134,7 @@ def test_provider_value_updates_fine_grainedly(wyb, root_element):
     @comp_mod.component
     def Consumer():
         consumer_runs[0] += 1
-        return h("p", {}, "theme=", lambda: use_context(Theme))
+        return h("p", {}, "theme=", expr(lambda: use_context(Theme)))
 
     @comp_mod.component
     def App():
@@ -165,7 +165,7 @@ def test_provider_static_value_still_propagates(wyb, root_element):
 
     @comp_mod.component
     def Consumer():
-        return h("p", {}, "t=", lambda: use_context(Theme))
+        return h("p", {}, "t=", expr(lambda: use_context(Theme)))
 
     vdom.render(
         h(Provider, {"context": Theme, "value": "dark"}, h(Consumer, {})),

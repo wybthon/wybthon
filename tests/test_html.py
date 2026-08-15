@@ -11,6 +11,10 @@ from wybthon.vnode import Fragment, h
 
 def _load_modules():
     """Reload dom, reconciler, html modules against current stubs. Returns (dom_mod, vdom_mod, html_mod)."""
+    from js import document
+
+    kernel_mod = importlib.import_module("wybthon.kernel")
+    kernel_mod.set_backend(kernel_mod.PythonBackend(document))
     dom_mod = importlib.import_module("wybthon.dom")
     importlib.reload(dom_mod)
     vdom_mod = importlib.import_module("wybthon.reconciler")
@@ -38,11 +42,17 @@ def test_class_underscore_maps_to_class(browser_stubs):
     assert "class_" not in node.props
 
 
-def test_html_for_maps_to_for(browser_stubs):
+def test_trailing_underscore_maps_reserved_keyword(browser_stubs):
     _, _, html_mod = _load_modules()
-    node = html_mod.label("Name", html_for="name-input")
+    node = html_mod.label("Name", for_="name-input")
     assert node.props.get("for") == "name-input"
-    assert "html_for" not in node.props
+    assert "for_" not in node.props
+
+
+def test_generic_trailing_underscore_is_removed(browser_stubs):
+    _, _, html_mod = _load_modules()
+    node = html_mod.source(async_=True)
+    assert node.props == {"async": True}
 
 
 def test_children_as_positional_args(browser_stubs):

@@ -445,15 +445,17 @@ def rules_from_schema(schema: Dict[str, Dict[str, Any]]) -> Dict[str, List[Valid
             vlist.append(required(msg))
 
         if "min_length" in spec and spec.get("min_length") is not None:
+            min_value = spec["min_length"]
             try:
-                n = int(spec.get("min_length"))
+                n = int(min_value)
             except Exception:
                 n = 0
             vlist.append(min_length(n, spec.get("min_length_message")))
 
         if "max_length" in spec and spec.get("max_length") is not None:
+            max_value = spec["max_length"]
             try:
-                n2 = int(spec.get("max_length"))
+                n2 = int(max_value)
             except Exception:
                 n2 = 0
             vlist.append(max_length(n2, spec.get("max_length_message")))

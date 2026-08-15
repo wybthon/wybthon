@@ -123,6 +123,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `props` – DOM property application, diffing, and controlled elements
   - `reactivity` – signals-first reactive primitives (create_signal, create_effect, etc.)
   - `reconciler` – reconciliation engine for mounting, patching, and unmounting
+  - `runtime` – mount handles, runtime instances, and container ownership
   - `router` – routing, paths, and navigation helpers
   - `router_core` – core route resolution helpers
   - `store` – reactive stores (`create_store`, `produce`) for nested state management
@@ -300,7 +301,7 @@ fix/dom-event-delegation
 
 ### CI
 
-- **CI** (`ci.yml`): runs formatter, linter, type checker, and unit tests (the `build` job, across Python 3.9–3.11) on every push and PR. A separate `e2e` job runs the full browser suite under `tests/e2e/` (fixture app + demo smoke test) in headless Chromium with Pyodide, caching the Playwright browser between runs.
+- **CI** (`ci.yml`): runs formatter, linter, type checker, and unit tests (the `build` job, across Python 3.10–3.13) on every push and PR. A separate `e2e` job runs the full browser suite under `tests/e2e/` (fixture app + demo smoke test) in headless Chromium with Pyodide, caching the Playwright browser between runs.
 - **PR Lint** (`pr-lint.yml`): validates the PR title against Conventional Commits format (protects squash merges) and checks individual commit messages via commitlint (protects rebase merges). Recommended: add the **PR title** job as a required status check in branch-protection settings.
 - **Release** (`release.yml`): runs on merge to `main`; computes version, generates changelog, tags, creates GitHub Release, and (when `DRAFT_RELEASE` is `"false"`) publishes to PyPI.
 - **Docs** (`docs.yml`): builds the MkDocs site with `--strict` (fail on warning) on every push and PR; on push to `main` it also deploys to GitHub Pages.

@@ -1,41 +1,16 @@
-"""Reconciliation engine: mounting, patching, and unmounting VNode trees.
+"""Owned VDOM reconciliation and retained DOM regions.
 
-This module translates VNode trees into batched DOM operations. It
-never touches the DOM directly: every mutation is emitted as a compact
-op against an integer node id (see `wybthon.kernel`), and the whole
-buffer is applied in a single bridge crossing at commit time (end of
-`render`, end of each effect flush).
-
-Mental model:
-
-- **Components run once.** A function component is invoked a single time
-  during mount. Its returned VNode tree is mounted directly. Reactive
-  updates flow through *reactive holes* embedded in that tree, not by
-  re-running the component body.
-- **Reactive holes** are `_dynamic` VNodes whose `getter` is re-evaluated
-  by an effect when its dependencies change. They're created automatically
-  whenever a callable child or callable prop value appears in the tree,
-  and explicitly via [`dynamic`][wybthon.dynamic].
-- **Components return a VNode** (or a value coercible to one). The
-  idiomatic style is to return a static tree and use `dynamic` for
-  explicit reactive subtrees; a returned zero-arg callable is also
-  accepted and is wrapped in a single reactive hole for convenience
-  (handy when authoring higher-order components).
-
-Public surface:
-
-- [`render`][wybthon.render]: top-level entry point.
-- [`mount`][wybthon.reconciler.mount]: emit ops creating DOM for a new
-  VNode under a parent node id.
-- [`unmount`][wybthon.reconciler.unmount]: tear down a VNode and its DOM.
-- [`patch`][wybthon.reconciler.patch]: diff two VNodes and emit the
-  difference.
+VNode objects are unmounted render descriptions. This module creates a
+separate ``MountedNode`` tree containing DOM IDs, reactive subscriptions,
+component owners, and mounted children. The separation lets one VNode be
+mounted more than once and gives async boundaries a tree they can retain
+without mutating application declarations.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_left
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from . import kernel
 from ._warnings import component_name, log_error
@@ -52,358 +27,400 @@ from .kernel import (
     OP_SET_TEXT,
 )
 from .props import _apply_single_prop, _bind_reactive_prop, apply_initial_props, apply_props, attach_ref, detach_ref
-from .reactivity import (
-    ReactiveProps,
-    _ComponentContext,
-    _get_component_ctx,
-    batch,
-    effect,
-)
-from .template import (
-    BIND_EVENT,
-    BIND_PROP,
-    BIND_REACTIVE,
-    BIND_TEXT,
-    NODE_HOLE,
-    NODE_STATIC,
-    build_plan,
-)
-from .vnode import VNode, dynamic, normalize_children, to_text_vnode
+from .reactivity import Owner, ReactiveProps, _ComponentContext, effect
+from .runtime import MountHandle, Runtime
+from .template import BIND_EVENT, BIND_PROP, BIND_REACTIVE, BIND_TEXT, NODE_HOLE, NODE_STATIC, build_plan
+from .vnode import Fragment, VNode, dynamic, is_getter, normalize_children, to_text_vnode
 
-__all__ = ["render", "mount", "unmount", "patch"]
-
-# Rendered root per container, keyed by the container's kernel node id.
-_container_registry: Dict[int, VNode] = {}
+__all__ = ["MountHandle", "MountedNode", "render", "mount", "patch", "unmount"]
 
 _emit = kernel.emit
 _alloc_id = kernel.alloc_id
 
 
-def _dispatch_to_error_boundary(exc: BaseException) -> bool:
-    """Route a mount/render error to the nearest ancestor error boundary.
+class MountedNode:
+    """Per-mount state corresponding to one VNode description."""
 
-    Walks the active ownership chain (from the current owner upward) looking
-    for the first scope that has an ``_error_handler`` installed by
-    :func:`wybthon.error_boundary.ErrorBoundary`. If one is found it's
-    invoked (which swaps in the boundary's fallback on the next flush) and
-    this returns ``True``. When no boundary exists it returns ``False`` so
-    the caller can log and swallow the error as before.
+    __slots__ = (
+        "vnode",
+        "parent_id",
+        "node_id",
+        "end_id",
+        "children",
+        "subtree",
+        "render_effect",
+        "component_ctx",
+        "scope_owner",
+        "bindings",
+        "state",
+        "disposed",
+    )
 
-    This is what makes ``ErrorBoundary`` catch *synchronous* errors thrown
-    while mounting descendant components or evaluating reactive holes; the
-    reconciler's defensive ``try``/``except`` sites would otherwise swallow
-    them before they could reach a boundary.
+    def __init__(self, vnode: VNode, parent_id: int) -> None:
+        self.vnode = vnode
+        self.parent_id = parent_id
+        self.node_id: Optional[int] = None
+        self.end_id: Optional[int] = None
+        self.children: List[MountedNode] = []
+        self.subtree: Optional[MountedNode] = None
+        self.render_effect: Any = None
+        self.component_ctx: Optional[_ComponentContext] = None
+        self.scope_owner: Optional[Owner] = None
+        self.bindings: List[Any] = []
+        self.state: Any = None
+        self.disposed = False
+
+    @property
+    def key(self) -> Any:
+        """Stable reconciliation key from the VNode declaration."""
+        return self.vnode.key
+
+
+_default_runtime = Runtime()
+
+
+def _coerce_container(container: Union[Element, str, int]) -> Element:
+    if isinstance(container, str):
+        return Element(container, existing=True)
+    if isinstance(container, int):
+        return Element(node_id=container)
+    return container
+
+
+def render(vnode: VNode, container: Union[Element, str, int]) -> MountHandle:
+    """Render ``vnode`` and return its owned mount handle.
+
+    Calling ``render`` again for the same container patches the existing
+    mount. Call ``handle.dispose()`` to unmount the application.
     """
+    return _default_runtime.render(vnode, container)
+
+
+def _create_handle(runtime: Runtime, element: Element, vnode: VNode) -> MountHandle:
+    import wybthon.reactivity as _rx
+
+    owner = Owner()
+    handle = MountHandle(runtime, element, owner)
+    previous_owner = _rx._current_owner
+    _rx._current_owner = owner
+    _rx._begin_render()
+    try:
+        handle._mounted = mount(vnode, element.node_id)
+    except Exception:
+        owner.dispose()
+        raise
+    finally:
+        _rx._current_owner = previous_owner
+        _rx._end_render()
+    kernel.commit()
+    return handle
+
+
+def _update_handle(handle: MountHandle, vnode: VNode) -> None:
+    import wybthon.reactivity as _rx
+
+    previous_owner = _rx._current_owner
+    _rx._current_owner = handle._root_owner
+    _rx._begin_render()
+    try:
+        handle._mounted = patch(handle._mounted, vnode, handle.container_id)
+    finally:
+        _rx._current_owner = previous_owner
+        _rx._end_render()
+    kernel.commit()
+
+
+def _dispose_handle(handle: MountHandle) -> None:
+    import wybthon.reactivity as _rx
+
+    previous_owner = _rx._current_owner
+    _rx._current_owner = handle._root_owner
+    _rx._begin_render()
+    try:
+        if handle._mounted is not None:
+            _unmount(handle._mounted)
+            handle._mounted = None
+        handle._root_owner.dispose()
+        handle.disposed = True
+        handle._runtime._forget(handle)
+    finally:
+        _rx._current_owner = previous_owner
+        _rx._end_render()
+    kernel.commit()
+
+
+def _dispatch_to_error_boundary(exc: BaseException) -> bool:
     import wybthon.reactivity as _rx
 
     owner = _rx._current_owner
     while owner is not None:
-        handler = getattr(owner, "_error_handler", None)
+        handler = owner._error_handler
         if handler is not None:
             try:
                 handler(exc)
-            except Exception as handler_exc:  # pragma: no cover - defensive
+            except Exception as handler_exc:
                 log_error(f"Error boundary handler raised: {handler_exc}", handler_exc)
             return True
         owner = owner._parent
     return False
 
 
-def render(vnode: VNode, container: Union[Element, str, int]) -> Element:
-    """Render a VNode tree into a container element.
-
-    Subsequent calls with the same `container` *patch* the existing tree
-    in place; only the differences are applied. All emitted DOM ops are
-    committed to the backend in one batch before this returns.
-
-    Args:
-        vnode: The root VNode to render.
-        container: An [`Element`][wybthon.Element] wrapper, a CSS selector
-            string identifying an existing DOM node, or a kernel node id.
-
-    Returns:
-        The wrapped container `Element`. Useful for chaining or for
-        retaining a reference to the mount point.
-
-    Example:
-        ```python
-        from wybthon import h, render
-
-        render(h("h1", {}, "Hello, world!"), "#app")
-        ```
-    """
-    if isinstance(container, str):
-        container_el = Element(container, existing=True)
-    elif isinstance(container, int):
-        container_el = Element(node_id=container)
-    else:
-        container_el = container
-    container_id = container_el.node_id
-    prev = _container_registry.get(container_id)
-    # Batch so signal writes during mount (Suspense registrations, error
-    # boundary trips) defer their effects until the mount stack has fully
-    # unwound, instead of re-entering the reconciler mid-mount.
-    batch(lambda: patch(prev, vnode, container_id))
-    _container_registry[container_id] = vnode
-    kernel.commit()
-    return container_el
+def _first_dom_id(mounted: MountedNode) -> Optional[int]:
+    tag = mounted.vnode.tag
+    if tag == "_suspense":
+        return mounted.node_id
+    if tag in ("_dynamic", "_scope", "_provider") or callable(tag):
+        if mounted.subtree is not None:
+            found = _first_dom_id(mounted.subtree)
+            if found is not None:
+                return found
+    return mounted.node_id
 
 
-# ---------------------------------------------------------------------------
-# DOM-position helpers (computed from the VNode tree; no DOM reads)
-# ---------------------------------------------------------------------------
+def _dom_node_ids(mounted: MountedNode) -> List[int]:
+    tag = mounted.vnode.tag
+    if tag == "_suspense":
+        return mounted.state.live_dom_ids()
+    if tag == "_dynamic":
+        result = _dom_node_ids(mounted.subtree) if mounted.subtree is not None else []
+        if mounted.node_id is not None:
+            result.append(mounted.node_id)
+        return result
+    if tag in ("_scope", "_provider") or callable(tag):
+        return _dom_node_ids(mounted.subtree) if mounted.subtree is not None else []
+    if tag == "_fragment":
+        result = [] if mounted.node_id is None else [mounted.node_id]
+        for child in mounted.children:
+            result.extend(_dom_node_ids(child))
+        if mounted.end_id is not None:
+            result.append(mounted.end_id)
+        return result
+    return [] if mounted.node_id is None else [mounted.node_id]
 
 
-def _first_dom_id(vnode: VNode) -> Optional[int]:
-    """Return the id of the first DOM node belonging to this vnode."""
-    while True:
-        if vnode.tag == "_dynamic":
-            if vnode.subtree is not None:
-                first = _first_dom_id(vnode.subtree)
-                if first is not None:
-                    return first
-            return vnode.el
-        if vnode.subtree is not None:
-            vnode = vnode.subtree
-            continue
-        return vnode.el
+def _move_mounted(mounted: MountedNode, parent_id: int, anchor_id: Optional[int]) -> None:
+    for node_id in _dom_node_ids(mounted):
+        _emit((OP_INSERT, parent_id, node_id, anchor_id))
+    mounted.parent_id = parent_id
 
 
-def _dom_node_ids(vnode: VNode) -> List[int]:
-    """Return the ids of all top-level DOM nodes belonging to this vnode."""
-    if vnode.tag == "_dynamic":
-        nodes: List[int] = []
-        if vnode.subtree is not None:
-            nodes.extend(_dom_node_ids(vnode.subtree))
-        if vnode.el is not None:
-            nodes.append(vnode.el)
-        return nodes
-    if vnode.subtree is not None:
-        return _dom_node_ids(vnode.subtree)
-    if vnode.tag == "_fragment":
-        if vnode.el is None:
-            return []
-        # Mounted fragments always carry normalized children.
-        frag_nodes: List[int] = [vnode.el]
-        for child in vnode.children:
-            frag_nodes.extend(_dom_node_ids(child))
-        if vnode._frag_end is not None:
-            frag_nodes.append(vnode._frag_end)
-        return frag_nodes
-    if vnode.el is not None:
-        return [vnode.el]
-    return []
-
-
-# ---------------------------------------------------------------------------
-# Mounting
-# ---------------------------------------------------------------------------
-
-
-def mount(vnode: Union[VNode, str], parent_id: int, anchor_id: Optional[int] = None) -> None:
-    """Emit ops mounting a VNode (or string) under the node `parent_id`.
-
-    When the VNode carries an `owner_scope` (set by `For`/`Index` for
-    cached rows), mounting runs under that reactive owner so the row's
-    effects survive later list updates.
-
-    Args:
-        vnode: The VNode to mount. Strings are coerced to text VNodes.
-        parent_id: Kernel id of the parent node.
-        anchor_id: Optional id of the sibling node to insert before.
-            When `None`, the new nodes are appended to the parent.
-    """
+def mount(vnode: Union[VNode, str], parent_id: int, anchor_id: Optional[int] = None) -> MountedNode:
+    """Mount a declaration and return its independent mounted state."""
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
-
-    scope = vnode.owner_scope
-    if scope is not None:
-        import wybthon.reactivity as _rx
-
-        prev_owner = _rx._current_owner
-        _rx._current_owner = scope
-        try:
-            _mount_dispatch(vnode, parent_id, anchor_id)
-        finally:
-            _rx._current_owner = prev_owner
-        return
-
-    _mount_dispatch(vnode, parent_id, anchor_id)
-
-
-def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> None:
-    """Route a VNode to the appropriate mount strategy by tag."""
     tag = vnode.tag
-
     if tag == "_text":
-        nid = _alloc_id()
-        vnode.el = nid
-        _emit((OP_CREATE_TEXT, nid, vnode.props.get("nodeValue", "")))
-        _emit((OP_INSERT, parent_id, nid, anchor_id))
-        return
-
+        mounted = MountedNode(vnode, parent_id)
+        mounted.node_id = _alloc_id()
+        _emit((OP_CREATE_TEXT, mounted.node_id, vnode.props.get("nodeValue", "")))
+        _emit((OP_INSERT, parent_id, mounted.node_id, anchor_id))
+        return mounted
     if tag == "_dynamic":
-        _mount_dynamic(vnode, parent_id, anchor_id)
-        return
-
+        return _mount_dynamic(vnode, parent_id, anchor_id)
     if tag == "_fragment":
-        _mount_fragment(vnode, parent_id, anchor_id)
-        return
+        return _mount_fragment(vnode, parent_id, anchor_id)
+    if tag == "_scope":
+        return _mount_scope(vnode, parent_id, anchor_id)
+    if tag == "_provider":
+        return _mount_provider(vnode, parent_id, anchor_id)
+    if tag == "_suspense":
+        from .suspense import _mount_suspense
 
+        return _mount_suspense(vnode, parent_id, anchor_id)
     if callable(tag):
-        _mount_component(vnode, parent_id, anchor_id)
-        return
-
-    if _mount_template(vnode, parent_id, anchor_id):
-        return
-
-    _mount_element(vnode, parent_id, anchor_id)
+        return _mount_component(vnode, parent_id, anchor_id)
+    template_mounted = _mount_template(vnode, parent_id, anchor_id)
+    return template_mounted if template_mounted is not None else _mount_element(vnode, parent_id, anchor_id)
 
 
-def _mount_element(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> None:
-    """Mount an element subtree with per-node ops (the template-ineligible path)."""
+def _mount_element(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> MountedNode:
     assert isinstance(vnode.tag, str)
-    nid = _alloc_id()
-    vnode.el = nid
-    _emit((OP_CREATE_ELEMENT, nid, vnode.tag))
-    apply_initial_props(nid, vnode.props)
-    norm_children = normalize_children(vnode.children)
-    vnode.children = norm_children
-    for child in norm_children:
-        mount(child, nid)
-    _emit((OP_INSERT, parent_id, nid, anchor_id))
-    attach_ref(vnode.props, nid)
+    mounted = MountedNode(vnode, parent_id)
+    mounted.node_id = _alloc_id()
+    _emit((OP_CREATE_ELEMENT, mounted.node_id, vnode.tag))
+    bindings = apply_initial_props(mounted.node_id, vnode.props)
+    if bindings:
+        mounted.bindings.extend(bindings)
+    for child in normalize_children(vnode.children):
+        mounted.children.append(mount(child, mounted.node_id))
+    _emit((OP_INSERT, parent_id, mounted.node_id, anchor_id))
+    attach_ref(vnode.props, mounted.node_id)
+    return mounted
 
 
-def _mount_template(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> bool:
-    """Mount an element subtree through the template fast path.
-
-    Serializes the static skeleton to HTML (text content hoisted),
-    registers it with the kernel on first use, and emits one
-    `CLONE_TPL` op; the kernel clones the pre-parsed template and
-    assigns a dense id block in the same pre-order the serializer
-    counted, so every element, text node, and placeholder comment is
-    addressable with no further communication. Text content, dynamic
-    bindings, and dynamic children are then wired by id.
-
-    Returns:
-        `True` when the subtree was mounted, `False` when it isn't
-        eligible (the caller falls back to per-node ops).
-    """
+def _mount_template(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> Optional[MountedNode]:
     if not kernel.supports_html():
-        return False
+        return None
     plan = build_plan(vnode)
     if plan is None:
-        return False
+        return None
 
     count = plan.node_count
     first = kernel.alloc_ids(count)
     _emit((OP_CLONE_TPL, first, count, kernel.template_id(plan.html)))
 
-    holes: List[Any] = []
-    mounts: List[Any] = []
-    nid = first
-    for kind, node, parent in plan.order:
+    instances: List[Optional[MountedNode]] = [None] * count
+    placeholders: List[int] = []
+    root: Optional[MountedNode] = None
+    for index, (kind, description, parent_index) in enumerate(plan.order):
+        node_id = first + index
+        parent_mounted = instances[parent_index] if parent_index >= 0 else None
         if kind == NODE_STATIC:
-            node.el = nid
-        elif kind == NODE_HOLE:
-            holes.append((node, parent, nid))
+            instance_parent_id = parent_id
+            if parent_mounted is not None:
+                assert parent_mounted.node_id is not None
+                instance_parent_id = parent_mounted.node_id
+            instance = MountedNode(description, instance_parent_id)
+            instance.node_id = node_id
+            instances[index] = instance
+            if parent_mounted is not None:
+                parent_mounted.children.append(instance)
+            else:
+                root = instance
         else:
-            mounts.append((node, parent, nid))
-        nid += 1
+            assert parent_mounted is not None and parent_mounted.node_id is not None
+            if kind == NODE_HOLE:
+                child = _mount_dynamic(description, parent_mounted.node_id, end_id=node_id)
+            else:
+                child = mount(description, parent_mounted.node_id, node_id)
+                _emit((OP_REMOVE, node_id))
+                placeholders.append(node_id)
+            instances[index] = child
+            parent_mounted.children.append(child)
 
-    for target, bkind, name, value in plan.bindings:
-        el = target.el
-        assert el is not None
-        if bkind == BIND_TEXT:
-            if value != " ":  # the clone already holds the placeholder space
-                _emit((OP_SET_TEXT, el, value))
-        elif bkind == BIND_EVENT:
-            set_handler(el, name, value if callable(value) else None)
-        elif bkind == BIND_REACTIVE:
-            _bind_reactive_prop(el, name, value)
-        elif bkind == BIND_PROP:
-            _apply_single_prop(el, name, None, value)
-        else:  # BIND_REF
-            attach_ref({name: value}, el)
+    assert root is not None
+    for target_index, binding_kind, name, value in plan.bindings:
+        target_mounted = instances[target_index]
+        assert target_mounted is not None
+        target_id = target_mounted.node_id
+        assert target_id is not None
+        if binding_kind == BIND_TEXT:
+            if value != " ":
+                _emit((OP_SET_TEXT, target_id, value))
+        elif binding_kind == BIND_EVENT:
+            set_handler(target_id, name, value if callable(value) else None)
+        elif binding_kind == BIND_REACTIVE:
+            target_mounted.bindings.append(_bind_reactive_prop(target_id, name, value))
+        elif binding_kind == BIND_PROP:
+            _apply_single_prop(target_id, name, None, value)
+        else:
+            attach_ref({name: value}, target_id)
 
     _emit((OP_INSERT, parent_id, first, anchor_id))
-
-    for node, parent, comment_id in holes:
-        _mount_dynamic(node, parent.el, end_id=comment_id)
-
-    if mounts:
-        removed: List[int] = []
-        for node, parent, comment_id in mounts:
-            mount(node, parent.el, comment_id)
-            _emit((OP_REMOVE, comment_id))
-            removed.append(comment_id)
-        _emit((OP_RELEASE, removed))
-
-    return True
+    if placeholders:
+        _emit((OP_RELEASE, placeholders))
+    return root
 
 
-def _mount_fragment(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> None:
-    """Mount a fragment using comment markers, children directly in the parent."""
-    start_id = _alloc_id()
-    vnode.el = start_id
-    _emit((OP_CREATE_COMMENT, start_id))
-    _emit((OP_INSERT, parent_id, start_id, anchor_id))
-
-    end_id = _alloc_id()
-    vnode._frag_end = end_id
-    _emit((OP_CREATE_COMMENT, end_id))
-    _emit((OP_INSERT, parent_id, end_id, anchor_id))
-
-    norm_children = normalize_children(vnode.children)
-    vnode.children = norm_children
-    for child in norm_children:
-        mount(child, parent_id, end_id)
+def _mount_fragment(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> MountedNode:
+    mounted = MountedNode(vnode, parent_id)
+    mounted.node_id = _alloc_id()
+    mounted.end_id = _alloc_id()
+    _emit((OP_CREATE_COMMENT, mounted.node_id))
+    _emit((OP_INSERT, parent_id, mounted.node_id, anchor_id))
+    _emit((OP_CREATE_COMMENT, mounted.end_id))
+    _emit((OP_INSERT, parent_id, mounted.end_id, anchor_id))
+    for child in normalize_children(vnode.children):
+        mounted.children.append(mount(child, parent_id, mounted.end_id))
+    return mounted
 
 
-# ---------------------------------------------------------------------------
-# Reactive hole (``_dynamic``) mounting
-# ---------------------------------------------------------------------------
+def _mount_scope(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> MountedNode:
+    import wybthon.reactivity as _rx
+
+    mounted = MountedNode(vnode, parent_id)
+    owner = vnode.props.get("owner")
+    if not isinstance(owner, Owner):
+        owner = Owner()
+        if _rx._current_owner is not None:
+            _rx._current_owner._add_child(owner)
+    mounted.scope_owner = owner
+    child = vnode.children[0] if vnode.children else to_text_vnode("")
+    previous_owner = _rx._current_owner
+    _rx._current_owner = owner
+    try:
+        mounted.subtree = mount(child, parent_id, anchor_id)
+    finally:
+        _rx._current_owner = previous_owner
+    mounted.node_id = _first_dom_id(mounted.subtree)
+    return mounted
+
+
+def _provider_children(props: Dict[str, Any]) -> VNode:
+    children = props.get("children", [])
+    if children is None:
+        children = []
+    if not isinstance(children, (list, tuple)):
+        children = [children]
+    return Fragment(*children)
+
+
+def _bind_provider_value(mounted: MountedNode, value: Any) -> None:
+    state = mounted.state
+    signal = state["signal"]
+    old_binding = state.get("binding")
+    if old_binding is not None:
+        old_binding.dispose()
+        state["binding"] = None
+    if is_getter(value):
+        state["binding"] = effect(lambda: signal.set(value()))
+    else:
+        signal.set(value)
+
+
+def _mount_provider(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> MountedNode:
+    import wybthon.reactivity as _rx
+
+    mounted = MountedNode(vnode, parent_id)
+    owner = Owner()
+    if _rx._current_owner is not None:
+        _rx._current_owner._add_child(owner)
+    mounted.scope_owner = owner
+
+    context_object = vnode.props.get("context")
+    value = vnode.props.get("value")
+    if is_getter(value):
+        assert callable(value)
+        resolved = value()
+    else:
+        resolved = value
+    signal = _rx.Signal(resolved)
+    if context_object is not None:
+        owner._set_context(context_object.id, signal)
+    mounted.state = {"context": context_object, "signal": signal, "binding": None}
+
+    previous_owner = _rx._current_owner
+    _rx._current_owner = owner
+    try:
+        _bind_provider_value(mounted, value)
+        mounted.subtree = mount(_provider_children(vnode.props), parent_id, anchor_id)
+    finally:
+        _rx._current_owner = previous_owner
+    mounted.node_id = _first_dom_id(mounted.subtree)
+    return mounted
 
 
 def _coerce_dynamic_result(value: Any) -> VNode:
-    """Convert the result of a reactive hole getter into a single VNode."""
     if isinstance(value, VNode):
         return value
-    if isinstance(value, list):
+    if isinstance(value, (list, tuple)):
         from .vnode import Fragment
 
         return Fragment(*value)
-    if value is None:
-        return to_text_vnode("")
-    return to_text_vnode(value)
+    return to_text_vnode("" if value is None else value)
 
 
-def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Any:
-    """Build the effect body that re-evaluates a hole and patches its region."""
-
+def _dynamic_updater(mounted: MountedNode, getter: Any) -> Any:
     def update() -> None:
         try:
-            result = getter()
+            description = _coerce_dynamic_result(getter())
+            if mounted.subtree is None:
+                mounted.subtree = mount(description, mounted.parent_id, mounted.end_id)
+            else:
+                mounted.subtree = patch(mounted.subtree, description, mounted.parent_id)
         except Exception as exc:
             if not _dispatch_to_error_boundary(exc):
-                log_error(f"Reactive hole getter raised: {exc}", exc)
-            return
-        new_node = _coerce_dynamic_result(result)
-        prev = vnode.subtree
-        vnode.subtree = new_node
-        if prev is None:
-            try:
-                mount(new_node, parent_id, end_id)
-            except Exception as exc:
-                if not _dispatch_to_error_boundary(exc):
-                    log_error(f"Reactive hole mount failed: {exc}", exc)
-        else:
-            try:
-                patch(prev, new_node, parent_id)
-            except Exception as exc:
-                if not _dispatch_to_error_boundary(exc):
-                    log_error(f"Reactive hole patch failed: {exc}", exc)
+                log_error(f"Reactive region failed: {exc}", exc)
 
     return update
 
@@ -413,177 +430,60 @@ def _mount_dynamic(
     parent_id: int,
     anchor_id: Optional[int] = None,
     end_id: Optional[int] = None,
-) -> None:
-    """Mount a reactive hole: an effect re-evaluates *getter* and patches its region.
-
-    When `end_id` is provided (the template fast path), the existing
-    placeholder comment is adopted as the hole's end anchor instead of
-    creating and inserting a new one.
-    """
+) -> MountedNode:
+    mounted = MountedNode(vnode, parent_id)
     if end_id is None:
         end_id = _alloc_id()
         _emit((OP_CREATE_COMMENT, end_id))
         _emit((OP_INSERT, parent_id, end_id, anchor_id))
-    vnode.el = end_id
-    vnode._frag_end = end_id
-
+    mounted.node_id = end_id
+    mounted.end_id = end_id
     getter = vnode.props.get("getter")
-    if not callable(getter):
-        return
-
-    vnode.render_effect = effect(_hole_updater(vnode, parent_id, end_id, getter))
-
-
-def _patch_dynamic(old: VNode, new: VNode, parent_id: int) -> None:
-    """Patch one reactive hole against another.
-
-    If the getter object is the same instance, no work is needed; the
-    existing effect already tracks the same dependencies and will fire
-    on its own.  If the getter changed (e.g., a parent re-rendered with
-    a new lambda), dispose the old effect and install a new one,
-    re-using the existing end-anchor and any currently-mounted subtree.
-    """
-    new.el = old.el
-    new._frag_end = old._frag_end
-    new.subtree = old.subtree
-
-    old_getter = old.props.get("getter")
-    new_getter = new.props.get("getter")
-
-    if old_getter is new_getter:
-        new.render_effect = old.render_effect
-        return
-
-    if old.render_effect is not None:
-        try:
-            old.render_effect.dispose()
-        except Exception as exc:  # pragma: no cover - defensive
-            log_error(f"Failed disposing old reactive hole effect: {exc}", exc)
-    old.render_effect = None
-
-    if not callable(new_getter):
-        return
-
-    assert new._frag_end is not None
-    new.render_effect = effect(_hole_updater(new, parent_id, new._frag_end, new_getter))
+    if callable(getter):
+        mounted.render_effect = effect(_dynamic_updater(mounted, getter))
+    return mounted
 
 
-# ---------------------------------------------------------------------------
-# Component mounting (run-once model)
-# ---------------------------------------------------------------------------
-
-
-def _mount_component(vnode: VNode, parent_id: int, anchor_id: Optional[int] = None) -> None:
-    """Mount a function component using the run-once + reactive-holes model.
-
-    The component body is invoked exactly once.  The return value is
-    coerced to a VNode subtree.  As a convenience, a callable return
-    is wrapped in a single-root reactive hole (the same primitive
-    :func:`wybthon.dynamic` produces), so HOCs that build a render
-    callback continue to work.  Idiomatic components return a
-    :class:`VNode` directly and use :func:`wybthon.dynamic` where they
-    need reactive subtrees.
-    """
+def _mount_component(vnode: VNode, parent_id: int, anchor_id: Optional[int]) -> MountedNode:
     import wybthon.reactivity as _rx
 
-    comp_fn = vnode.tag
-    assert callable(comp_fn)
+    component = vnode.tag
+    assert callable(component)
+    mounted = MountedNode(vnode, parent_id)
+    context = _ComponentContext()
+    context._props = vnode.props
+    context._vnode = vnode
+    context._reactive_props = ReactiveProps(vnode.props, getattr(component, "_wyb_defaults", {}))
+    mounted.component_ctx = context
+    if _rx._current_owner is not None:
+        _rx._current_owner._add_child(context)
 
-    ctx = _ComponentContext()
-    ctx._props = vnode.props
-    ctx._vnode = vnode
-    vnode.component_ctx = ctx
-
-    comp_defaults = getattr(comp_fn, "_wyb_defaults", {})
-    ctx._reactive_props = ReactiveProps(vnode.props, comp_defaults)
-
-    parent_ctx = _get_component_ctx()
-    if parent_ctx is not None:
-        parent_ctx._add_child(ctx)
-    elif _rx._current_owner is not None:
-        _rx._current_owner._add_child(ctx)
-
-    is_provider = getattr(comp_fn, "_wyb_provider", False)
-
-    if is_provider:
-        ctx_obj = ctx._props.get("context")
-        value = ctx._props.get("value")
-        if ctx_obj is not None:
-            # Store a Signal so descendants get fine-grained reactive
-            # updates when the provider's ``value`` prop changes.
-            from .vnode import is_getter as _is_getter
-
-            initial_value = value() if callable(value) and _is_getter(value) else value
-            value_sig = _rx.Signal(initial_value)
-            ctx._set_context(ctx_obj.id, value_sig)
-            # Remember the signal so the patch path can update it in
-            # place without rebuilding child contexts.
-            if ctx._provider_value_signals is None:
-                ctx._provider_value_signals = {}
-            ctx._provider_value_signals[ctx_obj.id] = value_sig
-
-            # If ``value`` is itself a getter, set up an effect owned by
-            # this Provider's context so the value signal stays in sync
-            # with the upstream source, without re-mounting subtrees.
-            if callable(value) and _is_getter(value):
-                value_getter = value
-                prev_owner = _rx._current_owner
-                _rx._current_owner = ctx
-                try:
-
-                    def _track_value() -> None:
-                        value_sig.set(value_getter())
-
-                    _rx.create_effect(_track_value)
-                finally:
-                    _rx._current_owner = prev_owner
-
-    prev_owner = _rx._current_owner
-    _rx._current_owner = ctx
+    previous_owner = _rx._current_owner
+    _rx._current_owner = context
     try:
         try:
-            result = comp_fn(ctx._reactive_props)
+            result = component(context._reactive_props)
         except Exception as exc:
             if _dispatch_to_error_boundary(exc):
                 result = to_text_vnode("")
             else:
-                log_error(f"Render failed in function component {component_name(comp_fn)}", exc)
+                log_error(f"Render failed in function component {component_name(component)}", exc)
                 raise
-    finally:
-        _rx._current_owner = prev_owner
-
-    sub_tree = _normalize_component_result(result, ctx, comp_fn)
-
-    vnode.subtree = sub_tree
-
-    prev_owner = _rx._current_owner
-    _rx._current_owner = ctx
-    try:
+        description = _normalize_component_result(result)
         try:
-            mount(sub_tree, parent_id, anchor_id)
-            vnode.el = _first_dom_id(sub_tree)
+            mounted.subtree = mount(description, parent_id, anchor_id)
         except Exception as exc:
-            if _dispatch_to_error_boundary(exc):
-                placeholder = to_text_vnode("")
-                vnode.subtree = placeholder
-                mount(placeholder, parent_id, anchor_id)
-                vnode.el = placeholder.el
-            else:
+            if not _dispatch_to_error_boundary(exc):
                 raise
+            mounted.subtree = mount(to_text_vnode(""), parent_id, anchor_id)
     finally:
-        _rx._current_owner = prev_owner
+        _rx._current_owner = previous_owner
+    mounted.node_id = _first_dom_id(mounted.subtree)
+    context._schedule_mount_callbacks()
+    return mounted
 
-    ctx._run_mount_callbacks()
 
-
-def _normalize_component_result(result: Any, ctx: _ComponentContext, comp_fn: Any = None) -> VNode:
-    """Coerce a component's return value to a VNode subtree.
-
-    Components should return a ``VNode``; use :func:`wybthon.dynamic`
-    for reactive subtrees.  As a courtesy, a callable return is
-    wrapped in a single-root reactive hole so it still renders
-    (useful for HOCs that build a render callback).
-    """
+def _normalize_component_result(result: Any) -> VNode:
     if isinstance(result, VNode):
         return result
     if callable(result):
@@ -591,383 +491,297 @@ def _normalize_component_result(result: Any, ctx: _ComponentContext, comp_fn: An
     return to_text_vnode(result)
 
 
-def _patch_component(old: VNode, new: VNode, parent_id: int) -> None:
-    """Patch a function component: update props on the existing context.
-
-    Components don't re-render on patch; the existing reactive props
-    proxy is updated in place, and any reactive holes inside the
-    subtree that read those props will re-fire automatically.
-    """
-    ctx = old.component_ctx
-    is_provider = getattr(new.tag, "_wyb_provider", False)
-
-    if ctx is None:
-        _replace(old, new, parent_id)
+def unmount(target: Union[MountHandle, MountedNode]) -> None:
+    """Dispose a mount handle or an internal mounted subtree."""
+    if isinstance(target, MountHandle):
+        target.dispose()
         return
-
-    ctx._props = new.props
-    if ctx._reactive_props is not None:
-        ctx._reactive_props._update(new.props)
-
-    if is_provider:
-        ctx_obj = new.props.get("context")
-        new_value = new.props.get("value")
-        if ctx_obj is not None:
-            from .vnode import is_getter as _is_getter
-
-            resolved = new_value() if callable(new_value) and _is_getter(new_value) else new_value
-            existing_signals = ctx._provider_value_signals
-            if existing_signals is not None and ctx_obj.id in existing_signals:
-                existing_signals[ctx_obj.id].set(resolved)
-            else:
-                from .reactivity import Signal as _Signal
-
-                value_sig = _Signal(resolved)
-                ctx._set_context(ctx_obj.id, value_sig)
-                if ctx._provider_value_signals is None:
-                    ctx._provider_value_signals = {}
-                ctx._provider_value_signals[ctx_obj.id] = value_sig
-
-    ctx._vnode = new
-
-    new.component_ctx = ctx
-    new.render_effect = old.render_effect
-    new.subtree = old.subtree
-    new.el = old.el
-
-
-# ---------------------------------------------------------------------------
-# Unmount
-# ---------------------------------------------------------------------------
-
-
-def unmount(vnode: VNode) -> None:
-    """Unmount `vnode`, disposing its effects, ownership scope, and DOM.
-
-    Calls cleanup on the owning component context (if any), removes
-    delegated event handlers, runs `on_cleanup` callbacks, and removes
-    the subtree's DOM. The removal itself is a handful of ops (one
-    `REMOVE` per top-level node plus one `RELEASE` for the whole
-    subtree), applied in a single commit.
-
-    Args:
-        vnode: The VNode to tear down. Safe to call on already-unmounted
-            nodes (becomes a no-op).
-    """
-    _unmount(vnode)
+    _unmount(target)
     kernel.commit()
 
 
-def _unmount(vnode: VNode) -> None:
-    """Internal unmount: emits ops but leaves committing to the caller."""
-    top_ids = _dom_node_ids(vnode)
-    for nid in top_ids:
-        _emit((OP_REMOVE, nid))
+def _unmount(mounted: MountedNode) -> None:
+    if mounted.disposed:
+        return
+    for node_id in _dom_node_ids(mounted):
+        _emit((OP_REMOVE, node_id))
     released: List[int] = []
-    _dispose_tree(vnode, released)
+    _dispose_tree(mounted, released)
     if released:
         _emit((OP_RELEASE, released))
 
 
-def _dispose_tree(vnode: VNode, released: List[int]) -> None:
-    """Dispose scopes/effects/handlers recursively, collecting node ids to release."""
-    tag = vnode.tag
+def _dispose_tree(mounted: MountedNode, released: List[int]) -> None:
+    if mounted.disposed:
+        return
+    mounted.disposed = True
+    tag = mounted.vnode.tag
+    if tag == "_suspense":
+        mounted.state.dispose_into(released)
+        for node_id in (mounted.node_id, mounted.end_id):
+            if node_id is not None and node_id not in released:
+                released.append(node_id)
+        mounted.node_id = None
+        mounted.end_id = None
+        return
+    if mounted.render_effect is not None:
+        mounted.render_effect.dispose()
+        mounted.render_effect = None
+    if mounted.component_ctx is not None:
+        mounted.component_ctx.dispose()
+    if mounted.scope_owner is not None:
+        mounted.scope_owner.dispose()
+    if mounted.subtree is not None:
+        _dispose_tree(mounted.subtree, released)
+        mounted.subtree = None
+    for child in mounted.children:
+        _dispose_tree(child, released)
+    mounted.children.clear()
+    if isinstance(tag, str) and not tag.startswith("_") and mounted.node_id is not None:
+        detach_ref(mounted.vnode.props)
+        remove_handlers_for(mounted.node_id)
+    for node_id in (mounted.node_id, mounted.end_id):
+        if node_id is not None and node_id not in released:
+            released.append(node_id)
+    mounted.node_id = None
+    mounted.end_id = None
 
+
+def _same_type(mounted: MountedNode, vnode: VNode) -> bool:
+    return mounted.vnode.tag == vnode.tag
+
+
+def patch(old: Optional[MountedNode], new: VNode, parent_id: int) -> MountedNode:
+    """Patch a mounted instance with a new VNode description."""
+    if old is None:
+        return mount(new, parent_id)
+    if old.vnode is new:
+        return old
+    if not _same_type(old, new):
+        return _replace(old, new, parent_id)
+
+    old_vnode = old.vnode
+    old.vnode = new
+    tag = new.tag
+    if tag == "_text":
+        if old.node_id is not None:
+            old_text = old_vnode.props.get("nodeValue", "")
+            new_text = new.props.get("nodeValue", "")
+            if old_text != new_text:
+                _emit((OP_SET_TEXT, old.node_id, new_text))
+        return old
     if tag == "_dynamic":
-        if vnode.render_effect is not None:
-            try:
-                vnode.render_effect.dispose()
-            except Exception as exc:  # pragma: no cover - defensive
-                log_error(f"Failed disposing reactive hole effect: {exc}", exc)
-            vnode.render_effect = None
-        if vnode.subtree is not None:
-            _dispose_tree(vnode.subtree, released)
-            vnode.subtree = None
-        if vnode.el is not None:
-            released.append(vnode.el)
-            vnode.el = None
-        return
-
-    if callable(tag):
-        if vnode.component_ctx is not None:
-            try:
-                vnode.component_ctx.dispose()
-            except Exception as e:
-                log_error(f"Component context disposal failed in {component_name(tag)}", e)
-        elif vnode.render_effect is not None:
-            try:
-                vnode.render_effect.dispose()
-            except Exception as e:
-                log_error(f"Effect disposal failed in {component_name(tag)}", e)
-        if vnode.subtree is not None:
-            _dispose_tree(vnode.subtree, released)
-        vnode.el = None
-        return
-
+        return _patch_dynamic(old, old_vnode, new)
     if tag == "_fragment":
-        for child in vnode.children:
-            if isinstance(child, VNode):
-                _dispose_tree(child, released)
-        if vnode.el is not None:
-            released.append(vnode.el)
-            vnode.el = None
-        if vnode._frag_end is not None:
-            released.append(vnode._frag_end)
-            vnode._frag_end = None
+        old.children = _reconcile_children(old.children, normalize_children(new.children), parent_id, old.end_id)
+        return old
+    if tag == "_scope":
+        if old_vnode.props.get("owner") is not new.props.get("owner"):
+            old.vnode = old_vnode
+            return _replace(old, new, parent_id)
+        child = new.children[0] if new.children else to_text_vnode("")
+        assert old.subtree is not None
+        old.subtree = patch(old.subtree, child, parent_id)
+        old.node_id = _first_dom_id(old.subtree)
+        return old
+    if tag == "_provider":
+        return _patch_provider(old, old_vnode, new, parent_id)
+    if tag == "_suspense":
+        from .suspense import _patch_suspense
+
+        return _patch_suspense(old, old_vnode, new)
+    if callable(tag):
+        _patch_component(old, new)
+        return old
+
+    assert old.node_id is not None
+    apply_props(old.node_id, old_vnode.props, new.props)
+    attach_ref(new.props, old.node_id)
+    old.children = _reconcile_children(old.children, normalize_children(new.children), old.node_id, None)
+    return old
+
+
+def _patch_dynamic(mounted: MountedNode, old_vnode: VNode, new_vnode: VNode) -> MountedNode:
+    old_getter = old_vnode.props.get("getter")
+    new_getter = new_vnode.props.get("getter")
+    if old_getter is new_getter:
+        return mounted
+    if mounted.render_effect is not None:
+        mounted.render_effect.dispose()
+        mounted.render_effect = None
+    if callable(new_getter):
+        mounted.render_effect = effect(_dynamic_updater(mounted, new_getter))
+    return mounted
+
+
+def _patch_component(mounted: MountedNode, vnode: VNode) -> None:
+    context = mounted.component_ctx
+    if context is None:
         return
-
-    # Element or text node.
-    if vnode.el is None:
-        return
-    detach_ref(vnode.props)
-    remove_handlers_for(vnode.el)
-    if vnode.render_effect is not None:
-        try:
-            vnode.render_effect.dispose()
-        except Exception as e:
-            log_error(f"Effect disposal failed in {component_name(tag)}", e)
-    for child in vnode.children:
-        if isinstance(child, VNode):
-            _dispose_tree(child, released)
-    released.append(vnode.el)
-    vnode.el = None
+    context._props = vnode.props
+    if context._reactive_props is not None:
+        context._reactive_props._update(vnode.props)
+    context._vnode = vnode
 
 
-# ---------------------------------------------------------------------------
-# Patch
-# ---------------------------------------------------------------------------
+def _patch_provider(
+    mounted: MountedNode,
+    old_vnode: VNode,
+    new_vnode: VNode,
+    parent_id: int,
+) -> MountedNode:
+    old_context = old_vnode.props.get("context")
+    new_context = new_vnode.props.get("context")
+    if old_context is not new_context:
+        mounted.vnode = old_vnode
+        return _replace(mounted, new_vnode, parent_id)
+
+    import wybthon.reactivity as _rx
+
+    previous_owner = _rx._current_owner
+    _rx._current_owner = mounted.scope_owner
+    try:
+        _bind_provider_value(mounted, new_vnode.props.get("value"))
+        assert mounted.subtree is not None
+        mounted.subtree = patch(mounted.subtree, _provider_children(new_vnode.props), parent_id)
+    finally:
+        _rx._current_owner = previous_owner
+    mounted.node_id = _first_dom_id(mounted.subtree)
+    return mounted
 
 
-def _same_type(a: VNode, b: VNode) -> bool:
-    """Return True when both VNodes represent the same tag/component type."""
-    return a.tag == b.tag
-
-
-def _replace(old: VNode, new: VNode, parent_id: int) -> None:
-    """Unmount `old` and mount `new` at the same DOM position.
-
-    A temporary comment marker holds the position, preserving the
-    lifecycle order (old cleanups run before the new tree mounts).
-    """
+def _replace(old: MountedNode, new: VNode, parent_id: int) -> MountedNode:
     anchor = _first_dom_id(old)
     if anchor is None:
         _unmount(old)
-        mount(new, parent_id)
-        return
+        return mount(new, parent_id)
     marker = _alloc_id()
     _emit((OP_CREATE_COMMENT, marker))
     _emit((OP_INSERT, parent_id, marker, anchor))
     _unmount(old)
-    mount(new, parent_id, marker)
+    mounted = mount(new, parent_id, marker)
     _emit((OP_REMOVE, marker))
     _emit((OP_RELEASE, [marker]))
+    return mounted
 
 
-def patch(old: Optional[VNode], new: VNode, parent_id: int) -> None:
-    """Diff `old` against `new` and emit minimal DOM ops under `parent_id`.
-
-    Identical VNode instances (`old is new`, e.g. cached `For` rows) are
-    skipped entirely. Same-type VNodes are patched in place (props and
-    children diffed); different types are unmounted and remounted at the
-    same position.
-
-    Args:
-        old: The previously-rendered VNode, or `None` for the initial
-            mount.
-        new: The new VNode to render.
-        parent_id: Kernel id of the node that directly contains this
-            VNode's DOM.
-    """
-    if old is None:
-        mount(new, parent_id)
-        return
-
-    if old is new:
-        return
-
-    if not _same_type(old, new):
-        _replace(old, new, parent_id)
-        return
-
-    if old.tag == "_text" and new.tag == "_text":
-        new.el = old.el
-        if new.el is not None:
-            old_text = old.props.get("nodeValue", "")
-            new_text = new.props.get("nodeValue", "")
-            if old_text != new_text:
-                _emit((OP_SET_TEXT, new.el, new_text))
-        return
-
-    if old.tag == "_dynamic" and new.tag == "_dynamic":
-        _patch_dynamic(old, new, parent_id)
-        return
-
-    if old.tag == "_fragment" and new.tag == "_fragment":
-        _patch_fragment(old, new, parent_id)
-        return
-
-    assert old.el is not None
-    new.el = old.el
-
-    if callable(new.tag):
-        _patch_component(old, new, parent_id)
-        return
-
-    apply_props(new.el, old.props, new.props)
-    attach_ref(new.props, new.el)
-
-    # `old` was mounted (or patched) before, so its children are
-    # already normalized; only the new side needs normalization.
-    new_children = normalize_children(new.children)
-    new.children = new_children
-    _reconcile_children(old.children, new_children, new.el, None)
-
-
-def _patch_fragment(old: VNode, new: VNode, parent_id: int) -> None:
-    """Patch two fragment VNodes in place."""
-    new.el = old.el
-    new._frag_end = old._frag_end
-
-    new_children = normalize_children(new.children)
-    new.children = new_children
-
-    _reconcile_children(old.children, new_children, parent_id, new._frag_end)
+def _identity_positions(children: Iterable[MountedNode]) -> Dict[int, List[int]]:
+    positions: Dict[int, List[int]] = {}
+    for index, child in enumerate(children):
+        positions.setdefault(id(child.vnode), []).append(index)
+    return positions
 
 
 def _reconcile_children(
-    old_children: List[VNode],
-    new_children: List[VNode],
+    old_children: List[MountedNode],
+    descriptions: List[VNode],
     parent_id: int,
     end_marker: Optional[int],
-) -> None:
-    """Diff two child lists and emit mounts, patches, moves, and removals.
+) -> List[MountedNode]:
+    old_count = len(old_children)
+    new_count = len(descriptions)
+    used = [False] * old_count
+    sources = [-1] * new_count
+    should_patch = [False] * new_count
+    identity = _identity_positions(old_children)
+    identity_cursor: Dict[int, int] = {}
+    keyed: Dict[Any, List[int]] = {}
+    key_cursor: Dict[Any, int] = {}
+    for index, child in enumerate(old_children):
+        if child.key is not None:
+            keyed.setdefault(child.key, []).append(index)
 
-    Matching runs in three passes, all `O(n)`:
-
-    1. **Identity**: the same VNode instance in both lists (cached `For`
-       rows) is reused with no patching at all.
-    2. **Key**: children with equal `key` values are patched in place.
-    3. **Type**: remaining unkeyed children are matched against unused
-       old children of the same tag in document order.
-
-    DOM moves are minimized with a longest-increasing-subsequence pass:
-    only children outside the LIS are repositioned.
-
-    Args:
-        old_children: Normalized previous children.
-        new_children: Normalized next children.
-        parent_id: Id of the node that directly contains the children's
-            DOM.
-        end_marker: Exclusive end anchor id (a fragment's end comment),
-            or `None` when children occupy the whole parent.
-    """
-    n_old = len(old_children)
-    n = len(new_children)
-    used_old: List[bool] = [False] * n_old
-    sources: List[int] = [-1] * n
-    needs_patch: List[bool] = [False] * n
-
-    old_ids: Dict[int, int] = {}
-    old_keys: Dict[Union[str, int], int] = {}
-    for j, oc in enumerate(old_children):
-        old_ids[id(oc)] = j
-        if oc.key is not None:
-            old_keys[oc.key] = j
-
-    # Pass 1 + 2: identity and key matches (reserved before type matching
-    # so an unkeyed scan can't steal a child that matches later by
-    # identity or key).
     unmatched: List[int] = []
-    for i, nc in enumerate(new_children):
-        j = old_ids.get(id(nc))
-        if j is not None and not used_old[j]:
-            used_old[j] = True
-            sources[i] = j
+    for index, description in enumerate(descriptions):
+        positions = identity.get(id(description), ())
+        cursor = identity_cursor.get(id(description), 0)
+        while cursor < len(positions) and used[positions[cursor]]:
+            cursor += 1
+        identity_cursor[id(description)] = cursor + 1
+        if cursor < len(positions):
+            source = positions[cursor]
+            used[source] = True
+            sources[index] = source
             continue
-        if nc.key is not None:
-            j = old_keys.get(nc.key)
-            if j is not None and not used_old[j]:
-                used_old[j] = True
-                sources[i] = j
-                needs_patch[i] = True
+        if description.key is not None:
+            positions = keyed.get(description.key, ())
+            cursor = key_cursor.get(description.key, 0)
+            while cursor < len(positions) and used[positions[cursor]]:
+                cursor += 1
+            key_cursor[description.key] = cursor + 1
+            if cursor < len(positions):
+                source = positions[cursor]
+                used[source] = True
+                sources[index] = source
+                should_patch[index] = True
                 continue
-        unmatched.append(i)
+        unmatched.append(index)
 
-    # Pass 3: unkeyed children match unused old children of the same tag
-    # in order. Per-tag index queues keep this linear.
-    if unmatched:
-        type_queues: Dict[Any, List[int]] = {}
-        type_pos: Dict[Any, int] = {}
-        for j, oc in enumerate(old_children):
-            if not used_old[j] and oc.key is None:
-                type_queues.setdefault(oc.tag, []).append(j)
-        for i in unmatched:
-            nc = new_children[i]
-            if nc.key is not None:
-                continue
-            queue = type_queues.get(nc.tag)
-            if queue is None:
-                continue
-            pos = type_pos.get(nc.tag, 0)
-            while pos < len(queue) and used_old[queue[pos]]:
-                pos += 1
-            type_pos[nc.tag] = pos
-            if pos < len(queue):
-                j = queue[pos]
-                type_pos[nc.tag] = pos + 1
-                used_old[j] = True
-                sources[i] = j
-                needs_patch[i] = True
+    type_queues: Dict[Any, List[int]] = {}
+    type_cursor: Dict[Any, int] = {}
+    for index, child in enumerate(old_children):
+        if not used[index] and child.key is None:
+            type_queues.setdefault(child.vnode.tag, []).append(index)
+    for index in unmatched:
+        description = descriptions[index]
+        if description.key is not None:
+            continue
+        positions = type_queues.get(description.tag, ())
+        cursor = type_cursor.get(description.tag, 0)
+        while cursor < len(positions) and used[positions[cursor]]:
+            cursor += 1
+        type_cursor[description.tag] = cursor + 1
+        if cursor < len(positions):
+            source = positions[cursor]
+            used[source] = True
+            sources[index] = source
+            should_patch[index] = True
 
-    for i in range(n):
-        if needs_patch[i]:
-            patch(old_children[sources[i]], new_children[i], parent_id)
+    result: List[Optional[MountedNode]] = [None] * new_count
+    for index, source in enumerate(sources):
+        if source >= 0:
+            instance = old_children[source]
+            result[index] = patch(instance, descriptions[index], parent_id) if should_patch[index] else instance
 
-    # Longest increasing subsequence over matched source indices; children
-    # inside the LIS keep their DOM position.
     tails: List[int] = []
-    tails_idx: List[int] = []
-    prev_idx: List[int] = [-1] * n
-    for i in range(n):
-        s = sources[i]
-        if s == -1:
+    tail_indices: List[int] = []
+    predecessors = [-1] * new_count
+    for index, source in enumerate(sources):
+        if source < 0:
             continue
-        pos = bisect_left(tails, s)
-        if pos == len(tails):
-            tails.append(s)
-            tails_idx.append(i)
+        position = bisect_left(tails, source)
+        if position == len(tails):
+            tails.append(source)
+            tail_indices.append(index)
         else:
-            tails[pos] = s
-            tails_idx[pos] = i
-        prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
+            tails[position] = source
+            tail_indices[position] = index
+        predecessors[index] = tail_indices[position - 1] if position else -1
+    stable: Set[int] = set()
+    cursor = tail_indices[-1] if tail_indices else -1
+    while cursor >= 0:
+        stable.add(cursor)
+        cursor = predecessors[cursor]
 
-    lis_set: Set[int] = set()
-    k = tails_idx[-1] if tails_idx else -1
-    while k != -1:
-        lis_set.add(k)
-        k = prev_idx[k]
+    anchor = end_marker
+    for index in range(new_count - 1, -1, -1):
+        candidate = result[index]
+        if candidate is None:
+            candidate = mount(descriptions[index], parent_id, anchor)
+            result[index] = candidate
+        elif index not in stable:
+            _move_mounted(candidate, parent_id, anchor)
+        first = _first_dom_id(candidate)
+        if first is not None:
+            anchor = first
 
-    next_anchor = end_marker
-    for i in range(n - 1, -1, -1):
-        new_child = new_children[i]
-        s = sources[i]
-        if s == -1:
-            try:
-                mount(new_child, parent_id, next_anchor)
-                first = _first_dom_id(new_child)
-                if first is not None:
-                    next_anchor = first
-            except Exception as e:
-                if not _dispatch_to_error_boundary(e):
-                    log_error(f"Failed to mount child at index {i}", e)
-        else:
-            first_dom = _first_dom_id(new_child)
-            if first_dom is not None:
-                if i not in lis_set:
-                    for nid in _dom_node_ids(new_child):
-                        _emit((OP_INSERT, parent_id, nid, next_anchor))
-                next_anchor = first_dom
+    for index, child in enumerate(old_children):
+        if not used[index]:
+            _unmount(child)
+    return [child for child in result if child is not None]
 
-    for j, oc in enumerate(old_children):
-        if not used_old[j]:
-            _unmount(oc)
+
+def _mounted_node_count(mounted: Optional[MountedNode]) -> int:
+    if mounted is None:
+        return 0
+    return 1 + _mounted_node_count(mounted.subtree) + sum(_mounted_node_count(child) for child in mounted.children)

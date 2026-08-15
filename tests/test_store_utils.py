@@ -70,6 +70,43 @@ def test_reconcile_without_key_replaces_positionally():
     assert unwrap(store)["items"] == [4, 5]
 
 
+def test_store_key_iteration_tracks_structural_changes():
+    store, set_store = create_store({"a": 1})
+    seen = []
+    create_effect(lambda: seen.append(tuple(store)))
+
+    set_store("b", 2)
+    set_store(reconcile({"b": 2}))
+
+    assert seen == [("a",), ("a", "b"), ("b",)]
+
+
+def test_set_store_predicate_path_updates_matching_rows():
+    store, set_store = create_store(
+        {"todos": [{"id": 1, "done": False}, {"id": 2, "done": False}, {"id": 3, "done": False}]}
+    )
+
+    set_store("todos", lambda todo: todo["id"] % 2 == 1, "done", True)
+
+    assert [todo.done for todo in store.todos] == [True, False, True]
+
+
+def test_set_store_selector_receives_item_index():
+    store, set_store = create_store({"items": [0, 0, 0, 0]})
+
+    set_store("items", lambda _value, index: index >= 2, lambda value: value + 1)
+
+    assert list(store.items) == [0, 0, 1, 1]
+
+
+def test_set_store_slice_path_updates_a_range():
+    store, set_store = create_store({"items": [0, 0, 0, 0]})
+
+    set_store("items", slice(1, 3), 9)
+
+    assert list(store.items) == [0, 9, 9, 0]
+
+
 # ---------------------------------------------------------------------------
 # create_mutable
 # ---------------------------------------------------------------------------

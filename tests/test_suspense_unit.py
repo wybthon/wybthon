@@ -15,6 +15,8 @@ from wybthon.vnode import h, to_text_vnode
 class FakeResource:
     """Minimal stand-in matching the Resource read/registration protocol."""
 
+    _wyb_getter = True
+
     def __init__(self, is_loading: bool = False, value=None):
         from wybthon.reactivity import Signal
 
@@ -77,6 +79,37 @@ def test_suspense_swaps_to_children_after_resolve(wyb, root_element):
     assert "Loading..." not in texts
 
 
+def test_suspense_retains_primary_mount_and_gates_lifecycle(wyb, root_element):
+    reactivity = wyb["reactivity"]
+    res = FakeResource(is_loading=True)
+    lifecycle = []
+
+    def Content(props):
+        reactivity.on_mount(lambda: lifecycle.append("mount"))
+        reactivity.on_cleanup(lambda: lifecycle.append("cleanup"))
+        return h("p", {}, res)
+
+    handle = wyb["reconciler"].render(
+        Suspense(fallback="Loading...", children=[h(Content, {})]),
+        root_element,
+    )
+    controller = handle._mounted.state
+    primary_id = controller.primary.children[0].subtree.node_id
+    primary_element = wyb["kernel"].get_node(primary_id)
+
+    assert lifecycle == []
+    assert "Loading..." in collect_texts(root_element.element)
+
+    res.resolve("ready")
+
+    assert lifecycle == ["mount"]
+    assert primary_element in root_element.element.childNodes
+    assert "ready" in collect_texts(root_element.element)
+
+    handle.dispose()
+    assert lifecycle == ["mount", "cleanup"]
+
+
 def test_suspense_renders_children_when_already_resolved(wyb, root_element):
     vdom = wyb["reconciler"]
     res = FakeResource(is_loading=False, value="ready-data")
@@ -116,6 +149,14 @@ def test_suspense_callable_fallback(wyb, root_element):
         root_element,
     )
     assert "custom loading" in collect_texts(root_element.element)
+
+
+def test_suspense_callable_children_is_an_explicit_slot(wyb, root_element):
+    wyb["reconciler"].render(
+        Suspense(children=lambda: h("p", {}, "slotted")),
+        root_element,
+    )
+    assert "slotted" in collect_texts(root_element.element)
 
 
 def test_suspense_normalize_single_child(wyb, root_element):

@@ -8,7 +8,7 @@ Common use cases include modals, tooltips, and toast notifications.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Union
 
 from .reactivity import on_cleanup, on_mount
 from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
@@ -18,7 +18,7 @@ __all__ = ["Portal"]
 
 def _PortalComponent(props: Any) -> Any:
     """Internal stateful component that mounts children into another container."""
-    portal_tree: List[Optional[VNode]] = [None]
+    portal_tree: List[Any] = [None]
 
     def _resolve_container_id(container: Any) -> int:
         from .dom import Element
@@ -42,12 +42,11 @@ def _PortalComponent(props: Any) -> Any:
         new_tree = Fragment(*children)
 
         old_tree = portal_tree[0]
-        portal_tree[0] = new_tree
 
         if old_tree is None:
-            mount(new_tree, container_id)
+            portal_tree[0] = mount(new_tree, container_id)
         else:
-            patch(old_tree, new_tree, container_id)
+            portal_tree[0] = patch(old_tree, new_tree, container_id)
 
     on_mount(_do_render)
 

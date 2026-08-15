@@ -18,12 +18,10 @@ Together they let you split big apps into smaller chunks and present a polished 
 
 ## Suspense
 
-`Suspense` watches its descendants for any tracked async work (typically a `create_resource` that hasn't resolved). While anything is pending, it renders `fallback`. Once everything resolves, it swaps to the resolved tree.
+`Suspense` watches its descendants for any tracked async work, typically a `create_resource` that hasn't resolved. Primary content mounts once in a retained region. While anything is pending, Wybthon moves that region to a detached fragment and renders `fallback`. Once everything resolves, it moves the same DOM and owners back. Component state isn't recreated, and initial effects and `on_mount` callbacks are held until the first reveal.
 
 ```python
-from wybthon import (
-    Suspense, component, create_resource, create_signal,
-)
+from wybthon import Suspense, component, create_resource, create_signal, expr
 from wybthon.html import div, p, span
 
 
@@ -36,8 +34,8 @@ def UserCard(id):
     user = create_resource(id, fetch_user)
 
     return div(
-        p("Name: ", span(lambda: user()["name"])),
-        p("Email: ", span(lambda: user()["email"])),
+        p("Name: ", span(expr(lambda: user()["name"]))),
+        p("Email: ", span(expr(lambda: user()["email"]))),
     )
 
 
@@ -53,6 +51,8 @@ def Profile():
 - The `Suspense` boundary catches any pending resources in its subtree.
 - `fallback` accepts a callable so the placeholder can stay reactive too.
 - Resources resolve independently; `Suspense` waits for *all* of them.
+- Sibling boundaries inside `SuspenseList` prepare in parallel. Reveal
+  ordering changes visibility, not when their work starts.
 
 ### Nesting boundaries
 

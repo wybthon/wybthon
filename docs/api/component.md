@@ -70,9 +70,10 @@ h(Counter, {"initial": 5})
 
 #### Proxy mode
 
-When the component declares a single positional parameter with no
-default, the decorator passes the underlying `ReactiveProps` proxy
-directly:
+When the component declares one required parameter named `props` or
+annotated as `ReactiveProps`, the decorator passes the underlying proxy
+directly. A different required name is a named prop accessor, which avoids
+signature ambiguity:
 
 ```python
 @component

@@ -18,6 +18,11 @@ The `set_store` setter supports several calling conventions:
 - `set_store("key", fn)`. Functional update (fn receives current value).
 - `set_store("a", "b", value)`. Nested path.
 - `set_store("a", 0, "done", True)`. Path with list index.
+- `set_store("items", predicate, "done", True)`. Update each dict or
+  list entry whose predicate returns true. A predicate may accept
+  `(value)` or `(value, key_or_index)`.
+- `set_store("items", slice(1, 4), value)`. Update a list range. Lists,
+  tuples, and sets of keys are also valid path selectors.
 - `set_store(produce(fn))`. Batch mutations via produce.
 - `set_store({"a": 1, "b": 2})`. Update multiple top-level keys.
 - `set_store(fn)`. Functional update on the entire store (fn receives raw data).
@@ -30,6 +35,10 @@ The `set_store` setter supports several calling conventions:
 
 - `reconcile(data, key="id")`. Create a reconcile marker for `set_store`: the new data is **diffed** into the existing state so only changed paths notify. List items are matched by `key`, preserving proxy identity across updates (important for `For`).
 - `unwrap(value)`. Return the raw data underneath a store proxy without tracking. Plain values pass through unchanged.
+
+Iteration, membership checks, and `len()` on store objects subscribe to
+structural changes. Adding or removing a key therefore reruns only the
+computations that observed the key set.
 
 ```python
 set_store("todos", reconcile(fetched_todos))

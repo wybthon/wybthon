@@ -4,7 +4,7 @@ Follow these steps to run the demo and start hacking on Wybthon.
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - A modern browser
 
 ## Run the demo (no install)
@@ -62,7 +62,7 @@ def Hello(name="world"):
 
 tree = Hello(name="Python")
 container = Element("body", existing=True)
-render(tree, container)
+handle = render(tree, container)
 ```
 
 Stateful component with signals:
@@ -89,8 +89,12 @@ def Counter(initial=0):
 
 tree = h(Counter, {"initial": 5})
 container = Element("body", existing=True)
-render(tree, container)
+handle = render(tree, container)
 ```
+
+`render` returns a mount handle. Call `handle.update(next_tree)` to patch
+it directly or `handle.dispose()` to remove the DOM and all owned reactive
+and async work.
 
 !!! tip "Why `span(count)` instead of `f'Count: {count()}'`?"
     Reading `count()` eagerly at setup captures the current value

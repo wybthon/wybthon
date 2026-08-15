@@ -17,7 +17,7 @@ fallbacks show while loading (`tail=None | "collapsed" | "hidden"`).
 #### Usage
 
 ```python
-from wybthon import Suspense, component, create_resource, create_signal
+from wybthon import Suspense, component, create_resource, create_signal, expr
 from wybthon.html import div, p, span
 
 
@@ -29,7 +29,7 @@ async def fetch_user(id_: int) -> dict:
 def UserCard(id):
     user = create_resource(id, fetch_user)
     return div(
-        p("Name: ", span(lambda: user()["name"])),
+        p("Name: ", span(expr(lambda: user()["name"]))),
     )
 
 
@@ -42,7 +42,9 @@ def Profile():
     )
 ```
 
-- `fallback` is a callable so it can stay reactive too.
+- Primary content mounts once in a retained region. Pending boundaries move
+  that region off-DOM and reveal the same nodes and owners later.
+- Initial user effects and `on_mount` callbacks are gated until reveal.
 - The boundary waits for **all** pending resources in its subtree.
 
 #### See also

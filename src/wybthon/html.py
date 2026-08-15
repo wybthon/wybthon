@@ -18,7 +18,9 @@ Children are positional arguments and props are keyword arguments.
 Prop name mapping (Python keyword to HTML attribute):
 
 - `class_` → `class` (the canonical reserved-word workaround).
-- `html_for` → `for` (Python reserved word).
+- `for_` → `for` (the standard trailing-underscore convention).
+- Any other trailing underscore is removed, so ``async_=True`` emits
+  the ``async`` prop.
 - All other kwargs pass through unchanged.
 
 Each helper exported here (e.g., `div`, `p`, `button`, `input_`) is a
@@ -107,8 +109,8 @@ __all__ = [
 def _process_props(kwargs: dict) -> dict:
     """Convert Python keyword arguments to a VNode props dict.
 
-    Maps the reserved-word workarounds `class_` to `class` and
-    `html_for` to `for`. All other keys pass through unchanged.
+    Removes one trailing underscore from Python keyword workarounds.
+    All other keys pass through unchanged.
 
     Args:
         kwargs: Keyword arguments captured from an element helper.
@@ -119,10 +121,8 @@ def _process_props(kwargs: dict) -> dict:
     """
     props: dict = {}
     for key, value in kwargs.items():
-        if key == "class_":
-            props["class"] = value
-        elif key == "html_for":
-            props["for"] = value
+        if key.endswith("_"):
+            props[key[:-1]] = value
         else:
             props[key] = value
     return props

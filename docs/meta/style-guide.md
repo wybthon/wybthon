@@ -56,9 +56,8 @@ def map_array(source, map_fn):
         source: A zero-arg getter that returns the current list. Tracking
             is established when the returned getter is read inside a
             reactive computation.
-        map_fn: Called as ``map_fn(item_getter, index_getter)`` for each
-            unique item. ``item_getter()`` returns the item; ``index_getter()``
-            returns its current position.
+        map_fn: Called as ``map_fn(item, index_getter)`` for each unique
+            item. ``index_getter()`` returns its current position.
 
     Returns:
         A zero-arg getter that, when read, returns the mapped list.
@@ -69,7 +68,7 @@ def map_array(source, map_fn):
     Example:
         ```python
         items, set_items = create_signal(["A", "B", "C"])
-        labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+        labels = map_array(items, lambda item, idx: f"{idx()}: {item}")
         # labels() == ["0: A", "1: B", "2: C"]
         ```
     """
@@ -133,7 +132,7 @@ scopes are disposed automatically when items leave the source list.
 Example:
     ```python
     items, set_items = create_signal(["A", "B"])
-    labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+    labels = map_array(items, lambda item, idx: f"{idx()}: {item}")
     ```
 """
 ```

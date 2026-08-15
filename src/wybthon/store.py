@@ -67,7 +67,7 @@ class _StoreNode:
     by children) controls whether wrapped values are writable proxies.
     """
 
-    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_mutable")
+    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_mutable", "_structure")
 
     def __init__(self, raw: Any, mutable: bool = False) -> None:
         """Wrap `raw` in an empty signal/child cache."""
@@ -76,6 +76,7 @@ class _StoreNode:
         object.__setattr__(self, "_children", {})
         object.__setattr__(self, "_proxy", None)
         object.__setattr__(self, "_mutable", mutable)
+        object.__setattr__(self, "_structure", Signal(0, equals=False))
 
     def _get_signal(self, key: Any) -> Signal:
         signals: Dict[Any, Signal] = object.__getattribute__(self, "_signals")
@@ -115,6 +116,7 @@ class _StoreNode:
         raw = object.__getattribute__(self, "_raw")
         signals: Dict[Any, Signal] = object.__getattribute__(self, "_signals")
         children: Dict[Any, _StoreNode] = object.__getattribute__(self, "_children")
+        added_key = isinstance(raw, dict) and key not in raw
 
         if isinstance(raw, dict):
             raw[key] = value
@@ -134,12 +136,17 @@ class _StoreNode:
                 child_node._replace_raw(value)
             else:
                 children.pop(key, None)
+        if added_key:
+            structure: Signal = object.__getattribute__(self, "_structure")
+            structure.set(structure.peek() + 1)
 
     def _replace_raw(self, new_raw: Any) -> None:
         """Replace the underlying raw data and update all affected signals."""
         signals: Dict[Any, Signal] = object.__getattribute__(self, "_signals")
         children: Dict[Any, _StoreNode] = object.__getattribute__(self, "_children")
         object.__setattr__(self, "_raw", new_raw)
+        structure: Signal = object.__getattribute__(self, "_structure")
+        structure.set(structure.peek() + 1)
 
         if isinstance(new_raw, dict):
             keys = set(new_raw.keys()) | set(signals.keys())
@@ -259,16 +266,19 @@ class _StoreProxy:
 
     def __contains__(self, key: Any) -> bool:
         node: _StoreNode = object.__getattribute__(self, "_node")
+        object.__getattribute__(node, "_structure").get()
         raw = object.__getattribute__(node, "_raw")
         return key in raw
 
     def __iter__(self):
         node: _StoreNode = object.__getattribute__(self, "_node")
+        object.__getattribute__(node, "_structure").get()
         raw = object.__getattribute__(node, "_raw")
         return iter(raw)
 
     def __len__(self) -> int:
         node: _StoreNode = object.__getattribute__(self, "_node")
+        object.__getattribute__(node, "_structure").get()
         raw = object.__getattribute__(node, "_raw")
         return len(raw)
 
@@ -313,9 +323,7 @@ class _StoreListProxy:
             yield self[i]
 
     def __contains__(self, item: Any) -> bool:
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw: list = object.__getattribute__(node, "_raw")
-        return item in raw
+        return any(value == item for value in self)
 
     def __repr__(self) -> str:
         node: _StoreNode = object.__getattribute__(self, "_node")
@@ -360,6 +368,65 @@ def _resolve_path(node: _StoreNode, path: Sequence[Any]) -> Tuple[_StoreNode, An
         if not isinstance(raw, (dict, list)):
             raise KeyError(f"Cannot traverse into non-container at path segment {segment!r}")
     return current, path[-1]
+
+
+def _selector_keys(node: _StoreNode, selector: Any) -> list:
+    """Expand one store path selector into concrete keys or indexes."""
+    raw = object.__getattribute__(node, "_raw")
+    if isinstance(selector, slice):
+        if not isinstance(raw, list):
+            raise TypeError("slice store selectors require a list")
+        return list(range(len(raw)))[selector]
+    if isinstance(selector, (list, tuple, set, frozenset)):
+        return list(selector)
+    if not callable(selector):
+        return [selector]
+
+    if isinstance(raw, dict):
+        entries = list(raw.items())
+    elif isinstance(raw, list):
+        entries = list(enumerate(raw))
+    else:
+        raise KeyError("callable store selectors require a dict or list path")
+
+    import inspect
+
+    try:
+        parameters = inspect.signature(selector).parameters.values()
+        positional = [
+            parameter
+            for parameter in parameters
+            if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        takes_key = len(positional) >= 2 or any(
+            parameter.kind is inspect.Parameter.VAR_POSITIONAL for parameter in parameters
+        )
+    except (TypeError, ValueError):
+        takes_key = False
+    if takes_key:
+        return [key for key, value in entries if selector(value, key)]
+    return [key for key, value in entries if selector(value)]
+
+
+def _apply_store_path(node: _StoreNode, path: Sequence[Any], final: Any) -> None:
+    """Apply a value across concrete, keyed, sliced, or predicate paths."""
+    segment = path[0]
+    for key in _selector_keys(node, segment):
+        if len(path) > 1:
+            child = node._get_child(key)
+            raw = object.__getattribute__(child, "_raw")
+            if not isinstance(raw, (dict, list)):
+                raise KeyError(f"Cannot traverse into non-container at path segment {key!r}")
+            _apply_store_path(child, path[1:], final)
+            continue
+
+        if isinstance(final, _ReconcileResult):
+            target = node._get_child(key)
+            final._apply(target)
+            node._set_value(key, object.__getattribute__(target, "_raw"))
+            continue
+        old = node._get_signal(key)._value
+        node._set_value(key, final(old) if callable(final) else final)
 
 
 class _StoreSetter:
@@ -415,41 +482,8 @@ class _StoreSetter:
         if not path_parts:
             raise TypeError("set_store() requires a path when called with two or more arguments")
 
-        if isinstance(final, _ReconcileResult):
-            if len(path_parts) == 1:
-                target = self._node._get_child(path_parts[0])
-            else:
-                parent_node, last_key = _resolve_path(self._node, path_parts)
-                target = parent_node._get_child(last_key)
-            final._apply(target)
-            # The parent's raw container holds a reference to the child's
-            # raw value, which reconcile may have swapped out.
-            if len(path_parts) == 1:
-                self._node._set_value(path_parts[0], object.__getattribute__(target, "_raw"))
-            else:
-                parent_node._set_value(last_key, object.__getattribute__(target, "_raw"))
-            return
-
-        if len(path_parts) == 1:
-            key = path_parts[0]
-            if callable(final):
-                sig = self._node._get_signal(key)
-                old = sig._value
-                new_val = final(old)
-                self._node._set_value(key, new_val)
-            else:
-                self._node._set_value(key, final)
-            self._update_length_if_list()
-            return
-
-        parent_node, last_key = _resolve_path(self._node, path_parts)
-        if callable(final):
-            sig = parent_node._get_signal(last_key)
-            old = sig._value
-            new_val = final(old)
-            parent_node._set_value(last_key, new_val)
-        else:
-            parent_node._set_value(last_key, final)
+        _apply_store_path(self._node, path_parts, final)
+        self._update_length_if_list()
 
     def _update_length_if_list(self) -> None:
         raw = object.__getattribute__(self._node, "_raw")

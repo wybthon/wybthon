@@ -198,10 +198,10 @@ def test_unmount_disposes_component_context(wyb, root_element):
         return render
 
     tree = h(MyComp, {})
-    vdom.render(tree, root_element)
+    handle = vdom.render(tree, root_element)
     assert cleanup_log == []
 
-    vdom.unmount(tree)
+    handle.dispose()
     assert "comp_cleanup" in cleanup_log
     assert "effect_cleanup" in cleanup_log
 

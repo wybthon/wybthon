@@ -6,7 +6,7 @@ A short tour of how Wybthon thinks. Read this once and the rest of the docs will
 
 1. **Run-once components.** Function components execute exactly once at mount. They build a virtual DOM tree and return it. The body never re-runs because a prop or signal changed.
 2. **Fine-grained reactivity.** Updates flow through small, isolated subscriptions called *reactive holes*. Only the DOM nodes that depend on a changed signal are patched.
-3. **Props are accessors.** Every prop a component receives is a zero-argument callable. Calling it inside an effect or as a child creates a subscription; reading it inside the body without an effect captures only the current value.
+3. **Props are accessors.** Every named prop a component receives is a zero-argument callable. Calling it inside an effect or passing it as a child creates a subscription; reading it inside the body without an effect captures only the current value. Composite render expressions use `expr(...)` or `dynamic(...)`, so ordinary callbacks remain application data.
 4. **Ownership tree, not parent re-renders.** Effects, memos, cleanups, and context all attach to the *owner* established when a component is mounted. Disposing the owner cleans everything up; there's no "render cycle" to coordinate.
 
 ## The data flow
@@ -56,7 +56,7 @@ def Greeting(name):
 ```
 
 - `name` arrives as a callable. Passing it into `p(...)` creates a reactive hole, so when the parent updates `name`, only that text node changes.
-- Reading `name()` inside the body would freeze the value at mount. Read it inside an effect, memo, or callable child to stay reactive.
+- Reading `name()` inside the body would freeze the value at mount. Pass the accessor into the tree, or read it inside an effect, memo, `expr(...)`, or `dynamic(...)` to stay reactive.
 
 See [Components][wybthon.component] for the full prop story.
 

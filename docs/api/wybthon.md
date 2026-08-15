@@ -10,11 +10,12 @@
 - Components
   - `component`, `forward_ref`, `ErrorBoundary`, `Suspense`
 - Reactivity
-  - `create_signal` (optional `equals=`; the setter also accepts an updater function), `create_effect`, `create_render_effect`, `create_computed`, `create_memo`, `create_deferred`, `batch`, `untrack`, `on`, `create_root`, `create_selector`
+  - `create_signal` (optional `equals=`; the setter also accepts an updater function), `create_effect`, `create_render_effect`, `create_computed`, `create_memo`, `create_deferred`, `batch`, `untrack`, `on`, `create_root`, `create_selector`, `start_transition`, `use_transition`
   - `on_mount`, `on_cleanup`, `create_unique_id`, `catch_error`
   - `ReactiveProps`, `get_props`, `children` (memoized children helper), `get_owner`, `run_with_owner`
-  - `Resource`, `create_resource`
+  - `Resource`, `ResourceFetcherInfo`, `create_resource`
   - `merge_props`, `split_props`, `map_array`, `index_array`
+  - `expr`, `Runtime`, `MountHandle`, `create_runtime`
   - Types: `Signal`, `Computed` (for type hints; create instances via `create_signal` / `create_memo`)
 - Context
   - `Context`, `create_context`, `use_context`, `Provider`

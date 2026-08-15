@@ -49,6 +49,8 @@ Wybthon is a client-side SPA framework that lets you build interactive web appli
   `Match`, and `Dynamic` for declarative rendering.
 - **Error boundaries and Suspense:** Graceful error handling and async
   loading states.
+- **Owned runtime:** `render` returns a disposable mount handle, VNodes are
+  reusable declarations, and async tasks follow the lifetime of their tree.
 - **Dev server with hot reload:** `wyb dev` launches a local server
   with SSE-based auto-reload.
 

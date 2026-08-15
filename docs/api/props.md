@@ -21,9 +21,15 @@ helpers here document the semantics and edge cases.
 | `key` | Identity hint for keyed list reconciliation. |
 | `ref` | A [`Ref`][wybthon.Ref] populated when the underlying element is mounted. |
 | `class_` / `className` | Both map to the DOM `class` attribute. |
-| `for_` / `html_for` | Both map to the DOM `for` attribute. |
+| `for_` | Maps to the DOM `for` attribute. HTML helper keywords remove one trailing underscore. |
 | `on_*` | Event handlers; see [`events`][wybthon.events]. |
 | `style` | A dict of CSS properties or a string. |
+
+Live form and media state, including `value`, `checked`, `selected`,
+`disabled`, `multiple`, `muted`, `required`, and `readOnly`, is assigned
+as DOM properties. Boolean values therefore remain booleans and don't
+become string attributes. Use `expr(...)` for derived reactive props;
+ordinary callbacks aren't invoked implicitly.
 
 #### See also
 

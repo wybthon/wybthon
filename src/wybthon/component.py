@@ -20,9 +20,9 @@ Authoring modes:
 - **Named accessor mode**: used when the signature has zero args, kwargs
   with defaults, or `**kwargs`. Each parameter becomes a reactive
   accessor for the prop of the same name.
-- **Proxy mode**: used when the signature has exactly one positional-only
-  or positional-or-keyword parameter with no default and no
-  `*args`/`**kwargs`. The single parameter receives the full
+- **Proxy mode**: used when the signature has exactly one required
+  parameter named ``props`` (or annotated as ``ReactiveProps``). The
+  parameter receives the full
   [`ReactiveProps`][wybthon.ReactiveProps] proxy.
 
 Example:
@@ -46,7 +46,7 @@ Example:
 When you need the underlying `ReactiveProps` proxy (e.g., to iterate
 keys or forward unknown props), call
 [`get_props`][wybthon.reactivity.get_props] from inside the component
-body, or declare the component with a single positional parameter
+body, or declare the component with a required parameter named ``props``
 (proxy mode).
 
 Components are expected to return a [`VNode`][wybthon.VNode]. Use
@@ -79,10 +79,8 @@ def _build_param_plan(
 ) -> Tuple[List[str], Dict[str, Any], bool]:
     """Inspect `fn` once and produce a `(param_names, defaults, proxy_mode)` plan.
 
-    `proxy_mode` is True when the function takes a single positional or
-    positional-or-keyword parameter with no default; in that case the
-    decorator passes the `ReactiveProps` proxy directly instead of
-    destructuring kwargs.
+    ``proxy_mode`` is true when the function explicitly asks for a props
+    proxy through its parameter name or annotation.
 
     Args:
         fn: The function to inspect.
@@ -112,7 +110,12 @@ def _build_param_plan(
             if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
                 positional_no_default += 1
 
-    proxy_mode = not has_var and positional_no_default == 1 and len(param_names) == 1
+    proxy_mode = False
+    if not has_var and positional_no_default == 1 and len(param_names) == 1:
+        parameter = sig.parameters[param_names[0]]
+        annotation = parameter.annotation
+        annotation_name = annotation if isinstance(annotation, str) else getattr(annotation, "__name__", "")
+        proxy_mode = parameter.name == "props" or annotation_name == "ReactiveProps"
     return param_names, defaults, proxy_mode
 
 

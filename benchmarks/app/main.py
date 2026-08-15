@@ -20,7 +20,7 @@ from wybthon.dom import Element
 from wybthon.flow import For
 from wybthon.reactivity import batch, create_selector, create_signal
 from wybthon.reconciler import render
-from wybthon.vnode import h
+from wybthon.vnode import expr, h
 
 # ---------------------------------------------------------------------------
 # Standard benchmark data (matching js-framework-benchmark exactly)
@@ -120,11 +120,11 @@ def build_data(count):
 
 
 def _row(item, idx):
-    d = item()
+    d = item
     iid = d["id"]
     return h(
         "tr",
-        {"class": lambda: "danger" if _is_selected(iid) else ""},
+        {"class": expr(lambda: "danger" if _is_selected(iid) else "")},
         h("td", {"class": "col-md-1"}, str(iid)),
         h(
             "td",

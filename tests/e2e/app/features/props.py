@@ -2,7 +2,7 @@
 
 from app.testkit import tid
 
-from wybthon import button, component, create_signal, div, dynamic, h2, input_, span
+from wybthon import button, component, create_signal, div, dynamic, expr, h2, input_, span
 
 _COLORS = {"teal": "red", "red": "blue", "blue": "teal"}
 _STATES = {"idle": "busy", "busy": "done", "done": "idle"}
@@ -19,15 +19,15 @@ def Page():
     return div(
         h2("Props"),
         div(
-            span("status", class_=lambda: "pill danger" if danger() else "pill", **tid("props-class")),
+            span("status", class_=expr(lambda: "pill danger" if danger() else "pill"), **tid("props-class")),
             button("toggle danger", on_click=lambda e: set_danger(not danger()), **tid("props-class-btn")),
         ),
         div(
-            span("colored", style=lambda: {"color": color()}, **tid("props-style")),
+            span("colored", style=expr(lambda: {"color": color()}), **tid("props-style")),
             button("cycle color", on_click=lambda e: set_color(_COLORS[color()]), **tid("props-style-btn")),
         ),
         div(
-            span("attr", dataset=lambda: {"state": state()}, **tid("props-attr")),
+            span("attr", dataset=expr(lambda: {"state": state()}), **tid("props-attr")),
             button("cycle state", on_click=lambda e: set_state(_STATES[state()]), **tid("props-attr-btn")),
         ),
         div(

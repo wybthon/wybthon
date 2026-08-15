@@ -20,25 +20,25 @@ from wybthon.vnode import h
 
 def test_map_array_initial_mapping():
     items, _ = create_signal(["A", "B", "C"])
-    mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+    mapped = map_array(items, lambda item, idx: f"{idx()}: {item}")
     assert mapped() == ["0: A", "1: B", "2: C"]
 
 
 def test_map_array_empty_source():
     items, _ = create_signal([])
-    mapped = map_array(items, lambda item, idx: item())
+    mapped = map_array(items, lambda item, idx: item)
     assert mapped() == []
 
 
 def test_map_array_none_source():
     items, _ = create_signal(None)
-    mapped = map_array(items, lambda item, idx: item())
+    mapped = map_array(items, lambda item, idx: item)
     assert mapped() == []
 
 
 def test_map_array_reactive_update():
     items, set_items = create_signal(["X", "Y"])
-    mapped = map_array(items, lambda item, idx: item())
+    mapped = map_array(items, lambda item, idx: item)
     assert mapped() == ["X", "Y"]
 
     set_items(["A", "B", "C"])
@@ -48,7 +48,7 @@ def test_map_array_reactive_update():
 def test_map_array_item_removal():
     a, b, c = object(), object(), object()
     items, set_items = create_signal([a, b, c])
-    mapped = map_array(items, lambda item, idx: id(item()))
+    mapped = map_array(items, lambda item, idx: id(item))
 
     initial = mapped()
     assert len(initial) == 3
@@ -68,7 +68,7 @@ def test_map_array_item_reorder_preserves_identity():
 
     def map_fn(item, idx):
         call_count[0] += 1
-        return id(item())
+        return id(item)
 
     mapped = map_array(items, map_fn)
     initial = mapped()
@@ -114,7 +114,7 @@ def test_map_array_disposes_removed_items():
 
     def map_fn(item, idx):
         on_cleanup(lambda _i=idx(): disposed.append(_i))
-        return item()
+        return item
 
     result = create_root(lambda dispose: map_array(items, map_fn))
     result()
@@ -133,7 +133,7 @@ def test_map_array_disposes_all_on_empty():
 
     def map_fn(item, idx):
         on_cleanup(lambda: disposed.__setitem__(0, disposed[0] + 1))
-        return item()
+        return item
 
     result = create_root(lambda dispose: map_array(items, map_fn))
     result()
@@ -303,7 +303,7 @@ def test_map_array_in_component(wyb, root_element):
     labels = {id(a): "alpha", id(b): "beta", id(c): "gamma"}
 
     def App(props):
-        mapped = reactivity.map_array(items, lambda item, idx: labels.get(id(item()), "?"))
+        mapped = reactivity.map_array(items, lambda item, idx: labels.get(id(item), "?"))
 
         def render():
             return h("ul", {}, *[h("li", {}, v) for v in mapped()])

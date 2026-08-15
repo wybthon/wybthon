@@ -132,17 +132,17 @@ def test_show_callable_fallback(wyb, root_element):
 
 
 def test_for_returns_vnode():
-    result = For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item()))
+    result = For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item))
     assert isinstance(result, VNode)
 
 
 def test_for_empty_list():
-    result = For(each=[], children=lambda item, idx: h("li", {}, item()))
+    result = For(each=[], children=lambda item, idx: h("li", {}, item))
     assert isinstance(result, VNode)
 
 
 def test_for_callable_each():
-    result = For(each=lambda: [1, 2], children=lambda item, idx: h("li", {}, str(item())))
+    result = For(each=lambda: [1, 2], children=lambda item, idx: h("li", {}, str(item)))
     assert isinstance(result, VNode)
 
 
@@ -154,7 +154,7 @@ def test_for_callable_each():
 def test_for_renders_items(wyb, root_element):
     vdom = wyb["reconciler"]
     vdom.render(
-        For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item())),
+        For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item)),
         root_element,
     )
     texts = collect_texts(root_element.element)
@@ -166,7 +166,7 @@ def test_for_renders_items(wyb, root_element):
 def test_for_empty_renders_nothing(wyb, root_element):
     vdom = wyb["reconciler"]
     vdom.render(
-        For(each=[], children=lambda item, idx: h("li", {}, item())),
+        For(each=[], children=lambda item, idx: h("li", {}, item)),
         root_element,
     )
     texts = collect_texts(root_element.element)
@@ -179,7 +179,7 @@ def test_for_index_getter(wyb, root_element):
 
     def mapper(item, idx):
         indices.append(idx())
-        return h("li", {}, str(item()))
+        return h("li", {}, str(item))
 
     vdom.render(For(each=[10, 20, 30], children=mapper), root_element)
     assert indices == [0, 1, 2]
@@ -192,7 +192,7 @@ def test_for_reactive_list(wyb, root_element):
 
     def App(props):
         def render():
-            return For(each=items, children=lambda item, idx: h("li", {}, item()))
+            return For(each=items, children=lambda item, idx: h("li", {}, item))
 
         return render
 
@@ -208,7 +208,7 @@ def test_for_reactive_list(wyb, root_element):
 def test_for_fallback(wyb, root_element):
     vdom = wyb["reconciler"]
     vdom.render(
-        For(each=[], children=lambda item, idx: h("li", {}, item()), fallback=h("p", {}, "empty")),
+        For(each=[], children=lambda item, idx: h("li", {}, item), fallback=h("p", {}, "empty")),
         root_element,
     )
     texts = collect_texts(root_element.element)

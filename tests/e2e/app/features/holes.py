@@ -2,7 +2,7 @@
 
 from app.testkit import tid
 
-from wybthon import button, component, create_signal, div, dynamic, em, h2, input_, p, span, strong, untrack
+from wybthon import button, component, create_signal, div, dynamic, em, expr, h2, input_, p, span, strong, untrack
 
 
 @component
@@ -50,12 +50,12 @@ def Page():
             span(dynamic(lambda: f"Hello, {first()} {last()}!"), **tid("hole-greeting")),
         ),
         div(
-            p("node: ", span(node_hole, **tid("hole-node"))),
+            p("node: ", span(expr(node_hole), **tid("hole-node"))),
             button("cycle", on_click=next_mode, **tid("hole-node-cycle")),
         ),
         div(
-            p("x: ", span(x_view, **tid("hole-x")), " runs: ", span(x_runs, **tid("hole-x-runs"))),
-            p("y: ", span(y_view, **tid("hole-y")), " runs: ", span(y_runs, **tid("hole-y-runs"))),
+            p("x: ", span(expr(x_view), **tid("hole-x")), " runs: ", span(x_runs, **tid("hole-x-runs"))),
+            p("y: ", span(expr(y_view), **tid("hole-y")), " runs: ", span(y_runs, **tid("hole-y-runs"))),
             button("inc x", on_click=lambda e: set_x(x() + 1), **tid("hole-x-inc")),
             button("inc y", on_click=lambda e: set_y(y() + 1), **tid("hole-y-inc")),
         ),

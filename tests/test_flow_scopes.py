@@ -14,15 +14,15 @@ from wybthon.vnode import h
 # ---------------------------------------------------------------------------
 
 
-def test_for_item_getter_is_signal(wyb, root_element):
-    """For provides signal-backed item getters."""
+def test_for_item_is_direct_value(wyb, root_element):
+    """For provides direct item values."""
     vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B", "C"])
-    captured_getters: list = []
+    captured_items: list = []
 
     def mapper(item, idx):
-        captured_getters.append(item)
-        return h("li", {}, item())
+        captured_items.append(item)
+        return h("li", {}, item)
 
     def App(props):
         def render():
@@ -31,10 +31,7 @@ def test_for_item_getter_is_signal(wyb, root_element):
         return render
 
     vdom.render(h(App, {}), root_element)
-    assert len(captured_getters) == 3
-    assert captured_getters[0]() == "A"
-    assert captured_getters[1]() == "B"
-    assert captured_getters[2]() == "C"
+    assert captured_items == ["A", "B", "C"]
 
 
 def test_for_index_getter_is_signal(wyb, root_element):

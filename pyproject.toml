@@ -10,7 +10,7 @@ authors = [
   { name = "Owen Carey" }
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
@@ -18,7 +18,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -69,9 +68,13 @@ where = ["src"]
 
 [tool.setuptools]
 license-files = ["LICENSE*"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+wybthon = ["py.typed"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 120
 
 [tool.ruff.lint]
@@ -99,7 +102,7 @@ convention = "google"
 
 [tool.black]
 line-length = 120
-target-version = ['py39']
+target-version = ['py310']
 
 # ── Semantic Release ────────────────────────────────────────────────
 

@@ -70,6 +70,7 @@ nav:
     - Primitives: concepts/primitives.md
     - Reactivity: concepts/reactivity.md
     - Lifecycle and Ownership: concepts/lifecycle.md
+    - Runtime and Mounts: concepts/runtime.md
     - Virtual DOM: concepts/vdom.md
     - Router: concepts/router.md
     - Context: concepts/context.md
@@ -104,6 +105,7 @@ nav:
     - Component: api/component.md
     - VNode: api/vnode.md
     - Reconciler: api/reconciler.md
+    - Runtime: api/runtime.md
     - Kernel: api/kernel.md
     - Template: api/template.md
     - Props: api/props.md
@@ -155,6 +157,7 @@ plugins:
             summary: true
             filters: ["!^_"]
   - social:
+      enabled: !ENV [CARDS, true]
       cards_layout_options:
         background_color: "#ffffff"
         color: "#000000"

@@ -64,7 +64,7 @@ def ForDemo():
         p(
             "For maintains per-item reactive scopes keyed by identity. "
             "The mapping callback runs once per unique item and receives "
-            "signal-backed item() and index() getters."
+            "the item directly and a signal-backed index() getter."
         ),
         div(
             button("Add item", on_click=add_item),
@@ -74,7 +74,8 @@ def ForDemo():
         ul(
             For(
                 each=items,
-                children=lambda item, idx: li(dynamic(lambda: f"{idx()}: {item()}"), key=idx()),
+                key=lambda item: item,
+                children=lambda item, idx: li(dynamic(lambda: f"{idx()}: {item}"), key=item),
             ),
         ),
         class_="demo-section",

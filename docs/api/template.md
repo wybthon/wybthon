@@ -6,17 +6,17 @@
 
 `template` implements the template-based mounting fast path. When the
 reconciler mounts a host-element subtree, it first asks `build_plan` to
-serialize the static skeleton of the tree into a single HTML string
+match or compile an immutable `MountBlueprint` for the static skeleton
 (with text content hoisted out). The skeleton is registered with the
 rendering kernel once, parsed by the browser via a `<template>`
 element, and every mount is a single *clone* op. The kernel walks the
 clone in a deterministic pre-order, assigning a dense block of node
 ids, so Python can address every node with no read-backs; text,
-bindings, and dynamic children are then wired by id in the same
+bindings, and dynamic children are then wired by occurrence index in the same
 batched commit.
 
 Hoisting text is what makes templates shared: a thousand list rows
-that differ only in their ids and labels serialize to the *same*
+that differ only in their IDs and labels use the *same* blueprint and
 skeleton, so the browser parses it once and clones it a thousand
 times, exactly like SolidJS's compiled templates.
 
@@ -26,11 +26,12 @@ times, exactly like SolidJS's compiled templates.
   of the HTML string directly.
 - Static text serializes as a one-space placeholder; the real value is
   recorded as a `SET_TEXT` binding applied after the clone.
-- Reactive props (getter callables) are recorded as bindings; they're
+- Reactive props (marked accessors and `expr(...)`) are recorded as bindings; they're
   wrapped in per-prop effects after id assignment.
 - Event handlers (`on_*`) are recorded as bindings and registered
   through the kernel's delegated event system (`LISTEN` ops).
-- `value`/`checked` are recorded as DOM-property bindings and assigned
+- Live properties such as `value`, `checked`, `disabled`, and `selected`
+  are recorded as DOM-property bindings and assigned
   post-clone, matching the per-node mount path exactly.
 - Dynamic children (holes, components, fragments) are serialized as
   comment placeholders; the reconciler mounts them at the placeholder

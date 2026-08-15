@@ -64,7 +64,8 @@ def Page():
             ul(
                 For(
                     each=items,
-                    children=lambda item, idx: li(dynamic(lambda: f"{idx()}:{item()}"), key=item()),
+                    key=lambda item: item,
+                    children=lambda item, idx: li(dynamic(lambda: f"{idx()}:{item}"), key=item),
                 ),
                 **tid("flow-for-list"),
             ),

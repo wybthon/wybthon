@@ -79,7 +79,7 @@ def FormsPage():
         div(
             form(
                 div(
-                    label("Name", html_for="name-input"),
+                    label("Name", for_="name-input"),
                     input_(
                         id="name-input",
                         type="text",
@@ -94,7 +94,7 @@ def FormsPage():
                     class_="form-group",
                 ),
                 div(
-                    label("Email", html_for="email-input"),
+                    label("Email", for_="email-input"),
                     input_(
                         id="email-input",
                         type="email",
@@ -113,7 +113,7 @@ def FormsPage():
                     class_="form-group",
                 ),
                 div(
-                    label("Choice", html_for="choice-select"),
+                    label("Choice", for_="choice-select"),
                     select(
                         option("--", value=""),
                         option("Option A", value="a"),

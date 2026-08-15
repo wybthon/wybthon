@@ -410,6 +410,7 @@ def _load_wybthon():
         "wybthon.error_boundary",
         "wybthon.suspense",
         "wybthon.portal",
+        "wybthon.runtime",
         "wybthon.reconciler",
         "wybthon.flow",
     ):
@@ -434,10 +435,10 @@ class BenchState:
     app would do it.
     """
 
-    def __init__(self, mods, registry):
-        self._registry = registry
+    def __init__(self, mods):
         rx = mods["wybthon.reactivity"]
         h = mods["wybthon.vnode"].h
+        self._expr = mods["wybthon.vnode"].expr
         For = mods["wybthon.flow"].For
         self._rx = rx
         self._h = h
@@ -453,15 +454,16 @@ class BenchState:
             {"class": "table table-hover table-striped test-data"},
             h("tbody", {"id": "tbody"}, For(each=self.data, children=self._row)),
         )
-        mods["wybthon.reconciler"].render(app, self.root)
+        self.handle = mods["wybthon.reconciler"].render(app, self.root)
 
     def _row(self, item, idx):
         h = self._h
-        d = item()
+        expr = self._expr
+        d = item
         iid = d["id"]
         return h(
             "tr",
-            {"class": lambda: "danger" if self._is_selected(iid) else ""},
+            {"class": expr(lambda: "danger" if self._is_selected(iid) else "")},
             h("td", {"class": "col-md-1"}, str(iid)),
             h("td", {"class": "col-md-4"}, h("a", {"on_click": lambda e: self.set_selected(iid)}, d["label"])),
             h(
@@ -496,7 +498,7 @@ class BenchState:
         self.set_data(lambda rows: [r for r in rows if r["id"] != iid])
 
     def cleanup(self):
-        self._registry.pop(self.root.node_id, None)
+        self.handle.dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -601,15 +603,16 @@ _HOLE_TREE_SIZE = 1000
 class _HoleState:
     """State for the hole-vs-rerender microbenchmarks."""
 
-    def __init__(self, mods, registry):
+    def __init__(self, mods):
         self._h = mods["wybthon.vnode"].h
         self._render_fn = mods["wybthon.reconciler"].render
-        self._registry = registry
         self._reactivity = mods["wybthon.reactivity"]
         self.root = mods["wybthon.dom"].Element(node=_Node(tag="div"))
+        self.handle = None
 
     def cleanup(self):
-        self._registry.pop(self.root.node_id, None)
+        if self.handle is not None:
+            self.handle.dispose()
 
 
 def _setup_hole(state):
@@ -621,7 +624,7 @@ def _setup_hole(state):
 
     spans = [state._h("span", {}, getter)]
     spans.extend(state._h("span", {}, f"static-{i}") for i in range(1, n))
-    state._render_fn(state._h("div", {}, *spans), state.root)
+    state.handle = state._render_fn(state._h("div", {}, *spans), state.root)
 
 
 def _setup_rerender(state):
@@ -636,7 +639,7 @@ def _setup_rerender(state):
         return state._h("div", {}, *spans)
 
     state._build = build
-    state._render_fn(build(0), state.root)
+    state.handle = state._render_fn(build(0), state.root)
 
 
 def op_hole_update(state):
@@ -719,18 +722,15 @@ def _summarise(name, times):
 def run_benchmarks(warmup_override=None, iterations=10, include_memory=False, name_filter=None):
     _install_stubs()
     mods = _load_wybthon()
-    registry = mods["wybthon.reconciler"]._container_registry
 
     def _accept(name):
         return name_filter is None or name_filter in name
 
     def _make_state():
-        registry.clear()
-        return BenchState(mods, registry)
+        return BenchState(mods)
 
     def _make_hole_state():
-        registry.clear()
-        return _HoleState(mods, registry)
+        return _HoleState(mods)
 
     results = []
     for name, setup_fn, op_fn, default_warmup in BENCHMARKS:
@@ -769,6 +769,7 @@ def _measure_memory(make_state):
         state2.set_data(state2.build_data(1000))
         state2.set_data([])
         state2.set_selected(None)
+    state2.cleanup()
     cycle_cur, _ = tracemalloc.get_traced_memory()
 
     tracemalloc.stop()

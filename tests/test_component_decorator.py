@@ -123,6 +123,21 @@ def test_proxy_mode_for_single_positional_param():
     assert captured["props"].y() == 2
 
 
+def test_required_named_parameter_is_an_accessor_not_a_props_proxy():
+    """A required prop name no longer ambiguously selects proxy mode."""
+    from wybthon.component import component
+
+    captured = {}
+
+    @component
+    def Greet(name):
+        captured["name"] = name
+
+    Greet({"name": "Ada"})
+    assert callable(captured["name"])
+    assert captured["name"]() == "Ada"
+
+
 # ---------------------------------------------------------------------------
 # Tests — rendering with VDOM stubs
 # ---------------------------------------------------------------------------

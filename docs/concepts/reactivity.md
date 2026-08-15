@@ -93,7 +93,7 @@ its reactive scope is disposed.
 from wybthon import create_signal, map_array, create_effect
 
 items, set_items = create_signal(["A", "B", "C"])
-mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+mapped = map_array(items, lambda item, idx: f"{idx()}: {item}")
 
 create_effect(lambda: print(mapped()))  # ["0: A", "1: B", "2: C"]
 set_items(["B", "C", "D"])             # only "D" runs the mapping
@@ -261,7 +261,7 @@ disposal, the owner is removed from its parent's children list.
 
 #### Resources, cancellation, and Suspense
 
-`create_resource(fetcher)` creates a `Resource`, a callable accessor with tracked `loading`, `error`, `latest`, and `state` properties. Calling `refetch()` starts a new fetch. Calling `cancel()` aborts any in-flight JS fetch (via `AbortController` when available), cancels the Python task, invalidates the current version to ignore late results, and resets `loading`. `mutate(value)` writes the data directly for optimistic updates.
+`create_resource(fetcher)` creates a `Resource`, a callable accessor with tracked `loading`, `error`, `latest`, and `state` properties. Calling `refetch(value)` starts a new fetch and returns its awaitable task. Fetchers may request `info`, which exposes the previous value, the refetch value, and the abort signal. Calling `cancel()` aborts any in-flight JS fetch, cancels the Python task, invalidates the current version to ignore late results, and resets `loading`. Resource tasks belong to their creating owner and are canceled on disposal. `mutate(value)` writes the data directly for optimistic updates.
 
 You can also pass a source signal to automatically refetch when it changes:
 
@@ -281,7 +281,7 @@ res = create_resource(user_id, load_user)
 To render a loading UI declaratively, wrap the UI in `Suspense`. Reading a pending resource inside the boundary registers it automatically; no manual wiring is needed:
 
 ```python
-from wybthon import Suspense, h, create_resource
+from wybthon import Suspense, create_resource, expr, h
 
 async def load_user(signal=None):
     # ... fetch user ...
@@ -291,11 +291,13 @@ res = create_resource(load_user)
 
 view = Suspense(
     fallback=h("p", {}, "Loading user..."),
-    children=lambda: h("pre", {}, lambda: str(res())),
+    children=lambda: h("pre", {}, expr(lambda: str(res()))),
 )
 ```
 
 - Refetches (`state == "refreshing"`) don't re-trigger `Suspense`; the previous data stays readable through the accessor and `latest`, matching SolidJS.
+- `start_transition` and `use_transition` track resource tasks started
+  by transition work and expose a pending accessor until they settle.
 
 ## Next steps
 

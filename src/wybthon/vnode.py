@@ -7,7 +7,7 @@ dependencies, so VNode trees can be constructed and inspected anywhere
 CPython runs.
 
 A `_dynamic` VNode (created via [`dynamic`][wybthon.dynamic] or implicitly
-when a zero-argument callable appears in a child position) represents a
+when a marked accessor appears in a child position) represents a
 **reactive hole**: the reconciler wraps the getter in its own effect that
 updates only the corresponding DOM region when the getter's dependencies
 change. This is the building block for SolidJS-style "setup once, update
@@ -27,41 +27,48 @@ from __future__ import annotations
 
 import inspect
 import weakref
-from types import FunctionType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Union,
-)
-
-if TYPE_CHECKING:
-    from .reactivity import Computation
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, TypeVar, Union
 
 __all__ = [
     "VNode",
     "h",
     "Fragment",
     "dynamic",
+    "expr",
     "is_getter",
 ]
 
 PropsDict = Dict[str, Any]
 ChildType = Union["VNode", str]
+T = TypeVar("T")
+
+
+class Expression(Generic[T]):
+    """Explicit reactive expression used in child and DOM-prop positions.
+
+    Python has no JSX compiler that can distinguish a render expression
+    from an ordinary callback. ``expr`` provides that distinction without
+    changing the callable accessor model used by signals and memos.
+    """
+
+    __slots__ = ("_fn",)
+
+    _wyb_getter = True
+
+    def __init__(self, fn: Callable[[], T]) -> None:
+        self._fn = fn
+
+    def __call__(self) -> T:
+        return self._fn()
 
 
 class VNode:
-    """Virtual node representing an element, text, component, or reactive hole.
+    """Unmounted render description for an element, component, or region.
 
-    Uses `__slots__` for a compact memory layout and faster attribute
-    access, which is meaningful when authoring large lists. Internal
-    attributes (`el`, `subtree`, `render_effect`, `component_ctx`,
-    `_frag_end`) are populated by the reconciler when the VNode is
-    mounted.
+    A VNode contains declaration data only. DOM node IDs, reactive
+    subscriptions, component owners, and mounted children live in the
+    reconciler's ``MountedNode`` objects. Keeping those concerns separate
+    means one VNode may safely be mounted in more than one location.
 
     Attributes:
         tag: Element tag name (`"div"`), special tag (`"_text"`,
@@ -71,26 +78,9 @@ class VNode:
         children: List of child `VNode` instances (or strings, before
             normalization).
         key: Optional stable identity used for keyed list reconciliation.
-        el: Kernel node id of this VNode's DOM node once mounted (for
-            fragments, the start marker; for holes, the end marker).
-        owner_scope: Optional reactive `Owner` under which this VNode
-            should be mounted. Set by `For`/`Index` so effects created
-            while mounting a cached row belong to the row's scope rather
-            than to the list's re-running effect.
     """
 
-    __slots__ = (
-        "tag",
-        "props",
-        "children",
-        "key",
-        "el",
-        "subtree",
-        "render_effect",
-        "component_ctx",
-        "owner_scope",
-        "_frag_end",
-    )
+    __slots__ = ("tag", "props", "children", "key")
 
     def __init__(
         self,
@@ -103,12 +93,6 @@ class VNode:
         self.props = props if props is not None else {}
         self.children: List[Any] = children if children is not None else []
         self.key = key
-        self.el: Optional[int] = None
-        self.subtree: Optional[VNode] = None
-        self.render_effect: Optional[Computation] = None
-        self.component_ctx: Optional[Any] = None
-        self.owner_scope: Optional[Any] = None
-        self._frag_end: Optional[int] = None
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         tag = self.tag
@@ -133,10 +117,9 @@ def to_text_vnode(value: Any) -> VNode:
 def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None) -> VNode:
     """Create a reactive-hole VNode that re-evaluates `getter` on dependency changes.
 
-    This is the explicit form of the same machinery that wraps callable
-    children automatically. Use it when you want to be explicit about
-    which child is dynamic, or to attach a stable `key` for keyed reuse
-    inside a fragment.
+    This is the VNode form of the same machinery used for marked accessors
+    and ``expr(...)`` values. It can also attach a stable `key` for keyed
+    reuse inside a fragment.
 
     The getter may return a `VNode`, a `str`, a list of either, or `None`.
 
@@ -157,55 +140,55 @@ def dynamic(getter: Callable[[], Any], *, key: Optional[Union[str, int]] = None)
     return VNode(tag="_dynamic", props={"getter": getter}, children=[], key=key)
 
 
-# ---------------------------------------------------------------------------
-# is_getter: signature inspection for callable children / props
-# ---------------------------------------------------------------------------
+def expr(fn: Callable[[], T]) -> Expression[T]:
+    """Mark ``fn`` as a reactive render expression.
 
-# Cache for callables that need the slow ``inspect.signature`` path.
-# Weak refs avoid the id-reuse hazard plain ``dict[id]`` has when
-# short-lived test functions go out of scope.
+    Signal, memo, resource, and prop accessors are already marked by Wybthon and don't need
+    wrapping. Use ``expr`` for composite expressions, especially in prop
+    positions where an unmarked zero-argument callable may be application
+    data rather than a value to invoke.
+
+    Args:
+        fn: Zero-argument callable evaluated inside a render binding.
+
+    Returns:
+        A callable ``Expression`` recognized by the renderer.
+    """
+    return Expression(fn)
+
+
+def scoped(vnode: VNode, owner: Any, *, key: Any = None) -> VNode:
+    """Attach a declaration to an existing reactive owner.
+
+    This internal node replaces the old mutable ``VNode.owner_scope``
+    field used by list rows and conditional branches.
+    """
+    return VNode(tag="_scope", props={"owner": owner}, children=[vnode], key=vnode.key if key is None else key)
+
+
 _required_pos_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDictionary()
 
 
 def _signature_has_required_positional(fn: Any) -> bool:
-    """Return True when `fn` declares at least one required positional parameter.
-
-    Plain functions, lambdas, and bound methods are answered from their
-    code object directly; this is one of the hottest calls in the
-    rendering path (every callable child or prop goes through it, and
-    list rows create fresh lambdas), and ``inspect.signature`` is two
-    orders of magnitude slower. Exotic callables fall back to
-    ``inspect.signature`` with a weak-ref cache.
-    """
+    """Return whether a callable declares a required positional parameter."""
     code = getattr(fn, "__code__", None)
     if code is not None:
         defaults = getattr(fn, "__defaults__", None)
-        n_defaults = len(defaults) if defaults else 0
-        argcount = code.co_argcount
-        if getattr(fn, "__self__", None) is not None:
-            argcount -= 1  # bound method: self is already applied
-        return argcount - n_defaults > 0
-
+        argcount = code.co_argcount - (1 if getattr(fn, "__self__", None) is not None else 0)
+        return argcount - (len(defaults) if defaults else 0) > 0
     try:
-        cached = _required_pos_cache.get(fn)
-        if cached is not None:
-            return cached
-    except TypeError:
-        cached = None
+        return _required_pos_cache[fn]
+    except (KeyError, TypeError):
+        pass
     try:
-        sig = inspect.signature(fn)
+        signature = inspect.signature(fn)
+        result = any(
+            parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            and parameter.default is inspect.Parameter.empty
+            for parameter in signature.parameters.values()
+        )
     except (ValueError, TypeError):
-        try:
-            _required_pos_cache[fn] = True
-        except TypeError:
-            pass
-        return True
-    result = False
-    for p in sig.parameters.values():
-        if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
-            if p.default is inspect.Parameter.empty:
-                result = True
-                break
+        result = True
     try:
         _required_pos_cache[fn] = result
     except TypeError:
@@ -214,55 +197,25 @@ def _signature_has_required_positional(fn: Any) -> bool:
 
 
 def is_getter(value: Any) -> bool:
-    """Return True when `value` is a zero-arg callable suitable for a reactive hole.
+    """Return True when ``value`` is an explicit reactive accessor.
 
-    The check excludes:
-
-    - `VNode` instances
-    - Classes (`isinstance(value, type)`)
-    - Components and providers (marked with `_wyb_component` /
-      `_wyb_provider`)
-    - `Ref` objects (have a `current` attribute)
-    - Callables that require positional arguments (e.g., event handlers
-      taking an event object)
+    Signal, memo, prop, and ``expr`` accessors carry Wybthon's
+    ``_wyb_getter`` marker. Ordinary Python callables are application data
+    and are never invoked implicitly. This explicit contract removes the
+    ambiguity between a render expression and a zero-argument callback.
 
     Args:
         value: Any value, typically a child or prop value being normalized.
 
     Returns:
-        `True` if the value should be treated as a reactive getter.
+        ``True`` if the renderer should evaluate and track ``value``.
     """
-    # Fast path: plain functions and lambdas (the common case in child
-    # positions and list rows). Answered from the code object directly.
-    if type(value) is FunctionType:
-        d = value.__dict__
-        if d:
-            if d.get("_wyb_component") or d.get("_wyb_provider"):
-                return False
-            if d.get("_wyb_getter"):
-                return True
-        code = value.__code__
-        defaults = value.__defaults__
-        return code.co_argcount - (len(defaults) if defaults else 0) <= 0
-
-    if value is None:
-        return False
-    if not callable(value):
-        return False
-    if isinstance(value, (VNode, type)):
-        return False
-    if hasattr(value, "current"):
-        return False
-    if getattr(value, "_wyb_component", False):
-        return False
-    if getattr(value, "_wyb_provider", False):
-        return False
     if getattr(value, "_wyb_getter", False):
         return True
     self_obj = getattr(value, "__self__", None)
     if self_obj is not None and type(self_obj).__name__ == "Signal":
         return True
-    return not _signature_has_required_positional(value)
+    return False
 
 
 def flatten_children(items: Iterable[Any]) -> List[Any]:
@@ -284,7 +237,7 @@ def normalize_children(children: List[ChildType]) -> List[VNode]:
     Per-element handling:
 
     - `VNode`: kept as-is. Fragments are flattened into the parent list.
-    - Zero-arg callable: wrapped in a `_dynamic` VNode (reactive hole).
+    - Marked accessor: wrapped in a `_dynamic` VNode (reactive hole).
     - Anything else: coerced to a text VNode.
 
     Args:
@@ -314,10 +267,10 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
     common HTML tags, prefer the helpers in
     [`wybthon.html`][wybthon.html] (`div`, `span`, `button`, …).
 
-    Callable children (zero-argument getters) are passed through
-    unchanged; `normalize_children` wraps them as `_dynamic` VNodes when
-    the parent element mounts. Components receive their children verbatim
-    via the `children` prop so they can decide how to render them.
+    Marked accessor children are passed through unchanged;
+    `normalize_children` wraps them as `_dynamic` VNodes when the parent
+    element mounts. Components receive their children verbatim via the
+    `children` prop so they can decide how to render them.
 
     Args:
         tag: An HTML tag name (`"div"`), a special tag (`"_text"`,
@@ -335,12 +288,14 @@ def h(tag: Optional[Union[str, Callable[..., Any]]], props: Optional[PropsDict] 
         view = h("button", {"on_click": handle_click}, "Click me")
         ```
     """
-    props = props or {}
+    props = dict(props or {})
     key = props.get("key")
     flat_children = flatten_children(children)
     if callable(tag):
         if "children" not in props and flat_children:
             props["children"] = flat_children
+        if getattr(tag, "_wyb_provider", False):
+            return VNode(tag="_provider", props=props, children=[], key=key)
         vnode_children: List[ChildType] = []
     else:
         vnode_children = flat_children

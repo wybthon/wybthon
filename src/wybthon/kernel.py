@@ -66,6 +66,7 @@ OP_LISTEN = 11  # [op, id, event_type]
 OP_UNLISTEN = 12  # [op, id, event_type]
 OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listener sets)
 OP_REGISTER_TPL = 14  # [op, tpl_id, html]  (parse once; cloned by OP_CLONE_TPL)
+OP_CREATE_FRAGMENT = 15  # [op, id]  (detached staging parent for retained regions)
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -469,6 +470,10 @@ _KERNEL_JS = r"""
           registerTpl(op[1], op[2]);
           break;
         }
+        case 15: { // CREATE_FRAGMENT
+          reg(op[1], doc.createDocumentFragment());
+          break;
+        }
         default:
           throw new Error(`wybthon kernel: unknown op ${op[0]}`);
       }
@@ -639,6 +644,10 @@ class PythonBackend:
                 self._release(op[1])
             elif code == OP_REGISTER_TPL:
                 self._register_tpl(op[1], op[2])
+            elif code == OP_CREATE_FRAGMENT:
+                factory = getattr(doc, "createDocumentFragment", None)
+                fragment = factory() if factory is not None else doc.createElement("#fragment")
+                self._reg(op[1], fragment)
             else:
                 raise ValueError(f"wybthon kernel: unknown op {code}")
 

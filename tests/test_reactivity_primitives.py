@@ -21,6 +21,8 @@ from wybthon.reactivity import (
     create_signal,
     create_unique_id,
     on_error,
+    start_transition,
+    use_transition,
 )
 
 # ---------------------------------------------------------------------------
@@ -328,6 +330,60 @@ def test_resource_initial_value():
         await asyncio.sleep(0.01)
         assert res() == "fresh"
         assert res.state == "ready"
+
+    asyncio.run(run())
+
+
+def test_resource_fetcher_info_and_refetch_value():
+    async def run():
+        calls = []
+
+        async def fetcher(info=None):
+            calls.append((info.value, info.refetching))
+            return len(calls)
+
+        res = create_resource(fetcher, initial_value=0)
+        await asyncio.sleep(0.01)
+        assert calls == [(0, False)]
+
+        task = res.refetch("manual")
+        assert task is not None
+        assert await task == 2
+        assert calls[-1] == (1, "manual")
+
+    asyncio.run(run())
+
+
+def test_transition_pending_tracks_resource_work():
+    async def run():
+        release = asyncio.Event()
+        pending, begin = use_transition()
+
+        async def fetcher():
+            await release.wait()
+            return "done"
+
+        resources = []
+        transition = begin(lambda: resources.append(create_resource(fetcher)))
+        await asyncio.sleep(0)
+        assert pending() is True
+        assert resources[0].loading is True
+
+        release.set()
+        await transition
+        assert resources[0]() == "done"
+        assert pending() is False
+
+    asyncio.run(run())
+
+
+def test_start_transition_keeps_pending_through_next_loop_turn():
+    async def run():
+        pending, _begin = use_transition()
+        transition = start_transition(lambda: 42)
+        assert pending() is True
+        assert await transition == 42
+        assert pending() is False
 
     asyncio.run(run())
 

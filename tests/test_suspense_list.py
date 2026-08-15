@@ -11,6 +11,8 @@ from wybthon.vnode import h
 class FakeResource:
     """Minimal stand-in matching the Resource read/registration protocol."""
 
+    _wyb_getter = True
+
     def __init__(self, is_loading: bool = True, value=None):
         from wybthon.reactivity import Signal
 

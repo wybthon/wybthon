@@ -125,11 +125,11 @@ def test_on_cleanup_runs_on_unmount(wyb, root_element):
         return h("p", {}, "hello")
 
     tree = h(MyComp, {})
-    vdom.render(tree, root_element)
+    handle = vdom.render(tree, root_element)
     assert "setup" in log
     assert "cleanup" not in log
 
-    vdom.unmount(tree)
+    handle.dispose()
     assert "cleanup" in log
 
 

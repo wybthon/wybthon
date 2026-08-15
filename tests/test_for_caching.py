@@ -6,7 +6,7 @@ reactive scopes survive list updates and are disposed on removal.
 """
 
 import wybthon as _wybthon_pkg  # noqa: F401
-from wybthon.vnode import h
+from wybthon.vnode import expr, h
 
 
 def _li_nodes(ul):
@@ -30,8 +30,8 @@ def test_for_maps_each_item_once(wyb, root_element):
     calls = []
 
     def row(item, idx):
-        calls.append(item()["t"])
-        return h("li", {}, item()["t"])
+        calls.append(item["t"])
+        return h("li", {}, item["t"])
 
     ul = _setup(wyb, root_element, items, row)
     assert calls == ["A", "B", "C"]
@@ -52,8 +52,8 @@ def test_for_append_maps_only_new_item(wyb, root_element):
     calls = []
 
     def row(item, idx):
-        calls.append(item()["t"])
-        return h("li", {}, item()["t"])
+        calls.append(item["t"])
+        return h("li", {}, item["t"])
 
     ul = _setup(wyb, root_element, items, row)
     assert calls == ["A", "B"]
@@ -71,8 +71,8 @@ def test_for_remove_disposes_row_scope(wyb, root_element):
     cleanups = []
 
     def row(item, idx):
-        reactivity.on_cleanup(lambda: cleanups.append(item()["t"]))
-        return h("li", {}, item()["t"])
+        reactivity.on_cleanup(lambda: cleanups.append(item["t"]))
+        return h("li", {}, item["t"])
 
     ul = _setup(wyb, root_element, items, row)
     set_items([b])
@@ -89,8 +89,8 @@ def test_for_row_reactivity_survives_list_updates(wyb, root_element):
     is_selected = reactivity.create_selector(selected)
 
     def row(item, idx):
-        iid = item()["id"]
-        return h("li", {"class": lambda: "on" if is_selected(iid) else ""}, item()["t"])
+        iid = item["id"]
+        return h("li", {"class": expr(lambda: "on" if is_selected(iid) else "")}, item["t"])
 
     ul = _setup(wyb, root_element, items, row)
 
@@ -114,7 +114,7 @@ def test_for_index_getter_updates_on_reorder(wyb, root_element):
     items, set_items = reactivity.create_signal([a, b])
 
     def row(item, idx):
-        return h("li", {}, lambda: f"{idx()}:{item()['t']}")
+        return h("li", {}, expr(lambda: f"{idx()}:{item['t']}"))
 
     ul = _setup(wyb, root_element, items, row)
     assert _li_texts(ul) == ["0:A", "1:B"]
@@ -134,7 +134,7 @@ def test_for_fallback_when_empty(wyb, root_element):
             {},
             flow.For(
                 each=items,
-                children=lambda item, idx: h("li", {}, item()["t"]),
+                children=lambda item, idx: h("li", {}, item["t"]),
                 fallback=lambda: h("p", {}, "empty"),
             ),
         ),

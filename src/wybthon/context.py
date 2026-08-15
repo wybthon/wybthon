@@ -128,10 +128,8 @@ def Provider(props: Any) -> Any:
     [`use_context`][wybthon.use_context] and react to updates with
     fine-grained precision.
 
-    Children are wrapped in a reactive hole so updates from the parent
-    (for example a router swapping the matched route component) flow
-    into the subtree even though the provider body itself runs only
-    once.
+    ``h`` recognizes this marker component and creates an owned provider
+    region. The provider itself isn't invoked during ordinary rendering.
 
     Args:
         props: The component's props with the following keys:
@@ -143,22 +141,12 @@ def Provider(props: Any) -> Any:
               transparently.
 
     Returns:
-        A reactive [`VNode`][wybthon.VNode] subtree containing the
-        provider's children.
+        An internal provider-region [`VNode`][wybthon.VNode].
     """
-    from .vnode import Fragment, dynamic
+    from .vnode import VNode
 
-    children_getter = props.children
-
-    def _render() -> Any:
-        kids = children_getter()
-        if kids is None:
-            kids = []
-        if not isinstance(kids, list):
-            kids = [kids]
-        return Fragment(*kids)
-
-    return dynamic(_render)
+    raw = dict(props) if isinstance(props, dict) else props._raw
+    return VNode("_provider", props=raw)
 
 
 Provider._wyb_provider = True  # type: ignore[attr-defined]

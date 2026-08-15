@@ -36,7 +36,7 @@ def Demo():
             children=lambda: li("Welcome!"),
             fallback=lambda: li("Please log in"),
         ),
-        For(each=items, children=lambda item, idx: li(item())),
+        For(each=items, key=lambda item: item, children=lambda item, idx: li(item)),
     )
 ```
 
@@ -48,6 +48,9 @@ def Demo():
   mount added items, dispose removed ones, and move existing DOM for
   reorders. Inside `Index`, pass the `item` getter (not `item()`) where
   the slot's value should stay live.
+- `For` passes each item directly and a reactive index accessor. Its
+  optional `key=` selector supports stable IDs when list entries are
+  reconstructed from external data.
 
 #### See also
 

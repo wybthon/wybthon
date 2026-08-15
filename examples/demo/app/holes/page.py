@@ -1,6 +1,6 @@
 """Demos for *reactive holes* — fine-grained reactive expressions.
 
-A reactive hole is a zero-arg callable embedded in a ``VNode`` tree
+A reactive hole is an explicit accessor embedded in a ``VNode`` tree
 (child or prop value).  The reconciler wraps each hole in its own
 effect, so the surrounding component body runs **once** while the
 hole updates the DOM in place when its dependencies change.
@@ -14,6 +14,7 @@ from wybthon import (
     create_signal,
     div,
     dynamic,
+    expr,
     h,
     h2,
     h3,
@@ -85,7 +86,7 @@ def DynamicHelper():
 
 @component
 def ReactivePropBindings():
-    """Callable prop values become independent reactive bindings."""
+    """Marked accessor props become independent reactive bindings."""
     danger, set_danger = create_signal(False)
     color, set_color = create_signal("teal")
 
@@ -96,7 +97,7 @@ def ReactivePropBindings():
         p("Each prop has its own effect — no component re-render."),
         div(
             span("Status", class_=pill_class),
-            span("Hello", style=lambda: {"color": color(), "fontWeight": "600"}),
+            span("Hello", style=expr(lambda: {"color": color(), "fontWeight": "600"})),
             class_="form-row",
         ),
         div(
@@ -151,12 +152,12 @@ def IndependentHoles():
         p("Each hole has its own effect.  Watch the run counters."),
         div(
             div(
-                p("Value A: ", span(get_a, class_="hole-value")),
+                p("Value A: ", span(expr(get_a), class_="hole-value")),
                 p("A hole runs: ", span(a_count_sig)),
                 button("A++", on_click=click_a),
             ),
             div(
-                p("Value B: ", span(get_b, class_="hole-value")),
+                p("Value B: ", span(expr(get_b), class_="hole-value")),
                 p("B hole runs: ", span(b_count_sig)),
                 button("B++", on_click=click_b),
             ),
@@ -189,7 +190,7 @@ def NodeHole():
     return div(
         h3("Hole returning VNode"),
         p("This hole returns a different element each time."),
-        p("It is ", render_word, "."),
+        p("It is ", expr(render_word), "."),
         button(
             "Cycle mode",
             on_click=lambda e: set_mode(cycle_map.get(mode(), "emphasis")),
@@ -204,7 +205,7 @@ def NodeHole():
 
 
 _INTRO = """\
-A *reactive hole* is a zero-arg callable placed inside a VNode (child
+A *reactive hole* is a marked accessor or ``expr(...)`` placed inside a VNode (child
 or prop value).  The reconciler wraps each hole in its own effect, so
 the component body runs **once** and only the hole's DOM updates when
 its dependencies change.

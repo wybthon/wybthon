@@ -3,8 +3,8 @@
 #### The big idea
 
 Wybthon component bodies run **once**.  Reactive updates flow through
-*reactive holes*: a per-binding effect for each callable child or
-prop value.  When a signal changes, only the holes that read it
+*reactive holes*: a per-binding effect for each marked accessor or
+`expr(...)` child or prop value. When a signal changes, only the holes that read it
 re-evaluate, and only the affected DOM nodes are touched.  This is
 fundamentally cheaper than a full component re-render plus diff, even
 though we still use a VDOM internally to batch DOM mutations across
@@ -24,12 +24,11 @@ once, carrying its payload as a single JSON string.
 
 #### Template-based mounting
 
-On top of the command buffer, the reconciler serializes each static
-host-element skeleton to HTML with text content hoisted out, registers
-it with the kernel once, and mounts every occurrence with a single
-clone op.  Structurally-identical subtrees (list rows) share one
-template, so the browser parses the skeleton once and clones it per
-row, like SolidJS's compiled templates.
+On top of the command buffer, the reconciler compiles each static
+host-element skeleton into an immutable, occurrence-indexed mount
+blueprint. Structurally identical subtrees share the blueprint's HTML
+template and binding instructions, so the browser parses the skeleton
+once and clones it per row, like SolidJS's compiled templates.
 
 You get this for free; there's no opt-in.  Subtrees that can't be
 expressed as HTML (raw-text elements, adjacent text nodes, and
@@ -60,6 +59,11 @@ behavior.  See the [`template`][wybthon.template] API page.
 - **Use `key` on lists.**  Keyed reconciliation reorders existing
   DOM nodes in place instead of re-creating them.  Prefer stable IDs
   over indices for keys.
+
+- **Dispose mounts explicitly.** Keep the `MountHandle` returned by
+  `render` for embedded apps and tests. `handle.dispose()` cancels owned
+  resource tasks and releases every mounted region. `Runtime.stats()`
+  makes repeated-mount leak checks straightforward.
 
 - **Batch updates with `batch()`.**  When a single user action
   triggers multiple `set()` calls, wrap them in `batch()` so all

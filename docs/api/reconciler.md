@@ -4,15 +4,16 @@
 
 #### What's in this module
 
-The reconciler walks a previous and next VDOM tree and emits the
+The reconciler walks a mounted-state tree and the next VDOM declaration and emits the
 minimal set of DOM operations to bring the page into sync. It never
 touches the DOM directly: every mutation is a compact op against an
 integer node id (see `wybthon.kernel`), applied in one bridge crossing
 per commit. It handles keyed lists, fragments, components, text nodes,
 and reactive holes.
 
-Most users never call into this module directly. [`render`][wybthon.render]
-mounts a tree and the reconciler kicks in for subsequent updates. Read
+Most users call [`render`][wybthon.render], which returns a
+[`MountHandle`][wybthon.MountHandle]. Mounted DOM IDs, effects, owners,
+and child instances live in `MountedNode`, never on `VNode`. Read
 this page if you're contributing to Wybthon, debugging a diffing bug, or
 curious how holes plug into the patching loop.
 
@@ -26,10 +27,12 @@ curious how holes plug into the patching loop.
 | Components | A component's body runs once; the reconciler updates props on the existing component instance. |
 | Reactive holes | Each hole is an effect; the reconciler patches only the affected region when the signal updates. |
 | Cleanup | Unmounting disposes the owner recursively and retires the whole subtree with one `REMOVE` per top-level node plus one `RELEASE` op. |
+| Reusable declarations | Each VNode occurrence receives independent mounted state, even when the same VNode object appears twice or mounts in two containers. |
 
 #### See also
 
 - [`template`][wybthon.template]: the template-based mounting fast path.
 - [`vnode`][wybthon.vnode]: the data structure being diffed.
+- [`runtime`][wybthon.runtime]: the public mount and disposal boundary.
 - [Concepts: Virtual DOM](../concepts/vdom.md)
 - [Concepts: Lifecycle and Ownership](../concepts/lifecycle.md)

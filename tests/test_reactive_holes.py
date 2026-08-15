@@ -1,10 +1,10 @@
 """Tests for *reactive holes* — fine-grained reactive expressions in VNode trees.
 
-Reactive holes are zero-arg callables that appear as children or prop values
-inside a ``VNode``.  The reconciler treats each hole as an independent
-reactive scope: its getter is wrapped in an effect, and only the hole
-re-runs when its dependencies change.  The surrounding component body
-runs **once**.
+Reactive holes are marked accessors or ``expr(...)`` values that appear as
+children or prop values inside a ``VNode``. The reconciler treats each hole
+as an independent reactive scope: its getter is wrapped in an effect, and
+only the hole re-runs when its dependencies change. The surrounding
+component body runs **once**.
 
 This is the SolidJS-style fine-grained reactivity model, adapted to a
 batched VDOM for Pyodide's bridge-overhead constraints.
@@ -12,11 +12,20 @@ batched VDOM for Pyodide's bridge-overhead constraints.
 
 from conftest import collect_texts
 
-from wybthon.vnode import Fragment, dynamic, h
+from wybthon.vnode import Fragment, dynamic, expr, h, is_getter
 
 # --------------------------------------------------------------------------- #
 # Reactive hole basics
 # --------------------------------------------------------------------------- #
+
+
+def test_expr_distinguishes_render_expressions_from_callbacks():
+    callback = lambda: "application callback"  # noqa: E731
+    expression = expr(callback)
+
+    assert is_getter(callback) is False
+    assert is_getter(expression) is True
+    assert expression() == "application callback"
 
 
 def test_signal_getter_as_child_creates_hole(wyb, root_element):
@@ -97,8 +106,8 @@ def test_hole_runs_independently(wyb, root_element):
         return h(
             "div",
             {},
-            h("span", {}, get_a),
-            h("span", {}, get_b),
+            h("span", {}, expr(get_a)),
+            h("span", {}, expr(get_b)),
         )
 
     vdom.render(h(App, {}), root_element)
@@ -171,7 +180,7 @@ def test_reactive_style_prop(wyb, root_element):
     color = reactivity.signal("red")
 
     def App(props):
-        return h("p", {"style": lambda: {"color": color.get()}}, "hi")
+        return h("p", {"style": expr(lambda: {"color": color.get()})}, "hi")
 
     vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
@@ -219,6 +228,21 @@ def test_reactive_value_prop(wyb, root_element):
     assert el.value == "b"
 
 
+def test_reactive_boolean_dom_property(wyb, root_element):
+    """Boolean form props update live properties instead of string attributes."""
+    vdom = wyb["reconciler"]
+    reactivity = wyb["reactivity"]
+    disabled, set_disabled = reactivity.create_signal(False)
+
+    vdom.render(h("button", {"disabled": disabled}, "save"), root_element)
+    button = root_element.element.childNodes[0]
+    assert button.disabled is False
+    assert "disabled" not in button.attributes
+
+    set_disabled(True)
+    assert button.disabled is True
+
+
 def test_reactive_attr_prop(wyb, root_element):
     """A callable plain attribute is reactively applied."""
     vdom = wyb["reconciler"]
@@ -261,7 +285,7 @@ def test_event_handlers_are_not_holes(wyb, root_element):
     def App2(props):
         return h(
             "button",
-            {"on_click": my_handler, "title": lambda: f"clicked {sig.get()}"},
+            {"on_click": my_handler, "title": expr(lambda: f"clicked {sig.get()}")},
             "x",
         )
 
@@ -305,7 +329,7 @@ def test_hole_returning_vnode(wyb, root_element):
         return h("span", {}, "normal")
 
     def App(props):
-        return h("p", {}, render_text)
+        return h("p", {}, expr(render_text))
 
     vdom.render(h(App, {}), root_element)
     el = root_element.element.childNodes[0]
@@ -330,7 +354,7 @@ def test_hole_returning_fragment(wyb, root_element):
         return Fragment(*[h("li", {}, f"item {i}") for i in range(n)])
 
     def App(props):
-        return h("ul", {}, render_items)
+        return h("ul", {}, expr(render_items))
 
     vdom.render(h(App, {}), root_element)
     ul = root_element.element.childNodes[0]
@@ -355,7 +379,7 @@ def test_hole_returning_none_renders_nothing(wyb, root_element):
         return None
 
     def App(props):
-        return h("div", {}, render_msg)
+        return h("div", {}, expr(render_msg))
 
     vdom.render(h(App, {}), root_element)
     div = root_element.element.childNodes[0]
@@ -425,7 +449,7 @@ def test_for_works_with_holes(wyb, root_element):
                     "li",
                     {},
                     item,
-                    lambda: suffix.get(),
+                    expr(lambda: suffix.get()),
                 ),
             ),
         )
@@ -461,16 +485,16 @@ def test_hole_effect_disposed_on_unmount(wyb, root_element):
         return sig.get()
 
     def App(props):
-        return h("p", {}, get_value)
+        return h("p", {}, expr(get_value))
 
     tree = h(App, {})
-    vdom.render(tree, root_element)
+    handle = vdom.render(tree, root_element)
     assert runs[0] == 1
 
     sig.set(1)
     assert runs[0] == 2
 
-    vdom.unmount(tree)
+    handle.dispose()
     sig.set(2)
     assert runs[0] == 2, "hole effect must be disposed after unmount"
 
@@ -492,7 +516,7 @@ def test_hole_inside_show_fallback_disposed(wyb, root_element):
     def App(props):
         return flow.Show(
             when=cond.get,
-            children=lambda: h("p", {}, get_branch_val),
+            children=lambda: h("p", {}, expr(get_branch_val)),
             fallback=lambda: h("p", {}, "no"),
         )
 
@@ -529,17 +553,17 @@ def test_on_cleanup_inside_hole_runs_on_dependency_change(wyb, root_element):
         return str(v)
 
     def App(props):
-        return h("p", {}, get_value)
+        return h("p", {}, expr(get_value))
 
     tree = h(App, {})
-    vdom.render(tree, root_element)
+    handle = vdom.render(tree, root_element)
     assert log == ["run:0"]
 
     sig.set(1)
     assert "cleanup:0" in log
     assert "run:1" in log
 
-    vdom.unmount(tree)
+    handle.dispose()
     assert "cleanup:1" in log
 
 
@@ -564,7 +588,7 @@ def test_reactive_props_via_getter(wyb, root_element):
     def Greeting(props):
         child_runs[0] += 1
         get_count = props["count"]
-        return h("span", {}, lambda: f"count={get_count()}")
+        return h("span", {}, expr(lambda: f"count={get_count()}"))
 
     def Parent(props):
         return h("div", {}, h(Greeting, {"count": parent_count.get}))
@@ -599,7 +623,7 @@ def test_untrack_inside_hole(wyb, root_element):
         return f"{with_a}:{with_b}"
 
     def App(props):
-        return h("p", {}, get_value)
+        return h("p", {}, expr(get_value))
 
     vdom.render(h(App, {}), root_element)
     assert runs[0] == 1

@@ -95,7 +95,8 @@ Wybthon's [`Provider`][wybthon.Provider] is signal-backed: changing the value up
 React's `array.map(item => <Row key={item.id} />)` becomes:
 
 ```python
-For(each=items, children=lambda item, idx: Row(item=item, key=item().id))
+For(each=items, key=lambda item: item.id,
+    children=lambda item, idx: Row(item=item, key=item.id))
 ```
 
 [`For`][wybthon.For] keys by reference identity by default. Use `key=` only if you need to rekey on a derived value. See [Flow control][wybthon.For].
@@ -135,10 +136,12 @@ See [DOM Interop](../concepts/dom.md).
 React + Suspense is similar in spirit but Wybthon's [`create_resource`][wybthon.create_resource] is more direct:
 
 ```python
+from wybthon import Suspense, create_resource, expr
+
 data = create_resource(query, fetch_data)
 
 return Suspense(fallback=lambda: p("Loading"),
-                children=lambda: span(lambda: data()["title"]))
+                children=lambda: span(expr(lambda: data()["title"])))
 ```
 
 See [Suspense and Lazy Loading](../concepts/suspense-lazy.md).

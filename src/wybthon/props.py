@@ -8,7 +8,7 @@ including:
   inline styles).
 - **Dataset attributes** (`{"dataset": {"id": 5}}` → `data-id="5"`).
 - **Event delegation** for `on_click` / `onClick` style handlers.
-- **Reactive prop bindings**: callable prop values are wrapped in their
+- **Reactive prop bindings**: marked accessors and ``expr`` values are wrapped in their
   own effect so updates re-apply only the affected prop, never the
   surrounding component.
 
@@ -23,7 +23,7 @@ imports from it directly.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from . import kernel
 from ._warnings import log_error
@@ -43,6 +43,25 @@ _UNSET = object()
 # Lazily-bound reference to ``wybthon.reactivity.effect`` (a circular
 # import at module load time; binding once avoids a per-binding import).
 _effect: Any = None
+
+_DOM_PROPERTIES = frozenset(
+    {
+        "value",
+        "checked",
+        "selected",
+        "disabled",
+        "multiple",
+        "muted",
+        "required",
+        "readOnly",
+        "autofocus",
+    }
+)
+
+
+def is_dom_property(name: str) -> bool:
+    """Return whether ``name`` should be assigned as a live DOM property."""
+    return name in _DOM_PROPERTIES
 
 
 def to_kebab(name: str) -> str:
@@ -143,8 +162,8 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
         return
 
-    if name == "checked":
-        kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
+    if is_dom_property(name):
+        kernel.emit((OP_SET_PROP, node_id, name, bool(new_val)))
         return
 
     kernel.emit((OP_SET_ATTR, node_id, name, None if new_val is None else str(new_val)))
@@ -164,8 +183,8 @@ def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
         _remove_dataset(node_id, old_val)
     elif name == "value":
         kernel.emit((OP_SET_PROP, node_id, "value", ""))
-    elif name == "checked":
-        kernel.emit((OP_SET_PROP, node_id, "checked", False))
+    elif is_dom_property(name):
+        kernel.emit((OP_SET_PROP, node_id, name, False))
     else:
         kernel.emit((OP_SET_ATTR, node_id, name, None))
 
@@ -198,10 +217,10 @@ def apply_props(node_id: int, old_props: PropsDict, new_props: PropsDict) -> Non
             continue
         old_val = old_props.get(name, _UNSET)
         # Skip untouched props. Identity covers handlers/getters; scalar
-        # equality covers the common attribute case. `value`/`checked`
+        # equality covers the common attribute case. Live DOM properties
         # are always re-asserted because the live DOM property can
         # diverge from the last-applied prop (user input).
-        if name not in ("value", "checked"):
+        if not is_dom_property(name):
             if old_val is new_val and old_val is not _UNSET:
                 continue
             if isinstance(new_val, (str, int, float, bool)) and type(old_val) is type(new_val) and old_val == new_val:
@@ -209,10 +228,10 @@ def apply_props(node_id: int, old_props: PropsDict, new_props: PropsDict) -> Non
         _apply_single_prop(node_id, name, old_val, new_val)
 
 
-def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
+def apply_initial_props(node_id: int, new_props: PropsDict) -> List[Any]:
     """Emit ops for a fresh set of props on initial mount, wiring reactive bindings.
 
-    Callable prop values (excluding event handlers and `ref`) are treated
+    Explicit reactive accessor values (excluding event handlers and `ref`) are treated
     as **reactive bindings**: each is wrapped in its own effect so that
     updates re-apply only that single prop, with no re-render of the
     surrounding component. Static values are applied once.
@@ -221,6 +240,7 @@ def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
         node_id: The target node id.
         new_props: Initial prop dict.
     """
+    bindings: List[Any] = []
     for name, value in new_props.items():
         if name in ("key", "ref"):
             continue
@@ -228,9 +248,10 @@ def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
             set_handler(node_id, name, value if callable(value) else None)
             continue
         if is_getter(value):
-            _bind_reactive_prop(node_id, name, value)
+            bindings.append(_bind_reactive_prop(node_id, name, value))
         else:
             _apply_single_prop(node_id, name, _UNSET, value)
+    return bindings
 
 
 def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:

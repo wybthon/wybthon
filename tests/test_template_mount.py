@@ -3,7 +3,7 @@
 from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
-from wybthon.vnode import Fragment, VNode, dynamic, h
+from wybthon.vnode import Fragment, dynamic, expr, h
 
 # ---------------------------------------------------------------------------
 # build_plan (pure serialization; uses stubs because template.py imports props)
@@ -33,7 +33,7 @@ def test_build_plan_shares_html_across_texts(wyb):
 def test_build_plan_collects_event_and_reactive_bindings(wyb):
     template = wyb["template"]
     handler = lambda e: None  # noqa: E731
-    getter = lambda: "dyn"  # noqa: E731
+    getter = expr(lambda: "dyn")
     tree = h("div", {}, h("button", {"on_click": handler}, "go"), h("span", {"title": getter}, "x"))
     plan = template.build_plan(tree)
     assert plan is not None
@@ -147,18 +147,34 @@ def test_template_mount_wires_events(wyb, root_element):
     assert clicks == [1]
 
 
-def test_template_mount_populates_all_els(wyb, root_element):
+def test_template_mount_populates_mounted_tree_ids(wyb, root_element):
     rec = wyb["reconciler"]
     tree = h("div", {}, h("p", {}, "one"), h("p", {}, "two"))
-    rec.render(tree, root_element)
+    handle = rec.render(tree, root_element)
 
-    def check(vnode):
-        assert vnode.el is not None
-        for child in vnode.children:
-            if isinstance(child, VNode):
-                check(child)
+    def check(mounted):
+        assert mounted.node_id is not None
+        for child in mounted.children:
+            check(child)
 
-    check(tree)
+    check(handle._mounted)
+
+
+def test_template_blueprint_supports_repeated_vnode_occurrences(wyb, root_element):
+    """One declaration may appear twice without sharing mounted state."""
+    rec = wyb["reconciler"]
+    shared = h("p", {}, "same")
+    tree = h("div", {}, shared, shared)
+
+    plan = wyb["template"].build_plan(tree)
+    assert plan is not None
+    assert plan.nodes.count(shared) == 2
+
+    handle = rec.render(tree, root_element)
+    paragraphs = [child for child in root_element.element.childNodes[0].childNodes if child.tag == "p"]
+    assert len(paragraphs) == 2
+    assert paragraphs[0] is not paragraphs[1]
+    assert handle._mounted.children[0] is not handle._mounted.children[1]
 
 
 def test_template_mount_components_inside_static_tree(wyb, root_element):

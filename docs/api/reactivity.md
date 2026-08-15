@@ -57,6 +57,8 @@ their sources up to date, which keeps updates glitch-free.
 - `catch_error(fn, handler) -> result | None`. Runs `fn` under a scope whose errors (including errors thrown later by effects created inside it) route to `handler` instead of propagating.  Mirrors Solid's `catchError`.
 - `on_mount(fn)`. Run after first render.
 - `on_cleanup(fn)`. Appends `fn` to the current owner's cleanup list.  Inside `create_effect`: runs before each re-execution and on disposal.  Inside a component's setup phase: runs when the component unmounts.
+- `start_transition(fn) -> Awaitable`. Marks nonurgent work as pending through the next event-loop turn and through resource tasks started by `fn`.
+- `use_transition() -> (pending, start)`. Returns a reactive pending accessor and the transition starter.
 - `batch() -> context manager` or `batch(fn) -> result`. The callback form flushes synchronously.
 
 ##### `create_signal` and `equals`
@@ -107,8 +109,8 @@ def Greeting(name="world"):
     return p(dynamic(lambda: f"Hello, {props.name()}!"))
 ```
 
-When a component declares a single positional parameter with no
-default, the decorator passes the proxy in directly (proxy mode);
+When a component declares one required parameter named `props` or
+annotated as `ReactiveProps`, the decorator passes the proxy in directly (proxy mode);
 otherwise each parameter is bound to its own accessor and there's no
 need to call `get_props()`.
 
@@ -161,18 +163,23 @@ A `Resource` is **callable**, mirroring Solid's `createResource` accessor:
 - `res.state` is one of `"unresolved"`, `"pending"`, `"ready"`,
   `"refreshing"`, or `"errored"`.
 - `res.mutate(value)` writes the resolved value directly (optimistic
-  updates); `res.refetch()` re-runs the fetcher; `res.cancel()` abandons
+  updates); `res.refetch(value)` re-runs the fetcher and returns its
+  awaitable task; `res.cancel()` abandons
   an in-flight fetch.
+- A fetcher may request `info=...`. The `ResourceFetcherInfo` contains
+  the previous `value`, the value passed to `refetch`, and the abort
+  `signal`. Resource tasks belong to the owner that created them and are
+  canceled automatically when that owner is disposed.
 
 ```python
-from wybthon import Suspense, create_resource, create_signal, h
+from wybthon import Suspense, create_resource, create_signal, expr, h
 
 user_id, set_user_id = create_signal(1)
 user = create_resource(user_id, fetch_user)   # refetches when user_id changes
 
 view = Suspense(
     fallback="Loading...",
-    children=lambda: h("p", {}, lambda: user()["name"]),
+    children=lambda: h("p", {}, expr(lambda: user()["name"])),
 )
 ```
 
@@ -186,7 +193,7 @@ view = Suspense(
 
 ##### Reactive list primitives
 
-- `map_array(source, map_fn)`. Keyed reactive list mapping.  ``source`` is a getter returning a list; ``map_fn(item_getter, index_getter)`` runs once per unique item (matched by reference identity).  Returns a getter producing the mapped list.  Per-item reactive scopes are created and disposed automatically.
+- `map_array(source, map_fn, *, key=None)`. Keyed reactive list mapping.  ``source`` is a getter returning a list; ``map_fn(item, index_getter)`` runs once per unique item (matched by identity by default). Pass `key(item)` when decoded objects need application-level identity. Returns a getter producing the mapped list. Per-item reactive scopes are created and disposed automatically.
 - `index_array(source, map_fn)`. Index-keyed reactive list mapping.  Like ``map_array`` but keyed by index position.  ``map_fn(item_getter, index: int)``: the item getter is a signal that updates in place.  Returns a getter producing the mapped list.
 - `create_selector(source)`. Efficient selection signal.  Returns ``is_selected(key) -> bool``.  When the source changes, only the previous and new key's dependents re-run (O(1) instead of O(n)).
 
