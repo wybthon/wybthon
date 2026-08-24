@@ -68,6 +68,9 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Run browser benchmark
+        # Explicit bash shell enables pipefail so a benchmark crash is not
+        # masked by tee's exit code.
+        shell: bash
         run: python benchmarks/browser_bench.py --json | tee browser_bench_results.json
 
       - name: Upload results
