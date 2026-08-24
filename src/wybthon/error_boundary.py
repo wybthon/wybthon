@@ -7,7 +7,7 @@ trees untouched. It's the recommended way to surface unexpected
 errors without crashing the whole app.
 
 See Also:
-    - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
+    - [Async and loading guide](../concepts/async-loading.md)
 """
 
 from __future__ import annotations

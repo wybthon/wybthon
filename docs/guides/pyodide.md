@@ -21,26 +21,24 @@ Pyodide ships with a single-threaded event loop integrated with the browser's mi
 - **There are no native threads in WebAssembly.** Anything that blocks the main thread will freeze the page. Prefer async APIs (`asyncio.sleep`, `await fetch(...)`) over busy loops.
 - **Use `asyncio` for cooperative concurrency.** `asyncio.create_task`, `asyncio.gather`, and `asyncio.sleep` all work as you'd expect.
 - **`await` JavaScript promises directly.** Pyodide adapts Python coroutines to JS Promises and vice versa. From Python you can `await fetch(...)`; from JavaScript you can `await pyodide.runPythonAsync(...)`.
-- **Long computations should yield.** Wybthon uses [`batch`][wybthon.batch] to coalesce reactive updates, but if you have a slow, synchronous routine, break it up with `await asyncio.sleep(0)` or move it to a Pyodide [web worker](https://pyodide.org/en/stable/usage/webworker.html) (advanced; outside the scope of this guide).
+- **Long computations should yield.** Wybthon batches reactive updates automatically (effects run once per microtask flush), but if you have a slow, synchronous routine, break it up with `await asyncio.sleep(0)` or move it to a Pyodide [web worker](https://pyodide.org/en/stable/usage/webworker.html) (advanced; outside the scope of this guide).
 
 ```python
-import asyncio
-
 from js import fetch
-from wybthon import create_resource
+from wybthon import create_memo
 
 
-async def fetch_user(uid: str) -> dict:
-    response = await fetch(f"/api/users/{uid}")
+async def fetch_user() -> dict:
+    response = await fetch("/api/users/u-1")
     if not response.ok:
         raise RuntimeError(f"HTTP {response.status}")
     return (await response.json()).to_py()
 
 
-user = create_resource(lambda: ("u-1",), fetch_user)
+user = create_memo(fetch_user)
 ```
 
-[`create_resource`][wybthon.create_resource] integrates with the event loop automatically: it awaits your fetcher, exposes `loading` / `error` / `latest` signals, and works seamlessly with [`Suspense`][wybthon.Suspense] for declarative loading UIs.
+Async memos and [`action`][wybthon.action]s integrate with Pyodide's event loop automatically: `await` inside them runs on the same loop as the browser's microtask queue, so awaiting `fetch(...)` or any JS promise just works. [`create_memo`][wybthon.create_memo] with an `async def` body schedules the coroutine, raises [`NotReadyError`][wybthon.NotReadyError] on reads before the first value (which [`Loading`][wybthon.Loading] boundaries catch to show fallbacks), and serves the stale value while revalidating on later recomputes. Use [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest] to observe in-flight state.
 
 ## JavaScript interop tips
 
@@ -75,4 +73,4 @@ def on_hover_about(_evt):
 ## Next steps
 
 - Browse the [dev server guide](dev-server.md) for hot-reload tips.
-- Read [Suspense and lazy loading](../concepts/suspense-lazy.md) for end-to-end async UI patterns.
+- Read [Async and Loading](../concepts/async-loading.md) for end-to-end async UI patterns.

@@ -13,7 +13,7 @@ Pyodide runtime in headless Chromium:
 
 1. **Feature fixture app** (`tests/e2e/app/`): a dedicated single-page app with
    **one route per framework feature** (reactivity, reactive holes, props,
-   events, context, flow control, forms, stores, suspense, error boundary,
+   events, context, flow control, forms, stores, loading, error boundary,
    components/lifecycle, portal, lazy loading, and the router). Each
    per-feature test module (`tests/e2e/test_*.py`) drives that route and asserts
    behaviour through stable `data-testid` selectors.
@@ -65,17 +65,38 @@ Notes:
 
 For Python-only logic (e.g., `reactivity`, `forms` helpers), write regular `pytest` tests under `tests/`.
 
+**Settle effects with `flush()`.** Wybthon batches automatically: signal
+writes apply immediately (reads see the new value), but effects run on
+the next flush. In the browser that's a microtask (and the end of each
+event handler), but unit tests run outside that loop, so call
+[`flush()`][wybthon.flush] after writes and before asserting on effect
+output:
+
+```python
+from wybthon import create_signal, create_effect, flush
+
+count, set_count = create_signal(0)
+seen = []
+create_effect(lambda: seen.append(count()))
+set_count(1)
+flush()
+assert seen == [0, 1]
+```
+
+The initial effect run happens at creation; only re-runs wait for the
+flush. Multiple writes between flushes coalesce into a single effect
+run, so `seen` never records intermediate values.
+
 Several core modules are browser-agnostic and can be tested without any
 stubs:
 
 - `wybthon.vnode`: VNode creation, `h()`, `Fragment`, `dynamic()`
 - `wybthon.error_boundary`: ErrorBoundary component logic
-- `wybthon.suspense`: Suspense component logic
 - `wybthon._warnings`: dev-mode error reporting
 
-For browser-dependent modules (`reconciler`, `props`, `dom`, `events`), the
-existing test files use `_install_stubs()` to inject fake `js` and `pyodide`
-modules before reloading the Wybthon modules under test.
+For browser-dependent modules (`reconciler`, `props`, `dom`, `events`,
+`loading`), the existing test files use `_install_stubs()` to inject fake
+`js` and `pyodide` modules before reloading the Wybthon modules under test.
 
 #### Coverage
 

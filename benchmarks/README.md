@@ -35,7 +35,7 @@ benefit of the fully-reactive component model.  Both mount a `<div>` of
 
 | # | Name | Description | Warmup |
 |---|------|-------------|--------|
-| 10 | hole update (1k tree) | Single signal write inside `batch(...)` updates one reactive hole; the reconciler is **not** re-invoked | 5 |
+| 10 | hole update (1k tree) | Single signal write plus `flush()` updates one reactive hole; the reconciler is **not** re-invoked | 5 |
 | 11 | full rerender (1k tree) | The whole tree is re-built and the reconciler diffs its way to the same single text update | 5 |
 
 The "hole update" path is typically several orders of magnitude faster

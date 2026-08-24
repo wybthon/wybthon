@@ -1,4 +1,4 @@
-"""E2E: reactive primitives (signal, memo, effect, batch, untrack)."""
+"""E2E: reactive primitives (signal, memo, effect, automatic batching, untrack)."""
 
 import pytest
 from playwright.sync_api import expect
@@ -29,7 +29,7 @@ def test_effect_runs_and_batch(goto_feature):
     page.get_by_test_id("rx-inc").click()
     expect(page.get_by_test_id("rx-effect-runs")).to_have_text("2")
 
-    # A batch of two writes only triggers the effect once more.
+    # Two writes in one handler batch automatically: one more effect run.
     page.get_by_test_id("rx-batch").click()
     expect(page.get_by_test_id("rx-count")).to_have_text("3")
     expect(page.get_by_test_id("rx-effect-runs")).to_have_text("3")

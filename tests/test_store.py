@@ -1,9 +1,9 @@
-"""Tests for create_store, produce, and the batch(fn) enhancement."""
+"""Tests for create_store's draft-first mutation model."""
 
 import pytest
 
-from wybthon.reactivity import batch, create_effect, create_signal, effect
-from wybthon.store import create_store, produce
+from wybthon.reactivity import create_effect, effect, flush
+from wybthon.store import create_store
 
 # --------------------------------------------------------------------------- #
 # create_store basics
@@ -16,14 +16,18 @@ class TestCreateStore:
         assert store.count == 0
         assert store.name == "Ada"
 
-    def test_set_top_level_value(self):
+    def test_draft_set_top_level_value(self):
         store, set_store = create_store({"count": 0})
-        set_store("count", 5)
+        set_store(lambda s: setattr(s, "count", 5))
         assert store.count == 5
 
-    def test_set_top_level_functional_update(self):
+    def test_draft_augmented_assignment(self):
         store, set_store = create_store({"count": 10})
-        set_store("count", lambda c: c + 1)
+
+        def bump(s):
+            s.count += 1
+
+        set_store(bump)
         assert store.count == 11
 
     def test_nested_dict_read(self):
@@ -33,7 +37,7 @@ class TestCreateStore:
 
     def test_nested_dict_set(self):
         store, set_store = create_store({"user": {"name": "Ada"}})
-        set_store("user", "name", "Jane")
+        set_store(lambda s: setattr(s.user, "name", "Jane"))
         assert store.user.name == "Jane"
 
     def test_list_access(self):
@@ -70,7 +74,7 @@ class TestCreateStore:
 
     def test_set_nested_list_item_property(self):
         store, set_store = create_store({"todos": [{"id": 1, "text": "Test", "done": False}]})
-        set_store("todos", 0, "done", True)
+        set_store(lambda s: setattr(s.todos[0], "done", True))
         assert store.todos[0].done is True
 
     def test_store_repr(self):
@@ -106,16 +110,16 @@ class TestCreateStore:
         with pytest.raises(AttributeError, match="read-only"):
             store.count = 5
 
-    def test_set_store_with_dict_arg(self):
+    def test_set_store_non_callable_raises(self):
+        _, set_store = create_store({"a": 1})
+        with pytest.raises(TypeError, match="draft function"):
+            set_store({"a": 10})
+
+    def test_draft_update_bulk_write(self):
         store, set_store = create_store({"a": 1, "b": 2})
-        set_store({"a": 10, "b": 20})
+        set_store(lambda s: s.update({"a": 10, "b": 20}))
         assert store.a == 10
         assert store.b == 20
-
-    def test_set_store_no_args_raises(self):
-        _, set_store = create_store({"a": 1})
-        with pytest.raises(TypeError, match="requires at least one argument"):
-            set_store()
 
 
 # --------------------------------------------------------------------------- #
@@ -134,7 +138,8 @@ class TestStoreReactivity:
         eff = effect(watcher)
         assert seen == [0]
 
-        set_store("count", 5)
+        set_store(lambda s: setattr(s, "count", 5))
+        flush()
         assert seen == [0, 5]
         eff.dispose()
 
@@ -148,7 +153,8 @@ class TestStoreReactivity:
         eff = effect(watcher)
         assert seen == ["Ada"]
 
-        set_store("user", "name", "Jane")
+        set_store(lambda s: setattr(s.user, "name", "Jane"))
+        flush()
         assert seen == ["Ada", "Jane"]
         eff.dispose()
 
@@ -162,23 +168,24 @@ class TestStoreReactivity:
         eff = effect(watcher)
         assert seen == ["a"]
 
-        set_store("items", 0, "z")
+        set_store(lambda s: s.items.__setitem__(0, "z"))
+        flush()
         assert seen == ["a", "z"]
         eff.dispose()
 
-    def test_functional_update_triggers_effect(self):
-        store, set_store = create_store({"count": 0})
-        seen = []
+    def test_unrelated_leaf_does_not_notify(self):
+        """Mutating one leaf must not re-run effects reading another."""
+        store, set_store = create_store({"a": 1, "b": 2})
+        a_runs = []
+        b_runs = []
+        effect(lambda: a_runs.append(store.a))
+        effect(lambda: b_runs.append(store.b))
+        assert (a_runs, b_runs) == ([1], [2])
 
-        def watcher():
-            seen.append(store.count)
-
-        eff = effect(watcher)
-        assert seen == [0]
-
-        set_store("count", lambda c: c + 10)
-        assert seen == [0, 10]
-        eff.dispose()
+        set_store(lambda s: setattr(s, "a", 100))
+        flush()
+        assert a_runs == [1, 100]
+        assert b_runs == [2], "b's effect must not re-run"
 
     def test_effect_tracks_list_length(self):
         store, set_store = create_store({"items": [1, 2, 3]})
@@ -190,7 +197,8 @@ class TestStoreReactivity:
         eff = effect(watcher)
         assert seen == [3]
 
-        set_store("items", lambda items: [*items, 4])
+        set_store(lambda s: s.items.append(4))
+        flush()
         assert seen[-1] == 4
         eff.dispose()
 
@@ -201,91 +209,113 @@ class TestStoreReactivity:
         comp = create_effect(lambda: log.append(store.value))
         assert log == ["hello"]
 
-        set_store("value", "world")
+        set_store(lambda s: setattr(s, "value", "world"))
+        flush()
         assert log == ["hello", "world"]
         comp.dispose()
 
 
 # --------------------------------------------------------------------------- #
-# produce
+# Draft mutations (the former `produce` behavior, now the only way)
 # --------------------------------------------------------------------------- #
 
 
-class TestProduce:
-    def test_produce_setattr(self):
+class TestDraftMutations:
+    def test_draft_setattr(self):
         store, set_store = create_store({"count": 0})
-        set_store(produce(lambda s: setattr(s, "count", 42)))
+        set_store(lambda s: setattr(s, "count", 42))
         assert store.count == 42
 
-    def test_produce_nested_setattr(self):
+    def test_draft_nested_setattr(self):
         store, set_store = create_store({"user": {"name": "Ada"}})
-        set_store(produce(lambda s: setattr(s.user, "name", "Jane")))
+        set_store(lambda s: setattr(s.user, "name", "Jane"))
         assert store.user.name == "Jane"
 
-    def test_produce_list_append(self):
+    def test_draft_list_append(self):
         store, set_store = create_store({"items": [1, 2]})
-        set_store(produce(lambda s: s.items.append(3)))
+        set_store(lambda s: s.items.append(3))
         assert list(store.items) == [1, 2, 3]
 
-    def test_produce_list_pop(self):
+    def test_draft_list_pop(self):
         store, set_store = create_store({"items": [1, 2, 3]})
-        set_store(produce(lambda s: s.items.pop(-1)))
+        set_store(lambda s: s.items.pop(-1))
         assert list(store.items) == [1, 2]
 
-    def test_produce_list_item_set(self):
+    def test_draft_list_item_set(self):
         store, set_store = create_store({"items": ["a", "b", "c"]})
-        set_store(produce(lambda s: s.items.__setitem__(1, "B")))
+        set_store(lambda s: s.items.__setitem__(1, "B"))
         assert store.items[1] == "B"
 
-    def test_produce_nested_dict_in_list(self):
+    def test_draft_nested_dict_in_list(self):
         store, set_store = create_store({"todos": [{"text": "Test", "done": False}]})
-        set_store(produce(lambda s: setattr(s.todos[0], "done", True)))
+        set_store(lambda s: setattr(s.todos[0], "done", True))
         assert store.todos[0].done is True
 
-    def test_produce_triggers_reactivity(self):
+    def test_draft_triggers_reactivity(self):
         store, set_store = create_store({"count": 0})
         seen = []
 
         eff = effect(lambda: seen.append(store.count))
         assert seen == [0]
 
-        set_store(produce(lambda s: setattr(s, "count", 99)))
+        set_store(lambda s: setattr(s, "count", 99))
+        flush()
         assert seen == [0, 99]
         eff.dispose()
 
-    def test_produce_multiple_mutations(self):
+    def test_draft_multiple_mutations(self):
         store, set_store = create_store({"a": 1, "b": 2})
 
         def mutate(s):
             s.a = 10
             s.b = 20
 
-        set_store(produce(mutate))
+        set_store(mutate)
         assert store.a == 10
         assert store.b == 20
 
-    def test_produce_pop_front_updates_indices(self):
+    def test_draft_multiple_mutations_flush_once(self):
+        """Several draft writes settle in one effect run."""
+        store, set_store = create_store({"a": 1, "b": 2})
+        runs = [0]
+
+        def watcher():
+            runs[0] += 1
+            store.a, store.b  # noqa: B018 - reads for tracking
+
+        effect(watcher)
+        assert runs[0] == 1
+
+        def mutate(s):
+            s.a = 10
+            s.b = 20
+
+        set_store(mutate)
+        flush()
+        assert runs[0] == 2, "two leaf writes coalesce into one effect run"
+
+    def test_draft_pop_front_updates_indices(self):
         """Popping index 0 should shift all per-index values."""
         store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
         assert store.items[0].v == "A"
 
-        set_store(produce(lambda s: s.items.pop(0)))
+        set_store(lambda s: s.items.pop(0))
         assert len(store.items) == 2
         assert store.items[0].v == "B"
         assert store.items[1].v == "C"
 
-    def test_produce_pop_middle_updates_indices(self):
+    def test_draft_pop_middle_updates_indices(self):
         """Popping from the middle should shift subsequent indices."""
         store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}, {"v": "D"}]})
         assert store.items[1].v == "B"
 
-        set_store(produce(lambda s: s.items.pop(1)))
+        set_store(lambda s: s.items.pop(1))
         assert len(store.items) == 3
         assert store.items[0].v == "A"
         assert store.items[1].v == "C"
         assert store.items[2].v == "D"
 
-    def test_produce_pop_front_triggers_effect(self):
+    def test_draft_pop_front_triggers_effect(self):
         """Effects reading list items should see correct values after pop(0)."""
         store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
         seen: list = []
@@ -298,79 +328,50 @@ class TestProduce:
         eff = effect(watcher)
         assert seen == ["A", "B", "C"]
 
-        set_store(produce(lambda s: s.items.pop(0)))
+        set_store(lambda s: s.items.pop(0))
+        flush()
         assert seen == ["B", "C"]
         eff.dispose()
 
-    def test_produce_append_then_pop_front(self):
+    def test_draft_append_then_pop_front(self):
         """Append followed by pop(0) should leave correct items."""
         store, set_store = create_store({"items": [{"v": "A"}]})
         assert store.items[0].v == "A"
 
-        set_store(produce(lambda s: s.items.append({"v": "B"})))
+        set_store(lambda s: s.items.append({"v": "B"}))
         assert len(store.items) == 2
         assert store.items[1].v == "B"
 
-        set_store(produce(lambda s: s.items.pop(0)))
+        set_store(lambda s: s.items.pop(0))
         assert len(store.items) == 1
         assert store.items[0].v == "B"
 
+    def test_draft_read_during_mutation(self):
+        """Draft reads should return current values."""
+        store, set_store = create_store({"x": 10, "y": 20})
+        captured = []
 
-# --------------------------------------------------------------------------- #
-# batch(fn) enhancement
-# --------------------------------------------------------------------------- #
+        def mutate(s):
+            captured.append(s.x)
+            s.y = s.x + 5
 
+        set_store(mutate)
+        assert captured == [10]
+        assert store.y == 15
 
-class TestBatchFunction:
-    def test_batch_with_function(self):
-        count, set_count = create_signal(0)
-        name, set_name = create_signal("old")
-        seen = []
+    def test_draft_list_insert_remove_extend_clear(self):
+        store, set_store = create_store({"items": [1, 3]})
+        set_store(lambda s: s.items.insert(1, 2))
+        assert list(store.items) == [1, 2, 3]
 
-        eff = effect(lambda: seen.append((count(), name())))
-        assert seen == [(0, "old")]
+        set_store(lambda s: s.items.remove(2))
+        assert list(store.items) == [1, 3]
 
-        def update():
-            set_count(1)
-            set_name("new")
+        set_store(lambda s: s.items.extend([4, 5]))
+        assert list(store.items) == [1, 3, 4, 5]
 
-        batch(update)
-        assert seen == [(0, "old"), (1, "new")]
-        eff.dispose()
-
-    def test_batch_function_returns_value(self):
-        result = batch(lambda: 42)
-        assert result == 42
-
-    def test_batch_context_manager_still_works(self):
-        count, set_count = create_signal(0)
-        seen = []
-
-        eff = effect(lambda: seen.append(count()))
-        assert seen == [0]
-
-        with batch():
-            set_count(1)
-            set_count(2)
-            set_count(3)
-        assert seen[-1] == 3
-        eff.dispose()
-
-    def test_batch_none_returns_context_manager(self):
-        ctx = batch()
-        assert hasattr(ctx, "__enter__")
-        assert hasattr(ctx, "__exit__")
-
-    def test_batch_function_flushes_synchronously(self):
-        """Effects should have run by the time batch(fn) returns."""
-        a, set_a = create_signal(0)
-        log = []
-        eff = effect(lambda: log.append(a()))
-        assert log == [0]
-
-        batch(lambda: set_a(99))
-        assert log == [0, 99]
-        eff.dispose()
+        set_store(lambda s: s.items.clear())
+        assert list(store.items) == []
 
 
 # --------------------------------------------------------------------------- #
@@ -382,18 +383,18 @@ class TestStoreEdgeCases:
     def test_deeply_nested(self):
         store, set_store = create_store({"a": {"b": {"c": {"d": 42}}}})
         assert store.a.b.c.d == 42
-        set_store("a", "b", "c", "d", 100)
+        set_store(lambda s: setattr(s.a.b.c, "d", 100))
         assert store.a.b.c.d == 100
 
     def test_set_replaces_entire_nested_dict(self):
         store, set_store = create_store({"user": {"name": "Ada", "age": 30}})
-        set_store("user", {"name": "Jane", "age": 25})
+        set_store(lambda s: setattr(s, "user", {"name": "Jane", "age": 25}))
         assert store.user.name == "Jane"
         assert store.user.age == 25
 
     def test_set_replaces_entire_list(self):
         store, set_store = create_store({"items": [1, 2, 3]})
-        set_store("items", [4, 5])
+        set_store(lambda s: setattr(s, "items", [4, 5]))
         assert list(store.items) == [4, 5]
 
     def test_none_values(self):
@@ -403,13 +404,13 @@ class TestStoreEdgeCases:
     def test_boolean_values(self):
         store, set_store = create_store({"flag": False})
         assert store.flag is False
-        set_store("flag", True)
+        set_store(lambda s: setattr(s, "flag", True))
         assert store.flag is True
 
     def test_numeric_values(self):
         store, set_store = create_store({"pi": 3.14})
         assert store.pi == 3.14
-        set_store("pi", 3.14159)
+        set_store(lambda s: setattr(s, "pi", 3.14159))
         assert store.pi == 3.14159
 
     def test_list_proxy_repr(self):
@@ -421,28 +422,10 @@ class TestStoreEdgeCases:
         store, _ = create_store({"items": [1, 2, 3]})
         assert store.items == [1, 2, 3]
 
-    def test_callable_top_level_update(self):
-        store, set_store = create_store({"count": 5})
-        set_store(lambda raw: {"count": raw["count"] * 2})
-        assert store.count == 10
-
-    def test_produce_read_during_draft(self):
-        """Draft reads should return current values."""
-        store, set_store = create_store({"x": 10, "y": 20})
-        captured = []
-
-        def mutate(s):
-            captured.append(s.x)
-            s.y = s.x + 5
-
-        set_store(produce(mutate))
-        assert captured == [10]
-        assert store.y == 15
-
     # ---- list replacement / pop correctness ---- #
 
-    def test_functional_list_filter_removes_correct_item(self):
-        """Filtering a list via functional update should remove the right item.
+    def test_list_filter_removes_correct_item(self):
+        """Filtering a list via replacement should remove the right item.
 
         Regression test for a bug where removing index 0 actually dropped the
         last item because child-node signals were not refreshed after the list
@@ -461,18 +444,19 @@ class TestStoreEdgeCases:
 
         assert store.todos[0].text == "first"
 
-        set_store(
-            "todos",
-            lambda ts: [t for i, t in enumerate(ts) if i != 0],
-        )
+        from wybthon.store import unwrap
+
+        set_store(lambda s: setattr(s, "todos", [t for i, t in enumerate(unwrap(store)["todos"]) if i != 0]))
 
         assert len(store.todos) == 3
         assert store.todos[0].text == "second"
         assert store.todos[1].text == "third"
         assert store.todos[2].text == "fourth"
 
-    def test_functional_list_filter_with_effect(self):
+    def test_list_filter_with_effect(self):
         """Effects tracking list items should see correct values after filter."""
+        from wybthon.store import unwrap
+
         store, set_store = create_store(
             {
                 "todos": [
@@ -492,10 +476,12 @@ class TestStoreEdgeCases:
         eff = effect(watcher)
         assert texts == ["A", "B", "C"]
 
-        set_store("todos", lambda ts: [t for t in ts if t["id"] != 1])
+        set_store(lambda s: setattr(s, "todos", [t for t in unwrap(store)["todos"] if t["id"] != 1]))
+        flush()
         assert texts == ["B", "C"]
 
-        set_store("todos", lambda ts: [t for t in ts if t["id"] != 3])
+        set_store(lambda s: setattr(s, "todos", [t for t in unwrap(store)["todos"] if t["id"] != 3]))
+        flush()
         assert texts == ["B"]
         eff.dispose()
 
@@ -505,24 +491,26 @@ class TestStoreEdgeCases:
         assert store.items[0].name == "A"
         assert store.items[1].name == "B"
 
-        set_store("items", [10, 20])
+        set_store(lambda s: setattr(s, "items", [10, 20]))
         assert store.items[0] == 10
         assert store.items[1] == 20
 
     def test_multiple_sequential_list_replacements(self):
         """Multiple list replacements with reads between each."""
+        from wybthon.store import unwrap
+
         store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
         assert store.items[0].v == "A"
 
-        set_store("items", lambda ts: [t for t in ts if t["v"] != "A"])
+        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "A"]))
         assert store.items[0].v == "B"
         assert store.items[1].v == "C"
 
-        set_store("items", lambda ts: [t for t in ts if t["v"] != "B"])
+        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "B"]))
         assert len(store.items) == 1
         assert store.items[0].v == "C"
 
-        set_store("items", lambda ts: [t for t in ts if t["v"] != "C"])
+        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "C"]))
         assert len(store.items) == 0
 
     def test_replace_nested_dict_after_reading_children(self):
@@ -530,7 +518,7 @@ class TestStoreEdgeCases:
         store, set_store = create_store({"user": {"name": "Ada", "address": {"city": "London"}}})
         assert store.user.address.city == "London"
 
-        set_store("user", {"name": "Jane", "address": {"city": "Paris"}})
+        set_store(lambda s: setattr(s, "user", {"name": "Jane", "address": {"city": "Paris"}}))
         assert store.user.name == "Jane"
         assert store.user.address.city == "Paris"
 
@@ -538,13 +526,13 @@ class TestStoreEdgeCases:
         """Grow then shrink a list multiple times."""
         store, set_store = create_store({"items": []})
 
-        set_store("items", [1, 2, 3])
+        set_store(lambda s: setattr(s, "items", [1, 2, 3]))
         assert list(store.items) == [1, 2, 3]
 
-        set_store("items", [1])
+        set_store(lambda s: setattr(s, "items", [1]))
         assert list(store.items) == [1]
         assert len(store.items) == 1
 
-        set_store("items", [10, 20, 30, 40])
+        set_store(lambda s: setattr(s, "items", [10, 20, 30, 40]))
         assert list(store.items) == [10, 20, 30, 40]
         assert len(store.items) == 4

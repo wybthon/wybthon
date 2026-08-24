@@ -1,9 +1,10 @@
-"""Tests for the async, Suspense-integrated ``lazy`` helper.
+"""Tests for the async, Loading-integrated ``lazy`` helper.
 
 ``lazy(loader)`` wraps a sync or async loader that returns a component,
 a module, a module-path string, or a ``(module_path, attr)`` tuple. The
-load is backed by a Resource, so pending loads register with the nearest
-Suspense boundary and failures raise into the nearest ErrorBoundary.
+load is backed by an async memo, so pending loads register with the
+nearest Loading boundary and failures raise into the nearest
+ErrorBoundary.
 """
 
 import asyncio
@@ -15,7 +16,6 @@ from conftest import collect_texts
 
 import wybthon as _wybthon_pkg  # noqa: F401
 from wybthon.error_boundary import ErrorBoundary
-from wybthon.suspense import Suspense
 
 
 def _install_fake_module(monkeypatch, module_name: str, page_factory) -> None:
@@ -48,6 +48,7 @@ def test_lazy_mounts_resolved_module(wyb, monkeypatch, root_element):
     async def run() -> None:
         wyb["reconciler"].render(h(LazyComp, {}), root_element)
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
 
     asyncio.run(run())
 
@@ -71,6 +72,7 @@ def test_lazy_accepts_direct_component(wyb, root_element):
     async def run() -> None:
         wyb["reconciler"].render(h(LazyComp, {}), root_element)
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
 
     asyncio.run(run())
 
@@ -99,16 +101,18 @@ def test_lazy_async_loader(wyb, monkeypatch, root_element):
     async def run() -> None:
         wyb["reconciler"].render(h(LazyComp, {}), root_element)
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
 
     asyncio.run(run())
 
     assert "async loaded" in collect_texts(root_element.element)
 
 
-def test_lazy_shows_suspense_fallback_while_loading(wyb, monkeypatch, root_element):
-    """A pending lazy load triggers the nearest Suspense fallback."""
+def test_lazy_shows_loading_fallback_while_loading(wyb, monkeypatch, root_element):
+    """A pending lazy load triggers the nearest Loading fallback."""
     component = wyb["component"].component
     h = wyb["vnode"].h
+    Loading = importlib.import_module("wybthon.loading").Loading
 
     @component
     def Page():
@@ -130,14 +134,16 @@ def test_lazy_shows_suspense_fallback_while_loading(wyb, monkeypatch, root_eleme
         nonlocal release
         release = asyncio.Event()
         wyb["reconciler"].render(
-            Suspense(fallback="Loading...", children=[h(LazyComp, {})]),
+            Loading(fallback="Loading...", children=[h(LazyComp, {})]),
             root_element,
         )
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
         assert "Loading..." in collect_texts(root_element.element)
 
         release.set()
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
         texts = collect_texts(root_element.element)
         assert "lazy page ready" in texts
         assert "Loading..." not in texts
@@ -164,6 +170,7 @@ def test_lazy_raises_into_error_boundary_on_import_failure(wyb, root_element):
             root_element,
         )
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
 
     asyncio.run(run())
 
@@ -199,6 +206,7 @@ def test_lazy_preload_starts_load_early(wyb, monkeypatch, root_element):
 
         wyb["reconciler"].render(h(LazyComp, {}), root_element)
         await asyncio.sleep(0.01)
+        wyb["reactivity"].flush()
 
     asyncio.run(run())
 

@@ -408,7 +408,7 @@ def _load_wybthon():
         "wybthon.context",
         "wybthon.template",
         "wybthon.error_boundary",
-        "wybthon.suspense",
+        "wybthon.loading",
         "wybthon.portal",
         "wybthon.reconciler",
         "wybthon.flow",
@@ -510,36 +510,40 @@ def _setup_empty(state):
 
 def _setup_1k(state):
     state.set_data(state.build_data(1000))
+    state._rx.flush()
 
 
 def _setup_10k(state):
     state.set_data(state.build_data(10000))
+    state._rx.flush()
 
 
 # ---------------------------------------------------------------------------
 # Benchmark operations (matching js-framework-benchmark)
+#
+# Writes batch automatically; each op ends with an explicit ``flush()``
+# so the effect run and DOM commit land inside the timed region.
 # ---------------------------------------------------------------------------
 
 
 def op_create_rows(state):
     """Create 1,000 rows."""
     state.set_data(state.build_data(1000))
+    state._rx.flush()
 
 
 def op_replace_all(state):
     """Replace all 1,000 rows with new data."""
     state.set_data(state.build_data(1000))
+    state._rx.flush()
 
 
 def op_partial_update(state):
-    """Update every 10th row's label signal."""
+    """Update every 10th row's label signal (one batched flush)."""
     rows = state.data()
-
-    def update():
-        for i in range(0, len(rows), 10):
-            rows[i]["set_label"](lambda label: label + " !!!")
-
-    state._rx.batch(update)
+    for i in range(0, len(rows), 10):
+        rows[i]["set_label"](lambda label: label + " !!!")
+    state._rx.flush()
 
 
 def op_select_row(state):
@@ -547,6 +551,7 @@ def op_select_row(state):
     rows = state.data()
     if rows:
         state.set_selected(rows[len(rows) // 2]["id"])
+    state._rx.flush()
 
 
 def op_swap_rows(state):
@@ -555,6 +560,7 @@ def op_swap_rows(state):
     if len(rows) > 998:
         rows[1], rows[998] = rows[998], rows[1]
     state.set_data(rows)
+    state._rx.flush()
 
 
 def op_remove_row(state):
@@ -563,26 +569,26 @@ def op_remove_row(state):
     if rows:
         target_id = rows[len(rows) // 2]["id"]
         state.set_data([d for d in rows if d["id"] != target_id])
+    state._rx.flush()
 
 
 def op_create_many(state):
     """Create 10,000 rows."""
     state.set_data(state.build_data(10000))
+    state._rx.flush()
 
 
 def op_append_rows(state):
     """Append 1,000 rows to the existing table."""
     state.set_data(state.data() + state.build_data(1000))
+    state._rx.flush()
 
 
 def op_clear_rows(state):
-    """Clear all rows."""
-
-    def update():
-        state.set_data([])
-        state.set_selected(None)
-
-    state._rx.batch(update)
+    """Clear all rows (two writes, one batched flush)."""
+    state.set_data([])
+    state.set_selected(None)
+    state._rx.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -642,15 +648,12 @@ def _setup_rerender(state):
 def op_hole_update(state):
     """Update one signal — only the one hole-driven text node is touched.
 
-    Wrapped in ``batch`` so effects flush synchronously inside the timed
+    The explicit ``flush()`` runs effects synchronously inside the timed
     region, matching the behavior of ``op_full_rerender``.
     """
     state._counter += 1
-
-    def update():
-        state._setter(state._counter)
-
-    state._reactivity.batch(update)
+    state._setter(state._counter)
+    state._reactivity.flush()
 
 
 def op_full_rerender(state):
@@ -761,14 +764,17 @@ def _measure_memory(make_state):
     ready_cur, _ = tracemalloc.get_traced_memory()
 
     state.set_data(state.build_data(1000))
+    state._rx.flush()
     run_cur, _ = tracemalloc.get_traced_memory()
 
     state.cleanup()
     state2 = make_state()
     for _ in range(5):
         state2.set_data(state2.build_data(1000))
+        state2._rx.flush()
         state2.set_data([])
         state2.set_selected(None)
+        state2._rx.flush()
     cycle_cur, _ = tracemalloc.get_traced_memory()
 
     tracemalloc.stop()

@@ -1,9 +1,8 @@
-"""Reactivity primitives surfaced to the DOM: signal, memo, effect, batch, untrack."""
+"""Reactivity primitives surfaced to the DOM: signal, memo, effect, automatic batching, untrack."""
 
 from app.testkit import tid
 
 from wybthon import (
-    batch,
     button,
     component,
     create_effect,
@@ -30,10 +29,10 @@ def Page():
 
     create_effect(track_count)
 
-    def do_batch(_e):
-        with batch():
-            set_count(count() + 1)
-            set_count(count() + 1)
+    def do_double_write(_e):
+        # Two writes in one handler batch automatically: effects run once.
+        set_count(count() + 1)
+        set_count(count() + 1)
 
     a, set_a = create_signal(0)
     b, set_b = create_signal(0)
@@ -53,7 +52,7 @@ def Page():
             p("doubled: ", span(doubled, **tid("rx-doubled"))),
             button("+1", on_click=lambda e: set_count(count() + 1), **tid("rx-inc")),
             button("reset", on_click=lambda e: set_count(0), **tid("rx-reset")),
-            button("batch +2", on_click=do_batch, **tid("rx-batch")),
+            button("batch +2", on_click=do_double_write, **tid("rx-batch")),
             p("effect runs: ", span(effect_runs, **tid("rx-effect-runs"))),
         ),
         div(

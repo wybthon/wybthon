@@ -30,7 +30,7 @@ def Hello(name="world", greeting="Hello"):
   are still tracked but ignored.
 * Pass an accessor directly into the tree for a reactive auto-hole.
 * Call it (`name()`) for a tracked read.
-* Wrap with [`untrack`](../concepts/primitives.md#untrack) for a
+* Wrap with [`untrack`](../concepts/primitives.md#untrack-and-peek) for a
   one-shot snapshot (e.g., seeding a signal).
 
 ```python
@@ -125,8 +125,8 @@ update reactively without the subtree being re-mounted.
 - Use `untrack(prop)` to seed local state from a prop.
 - Use `dynamic(getter)` to wrap a derived expression as a reactive hole.
 - Pass signals into context's `value` for reactive context updates.
-- Use `For`/`Index` for keyed lists; `each=` should be a getter, not a
-  plain `list`.
+- Use `For` for lists (with `key="index"` for per-position slots);
+  `each=` should be a getter, not a plain `list`.
 - Use `on_mount` / `on_cleanup` for lifecycle work.
 
 #### Larger examples

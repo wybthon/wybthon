@@ -94,6 +94,7 @@ def test_nested_effect_disposed_on_parent_rerun(wyb, root_element):
     assert inner_cleanups[0] == 0
 
     setter_ref[0](1)
+    reactivity.flush()
 
     # Inner effect from prev render was disposed (cleanup ran),
     # and a new one was created
@@ -129,6 +130,7 @@ def test_setup_effects_survive_rerender(wyb, root_element):
     assert setup_effect_cleanups[0] == 0
 
     setter_ref[0](1)
+    reactivity.flush()
 
     # Setup effect re-ran (it tracks count) but was NOT disposed
     assert setup_effect_runs[0] == 2
@@ -142,7 +144,7 @@ def test_setup_effects_survive_rerender(wyb, root_element):
 
 
 def test_create_root_disposes_all_effects():
-    from wybthon.reactivity import create_effect, create_root, create_signal
+    from wybthon.reactivity import create_effect, create_root, create_signal, flush
 
     log = []
 
@@ -154,6 +156,7 @@ def test_create_root_disposes_all_effects():
 
     dispose_fn = create_root(body)
     assert "effect:0" in log
+    flush()
     assert "effect:1" in log
 
     dispose_fn()

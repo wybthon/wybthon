@@ -1,12 +1,13 @@
 """Tests for fine-grained reactive scopes in flow controls.
 
-Verifies that For/Index create per-item/per-index reactive scopes,
-and that Show uses keyed conditional rendering.
+Verifies that For creates per-item (and, with ``key="index"``,
+per-index) reactive scopes, and that Show uses keyed conditional
+rendering.
 """
 
 from conftest import collect_texts
 
-from wybthon.flow import For, Index, Show
+from wybthon.flow import For, Show
 from wybthon.vnode import h
 
 # ---------------------------------------------------------------------------
@@ -60,6 +61,7 @@ def test_for_index_getter_is_signal(wyb, root_element):
     assert captured_idx_getters[2]() == 2
 
     set_items([c, a, b])
+    reactivity.flush()
 
     assert captured_idx_getters[0]() == 1
     assert captured_idx_getters[1]() == 2
@@ -87,18 +89,19 @@ def test_for_disposes_scope_on_item_removal(wyb, root_element):
     assert cleanup_log == []
 
     set_items([a])
+    reactivity.flush()
 
     assert 1 in cleanup_log
     assert 2 in cleanup_log
 
 
 # ---------------------------------------------------------------------------
-# Index — per-index reactive scopes
+# For key="index" — per-index reactive scopes
 # ---------------------------------------------------------------------------
 
 
-def test_index_item_getter_updates_in_place(wyb, root_element):
-    """Index item getters update when the value at that position changes."""
+def test_index_mode_item_getter_updates_in_place(wyb, root_element):
+    """key="index" item getters update when the value at that position changes."""
     vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B"])
     captured_getters: list = []
@@ -109,7 +112,7 @@ def test_index_item_getter_updates_in_place(wyb, root_element):
 
     def App(props):
         def render():
-            return Index(each=items, children=mapper)
+            return For(each=items, children=mapper, key="index")
 
         return render
 
@@ -118,24 +121,25 @@ def test_index_item_getter_updates_in_place(wyb, root_element):
     assert captured_getters[1]() == "B"
 
     set_items(["X", "Y"])
+    reactivity.flush()
 
     assert captured_getters[0]() == "X"
     assert captured_getters[1]() == "Y"
 
 
-def test_index_disposes_on_shrink(wyb, root_element):
-    """Index disposes scopes for excess positions when the list shrinks."""
+def test_index_mode_disposes_on_shrink(wyb, root_element):
+    """key="index" disposes scopes for excess positions when the list shrinks."""
     vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal(["A", "B", "C"])
     cleanup_log: list = []
 
     def mapper(item, idx):
-        reactivity.on_cleanup(lambda _i=idx: cleanup_log.append(_i))
+        reactivity.on_cleanup(lambda _i=idx(): cleanup_log.append(_i))
         return h("li", {}, item())
 
     def App(props):
         def render():
-            return Index(each=items, children=mapper)
+            return For(each=items, children=mapper, key="index")
 
         return render
 
@@ -143,6 +147,7 @@ def test_index_disposes_on_shrink(wyb, root_element):
     assert cleanup_log == []
 
     set_items(["A"])
+    reactivity.flush()
 
     assert 1 in cleanup_log
     assert 2 in cleanup_log
@@ -175,9 +180,11 @@ def test_show_keyed_scope_disposal(wyb, root_element):
     assert "visible" in collect_texts(root_element.element)
 
     set_visible(False)
+    reactivity.flush()
     assert "hidden" in collect_texts(root_element.element)
 
     set_visible(True)
+    reactivity.flush()
     assert "visible" in collect_texts(root_element.element)
 
 
@@ -199,4 +206,5 @@ def test_show_stable_when_condition_unchanged(wyb, root_element):
     assert "count=1" in collect_texts(root_element.element)
 
     set_count(5)
+    reactivity.flush()
     assert "count=5" in collect_texts(root_element.element)

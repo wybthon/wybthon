@@ -13,19 +13,19 @@ API rules:
 - `when` / `each`: pass a *getter* (the signal accessor itself) or a raw
   value. Getters are called inside the flow control's own scope.
 - `children`: may be a `VNode`, a callable returning a `VNode`, or
-  (for `For` / `Index`) the per-item mapping callback.
+  (for `For` / `Repeat`) the per-item mapping callback.
 - `fallback`: same flexibility as `children`.
 
-Fine-grained list primitives:
+List rendering (unified, matching SolidJS 2.0):
 
-- [`For`][wybthon.For] maintains **stable per-item rendered subtrees**
-  (keyed by reference identity) on top of
-  [`map_array`][wybthon.map_array]. The mapping callback runs exactly
-  once per unique item; on list changes, existing rows keep their DOM
-  and are only *moved*, never re-diffed.
-- [`Index`][wybthon.Index] maintains **stable per-index subtrees** on
-  top of [`index_array`][wybthon.index_array], with a reactive item
-  signal that updates when the value at that position changes.
+- [`For`][wybthon.For] renders a list with **stable per-item subtrees**
+  and three keying modes selected by the `key` argument: reference
+  identity (default), a key-extractor callable, or `"index"` for
+  per-position slots. The mapping callback runs exactly once per unique
+  item; on list changes, existing rows keep their DOM and are only
+  *moved*, never re-diffed.
+- [`Repeat`][wybthon.Repeat] renders by count, with no list diffing at
+  all: changing the count mounts or disposes tail slots only.
 
 Example:
     ```python
@@ -33,8 +33,11 @@ Example:
          children=lambda: p("Welcome!"),
          fallback=lambda: p("Please log in"))
 
-    For(each=items,
-        children=lambda item, idx: li(item()))
+    For(each=todos,
+        key=lambda t: t["id"],
+        children=lambda item, idx: li(lambda: item()["title"]))
+
+    Repeat(times=count, children=lambda i: span(f"#{i}"))
     ```
 """
 
@@ -46,7 +49,7 @@ from ._warnings import warn_each_plain_list
 from .reactivity import ReactiveProps
 from .vnode import Fragment, VNode, dynamic, h, is_getter, to_text_vnode
 
-__all__ = ["Show", "For", "Index", "Switch", "Match", "Dynamic"]
+__all__ = ["Show", "For", "Repeat", "Switch", "Match", "Dynamic"]
 
 
 def _eval(v: Any) -> Any:
@@ -194,7 +197,7 @@ _ShowComponent._wyb_component = True  # type: ignore[attr-defined]
 # ---------------------------------------------------------------------------
 
 
-def For(each: Any = None, children: Any = None, fallback: Any = None) -> VNode:
+def For(each: Any = None, children: Any = None, fallback: Any = None, key: Any = None) -> VNode:
     """Render a list of items using a per-item mapping function.
 
     ```python
@@ -204,25 +207,36 @@ def For(each: Any = None, children: Any = None, fallback: Any = None) -> VNode:
 
     Inside the callback, `item` is a **signal-backed getter** returning
     the current item value, and `index` is a signal-backed getter
-    returning the current integer index, matching SolidJS `<For>`.
+    returning the current integer index. The mapping callback runs
+    **exactly once per unique item**, and the rendered subtree is
+    cached. When the list changes, unchanged rows keep their DOM
+    untouched; the reconciler only mounts additions, unmounts removals,
+    and moves reordered rows. When an item leaves the list, its
+    reactive scope (including any effects or cleanups created inside
+    the callback) is disposed.
 
-    `For` is built on [`map_array`][wybthon.map_array]: the mapping
-    callback runs **exactly once per unique item** (keyed by reference
-    identity), and the rendered subtree is cached. When the list
-    changes, unchanged rows keep their DOM untouched; the reconciler
-    only mounts additions, unmounts removals, and moves reordered rows.
-    When an item leaves the list, its reactive scope (including any
-    effects or cleanups created inside the callback) is disposed.
+    **Keying modes** (matching SolidJS 2.0's unified list component):
+
+    - `key=None` (default): rows match by **reference identity**. The
+      same object keeps its row; a replacement object makes a new row.
+    - `key=callable`: rows match by `key(item)`. A fresh object with
+      the same key **updates the existing row in place** through the
+      `item` getter; ideal for data refreshed from a server.
+    - `key="index"`: rows match by **position**. The row at each index
+      renders once and its `item` getter updates when the value at
+      that position changes (the old `Index` component).
 
     Args:
         each: List getter (typically a signal accessor) or plain list.
         children: A `(item_getter, index_getter) -> VNode` callable.
         fallback: Slot rendered when the list is empty.
+        key: Keying mode: `None`, a key-extractor callable, or the
+            string `"index"`.
 
     Returns:
         A component [`VNode`][wybthon.VNode].
     """
-    return h(_ForComponent, {"each": each, "children": children, "fallback": fallback})
+    return h(_ForComponent, {"each": each, "children": children, "fallback": fallback, "key_mode": key})
 
 
 def _ForComponent(props: ReactiveProps) -> Any:
@@ -234,10 +248,12 @@ def _ForComponent(props: ReactiveProps) -> Any:
     def source() -> Any:
         return _eval(props.value("each")) or None
 
-    # The mapping callback is fixed at setup (matching SolidJS, where the
-    # <For> children function can't be swapped reactively); resolving it
-    # once keeps the per-row path allocation-free.
+    # The mapping callback and keying mode are fixed at setup (matching
+    # SolidJS, where the <For> children function can't be swapped
+    # reactively); resolving them once keeps the per-row path
+    # allocation-free.
     children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
+    key_mode = _rx.untrack(lambda: props.value("key_mode"))
 
     def map_row(item: Callable[[], Any], index: Callable[[], int]) -> VNode:
         if children_fn is None:
@@ -249,7 +265,16 @@ def _ForComponent(props: ReactiveProps) -> Any:
         vnode.owner_scope = _rx._current_owner
         return vnode
 
-    rows = _rx.map_array(source, map_row)
+    if key_mode == "index":
+
+        def map_slot(item: Callable[[], Any], index: int) -> VNode:
+            return map_row(item, lambda: index)
+
+        rows = _rx.index_array(source, map_slot)
+    elif callable(key_mode):
+        rows = _rx.map_array(source, map_row, key=key_mode)
+    else:
+        rows = _rx.map_array(source, map_row)
 
     def render() -> VNode:
         vnodes = rows()
@@ -265,48 +290,55 @@ _ForComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
-# Index
+# Repeat
 # ---------------------------------------------------------------------------
 
 
-def Index(each: Any = None, children: Any = None, fallback: Any = None) -> VNode:
-    """Render a list by index with a stable item getter.
+def Repeat(times: Any = None, children: Any = None, fallback: Any = None) -> VNode:
+    """Render `children(i)` for each index in `range(times)`, with no diffing.
 
-    Unlike [`For`][wybthon.For], the `children` callback receives
-    `(item_getter, index)` so that the DOM subtree for each index is
-    reused even when the underlying data changes.
-
-    `Index` is built on [`index_array`][wybthon.index_array]: each slot
-    renders **once** and owns a signal-backed `item_getter` that updates
-    when the value at that position changes. Growing the list creates
-    and mounts new slots; shrinking disposes and unmounts excess slots.
+    Matches SolidJS 2.0's `Repeat`: rendering is driven purely by the
+    count. Growing the count mounts new tail slots; shrinking disposes
+    excess tail slots; nothing else is touched. Use it for
+    pagination dots, star ratings, skeleton rows, and other
+    count-driven UI where list diffing is pure overhead.
 
     Args:
-        each: List getter (typically a signal accessor) or plain list.
-        children: A `(item_getter, index: int) -> VNode` callable.
-        fallback: Slot rendered when the list is empty.
+        times: Count value or zero-arg getter.
+        children: A `(index: int) -> VNode` callable, rendered once per
+            slot.
+        fallback: Slot rendered when the count is zero.
 
     Returns:
         A component [`VNode`][wybthon.VNode].
+
+    Example:
+        ```python
+        rating, set_rating = create_signal(3)
+        Repeat(times=rating, children=lambda i: span("*"))
+        ```
     """
-    return h(_IndexComponent, {"each": each, "children": children, "fallback": fallback})
+    return h(_RepeatComponent, {"times": times, "children": children, "fallback": fallback})
 
 
-def _IndexComponent(props: ReactiveProps) -> Any:
-    """Internal component backing [`Index`][wybthon.Index] with per-index slots."""
+def _RepeatComponent(props: ReactiveProps) -> Any:
+    """Internal component backing [`Repeat`][wybthon.Repeat] with per-index slots."""
     import wybthon.reactivity as _rx
 
-    _maybe_warn_plain_each(_IndexComponent, props)
+    children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
 
     def source() -> Any:
-        return _eval(props.value("each")) or None
-
-    children_fn = _normalize_children_callback(_rx.untrack(lambda: props.value("children")))
+        count = _eval(props.value("times"))
+        try:
+            n = int(count) if count else 0
+        except (TypeError, ValueError):
+            n = 0
+        return list(range(n)) if n > 0 else None
 
     def map_slot(item: Callable[[], Any], index: int) -> VNode:
         if children_fn is None:
             return to_text_vnode("")
-        vnode = _to_vnode(children_fn(item, index))
+        vnode = _to_vnode(children_fn(index))
         vnode.owner_scope = _rx._current_owner
         return vnode
 
@@ -322,7 +354,7 @@ def _IndexComponent(props: ReactiveProps) -> Any:
     return dynamic(render)
 
 
-_IndexComponent._wyb_component = True  # type: ignore[attr-defined]
+_RepeatComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -377,7 +409,10 @@ def Switch(*branches: _MatchResult, fallback: Any = None) -> VNode:
     ```
 
     Each `Match` `when` is evaluated lazily inside the `Switch`
-    component's reactive scope.
+    component's reactive scope. Each branch renders inside its own
+    ownership scope: switching branches disposes the previous branch's
+    effects and cleanups before the next branch mounts, matching
+    [`Show`][wybthon.Show].
 
     Args:
         *branches: One or more `Match` results, in priority order.
@@ -394,14 +429,33 @@ def Switch(*branches: _MatchResult, fallback: Any = None) -> VNode:
 
 def _SwitchComponent(props: ReactiveProps) -> Any:
     """Internal component backing [`Switch`][wybthon.Switch]."""
+    import wybthon.reactivity as _rx
+
+    comp_ctx = _rx._get_component_ctx()
+
+    _active: List[Optional[int]] = [None]
+    _branch_owner: List[Optional[_rx.Owner]] = [None]
+
+    def _enter_branch(index: Optional[int]) -> None:
+        if _active[0] == index:
+            return
+        if _branch_owner[0] is not None:
+            _branch_owner[0].dispose()
+        owner = _rx.Owner()
+        if comp_ctx is not None:
+            comp_ctx._add_child(owner)
+        _branch_owner[0] = owner
+        _active[0] = index
 
     def render() -> VNode:
         branches: List[_MatchResult] = props.value("branches") or []
-        for branch in branches:
+        for i, branch in enumerate(branches):
             condition = _eval(branch.when)
             if condition:
+                _enter_branch(i)
                 return _render_slot(branch.children)
 
+        _enter_branch(-1)
         fb = props.value("fallback")
         if fb is None:
             return to_text_vnode("")

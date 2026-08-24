@@ -1,21 +1,25 @@
 # Migrating from Solid
 
-Wybthon is essentially SolidJS for Python. Most of the primitives have direct equivalents and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.
+Wybthon is essentially SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the unified `For` plus `Repeat` flow components. Most of the primitives have direct equivalents, and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.
 
 The differences are mostly cosmetic: Python instead of JavaScript, builder functions instead of JSX, and a few naming conventions to keep things idiomatic.
 
 ## API mapping
 
-| SolidJS | Wybthon |
+| SolidJS 2.0 | Wybthon |
 | --- | --- |
 | `createSignal(initial)` | [`create_signal(initial)`][wybthon.create_signal] |
 | `createEffect(fn)` | [`create_effect(fn)`][wybthon.create_effect] |
+| `createEffect(compute, apply)` | [`create_effect(compute, apply)`][wybthon.create_effect] |
 | `createRenderEffect(fn)` | [`create_render_effect(fn)`][wybthon.create_render_effect] |
-| `createComputed(fn)` | [`create_computed(fn)`][wybthon.create_computed] |
-| `createMemo(fn, v, { equals })` | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
+| `createMemo(fn, { equals })` (async supported) | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
+| `isPending(getter)` | [`is_pending(getter)`][wybthon.is_pending] |
+| `latest(getter)` | [`latest(getter)`][wybthon.latest] |
+| `action(fn)` | [`action(fn)`][wybthon.action] |
+| `createOptimistic(source)` | [`create_optimistic(source)`][wybthon.create_optimistic] |
+| `createProjection(fn)` | [`create_projection(fn)`][wybthon.create_projection] |
 | `createReaction(onInvalidate)` | [`create_reaction(on_invalidate)`][wybthon.create_reaction] |
 | `onError(handler)` | [`on_error(handler)`][wybthon.on_error] |
-| `createDeferred(source)` | [`create_deferred(source)`][wybthon.create_deferred] |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
 | `catchError(fn, handler)` | [`catch_error(fn, handler)`][wybthon.catch_error] |
 | `createSelector(source)` | [`create_selector(source)`][wybthon.create_selector] |
@@ -24,30 +28,42 @@ The differences are mostly cosmetic: Python instead of JavaScript, builder funct
 | `children(fn)` | [`children(fn)`][wybthon.children] |
 | `getOwner` / `runWithOwner` | [`get_owner`][wybthon.get_owner] / [`run_with_owner`][wybthon.run_with_owner] |
 | `createRoot(fn)` | [`create_root(fn)`][wybthon.create_root] |
-| `createResource(source, fetcher)` | [`create_resource(source, fetcher)`][wybthon.create_resource] |
 | `createContext(default)` / `useContext` | [`create_context`][wybthon.create_context] / [`use_context`][wybthon.use_context] |
 | `Ctx.Provider` | `ctx.Provider(value=..., children=[...])` |
 | `<Show when={...} fallback={...}>` | [`Show(when=..., fallback=...)`][wybthon.Show] |
 | `<For each={...}>` | [`For(each=..., children=...)`][wybthon.For] |
-| `<Index each={...}>` | [`Index(each=..., children=...)`][wybthon.Index] |
+| `<Repeat times={...}>` | [`Repeat(times=..., children=...)`][wybthon.Repeat] |
 | `<Switch>` / `<Match>` | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
 | `<Dynamic component={...} />` | [`Dynamic(component=...)`][wybthon.Dynamic] |
 | `<Portal mount={...}>` | [`Portal(mount=...)`][wybthon.Portal] |
 | `<ErrorBoundary fallback={...}>` | [`ErrorBoundary(fallback=...)`][wybthon.ErrorBoundary] |
-| `<Suspense fallback={...}>` | [`Suspense(fallback=...)`][wybthon.Suspense] |
-| `<SuspenseList revealOrder={...}>` | [`SuspenseList(reveal_order=...)`][wybthon.SuspenseList] |
+| `<Loading fallback={...}>` | [`Loading(fallback=...)`][wybthon.Loading] |
+| `<LoadingList revealOrder={...}>` | [`LoadingList(reveal_order=...)`][wybthon.LoadingList] |
 | `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
 | `onMount(fn)` | [`on_mount(fn)`][wybthon.on_mount] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
-| `batch(fn)` | [`batch(fn)`][wybthon.batch] |
 | `untrack(fn)` | [`untrack(fn)`][wybthon.untrack] |
-| `on(deps, fn)` | [`on(deps, fn)`][wybthon.on] |
-| `createStore(initial)` | [`create_store(initial)`][wybthon.create_store] |
-| `createMutable(initial)` | [`create_mutable(initial)`][wybthon.create_mutable] |
-| `modifyMutable(state, modifier)` | [`modify_mutable(state, modifier)`][wybthon.modify_mutable] |
-| `produce(fn)` | [`produce(fn)`][wybthon.produce] |
+| `createStore(initial)` (draft setter) | [`create_store(initial)`][wybthon.create_store] |
 | `reconcile(data)` | [`reconcile(data, key="id")`][wybthon.reconcile] |
 | `unwrap(store)` | [`unwrap(store)`][wybthon.unwrap] |
+
+## Coming from Solid 1.x
+
+Wybthon follows SolidJS 2.0, so the primitives that Solid 2.0 removed don't exist here either:
+
+| Solid 1.x | Wybthon equivalent |
+| --- | --- |
+| `batch(fn)` | Nothing to call. Batching is automatic; every write batches until the next flush. Use [`flush()`][wybthon.flush] to settle effects synchronously. |
+| `on(deps, fn, { defer })` | Split effects: [`create_effect(compute, apply)`][wybthon.create_effect]. The tracked `compute` phase declares dependencies; the untracked `apply` phase receives its return value. |
+| `createComputed(fn)` | [`create_memo`][wybthon.create_memo] for derived values, or [`create_render_effect`][wybthon.create_render_effect] for pre-render side effects. |
+| `createDeferred(source)` | Removed with no direct replacement. |
+| `createResource(source, fetcher)` | Async memos: [`create_memo(async_fn)`][wybthon.create_memo], observed with [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest]. |
+| `<Suspense>` / `<SuspenseList>` | [`Loading`][wybthon.Loading] / [`LoadingList`][wybthon.LoadingList]. |
+| `<Index each={...}>` | [`For(each=..., key="index")`][wybthon.For]. |
+| `produce(fn)` | The store setter is draft-first: pass the mutator function directly, `set_store(fn)`. |
+| `createMutable` / `modifyMutable` | Draft-first store setters via [`create_store`][wybthon.create_store]. |
+| Path-based store writes (`setStore("a", "b", value)`) | Draft mutations: `set_store(lambda s: ...)` or `set_store(reconcile(data))`. |
+| `useTransition` / `startTransition` | [`action`][wybthon.action] plus [`create_optimistic`][wybthon.create_optimistic] / [`create_optimistic_store`][wybthon.create_optimistic_store]. |
 
 ## Templates
 
@@ -104,56 +120,81 @@ count, set_count = create_signal(0)
 create_effect(lambda: print("count =", count()))
 ```
 
-`create_effect` re-runs whenever signals it tracked during the previous run change. There's no manual dep array.
+`create_effect` re-runs whenever signals it tracked during the previous run change. There's no manual dep array. Like Solid 2.0, effects also come in a split form, `create_effect(compute, apply)`: the `compute` phase runs tracked, and its return value is passed to the untracked `apply` phase, replacing 1.x's `on(deps, fn)`. Effect bodies may be `async def`; reads after an `await` are still tracked.
 
 ### Execution semantics carry over
 
-The behaviors you rely on in Solid hold in Wybthon too:
+The behaviors you rely on in Solid 2.0 hold in Wybthon too:
 
-- **Synchronous updates.** Outside a `batch`, a `set` propagates before it
-  returns. After `set_count(1)`, both `count()` and any derived memo read the
-  new value immediately. (No `await`, no microtask, no test `sleep`.)
+- **Automatic batching.** Signal writes apply immediately (reads see the
+  new value right away), but effects are scheduled and run on the next
+  flush: a browser microtask, automatically at the end of each Wybthon
+  event handler, or an explicit [`flush()`][wybthon.flush]. Multiple
+  writes coalesce into one effect run per flush; there's no `batch()`
+  to call.
 - **Glitch-free.** An effect reading several memos derived from one signal
-  always sees a consistent combination and runs once per change, never on an
+  always sees a consistent combination and runs once per flush, never on an
   intermediate state.
 - **Lazy memos.** `create_memo` recomputes only when read after a dependency
   changed, and skips notifying consumers when its value is unchanged (same
   `equals`-based short-circuit as Solid).
-- **`batch`** coalesces writes and flushes once at the outermost boundary.
+- **Async-first.** `create_memo` accepts `async def` functions. Reading
+  an async memo before its first value raises
+  [`NotReadyError`][wybthon.NotReadyError] (which
+  [`Loading`][wybthon.Loading] boundaries catch); after the first value,
+  recomputes serve the stale value while revalidating.
 
-`For` and `Index` match Solid exactly: the mapping callback runs **once
-per unique item** (or per index slot), and its result is cached. On list
-changes only added items map, removed items dispose, and reorders move
-existing DOM nodes. That means eager reads like `str(item())` inside the
-callback freeze at creation, just like destructuring props: pass the
-accessor itself (or `dynamic(lambda: ...)`) where the value should stay
-live.
+`For` matches Solid exactly: the mapping callback runs **once per unique
+item**, and its result is cached. On list changes only added items map,
+removed items dispose, and reorders move existing DOM nodes. Pass
+`key="index"` for per-position slots (Solid 1.x's `Index`). That means
+eager reads like `str(item())` inside the callback freeze at creation,
+just like destructuring props: pass the accessor itself (or
+`dynamic(lambda: ...)`) where the value should stay live.
 
 ## Stores
 
+Stores are draft-first, matching Solid 2.0's `createStore`: the setter takes a function that mutates a draft with plain Python.
+
 ```python
-from wybthon import create_store, produce, reconcile, unwrap
+from wybthon import create_store, reconcile, unwrap
 
 state, set_state = create_store({"count": 0, "items": []})
-
-# Path-based writes:
-set_state("count", lambda c: c + 1)
 
 # Atomic multi-mutation update (Immer-style draft):
 def update(s):
     s.count += 1
     s.items.append("new")
 
-set_state(produce(update))
+set_state(update)
 
 # Diff fresh server data in, preserving identity for unchanged items:
-set_state("items", reconcile(fetched_items))
+set_state(reconcile({"count": 5, "items": fetched_items}, key="id"))
 
 # Get the raw data back out:
 raw = unwrap(state.items)
 ```
 
-Stores wrap nested data in lazy proxies so reads are tracked at the leaf level, exactly like Solid.
+Stores wrap nested data in lazy proxies so reads are tracked at the leaf level, exactly like Solid. Only the leaves your draft function actually changed notify. For read-only derived stores updated fine-grained, use [`create_projection`][wybthon.create_projection], the counterpart of Solid 2.0's `createProjection`.
+
+## Async data, actions, and optimistic state
+
+Solid 2.0's async model carries over directly. An async memo is the unit of async data:
+
+```python
+async def fetch_user():
+    resp = await js.fetch("/api/user")
+    return await resp.json()
+
+user = create_memo(fetch_user)
+
+Loading(
+    fallback=lambda: p("Loading..."),
+    children=lambda: p(dynamic(lambda: user().name)),
+)
+```
+
+[`is_pending(user)`][wybthon.is_pending] reports in-flight recomputation (tracked), and [`latest(user)`][wybthon.latest] reads without raising. For mutations, [`@action`][wybthon.action] wraps an async function, exposes a tracked `.pending()` getter, and routes errors to the nearest error boundary; [`create_optimistic`][wybthon.create_optimistic] and [`create_optimistic_store`][wybthon.create_optimistic_store] overlay temporary values that revert when in-flight actions settle.
 
 ## Routing
 
@@ -185,7 +226,7 @@ Wybthon's router supports nested routes, dynamic params, query parsing, and lazy
 
 - The mental model (components run once, fine-grained reactivity).
 - Ownership semantics: `on_cleanup` attaches to the current owner.
-- Transitions and resources: `create_resource` integrates with `Suspense`.
+- Async loading UI: async memos integrate with `Loading` boundaries.
 - Patterns like keyed lists, conditional flows, and nested boundaries.
 
 ## Next steps

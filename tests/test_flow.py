@@ -1,4 +1,4 @@
-"""Tests for reactive flow control components (Show, For, Index, Switch, Match, Dynamic).
+"""Tests for reactive flow control components (Show, For, Repeat, Switch, Match, Dynamic).
 
 Flow controls are now reactive components that create isolated reactive
 scopes.  These tests verify both the VNode structure and the reactive
@@ -7,7 +7,7 @@ behaviour (re-rendering only when dependencies change).
 
 from conftest import collect_texts
 
-from wybthon.flow import Dynamic, For, Index, Match, Show, Switch, _MatchResult
+from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch, _MatchResult
 from wybthon.vnode import VNode, h
 
 # ---------------------------------------------------------------------------
@@ -104,9 +104,11 @@ def test_show_reactive_toggle(wyb, root_element):
     assert "on" in collect_texts(root_element.element)
 
     set_visible(False)
+    reactivity.flush()
     assert "off" in collect_texts(root_element.element)
 
     set_visible(True)
+    reactivity.flush()
     assert "on" in collect_texts(root_element.element)
 
 
@@ -201,6 +203,7 @@ def test_for_reactive_list(wyb, root_element):
     assert "X" in texts and "Y" in texts
 
     set_items(["A", "B", "C"])
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "A" in texts and "B" in texts and "C" in texts
 
@@ -216,29 +219,24 @@ def test_for_fallback(wyb, root_element):
 
 
 # ---------------------------------------------------------------------------
-# Index — VNode structure
+# For key="index" — per-position slots (the old Index component)
 # ---------------------------------------------------------------------------
 
 
-def test_index_returns_vnode():
-    result = Index(each=[10, 20], children=lambda item, idx: h("li", {}, str(item())))
+def test_for_index_mode_returns_vnode():
+    result = For(each=[10, 20], children=lambda item, idx: h("li", {}, str(item())), key="index")
     assert isinstance(result, VNode)
 
 
-def test_index_empty_list():
-    result = Index(each=[], children=lambda item, idx: h("li", {}, str(item())))
+def test_for_index_mode_empty_list():
+    result = For(each=[], children=lambda item, idx: h("li", {}, str(item())), key="index")
     assert isinstance(result, VNode)
 
 
-# ---------------------------------------------------------------------------
-# Index — rendered output with browser stubs
-# ---------------------------------------------------------------------------
-
-
-def test_index_renders_items(wyb, root_element):
+def test_for_index_mode_renders_items(wyb, root_element):
     vdom = wyb["reconciler"]
     vdom.render(
-        Index(each=[10, 20], children=lambda item, idx: h("li", {}, str(item()))),
+        For(each=[10, 20], children=lambda item, idx: h("li", {}, str(item())), key="index"),
         root_element,
     )
     texts = collect_texts(root_element.element)
@@ -246,7 +244,7 @@ def test_index_renders_items(wyb, root_element):
     assert "20" in texts
 
 
-def test_index_item_getter(wyb, root_element):
+def test_for_index_mode_item_getter(wyb, root_element):
     vdom = wyb["reconciler"]
     captured: list = []
 
@@ -254,18 +252,18 @@ def test_index_item_getter(wyb, root_element):
         captured.append(item())
         return h("li", {}, str(item()))
 
-    vdom.render(Index(each=["a", "b"], children=mapper), root_element)
+    vdom.render(For(each=["a", "b"], children=mapper, key="index"), root_element)
     assert captured == ["a", "b"]
 
 
-def test_index_reactive_list(wyb, root_element):
-    """Index re-renders when its list signal changes."""
+def test_for_index_mode_reactive_list(wyb, root_element):
+    """key="index" re-renders when its list signal changes."""
     vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
     items, set_items = reactivity.create_signal([1, 2])
 
     def App(props):
         def render():
-            return Index(each=items, children=lambda item, idx: h("li", {}, item))
+            return For(each=items, children=lambda item, idx: h("li", {}, item), key="index")
 
         return render
 
@@ -274,8 +272,39 @@ def test_index_reactive_list(wyb, root_element):
     assert "1" in texts and "2" in texts
 
     set_items([10, 20, 30])
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "10" in texts and "20" in texts and "30" in texts
+
+
+# ---------------------------------------------------------------------------
+# Repeat — count-driven rendering
+# ---------------------------------------------------------------------------
+
+
+def test_repeat_returns_vnode():
+    result = Repeat(times=3, children=lambda i: h("li", {}, f"#{i}"))
+    assert isinstance(result, VNode)
+
+
+def test_repeat_renders_count(wyb, root_element):
+    vdom = wyb["reconciler"]
+    vdom.render(Repeat(times=3, children=lambda i: h("li", {}, f"#{i}")), root_element)
+    texts = collect_texts(root_element.element)
+    assert "#0" in texts and "#1" in texts and "#2" in texts
+
+
+def test_repeat_reactive_count(wyb, root_element):
+    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
+    count, set_count = reactivity.create_signal(1)
+
+    vdom.render(Repeat(times=count, children=lambda i: h("li", {}, f"#{i}")), root_element)
+    assert "#0" in collect_texts(root_element.element)
+
+    set_count(3)
+    reactivity.flush()
+    texts = collect_texts(root_element.element)
+    assert "#1" in texts and "#2" in texts
 
 
 # ---------------------------------------------------------------------------
@@ -373,9 +402,11 @@ def test_switch_reactive(wyb, root_element):
     assert "Loading..." in collect_texts(root_element.element)
 
     set_status("ready")
+    reactivity.flush()
     assert "Ready" in collect_texts(root_element.element)
 
     set_status("other")
+    reactivity.flush()
     assert "Unknown" in collect_texts(root_element.element)
 
 

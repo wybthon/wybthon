@@ -1,12 +1,12 @@
-"""Flow control: Show, For (keyed), Index, Switch/Match, and Dynamic."""
+"""Flow control: Show, For (keyed and index modes), Repeat, Switch/Match, and Dynamic."""
 
 from app.testkit import tid
 
 from wybthon import (
     Dynamic,
     For,
-    Index,
     Match,
+    Repeat,
     Show,
     Switch,
     button,
@@ -43,6 +43,7 @@ def Page():
     def reverse(_e):
         set_items(list(reversed(items())))
 
+    stars, set_stars = create_signal(3)
     status, set_status = create_signal("idle")
     tag, set_tag = create_signal("h3")
 
@@ -69,11 +70,24 @@ def Page():
                 **tid("flow-for-list"),
             ),
             ul(
-                Index(
+                For(
                     each=items,
-                    children=lambda item, index: li(dynamic(lambda: f"[{index}]{item()}")),
+                    key="index",
+                    children=lambda item, index: li(dynamic(lambda: f"[{index()}]{item()}")),
                 ),
                 **tid("flow-index-list"),
+            ),
+        ),
+        div(
+            button("star +", on_click=lambda e: set_stars(stars() + 1), **tid("flow-repeat-inc")),
+            button("star -", on_click=lambda e: set_stars(max(0, stars() - 1)), **tid("flow-repeat-dec")),
+            ul(
+                Repeat(
+                    times=stars,
+                    children=lambda i: li(f"star-{i}"),
+                    fallback=lambda: li("no stars"),
+                ),
+                **tid("flow-repeat-list"),
             ),
         ),
         div(

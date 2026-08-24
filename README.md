@@ -35,7 +35,12 @@ Wybthon is a client-side SPA framework that lets you build interactive web appli
   the reconciler wires it as a *reactive hole*: only that DOM node
   updates when the signal changes.  No React-style re-renders.
 - **Signals-first reactivity:** Fine-grained updates with `create_signal`,
-  `create_effect`, `create_memo`, `batch`, `untrack`, and `on`.
+  `create_effect`, `create_memo`, and `untrack`, with automatic batching:
+  writes apply immediately and effects run once per flush.
+- **Async-first:** Pass an `async def` to `create_memo` for async data;
+  `Loading` boundaries show fallbacks, later refetches serve the stale
+  value while revalidating, and `action` plus optimistic state cover
+  mutations.
 - **Virtual DOM:** Function components with efficient, batched diffing,
   amortising the Pyodide ↔ JS bridge cost while keeping SolidJS-style
   fine-grained updates above it.
@@ -45,10 +50,10 @@ Wybthon is a client-side SPA framework that lets you build interactive web appli
   `create_context` and `use_context`.
 - **Forms and validation:** Built-in form state management with
   validators and two-way bindings.
-- **Flow control primitives:** `Show`, `For`, `Index`, `Switch`,
+- **Flow control primitives:** `Show`, `For`, `Repeat`, `Switch`,
   `Match`, and `Dynamic` for declarative rendering.
-- **Error boundaries and Suspense:** Graceful error handling and async
-  loading states.
+- **Error and loading boundaries:** `ErrorBoundary` for graceful error
+  handling and `Loading` for declarative async fallbacks.
 - **Dev server with hot reload:** `wyb dev` launches a local server
   with SSE-based auto-reload.
 

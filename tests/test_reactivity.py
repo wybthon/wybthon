@@ -1,6 +1,11 @@
-import asyncio
+"""Low-level reactivity tests: signal/effect/computed plus the new scheduler.
 
-from wybthon.reactivity import batch, computed, create_resource, effect, signal
+Signal writes apply immediately, but effects run on the next flush;
+these tests call ``flush()`` explicitly (the browser does it on a
+microtask automatically).
+"""
+
+from wybthon.reactivity import computed, effect, flush, signal
 
 
 def test_signal_and_effect():
@@ -14,6 +19,7 @@ def test_signal_and_effect():
     # Initial run
     assert seen == [0]
     s.set(1)
+    flush()
     assert seen[-1] == 1
     eff.dispose()
 
@@ -23,10 +29,12 @@ def test_computed_updates():
     b = computed(lambda: a.get() * 5)
     assert b.get() == 10
     a.set(3)
+    # Memos are pull-based: no flush needed for reads.
     assert b.get() == 15
 
 
-def test_batch_coalesces():
+def test_writes_coalesce_automatically():
+    """Multiple writes before a flush run dependent effects once."""
     a = signal(0)
     seen = []
 
@@ -35,12 +43,12 @@ def test_batch_coalesces():
 
     effect(watcher)
     assert seen == [0]
-    with batch():
-        a.set(1)
-        a.set(2)
-        a.set(3)
-    # Only the final value should be observed after batch
-    assert seen[-1] == 3
+    a.set(1)
+    a.set(2)
+    a.set(3)
+    flush()
+    # Only the final value is observed; intermediate writes coalesced.
+    assert seen == [0, 3]
 
 
 def test_effect_dispose_cancels_pending():
@@ -52,10 +60,10 @@ def test_effect_dispose_cancels_pending():
 
     eff = effect(watcher)
     assert seen == [0]
-    # Ensure disposal cancels any pending runs
-    with batch():
-        s.set(1)
-        eff.dispose()
+    # Disposal before the flush cancels the pending run.
+    s.set(1)
+    eff.dispose()
+    flush()
     assert seen == [0]
 
 
@@ -74,17 +82,16 @@ def test_flush_deterministic_order():
     # Initial runs should be in subscription order
     assert seen[:2] == [("A", 0), ("B", 0)]
     s.set(1)
+    flush()
     # Next runs should preserve FIFO order
     assert seen[-2:] == [("A", 1), ("B", 1)]
 
 
-def test_resource_cancel_sets_loading_false():
-    # Define a fetcher that awaits a bit
-    async def fetcher(signal=None):
-        await asyncio.sleep(0.01)
-        return 42
-
-    res = create_resource(fetcher)
-    # Immediately cancel; loading should become False soon after
-    res.cancel()
-    assert res.loading is False
+def test_flush_is_idempotent():
+    s = signal(0)
+    seen = []
+    effect(lambda: seen.append(s.get()))
+    s.set(1)
+    flush()
+    flush()
+    assert seen == [0, 1]

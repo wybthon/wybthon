@@ -291,11 +291,17 @@ def reload_wybthon_modules(doc=None):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
-    for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template"):
+    for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template", "loading"):
         mods[name] = importlib.import_module(f"wybthon.{name}")
     if doc is not None:
         kernel = mods["kernel"]
         kernel.set_backend(kernel.PythonBackend(doc))
+    # Reloading ``kernel`` rebinds its module-level ``commit``; point the
+    # reactivity scheduler's cached reference at the fresh one and drop
+    # any effect queues left over from a previous test.
+    reactivity = mods["reactivity"]
+    reactivity._kernel_commit = mods["kernel"].commit
+    reactivity._reset_scheduler_for_tests()
     return mods
 
 

@@ -33,6 +33,7 @@ def test_signal_getter_as_child_creates_hole(wyb, root_element):
     assert "hello" in collect_texts(root_element.element)
 
     sig.set("world")
+    reactivity.flush()
     assert "world" in collect_texts(root_element.element)
 
 
@@ -50,6 +51,7 @@ def test_explicit_dynamic_helper(wyb, root_element):
     assert "value=0" in collect_texts(root_element.element)
 
     sig.set(42)
+    reactivity.flush()
     assert "value=42" in collect_texts(root_element.element)
 
 
@@ -70,6 +72,7 @@ def test_component_body_runs_once(wyb, root_element):
 
     for v in (1, 2, 3, 4, 5):
         sig.set(v)
+    reactivity.flush()
 
     assert body_runs[0] == 1, "body still runs only once after multiple updates"
     assert "5" in collect_texts(root_element.element)
@@ -106,10 +109,12 @@ def test_hole_runs_independently(wyb, root_element):
     assert b_runs[0] == 1
 
     a.set("A1")
+    reactivity.flush()
     assert a_runs[0] == 2
     assert b_runs[0] == 1, "b's hole did not re-run"
 
     b.set("B1")
+    reactivity.flush()
     assert a_runs[0] == 2, "a's hole did not re-run"
     assert b_runs[0] == 2
 
@@ -136,6 +141,7 @@ def test_hole_with_memo(wyb, root_element):
     assert compute_runs[0] == 1
 
     sig.set(3)
+    reactivity.flush()
     assert "30" in collect_texts(root_element.element)
     assert compute_runs[0] == 2
 
@@ -160,6 +166,7 @@ def test_reactive_class_prop(wyb, root_element):
     assert el.attributes.get("class") == "foo"
 
     cls.set("bar baz")
+    reactivity.flush()
     assert el.attributes.get("class") == "bar baz"
 
 
@@ -178,6 +185,7 @@ def test_reactive_style_prop(wyb, root_element):
     assert el.style._props.get("color") == "red"
 
     color.set("blue")
+    reactivity.flush()
     assert el.style._props.get("color") == "blue"
 
 
@@ -197,6 +205,7 @@ def test_reactive_dataset_prop(wyb, root_element):
     assert el.attributes.get("data-id") == "1"
 
     state.set({"role": "link", "id": "2"})
+    reactivity.flush()
     assert el.attributes.get("data-role") == "link"
     assert el.attributes.get("data-id") == "2"
 
@@ -216,6 +225,7 @@ def test_reactive_value_prop(wyb, root_element):
     assert el.value == "a"
 
     val.set("b")
+    reactivity.flush()
     assert el.value == "b"
 
 
@@ -234,6 +244,7 @@ def test_reactive_attr_prop(wyb, root_element):
     assert el.attributes.get("title") == "first"
 
     title.set("second")
+    reactivity.flush()
     assert el.attributes.get("title") == "second"
 
 
@@ -288,6 +299,7 @@ def test_mixed_static_and_reactive_children(wyb, root_element):
     assert "Hello, Alice!" in texts
 
     name.set("Bob")
+    reactivity.flush()
     texts = "".join(collect_texts(root_element.element))
     assert "Hello, Bob!" in texts
 
@@ -312,9 +324,11 @@ def test_hole_returning_vnode(wyb, root_element):
     assert el.childNodes[0].tag == "span"
 
     show_emphasis.set(True)
+    reactivity.flush()
     assert el.childNodes[0].tag == "strong"
 
     show_emphasis.set(False)
+    reactivity.flush()
     assert el.childNodes[0].tag == "span"
 
 
@@ -338,6 +352,7 @@ def test_hole_returning_fragment(wyb, root_element):
     assert li_count == 2
 
     count.set(5)
+    reactivity.flush()
     li_count = sum(1 for c in ul.childNodes if c.tag == "li")
     assert li_count == 5
 
@@ -363,10 +378,12 @@ def test_hole_returning_none_renders_nothing(wyb, root_element):
     assert "I'm here" not in text_content
 
     visible.set(True)
+    reactivity.flush()
     text_content = "".join(collect_texts(div))
     assert "I'm here" in text_content
 
     visible.set(False)
+    reactivity.flush()
     text_content = "".join(collect_texts(div))
     assert "I'm here" not in text_content
 
@@ -397,10 +414,12 @@ def test_show_works_with_holes(wyb, root_element):
     assert "name: alice" in texts
 
     name.set("bob")
+    reactivity.flush()
     texts = "".join(collect_texts(root_element.element))
     assert "name: bob" in texts
 
     visible.set(False)
+    reactivity.flush()
     texts = "".join(collect_texts(root_element.element))
     assert "(hidden)" in texts
     assert "name:" not in texts
@@ -437,6 +456,7 @@ def test_for_works_with_holes(wyb, root_element):
     assert "c!" in texts
 
     suffix.set("?")
+    reactivity.flush()
     texts = "".join(collect_texts(root_element.element))
     assert "a?" in texts
     assert "b?" in texts
@@ -468,10 +488,12 @@ def test_hole_effect_disposed_on_unmount(wyb, root_element):
     assert runs[0] == 1
 
     sig.set(1)
+    reactivity.flush()
     assert runs[0] == 2
 
     vdom.unmount(tree)
     sig.set(2)
+    reactivity.flush()
     assert runs[0] == 2, "hole effect must be disposed after unmount"
 
 
@@ -500,12 +522,15 @@ def test_hole_inside_show_fallback_disposed(wyb, root_element):
     assert branch_runs[0] == 1
 
     branch_sig.set(1)
+    reactivity.flush()
     assert branch_runs[0] == 2
 
     cond.set(False)
+    reactivity.flush()
     runs_after_flip = branch_runs[0]
 
     branch_sig.set(99)
+    reactivity.flush()
     assert branch_runs[0] == runs_after_flip, "inactive branch's hole must be disposed and not re-run"
 
 
@@ -536,6 +561,7 @@ def test_on_cleanup_inside_hole_runs_on_dependency_change(wyb, root_element):
     assert log == ["run:0"]
 
     sig.set(1)
+    reactivity.flush()
     assert "cleanup:0" in log
     assert "run:1" in log
 
@@ -574,6 +600,7 @@ def test_reactive_props_via_getter(wyb, root_element):
     assert "count=0" in "".join(collect_texts(root_element.element))
 
     parent_count.set(7)
+    reactivity.flush()
     assert child_runs[0] == 1, "child body must run only once"
     assert "count=7" in "".join(collect_texts(root_element.element))
 
@@ -606,9 +633,11 @@ def test_untrack_inside_hole(wyb, root_element):
     assert "0:0" in "".join(collect_texts(root_element.element))
 
     b.set(99)
+    reactivity.flush()
     assert runs[0] == 1, "untracked b must not trigger re-run"
 
     a.set(1)
+    reactivity.flush()
     assert runs[0] == 2
     assert "1:99" in "".join(collect_texts(root_element.element))
 
@@ -635,10 +664,12 @@ def test_multiple_holes_on_same_element(wyb, root_element):
     assert "b1" in collect_texts(el)
 
     title.set("t2")
+    reactivity.flush()
     assert el.attributes.get("title") == "t2"
     assert "b1" in collect_texts(el)
 
     body.set("b2")
+    reactivity.flush()
     assert el.attributes.get("title") == "t2"
     assert "b2" in collect_texts(el)
 
@@ -685,11 +716,13 @@ def test_provider_swaps_child_component_via_parent_hole(wyb, root_element):
     assert "about-page" not in texts
 
     current.set("about")
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "about-page" in texts, f"expected new component to mount after children change, got: {texts}"
     assert "home-page" not in texts, "old component must be unmounted when children change"
 
     current.set("home")
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "home-page" in texts
     assert "about-page" not in texts
@@ -725,4 +758,5 @@ def test_provider_keeps_context_after_children_change(wyb, root_element):
     assert "home:dark" in "".join(collect_texts(root_element.element))
 
     current.set("about")
+    reactivity.flush()
     assert "about:dark" in "".join(collect_texts(root_element.element))

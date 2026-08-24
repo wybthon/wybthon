@@ -54,7 +54,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Can I lazy-load route components?"
 
-    Yes; see [`lazy`][wybthon.lazy]. It integrates with [`Suspense`][wybthon.Suspense] for declarative loading UIs, and each lazy component has a `.preload()` method for warming the cache early.
+    Yes; see [`lazy`][wybthon.lazy]. It's backed by an async memo, so it integrates with [`Loading`][wybthon.Loading] for declarative loading UIs and with [`ErrorBoundary`][wybthon.ErrorBoundary] for load failures, and each lazy component has a `.preload()` method for warming the cache early.
 
 ## Reactivity
 
@@ -64,15 +64,15 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "How do I batch multiple signal updates?"
 
-    Wrap them in [`batch`][wybthon.batch]:
+    You don't need to; batching is automatic. Signal writes apply immediately, but dependent effects run on the next scheduled flush (a browser microtask), so consecutive writes coalesce into a single effect run:
 
     ```python
-    from wybthon import batch
-
-    with_batch = batch(lambda: (set_first("Ada"), set_last("Lovelace")))
+    set_first("Ada")
+    set_last("Lovelace")
+    # A name effect reading both runs once, not twice.
     ```
 
-    Effects only run once after the batch resolves.
+    Wybthon event handlers flush automatically at the end of the handler. In plain Python (for example, in tests), call [`flush`][wybthon.flush] after your writes to run pending effects synchronously.
 
 ## Next steps
 

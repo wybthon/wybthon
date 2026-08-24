@@ -81,10 +81,11 @@ log.
 
 #### Limitations
 
-- Only errors thrown during render of the child subtree are caught. Errors in event handlers or async tasks should be handled separately.
+- Only errors thrown during render of the child subtree are caught. Errors from event handlers should be handled separately.
+- Async work integrates through the reactive graph: an async memo stores its error and re-raises it on read, so a failed fetch reaches the boundary when the memo is read during render. Errors from an [`action`][wybthon.action] route to the nearest error-boundary scope captured at call time (and re-raise to the awaiter).
 
 ## Next steps
 
 - See the [`error_boundary`][wybthon.error_boundary] API reference.
-- Read [Suspense and Lazy Loading](suspense-lazy.md) for async error handling.
+- Read [Async and Loading](async-loading.md) for async error handling.
 - Walk through the [Error boundary example](../examples/errors.md).

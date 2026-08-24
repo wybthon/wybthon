@@ -1,7 +1,15 @@
-"""Tests for store utilities: reconcile, unwrap, create_mutable, modify_mutable."""
+"""Tests for store utilities: reconcile, unwrap, create_projection, create_optimistic_store."""
 
-from wybthon.reactivity import create_effect
-from wybthon.store import create_mutable, create_store, modify_mutable, produce, reconcile, unwrap
+import asyncio
+
+from wybthon.reactivity import action, create_effect, create_signal, flush
+from wybthon.store import (
+    create_optimistic_store,
+    create_projection,
+    create_store,
+    reconcile,
+    unwrap,
+)
 
 # ---------------------------------------------------------------------------
 # unwrap
@@ -39,6 +47,7 @@ def test_reconcile_updates_changed_leaves_only():
     create_effect(lambda: b_seen.append(store.b))
 
     set_store(reconcile({"a": 1, "b": 3}))
+    flush()
     assert a_seen == [1], "unchanged leaf must not re-notify"
     assert b_seen == [2, 3]
 
@@ -48,8 +57,14 @@ def test_reconcile_preserves_item_identity_by_key():
     store, set_store = create_store({"todos": todos})
     original_first = unwrap(store)["todos"][0]
 
-    incoming = [{"id": 1, "text": "one"}, {"id": 2, "text": "TWO!"}, {"id": 3, "text": "three"}]
-    set_store("todos", reconcile(incoming))
+    incoming = {
+        "todos": [
+            {"id": 1, "text": "one"},
+            {"id": 2, "text": "TWO!"},
+            {"id": 3, "text": "three"},
+        ]
+    }
+    set_store(reconcile(incoming))
 
     raw = unwrap(store)["todos"]
     assert raw[0] is original_first, "key-matched item keeps identity"
@@ -66,167 +81,118 @@ def test_reconcile_removes_missing_keys():
 
 def test_reconcile_without_key_replaces_positionally():
     store, set_store = create_store({"items": [1, 2, 3]})
-    set_store("items", reconcile([4, 5], key=None))
+    set_store(reconcile({"items": [4, 5]}, key=None))
     assert unwrap(store)["items"] == [4, 5]
 
 
 # ---------------------------------------------------------------------------
-# create_mutable
+# create_projection
 # ---------------------------------------------------------------------------
 
 
-def test_create_mutable_read_write():
-    state = create_mutable({"count": 0})
-    assert state.count == 0
-    state.count = 5
-    assert state.count == 5
+def test_projection_derives_from_signal():
+    selected, set_selected = create_signal(1)
+
+    flags = create_projection(
+        lambda draft: draft.update({"selected_id": selected()}),
+        {"selected_id": None},
+    )
+    assert flags.selected_id == 1
+
+    set_selected(7)
+    flush()
+    assert flags.selected_id == 7
 
 
-def test_create_mutable_is_tracked():
-    state = create_mutable({"count": 0})
-    seen = []
-    create_effect(lambda: seen.append(state.count))
-    assert seen == [0]
-    state.count = 1
-    assert seen == [0, 1]
+def test_projection_is_fine_grained():
+    """Only leaves the projection actually changed should notify."""
+    a, set_a = create_signal(1)
+    b, set_b = create_signal(10)
+
+    def project(draft):
+        draft.a = a()
+        draft.b = b()
+
+    proj = create_projection(project, {"a": None, "b": None})
+
+    a_seen = []
+    b_seen = []
+    create_effect(lambda: a_seen.append(proj.a))
+    create_effect(lambda: b_seen.append(proj.b))
+    assert (a_seen, b_seen) == ([1], [10])
+
+    set_a(2)
+    flush()
+    assert a_seen == [1, 2]
+    assert b_seen == [10], "untouched leaf must not re-notify"
 
 
-def test_create_mutable_item_assignment():
-    state = create_mutable({"x": 1})
-    state["x"] = 10
-    assert state["x"] == 10
-    assert state.x == 10
-
-
-def test_create_mutable_unwrap():
-    state = create_mutable({"a": 1})
-    state.a = 2
-    assert unwrap(state) == {"a": 2}
-
-
-def test_create_mutable_rejects_non_dict():
+def test_projection_is_read_only():
+    proj = create_projection(lambda draft: draft.update({"x": 1}), {"x": 0})
     try:
-        create_mutable([1, 2])
+        proj.x = 5
         raised = False
-    except TypeError:
+    except AttributeError:
         raised = True
     assert raised
 
 
 # ---------------------------------------------------------------------------
-# create_mutable: nested writes
+# create_optimistic_store
 # ---------------------------------------------------------------------------
 
 
-def test_create_mutable_nested_dict_write():
-    state = create_mutable({"user": {"name": "Ada", "age": 30}})
-    state.user.name = "Grace"
-    assert state.user.name == "Grace"
-    assert unwrap(state) == {"user": {"name": "Grace", "age": 30}}
+def test_optimistic_store_reverts_when_action_settles():
+    async def run():
+        todos, set_todos = create_store({"items": [{"id": 1, "title": "a"}]})
+
+        def base():
+            len(todos.items)  # reactive read so the overlay re-bases on change
+            return unwrap(todos)
+
+        shown, set_shown = create_optimistic_store(base, {"items": [{"id": 1, "title": "a"}]})
+        release = asyncio.Event()
+
+        @action
+        async def add(title):
+            set_shown(lambda s: s.items.append({"id": 2, "title": title, "saving": True}))
+            await release.wait()
+            set_todos(lambda s: s.items.append({"id": 2, "title": title}))
+
+        task = asyncio.ensure_future(add("b"))
+        await asyncio.sleep(0)
+        assert len(shown.items) == 2, "optimistic row visible while in flight"
+        assert shown.items[1].title == "b"
+        assert len(todos.items) == 1
+
+        release.set()
+        await task
+        await asyncio.sleep(0)
+        flush()
+        # Action settled: overlay reverts to the (now-updated) base state.
+        assert len(todos.items) == 2
+        assert len(shown.items) == 2
+        assert shown.items[1].title == "b"
+
+    asyncio.run(run())
 
 
-def test_create_mutable_nested_write_is_tracked():
-    state = create_mutable({"user": {"name": "Ada"}})
-    seen = []
-    create_effect(lambda: seen.append(state.user.name))
-    assert seen == ["Ada"]
-    state.user.name = "Grace"
-    assert seen == ["Ada", "Grace"]
+def test_optimistic_store_value_form_reverts_on_failure():
+    async def run():
+        shown, set_shown = create_optimistic_store({"items": [{"id": 1, "v": "a"}]})
 
+        @action
+        async def add():
+            set_shown(lambda s: s.items.append({"id": 2, "v": "b"}))
+            raise ValueError("server rejected")
 
-def test_create_mutable_deeply_nested_write():
-    state = create_mutable({"a": {"b": {"c": 1}}})
-    state.a.b.c = 2
-    assert state.a.b.c == 2
+        try:
+            await add()
+        except ValueError:
+            pass
+        await asyncio.sleep(0)
+        flush()
+        assert len(shown.items) == 1, "failed action reverts optimistic writes"
+        assert shown.items[0].v == "a"
 
-
-def test_create_mutable_list_index_assignment():
-    state = create_mutable({"items": [1, 2, 3]})
-    seen = []
-    create_effect(lambda: seen.append(state.items[0]))
-    assert seen == [1]
-    state.items[0] = 10
-    assert seen == [1, 10]
-    assert unwrap(state) == {"items": [10, 2, 3]}
-
-
-def test_create_mutable_list_append_notifies_length():
-    state = create_mutable({"items": ["a"]})
-    lengths = []
-    create_effect(lambda: lengths.append(len(state.items)))
-    assert lengths == [1]
-    state.items.append("b")
-    assert lengths == [1, 2]
-    assert unwrap(state) == {"items": ["a", "b"]}
-
-
-def test_create_mutable_list_insert_pop_remove_clear():
-    state = create_mutable({"items": [1, 2, 3]})
-    state.items.insert(0, 0)
-    assert unwrap(state)["items"] == [0, 1, 2, 3]
-    assert state.items.pop() == 3
-    assert unwrap(state)["items"] == [0, 1, 2]
-    state.items.remove(1)
-    assert unwrap(state)["items"] == [0, 2]
-    state.items.clear()
-    assert unwrap(state)["items"] == []
-
-
-def test_create_mutable_nested_list_in_dict():
-    state = create_mutable({"user": {"tags": []}})
-    state.user.tags.append("admin")
-    assert unwrap(state) == {"user": {"tags": ["admin"]}}
-
-
-# ---------------------------------------------------------------------------
-# modify_mutable
-# ---------------------------------------------------------------------------
-
-
-def test_modify_mutable_with_produce():
-    state = create_mutable({"a": 1, "b": 2})
-
-    def mutate(draft):
-        draft.a = 10
-        draft.b = 20
-
-    modify_mutable(state, produce(mutate))
-    assert state.a == 10
-    assert state.b == 20
-
-
-def test_modify_mutable_with_plain_callable():
-    state = create_mutable({"count": 0})
-    modify_mutable(state, lambda draft: setattr(draft, "count", 42))
-    assert state.count == 42
-
-
-def test_modify_mutable_with_reconcile():
-    state = create_mutable({"a": 1, "b": 2})
-    modify_mutable(state, reconcile({"a": 5, "b": 2}))
-    assert state.a == 5
-    assert state.b == 2
-
-
-def test_modify_mutable_batches_notifications():
-    state = create_mutable({"a": 1, "b": 2})
-    runs = []
-    create_effect(lambda: runs.append((state.a, state.b)))
-    assert runs == [(1, 2)]
-
-    def mutate(draft):
-        draft.a = 10
-        draft.b = 20
-
-    modify_mutable(state, produce(mutate))
-    # Both writes flush as one update: exactly one extra effect run.
-    assert runs == [(1, 2), (10, 20)]
-
-
-def test_modify_mutable_rejects_non_store():
-    try:
-        modify_mutable({"a": 1}, lambda d: None)
-        raised = False
-    except TypeError:
-        raised = True
-    assert raised
+    asyncio.run(run())

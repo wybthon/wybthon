@@ -1,16 +1,29 @@
 """Signal-based reactive primitives with an ownership tree.
 
 This module is the heart of Wybthon's SolidJS-inspired reactivity. It
-implements a **synchronous, glitch-free, pull-based** reactive graph that
-matches SolidJS's observable semantics:
+implements a **glitch-free, pull-based** reactive graph with
+**automatic batching** and **first-class async**, matching the
+semantics of SolidJS 2.0:
 
-- Writing a signal synchronously propagates to dependents before the
-  setter returns (outside an explicit :func:`batch`).
+- Writing a signal applies the value immediately, but dependent
+  effects run on the next scheduled flush (a browser microtask, or an
+  explicit [`flush`][wybthon.flush] call). There is no `batch()`;
+  everything batches.
 - Memos are **lazy**: they recompute only when read after a dependency
   changed, and they skip notifying their own observers when the
-  recomputed value is unchanged (the glitch-free "equality short-circuit").
-- Effects run in a second phase after pure computations have settled, so
-  an effect never observes a half-updated graph.
+  recomputed value is unchanged (the glitch-free "equality
+  short-circuit").
+- **Async is part of the graph.** A memo or effect whose body is an
+  `async def` (or returns an awaitable) becomes an *async
+  computation*: reading it before its first value raises
+  [`NotReadyError`][wybthon.NotReadyError] (which
+  [`Loading`][wybthon.Loading] boundaries turn into fallback UI), and
+  reads during a recompute return the previous settled value
+  (stale-while-revalidate). Use [`is_pending`][wybthon.is_pending] and
+  [`latest`][wybthon.latest] to observe in-flight state.
+- Effects run in phases within one flush: render effects (internal
+  holes and prop bindings) first, then a single DOM commit, then user
+  effects, so an effect never observes a half-updated graph or DOM.
 
 Every reactive computation (effect, memo) is also **owned** by a parent
 scope. When that scope re-runs or is disposed, all child computations are
@@ -23,16 +36,22 @@ Core types:
 - [`Owner`][wybthon.reactivity.Owner]: base ownership scope (cleanups + children).
 - [`Computation`][wybthon.reactivity.Computation]: a reactive computation
   (effect or memo) that is itself an ownership scope.
-- [`Resource`][wybthon.Resource]: async data wrapper with `data`/`error`/`loading`.
 
 Public primitives:
 
 - [`create_signal`][wybthon.create_signal]: create a `(getter, setter)` pair.
-- [`create_effect`][wybthon.create_effect]: auto-tracking side-effect.
-- [`create_memo`][wybthon.create_memo]: auto-tracking derived value.
+- [`create_effect`][wybthon.create_effect]: auto-tracking side-effect
+  (optionally split into a tracked compute and an untracked apply).
+- [`create_memo`][wybthon.create_memo]: auto-tracking derived value
+  (sync or async).
+- [`flush`][wybthon.flush]: run pending effects and commit DOM ops now.
+- [`is_pending`][wybthon.is_pending] / [`latest`][wybthon.latest]:
+  observe in-flight async state without suspending.
+- [`action`][wybthon.action] / [`create_optimistic`][wybthon.create_optimistic]:
+  async mutations with optimistic UI state.
 - [`on_mount`][wybthon.on_mount] / [`on_cleanup`][wybthon.on_cleanup]:
   lifecycle hooks.
-- [`batch`][wybthon.batch] / [`untrack`][wybthon.untrack]: scheduling control.
+- [`untrack`][wybthon.untrack]: read without subscribing.
 - [`create_root`][wybthon.create_root]: spawn an independent reactive root.
 - [`merge_props`][wybthon.merge_props] / [`split_props`][wybthon.split_props]:
   prop composition helpers.
@@ -42,20 +61,24 @@ Public primitives:
 Example:
     A counter with a derived doubled value::
 
-        from wybthon import create_signal, create_memo, create_effect
+        from wybthon import create_signal, create_memo, create_effect, flush
 
         count, set_count = create_signal(0)
         doubled = create_memo(lambda: count() * 2)
         create_effect(lambda: print("doubled:", doubled()))
 
-        set_count(2)  # synchronously prints "doubled: 4"
+        set_count(2)   # doubled() == 4 immediately (memos are pull-based)
+        flush()        # prints "doubled: 4" (effects run on flush)
+
+    In the browser, the flush happens automatically on a microtask, so
+    application code rarely calls ``flush()`` directly.
 """
 
 from __future__ import annotations
 
 import weakref
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Generic, List, Optional, Set, Tuple, TypeVar, cast
 
 __all__ = [
     "Owner",
@@ -63,23 +86,23 @@ __all__ = [
     "Signal",
     "Computed",
     "ReactiveProps",
-    "batch",
-    "Resource",
-    "create_resource",
+    "NotReadyError",
+    "action",
+    "create_optimistic",
     "create_signal",
     "create_effect",
     "create_render_effect",
-    "create_computed",
-    "create_deferred",
     "create_memo",
     "create_reaction",
     "create_unique_id",
     "catch_error",
+    "flush",
+    "is_pending",
+    "latest",
     "on_error",
     "on_mount",
     "on_cleanup",
     "untrack",
-    "on",
     "create_root",
     "get_owner",
     "run_with_owner",
@@ -133,21 +156,58 @@ _current_observer: Optional["Computation"] = None
 # queued; they recompute lazily on read. Within one flush, the phases
 # match SolidJS's update ordering:
 #
-# 1. **Pure** (``create_computed``): derive state before anything renders.
-# 2. **Render** (internal holes/bindings, ``create_render_effect``):
+# 1. **Render** (internal holes/bindings, ``create_render_effect``):
 #    emit DOM ops.
-# 3. **Commit**: ship the buffered DOM ops across the bridge.
-# 4. **User** (``create_effect``): observe the committed DOM.
-_pure_queue: List["Computation"] = []
+# 2. **Commit**: ship the buffered DOM ops across the bridge in a
+#    single crossing.
+# 3. **User** (``create_effect``): observe the committed DOM.
 _render_effect_queue: List["Computation"] = []
 _effect_queue: List["Computation"] = []
 _running_effects: bool = False
-_batch_depth: int = 0
+
+# True while a flush is scheduled on the microtask queue (browser) or an
+# asyncio loop. Cleared when the scheduled flush runs.
+_flush_scheduled: bool = False
+
+# Cached microtask scheduler: ``None`` = not probed yet, ``False`` = no
+# browser scheduler available (fall back to asyncio / explicit flush),
+# otherwise a ``(queueMicrotask, create_once_callable)`` pair.
+_js_microtask: Any = None
 
 # Re-entrant counter incremented while inside :func:`untrack`.  Used by
 # the dev-mode "destructured prop" warning to detect intentional
 # untracked reads and stay quiet.
 _untrack_depth: int = 0
+
+# Stack of in-progress ``is_pending`` probes. While non-empty, reads of
+# async computations record their pending state on the top of the stack
+# (and subscribe the current observer to the node's pending signal).
+_pending_probe: List[bool] = []
+
+# Re-entrant counter incremented while inside :func:`latest`. While
+# positive, reads of never-resolved async computations return their
+# placeholder value instead of raising ``NotReadyError``.
+_latest_depth: int = 0
+
+# Sentinel key under which ``Loading`` stores its collector on the owner
+# context map. Kept here (rather than in ``loading.py``) so async reads
+# can look it up without importing browser-facing modules.
+LOADING_CONTEXT_KEY = "__wyb_loading__"
+
+
+class NotReadyError(Exception):
+    """Raised when reading an async computation that has no value yet.
+
+    Propagates "not ready" through the reactive graph: a memo whose
+    body reads a pending async memo becomes pending itself, and a
+    reactive hole that hits `NotReadyError` keeps its previous content
+    while the nearest [`Loading`][wybthon.Loading] boundary shows its
+    fallback.
+
+    Application code rarely raises or catches this directly; use
+    [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest]
+    to observe pending state without suspending.
+    """
 
 
 def _is_inside_untrack() -> bool:
@@ -192,68 +252,150 @@ def _changed(equals: Any, old: Any, new: Any) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Synchronous flush
+# Scheduling: automatic batching with an explicit flush escape hatch
 # ---------------------------------------------------------------------------
 
 
-def _run_effects_if_idle() -> None:
-    """Flush the effect queue unless we're batching or already flushing."""
-    if _batch_depth == 0 and not _running_effects:
-        _flush_effects()
+def _schedule_microtask(fn: Callable[[], None]) -> bool:
+    """Schedule `fn` on the soonest available async tick.
+
+    Prefers the browser's `queueMicrotask` (in Pyodide), then a running
+    asyncio loop's `call_soon`. Returns `False` when neither is
+    available (pure-Python code without a running loop); callers then
+    rely on an explicit [`flush`][wybthon.flush].
+    """
+    global _js_microtask
+    if _js_microtask is None:
+        try:
+            import js as _js
+            from pyodide.ffi import create_once_callable as _once
+
+            qm = _js.queueMicrotask
+            _js_microtask = (qm, _once)
+        except Exception:
+            _js_microtask = False
+    if _js_microtask:
+        try:
+            qm, once = _js_microtask
+            qm(once(fn))
+            return True
+        except Exception:
+            pass
+    try:
+        import asyncio
+
+        asyncio.get_running_loop().call_soon(fn)
+        return True
+    except Exception:
+        return False
+
+
+def _schedule_flush() -> None:
+    """Request an effect flush on the next tick (automatic batching).
+
+    No-op while a flush is already scheduled or running. When no async
+    scheduler exists (synchronous CPython code), the pending work waits
+    for an explicit [`flush`][wybthon.flush] call; memo reads are
+    unaffected because memos recompute lazily on read.
+    """
+    global _flush_scheduled
+    if _flush_scheduled or _running_effects:
+        return
+    if _schedule_microtask(_run_scheduled_flush):
+        _flush_scheduled = True
+
+
+def _run_scheduled_flush() -> None:
+    global _flush_scheduled
+    _flush_scheduled = False
+    _flush_effects()
+
+
+def flush() -> None:
+    """Run all pending effects now and commit buffered DOM ops.
+
+    Writes apply to signal values immediately, but dependent effects
+    (and therefore DOM updates) run on the next scheduled flush. In the
+    browser that happens automatically on a microtask and after every
+    event handler; call `flush()` when you need the effects *now*, for
+    example right after a write in synchronous test code.
+
+    Safe to call at any time; a no-op when nothing is pending.
+
+    Example:
+        ```python
+        count, set_count = create_signal(0)
+        create_effect(lambda: print(count()))  # prints 0 immediately
+
+        set_count(1)
+        flush()  # prints 1
+        ```
+    """
+    global _flush_scheduled
+    _flush_scheduled = False
+    _flush_effects()
 
 
 def _flush_effects() -> None:
     """Run all queued effects to completion (the "effects" phase).
 
-    Pure computations (``create_computed``) drain first, then render
-    effects (internal holes/bindings, ``create_render_effect``). Once
-    both are settled, the buffered DOM ops are committed across the
-    bridge, and only then do user effects (``create_effect``) run --
-    matching SolidJS, where ``createEffect`` callbacks observe the
-    updated DOM. A user effect that writes a signal re-drains the pure
-    and render phases (and re-commits) before the next user effect,
-    giving synchronous settling within one logical update.
+    Render effects (internal holes/bindings, ``create_render_effect``)
+    drain first. Once they're settled, the buffered DOM ops are
+    committed across the bridge in a single crossing, and only then do
+    user effects (``create_effect``) run -- matching SolidJS, where
+    ``createEffect`` callbacks observe the updated DOM. A user effect
+    that writes a signal re-drains the render phase (and re-commits)
+    before the next user effect, giving synchronous settling within one
+    logical flush.
     """
     global _running_effects
     if _running_effects:
         return
     _running_effects = True
     try:
-        pi = 0
         ri = 0
         ei = 0
         guard = 0
-        pure_queue = _pure_queue
         render_queue = _render_effect_queue
         queue = _effect_queue
-        while pi < len(pure_queue) or ri < len(render_queue) or ei < len(queue):
+        while ri < len(render_queue) or ei < len(queue):
             guard += 1
             if guard > _MAX_FLUSH_ITER:
                 raise RuntimeError(
                     "Wybthon: reactive update did not stabilize " "(possible cyclic effect writing its own dependency)."
                 )
-            if pi < len(pure_queue):
-                comp = pure_queue[pi]
-                pi += 1
-            elif ri < len(render_queue):
+            if ri < len(render_queue):
                 comp = render_queue[ri]
                 ri += 1
             else:
-                # Pure and render phases are settled: commit the DOM ops
-                # so the next user effect observes the updated DOM.
-                # A no-op when the buffer is empty.
+                # The render phase is settled: commit the DOM ops so the
+                # next user effect observes the updated DOM. A no-op
+                # when the buffer is empty.
                 _kernel_commit()
                 comp = queue[ei]
                 ei += 1
             if not comp._disposed:
                 comp._update_if_necessary()
     finally:
-        _pure_queue.clear()
         _render_effect_queue.clear()
         _effect_queue.clear()
         _running_effects = False
     # Ship any remaining DOM ops across the bridge in one batch.
     _kernel_commit()
+
+
+def _reset_scheduler_for_tests() -> None:
+    """Test-only helper: drop pending effect queues and scheduler flags.
+
+    Prevents dirty computations left over from a previous test (whose
+    stub DOM has been torn down) from running inside the next test's
+    first flush.
+    """
+    global _flush_scheduled, _running_effects
+    _render_effect_queue.clear()
+    _effect_queue.clear()
+    _flush_scheduled = False
+    _running_effects = False
 
 
 # ---------------------------------------------------------------------------
@@ -361,6 +503,39 @@ class Owner:
 
 
 # ---------------------------------------------------------------------------
+# Async computation state
+# ---------------------------------------------------------------------------
+
+
+class _AsyncState:
+    """Per-computation async bookkeeping, allocated on first use.
+
+    Attributes:
+        pending: True while a recompute is in flight (or while a source
+            is not ready).
+        has_value: True once the computation has produced at least one
+            settled value. While `pending and not has_value`, reads
+            raise [`NotReadyError`][wybthon.NotReadyError]; while
+            `pending and has_value`, reads return the stale value.
+        version: Monotonic counter; in-flight completions from an older
+            version are discarded.
+        error: The exception from the most recent failed run, re-raised
+            on read.
+        pending_signal: Lazily-created `Signal[bool]` observed by
+            [`is_pending`][wybthon.is_pending] callers.
+    """
+
+    __slots__ = ("pending", "has_value", "version", "error", "pending_signal")
+
+    def __init__(self) -> None:
+        self.pending: bool = False
+        self.has_value: bool = False
+        self.version: int = 0
+        self.error: Optional[BaseException] = None
+        self.pending_signal: Optional["Signal[bool]"] = None
+
+
+# ---------------------------------------------------------------------------
 # Computation -- reactive computation (effect or memo), extends Owner
 # ---------------------------------------------------------------------------
 
@@ -374,6 +549,12 @@ class Computation(Owner):
     during execution are disposed before each re-run, preventing leaks from
     conditionally-created effects.
 
+    When the tracked function returns an awaitable (for example because
+    it's an `async def`), the computation becomes **async**: the
+    coroutine is driven step by step with dependency tracking active on
+    every step, and the settled value flows into the graph exactly like
+    a synchronous result.
+
     Attributes:
         _fn: The callback executed by `_update()`.
         _sources: Sources (signals or memos) read during the last run.
@@ -382,6 +563,7 @@ class Computation(Owner):
         _state: One of `_CLEAN` / `_CHECK` / `_DIRTY`.
         _is_effect: True for effects (scheduled in the effects phase).
         _is_memo: True for memos (carry a value and observers).
+        _async: Lazily-allocated [`_AsyncState`] for async computations.
     """
 
     __slots__ = (
@@ -390,11 +572,11 @@ class Computation(Owner):
         "_state",
         "_is_effect",
         "_is_render",
-        "_is_pure",
         "_is_memo",
         "_value",
         "_observers",
         "_equals",
+        "_async",
     )
 
     def __init__(
@@ -403,7 +585,6 @@ class Computation(Owner):
         *,
         is_effect: bool = False,
         is_render: bool = False,
-        is_pure: bool = False,
         is_memo: bool = False,
         value: Any = None,
         equals: Any = _DEFAULT_EQUALS,
@@ -414,11 +595,11 @@ class Computation(Owner):
         self._state: int = _DIRTY
         self._is_effect = is_effect
         self._is_render = is_render
-        self._is_pure = is_pure
         self._is_memo = is_memo
         self._value: Any = value
         self._observers: Optional[Dict[Computation, None]] = None
         self._equals = equals
+        self._async: Optional[_AsyncState] = None
 
     # -- source side (memos act as sources for other computations) ----------
 
@@ -468,9 +649,7 @@ class Computation(Owner):
             self._state = state
             if was_clean:
                 if self._is_effect:
-                    if self._is_pure:
-                        _pure_queue.append(self)
-                    elif self._is_render:
+                    if self._is_render:
                         _render_effect_queue.append(self)
                     else:
                         _effect_queue.append(self)
@@ -530,12 +709,23 @@ class Computation(Owner):
         Exceptions raised by effect bodies are routed to the nearest
         ancestor error handler (`ErrorBoundary` / `catch_error`); when no
         handler exists, the exception propagates to the caller.
+
+        A [`NotReadyError`][wybthon.NotReadyError] raised by the body
+        (because it read a pending async source) marks this computation
+        pending; the partial dependency set already includes the pending
+        source, so its resolution triggers a fresh run. An awaitable
+        return value launches an async run instead of producing a value
+        synchronously.
         """
         if self._disposed:
             return
         self._dispose_children()
         self._run_cleanups()
         self._clear_sources()
+        a = self._async
+        if a is not None:
+            # Invalidate any in-flight async run from a previous update.
+            a.version += 1
         global _current_owner, _current_observer
         prev_owner = _current_owner
         prev_obs = _current_observer
@@ -543,6 +733,9 @@ class Computation(Owner):
         _current_observer = self
         try:
             new_value = self._fn()
+        except NotReadyError:
+            self._async_mark_pending()
+            return
         except Exception as exc:
             if self._is_effect and self._handle_error(exc):
                 return
@@ -550,6 +743,11 @@ class Computation(Owner):
         finally:
             _current_owner = prev_owner
             _current_observer = prev_obs
+        if isinstance(new_value, AbcAwaitable):
+            self._async_launch(new_value)
+            return
+        if self._async is not None:
+            self._async_settle_sync()
         if self._is_memo:
             if _changed(self._equals, self._value, new_value):
                 self._value = new_value
@@ -560,22 +758,231 @@ class Computation(Owner):
                     for o in self._observers:
                         o._state = _DIRTY
 
+    # -- async plumbing ------------------------------------------------------
+
+    def _ensure_async(self) -> _AsyncState:
+        a = self._async
+        if a is None:
+            a = _AsyncState()
+            self._async = a
+        return a
+
+    def _pending_sig(self) -> "Signal[bool]":
+        a = self._ensure_async()
+        if a.pending_signal is None:
+            a.pending_signal = Signal(a.pending)
+        return a.pending_signal
+
+    def _set_pending(self, value: bool) -> None:
+        a = self._ensure_async()
+        if a.pending == value:
+            return
+        a.pending = value
+        if a.pending_signal is not None:
+            a.pending_signal.set(value)
+
+    def _async_mark_pending(self) -> None:
+        """Mark this computation pending because a source isn't ready.
+
+        The partial run already subscribed to the pending source, so its
+        resolution marks this node dirty and a fresh run follows.
+        """
+        a = self._ensure_async()
+        a.error = None
+        self._set_pending(True)
+
+    def _async_settle_sync(self) -> None:
+        """A previously-async computation produced a synchronous value."""
+        a = self._ensure_async()
+        a.version += 1
+        a.error = None
+        a.has_value = True
+        self._set_pending(False)
+
+    def _async_launch(self, awaitable: Any) -> None:
+        """Drive `awaitable` to completion with dependency tracking.
+
+        The coroutine is stepped manually (mirroring `asyncio.Task`'s
+        `__step`) so that every resume runs with this computation
+        installed as the current observer: signal reads *after* an
+        `await` are tracked just like reads before it. Completion
+        pushes the value into the graph and wakes observers.
+        """
+        import asyncio
+
+        a = self._ensure_async()
+        a.version += 1
+        version = a.version
+        a.error = None
+        self._set_pending(True)
+        _schedule_flush()
+
+        if asyncio.iscoroutine(awaitable):
+            coro = awaitable
+        else:
+
+            async def _wrap() -> Any:
+                return await awaitable
+
+            coro = _wrap()
+
+        def step(exc: Optional[BaseException] = None) -> None:
+            if self._disposed or self._async is None or self._async.version != version:
+                try:
+                    coro.close()
+                except Exception:
+                    pass
+                return
+            global _current_owner, _current_observer
+            prev_owner = _current_owner
+            prev_obs = _current_observer
+            _current_owner = self
+            _current_observer = self
+            try:
+                if exc is not None:
+                    yielded = coro.throw(exc)
+                else:
+                    yielded = coro.send(None)
+            except StopIteration as si:
+                self._async_resolve(version, si.value)
+                return
+            except NotReadyError:
+                # A source read inside the coroutine isn't ready yet; the
+                # subscription is in place, so stay pending until the
+                # source resolves and triggers a fresh run.
+                return
+            except Exception as e:
+                self._async_reject(version, e)
+                return
+            finally:
+                _current_owner = prev_owner
+                _current_observer = prev_obs
+
+            blocking = getattr(yielded, "_asyncio_future_blocking", None)
+            if blocking is not None:
+                yielded._asyncio_future_blocking = False
+
+                def _wakeup(fut: Any) -> None:
+                    try:
+                        fut.result()
+                    except BaseException as e:  # noqa: BLE001 - mirrors Task.__wakeup
+                        step(e)
+                    else:
+                        step()
+
+                yielded.add_done_callback(_wakeup)
+            elif yielded is None:
+                # Bare yield (e.g. ``asyncio.sleep(0)``): resume on the
+                # next loop iteration.
+                self._call_soon(step)
+            else:
+                self._async_reject(
+                    version,
+                    RuntimeError(f"Async computation awaited an unsupported object: {yielded!r}"),
+                )
+
+        step()
+
+    @staticmethod
+    def _call_soon(fn: Callable[[], None]) -> None:
+        import asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except Exception:
+            try:
+                loop = asyncio.get_event_loop()
+            except Exception:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        loop.call_soon(fn)
+
+    def _async_resolve(self, version: int, value: Any) -> None:
+        a = self._async
+        if self._disposed or a is None or a.version != version:
+            return
+        a.error = None
+        a.has_value = True
+        self._set_pending(False)
+        if self._is_memo:
+            if _changed(self._equals, self._value, value):
+                self._value = value
+                if self._observers:
+                    for o in list(self._observers):
+                        o._stale(_DIRTY)
+        _schedule_flush()
+
+    def _async_reject(self, version: int, exc: BaseException) -> None:
+        a = self._async
+        if self._disposed or a is None or a.version != version:
+            return
+        a.error = exc
+        self._set_pending(False)
+        if self._is_memo:
+            # Readers re-raise the stored error, so wake them up.
+            if self._observers:
+                for o in list(self._observers):
+                    o._stale(_DIRTY)
+        else:
+            if not self._handle_error(exc):
+                from ._warnings import log_error
+
+                log_error(
+                    f"Async effect raised: {exc}",
+                    exc if isinstance(exc, Exception) else None,
+                )
+        _schedule_flush()
+
+    def _register_with_loading(self) -> None:
+        """Register this pending computation with the nearest `Loading` boundary."""
+        owner: Optional[Owner] = _current_owner
+        if owner is None:
+            return
+        collector = owner._lookup_context(LOADING_CONTEXT_KEY, None)
+        if collector is not None:
+            collector.register(self)
+
     def _read(self) -> Any:
-        """Read a memo's value: ensure it's current, then subscribe the reader."""
+        """Read a memo's value: ensure it's current, then subscribe the reader.
+
+        Async semantics:
+
+        - pending with no settled value: raises
+          [`NotReadyError`][wybthon.NotReadyError] (unless inside
+          [`latest`][wybthon.latest], which returns the placeholder).
+        - pending with a previous value: returns the stale value
+          (stale-while-revalidate).
+        - errored: re-raises the stored exception.
+        """
         self._update_if_necessary()
         obs = _current_observer
         if obs is not None and obs is not self and not self._disposed:
             obs._add_source(self)
+        a = self._async
+        if a is not None:
+            if _pending_probe:
+                if self._pending_sig().get():
+                    _pending_probe[-1] = True
+            if a.error is not None and not a.pending:
+                raise a.error
+            if a.pending and not a.has_value:
+                if _latest_depth == 0:
+                    if not _pending_probe:
+                        self._register_with_loading()
+                    raise NotReadyError(f"Async computation has no value yet: {self._fn!r}")
         return self._value
 
     def dispose(self) -> None:
         """Dispose the computation and unsubscribe from all dependencies.
 
         Removes dependency edges, drops this node as a source for any of its
-        observers, tears down child owners, and runs cleanups.
+        observers, tears down child owners, and runs cleanups. In-flight
+        async runs are invalidated (their completions are discarded).
         """
         if self._disposed:
             return
+        if self._async is not None:
+            self._async.version += 1
         self._clear_sources()
         obs = self._observers
         if obs:
@@ -649,13 +1056,17 @@ class Signal(Generic[T]):
         return self._value
 
     def set(self, value: T) -> None:
-        """Write a new value and synchronously notify observers if it changed.
+        """Write a new value and schedule dependent effects.
 
         Equality is determined by the `equals` policy passed to the
         constructor (default: `is` then `==`, with `equals=False` to
-        bypass the check entirely). Outside a [`batch`][wybthon.batch],
-        dependent memos become readable immediately and effects run before
-        this call returns.
+        bypass the check entirely). The value applies **immediately**:
+        reads (including dependent memos, which recompute lazily on
+        read) observe the new value as soon as `set` returns. Dependent
+        *effects* run on the next scheduled flush: automatically on a
+        browser microtask and after event handlers, or via an explicit
+        [`flush`][wybthon.flush]. Writes therefore batch by default;
+        there is no `batch()` wrapper.
 
         Args:
             value: The new value to store.
@@ -667,7 +1078,7 @@ class Signal(Generic[T]):
         if observers:
             for o in list(observers):
                 o._stale(_DIRTY)
-            _run_effects_if_idle()
+            _schedule_flush()
 
 
 def signal(value: T) -> Signal[T]:
@@ -813,16 +1224,15 @@ class ReactiveProps:
     def _update(self, new_props: dict) -> None:
         """Update props from parent (called by reconciler on re-render).
 
-        All prop signals are written inside a single batch so a parent
-        update flushes dependent holes exactly once.
+        Writes batch automatically, so a parent update flushes dependent
+        holes exactly once.
         """
         signals = object.__getattribute__(self, "_signals")
         defaults = object.__getattribute__(self, "_defaults")
         object.__setattr__(self, "_raw", dict(new_props))
-        with _Batch():
-            for key, sig in signals.items():
-                new_val = new_props.get(key, defaults.get(key))
-                sig.set(new_val)
+        for key, sig in signals.items():
+            new_val = new_props.get(key, defaults.get(key))
+            sig.set(new_val)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -1000,6 +1410,28 @@ def effect(fn: Callable[[], Any]) -> Computation:
     return comp
 
 
+def render_effect(fn: Callable[[], Any]) -> Computation:
+    """Low-level render-phase effect (used by the reconciler for holes).
+
+    Like [`effect`][wybthon.reactivity.effect] but scheduled in the
+    render phase: within one flush, all pending render effects run
+    before the batched DOM ops are committed and before any user
+    effects. Internal holes and prop bindings use this, so one flush
+    ships all their DOM ops across the bridge in a single crossing.
+
+    Args:
+        fn: Zero-arg callback.
+
+    Returns:
+        The underlying `Computation`.
+    """
+    comp = Computation(fn, is_effect=True, is_render=True)
+    if _current_owner is not None:
+        _current_owner._add_child(comp)
+    comp._update_if_necessary()
+    return comp
+
+
 def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
     """Register `fn` to run when `comp` is disposed.
 
@@ -1008,71 +1440,6 @@ def on_effect_cleanup(comp: Computation, fn: Callable[[], Any]) -> None:
         fn: Zero-arg cleanup callback.
     """
     comp._add_cleanup(fn)
-
-
-# ---------------------------------------------------------------------------
-# Batch
-# ---------------------------------------------------------------------------
-
-
-class _Batch:
-    """Context manager that batches signal updates into a single flush.
-
-    Returned by [`batch()`][wybthon.batch] when called with no arguments.
-    Increments a depth counter on `__enter__` and flushes pending
-    effects exactly once when the outermost batch exits.
-    """
-
-    def __enter__(self) -> None:
-        global _batch_depth
-        _batch_depth += 1
-
-    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
-        global _batch_depth
-        _batch_depth -= 1
-        if _batch_depth == 0:
-            _flush_effects()
-
-
-def batch(fn: Optional[Callable[[], T]] = None) -> Union[T, _Batch]:
-    """Batch signal updates so dependent effects flush once at the end.
-
-    Two call shapes are supported:
-
-    1. **Context manager** (Pythonic):
-       ```python
-       with batch():
-           set_a(1)
-           set_b(2)
-       ```
-    2. **Callback** (SolidJS style):
-       ```python
-       batch(lambda: (set_a(1), set_b(2)))
-       ```
-
-    When called with a function, the function's return value is returned.
-    Effects are flushed synchronously when the outermost batch exits,
-    matching SolidJS semantics.
-
-    Args:
-        fn: Optional zero-arg callable. When omitted, returns a context
-            manager.
-
-    Returns:
-        Either a `_Batch` context manager (when `fn is None`) or the
-        return value of `fn`.
-    """
-    if fn is None:
-        return _Batch()
-    global _batch_depth
-    _batch_depth += 1
-    try:
-        result = fn()
-    finally:
-        _batch_depth -= 1
-        if _batch_depth == 0:
-            _flush_effects()
-    return result
 
 
 def untrack(fn: Callable[[], T]) -> T:
@@ -1109,328 +1476,255 @@ def untrack(fn: Callable[[], T]) -> T:
 
 
 # ---------------------------------------------------------------------------
-# Async resource
+# Async state queries
 # ---------------------------------------------------------------------------
 
-R = TypeVar("R")
 
-FetchFn = Callable[..., Union[Awaitable[R], R]]
+def is_pending(fn: Callable[[], Any]) -> bool:
+    """Return True while any async computation read by `fn` is in flight.
 
-# Sentinel key under which ``Suspense`` stores its collector on the owner
-# context map. Kept here (rather than in ``suspense.py``) so ``Resource``
-# can look it up without importing browser-facing modules.
-SUSPENSE_CONTEXT_KEY = "__wyb_suspense__"
+    Evaluates `fn` in a probe mode: reads of async computations record
+    their in-flight status (and subscribe the calling computation to
+    future status changes) instead of only returning values. A read
+    that raises [`NotReadyError`][wybthon.NotReadyError] also counts as
+    pending and is swallowed.
 
+    Use it to render "stale while revalidating" hints without tearing
+    the content down:
 
-class Resource(Generic[R]):
-    """Async data accessor with reactive loading/error state.
+    ```python
+    user = create_memo(fetch_user)  # async def fetcher
 
-    Matches SolidJS's resource shape: the resource **is** the accessor.
-    Call it to read the current data (tracked); read `loading`, `error`,
-    `latest`, and `state` as properties (also tracked).
-
-    While a resource is in its initial `"pending"` state, reading it
-    under a [`Suspense`][wybthon.Suspense] boundary automatically
-    registers it with that boundary; no manual wiring is needed.
-    Refetches (`"refreshing"` state) don't re-trigger Suspense; the
-    previous data stays available, matching SolidJS.
-
-    States:
-
-    - `"unresolved"`: never fetched (source was `None`/`False`).
-    - `"pending"`: first fetch in flight, no data yet.
-    - `"ready"`: data available.
-    - `"refreshing"`: refetch in flight, previous data still readable.
-    - `"errored"`: last fetch raised.
-
-    Example:
-        ```python
-        async def load_user(user_id, signal=None):
-            resp = await fetch(f"/api/users/{user_id}")
-            return await resp.json()
-
-        user = create_resource(user_id, load_user)
-        p("Name: ", span(lambda: (user() or {}).get("name", "...")))
-        ```
-    """
-
-    def __init__(
-        self,
-        fetcher: FetchFn,
-        source: Optional[Callable[[], Any]] = None,
-        *,
-        initial_value: Any = _MISSING,
-    ) -> None:
-        import asyncio
-        import inspect
-
-        self._asyncio = asyncio
-        self._fetcher: FetchFn = fetcher
-        self._source = source
-        self._task: Optional[asyncio.Task[Any]] = None
-        self._abort_controller: Any = None
-        self._version: int = 0
-
-        try:
-            params = inspect.signature(fetcher).parameters
-            self._fetcher_takes_signal = "signal" in params
-            self._fetcher_takes_source = any(
-                p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-                and p.name != "signal"
-                for p in params.values()
-            )
-        except (ValueError, TypeError):
-            self._fetcher_takes_signal = False
-            self._fetcher_takes_source = False
-
-        has_initial = initial_value is not _MISSING
-        self._data: Signal[Optional[R]] = Signal(initial_value if has_initial else None)
-        self._error: Signal[Optional[Any]] = Signal(None)
-        self._loading: Signal[bool] = Signal(False)
-        self._state: Signal[str] = Signal("ready" if has_initial else "unresolved")
-        self._has_value: bool = has_initial
-
-        if source is None:
-            self.refetch()
-        else:
-            self._setup_source_tracking()
-
-    # -- reading ------------------------------------------------------------
-
-    def __call__(self) -> Optional[R]:
-        """Return the current data (tracked read).
-
-        While the resource is `"pending"`, this registers it with the
-        nearest enclosing [`Suspense`][wybthon.Suspense] boundary.
-        """
-        self._register_with_suspense()
-        return self._data.get()
-
-    @property
-    def loading(self) -> bool:
-        """`True` while a fetch is in flight (tracked read)."""
-        return bool(self._loading.get())
-
-    @property
-    def error(self) -> Optional[Any]:
-        """The most recent exception, or `None` (tracked read)."""
-        return self._error.get()
-
-    @property
-    def latest(self) -> Optional[R]:
-        """The most recent data, even while refreshing (tracked read).
-
-        Unlike calling the resource, reading `latest` never registers
-        with a Suspense boundary.
-        """
-        return self._data.get()
-
-    @property
-    def state(self) -> str:
-        """The current lifecycle state string (tracked read)."""
-        return self._state.get()
-
-    def _register_with_suspense(self) -> None:
-        if self._state.peek() != "pending":
-            return
-        owner = _current_owner
-        if owner is None:
-            return
-        collector = owner._lookup_context(SUSPENSE_CONTEXT_KEY, None)
-        if collector is not None:
-            collector.register(self)
-
-    # -- writing ------------------------------------------------------------
-
-    def mutate(self, value: Union[R, Callable[[Optional[R]], R]]) -> Optional[R]:
-        """Set the resource's data directly, without fetching.
-
-        Supports functional updates like a signal setter. Clears any
-        error and marks the resource `"ready"`.
-
-        Args:
-            value: The new data, or a callable receiving the current data.
-
-        Returns:
-            The stored value.
-        """
-        if callable(value):
-            value = value(self._data.peek())
-        with _Batch():
-            self._has_value = True
-            self._data.set(value)
-            self._error.set(None)
-            self._loading.set(False)
-            self._state.set("ready")
-        return self._data.peek()
-
-    def _make_abort_controller(self) -> Any:
-        try:
-            from js import AbortController
-
-            return AbortController.new()
-        except Exception:
-            return None
-
-    def _setup_source_tracking(self) -> None:
-        """Watch the `source` getter; fetch when it yields a usable value."""
-
-        def watcher() -> None:
-            assert self._source is not None
-            value = self._source()
-            if value is None or value is False:
-                return
-            self._refetch_with(value)
-
-        effect(watcher)
-
-    async def _run(self, current_version: int, controller: Any, source_value: Any) -> None:
-        try:
-            args: List[Any] = []
-            kwargs: Dict[str, Any] = {}
-            if self._fetcher_takes_source and self._source is not None:
-                args.append(source_value)
-            if self._fetcher_takes_signal:
-                kwargs["signal"] = getattr(controller, "signal", None)
-            coro_or_val = self._fetcher(*args, **kwargs)
-
-            if isinstance(coro_or_val, AbcAwaitable):
-                result = await coro_or_val
-            else:
-                result = cast(R, coro_or_val)
-
-            if current_version == self._version:
-                with _Batch():
-                    self._has_value = True
-                    self._error.set(None)
-                    self._data.set(result)
-                    self._loading.set(False)
-                    self._state.set("ready")
-        except Exception as e:
-            if current_version != self._version:
-                return
-            with _Batch():
-                self._error.set(e)
-                self._loading.set(False)
-                self._state.set("errored")
-
-    def refetch(self) -> None:
-        """Cancel any in-flight request and start a new fetch.
-
-        The resource enters `"pending"` (first fetch) or `"refreshing"`
-        (data already present). Older in-flight tasks are ignored when
-        they resolve.
-        """
-        source_value = untrack(self._source) if self._source is not None else None
-        self._refetch_with(source_value)
-
-    def _refetch_with(self, source_value: Any) -> None:
-        self.cancel()
-        self._version += 1
-        with _Batch():
-            self._loading.set(True)
-            self._error.set(None)
-            self._state.set("refreshing" if self._has_value else "pending")
-
-        controller = self._make_abort_controller()
-        self._abort_controller = controller
-        version = self._version
-
-        async def runner() -> None:
-            await self._run(version, controller, source_value)
-
-        try:
-            self._task = self._asyncio.create_task(runner())
-        except Exception:
-            # No running loop (e.g., synchronous test code). Schedule on
-            # the policy loop, creating one if none exists yet.
-            try:
-                loop = self._asyncio.get_event_loop()
-            except Exception:
-                loop = self._asyncio.new_event_loop()
-                self._asyncio.set_event_loop(loop)
-            self._task = loop.create_task(runner())
-
-    def cancel(self) -> None:
-        """Abort the current in-flight fetch, if any.
-
-        Calls `AbortController.abort()` on the wrapped browser controller,
-        cancels the asyncio task, and resets `loading` to `False` without
-        touching the data or error state.
-        """
-        self._version += 1
-        try:
-            if self._abort_controller is not None:
-                self._abort_controller.abort()
-        except Exception:
-            pass
-        self._abort_controller = None
-        try:
-            if self._task is not None:
-                self._task.cancel()
-        except Exception:
-            pass
-        self._task = None
-        try:
-            if self._loading.peek():
-                with _Batch():
-                    self._loading.set(False)
-                    self._state.set("ready" if self._has_value else "unresolved")
-        except Exception:
-            pass
-
-
-def create_resource(
-    source_or_fetcher: Union[Callable[[], Any], Callable[..., Awaitable[R]]],
-    fetcher: Optional[Callable[..., Awaitable[R]]] = None,
-    *,
-    initial_value: Any = _MISSING,
-) -> Resource[R]:
-    """Create an async [`Resource`][wybthon.Resource] accessor.
-
-    Can be called two ways:
-
-    - `create_resource(fetcher)`: simple fetcher, fetches immediately.
-    - `create_resource(source, fetcher)`: fetches whenever the `source`
-      getter's tracked value changes; when the source yields `None` or
-      `False` the fetch is skipped (the resource stays unresolved).
-
-    The fetcher may be sync or async. When it declares a positional
-    parameter, the current source value is passed as the first argument.
-    When it accepts a `signal` keyword argument, an `AbortSignal` is
-    passed for cancellation support in the browser.
+    span(lambda: "Refreshing..." if is_pending(user) else "")
+    ```
 
     Args:
-        source_or_fetcher: When called with one argument, this is the
-            fetcher. When called with two, this is the source getter
-            (typically a signal accessor).
-        fetcher: Optional fetcher. Required when `source_or_fetcher` is a
-            source getter.
-        initial_value: Optional seed data. When provided, the resource
-            starts `"ready"` with this value, so reading it never
-            triggers a [`Suspense`][wybthon.Suspense] fallback; the
-            first fetch runs as a `"refreshing"` state instead of
-            `"pending"`, matching SolidJS's `initialValue` option.
+        fn: Zero-arg callable, typically a memo getter (or an expression
+            reading one or more of them).
 
     Returns:
-        A `Resource[R]`. Call it to read the data; read `.loading`,
-        `.error`, `.latest`, and `.state` for the surrounding UI state.
+        `True` while any async computation read by `fn` has a recompute
+        in flight; `False` once everything read is settled.
+    """
+    _pending_probe.append(False)
+    try:
+        try:
+            fn()
+        except NotReadyError:
+            _pending_probe[-1] = True
+        return _pending_probe[-1]
+    finally:
+        _pending_probe.pop()
+
+
+def latest(fn: Callable[[], T]) -> Optional[T]:
+    """Evaluate `fn` without ever raising [`NotReadyError`][wybthon.NotReadyError].
+
+    Reads of async computations return their most recent settled value;
+    a computation that has never resolved yields its placeholder
+    (`None`). Use it to peek at data from outside a
+    [`Loading`][wybthon.Loading] boundary, or to render optional UI that
+    shouldn't suspend.
+
+    Args:
+        fn: Zero-arg callable, typically a memo getter.
+
+    Returns:
+        The result of `fn`, with not-ready reads replaced by their
+        latest settled values (or `None`).
+    """
+    global _latest_depth
+    _latest_depth += 1
+    try:
+        return fn()
+    finally:
+        _latest_depth -= 1
+
+
+# ---------------------------------------------------------------------------
+# Actions and optimistic state
+# ---------------------------------------------------------------------------
+
+# Number of in-flight actions plus the registered optimistic reverts.
+# When the count drops to zero, every registered revert runs, restoring
+# optimistic values to their sources.
+_inflight_action_count: int = 0
+_optimistic_reverts: List[Callable[[], None]] = []
+
+
+def _register_optimistic_revert(fn: Callable[[], None]) -> None:
+    _optimistic_reverts.append(fn)
+
+
+def _on_action_settled() -> None:
+    global _inflight_action_count
+    _inflight_action_count -= 1
+    if _inflight_action_count <= 0:
+        _inflight_action_count = 0
+        reverts = list(_optimistic_reverts)
+        _optimistic_reverts.clear()
+        for fn in reverts:
+            try:
+                fn()
+            except Exception:
+                pass
+    _schedule_flush()
+
+
+def action(fn: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap an async mutation so the graph can track its in-flight state.
+
+    Calling the returned wrapper invokes `fn`; when `fn` returns an
+    awaitable it's scheduled as a task and the action counts as
+    **in flight** until it settles. While any action is in flight:
+
+    - the wrapper's `.pending()` getter (tracked) returns `True`, and
+    - values written through [`create_optimistic`][wybthon.create_optimistic]
+      or [`create_optimistic_store`][wybthon.create_optimistic_store]
+      stay applied; they revert to their sources when every in-flight
+      action has settled.
+
+    Errors raised by the action route to the nearest error handler
+    captured at call time (an enclosing `ErrorBoundary`) and re-raise
+    to the awaiter, so `await my_action(...)` behaves like a normal
+    Python call.
+
+    Args:
+        fn: The mutation. May be sync or `async def`.
+
+    Returns:
+        A callable wrapper. Calling it returns the task (awaitable) for
+        async mutations, or `fn`'s return value for sync ones. The
+        wrapper exposes a tracked `.pending()` getter.
 
     Example:
         ```python
-        user_id, set_user_id = create_signal(1)
+        todos, set_todos = create_store({"items": []})
+        text, set_text = create_optimistic(lambda: "")
 
-        async def load_user(uid, signal=None):
-            resp = await fetch(f"/api/users/{uid}")
-            return await resp.json()
-
-        user = create_resource(user_id, load_user)
-        cached = create_resource(load_all, initial_value=[])
+        @action
+        async def add_todo(title):
+            set_text(title)  # optimistic: reverts when the action settles
+            saved = await api_create_todo(title)
+            set_todos(lambda s: s.items.append(saved))
         ```
     """
-    if fetcher is None:
-        return Resource(source_or_fetcher, initial_value=initial_value)
-    return Resource(fetcher, source=source_or_fetcher, initial_value=initial_value)
+    import asyncio
+
+    pending_count: Signal[int] = Signal(0)
+
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        owner = _current_owner
+        result = fn(*args, **kwargs)
+        if not isinstance(result, AbcAwaitable):
+            return result
+
+        global _inflight_action_count
+        _inflight_action_count += 1
+        pending_count.set(pending_count.peek() + 1)
+
+        async def runner() -> Any:
+            try:
+                return await result
+            except Exception as exc:
+                scope: Optional[Owner] = owner
+                while scope is not None:
+                    handler = scope._error_handler
+                    if handler is not None:
+                        try:
+                            handler(exc)
+                        except Exception:
+                            pass
+                        break
+                    scope = scope._parent
+                raise
+            finally:
+                pending_count.set(pending_count.peek() - 1)
+                _on_action_settled()
+
+        try:
+            task = asyncio.create_task(runner())
+        except Exception:
+            try:
+                loop = asyncio.get_event_loop()
+            except Exception:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            task = loop.create_task(runner())
+        return task
+
+    def pending() -> bool:
+        return pending_count.get() > 0
+
+    wrapper.pending = pending  # type: ignore[attr-defined]
+    wrapper.__name__ = getattr(fn, "__name__", "action")
+    wrapper.__qualname__ = wrapper.__name__
+    return wrapper
+
+
+def create_optimistic(source: Any) -> Tuple[Callable[[], Any], Callable[[Any], Any]]:
+    """Create a signal whose writes are **optimistic**.
+
+    Reads return the optimistic override while one is active, else the
+    source value. Overrides revert automatically when every in-flight
+    [`action`][wybthon.action] has settled, by which time the real data
+    (typically a store the action reconciled) reflects the server's
+    answer.
+
+    Args:
+        source: Either a zero-arg getter (the optimistic value shadows
+            a live reactive source) or a plain initial value.
+
+    Returns:
+        A `(getter, setter)` pair like
+        [`create_signal`][wybthon.create_signal]. The setter supports
+        functional updates.
+
+    Example:
+        ```python
+        likes = create_memo(fetch_like_count)         # async source
+        shown, set_shown = create_optimistic(likes)   # shadows it
+
+        @action
+        async def like():
+            set_shown(lambda n: (n or 0) + 1)  # instant UI
+            await api_like()                   # reverts to real data on settle
+        ```
+    """
+    from .vnode import is_getter as _is_getter
+
+    if callable(source) and _is_getter(source):
+        source_getter: Callable[[], Any] = source
+    else:
+        static_value = source
+
+        def source_getter() -> Any:
+            return static_value
+
+    override: Signal[Any] = Signal(_MISSING)
+
+    def getter() -> Any:
+        ov = override.get()
+        if ov is not _MISSING:
+            return ov
+        return source_getter()
+
+    getter._wyb_getter = True  # type: ignore[attr-defined]
+
+    def revert() -> None:
+        override.set(_MISSING)
+
+    def setter(value: Any) -> Any:
+        if callable(value):
+            current = override.peek()
+            if current is _MISSING:
+                current = untrack(source_getter)
+            value = value(current)
+        override.set(value)
+        _register_optimistic_revert(revert)
+        return value
+
+    return getter, setter
 
 
 # ---------------------------------------------------------------------------
@@ -1558,6 +1852,11 @@ def create_signal(value: T, *, equals: Any = _DEFAULT_EQUALS) -> tuple:
     its return value becomes the new value. To *store* a callable as the
     signal's value, wrap it: `set_fn(lambda _prev: my_callable)`.
 
+    Writes apply to the value immediately; dependent effects run on the
+    next scheduled flush (automatic in the browser, or via
+    [`flush`][wybthon.flush]). There is no `batch()`; everything
+    batches.
+
     Args:
         value: Initial value stored in the signal.
         equals: Equality policy controlling when subscribers are notified.
@@ -1648,26 +1947,74 @@ def _accepts_prev_arg(fn: Callable[..., Any]) -> bool:
     return result
 
 
-def _create_effect_impl(fn: Callable[..., Any], *, is_render: bool = False, is_pure: bool = False) -> Computation:
-    """Shared implementation for `create_effect`, `create_render_effect`, and `create_computed`."""
-    if _accepts_prev_arg(fn):
+def _create_effect_impl(
+    fn: Callable[..., Any],
+    apply: Optional[Callable[..., Any]] = None,
+    *,
+    is_render: bool = False,
+) -> Computation:
+    """Shared implementation for `create_effect` and `create_render_effect`."""
+    if apply is not None:
+        # Split effect: ``fn`` runs tracked and produces a value;
+        # ``apply`` runs untracked with (value, previous_value).
+        _prev_value: List[Any] = [None]
+
+        def split_body() -> None:
+            value = fn()
+            prev = _prev_value[0]
+            _prev_value[0] = value
+            untrack(lambda: apply(value, prev) if _accepts_prev_arg_pair(apply) else apply(value))
+
+        body: Callable[[], Any] = split_body
+    elif _accepts_prev_arg(fn):
         _prev: List[Any] = [None]
 
         def wrapped() -> None:
             _prev[0] = fn(_prev[0])
 
-        body: Callable[[], Any] = wrapped
+        body = wrapped
     else:
         body = fn
 
-    comp = Computation(body, is_effect=True, is_render=is_render, is_pure=is_pure)
+    comp = Computation(body, is_effect=True, is_render=is_render)
     if _current_owner is not None:
         _current_owner._add_child(comp)
     comp._update_if_necessary()
     return comp
 
 
-def create_effect(fn: Callable[..., Any]) -> Computation:
+def _accepts_prev_arg_pair(fn: Callable[..., Any]) -> bool:
+    """Return True when `fn` declares two or more required positional params."""
+    try:
+        cached = _accepts_two_cache.get(fn)
+        if cached is not None:
+            return cached
+    except TypeError:
+        cached = None
+    import inspect as _inspect
+
+    try:
+        sig = _inspect.signature(fn)
+        count = sum(
+            1
+            for p in sig.parameters.values()
+            if p.kind in (_inspect.Parameter.POSITIONAL_ONLY, _inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            and p.default is _inspect.Parameter.empty
+        )
+        result = count >= 2
+    except (ValueError, TypeError):
+        result = False
+    try:
+        _accepts_two_cache[fn] = result
+    except TypeError:
+        pass
+    return result
+
+
+_accepts_two_cache: "weakref.WeakKeyDictionary[Any, bool]" = weakref.WeakKeyDictionary()
+
+
+def create_effect(fn: Callable[..., Any], apply: Optional[Callable[..., Any]] = None) -> Computation:
     """Create an auto-tracking reactive effect.
 
     The effect runs immediately and re-runs whenever any signal read inside
@@ -1675,15 +2022,28 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
     `fn` to register per-run cleanup that runs before re-execution and on
     disposal.
 
-    If `fn` accepts a positional parameter, the **previous return value**
-    is passed on each re-execution (`None` on the first run), matching
-    SolidJS's `createEffect(prev => ...)`.
+    **Split effects** (matching SolidJS 2.0's `createEffect(compute,
+    apply)`): when `apply` is provided, `fn` is the tracked *compute*
+    stage and `apply` is the untracked *side-effect* stage. `apply`
+    receives the computed value (and, when it declares a second
+    required parameter, the previous computed value). Signal reads
+    inside `apply` are **not** tracked, so incidental reads can't
+    over-subscribe the effect.
+
+    In the single-function form, if `fn` accepts a positional parameter
+    the **previous return value** is passed on each re-execution
+    (`None` on the first run), matching SolidJS 1.x's
+    `createEffect(prev => ...)`.
+
+    The effect body may be an `async def`: awaits suspend the effect
+    without blocking, and reads after an `await` are still tracked.
 
     Inside a component, the effect is automatically disposed on unmount.
 
     Args:
-        fn: Zero- or one-arg callable. When it accepts an argument, the
-            previous return value is forwarded.
+        fn: The tracked function (zero- or one-arg in single form).
+        apply: Optional untracked side-effect stage receiving the value
+            computed by `fn`.
 
     Returns:
         The underlying `Computation`. Call `.dispose()` to stop the effect
@@ -1692,49 +2052,37 @@ def create_effect(fn: Callable[..., Any]) -> Computation:
     Example:
         ```python
         count, set_count = create_signal(0)
-        create_effect(lambda prev: (print("was", prev), count())[1])
+
+        # Single form
+        create_effect(lambda: print("count:", count()))
+
+        # Split form: track only ``count``; log without subscribing to
+        # anything read inside the apply stage.
+        create_effect(count, lambda value, prev: print(prev, "->", value))
         ```
     """
-    return _create_effect_impl(fn, is_render=False)
+    return _create_effect_impl(fn, apply, is_render=False)
 
 
-def create_render_effect(fn: Callable[..., Any]) -> Computation:
+def create_render_effect(fn: Callable[..., Any], apply: Optional[Callable[..., Any]] = None) -> Computation:
     """Create an effect that runs in the **render phase**, before user effects.
 
     Matches SolidJS's `createRenderEffect`: within one flush, all pending
-    render effects execute before any [`create_effect`][wybthon.create_effect]
-    callbacks, and before the batched DOM ops are committed. Wybthon's
-    internal reactive holes and prop bindings run in this phase, so a
-    render effect observes the DOM in the same state the framework's own
-    bindings do (updates emitted but not yet committed).
+    render effects execute before the batched DOM ops are committed and
+    before any [`create_effect`][wybthon.create_effect] callbacks.
+    Wybthon's internal reactive holes and prop bindings run in this
+    phase, so a render effect observes the DOM in the same state the
+    framework's own bindings do (updates emitted but not yet committed).
 
     Args:
-        fn: Zero- or one-arg callable (the previous return value is
-            forwarded when accepted, as with `create_effect`).
+        fn: The tracked function (zero- or one-arg; the previous return
+            value is forwarded when accepted, as with `create_effect`).
+        apply: Optional untracked side-effect stage (split form).
 
     Returns:
         The underlying `Computation`.
     """
-    return _create_effect_impl(fn, is_render=True)
-
-
-def create_computed(fn: Callable[..., Any]) -> Computation:
-    """Create an eagerly-run computation in the pure (pre-render) phase.
-
-    Matches SolidJS's `createComputed`: within one flush, all pending
-    `create_computed` computations run **before** any render effects,
-    so signals they write are fully settled before the DOM updates.
-    Prefer [`create_memo`][wybthon.create_memo] for plain derived
-    values; reach for `create_computed` only when you must push a value
-    into another signal.
-
-    Args:
-        fn: Zero- or one-arg callable.
-
-    Returns:
-        The underlying `Computation`.
-    """
-    return _create_effect_impl(fn, is_pure=True)
+    return _create_effect_impl(fn, apply, is_render=True)
 
 
 def create_reaction(on_invalidate: Callable[[], Any]) -> Callable[[Callable[[], Any]], None]:
@@ -1760,8 +2108,10 @@ def create_reaction(on_invalidate: Callable[[], Any]) -> Callable[[Callable[[], 
         track = create_reaction(lambda: print("count changed!"))
 
         track(count)     # start tracking
-        set_count(1)     # prints "count changed!"
-        set_count(2)     # nothing: tracking stopped
+        set_count(1)
+        flush()          # prints "count changed!"
+        set_count(2)
+        flush()          # nothing: tracking stopped
         track(count)     # re-arm
         ```
     """
@@ -1890,55 +2240,25 @@ def on_error(handler: Callable[[Any], Any]) -> None:
         owner._error_handler = chained
 
 
-def create_deferred(source: Callable[[], T]) -> Callable[[], T]:
-    """Return a getter that trails `source`, updating on the next event-loop tick.
-
-    A lightweight analogue of SolidJS's `createDeferred`: reads of the
-    returned getter don't recompute synchronously when `source` changes;
-    instead, the new value is published asynchronously (via the running
-    asyncio loop when one exists, else immediately). Use it to decouple
-    expensive consumers from rapid-fire updates.
-
-    Args:
-        source: Zero-arg tracked getter.
-
-    Returns:
-        A zero-arg getter for the deferred value.
-    """
-    deferred: Signal[Any] = Signal(untrack(source))
-    pending: List[Any] = []
-
-    def _publish() -> None:
-        if pending:
-            value = pending.pop()
-            pending.clear()
-            deferred.set(value)
-
-    def _track() -> None:
-        value = source()
-        if not pending and value == deferred.peek():
-            return
-        pending.append(value)
-        try:
-            import asyncio
-
-            loop = asyncio.get_running_loop()
-            loop.call_soon(_publish)
-        except Exception:
-            _publish()
-
-    _create_effect_impl(_track, is_render=False)
-    return deferred.get
-
-
 def create_memo(fn: Callable[[], T], *, equals: Any = _DEFAULT_EQUALS) -> Callable[[], T]:
     """Create an auto-tracking computed value and return its getter.
 
     Re-computes lazily, only when read after a tracked source changed.
     Inside a component, the underlying computation is disposed on unmount.
 
+    **Async memos**: when `fn` is an `async def` (or returns an
+    awaitable), the memo becomes an async computation. Reading it
+    before its first value resolves raises
+    [`NotReadyError`][wybthon.NotReadyError], which the nearest
+    [`Loading`][wybthon.Loading] boundary turns into fallback UI. Once
+    it has resolved, reads during a recompute return the previous value
+    (stale-while-revalidate); use [`is_pending`][wybthon.is_pending] to
+    detect the refresh. Signal reads inside the coroutine are tracked
+    both before and after `await` points.
+
     Args:
-        fn: Zero-arg callable producing the derived value.
+        fn: Zero-arg callable producing the derived value (sync or
+            async).
         equals: Equality policy controlling when the memo's own
             observers are notified after a recompute. Same semantics as
             [`create_signal`][wybthon.create_signal]: the default is
@@ -1954,11 +2274,15 @@ def create_memo(fn: Callable[[], T], *, equals: Any = _DEFAULT_EQUALS) -> Callab
     Example:
         ```python
         doubled = create_memo(lambda: count() * 2)
-        print(doubled())      # reactive read
+        print(doubled())       # reactive read
         print(doubled.peek())  # untracked read
 
-        # Notify only when the result list changes length:
-        heads = create_memo(lambda: items()[:5], equals=lambda a, b: len(a) == len(b))
+        # Async: the graph suspends readers until the first value lands.
+        async def load_user():
+            uid = user_id()  # tracked; refetches when it changes
+            return await fetch_json(f"/api/users/{uid}")
+
+        user = create_memo(load_user)
         ```
     """
     c = _Computed(fn, equals=equals)
@@ -1968,6 +2292,7 @@ def create_memo(fn: Callable[[], T], *, equals: Any = _DEFAULT_EQUALS) -> Callab
 
     getter.peek = c.peek  # type: ignore[attr-defined]
     getter._wyb_getter = True  # type: ignore[attr-defined]
+    getter._wyb_computed = c  # type: ignore[attr-defined]
     return getter
 
 
@@ -2087,64 +2412,6 @@ def get_props() -> "ReactiveProps":
     rp = ReactiveProps(ctx._props)
     ctx._reactive_props = rp
     return rp
-
-
-# ---------------------------------------------------------------------------
-# Additional reactive utilities
-# ---------------------------------------------------------------------------
-
-
-def on(
-    deps: Union[Callable[[], Any], List[Callable[[], Any]]],
-    fn: Callable[..., Any],
-    defer: bool = False,
-) -> Computation:
-    """Create an effect with explicit dependencies.
-
-    `deps` may be a single getter or a list of getters. `fn` receives the
-    current value(s) as positional arguments. Only the listed deps are
-    tracked; the body of `fn` runs inside `untrack`.
-
-    Args:
-        deps: One getter or a list of getters to subscribe to.
-        fn: Callback receiving the current dep value(s) on each change.
-        defer: When `True`, skip the first invocation (so `fn` runs only
-            on subsequent changes, not the initial read).
-
-    Returns:
-        The underlying `Computation`.
-
-    Example:
-        ```python
-        on(count, lambda v: print("count is now", v))
-        on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
-        ```
-    """
-    dep_list: List[Callable[[], Any]] = deps if isinstance(deps, list) else [deps]
-    ran = [False]
-
-    def tracked() -> None:
-        values = [d() for d in dep_list]
-        if defer and not ran[0]:
-            ran[0] = True
-            return
-        ran[0] = True
-
-        def call_fn() -> None:
-            if len(values) == 1:
-                fn(values[0])
-            else:
-                fn(*values)
-
-        global _current_observer
-        prev = _current_observer
-        _current_observer = None
-        try:
-            call_fn()
-        finally:
-            _current_observer = prev
-
-    return create_effect(tracked)
 
 
 def create_root(fn: Callable[[Callable[[], None]], T]) -> T:
@@ -2478,12 +2745,18 @@ def _run_owned_untracked(owner: "Owner", fn: Callable[[], T]) -> T:
 def map_array(
     source: Callable[[], Optional[List[Any]]],
     map_fn: Callable[[Callable[[], Any], Callable[[], int]], T],
+    *,
+    key: Optional[Callable[[Any], Any]] = None,
 ) -> Callable[[], List[T]]:
-    """Map a reactive list with stable per-item scopes (keyed by identity).
+    """Map a reactive list with stable per-item scopes.
 
-    Items are matched by **reference identity**. The mapping callback
-    runs **once** per unique item; when an item leaves the source list,
-    its reactive scope is disposed automatically.
+    Items are matched by **reference identity** by default, or by the
+    result of `key(item)` when a key function is given. The mapping
+    callback runs **once** per unique item (or key); when an item
+    leaves the source list, its reactive scope is disposed
+    automatically. With a key function, an item whose key survives a
+    data refresh keeps its scope and DOM: only its `item_getter` signal
+    updates.
 
     Args:
         source: Zero-arg getter that returns the current list (typically
@@ -2491,6 +2764,8 @@ def map_array(
         map_fn: Called as `map_fn(item_getter, index_getter)` for each
             unique item. `item_getter()` returns the item; `index_getter()`
             returns its current position.
+        key: Optional key extractor. When provided, cache slots match by
+            `key(item)` instead of item identity.
 
     Returns:
         A zero-arg getter producing the mapped list. Reading it inside a
@@ -2501,11 +2776,21 @@ def map_array(
         items, set_items = create_signal(["A", "B", "C"])
         labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
         # labels() == ["0: A", "1: B", "2: C"]
+
+        rows = map_array(todos, render_row, key=lambda t: t["id"])
         ```
     """
     global _map_key_counter
     _parent = _current_owner
     _cache: List[Dict[str, Any]] = []
+
+    def _slot_key(item: Any) -> Any:
+        if key is not None:
+            try:
+                return key(item)
+            except Exception:
+                return id(item)
+        return id(item)
 
     def _compute() -> List[T]:
         global _map_key_counter
@@ -2519,29 +2804,35 @@ def map_array(
         new_cache: List[Dict[str, Any]] = []
         used = [False] * len(_cache)
 
-        # Identity index: id(item) -> cache positions, consumed in order
-        # so duplicate items resolve stably. Keeps matching O(n).
-        by_id: Dict[int, List[int]] = {}
+        # Key index: slot_key -> cache positions, consumed in order so
+        # duplicate keys resolve stably. Keeps matching O(n).
+        by_key: Dict[Any, List[int]] = {}
         for ci in range(len(_cache)):
-            by_id.setdefault(id(_cache[ci]["item"]), []).append(ci)
-        by_id_pos: Dict[int, int] = {}
+            by_key.setdefault(_cache[ci]["slot_key"], []).append(ci)
+        by_key_pos: Dict[Any, int] = {}
 
         for idx, item in enumerate(items):
+            skey = _slot_key(item)
             found = -1
-            positions = by_id.get(id(item))
+            positions = by_key.get(skey)
             if positions is not None:
-                p = by_id_pos.get(id(item), 0)
+                p = by_key_pos.get(skey, 0)
                 while p < len(positions) and used[positions[p]]:
                     p += 1
-                by_id_pos[id(item)] = p
+                by_key_pos[skey] = p
                 if p < len(positions):
                     found = positions[p]
-                    by_id_pos[id(item)] = p + 1
+                    by_key_pos[skey] = p + 1
 
             if found >= 0:
                 used[found] = True
                 entry = _cache[found]
                 entry["index_signal"].set(idx)
+                if key is not None:
+                    # Keyed mode: the item object may be a fresh instance
+                    # carrying updated data for the same logical row.
+                    entry["item_signal"].set(item)
+                    entry["item"] = item
                 new_cache.append(entry)
             else:
                 owner = Owner()
@@ -2557,6 +2848,7 @@ def map_array(
                 new_cache.append(
                     {
                         "item": item,
+                        "slot_key": skey,
                         "owner": owner,
                         "result": result,
                         "item_signal": item_sig,
@@ -2692,7 +2984,7 @@ def create_selector(
 
         _notify(old_key)
         _notify(new_key)
-        _run_effects_if_idle()
+        _schedule_flush()
 
     effect(_tracker)
 

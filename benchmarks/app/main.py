@@ -18,7 +18,7 @@ from pyodide.ffi import create_proxy
 
 from wybthon.dom import Element
 from wybthon.flow import For
-from wybthon.reactivity import batch, create_selector, create_signal
+from wybthon.reactivity import create_selector, create_signal, flush
 from wybthon.reconciler import render
 from wybthon.vnode import h
 
@@ -159,46 +159,44 @@ render(app, container)
 
 
 # ---------------------------------------------------------------------------
-# Benchmark operations — every one is a signal write
+# Benchmark operations — every one is a batch of signal writes.
+#
+# Writes batch automatically; the explicit ``flush()`` settles effects
+# and commits the DOM synchronously so the benchmark measures the full
+# update inside the click handler (these handlers are wired straight to
+# addEventListener, bypassing Wybthon's event system which would
+# otherwise flush for us).
 # ---------------------------------------------------------------------------
 
 
 def run(e=None):
-    def update_state():
-        set_data(build_data(1000))
-        set_selected(None)
-
-    batch(update_state)
+    set_data(build_data(1000))
+    set_selected(None)
+    flush()
 
 
 def run_lots(e=None):
-    def update_state():
-        set_data(build_data(10000))
-        set_selected(None)
-
-    batch(update_state)
+    set_data(build_data(10000))
+    set_selected(None)
+    flush()
 
 
 def add(e=None):
     set_data(lambda rows: rows + build_data(1000))
+    flush()
 
 
 def update(e=None):
     rows = data()
-
-    def update_state():
-        for i in range(0, len(rows), 10):
-            rows[i]["set_label"](lambda label: label + " !!!")
-
-    batch(update_state)
+    for i in range(0, len(rows), 10):
+        rows[i]["set_label"](lambda label: label + " !!!")
+    flush()
 
 
 def clear(e=None):
-    def update_state():
-        set_data([])
-        set_selected(None)
-
-    batch(update_state)
+    set_data([])
+    set_selected(None)
+    flush()
 
 
 def swap_rows(e=None):
@@ -206,14 +204,17 @@ def swap_rows(e=None):
     if len(rows) > 998:
         rows[1], rows[998] = rows[998], rows[1]
     set_data(rows)
+    flush()
 
 
 def select(item_id):
     set_selected(item_id)
+    flush()
 
 
 def delete(item_id):
     set_data(lambda rows: [d for d in rows if d["id"] != item_id])
+    flush()
 
 
 # ---------------------------------------------------------------------------

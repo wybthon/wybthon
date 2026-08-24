@@ -87,7 +87,7 @@ This project uses Conventional Commits. Use the form:
 Example (UTF‑8 subject):
 
 ```
-feat(reactivity): add computed() invalidation scheduling; stabilize batch() semantics
+feat(reactivity): add async memo scheduling; stabilize flush() semantics
 ```
 
 Accepted types (stick to the standard):
@@ -113,7 +113,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `dom` – DOM interop and element helpers
   - `error_boundary` – error boundary component and fallback rendering
   - `events` – DOM events and event utilities
-  - `flow` – control-flow components (Show, For, Index, Switch, Match, Dynamic)
+  - `flow` – control-flow components (Show, For, Repeat, Switch, Match, Dynamic)
   - `forms` – form state, validators, and bindings
   - `html` – Pythonic HTML element helpers and Fragment
   - `kernel` – batched DOM command buffer, JS kernel, and rendering backends
@@ -125,8 +125,8 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `reconciler` – reconciliation engine for mounting, patching, and unmounting
   - `router` – routing, paths, and navigation helpers
   - `router_core` – core route resolution helpers
-  - `store` – reactive stores (`create_store`, `produce`) for nested state management
-  - `suspense` – suspense boundaries and async fallback UI
+  - `store` – reactive stores (`create_store`, `reconcile`) for nested state management
+  - `loading` – loading boundaries and async fallback UI
   - `template` – template-based mounting fast path (serialization and plans)
   - `vdom` – virtual DOM and renderer
   - `vnode` – virtual node data structure and creation utilities

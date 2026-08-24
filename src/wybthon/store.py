@@ -1,4 +1,4 @@
-"""Reactive stores for nested state, inspired by SolidJS `createStore`.
+"""Reactive stores for nested state, matching SolidJS 2.0's draft-first model.
 
 Stores provide fine-grained reactive access to nested objects and
 lists. Each path through the store is backed by its own
@@ -6,22 +6,27 @@ lists. Each path through the store is backed by its own
 subscribes the current computation to that specific leaf, not to the
 entire store.
 
+Writes are **draft-first**: the setter hands you a mutable draft of the
+state and you mutate it directly with normal Python. There is no path
+syntax and no `produce` wrapper; mutating the draft is just how stores
+work.
+
 Public surface:
 
-- [`create_store`][wybthon.create_store]: build a store from any
-  initial value.
-- [`produce`][wybthon.produce]: batch mutations through a mutable
-  draft.
+- [`create_store`][wybthon.create_store]: build a store from an initial
+  value; returns `(store, set_store)`.
+- [`create_projection`][wybthon.create_projection]: a read-only store
+  derived from reactive sources, updated fine-grained.
+- [`create_optimistic_store`][wybthon.create_optimistic_store]: a store
+  whose writes revert when in-flight [`action`][wybthon.action]s settle.
 - [`reconcile`][wybthon.reconcile]: diff external data into a store,
   preserving object identity for unchanged items.
 - [`unwrap`][wybthon.unwrap]: read the raw (non-reactive) data behind
   a store proxy.
-- [`create_mutable`][wybthon.create_mutable]: a directly-writable
-  store proxy (no separate setter).
 
 Example:
     ```python
-    from wybthon import create_store, produce
+    from wybthon import create_store, reconcile
 
     store, set_store = create_store({
         "count": 0,
@@ -35,12 +40,15 @@ Example:
     store.user.name       # "Ada"
     store.todos[0].text   # "Learn Wybthon"
 
-    set_store("count", 5)
-    set_store("user", "name", "Jane")
-    set_store("count", lambda c: c + 1)
-    set_store("todos", 0, "done", True)
+    def bump(s):
+        s.count += 1
+        s.user.name = "Jane"
+        s.todos[0].done = True
+        s.todos.append({"id": 2, "text": "New", "done": False})
 
-    set_store(produce(lambda s: setattr(s, "count", s.count + 1)))
+    set_store(bump)
+
+    set_store(reconcile(fetched_state))
     ```
 
 See Also:
@@ -49,11 +57,23 @@ See Also:
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, TypeVar
+import copy
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
-from .reactivity import Signal, batch
+from .reactivity import (
+    Signal,
+    _register_optimistic_revert,
+    create_render_effect,
+    untrack,
+)
 
-__all__ = ["create_store", "produce", "reconcile", "unwrap", "create_mutable", "modify_mutable"]
+__all__ = [
+    "create_store",
+    "create_projection",
+    "create_optimistic_store",
+    "reconcile",
+    "unwrap",
+]
 
 T = TypeVar("T")
 
@@ -61,21 +81,19 @@ T = TypeVar("T")
 class _StoreNode:
     """Internal node holding one [`Signal`][wybthon.Signal] per property.
 
-    Child nodes are cached by key so that proxy reads and setter
-    writes for the same path always resolve to the same `Signal`
-    instances. The `_mutable` flag (set by `create_mutable`, inherited
-    by children) controls whether wrapped values are writable proxies.
+    Child nodes are cached by key so that proxy reads and draft writes
+    for the same path always resolve to the same `Signal` instances.
     """
 
-    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_mutable")
+    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_draft_proxy")
 
-    def __init__(self, raw: Any, mutable: bool = False) -> None:
+    def __init__(self, raw: Any) -> None:
         """Wrap `raw` in an empty signal/child cache."""
         object.__setattr__(self, "_signals", {})
         object.__setattr__(self, "_raw", raw)
         object.__setattr__(self, "_children", {})
         object.__setattr__(self, "_proxy", None)
-        object.__setattr__(self, "_mutable", mutable)
+        object.__setattr__(self, "_draft_proxy", None)
 
     def _get_signal(self, key: Any) -> Signal:
         signals: Dict[Any, Signal] = object.__getattribute__(self, "_signals")
@@ -107,7 +125,7 @@ class _StoreNode:
                     child_raw = None
             else:
                 child_raw = getattr(raw, key, None)
-            child_node = _StoreNode(child_raw, object.__getattribute__(self, "_mutable"))
+            child_node = _StoreNode(child_raw)
             children[key] = child_node
         return children[key]
 
@@ -172,35 +190,35 @@ class _StoreNode:
             signals["length"].set(len(new_raw))
 
 
-def _wrap_value(value: Any, node: _StoreNode) -> Any:
+def _wrap_value(value: Any, node: _StoreNode, *, draft: bool = False) -> Any:
     """Wrap a raw value in a reactive proxy backed by `node`.
 
-    Proxies are cached per node so repeated reads of the same path
-    return the same proxy object (stable identity). Nodes belonging to
-    a mutable store wrap in directly-writable proxy variants.
+    Read proxies and draft proxies are cached separately per node so
+    repeated reads of the same path return the same proxy object
+    (stable identity).
     """
     if isinstance(value, (dict, list)):
-        cached = object.__getattribute__(node, "_proxy")
-        mutable = object.__getattribute__(node, "_mutable")
+        cache_attr = "_draft_proxy" if draft else "_proxy"
+        cached = object.__getattribute__(node, cache_attr)
+        expected: type
         if isinstance(value, dict):
-            if isinstance(cached, _StoreProxy):
-                return cached
-            proxy: Any = _MutableProxy(node) if mutable else _StoreProxy(node)
+            expected = _DraftProxy if draft else _StoreProxy
         else:
-            if isinstance(cached, _StoreListProxy):
-                return cached
-            proxy = _MutableListProxy(node) if mutable else _StoreListProxy(node)
-        object.__setattr__(node, "_proxy", proxy)
+            expected = _DraftListProxy if draft else _StoreListProxy
+        if type(cached) is expected:
+            return cached
+        proxy: Any = expected(node)
+        object.__setattr__(node, cache_attr, proxy)
         return proxy
     return value
 
 
 class _StoreProxy:
-    """Reactive proxy for dict-like store objects.
+    """Reactive read proxy for dict-like store objects.
 
     Attribute reads track the corresponding `Signal`; nested dicts and
     lists are lazily wrapped in their own proxies via cached child
-    nodes.
+    nodes. Writes must go through the store setter's draft.
     """
 
     __slots__ = ("_node",)
@@ -237,7 +255,7 @@ class _StoreProxy:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
-        raise AttributeError("Store is read-only. Use set_store() to update values.")
+        raise AttributeError("Store is read-only. Mutate the draft inside set_store(lambda s: ...) instead.")
 
     def __repr__(self) -> str:
         node: _StoreNode = object.__getattribute__(self, "_node")
@@ -274,11 +292,11 @@ class _StoreProxy:
 
 
 class _StoreListProxy:
-    """Reactive proxy for list-like store values.
+    """Reactive read proxy for list-like store values.
 
     Index reads track the corresponding `Signal`. Supports `len()`,
     iteration, and `in` checks; mutations must go through the store
-    setter.
+    setter's draft.
     """
 
     __slots__ = ("_node",)
@@ -336,127 +354,186 @@ class _StoreListProxy:
         return NotImplemented
 
 
-def _resolve_path(node: _StoreNode, path: Sequence[Any]) -> Tuple[_StoreNode, Any]:
-    """Walk a store tree following `path`, returning `(parent_node, final_key)`.
+# --------------- draft proxies (handed to set_store callbacks) ---------------
 
-    Uses the child-node cache so that writes resolve to the same
-    nodes (and therefore the same signals) as proxy reads.
 
-    Args:
-        node: Root node of the store sub-tree.
-        path: Sequence of attribute names or indices.
+class _DraftProxy(_StoreProxy):
+    """Writable draft over a dict store node.
 
-    Returns:
-        A tuple `(parent_node, final_key)` where `parent_node` owns
-        the leaf signal addressed by `final_key`.
-
-    Raises:
-        KeyError: If the path passes through a non-container value.
+    Handed to `set_store(fn)` callbacks. Reads behave like the read
+    proxy (nested containers wrap in nested drafts); writes apply
+    immediately to the underlying raw data and notify exactly the
+    affected leaf signals. Because effects flush once per scheduled
+    flush, a draft function making many writes still produces a single
+    settled update.
     """
-    current = node
-    for segment in path[:-1]:
-        current = current._get_child(segment)
-        raw = object.__getattribute__(current, "_raw")
-        if not isinstance(raw, (dict, list)):
-            raise KeyError(f"Cannot traverse into non-container at path segment {segment!r}")
-    return current, path[-1]
+
+    __slots__ = ()
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        sig = node._get_signal(name)
+        val = sig.get()
+        if isinstance(val, (dict, list)):
+            child_node = node._get_child(name)
+            object.__setattr__(child_node, "_raw", val)
+            return _wrap_value(val, child_node, draft=True)
+        return val
+
+    def __getitem__(self, key: Any) -> Any:
+        if isinstance(key, str):
+            return self.__getattr__(key)
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        sig = node._get_signal(key)
+        val = sig.get()
+        if isinstance(val, (dict, list)):
+            child_node = node._get_child(key)
+            object.__setattr__(child_node, "_raw", val)
+            return _wrap_value(val, child_node, draft=True)
+        return val
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+            return
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        node._set_value(name, value)
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        node._set_value(key, value)
+
+    def __delitem__(self, key: Any) -> None:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = object.__getattribute__(node, "_raw")
+        if isinstance(raw, dict):
+            raw.pop(key, None)
+            node._replace_raw(raw)
+        elif isinstance(raw, list):
+            raw.pop(key)
+            node._replace_raw(raw)
+
+    def update(self, values: Dict[str, Any]) -> None:
+        """Merge `values` into this draft (dict-style bulk write)."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        for k, v in values.items():
+            node._set_value(k, v)
+
+
+class _DraftListProxy(_StoreListProxy):
+    """Writable draft over a list store node.
+
+    Supports index assignment plus `append`, `insert`, `pop`, `remove`,
+    `extend`, and `clear`, notifying index and length subscribers.
+    """
+
+    __slots__ = ()
+
+    def _raw_list(self) -> list:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        return object.__getattribute__(node, "_raw")
+
+    def __getitem__(self, index: int) -> Any:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        sig = node._get_signal(index)
+        val = sig.get()
+        if isinstance(val, (dict, list)):
+            child_node = node._get_child(index)
+            object.__setattr__(child_node, "_raw", val)
+            return _wrap_value(val, child_node, draft=True)
+        return val
+
+    def __setitem__(self, index: Any, value: Any) -> None:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        node._set_value(index, value)
+
+    def __delitem__(self, index: Any) -> None:
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.pop(index)
+        node._replace_raw(raw)
+
+    def append(self, value: Any) -> None:
+        """Append `value`, notifying index and length subscribers."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.append(value)
+        node._replace_raw(raw)
+
+    def extend(self, values: Any) -> None:
+        """Append every item in `values`."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.extend(values)
+        node._replace_raw(raw)
+
+    def insert(self, index: int, value: Any) -> None:
+        """Insert `value` at `index`, shifting later items."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.insert(index, value)
+        node._replace_raw(raw)
+
+    def pop(self, index: int = -1) -> Any:
+        """Remove and return the item at `index` (default: last)."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        value = raw.pop(index)
+        node._replace_raw(raw)
+        return value
+
+    def remove(self, value: Any) -> None:
+        """Remove the first occurrence of `value`."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.remove(value)
+        node._replace_raw(raw)
+
+    def clear(self) -> None:
+        """Remove every item."""
+        node: _StoreNode = object.__getattribute__(self, "_node")
+        raw = self._raw_list()
+        raw.clear()
+        node._replace_raw(raw)
+
+
+def _make_draft(node: _StoreNode) -> Any:
+    raw = object.__getattribute__(node, "_raw")
+    if isinstance(raw, dict):
+        return _wrap_value(raw, node, draft=True)
+    if isinstance(raw, list):
+        return _wrap_value(raw, node, draft=True)
+    return raw
 
 
 class _StoreSetter:
-    """Callable that applies path-based updates to a store.
+    """Callable that applies draft mutations to a store.
 
-    Supports several calling conventions mirroring SolidJS
-    `setStore`:
+    Two calling conventions, matching SolidJS 2.0 `setStore`:
 
-    - `set_store("key", value)`: set a top-level key.
-    - `set_store("key", fn)`: functional update (`fn(current)`).
-    - `set_store("a", "b", value)`: nested path.
-    - `set_store("a", 0, "done", True)`: path with list index.
-    - `set_store(produce(fn))`: batch mutations via
-      [`produce`][wybthon.produce].
+    - `set_store(fn)`: `fn` receives a mutable **draft** of the state;
+      mutate it with normal Python (attribute and index assignment,
+      list methods). Only the leaf signals whose values actually
+      changed notify.
+    - `set_store(reconcile(data))`: merge external data in, preserving
+      object identity for unchanged items (see
+      [`reconcile`][wybthon.reconcile]).
     """
 
     def __init__(self, node: _StoreNode) -> None:
         """Bind this setter to the store's root node."""
         self._node = node
 
-    def __call__(self, *args: Any) -> None:
-        if len(args) == 0:
-            raise TypeError("set_store() requires at least one argument")
-
-        # All signal writes from a single ``set_store`` call are coalesced into
-        # one flush so that a consumer reading several paths in one effect sees
-        # a single, fully-settled update (glitch-free), matching SolidJS stores.
-        with batch():
-            self._apply(*args)
-
-    def _apply(self, *args: Any) -> None:
-        if len(args) == 1:
-            arg = args[0]
-            if isinstance(arg, _ProduceResult):
-                arg._apply(self._node)
-                return
-            if isinstance(arg, _ReconcileResult):
-                arg._apply(self._node)
-                return
-            if callable(arg):
-                raw = object.__getattribute__(self._node, "_raw")
-                new_raw = arg(raw)
-                if new_raw is not raw and new_raw is not None:
-                    self._node._replace_raw(new_raw)
-                return
-            if isinstance(arg, dict):
-                for k, v in arg.items():
-                    self._node._set_value(k, v)
-                return
-            raise TypeError("set_store() with a single argument requires a produce(), callable, or dict")
-
-        *path_parts, final = args
-        if not path_parts:
-            raise TypeError("set_store() requires a path when called with two or more arguments")
-
-        if isinstance(final, _ReconcileResult):
-            if len(path_parts) == 1:
-                target = self._node._get_child(path_parts[0])
-            else:
-                parent_node, last_key = _resolve_path(self._node, path_parts)
-                target = parent_node._get_child(last_key)
-            final._apply(target)
-            # The parent's raw container holds a reference to the child's
-            # raw value, which reconcile may have swapped out.
-            if len(path_parts) == 1:
-                self._node._set_value(path_parts[0], object.__getattribute__(target, "_raw"))
-            else:
-                parent_node._set_value(last_key, object.__getattribute__(target, "_raw"))
+    def __call__(self, modifier: Any) -> None:
+        if isinstance(modifier, _ReconcileResult):
+            modifier._apply(self._node)
             return
-
-        if len(path_parts) == 1:
-            key = path_parts[0]
-            if callable(final):
-                sig = self._node._get_signal(key)
-                old = sig._value
-                new_val = final(old)
-                self._node._set_value(key, new_val)
-            else:
-                self._node._set_value(key, final)
-            self._update_length_if_list()
+        if callable(modifier):
+            modifier(_make_draft(self._node))
             return
-
-        parent_node, last_key = _resolve_path(self._node, path_parts)
-        if callable(final):
-            sig = parent_node._get_signal(last_key)
-            old = sig._value
-            new_val = final(old)
-            parent_node._set_value(last_key, new_val)
-        else:
-            parent_node._set_value(last_key, final)
-
-    def _update_length_if_list(self) -> None:
-        raw = object.__getattribute__(self._node, "_raw")
-        if isinstance(raw, list):
-            signals: Dict[Any, Signal] = object.__getattribute__(self._node, "_signals")
-            if "length" in signals:
-                signals["length"].set(len(raw))
+        raise TypeError("set_store() takes a draft function or a reconcile() result")
 
 
 def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
@@ -467,10 +544,11 @@ def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
             reactive proxies; other values are returned unchanged.
 
     Returns:
-        A tuple `(store, set_store)` where `store` is a reactive
-        proxy that tracks reads per-path, and `set_store` is a setter
-        supporting path-based updates and
-        [`produce`][wybthon.produce] batches.
+        A tuple `(store, set_store)` where `store` is a read-only
+        reactive proxy that tracks reads per-path, and `set_store`
+        applies **draft mutations**: call it with a function that
+        receives a mutable draft, or with a
+        [`reconcile`][wybthon.reconcile] result.
 
     Example:
         ```python
@@ -479,13 +557,13 @@ def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
         store.count         # 0
         store.user.name     # "Ada"
 
-        set_store("count", 5)
-        set_store("user", "name", "Jane")
-        set_store("count", lambda c: c + 1)
-        ```
+        def rename(s):
+            s.count += 1
+            s.user.name = "Jane"
 
-    See the module docstring for the full set of supported calling
-    conventions.
+        set_store(rename)
+        set_store(reconcile(fetched_state))
+        ```
     """
     node = _StoreNode(initial)
     if isinstance(initial, dict):
@@ -498,114 +576,136 @@ def create_store(initial: Any) -> Tuple[Any, _StoreSetter]:
     return proxy, setter
 
 
-# --------------- produce ---------------
+# --------------- projections ---------------
 
 
-class _ProduceDraft:
-    """Mutable draft that records attribute writes for later application.
+def create_projection(fn: Callable[[Any], Any], initial: Optional[Any] = None) -> Any:
+    """Create a read-only store derived from reactive sources.
 
-    Used internally by [`produce`][wybthon.produce]. Mutations made on
-    the draft are accumulated as patches and replayed against the
-    real store via [`_apply_patches`][wybthon.store._apply_patches].
+    `fn` receives a mutable draft of the projection's state and runs
+    inside a render-phase computation: any signals, memos, or other
+    stores it reads become dependencies, and when they change `fn`
+    re-runs against the same draft. Because writes go through
+    fine-grained store signals, consumers re-render only for the paths
+    that actually changed.
+
+    Matches SolidJS 2.0's `createProjection`.
+
+    Args:
+        fn: Draft mutator. Reads are tracked; mutate the draft to
+            publish derived state.
+        initial: Initial backing state (a dict or list). Defaults to an
+            empty dict.
+
+    Returns:
+        A read-only store proxy.
+
+    Example:
+        ```python
+        selected, set_selected = create_signal(1)
+
+        flags = create_projection(
+            lambda draft: draft.update({"selected_id": selected()}),
+            {"selected_id": None},
+        )
+        ```
     """
+    state = initial if initial is not None else {}
+    node = _StoreNode(state)
+    draft = _make_draft(node)
 
-    __slots__ = ("_target", "_patches")
+    create_render_effect(lambda: fn(draft))
 
-    def __init__(self, raw: Any) -> None:
-        """Initialize the draft over `raw` with an empty patch list."""
-        object.__setattr__(self, "_target", raw)
-        object.__setattr__(self, "_patches", [])
+    if isinstance(state, dict):
+        return _StoreProxy(node)
+    if isinstance(state, list):
+        return _StoreListProxy(node)
+    return state
 
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            return object.__getattribute__(self, name)
-        target = object.__getattribute__(self, "_target")
-        if isinstance(target, dict):
-            val = target.get(name)
+
+# --------------- optimistic stores ---------------
+
+
+def create_optimistic_store(source: Any, initial: Optional[Any] = None) -> Tuple[Any, Callable[[Any], None]]:
+    """Create a store whose writes revert when in-flight actions settle.
+
+    Reads behave like a normal store. Writes (draft mutations through
+    the returned setter) apply immediately; when every in-flight
+    [`action`][wybthon.action] has settled, the store **reverts** to its
+    base state: the tracked `source` function's latest result (derived
+    form), or the initial value (value form). Pair it with actions that
+    reconcile real data into a regular store; the optimistic overlay
+    bridges the latency gap.
+
+    Args:
+        source: Either a tracked function returning the base state
+            (derived form; re-runs and reconciles when its dependencies
+            change) or a plain dict/list initial value.
+        initial: Initial backing state for the derived form, used
+            before `source` first runs. Defaults to an empty dict.
+
+    Returns:
+        A `(store, set_optimistic)` tuple. `set_optimistic(fn)` applies
+        a draft mutation, like a store setter.
+
+    Example:
+        ```python
+        todos, set_todos = create_store({"items": []})
+
+        shown, set_shown = create_optimistic_store(lambda: unwrap(todos)["items"], [])
+
+        @action
+        async def add(title):
+            set_shown(lambda s: s.append({"title": title, "saving": True}))
+            saved = await api_create(title)
+            set_todos(lambda s: s.items.append(saved))
+        ```
+    """
+    derived = callable(source)
+    if derived:
+        state: Any = initial if initial is not None else {}
+    else:
+        state = source
+    node = _StoreNode(state)
+    draft = _make_draft(node)
+
+    base_snapshot: Dict[str, Any] = {"value": copy.deepcopy(unwrap_raw(state))}
+
+    def _reconcile_to(data: Any) -> None:
+        merged = _merge_data(object.__getattribute__(node, "_raw"), copy.deepcopy(data), "id")
+        node._replace_raw(merged)
+
+    if derived:
+
+        def _track_base() -> None:
+            data = source()
+            base_snapshot["value"] = copy.deepcopy(unwrap_raw(data))
+            _reconcile_to(base_snapshot["value"])
+
+        create_render_effect(_track_base)
+
+    def _revert() -> None:
+        _reconcile_to(base_snapshot["value"])
+
+    def set_optimistic(modifier: Any) -> None:
+        if isinstance(modifier, _ReconcileResult):
+            modifier._apply(node)
+        elif callable(modifier):
+            modifier(draft)
         else:
-            val = getattr(target, name, None)
-        if isinstance(val, (dict, list)):
-            child = _ProduceDraft(val)
-            patches: list = object.__getattribute__(self, "_patches")
-            patches.append(("_child", name, child))
-            return child
-        return val
+            raise TypeError("set_optimistic() takes a draft function or a reconcile() result")
+        _register_optimistic_revert(lambda: untrack(_revert))
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_"):
-            object.__setattr__(self, name, value)
-            return
-        patches: list = object.__getattribute__(self, "_patches")
-        patches.append(("set", name, value))
-
-    def __getitem__(self, key: Any) -> Any:
-        target = object.__getattribute__(self, "_target")
-        val = target[key]
-        if isinstance(val, (dict, list)):
-            child = _ProduceDraft(val)
-            patches: list = object.__getattribute__(self, "_patches")
-            patches.append(("_child", key, child))
-            return child
-        return val
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        patches: list = object.__getattribute__(self, "_patches")
-        patches.append(("set", key, value))
-
-    def append(self, value: Any) -> None:
-        patches: list = object.__getattribute__(self, "_patches")
-        patches.append(("append", None, value))
-
-    def pop(self, index: int = -1) -> Any:
-        target = object.__getattribute__(self, "_target")
-        val = target[index]
-        patches: list = object.__getattribute__(self, "_patches")
-        patches.append(("pop", index, None))
-        return val
+    if isinstance(state, dict):
+        proxy: Any = _StoreProxy(node)
+    elif isinstance(state, list):
+        proxy = _StoreListProxy(node)
+    else:
+        proxy = state
+    return proxy, set_optimistic
 
 
-class _ProduceResult:
-    """Marker wrapping a `produce` function for the store setter to recognize."""
-
-    __slots__ = ("_fn",)
-
-    def __init__(self, fn: Callable[..., None]) -> None:
-        """Capture `fn` until the store setter applies it to a draft."""
-        self._fn = fn
-
-    def _apply(self, node: _StoreNode) -> None:
-        raw = object.__getattribute__(node, "_raw")
-        draft = _ProduceDraft(raw)
-        self._fn(draft)
-        _apply_patches(node, draft)
-
-
-def _apply_patches(node: _StoreNode, draft: _ProduceDraft) -> None:
-    """Recursively apply recorded patches from a produce draft to a store node."""
-    patches: list = object.__getattribute__(draft, "_patches")
-    raw = object.__getattribute__(node, "_raw")
-
-    for op, key, value in patches:
-        if op == "set":
-            node._set_value(key, value)
-        elif op == "append":
-            if isinstance(raw, list):
-                raw.append(value)
-                signals: Dict[Any, Signal] = object.__getattribute__(node, "_signals")
-                new_idx = len(raw) - 1
-                signals[new_idx] = Signal(value)
-                if "length" in signals:
-                    signals["length"].set(len(raw))
-        elif op == "pop":
-            if isinstance(raw, list):
-                raw.pop(key)
-                node._replace_raw(raw)
-        elif op == "_child":
-            child_node = node._get_child(key)
-            _apply_patches(child_node, value)
-
-
-# --------------- reconcile / unwrap / create_mutable ---------------
+# --------------- reconcile / unwrap ---------------
 
 
 def _merge_data(old: Any, new: Any, key: Optional[str]) -> Any:
@@ -681,10 +781,18 @@ def reconcile(data: Any, key: Optional[str] = "id") -> _ReconcileResult:
 
     Example:
         ```python
-        set_store("todos", reconcile(fetched_todos))
+        set_store(reconcile(fetched_state))
         ```
     """
     return _ReconcileResult(data, key)
+
+
+def unwrap_raw(value: Any) -> Any:
+    """Internal: return the raw data behind a proxy, or `value` unchanged."""
+    if isinstance(value, (_StoreProxy, _StoreListProxy)):
+        node: _StoreNode = object.__getattribute__(value, "_node")
+        return object.__getattribute__(node, "_raw")
+    return value
 
 
 def unwrap(value: Any) -> Any:
@@ -700,184 +808,4 @@ def unwrap(value: Any) -> Any:
         The underlying dict/list for proxies; `value` unchanged
         otherwise.
     """
-    if isinstance(value, (_StoreProxy, _StoreListProxy, _MutableProxy)):
-        node: _StoreNode = object.__getattribute__(value, "_node")
-        return object.__getattribute__(node, "_raw")
-    return value
-
-
-class _MutableProxy(_StoreProxy):
-    """Directly-writable variant of `_StoreProxy` used by `create_mutable`."""
-
-    __slots__ = ()
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_"):
-            object.__setattr__(self, name, value)
-            return
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        with batch():
-            node._set_value(name, value)
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        with batch():
-            node._set_value(key, value)
-
-
-class _MutableListProxy(_StoreListProxy):
-    """Directly-writable variant of `_StoreListProxy` used by `create_mutable`."""
-
-    __slots__ = ()
-
-    def _raw_list(self) -> list:
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        return object.__getattribute__(node, "_raw")
-
-    def __setitem__(self, index: Any, value: Any) -> None:
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        with batch():
-            node._set_value(index, value)
-
-    def append(self, value: Any) -> None:
-        """Append `value`, notifying index and length subscribers."""
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw = self._raw_list()
-        with batch():
-            raw.append(value)
-            node._replace_raw(raw)
-
-    def insert(self, index: int, value: Any) -> None:
-        """Insert `value` at `index`, shifting later items."""
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw = self._raw_list()
-        with batch():
-            raw.insert(index, value)
-            node._replace_raw(raw)
-
-    def pop(self, index: int = -1) -> Any:
-        """Remove and return the item at `index` (default: last)."""
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw = self._raw_list()
-        with batch():
-            value = raw.pop(index)
-            node._replace_raw(raw)
-        return value
-
-    def remove(self, value: Any) -> None:
-        """Remove the first occurrence of `value`."""
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw = self._raw_list()
-        with batch():
-            raw.remove(value)
-            node._replace_raw(raw)
-
-    def clear(self) -> None:
-        """Remove every item."""
-        node: _StoreNode = object.__getattribute__(self, "_node")
-        raw = self._raw_list()
-        with batch():
-            raw.clear()
-            node._replace_raw(raw)
-
-
-def create_mutable(initial: Any) -> Any:
-    """Create a directly-writable reactive store proxy.
-
-    Matches SolidJS's `createMutable`: reads are tracked per path like
-    [`create_store`][wybthon.create_store], and writes go through plain
-    attribute or item assignment at **any depth**. Nested dicts wrap in
-    writable proxies, and nested lists support `append`, `insert`,
-    `pop`, `remove`, `clear`, and index assignment. Each write batches
-    its notifications; use [`modify_mutable`][wybthon.modify_mutable]
-    with [`produce`][wybthon.produce] or
-    [`reconcile`][wybthon.reconcile] to group several changes into one
-    update.
-
-    Args:
-        initial: Initial dict state.
-
-    Returns:
-        A mutable reactive proxy.
-
-    Example:
-        ```python
-        state = create_mutable({"count": 0, "user": {"name": "Ada"}, "tags": []})
-        create_effect(lambda: print(state.count, state.user.name))
-        state.count = 5             # effect re-runs
-        state.user.name = "Grace"   # nested write, effect re-runs
-        state.tags.append("new")    # list mutation, tracked
-        ```
-    """
-    if not isinstance(initial, dict):
-        raise TypeError("create_mutable() requires a dict initial value")
-    node = _StoreNode(initial, mutable=True)
-    proxy = _MutableProxy(node)
-    object.__setattr__(node, "_proxy", proxy)
-    return proxy
-
-
-def modify_mutable(state: Any, modifier: Any) -> None:
-    """Apply a batched modification to a [`create_mutable`][wybthon.create_mutable] proxy.
-
-    Matches SolidJS's `modifyMutable`. The modifier is either a
-    [`produce`][wybthon.produce] draft function, a
-    [`reconcile`][wybthon.reconcile] result, or a plain callable
-    receiving a mutable draft (shorthand for `produce`). All resulting
-    signal notifications flush once, as a single update.
-
-    Args:
-        state: A proxy created by `create_mutable` (or any store
-            proxy).
-        modifier: A `produce(...)` / `reconcile(...)` result, or a
-            callable draft mutator.
-
-    Example:
-        ```python
-        state = create_mutable({"a": 1, "b": 2})
-        modify_mutable(state, produce(lambda s: (
-            setattr(s, "a", 10),
-            setattr(s, "b", 20),
-        )))
-        modify_mutable(state, reconcile(fetched_state))
-        ```
-    """
-    if not isinstance(state, (_StoreProxy, _StoreListProxy)):
-        raise TypeError("modify_mutable() requires a store proxy")
-    node: _StoreNode = object.__getattribute__(state, "_node")
-    if callable(modifier) and not isinstance(modifier, (_ProduceResult, _ReconcileResult)):
-        modifier = _ProduceResult(modifier)
-    if not isinstance(modifier, (_ProduceResult, _ReconcileResult)):
-        raise TypeError("modify_mutable() requires a produce(), reconcile(), or callable modifier")
-    with batch():
-        modifier._apply(node)
-
-
-def produce(fn: Callable[..., None]) -> _ProduceResult:
-    """Create a producer for batch-mutating store state.
-
-    `fn` receives a mutable draft of the store. Mutations are
-    recorded and applied reactively when the producer is passed to a
-    store setter created by [`create_store`][wybthon.create_store].
-
-    The draft supports attribute access, item access, and `append` /
-    `pop` for lists.
-
-    Args:
-        fn: A function that mutates the supplied draft. The draft is
-            consumed immediately when applied; don't keep a
-            reference past the call.
-
-    Returns:
-        A marker object recognized by the store setter.
-
-    Example:
-        ```python
-        set_store(produce(lambda s: setattr(s, "count", s.count + 1)))
-
-        set_store(produce(lambda s: s.todos.append(
-            {"text": "New", "done": False}
-        )))
-        ```
-    """
-    return _ProduceResult(fn)
+    return unwrap_raw(value)

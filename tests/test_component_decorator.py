@@ -239,6 +239,7 @@ def test_component_with_create_signal(wyb, root_element):
     assert "10" in collect_texts(root_element.element)
 
     setter_ref[0](20)
+    reactivity.flush()
 
     assert "20" in collect_texts(root_element.element)
 
@@ -325,6 +326,7 @@ def test_component_runs_once_static_prop_capture(wyb, root_element):
     assert "count=0" in collect_texts(root_element.element)
 
     parent_setter[0](5)
+    reactivity.flush()
 
     assert child_renders[0] == 1, "child body must not re-run"
     assert "count=0" in collect_texts(root_element.element), "static read keeps old value"
@@ -354,6 +356,7 @@ def test_component_re_renders_via_reactive_prop(wyb, root_element):
     assert "0" in collect_texts(root_element.element)
 
     parent_setter[0](5)
+    reactivity.flush()
 
     assert child_renders[0] == 1, "body still runs only once"
     assert "5" in collect_texts(root_element.element), "auto-hole updates the DOM"
@@ -389,6 +392,7 @@ def test_component_reactive_props_update_via_get_props(wyb, root_element):
     assert "hello" in collect_texts(root_element.element)
 
     parent_setter[0]("goodbye")
+    reactivity.flush()
     assert "goodbye" in collect_texts(root_element.element)
 
 
@@ -415,4 +419,5 @@ def test_create_effect_prev_value(wyb, root_element):
     assert log == [("prev", None, "cur", 0)]
 
     setter_ref[0](5)
+    reactivity.flush()
     assert log[-1] == ("prev", 0, "cur", 5)

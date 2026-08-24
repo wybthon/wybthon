@@ -1,48 +1,53 @@
-"""`Suspense` and `SuspenseList` for rendering fallback UI during async loading.
+"""`Loading` and `LoadingList`: fallback UI for async computations.
 
-[`Suspense`][wybthon.Suspense] tracks resources **automatically**,
-matching SolidJS: any [`Resource`][wybthon.Resource] read (called) under
-the boundary while it's still `"pending"` registers itself, and the
-boundary shows its fallback until every registered resource resolves.
-No `resources` prop wiring is needed.
+[`Loading`][wybthon.Loading] is the async boundary (SolidJS 2.0's
+`Loading`, the successor to `Suspense`). Any read of an async
+computation under the boundary that raises
+[`NotReadyError`][wybthon.NotReadyError] registers the computation with
+the boundary, and the boundary shows its fallback until every
+registered computation has produced its first value.
 
-Refetches don't re-trigger the boundary. A resource that already has
-data enters the `"refreshing"` state and keeps serving its previous
-value, so content stays visible during reloads.
+Revalidations don't re-trigger the boundary: an async memo that already
+has a value keeps serving it (stale-while-revalidate) while the
+recompute is in flight, so content stays visible during reloads. Use
+[`is_pending`][wybthon.is_pending] to render inline refresh hints.
 
-[`SuspenseList`][wybthon.SuspenseList] coordinates multiple `Suspense`
+[`LoadingList`][wybthon.LoadingList] coordinates multiple `Loading`
 boundaries beneath it, controlling the order their contents reveal
 (`reveal_order`) and how many fallbacks show at once (`tail`).
 
 Example:
     ```python
-    user = create_resource(fetch_user)
+    async def load_user():
+        return await fetch_json("/api/user")
 
-    Suspense(
+    user = create_memo(load_user)
+
+    Loading(
         fallback=lambda: p("Loading..."),
-        children=[div(lambda: (user() or {}).get("name", ""))],
+        children=[div(lambda: user()["name"])],
     )
     ```
 
 See Also:
-    - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
+    - [Async and loading guide](../concepts/async-loading.md)
 """
 
 from __future__ import annotations
 
 from typing import Any, Callable, List, Optional, Set
 
-from .reactivity import SUSPENSE_CONTEXT_KEY, Signal, _get_component_ctx
+from .reactivity import LOADING_CONTEXT_KEY, Signal, _get_component_ctx
 from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
 
-__all__ = ["Suspense", "SuspenseList"]
+__all__ = ["Loading", "LoadingList"]
 
-# Owner-context key under which ``SuspenseList`` stores its coordinator.
-SUSPENSE_LIST_CONTEXT_KEY = "__wyb_suspense_list__"
+# Owner-context key under which ``LoadingList`` stores its coordinator.
+LOADING_LIST_CONTEXT_KEY = "__wyb_loading_list__"
 
 
-class _SuspenseCollector:
-    """Tracks pending resources read under one Suspense boundary."""
+class _LoadingCollector:
+    """Tracks not-ready async computations read under one Loading boundary."""
 
     __slots__ = ("_version", "_pending")
 
@@ -50,57 +55,68 @@ class _SuspenseCollector:
         self._version: Signal[int] = Signal(0)
         self._pending: Set[Any] = set()
 
-    def register(self, resource: Any) -> None:
-        """Called by `Resource.__call__` when read while pending."""
-        if resource in self._pending:
+    def register(self, comp: Any) -> None:
+        """Called by the reactive core when a read raises `NotReadyError`."""
+        if comp in self._pending:
             return
-        self._pending.add(resource)
+        self._pending.add(comp)
         self._version.set(self._version.peek() + 1)
 
     def is_loading(self) -> bool:
-        """Tracked read: True while any registered resource is loading.
+        """Tracked read: True while any registered computation has no value.
 
-        Resolved resources are pruned so a later refetch (which doesn't
-        go through the pending state) can't re-trigger the boundary.
+        Computations that have produced a first value are pruned, so a
+        later revalidation (which serves the stale value instead of
+        raising) can't re-trigger the boundary.
         """
         self._version.get()
-        done = [r for r in self._pending if not r._loading.get()]
-        for r in done:
-            self._pending.discard(r)
+        done = []
+        for comp in self._pending:
+            a = comp._async
+            still_loading = a is not None and a.pending and not a.has_value
+            if still_loading:
+                # Subscribe to the transition out of the pending state.
+                comp._pending_sig().get()
+            else:
+                done.append(comp)
+        for comp in done:
+            self._pending.discard(comp)
         return bool(self._pending)
 
 
-def Suspense(fallback: Any = None, children: Any = None) -> VNode:
-    """Show a fallback while resources read under the boundary are pending.
+def Loading(fallback: Any = None, children: Any = None) -> VNode:
+    """Show a fallback while async reads under the boundary aren't ready.
 
     Args:
         fallback: `VNode`, string, or callable returning one of those.
-            Shown while any registered resource is pending.
-        children: Children rendered when nothing is pending. Resources
-            called anywhere in this subtree self-register with the
-            boundary while they're in their initial `"pending"` state.
+            Shown while any registered async computation has no value
+            yet.
+        children: Children rendered when nothing is loading. Async
+            computations read anywhere in this subtree self-register
+            with the boundary when a read raises
+            [`NotReadyError`][wybthon.NotReadyError].
 
     Returns:
         A component [`VNode`][wybthon.VNode] that toggles between
         fallback and children.
     """
-    return h(_SuspenseComponent, {"fallback": fallback, "children": children})
+    return h(_LoadingComponent, {"fallback": fallback, "children": children})
 
 
-def _SuspenseComponent(props: Any) -> Any:
-    """Internal component backing [`Suspense`][wybthon.Suspense]."""
-    collector = _SuspenseCollector()
+def _LoadingComponent(props: Any) -> Any:
+    """Internal component backing [`Loading`][wybthon.Loading]."""
+    collector = _LoadingCollector()
     ctx = _get_component_ctx()
-    list_state: Optional[_SuspenseListState] = None
+    list_state: Optional[_LoadingListState] = None
     list_index = -1
     if ctx is not None:
-        ctx._set_context(SUSPENSE_CONTEXT_KEY, collector)
-        list_state = ctx._lookup_context(SUSPENSE_LIST_CONTEXT_KEY, None)
+        ctx._set_context(LOADING_CONTEXT_KEY, collector)
+        list_state = ctx._lookup_context(LOADING_LIST_CONTEXT_KEY, None)
         if list_state is not None:
             list_index = list_state.register(collector.is_loading)
             # Boundaries nested inside this one coordinate with this
             # boundary, not with the outer list.
-            ctx._set_context(SUSPENSE_LIST_CONTEXT_KEY, None)
+            ctx._set_context(LOADING_LIST_CONTEXT_KEY, None)
 
     def _render_children() -> VNode:
         children = props.value("children")
@@ -139,15 +155,15 @@ def _SuspenseComponent(props: Any) -> Any:
     return dynamic(render)
 
 
-_SuspenseComponent._wyb_component = True  # type: ignore[attr-defined]
+_LoadingComponent._wyb_component = True  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
-# SuspenseList
+# LoadingList
 # ---------------------------------------------------------------------------
 
 
-class _SuspenseListState:
+class _LoadingListState:
     """Coordinates reveal order across the boundaries under one list."""
 
     __slots__ = ("_reveal_order", "_tail", "_getters", "_version")
@@ -207,16 +223,16 @@ class _SuspenseListState:
         return "hidden"
 
 
-def SuspenseList(children: Any = None, reveal_order: str = "forwards", tail: Optional[str] = None) -> VNode:
-    """Coordinate the reveal order of multiple [`Suspense`][wybthon.Suspense] boundaries.
+def LoadingList(children: Any = None, reveal_order: str = "forwards", tail: Optional[str] = None) -> VNode:
+    """Coordinate the reveal order of multiple [`Loading`][wybthon.Loading] boundaries.
 
-    Matches SolidJS's `<SuspenseList>`. Each `Suspense` boundary
-    mounted underneath (that isn't nested inside another boundary)
-    registers with the list in mount order, and the list decides when
-    each may reveal its content and whether it shows its fallback.
+    Each `Loading` boundary mounted underneath (that isn't nested
+    inside another boundary) registers with the list in mount order,
+    and the list decides when each may reveal its content and whether
+    it shows its fallback.
 
     Args:
-        children: Children containing one or more `Suspense`
+        children: Children containing one or more `Loading`
             boundaries.
         reveal_order: One of `"forwards"` (default; contents reveal
             top-to-bottom, each waiting for the ones before it),
@@ -232,39 +248,39 @@ def SuspenseList(children: Any = None, reveal_order: str = "forwards", tail: Opt
 
     Example:
         ```python
-        SuspenseList(
+        LoadingList(
             reveal_order="forwards",
             tail="collapsed",
             children=[
-                Suspense(fallback=p("Loading A..."), children=[PanelA()]),
-                Suspense(fallback=p("Loading B..."), children=[PanelB()]),
+                Loading(fallback=p("Loading A..."), children=[PanelA()]),
+                Loading(fallback=p("Loading B..."), children=[PanelB()]),
             ],
         )
         ```
 
     Note:
         A boundary whose content hasn't mounted yet doesn't start its
-        resource fetches, so `"forwards"` reveals sequentially-loading
+        async computations, so `"forwards"` reveals sequentially-loading
         content as a cascade rather than loading everything in
-        parallel. Start fetches outside the boundaries (or pass
-        resources down as props) when parallel loading matters.
+        parallel. Start the memos outside the boundaries (or pass them
+        down as props) when parallel loading matters.
     """
     if reveal_order not in ("forwards", "backwards", "together"):
         raise ValueError('reveal_order must be "forwards", "backwards", or "together"')
     if tail not in (None, "collapsed", "hidden"):
         raise ValueError('tail must be None, "collapsed", or "hidden"')
     return h(
-        _SuspenseListComponent,
+        _LoadingListComponent,
         {"children": children, "reveal_order": reveal_order, "tail": tail},
     )
 
 
-def _SuspenseListComponent(props: Any) -> Any:
-    """Internal component backing [`SuspenseList`][wybthon.SuspenseList]."""
-    state = _SuspenseListState(props.value("reveal_order"), props.value("tail"))
+def _LoadingListComponent(props: Any) -> Any:
+    """Internal component backing [`LoadingList`][wybthon.LoadingList]."""
+    state = _LoadingListState(props.value("reveal_order"), props.value("tail"))
     ctx = _get_component_ctx()
     if ctx is not None:
-        ctx._set_context(SUSPENSE_LIST_CONTEXT_KEY, state)
+        ctx._set_context(LOADING_LIST_CONTEXT_KEY, state)
 
     children = props.value("children")
     if children is None:
@@ -274,4 +290,4 @@ def _SuspenseListComponent(props: Any) -> Any:
     return Fragment(*children)
 
 
-_SuspenseListComponent._wyb_component = True  # type: ignore[attr-defined]
+_LoadingListComponent._wyb_component = True  # type: ignore[attr-defined]

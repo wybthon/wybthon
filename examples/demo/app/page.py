@@ -126,8 +126,8 @@ def Page():
                     "Built-in form state, validation rules, and two-way bindings.",
                 ),
                 _feature(
-                    "Async Resources",
-                    "Fetch data with create_resource and Suspense for loading states.",
+                    "Async-First Reactivity",
+                    "Async memos and actions with Loading boundaries and optimistic updates.",
                 ),
                 _feature(
                     "Context",

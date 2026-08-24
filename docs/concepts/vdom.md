@@ -86,7 +86,7 @@ The VDOM implementation is split into focused modules:
 - **`reconciler`**: the mount/patch/unmount diffing engine (emits ops).
 - **`props`**: DOM property application and diffing (styles, events, datasets), also op-based.
 - **`error_boundary`**: the `ErrorBoundary` component.
-- **`suspense`**: the `Suspense` component.
+- **`loading`**: the `Loading` and `LoadingList` components.
 - **`portal`**: the `Portal` component.
 
 The most common names are available at the top-level `wybthon` package.

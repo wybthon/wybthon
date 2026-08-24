@@ -1,8 +1,8 @@
 from wybthon import (
     Dynamic,
     For,
-    Index,
     Match,
+    Repeat,
     Show,
     Switch,
     button,
@@ -15,6 +15,7 @@ from wybthon import (
     h3,
     li,
     p,
+    span,
     ul,
 )
 
@@ -123,7 +124,7 @@ def DynamicDemo():
 
 
 @component
-def IndexDemo():
+def IndexModeDemo():
     items, set_items = create_signal(["First", "Second", "Third"])
 
     def shuffle(e):
@@ -132,17 +133,45 @@ def IndexDemo():
         set_items(cur)
 
     return div(
-        h3("Index - Index-Stable Rendering"),
+        h3('For(key="index") - Index-Stable Rendering'),
         p(
-            "Index maintains per-index reactive scopes. Each slot has a "
-            "signal-backed item() getter that updates when the value at "
-            "that position changes."
+            'With key="index", For maintains per-position reactive slots. '
+            "Each slot has a signal-backed item() getter that updates when "
+            "the value at that position changes; the DOM never moves."
         ),
         button("Reverse", on_click=shuffle),
         ul(
-            Index(
+            For(
                 each=items,
-                children=lambda item, idx: li(dynamic(lambda: f"[{idx}] {item()}")),
+                key="index",
+                children=lambda item, idx: li(dynamic(lambda: f"[{idx()}] {item()}")),
+            ),
+        ),
+        class_="demo-section",
+    )
+
+
+@component
+def RepeatDemo():
+    rating, set_rating = create_signal(3)
+
+    return div(
+        h3("Repeat - Count-Driven Rendering"),
+        p(
+            "Repeat renders children(i) for each index in range(times), "
+            "with no list diffing. Growing the count mounts new tail "
+            "slots; shrinking disposes them."
+        ),
+        div(
+            button("-", on_click=lambda e: set_rating(max(0, rating() - 1))),
+            button("+", on_click=lambda e: set_rating(rating() + 1)),
+            style={"display": "flex", "gap": "8px"},
+        ),
+        p(
+            Repeat(
+                times=rating,
+                children=lambda i: span("\u2605", style={"color": "gold"}),
+                fallback=lambda: span("no stars", style={"color": "var(--text-3)"}),
             ),
         ),
         class_="demo-section",
@@ -155,15 +184,17 @@ def Page():
         div(
             h2("Flow Control"),
             p(
-                "Reactive flow control components: Show, For, Index, Switch/Match, "
-                "and Dynamic. Each creates an isolated reactive scope."
+                "Reactive flow control components: Show, For, Repeat, "
+                "Switch/Match, and Dynamic. Each creates an isolated "
+                "reactive scope."
             ),
             class_="page-header",
         ),
         h(ShowDemo, {}),
         h(ForDemo, {}),
         h(SwitchDemo, {}),
-        h(IndexDemo, {}),
+        h(IndexModeDemo, {}),
+        h(RepeatDemo, {}),
         h(DynamicDemo, {}),
         class_="page",
     )
