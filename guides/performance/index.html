@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2381,14 +2381,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/suspense/" class="md-nav__link">
+      <a href="../../api/loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2857,36 +2857,45 @@ behavior.  See the <a class="autorefs autorefs-internal" title="&lt;code class=&
   rather than reading signals eagerly inside the component body.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Slow: eager reads happen during setup; future changes are missed.</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">, count=</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">, count=</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Fast: only two text nodes update.</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello, &quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s2">&quot;, count=&quot;</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">))</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s2">", count="</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="n">count</span><span class="p">))</span>
 </span></code></pre></div>
 <ul>
 <li>
 <p><strong>Co-locate signals with the smallest visible region.</strong>  A hole is
-  cheaper than a <code>Show</code>/<code>For</code> re-evaluation, and a <code>For</code>/<code>Index</code>
-  per-item scope is cheaper than a <code>dynamic</code> returning the full list.</p>
+  cheaper than a <code>Show</code>/<code>For</code> re-evaluation, and a <code>For</code> per-item
+  scope is cheaper than a <code>dynamic</code> returning the full list.</p>
 </li>
 <li>
 <p><strong>Use <code>create_memo</code> for derived values.</strong>  Memoised getters work
   out-of-the-box as reactive holes: <code>span(my_memo)</code>.</p>
 </li>
 <li>
-<p><strong>Use <code>key</code> on lists.</strong>  Keyed reconciliation reorders existing
-  DOM nodes in place instead of re-creating them.  Prefer stable IDs
-  over indices for keys.</p>
+<p><strong>Let automatic batching work for you.</strong>  Signal writes apply
+  immediately, but effects run once per flush (a browser microtask,
+  and automatically at the end of each Wybthon event handler).  A
+  single user action that triggers multiple <code>set()</code> calls therefore
+  flushes all affected holes together with no <code>batch()</code> wrapper.  Call
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush()</code></a> only when you need effects settled
+  synchronously (tests, scripts outside the browser loop).</p>
 </li>
 <li>
-<p><strong>Batch updates with <code>batch()</code>.</strong>  When a single user action
-  triggers multiple <code>set()</code> calls, wrap them in <code>batch()</code> so all
-  affected holes flush together.</p>
+<p><strong>Use <code>For</code> for dynamic lists.</strong>  It maintains stable per-item
+  reactive scopes and <strong>caches the rendered subtree per item</strong>: on a
+  list change, only added items map, removed items dispose, and
+  reorders move the existing DOM nodes.  Pick the keying mode that
+  matches your data: the default (reference identity) for stable
+  objects, <code>key=lambda item: ...</code> to match by a stable ID and update
+  rows in place, or <code>key="index"</code> for per-position slots where the DOM
+  never moves.</p>
 </li>
 <li>
-<p><strong>Use <code>For</code> / <code>Index</code> for dynamic lists.</strong>  These maintain stable
-  per-item (or per-index) reactive scopes and <strong>cache the rendered
-  subtree per item</strong>: on a list change, only added items map, removed
-  items dispose, and reorders move the existing DOM nodes.</p>
+<p><strong>Use <code>Repeat</code> for count-driven UI.</strong>  When rendering is driven
+  purely by a number (pagination dots, star ratings, skeleton rows),
+  <code>Repeat(times, children)</code> skips list diffing entirely: growing the
+  count mounts new tail slots, shrinking disposes them.</p>
 </li>
 <li>
 <p><strong>Use <code>create_selector</code> for selection state.</strong>  A selector notifies
@@ -2952,7 +2961,7 @@ see <code>benchmarks/README.md</code>.</p>
 <ul>
 <li>Read <a href="../../concepts/mental-model/">Mental model</a> for the underlying ideas.</li>
 <li>Browse <a href="../authoring-patterns/">Authoring patterns</a> for hole-friendly recipes.</li>
-<li>See <a href="../../concepts/suspense-lazy/">Suspense and Lazy Loading</a> for code-splitting.</li>
+<li>See <a href="../../concepts/async-loading/">Async and Loading</a> for code-splitting.</li>
 </ul>
 
 
@@ -3032,7 +3041,7 @@ see <code>benchmarks/README.md</code>.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

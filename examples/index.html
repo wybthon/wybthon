@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2313,14 +2313,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/suspense/" class="md-nav__link">
+      <a href="../api/loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2694,22 +2694,22 @@
 <tr>
 <td><a href="counter/">Counter</a></td>
 <td>Signals, derived values, and event handlers.</td>
-<td><code>examples/demo/app/pages/counter.py</code></td>
+<td><code>examples/demo/app/components/counter.py</code></td>
 </tr>
 <tr>
 <td><a href="fetch/">Async fetch</a></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_resource&lt;/span&gt;" href="../api/wybthon/#wybthon.create_resource"><code>create_resource</code></a> with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="../api/wybthon/#wybthon.Suspense"><code>Suspense</code></a> for loading states.</td>
-<td><code>examples/demo/app/pages/fetch.py</code></td>
+<td>Async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary.</td>
+<td><code>examples/demo/app/fetch/page.py</code></td>
 </tr>
 <tr>
 <td><a href="forms/">Forms</a></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/wybthon/#wybthon.form_state"><code>form_state</code></a> and accessibility-friendly bindings.</td>
-<td><code>examples/demo/app/pages/forms.py</code></td>
+<td><code>examples/demo/app/forms/page.py</code></td>
 </tr>
 <tr>
 <td><a href="errors/">Error boundary</a></td>
 <td>Recovering from render errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../api/wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a>.</td>
-<td><code>examples/demo/app/pages/errors.py</code></td>
+<td><code>examples/demo/app/errors/page.py</code></td>
 </tr>
 <tr>
 <td><a href="router/">Router</a></td>
@@ -2719,12 +2719,12 @@
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../api/wybthon/#wybthon.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/wybthon/#wybthon.Link"><code>Link</code></a>, and dynamic params.</td>
-<td><code>examples/demo/app/pages/router.py</code></td>
+<td><code>examples/demo/app/routes.py</code></td>
 </tr>
 <tr>
 <td><a href="authoring-patterns/">Authoring patterns</a></td>
 <td>Common idioms for building reusable components.</td>
-<td><code>examples/demo/app/pages/authoring.py</code></td>
+<td><code>examples/demo/app/patterns/page.py</code></td>
 </tr>
 </tbody>
 </table>
@@ -2818,7 +2818,7 @@ additionally provides hot-reload on file changes.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

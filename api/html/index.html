@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2337,14 +2337,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../suspense/" class="md-nav__link">
+      <a href="../loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2750,10 +2750,10 @@
         <p>Pythonic HTML element helpers that wrap <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a>.</p>
 <p>These helpers let you author markup that reads more like Python than
 hyperscript. Instead of writing:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">h</span><span class="p">(</span><span class="s2">&quot;div&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">,</span> <span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="n">handler</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Hello&quot;</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">,</span> <span class="s2">"on_click"</span><span class="p">:</span> <span class="n">handler</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">))</span>
 </span></code></pre></div>
 <p>you can write:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">&quot;card&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">handler</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"card"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">handler</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Children are positional arguments and props are keyword arguments.</p>
 <p>Prop name mapping (Python keyword to HTML attribute):</p>
@@ -2900,8 +2900,8 @@ single dict containing a <code>children</code> key (the form used when
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Body text&quot;</span><span class="p">))</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">h</span><span class="p">(</span><span class="n">Fragment</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h1</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Body text&quot;</span><span class="p">))</span>  <span class="c1"># same thing</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">h</span><span class="p">(</span><span class="n">Fragment</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>  <span class="c1"># same thing</span>
 </span></code></pre></div>
 </details>
 
@@ -2994,7 +2994,7 @@ single dict containing a <code>children</code> key (the form used when
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

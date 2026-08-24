@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2359,14 +2359,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/suspense/" class="md-nav__link">
+      <a href="../../api/loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2789,7 +2789,7 @@ Pyodide runtime in headless Chromium:</p>
 <ol>
 <li><strong>Feature fixture app</strong> (<code>tests/e2e/app/</code>): a dedicated single-page app with
    <strong>one route per framework feature</strong> (reactivity, reactive holes, props,
-   events, context, flow control, forms, stores, suspense, error boundary,
+   events, context, flow control, forms, stores, loading, error boundary,
    components/lifecycle, portal, lazy loading, and the router). Each
    per-feature test module (<code>tests/e2e/test_*.py</code>) drives that route and asserts
    behaviour through stable <code>data-testid</code> selectors.</li>
@@ -2813,7 +2813,7 @@ Pyodide runtime in headless Chromium:</p>
   instead of timing out.</li>
 </ul>
 <p>Run locally:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-m<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># full browser suite (fixture app + demo smoke test)</span>
@@ -2836,28 +2836,45 @@ Pyodide runtime in headless Chromium:</p>
 </ul>
 <h4 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h4>
 <p>For Python-only logic (e.g., <code>reactivity</code>, <code>forms</code> helpers), write regular <code>pytest</code> tests under <code>tests/</code>.</p>
+<p><strong>Settle effects with <code>flush()</code>.</strong> Wybthon batches automatically: signal
+writes apply immediately (reads see the new value), but effects run on
+the next flush. In the browser that's a microtask (and the end of each
+event handler), but unit tests run outside that loop, so call
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush()</code></a> after writes and before asserting on effect
+output:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">flush</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">count</span><span class="p">()))</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</span></code></pre></div>
+<p>The initial effect run happens at creation; only re-runs wait for the
+flush. Multiple writes between flushes coalesce into a single effect
+run, so <code>seen</code> never records intermediate values.</p>
 <p>Several core modules are browser-agnostic and can be tested without any
 stubs:</p>
 <ul>
 <li><code>wybthon.vnode</code>: VNode creation, <code>h()</code>, <code>Fragment</code>, <code>dynamic()</code></li>
 <li><code>wybthon.error_boundary</code>: ErrorBoundary component logic</li>
-<li><code>wybthon.suspense</code>: Suspense component logic</li>
 <li><code>wybthon._warnings</code>: dev-mode error reporting</li>
 </ul>
-<p>For browser-dependent modules (<code>reconciler</code>, <code>props</code>, <code>dom</code>, <code>events</code>), the
-existing test files use <code>_install_stubs()</code> to inject fake <code>js</code> and <code>pyodide</code>
-modules before reloading the Wybthon modules under test.</p>
+<p>For browser-dependent modules (<code>reconciler</code>, <code>props</code>, <code>dom</code>, <code>events</code>,
+<code>loading</code>), the existing test files use <code>_install_stubs()</code> to inject fake
+<code>js</code> and <code>pyodide</code> modules before reloading the Wybthon modules under test.</p>
 <h4 id="coverage">Coverage<a class="headerlink" href="#coverage" title="Permanent link">&para;</a></h4>
 <p>We use <code>pytest-cov</code> for coverage and enforce a minimum in CI.</p>
 <ul>
 <li>Install locally:</li>
 </ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
 </span></code></pre></div>
 <ul>
 <li>Run tests with coverage:</li>
 </ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pytest<span class="w"> </span>-q<span class="w"> </span>--cov<span class="o">=</span>wybthon<span class="w"> </span>--cov-branch<span class="w"> </span>--cov-report<span class="o">=</span>term-missing
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pytest<span class="w"> </span>-q<span class="w"> </span>--cov<span class="o">=</span>wybthon<span class="w"> </span>--cov-branch<span class="w"> </span>--cov-report<span class="o">=</span>term-missing
 </span></code></pre></div>
 <p>In CI, coverage is generated as XML and the build fails if coverage drops below the configured threshold.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
@@ -2944,7 +2961,7 @@ modules before reloading the Wybthon modules under test.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

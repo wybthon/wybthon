@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2252,14 +2252,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/suspense/" class="md-nav__link">
+      <a href="../../api/loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2822,16 +2822,16 @@
 <p><strong>Fix:</strong> pass the accessor itself into the rendered tree (<code>span(my_prop)</code>) or wrap dependent expressions in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic(lambda: ...)</code></a>. See <code>warn_destructured_prop</code> in <code>wybthon._warnings</code> for the full explanation.</p>
 </details>
 <details class="bug">
-<summary><code>For</code> or <code>Index</code> rendered once and never updated</summary>
+<summary><code>For</code> rendered once and never updated</summary>
 <p><strong>Symptoms:</strong> the list renders correctly the first time, then stops responding to updates. The console shows <code>[wybthon] Warning: &lt;For&gt; received a plain list for</code>each=<code>.</code></p>
 <p><strong>Likely cause:</strong> you passed a Python list instead of a signal accessor for <code>each=</code>.</p>
 <p><strong>Fix:</strong> make <code>each</code> a signal accessor (typically the getter returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>) so the list reacts to updates. See <code>warn_each_plain_list</code> in <code>wybthon._warnings</code>.</p>
 </details>
 <details class="bug">
-<summary>An effect fires more often than expected</summary>
-<p><strong>Symptoms:</strong> a side-effect (network request, log line, etc.) runs multiple times when you only expected one trigger.</p>
-<p><strong>Likely cause:</strong> the effect reads several signals that all change inside the same event handler. Without batching, each <code>set</code> call schedules another flush.</p>
-<p><strong>Fix:</strong> wrap the updates in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch&lt;/span&gt;" href="../../api/wybthon/#wybthon.batch"><code>batch</code></a> so they coalesce into a single update.</p>
+<summary>An effect didn't run right after a signal write</summary>
+<p><strong>Symptoms:</strong> in a test or a plain Python script, you call a setter and then assert on the effect's side effect, but nothing has happened yet.</p>
+<p><strong>Likely cause:</strong> effects are batched. Signal writes apply immediately, but dependent effects run on the next scheduled flush. In the browser that happens automatically (on a microtask, and at the end of every Wybthon event handler), but synchronous test code observes the state before the flush.</p>
+<p><strong>Fix:</strong> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> after your writes to run pending effects now. Multiple writes coalesce into a single effect run per flush, so effects also can't fire more often than expected inside one handler.</p>
 </details>
 <h2 id="dom-and-events">DOM and events<a class="headerlink" href="#dom-and-events" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -2956,7 +2956,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

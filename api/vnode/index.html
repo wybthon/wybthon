@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,14 +949,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/suspense-lazy/" class="md-nav__link">
+      <a href="../../concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2442,14 +2442,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../suspense/" class="md-nav__link">
+      <a href="../loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2976,9 +2976,9 @@ fine-grained" rendering.</p>
   <p>Building a small subtree without a browser::</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">Fragment</span>
 
-<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;section&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;card&quot;</span><span class="p">},</span>
-         <span class="n">h</span><span class="p">(</span><span class="s2">&quot;h1&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Hello&quot;</span><span class="p">),</span>
-         <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Body 1&quot;</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">&quot;Body 2&quot;</span><span class="p">)))</span>
+<span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"section"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">},</span>
+         <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span>
+         <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 1"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 2"</span><span class="p">)))</span>
 </code></pre></div>
 </details>
 
@@ -3169,7 +3169,7 @@ fragments, the start marker; for holes, the end marker).</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional reactive <code>Owner</code> under which this VNode
-should be mounted. Set by <code>For</code>/<code>Index</code> so effects created
+should be mounted. Set by <code>For</code>/<code>Repeat</code> so effects created
 while mounting a cached row belong to the row's scope rather
 than to the list's re-running effect.</p>
               </div>
@@ -3383,7 +3383,7 @@ trigger re-evaluation.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">div</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">))</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">div</span><span class="p">(</span><span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">!"</span><span class="p">))</span>
 </span></code></pre></div>
 </details>
 
@@ -3689,7 +3689,7 @@ via the <code>children</code> prop so they can decide how to render them.</p>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="n">handle_click</span><span class="p">},</span> <span class="s2">&quot;Click me&quot;</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"on_click"</span><span class="p">:</span> <span class="n">handle_click</span><span class="p">},</span> <span class="s2">"Click me"</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3775,8 +3775,8 @@ single dict containing a <code>children</code> key (the form used when
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Body text&quot;</span><span class="p">))</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">h</span><span class="p">(</span><span class="n">Fragment</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h1</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Body text&quot;</span><span class="p">))</span>  <span class="c1"># same thing</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">h</span><span class="p">(</span><span class="n">Fragment</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>  <span class="c1"># same thing</span>
 </span></code></pre></div>
 </details>
 
@@ -3903,7 +3903,7 @@ directly.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

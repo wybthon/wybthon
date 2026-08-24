@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1060,14 +1060,14 @@
   
   
     <li class="md-nav__item">
-      <a href="concepts/suspense-lazy/" class="md-nav__link">
+      <a href="concepts/async-loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense and Lazy Loading
+    Async and Loading
   
 
     
@@ -2363,14 +2363,14 @@
   
   
     <li class="md-nav__item">
-      <a href="api/suspense/" class="md-nav__link">
+      <a href="api/loading/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Suspense
+    Loading
   
 
     
@@ -2793,7 +2793,7 @@
 <p>The framework ships with everything you need to build a real app:</p>
 <ul>
 <li>A virtual DOM renderer with batched DOM mutations.</li>
-<li>Reactive primitives (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="api/wybthon/#wybthon.create_effect"><code>create_effect</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_resource&lt;/span&gt;" href="api/wybthon/#wybthon.create_resource"><code>create_resource</code></a>).</li>
+<li>Reactive primitives (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="api/wybthon/#wybthon.create_effect"><code>create_effect</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>), with async memos for data fetching.</li>
 <li>Reactive <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Provider&lt;/span&gt;" href="api/wybthon/#wybthon.Provider"><code>Provider</code></a> / <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_context&lt;/span&gt;" href="api/wybthon/#wybthon.use_context"><code>use_context</code></a> for context propagation without forced re-renders.</li>
 <li>A small client-side router with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
@@ -2815,8 +2815,8 @@
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">&quot;Count: &quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">())),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">&quot;Increment&quot;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Count: "</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">())),</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Increment"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Walk through this example end-to-end in <a href="getting-started/">Getting started</a>, or jump straight into the <a href="concepts/primitives/">Concepts</a> section.</p>
@@ -2841,9 +2841,9 @@
 <h2 id="why-wybthon">Why Wybthon?<a class="headerlink" href="#why-wybthon" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Fully reactive props + run-once components</strong>: function components run a single time at mount. Every prop is a zero-argument accessor; pass it into the tree for an automatic <em>reactive hole</em> and only that node updates when the prop changes. No React-style re-renders. See <a href="concepts/primitives/#reactive-holes">Reactive Holes</a>.</li>
-<li><strong>Signals-first</strong> reactive model: <code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>on_mount</code>, <code>on_cleanup</code>, <code>batch</code>, <code>untrack</code>, <code>on</code>, <code>dynamic</code>.</li>
+<li><strong>Signals-first</strong> reactive model: <code>create_signal</code>, <code>create_effect</code>, <code>create_memo</code>, <code>on_mount</code>, <code>on_cleanup</code>, <code>untrack</code>, <code>dynamic</code>. Batching is automatic: writes apply immediately, and effects run once per flush.</li>
 <li>Virtual DOM renderer with function components, with <strong>batched</strong> mutations to amortise the Pyodide and JS bridge cost.</li>
-<li>Async data: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_resource&lt;/span&gt;" href="api/wybthon/#wybthon.create_resource"><code>create_resource</code></a> with loading/error signals and a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Suspense&lt;/span&gt;" href="api/wybthon/#wybthon.Suspense"><code>Suspense</code></a> boundary.</li>
+<li>Async data: pass an <code>async def</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> and wrap consumers in a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="api/wybthon/#wybthon.is_pending"><code>is_pending</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="api/wybthon/#wybthon.latest"><code>latest</code></a> observe in-flight state.</li>
 <li><strong>Reactive context</strong>: <code>Provider</code> values are signal-backed so consumers update without re-mounting the subtree.</li>
 <li>Router with path params, query parsing, and a <code>Link</code> component.</li>
 <li>DOM helpers and delegated event handling.</li>
@@ -2855,7 +2855,7 @@
 <ul>
 <li><strong>Get started</strong>: install, run the demo, write your first component, explore the dev server.</li>
 <li><strong>Concepts</strong>: deep dives into the <a href="concepts/mental-model/">mental model</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
-<li><strong>Guides</strong>: task-oriented recipes for <a href="concepts/forms/">forms</a>, <a href="concepts/router/">routing</a>, <a href="concepts/stores/">stores</a>, <a href="concepts/suspense-lazy/">suspense and lazy loading</a>, <a href="guides/testing/">testing</a>, and more.</li>
+<li><strong>Guides</strong>: task-oriented recipes for <a href="concepts/forms/">forms</a>, <a href="concepts/router/">routing</a>, <a href="concepts/stores/">stores</a>, <a href="concepts/async-loading/">async and loading</a>, <a href="guides/testing/">testing</a>, and more.</li>
 <li><strong>Examples</strong>: walkthroughs of the demo app pages and patterns.</li>
 <li><strong>API reference</strong>: auto-generated documentation per module via <code>mkdocstrings</code>.</li>
 <li><strong>Meta</strong>: contribution guide, <a href="meta/style-guide/">documentation style guide</a>, FAQ, and troubleshooting.</li>
@@ -2944,7 +2944,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.tooltips", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.instant.progress", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
