@@ -89,26 +89,23 @@ Notes:
 ### Class
 
 ```python
-class Resource(Generic[R]):
-    """Async resource with reactive ``data``, ``error``, and ``loading``.
-
-    Wraps an awaitable fetcher and exposes signal-backed state so
-    consumers can render loading and error UIs declaratively (see
-    ``Suspense``).
+class FieldState:
+    """Signals representing a field's value, error message, and touched state.
 
     Attributes:
-        latest: The most recent successful payload (tracked read).
-        error: The most recent error, or ``None`` (tracked read).
-        loading: ``True`` while a fetch is in flight (tracked read).
+        value: Signal holding the current input value.
+        error: Signal holding the latest validation error message, or
+            ``None`` when valid.
+        touched: Signal that becomes ``True`` once the user has
+            interacted with the field. Useful for delaying error
+            display until the user has had a chance to respond.
 
     Example:
         ```python
-        async def load_user(signal=None):
-            resp = await fetch("/api/users/1")
-            return await resp.json()
-
-        user = create_resource(load_user)
-        h("p", {}, dynamic(lambda: "Loading..." if user.loading else (user() or {}).get("name")))
+        fields = form_state({"name": ""})
+        name = fields["name"]
+        h("input", {**bind_text(name)})
+        h("span", {}, dynamic(lambda: name.error.get() or ""))
         ```
     """
 ```
@@ -197,8 +194,8 @@ plain Markdown. Prefer these short forms:
 
 ```markdown
 The [`create_signal`][wybthon.create_signal] primitive returns a
-``(getter, setter)`` tuple. See [`Resource`][wybthon.Resource] for
-async data.
+``(getter, setter)`` tuple. See [`create_memo`][wybthon.create_memo]
+for async data.
 ```
 
 Inside a docstring, plain backticks plus the qualified name are
@@ -231,7 +228,7 @@ A typical concept or guide page follows this skeleton:
 ## Next steps
 
 - Build your first component: [Components](components.md)
-- Manage async data: [`create_resource`][wybthon.create_resource]
+- Manage async data: [`create_memo`][wybthon.create_memo]
 - Performance tuning: [Performance guide](../guides/performance.md)
 ```
 

@@ -145,6 +145,7 @@ def test_error_boundary_recovers_after_reset(wyb, root_element):
 
     should_throw.set(False)
     reset_key.set(1)
+    reactivity.flush()
 
     texts = collect_texts(root_element.element)
     assert any("recovered" in t for t in texts), texts

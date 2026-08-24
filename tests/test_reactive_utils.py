@@ -1,12 +1,12 @@
-"""Tests for reactive utilities (untrack, on, create_root, merge_props, split_props)."""
+"""Tests for reactive utilities (untrack, create_root, merge_props, split_props)."""
 
 from wybthon.reactivity import (
     create_effect,
     create_root,
     create_signal,
     effect,
+    flush,
     merge_props,
-    on,
     signal,
     split_props,
     untrack,
@@ -27,9 +27,11 @@ def test_untrack_prevents_dependency():
     assert log == [(0, 0)]
 
     b.set(10)
+    flush()
     assert log == [(0, 0)]
 
     a.set(1)
+    flush()
     assert log[-1] == (1, 10)
 
 
@@ -39,34 +41,27 @@ def test_untrack_returns_value():
     assert result == 42
 
 
-def test_on_single_dep():
+def test_split_effect_replaces_on():
+    """The SolidJS 1.x `on(deps, fn)` pattern is now a split effect."""
     a = signal(0)
     log = []
-    on(a.get, lambda v: log.append(v))
+    create_effect(a.get, lambda v: log.append(v))
     assert log == [0]
 
     a.set(5)
+    flush()
     assert log[-1] == 5
 
 
-def test_on_defer():
-    a = signal(0)
-    log = []
-    on(a.get, lambda v: log.append(v), defer=True)
-    assert log == []
-
-    a.set(1)
-    assert log == [1]
-
-
-def test_on_multiple_deps():
+def test_split_effect_multiple_deps():
     a = signal(1)
     b = signal(2)
     log = []
-    on([a.get, b.get], lambda va, vb: log.append((va, vb)))
+    create_effect(lambda: (a.get(), b.get()), lambda pair: log.append(pair))
     assert log == [(1, 2)]
 
     a.set(10)
+    flush()
     assert log[-1] == (10, 2)
 
 

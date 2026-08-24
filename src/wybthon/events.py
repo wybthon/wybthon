@@ -264,7 +264,14 @@ def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
         handler(evt)
     except Exception as exc:
         log_error(f"Event handler for '{event_type}' raised: {exc}", exc)
-    kernel.commit()
+
+    # Settle the handler's signal writes now: every effect they dirtied
+    # runs, and the resulting DOM ops commit in one bridge crossing
+    # before the browser paints. Writes inside the handler batched
+    # automatically; no `batch()` was needed.
+    from .reactivity import flush
+
+    flush()
 
     flags = 0
     if evt._stopped:

@@ -1,10 +1,10 @@
-"""Lazy-loaded components integrated with Suspense.
+"""Lazy-loaded components integrated with `Loading` boundaries.
 
 [`lazy`][wybthon.lazy] wraps a **loader** callback (sync or async) that
-produces a component. The component loads on first mount, backed by a
-[`Resource`][wybthon.Resource]: while the load is in flight, the
-nearest [`Suspense`][wybthon.Suspense] boundary shows its fallback, and
-a load failure raises into the nearest
+produces a component. The component loads on first mount, backed by an
+async [`create_memo`][wybthon.create_memo]: while the load is in
+flight, the nearest [`Loading`][wybthon.Loading] boundary shows its
+fallback, and a load failure raises into the nearest
 [`ErrorBoundary`][wybthon.ErrorBoundary]. This matches SolidJS's
 `lazy(() => import(...))` semantics, adapted to Python's import system.
 
@@ -32,11 +32,11 @@ Example:
     Chart = lazy(load_chart)
     Chart.preload()  # warm the cache on hover/intent
 
-    Suspense(fallback=p("Loading..."), children=[About()])
+    Loading(fallback=p("Loading..."), children=[About()])
     ```
 
 See Also:
-    - [Suspense and lazy loading guide](../concepts/suspense-lazy.md)
+    - [Async and loading guide](../concepts/async-loading.md)
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ import importlib
 from collections.abc import Awaitable as AbcAwaitable
 from typing import Any, Callable, Dict, Optional
 
-from .reactivity import ReactiveProps, Resource, create_resource
+from .reactivity import ReactiveProps, create_memo, latest, run_with_owner
 from .vnode import VNode, dynamic, h, to_text_vnode
 
 __all__ = ["lazy"]
@@ -112,8 +112,8 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
     The loader runs once, on the first mount (or on
     [`preload`](#preload)); the resolved component is cached for every
     later mount. While loading, the nearest
-    [`Suspense`][wybthon.Suspense] boundary shows its fallback. A
-    loader error raises into the nearest
+    [`Loading`][wybthon.Loading] boundary shows its fallback. A loader
+    error raises into the nearest
     [`ErrorBoundary`][wybthon.ErrorBoundary].
 
     Args:
@@ -123,8 +123,7 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
 
     Returns:
         A component callable with a `.preload()` method that starts the
-        load early and returns the backing
-        [`Resource`][wybthon.Resource].
+        load early.
 
     Example:
         ```python
@@ -134,7 +133,7 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
         Link("Team", href="/about/team", on_mouseenter=lambda e: Team.preload())
         ```
     """
-    holder: Dict[str, Optional[Resource[Any]]] = {"resource": None}
+    holder: Dict[str, Optional[Callable[[], Any]]] = {"memo": None}
 
     async def _load() -> Any:
         result = loader()
@@ -142,30 +141,30 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
             result = await result
         return _coerce_component(result)
 
-    def _ensure_resource() -> Resource[Any]:
-        res = holder["resource"]
-        if res is None:
-            res = create_resource(_load)
-            holder["resource"] = res
-        return res
+    def _ensure_memo() -> Callable[[], Any]:
+        memo = holder["memo"]
+        if memo is None:
+            # Detach from the mounting component's ownership so the
+            # loaded component stays cached across unmounts.
+            memo = run_with_owner(None, lambda: create_memo(lambda: _load()))
+            holder["memo"] = memo
+        return memo
 
     def LazyComponent(props: Any) -> Any:
-        res = _ensure_resource()
+        memo = _ensure_memo()
 
         def render() -> VNode:
-            comp = res()  # tracked; registers with Suspense while pending
-            err = res.error
-            if err is not None:
-                raise err
+            comp = memo()  # raises NotReadyError while loading
             if comp is None:
                 return to_text_vnode("")
             return h(comp, _props_to_dict(props))
 
         return dynamic(render)
 
-    def preload() -> Resource[Any]:
-        """Start loading now; returns the backing resource."""
-        return _ensure_resource()
+    def preload() -> None:
+        """Start loading now (a no-op when already loading or loaded)."""
+        memo = _ensure_memo()
+        latest(memo)
 
     LazyComponent.preload = preload  # type: ignore[attr-defined]
     LazyComponent._wyb_component = True  # type: ignore[attr-defined]

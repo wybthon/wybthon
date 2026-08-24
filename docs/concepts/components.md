@@ -32,7 +32,7 @@ Each parameter is bound to a **reactive accessor**:
   reactive hole.
 * Call it (`name()`) to read the current value (tracked when called
   inside an effect).
-* Wrap it with [`untrack`](primitives.md#untrack) to read once
+* Wrap it with [`untrack`](primitives.md#untrack-and-peek) to read once
   without subscribing, which is useful for seeding local state from a prop.
 
 The body of an `@component` runs **once** per mount.  There's no
@@ -218,7 +218,7 @@ component decorator catches the most common reactive footguns:
   per component. You almost always want to either pass the accessor
   directly into the tree (creating a hole) or `untrack(prop)` for a
   one-shot snapshot.
-* **`each=plain_list`** in `For` / `Index` warns that the list will
+* **`each=plain_list`** in `For` warns that the list will
   not update reactively.  Pass a signal accessor instead.
 
 Warnings are silenced when the offending read happens inside an
@@ -293,24 +293,34 @@ children, and fallbacks so reads happen inside the flow control's own
 scope rather than the parent's:
 
 ```python
-from wybthon import Show, For, Index, Switch, Match
+from wybthon import Show, For, Repeat, Switch, Match
 
 # Conditional rendering: keyed scope disposes on transition
 Show(when=is_logged_in,
      children=lambda: p("Welcome!"),
      fallback=lambda: p("Please log in"))
 
-# List rendering: per-item reactive scopes (keyed by identity).
+# List rendering: per-item reactive scopes.
 # The mapping runs once per unique item; the subtree is cached and
 # moved (not rebuilt) on reorders.
 For(each=items,
     children=lambda item, idx: li(item()))
 
-# Index-based rendering: per-index reactive scopes.
-# The slot renders once; pass the ``item`` getter so the content
-# updates in place when the value at that position changes.
-Index(each=items,
-      children=lambda item, idx: li(item))
+# Keyed rows: a fresh object with the same key updates the existing
+# row in place through the ``item`` getter.
+For(each=todos,
+    key=lambda t: t["id"],
+    children=lambda item, idx: li(lambda: item()["title"]))
+
+# Per-position slots: the row at each index renders once, and the
+# ``item`` getter updates when the value at that position changes.
+For(each=items,
+    key="index",
+    children=lambda item, idx: li(item))
+
+# Count-driven rendering: no list diffing at all.
+Repeat(times=rating,
+       children=lambda i: span("*"))
 
 # Multi-branch matching (reactive)
 Switch(

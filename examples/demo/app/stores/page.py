@@ -1,4 +1,4 @@
-from wybthon import For, button, component, create_store, div, dynamic, h, h2, h3, p, produce, span
+from wybthon import For, button, component, create_store, div, dynamic, h, h2, h3, p, span, unwrap
 
 
 @component
@@ -18,13 +18,19 @@ def TodoStore():
             s.todos.append({"id": s.next_id, "text": f"Todo #{s.next_id}", "done": False})
             s.next_id = s.next_id + 1
 
-        set_store(produce(update))
+        set_store(update)
 
     def toggle(idx):
-        return lambda e: set_store("todos", idx, "done", lambda d: not d)
+        def update(s):
+            s.todos[idx].done = not s.todos[idx].done
+
+        return lambda e: set_store(update)
 
     def remove(idx):
-        return lambda e: set_store("todos", lambda ts: [t for i, t in enumerate(ts) if i != idx])
+        def update(s):
+            s.todos.pop(idx)
+
+        return lambda e: set_store(update)
 
     def summary() -> str:
         todos = list(store.todos)
@@ -32,14 +38,15 @@ def TodoStore():
         return f"{len(todos)} items, {done} done"
 
     return div(
-        h3("Todo List (create_store + produce)"),
+        h3("Todo List (draft mutations)"),
         p(dynamic(summary)),
         For(
             each=lambda: list(store.todos),
+            key=lambda t: unwrap(t)["id"],
             children=lambda item, idx: div(
                 span(
                     dynamic(lambda: f"{'[x]' if item().done else '[ ]'} {item().text}"),
-                    on_click=toggle(idx()),
+                    on_click=lambda e: toggle(idx())(e),
                     style=lambda: {
                         "cursor": "pointer",
                         "textDecoration": "line-through" if item().done else "none",
@@ -47,7 +54,7 @@ def TodoStore():
                 ),
                 button(
                     "x",
-                    on_click=remove(idx()),
+                    on_click=lambda e: remove(idx())(e),
                     style={"marginLeft": "8px", "fontSize": "0.8rem"},
                 ),
                 style={"display": "flex", "alignItems": "center", "gap": "4px", "padding": "4px 0"},
@@ -68,16 +75,25 @@ def NestedStore():
     )
 
     def toggle_theme(e):
-        set_store("settings", "theme", lambda t: "light" if t == "dark" else "dark")
+        def update(s):
+            s.settings.theme = "light" if s.settings.theme == "dark" else "dark"
+
+        set_store(update)
 
     def toggle_notifications(e):
-        set_store("settings", "notifications", lambda n: not n)
+        def update(s):
+            s.settings.notifications = not s.settings.notifications
+
+        set_store(update)
 
     def rename(e):
-        set_store("user", "name", lambda n: "Grace Hopper" if n == "Ada Lovelace" else "Ada Lovelace")
+        def update(s):
+            s.user.name = "Grace Hopper" if s.user.name == "Ada Lovelace" else "Ada Lovelace"
+
+        set_store(update)
 
     return div(
-        h3("Nested State (path-based setter)"),
+        h3("Nested State (draft mutations)"),
         p(dynamic(lambda: f"User: {store.user.name} ({store.user.role})")),
         p(dynamic(lambda: f"Theme: {store.settings.theme}")),
         p(dynamic(lambda: f"Notifications: {'on' if store.settings.notifications else 'off'}")),
@@ -96,7 +112,11 @@ def Page():
     return div(
         div(
             h2("Stores"),
-            p("Reactive state management for nested objects and lists, inspired by SolidJS createStore."),
+            p(
+                "Reactive state management for nested objects and lists. "
+                "The setter hands you a mutable draft: mutate it with normal "
+                "Python and only the changed leaves notify."
+            ),
             class_="page-header",
         ),
         h(TodoStore, {}),

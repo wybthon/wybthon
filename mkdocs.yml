@@ -78,7 +78,7 @@ nav:
     - Forms: concepts/forms.md
     - DOM Interop: concepts/dom.md
     - Error Boundaries: concepts/error-boundaries.md
-    - Suspense and Lazy Loading: concepts/suspense-lazy.md
+    - Async and Loading: concepts/async-loading.md
   - Guides:
     - Dev Server: guides/dev-server.md
     - Demo App: guides/demo-app.md
@@ -118,7 +118,7 @@ nav:
     - Flow control: api/flow.md
     - Lazy loading: api/lazy.md
     - Error Boundary: api/error_boundary.md
-    - Suspense: api/suspense.md
+    - Loading: api/loading.md
     - Portal: api/portal.md
     - Dev server (CLI): api/dev.md
   - Meta:

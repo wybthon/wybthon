@@ -221,7 +221,9 @@ def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None
 
     Returns:
         Props dict suitable for spreading onto a text input
-        (`value` + `on_input`).
+        (`value` + `on_input`). The `value` entry is the signal's
+        getter, so the input stays bound to the field reactively: a
+        programmatic `field.value.set(...)` updates the DOM too.
     """
     validators = validators or []
 
@@ -234,7 +236,7 @@ def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None
         field.error.set(validate(val, validators))
 
     return {
-        "value": field.value.get(),
+        "value": field.value.get,
         "on_input": on_input,
     }
 
@@ -248,7 +250,8 @@ def bind_checkbox(field: FieldState) -> Dict[str, Any]:
 
     Returns:
         Props dict suitable for spreading onto a checkbox
-        (`checked` + `on_change`).
+        (`checked` + `on_change`). The `checked` entry is a reactive
+        getter, so programmatic writes to the field update the DOM.
     """
 
     def on_change(evt) -> None:  # DomEvent
@@ -258,7 +261,7 @@ def bind_checkbox(field: FieldState) -> Dict[str, Any]:
         field.error.set(None)
 
     return {
-        "checked": bool(field.value.get()),
+        "checked": lambda: bool(field.value.get()),
         "on_change": on_change,
     }
 
@@ -271,7 +274,8 @@ def bind_select(field: FieldState) -> Dict[str, Any]:
 
     Returns:
         Props dict suitable for spreading onto a `<select>` element
-        (`value` + `on_change`).
+        (`value` + `on_change`). The `value` entry is the signal's
+        getter, so programmatic writes to the field update the DOM.
     """
 
     def on_change(evt) -> None:  # DomEvent
@@ -283,7 +287,7 @@ def bind_select(field: FieldState) -> Dict[str, Any]:
         field.error.set(None)
 
     return {
-        "value": field.value.get(),
+        "value": field.value.get,
         "on_change": on_change,
     }
 

@@ -1,44 +1,56 @@
-from wybthon import Suspense, button, code, component, create_resource, div, dynamic, h2, h3, on_cleanup, p, pre
+from wybthon import (
+    Loading,
+    button,
+    code,
+    component,
+    create_memo,
+    create_signal,
+    div,
+    dynamic,
+    h2,
+    h3,
+    is_pending,
+    p,
+    pre,
+    span,
+)
 
 
 @component
 def FetchPage():
-    async def fetcher(signal=None):
+    version, set_version = create_signal(0)
+
+    async def fetch_todo():
+        version()  # refetch dependency
         import importlib
 
         js = importlib.import_module("js")
-        if signal is not None:
-            resp = await js.fetch("https://jsonplaceholder.typicode.com/todos/1", {"signal": signal})
-        else:
-            resp = await js.fetch("https://jsonplaceholder.typicode.com/todos/1")
+        resp = await js.fetch("https://jsonplaceholder.typicode.com/todos/1")
         data = await resp.json()
         title = str(getattr(data, "title", "unknown"))
         return f"Todo: {title}"
 
-    res = create_resource(fetcher)
-
-    on_cleanup(lambda: res.cancel())
-
-    def display_text() -> str:
-        if res.error:
-            return str(res.error)
-        return res() or "No data"
+    todo = create_memo(fetch_todo)
 
     return div(
         div(
             h2("Data Fetching"),
-            p("Fetch data with create_resource and display loading states with Suspense."),
+            p("Fetch data with an async create_memo and display loading states with Loading."),
             class_="page-header",
         ),
         div(
             h3("JSONPlaceholder API"),
-            Suspense(
+            Loading(
                 fallback=p("Loading..."),
-                children=lambda: p(dynamic(display_text)),
+                children=lambda: p(dynamic(lambda: todo() or "No data")),
+            ),
+            p(
+                "Refreshing: ",
+                span(dynamic(lambda: "yes" if is_pending(todo) else "no")),
+                style={"color": "var(--text-3)"},
             ),
             div(
-                button("Refetch", on_click=lambda e: res.refetch()),
-                button("Cancel", on_click=lambda e: res.cancel()),
+                button("Refetch", on_click=lambda e: set_version(version() + 1)),
             ),
             class_="demo-section",
         ),
@@ -46,19 +58,26 @@ def FetchPage():
             h3("How It Works"),
             pre(
                 code(
-                    "async def fetcher(signal=None):\n"
-                    '    resp = await js.fetch(url, {"signal": signal})\n'
+                    "async def fetch_todo():\n"
+                    "    version()  # refetch dependency\n"
+                    "    resp = await js.fetch(url)\n"
                     "    data = await resp.json()\n"
                     '    return f"Todo: {data.title}"\n'
                     "\n"
-                    "res = create_resource(fetcher)\n"
+                    "todo = create_memo(fetch_todo)\n"
                     "\n"
-                    "Suspense(\n"
+                    "Loading(\n"
                     '    fallback=p("Loading..."),\n'
-                    '    children=lambda: p(dynamic(lambda: res() or "")),\n'
+                    "    children=lambda: p(dynamic(todo)),\n"
                     ")"
                 ),
                 class_="code-block",
+            ),
+            p(
+                "Reads of a pending async memo raise NotReadyError, which the "
+                "nearest Loading boundary catches to show its fallback. A "
+                "refetch serves the previous value while the new one loads "
+                "(stale-while-revalidate); is_pending() reports the refresh."
             ),
             class_="demo-section",
         ),

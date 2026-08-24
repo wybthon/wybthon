@@ -1,4 +1,4 @@
-"""E2E: flow control (Show, For, Index, Switch/Match, Dynamic)."""
+"""E2E: flow control (Show, For, Repeat, Switch/Match, Dynamic)."""
 
 import pytest
 from playwright.sync_api import expect
@@ -33,12 +33,25 @@ def test_for_keyed_add_remove_reorder(goto_feature):
     expect(items).to_have_text(["0:gamma", "1:beta", "2:alpha"])
 
 
-def test_index_list_reuses_slots(goto_feature):
+def test_index_mode_list_reuses_slots(goto_feature):
     page = goto_feature("flow")
     items = page.get_by_test_id("flow-index-list").locator("li")
     expect(items).to_have_text(["[0]alpha", "[1]beta", "[2]gamma"])
     page.get_by_test_id("flow-for-reverse").click()
     expect(items).to_have_text(["[0]gamma", "[1]beta", "[2]alpha"])
+
+
+def test_repeat_count_driven_slots(goto_feature):
+    page = goto_feature("flow")
+    items = page.get_by_test_id("flow-repeat-list").locator("li")
+    expect(items).to_have_text(["star-0", "star-1", "star-2"])
+
+    page.get_by_test_id("flow-repeat-inc").click()
+    expect(items).to_have_text(["star-0", "star-1", "star-2", "star-3"])
+
+    for _ in range(4):
+        page.get_by_test_id("flow-repeat-dec").click()
+    expect(items).to_have_text(["no stars"])
 
 
 def test_switch_match(goto_feature):

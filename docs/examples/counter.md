@@ -43,5 +43,5 @@ Counter(initial=seed)           # ``initial()`` will reflect ``seed()``
 ## Next steps
 
 - Read [Primitives](../concepts/primitives.md) and [Authoring Patterns](../guides/authoring-patterns.md).
-- See the [Async fetch example](fetch.md) for resource handling.
+- See the [Async fetch example](fetch.md) for async data handling.
 - Browse the [`reactivity`][wybthon.reactivity] API for signal helpers.

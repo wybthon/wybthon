@@ -40,5 +40,5 @@ def Page():
 #### See also
 
 - [Concepts → Error Boundaries](../concepts/error-boundaries.md)
-- [Concepts → Suspense and Lazy Loading](../concepts/suspense-lazy.md)
+- [Concepts → Async and Loading](../concepts/async-loading.md)
 - [Examples → Error Boundary](../examples/errors.md)

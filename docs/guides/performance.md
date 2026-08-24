@@ -51,24 +51,33 @@ behavior.  See the [`template`][wybthon.template] API page.
   ```
 
 - **Co-locate signals with the smallest visible region.**  A hole is
-  cheaper than a `Show`/`For` re-evaluation, and a `For`/`Index`
-  per-item scope is cheaper than a `dynamic` returning the full list.
+  cheaper than a `Show`/`For` re-evaluation, and a `For` per-item
+  scope is cheaper than a `dynamic` returning the full list.
 
 - **Use `create_memo` for derived values.**  Memoised getters work
   out-of-the-box as reactive holes: `span(my_memo)`.
 
-- **Use `key` on lists.**  Keyed reconciliation reorders existing
-  DOM nodes in place instead of re-creating them.  Prefer stable IDs
-  over indices for keys.
+- **Let automatic batching work for you.**  Signal writes apply
+  immediately, but effects run once per flush (a browser microtask,
+  and automatically at the end of each Wybthon event handler).  A
+  single user action that triggers multiple `set()` calls therefore
+  flushes all affected holes together with no `batch()` wrapper.  Call
+  [`flush()`][wybthon.flush] only when you need effects settled
+  synchronously (tests, scripts outside the browser loop).
 
-- **Batch updates with `batch()`.**  When a single user action
-  triggers multiple `set()` calls, wrap them in `batch()` so all
-  affected holes flush together.
+- **Use `For` for dynamic lists.**  It maintains stable per-item
+  reactive scopes and **caches the rendered subtree per item**: on a
+  list change, only added items map, removed items dispose, and
+  reorders move the existing DOM nodes.  Pick the keying mode that
+  matches your data: the default (reference identity) for stable
+  objects, `key=lambda item: ...` to match by a stable ID and update
+  rows in place, or `key="index"` for per-position slots where the DOM
+  never moves.
 
-- **Use `For` / `Index` for dynamic lists.**  These maintain stable
-  per-item (or per-index) reactive scopes and **cache the rendered
-  subtree per item**: on a list change, only added items map, removed
-  items dispose, and reorders move the existing DOM nodes.
+- **Use `Repeat` for count-driven UI.**  When rendering is driven
+  purely by a number (pagination dots, star ratings, skeleton rows),
+  `Repeat(times, children)` skips list diffing entirely: growing the
+  count mounts new tail slots, shrinking disposes them.
 
 - **Use `create_selector` for selection state.**  A selector notifies
   only the previously-selected and newly-selected rows, so selecting a
@@ -126,4 +135,4 @@ see `benchmarks/README.md`.
 
 - Read [Mental model](../concepts/mental-model.md) for the underlying ideas.
 - Browse [Authoring patterns](authoring-patterns.md) for hole-friendly recipes.
-- See [Suspense and Lazy Loading](../concepts/suspense-lazy.md) for code-splitting.
+- See [Async and Loading](../concepts/async-loading.md) for code-splitting.

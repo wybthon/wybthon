@@ -11,8 +11,8 @@ Built-in dev warnings include:
   a reactive prop accessor was unwrapped at component-setup time
   (loses reactivity).
 - `warn_each_plain_list`:
-  `For` / `Index` received a plain list rather than a getter (the
-  list will only render once).
+  `For` received a plain list rather than a getter (the list will
+  only render once).
 """
 
 from __future__ import annotations
@@ -157,7 +157,7 @@ def warn_destructured_prop(component: Any, prop_name: str) -> None:
 
 
 def warn_each_plain_list(component: Any) -> None:
-    """Warn that [`For`][wybthon.For] / [`Index`][wybthon.Index] received a static list.
+    """Warn that [`For`][wybthon.For] received a static list.
 
     Args:
         component: The flow control component receiving the prop.

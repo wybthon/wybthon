@@ -131,6 +131,7 @@ def test_template_mount_produces_working_tree(wyb, root_element):
     assert root_element.element.childNodes[0].attributes.get("class") == "app"
 
     set_count(7)
+    reactivity.flush()
     assert "7" in collect_texts(root_element.element)
 
 
@@ -184,6 +185,7 @@ def test_template_fallback_when_unsupported(wyb, root_element):
     rec.render(tree, root_element)
     assert "1" in collect_texts(root_element.element)
     set_count(2)
+    reactivity.flush()
     assert "2" in collect_texts(root_element.element)
 
 
@@ -204,8 +206,10 @@ def test_template_mount_inside_fragment_and_show(wyb, root_element):
     assert "shown" in collect_texts(root_element.element)
 
     set_visible(False)
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "hidden" in texts and "shown" not in texts
 
     set_visible(True)
+    reactivity.flush()
     assert "shown" in collect_texts(root_element.element)

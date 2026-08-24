@@ -37,7 +37,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** pass the accessor itself into the rendered tree (`span(my_prop)`) or wrap dependent expressions in [`dynamic(lambda: ...)`][wybthon.dynamic]. See `warn_destructured_prop` in `wybthon._warnings` for the full explanation.
 
-??? bug "`For` or `Index` rendered once and never updated"
+??? bug "`For` rendered once and never updated"
 
     **Symptoms:** the list renders correctly the first time, then stops responding to updates. The console shows `[wybthon] Warning: <For> received a plain list for `each=`.`
 
@@ -45,13 +45,13 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** make `each` a signal accessor (typically the getter returned by [`create_signal`][wybthon.create_signal]) so the list reacts to updates. See `warn_each_plain_list` in `wybthon._warnings`.
 
-??? bug "An effect fires more often than expected"
+??? bug "An effect didn't run right after a signal write"
 
-    **Symptoms:** a side-effect (network request, log line, etc.) runs multiple times when you only expected one trigger.
+    **Symptoms:** in a test or a plain Python script, you call a setter and then assert on the effect's side effect, but nothing has happened yet.
 
-    **Likely cause:** the effect reads several signals that all change inside the same event handler. Without batching, each `set` call schedules another flush.
+    **Likely cause:** effects are batched. Signal writes apply immediately, but dependent effects run on the next scheduled flush. In the browser that happens automatically (on a microtask, and at the end of every Wybthon event handler), but synchronous test code observes the state before the flush.
 
-    **Fix:** wrap the updates in [`batch`][wybthon.batch] so they coalesce into a single update.
+    **Fix:** call [`flush`][wybthon.flush] after your writes to run pending effects now. Multiple writes coalesce into a single effect run per flush, so effects also can't fire more often than expected inside one handler.
 
 ## DOM and events
 

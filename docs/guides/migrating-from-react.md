@@ -9,11 +9,12 @@ This guide maps common React idioms to Wybthon equivalents and calls out the pit
 | React | Wybthon |
 | --- | --- |
 | `useState(0)` | `count, set_count = create_signal(0)` |
-| `useEffect(fn, deps)` | `create_effect(fn)` |
+| `useEffect(fn, deps)` | `create_effect(fn)` or split `create_effect(compute, apply)` |
 | `useMemo(() => fn, deps)` | `create_memo(fn)` |
 | `useContext(Ctx)` | `use_context(Ctx)` |
 | `useRef()` | `Ref()` from `wybthon` |
-| `<Suspense fallback={...} />` | [`Suspense`][wybthon.Suspense] |
+| `<Suspense fallback={...} />` | [`Loading`][wybthon.Loading] |
+| `useTransition` / `useOptimistic` | [`action`][wybthon.action] / [`create_optimistic`][wybthon.create_optimistic] |
 | `<ErrorBoundary />` | [`ErrorBoundary`][wybthon.ErrorBoundary] |
 | `lazy(() => import('./X'))` | [`lazy`][wybthon.lazy] |
 | `useReducer` | `create_signal` + plain functions |
@@ -55,6 +56,8 @@ create_effect(lambda: document.title = f"count {count()}")
 ```
 
 The effect re-runs because it *reads* `count()` while tracking. There's no dependency array.
+
+If you miss the explicit deps-then-body split of `useEffect`, use the split form: `create_effect(compute, apply)` runs `compute` tracked and passes its return value to the untracked `apply` phase, so only reads in `compute` re-trigger the effect.
 
 ## Props
 
@@ -132,16 +135,20 @@ See [DOM Interop](../concepts/dom.md).
 
 ## Async data
 
-React + Suspense is similar in spirit but Wybthon's [`create_resource`][wybthon.create_resource] is more direct:
+React + Suspense is similar in spirit, but Wybthon is more direct: any [`create_memo`][wybthon.create_memo] with an `async def` body is an async computation, and [`Loading`][wybthon.Loading] shows a fallback until it produces its first value:
 
 ```python
-data = create_resource(query, fetch_data)
+async def fetch_data():
+    resp = await js.fetch("/api/data")
+    return (await resp.json()).to_py()
 
-return Suspense(fallback=lambda: p("Loading"),
-                children=lambda: span(lambda: data()["title"]))
+data = create_memo(fetch_data)
+
+return Loading(fallback=lambda: p("Loading"),
+               children=lambda: span(lambda: data()["title"]))
 ```
 
-See [Suspense and Lazy Loading](../concepts/suspense-lazy.md).
+Later recomputes serve the stale value while revalidating, so the boundary doesn't flash. For mutations, [`action`][wybthon.action] and [`create_optimistic`][wybthon.create_optimistic] cover what `useTransition` and `useOptimistic` do in React. See [Async and Loading](../concepts/async-loading.md).
 
 ## Things you can stop doing
 
@@ -161,9 +168,9 @@ See [Suspense and Lazy Loading](../concepts/suspense-lazy.md).
 ```python
 from wybthon import (
     component, create_signal, create_effect, create_memo,
-    on_mount, on_cleanup, Show, For, Switch, Match,
+    on_mount, on_cleanup, Show, For, Repeat, Switch, Match,
     create_context, Provider, use_context,
-    Suspense, ErrorBoundary, lazy,
+    Loading, ErrorBoundary, lazy,
 )
 ```
 

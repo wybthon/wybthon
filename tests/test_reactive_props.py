@@ -6,6 +6,7 @@ from wybthon.reactivity import (
     create_effect,
     create_root,
     create_signal,
+    flush,
     merge_props,
     split_props,
 )
@@ -117,6 +118,7 @@ def test_merge_props_reactive_tracking():
     assert log == [2]
 
     set_source({"b": 99})
+    flush()
     assert log[-1] == 99
     dispose()
 
@@ -216,6 +218,7 @@ def test_split_props_reactive_tracking():
     assert log == [1]
 
     set_source({"x": 99, "y": 2})
+    flush()
     assert log[-1] == 99
     dispose()
 

@@ -11,7 +11,7 @@ Wybthon brings a SolidJS-style fine-grained reactive model to Python. You write 
 The framework ships with everything you need to build a real app:
 
 - A virtual DOM renderer with batched DOM mutations.
-- Reactive primitives ([`create_signal`][wybthon.create_signal], [`create_effect`][wybthon.create_effect], [`create_memo`][wybthon.create_memo], [`create_resource`][wybthon.create_resource]).
+- Reactive primitives ([`create_signal`][wybthon.create_signal], [`create_effect`][wybthon.create_effect], [`create_memo`][wybthon.create_memo]), with async memos for data fetching.
 - Reactive [`Provider`][wybthon.Provider] / [`use_context`][wybthon.use_context] for context propagation without forced re-renders.
 - A small client-side router with [`Route`][wybthon.Route] and [`Link`][wybthon.Link].
 - Form state, validators, and accessibility helpers.
@@ -59,9 +59,9 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 ## Why Wybthon?
 
 - **Fully reactive props + run-once components**: function components run a single time at mount. Every prop is a zero-argument accessor; pass it into the tree for an automatic *reactive hole* and only that node updates when the prop changes. No React-style re-renders. See [Reactive Holes](concepts/primitives.md#reactive-holes).
-- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `batch`, `untrack`, `on`, `dynamic`.
+- **Signals-first** reactive model: `create_signal`, `create_effect`, `create_memo`, `on_mount`, `on_cleanup`, `untrack`, `dynamic`. Batching is automatic: writes apply immediately, and effects run once per flush.
 - Virtual DOM renderer with function components, with **batched** mutations to amortise the Pyodide and JS bridge cost.
-- Async data: [`create_resource`][wybthon.create_resource] with loading/error signals and a [`Suspense`][wybthon.Suspense] boundary.
+- Async data: pass an `async def` to [`create_memo`][wybthon.create_memo] and wrap consumers in a [`Loading`][wybthon.Loading] boundary; [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest] observe in-flight state.
 - **Reactive context**: `Provider` values are signal-backed so consumers update without re-mounting the subtree.
 - Router with path params, query parsing, and a `Link` component.
 - DOM helpers and delegated event handling.
@@ -73,7 +73,7 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 
 - **Get started**: install, run the demo, write your first component, explore the dev server.
 - **Concepts**: deep dives into the [mental model](concepts/mental-model.md), reactivity, components, lifecycle, VDOM, and DOM interop.
-- **Guides**: task-oriented recipes for [forms](concepts/forms.md), [routing](concepts/router.md), [stores](concepts/stores.md), [suspense and lazy loading](concepts/suspense-lazy.md), [testing](guides/testing.md), and more.
+- **Guides**: task-oriented recipes for [forms](concepts/forms.md), [routing](concepts/router.md), [stores](concepts/stores.md), [async and loading](concepts/async-loading.md), [testing](guides/testing.md), and more.
 - **Examples**: walkthroughs of the demo app pages and patterns.
 - **API reference**: auto-generated documentation per module via `mkdocstrings`.
 - **Meta**: contribution guide, [documentation style guide](meta/style-guide.md), FAQ, and troubleshooting.

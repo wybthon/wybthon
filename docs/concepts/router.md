@@ -109,5 +109,5 @@ Migration notes:
 ## Next steps
 
 - Walk through the [Router example](../examples/router.md).
-- See [Suspense and Lazy Loading](suspense-lazy.md) for code-splitting.
+- See [Async and Loading](async-loading.md) for code-splitting.
 - Browse the [`router`][wybthon.router] and [`router_core`][wybthon.router_core] API references.

@@ -120,8 +120,10 @@ component; no cursor system, no "rules of hooks".
 
 #### `create_effect`
 
-Create an auto-tracking reactive effect.  The effect runs immediately and
-re-runs whenever any signal it reads changes.
+Create an auto-tracking reactive effect.  The effect runs once
+immediately; when any signal it reads changes, it re-runs on the next
+flush (automatic in the browser; see
+[Automatic batching](reactivity.md#automatic-batching)).
 
 ```python
 from wybthon import component, create_effect, create_signal, p
@@ -152,6 +154,14 @@ Effects can also receive the previous return value as an argument:
 create_effect(lambda prev: (print(f"was {prev}, now {count()}"), count())[-1])
 ```
 
+The **split form** `create_effect(compute, apply)` separates tracking
+from side effects: `compute` runs tracked, and its return value is
+passed to the untracked `apply` stage:
+
+```python
+create_effect(lambda: (a(), b()), lambda pair: print("changed:", pair))
+```
+
 ---
 
 #### `create_memo`
@@ -163,6 +173,10 @@ re-computes only when its dependencies change.
 doubled = create_memo(lambda: count() * 2)
 print(doubled())  # reactive read
 ```
+
+`fn` may also be an `async def`, which makes the memo an async
+computation that integrates with `Loading` boundaries. See
+[Async memos](reactivity.md#async-memos).
 
 ---
 
@@ -294,7 +308,7 @@ mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
 
 #### `index_array`
 
-Index-keyed reactive list mapping with stable per-index scopes.  Each
+Position-keyed reactive list mapping with stable per-index scopes.  Each
 slot has a reactive item signal that updates when the value at that
 position changes.  The index is a plain `int`.
 

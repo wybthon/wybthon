@@ -7,6 +7,7 @@ from wybthon.reactivity import (
     create_root,
     create_selector,
     create_signal,
+    flush,
     index_array,
     map_array,
     on_cleanup,
@@ -245,6 +246,7 @@ def test_create_selector_updates():
     assert is_selected(2) is False
 
     set_selected(2)
+    flush()
 
     assert is_selected(1) is False
     assert is_selected(2) is True
@@ -267,6 +269,7 @@ def test_create_selector_notifies_only_affected_keys():
     assert runs == {"a": 1, "b": 1, "c": 1}
 
     set_selected("b")
+    flush()
 
     assert runs["a"] == 2
     assert runs["b"] == 2
@@ -286,6 +289,7 @@ def test_create_selector_same_value_no_op():
     assert runs[0] == 1
 
     set_selected(1)
+    flush()
     assert runs[0] == 1
 
 

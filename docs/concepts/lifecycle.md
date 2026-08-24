@@ -30,7 +30,7 @@ flowchart TD
 | [`on_cleanup`][wybthon.on_cleanup] | When the owning component (or effect) is disposed. | Cancel timers, detach listeners, abort fetches. |
 | [`create_effect`][wybthon.create_effect] | Initially after mount, then on each tracked signal change. | Side effects driven by reactive state. |
 | [`create_memo`][wybthon.create_memo] | Lazily on first read; recomputes when dependencies change. | Derived values you want cached. |
-| [`create_resource`][wybthon.create_resource] | Triggers async work when its source changes. | Data fetching with loading/error signals. |
+| [`create_memo`][wybthon.create_memo] with an `async def` | Starts async work on first read; revalidates when tracked dependencies change. | Data fetching with [`Loading`][wybthon.Loading] fallbacks. |
 
 ```python
 from wybthon import (
@@ -108,5 +108,5 @@ Use this when you need to schedule work outside an effect (timers, promises) and
 ## Next steps
 
 - Read [Reactivity](reactivity.md) for `create_effect` and `create_memo` semantics.
-- See [Suspense and Lazy Loading](suspense-lazy.md) for async data lifecycles.
+- See [Async and Loading](async-loading.md) for async data lifecycles.
 - Browse [Authoring Patterns](../guides/authoring-patterns.md) for real-world recipes.

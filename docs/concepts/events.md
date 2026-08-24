@@ -62,6 +62,12 @@ Registering a handler is itself a batched op (`LISTEN`), riding the
 same command buffer as the DOM mutations; mounting a list with
 thousands of handlers adds nothing to the bridge-crossing count.
 
+Handlers dispatched through the event system flush automatically when
+they return: pending effects run and the batched DOM ops commit once
+across the bridge. Signal writes inside a handler therefore update the
+UI without any manual step, no matter how many writes the handler made
+(see [Automatic batching](reactivity.md#automatic-batching)).
+
 Cleanup guarantees:
 
 - When a node is unmounted, its handlers are dropped on the Python side and the kernel's listener bookkeeping is cleared by the same `RELEASE` op that retires the node ids.

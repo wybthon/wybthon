@@ -74,7 +74,7 @@ class VNode:
         el: Kernel node id of this VNode's DOM node once mounted (for
             fragments, the start marker; for holes, the end marker).
         owner_scope: Optional reactive `Owner` under which this VNode
-            should be mounted. Set by `For`/`Index` so effects created
+            should be mounted. Set by `For`/`Repeat` so effects created
             while mounting a cached row belong to the row's scope rather
             than to the list's re-running effect.
     """

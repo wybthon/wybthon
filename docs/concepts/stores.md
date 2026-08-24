@@ -28,83 +28,59 @@ store.user.name       # "Ada"
 store.todos[0].text   # "Learn Wybthon"
 ```
 
-Nested dicts become store proxies and list values become list proxies, so reactivity extends to any depth.
+Nested dicts become store proxies and list values become list proxies, so reactivity extends to any depth. Reading `store.user.name` subscribes only to that leaf, not to the entire store.
 
 #### Writing values
 
-Use the `set_store` setter with a **path-based API**:
+Writes are **draft-first**: call `set_store` with a function, and it receives a mutable draft of the state. Mutate the draft with normal Python:
 
 ```python
-# Simple set
-set_store("count", 5)
-
-# Functional update
-set_store("count", lambda c: c + 1)
-
-# Nested path
-set_store("user", "name", "Jane")
-
-# Path through list index
-set_store("todos", 0, "done", True)
-
-# Replace an entire nested object
-set_store("user", {"name": "Grace", "age": 35})
-
-# Replace an entire list
-set_store("todos", [])
-```
-
-The store is **read-only**: writing directly via `store.count = 5` raises an error. Always use `set_store`.
-
-#### Produce
-
-For batch mutations, `produce` provides an Immer-style API. The function receives a mutable draft:
-
-```python
-from wybthon import produce
-
-# Single mutation
-set_store(produce(lambda s: setattr(s, "count", s.count + 1)))
-
-# List mutations
-set_store(produce(lambda s: s.todos.append({"id": 2, "text": "New", "done": False})))
-
-# Multiple mutations in one pass
 def update(s):
-    s.count = 42
-    s.user.name = "Updated"
+    s.count += 1                     # attribute assignment
+    s.user.name = "Grace"            # nested write
+    s.todos[0].done = True           # index path
+    s.todos.append({"id": 2, "text": "New", "done": False})
 
-set_store(produce(update))
+set_store(update)
+
+# Small updates read fine as lambdas:
+set_store(lambda s: s.user.update({"name": "Jane", "age": 36}))
 ```
 
 The draft supports:
 
-- Attribute read/write (`s.name`, `s.name = "new"`)
-- Item read/write (`s.items[0]`, `s.items[0] = "x"`)
-- `append` and `pop` for lists
+- Attribute and item assignment (`s.name = "new"`, `s.items[0] = "x"`)
+- `del s.items[0]` and `del`-style dict key removal
+- List methods: `append`, `insert`, `pop`, `remove`, `extend`, `clear`
+- Dict bulk merge: `s.update({...})`
+
+Only the leaves that actually changed notify their subscribers, and because effects run once per flush, a draft function making many writes still produces a single settled update.
+
+The store itself is **read-only**: writing directly via `store.count = 5` raises an error. Always mutate through the setter's draft.
 
 #### Reactivity with effects
 
 Store reads inside `create_effect` and render functions are tracked automatically:
 
 ```python
-from wybthon import create_effect
+from wybthon import create_effect, flush
 
 create_effect(lambda: print("Count is:", store.count))
 # Prints: Count is: 0
 
-set_store("count", 10)
+set_store(lambda s: setattr(s, "count", 10))
+flush()
 # Prints: Count is: 10
 ```
 
-Only effects that read the changed path re-run. Changing `store.user.name` won't re-trigger an effect that only reads `store.count`.
+Only effects that read the changed path re-run. Changing `store.user.name` won't re-trigger an effect that only reads `store.count`. In the browser the flush happens automatically; see [Automatic batching](reactivity.md#automatic-batching).
 
 #### Using stores in components
 
 Stores pair naturally with the `@component` decorator:
 
 ```python
-from wybthon import For, button, component, create_store, div, dynamic, p, produce
+from wybthon import For, button, component, create_store, div, dynamic, p
 
 @component
 def TodoApp():
@@ -116,11 +92,13 @@ def TodoApp():
     def add_todo(e):
         def update(s):
             s.todos.append({"id": s.next_id, "text": f"Item {s.next_id}", "done": False})
-            s.next_id = s.next_id + 1
-        set_store(produce(update))
+            s.next_id += 1
+        set_store(update)
 
     def toggle(idx):
-        return lambda e: set_store("todos", idx, "done", lambda d: not d)
+        def flip(s):
+            s.todos[idx].done = not s.todos[idx].done
+        return lambda e: set_store(flip)
 
     return div(
         button("Add", on_click=add_todo),
@@ -145,9 +123,39 @@ identity across updates, which is exactly what `For` needs:
 ```python
 from wybthon import reconcile
 
-set_store("todos", reconcile(fetched_todos))          # match by "id"
-set_store("todos", reconcile(fetched_todos, key="uuid"))
+set_store(reconcile(fetched_state))               # match list items by "id"
+set_store(reconcile(fetched_state, key="uuid"))   # custom key
 ```
+
+#### Projections
+
+`create_projection(fn, initial=None)` creates a **read-only derived
+store**. `fn` receives a mutable draft and runs inside a render effect:
+any signals, memos, or other stores it reads become dependencies, and
+when they change, `fn` re-runs against the same draft. Consumers get
+fine-grained updates for exactly the paths that changed:
+
+```python
+from wybthon import create_signal, create_projection
+
+selected, set_selected = create_signal(1)
+
+flags = create_projection(
+    lambda draft: draft.update({"selected_id": selected()}),
+    {"selected_id": None},
+)
+
+flags.selected_id   # tracked read; updates when ``selected`` changes
+```
+
+#### Optimistic stores
+
+`create_optimistic_store(source, initial=None)` creates a store whose
+writes revert when all in-flight [`action`][wybthon.action]s settle.
+`source` may be a tracked function returning the base state (derived
+form) or a plain dict/list (value form). See
+[Async and Loading](async-loading.md#actions-and-optimistic-state) for
+the full pattern.
 
 #### Unwrap
 
@@ -160,53 +168,18 @@ from wybthon import unwrap
 raw = unwrap(store.todos)   # plain list of dicts
 ```
 
-#### Mutable stores
-
-`create_mutable(initial)` returns a single directly-writable proxy
-instead of a `(store, setter)` pair, mirroring Solid's `createMutable`.
-Writes go through plain attribute or item assignment at **any depth**
-and notify subscribers of the touched path only:
-
-```python
-from wybthon import create_mutable
-
-state = create_mutable({"count": 0, "user": {"name": "Ada"}, "tags": []})
-state.count += 1
-state.user.name = "Grace"    # nested write
-state.tags.append("admin")   # tracked list mutation
-```
-
-Nested lists support `append`, `insert`, `pop`, `remove`, `clear`, and
-index assignment. To group several writes into one update, use
-`modify_mutable` with `produce` or `reconcile` (mirroring Solid's
-`modifyMutable`):
-
-```python
-from wybthon import modify_mutable, produce
-
-def bump(draft):
-    draft.count += 1
-    draft.user.name = "Hopper"
-
-modify_mutable(state, produce(bump))
-```
-
-Prefer `create_store` for most app state; the explicit setter keeps
-mutation sites easy to find. Reach for `create_mutable` for objects
-that are easier to update in place.
-
 #### Stores vs signals
 
 | | `create_signal` | `create_store` |
 |---|---|---|
 | **Best for** | Primitive values, simple state | Nested objects, lists, complex state |
 | **Read** | `count()` (call getter) | `store.count` (attribute access) |
-| **Write** | `set_count(5)` | `set_store("count", 5)` |
-| **Nested** | Manual (separate signals) | Automatic (path-based) |
+| **Write** | `set_count(5)` | `set_store(lambda s: ...)` (draft mutation) |
+| **Nested** | Manual (separate signals) | Automatic (fine-grained proxies) |
 | **Granularity** | Entire value | Per-property |
 
 ## Next steps
 
-- See the [`store`][wybthon.store] API for `create_store` and `produce`.
+- See the [`store`][wybthon.store] API for `create_store`, `create_projection`, and `reconcile`.
 - Read [Reactivity](reactivity.md) for the underlying signal model.
 - Browse [Authoring patterns](../guides/authoring-patterns.md) for store recipes.

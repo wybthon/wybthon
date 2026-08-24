@@ -1,4 +1,4 @@
-"""E2E: reactive stores (per-path tracking, nested set, functional set, produce)."""
+"""E2E: reactive stores (per-path tracking, draft-first mutations)."""
 
 import pytest
 from playwright.sync_api import expect
@@ -23,10 +23,10 @@ def test_store_updates(goto_feature):
     expect(page.get_by_test_id("store-todo")).to_have_text("True")
 
 
-def test_store_produce(goto_feature):
+def test_store_draft_list_append(goto_feature):
     page = goto_feature("stores")
-    page.get_by_test_id("store-produce").click()
-    expect(page.get_by_test_id("store-count")).to_have_text("1")
-
     page.get_by_test_id("store-add").click()
     expect(page.get_by_test_id("store-len")).to_have_text("2")
+
+    page.get_by_test_id("store-add").click()
+    expect(page.get_by_test_id("store-len")).to_have_text("3")

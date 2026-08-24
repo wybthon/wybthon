@@ -3,14 +3,17 @@
 Signals drive the render pipeline.
 
 ```python
-from wybthon import create_signal, create_effect, create_memo, batch
+from wybthon import create_signal, create_effect, create_memo, flush
 
 count, set_count = create_signal(0)
 double = create_memo(lambda: count() * 2)
 
-create_effect(lambda: print("double:", double()))
-set_count(1)
+create_effect(lambda: print("double:", double()))  # prints "double: 0"
+set_count(1)   # double() == 2 immediately (memos are pull-based)
+flush()        # prints "double: 2" (effects run on the next flush)
 ```
+
+In the browser the flush happens automatically on a microtask (and at the end of every event handler), so application code rarely calls `flush()` directly. See [Automatic batching](#automatic-batching) below.
 
 - `create_signal(value, *, equals=...)` returns a `(getter, setter)` tuple.
   The setter accepts either a new value or an **updater function**
@@ -20,14 +23,13 @@ set_count(1)
   or a custom comparator (e.g., `equals=lambda a, b: a is b` for
   SolidJS-style identity-only semantics). See
   [Reactivity API](../api/reactivity.md).
-- `create_memo(fn, *, equals=...)` returns a derived getter; recomputes **lazily** on read after a dependency changes. `equals` controls when its observers are notified; the getter also exposes `.peek()`.
-- `create_effect(fn)` runs and re-runs on dependencies; supports previous value. User effects run after the DOM commit in each flush.
-- `create_render_effect(fn)` is like `create_effect` but runs in the **render phase**, before the DOM commit and before user effects (the framework's own DOM bindings live here).
-- `create_computed(fn)` runs eagerly, **before** render effects; use it to push derived state into another signal.
-- `create_reaction(on_invalidate)` returns a `track(fn)` function; the first change to a dependency tracked by `fn` fires `on_invalidate` once, then tracking stops until you call `track` again.
-- `batch()` batches updates as a context manager, or `batch(fn)` with callback.
-- `create_resource(fetcher)` returns an async data primitive with loading/error state; `initial_value=...` seeds it with data.
-- `create_deferred(source)` returns a getter that trails `source` by one event-loop tick, decoupling expensive consumers from rapid updates.
+- `create_memo(fn, *, equals=...)` returns a derived getter; recomputes **lazily** on read after a dependency changes. `fn` may be an `async def`, which makes the memo an [async computation](#async-memos). `equals` controls when its observers are notified; the getter also exposes `.peek()`.
+- `create_effect(fn)` runs once immediately and re-runs on the next flush after a dependency changes; it supports the previous return value as an optional argument. `create_effect(compute, apply)` is the **split form**: `compute` runs tracked and its return value is passed to the untracked `apply` stage. Effects may be `async def`. User effects run after the DOM commit in each flush.
+- `create_render_effect(fn)` is like `create_effect` but runs in the **render phase**, before the DOM commit and before user effects (the framework's own DOM bindings live here). It supports the same split form.
+- `create_reaction(on_invalidate)` returns a `track(fn)` function; the first change to a dependency tracked by `fn` fires `on_invalidate` once (on the next flush), then tracking stops until you call `track` again.
+- `flush()` runs pending render effects, commits the batched DOM ops once across the Pyodide bridge, then runs user effects. Automatic in the browser; call it explicitly in plain Python scripts and tests.
+- `is_pending(getter)` is a tracked read reporting whether an async computation has a recompute in flight; `latest(getter)` reads without raising `NotReadyError`.
+- `action(fn)` wraps an async mutation and tracks its in-flight state; `create_optimistic(source)` overlays a signal with writes that revert when in-flight actions settle. See [Async and Loading](async-loading.md).
 - `create_unique_id()` returns a stable unique string for `id`/`for`/`aria-*` wiring.
 - `catch_error(fn, handler)` runs `fn` under a scope whose errors (now or from effects created inside) route to `handler`.
 - `on_error(handler)` registers an error handler on the **current** scope; errors from child computations route to the nearest ancestor handler.
@@ -43,15 +45,21 @@ from wybthon import create_effect, untrack
 create_effect(lambda: print("a changed:", a(), "b is:", untrack(b)))
 ```
 
-`on(deps, fn, defer=False)` creates an effect with explicit dependency
-tracking.  The body of `fn` is automatically untracked:
+For explicit dependencies, use the **split effect** form. The first
+function is the tracked compute stage; the second runs untracked with
+the computed value (and, when it accepts a second parameter, the
+previous value):
 
 ```python
-from wybthon import on
+from wybthon import create_effect
 
-on(count, lambda v: print("count is now", v))
-on([a, b], lambda va, vb: print(f"a={va}, b={vb}"), defer=True)
+create_effect(count, lambda v: print("count is now", v))
+create_effect(lambda: (a(), b()), lambda pair: print("changed:", pair))
+create_effect(count, lambda v, prev: print(f"{prev} -> {v}"))
 ```
+
+Because the apply stage is untracked, incidental signal reads inside it
+can't over-subscribe the effect.
 
 `merge_props(*sources)` merges multiple prop sources into a **reactive
 proxy**.  Each source may be a plain dict or a callable getter (e.g., a
@@ -84,19 +92,21 @@ local, rest = split_props(props, ["class", "style"])
 
 #### Reactive list primitives
 
-`map_array(source, map_fn)` creates a **keyed reactive list mapping**
-with stable per-item scopes.  Items are matched by reference identity.
+`map_array(source, map_fn, key=None)` creates a **keyed reactive list
+mapping** with stable per-item scopes.  By default items are matched by
+reference identity; pass `key=callable` to match by `key(item)` instead,
+so a fresh object with the same key updates the existing scope in place.
 The mapping callback runs **once** per unique item; when an item leaves,
 its reactive scope is disposed.
 
 ```python
-from wybthon import create_signal, map_array, create_effect
+from wybthon import create_signal, map_array
 
 items, set_items = create_signal(["A", "B", "C"])
 mapped = map_array(items, lambda item, idx: f"{idx()}: {item()}")
 
-create_effect(lambda: print(mapped()))  # ["0: A", "1: B", "2: C"]
-set_items(["B", "C", "D"])             # only "D" runs the mapping
+mapped()                    # ["0: A", "1: B", "2: C"]
+set_items(["B", "C", "D"])  # only "D" runs the mapping
 ```
 
 `index_array(source, map_fn)` is similar but keyed by **index
@@ -135,49 +145,56 @@ from wybthon import create_root
 result = create_root(lambda dispose: ...)
 ```
 
-#### Scheduling semantics
+#### Automatic batching
 
-Wybthon's scheduler is **synchronous and glitch-free**, matching SolidJS's
-observable behavior:
+Wybthon's scheduler batches automatically, matching SolidJS 2.0. There's
+no `batch()` primitive; everything batches.
 
-- **Writes propagate synchronously.** Outside a `batch`, setting a signal
-  updates dependent memos and runs affected effects *before the setter
-  returns*. There's no microtask delay, and there's nothing to `await` or
-  sleep on: a read immediately after a write reflects the new value.
-- **Two phases per update.** A write first marks the graph stale (the "pure"
-  phase), then effects run (the "effect" phase) and *pull* their
-  dependencies. Because effects pull a fully-settled graph, an effect reading
-  several memos derived from the same signal never observes an inconsistent,
-  half-updated combination, and it runs **once** per logical change rather
-  than once per intermediate edge.
-- **Memos are lazy (pull-based).** A `create_memo` recomputes only when it's
-  *read* after one of its sources changed. A memo that's never read never
-  runs, and several writes before the next read coalesce into a single
-  recompute.
+- **Writes apply immediately; effects are deferred.** Setting a signal
+  updates its value right away: a read immediately after a write
+  reflects the new value, and dependent memos recompute on their next
+  read. Effects, however, don't run inline; they're scheduled and run
+  on the next **flush**.
+- **When the flush happens.** In the browser, a flush is scheduled on a
+  microtask after the first write, and event handlers dispatched
+  through Wybthon's event system flush automatically at the end of the
+  handler. In plain Python scripts and tests, call `flush()` to settle
+  effects deterministically.
+- **Writes coalesce.** Any number of signal writes before a flush
+  produce **one** run per affected effect. There's nothing to wrap in a
+  batch; consecutive `set_a(1); set_b(2)` calls already coalesce.
+- **Phases within a flush.** Render effects (internal holes and prop
+  bindings, plus `create_render_effect`) run first, then the buffered
+  DOM ops are committed across the Pyodide bridge in a single crossing,
+  then user effects (`create_effect`) run. A user effect always
+  observes the committed DOM, and an effect reading several memos
+  derived from the same signal never observes an inconsistent,
+  half-updated combination.
+- **Memos are lazy (pull-based).** A `create_memo` recomputes only when
+  it's *read* after one of its sources changed. A memo that's never
+  read never runs, and several writes before the next read coalesce
+  into a single recompute.
 - **Equality short-circuits downstream work.** When a memo recomputes to a
   value equal to its previous one (per its `equals` policy), its consumers
   are *not* re-run. A `create_memo(lambda: n() > 0)` that stays `True` as `n`
   changes from `1` to `2` re-runs nothing downstream.
-- **Deterministic order.** Effects run in the order they were first marked
-  dirty (subscription order for a shared source). Effects enqueued while the
-  graph settles are drained within the same flush, so one logical update
-  fully settles before control returns.
-
-`batch()` defers the effect phase until the outermost batch exits, coalescing
-many writes into a single flush. It works as a context manager or with a
-callback:
+- **Deterministic order.** Within a flush, effects run in the order they
+  were marked dirty. Effects enqueued while the graph settles (for
+  example, by a user effect writing a signal) drain within the same
+  flush, so one logical update fully settles before the flush returns.
 
 ```python
-# Context manager (Pythonic)
-with batch():
-    set_a(1)
-    set_b(2)
+from wybthon import create_signal, create_effect, flush
 
-# Callback (SolidJS-style)
-batch(lambda: (set_a(1), set_b(2)))
+a, set_a = create_signal(1)
+b, set_b = create_signal(2)
+
+create_effect(lambda: print("sum:", a() + b()))  # prints "sum: 3"
+
+set_a(10)
+set_b(20)
+flush()  # prints "sum: 30" once, not twice
 ```
-
-Both forms flush dependent effects synchronously when the batch exits.
 
 #### Ownership tree
 
@@ -259,46 +276,58 @@ Disposing an `Owner` (or any subclass) walks the tree depth-first:
 children are disposed before the owner's own cleanups run.  After
 disposal, the owner is removed from its parent's children list.
 
-#### Resources, cancellation, and Suspense
+#### Async memos
 
-`create_resource(fetcher)` creates a `Resource`, a callable accessor with tracked `loading`, `error`, `latest`, and `state` properties. Calling `refetch()` starts a new fetch. Calling `cancel()` aborts any in-flight JS fetch (via `AbortController` when available), cancels the Python task, invalidates the current version to ignore late results, and resets `loading`. `mutate(value)` writes the data directly for optimistic updates.
-
-You can also pass a source signal to automatically refetch when it changes:
+A memo whose body is an `async def` (or returns an awaitable) becomes
+an **async computation**, a first-class citizen of the reactive graph:
 
 ```python
-from wybthon import create_resource, create_signal
+from wybthon import create_memo
 
-user_id, set_user_id = create_signal(1)
-
-async def load_user(uid, signal=None):
-    resp = await fetch(f"/api/users/{uid}")
+async def fetch_user():
+    resp = await js.fetch("/api/user")
     return await resp.json()
 
-res = create_resource(user_id, load_user)
-# Changing user_id will automatically refetch
+user = create_memo(fetch_user)
 ```
 
-To render a loading UI declaratively, wrap the UI in `Suspense`. Reading a pending resource inside the boundary registers it automatically; no manual wiring is needed:
+- **Reading before the first value raises `NotReadyError`.** A
+  [`Loading`][wybthon.Loading] boundary turns that into fallback UI;
+  reads through derived sync memos propagate the not-ready state, and
+  effects that read a pending value suspend until it lands.
+- **Stale-while-revalidate.** Once the memo has a value, later
+  recomputes serve the previous value while the new one is in flight,
+  so content stays visible during refreshes.
+- **`is_pending(getter)`** is a tracked read that returns `True` while a
+  recompute is in flight; use it to render inline refresh hints.
+  **`latest(getter)`** reads without raising: it returns the stale value,
+  or `None` before the first value.
+- **Errors are stored and re-raised on read**, so a failed fetch hits
+  the nearest [`ErrorBoundary`][wybthon.ErrorBoundary] when the memo is
+  read during render.
+- Signal reads inside the coroutine are tracked both before and after
+  `await` points, so an async memo refetches when its dependencies
+  change:
 
 ```python
-from wybthon import Suspense, h, create_resource
+from wybthon import create_signal, create_memo
 
-async def load_user(signal=None):
-    # ... fetch user ...
-    return {"name": "Ada"}
+version, set_version = create_signal(0)
 
-res = create_resource(load_user)
+async def fetch_todo():
+    version()  # tracked: bump the version to refetch
+    resp = await js.fetch(url)
+    return await resp.json()
 
-view = Suspense(
-    fallback=h("p", {}, "Loading user..."),
-    children=lambda: h("pre", {}, lambda: str(res())),
-)
+todo = create_memo(fetch_todo)
+set_version(lambda v: v + 1)  # triggers a revalidation
 ```
 
-- Refetches (`state == "refreshing"`) don't re-trigger `Suspense`; the previous data stays readable through the accessor and `latest`, matching SolidJS.
+See [Async and Loading](async-loading.md) for `Loading` boundaries,
+lazy components, actions, and optimistic state.
 
 ## Next steps
 
 - See [Lifecycle and Ownership](lifecycle.md) for the disposal model.
-- Read [Suspense and Lazy Loading](suspense-lazy.md) for resource UI patterns.
+- Read [Async and Loading](async-loading.md) for async memos, loading boundaries, and actions.
 - Browse the [`reactivity`][wybthon.reactivity] API reference.

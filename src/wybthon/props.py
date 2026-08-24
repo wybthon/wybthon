@@ -40,9 +40,10 @@ CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 # Sentinel used by reactive prop bindings to detect "first run".
 _UNSET = object()
 
-# Lazily-bound reference to ``wybthon.reactivity.effect`` (a circular
-# import at module load time; binding once avoids a per-binding import).
-_effect: Any = None
+# Lazily-bound reference to ``wybthon.reactivity.render_effect`` (a
+# circular import at module load time; binding once avoids a per-binding
+# import).
+_render_effect: Any = None
 
 
 def to_kebab(name: str) -> str:
@@ -234,22 +235,30 @@ def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
 
 
 def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
-    """Wrap `getter` in an effect that re-applies prop `name` on changes.
+    """Wrap `getter` in a render effect that re-applies prop `name` on changes.
+
+    Render-phase scheduling means every dirty binding in a flush emits
+    its op before the single commit, so one signal write that touches
+    many props still crosses the bridge once.
 
     Returns the underlying `Computation` so callers can dispose it when
     the element unmounts.
     """
-    global _effect
-    if _effect is None:
-        from .reactivity import effect as _effect_fn
+    global _render_effect
+    if _render_effect is None:
+        from .reactivity import render_effect as _render_effect_fn
 
-        _effect = _effect_fn
+        _render_effect = _render_effect_fn
+
+    from .reactivity import NotReadyError
 
     last: list = [_UNSET]
 
     def update() -> None:
         try:
             new_val = getter()
+        except NotReadyError:
+            return  # keep the previous value until the async source resolves
         except Exception as exc:
             log_error(f"Reactive prop '{name}' getter raised: {exc}", exc)
             return
@@ -257,7 +266,7 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
         last[0] = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    return _effect(update)
+    return _render_effect(update)
 
 
 # ---------------------------------------------------------------------------

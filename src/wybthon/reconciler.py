@@ -56,8 +56,8 @@ from .reactivity import (
     ReactiveProps,
     _ComponentContext,
     _get_component_ctx,
-    batch,
-    effect,
+    flush,
+    render_effect,
 )
 from .template import (
     BIND_EVENT,
@@ -140,12 +140,14 @@ def render(vnode: VNode, container: Union[Element, str, int]) -> Element:
         container_el = container
     container_id = container_el.node_id
     prev = _container_registry.get(container_id)
-    # Batch so signal writes during mount (Suspense registrations, error
-    # boundary trips) defer their effects until the mount stack has fully
-    # unwound, instead of re-entering the reconciler mid-mount.
-    batch(lambda: patch(prev, vnode, container_id))
+    # Signal writes during mount (Loading registrations, error boundary
+    # trips) only schedule effects, so the mount stack unwinds fully
+    # before anything re-enters the reconciler. The flush below settles
+    # those scheduled effects and commits all buffered DOM ops in one
+    # bridge crossing.
+    patch(prev, vnode, container_id)
     _container_registry[container_id] = vnode
-    kernel.commit()
+    flush()
     return container_el
 
 
@@ -203,7 +205,7 @@ def _dom_node_ids(vnode: VNode) -> List[int]:
 def mount(vnode: Union[VNode, str], parent_id: int, anchor_id: Optional[int] = None) -> None:
     """Emit ops mounting a VNode (or string) under the node `parent_id`.
 
-    When the VNode carries an `owner_scope` (set by `For`/`Index` for
+    When the VNode carries an `owner_scope` (set by `For`/`Repeat` for
     cached rows), mounting runs under that reactive owner so the row's
     effects survive later list updates.
 
@@ -381,10 +383,16 @@ def _coerce_dynamic_result(value: Any) -> VNode:
 
 def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Any:
     """Build the effect body that re-evaluates a hole and patches its region."""
+    from .reactivity import NotReadyError
 
     def update() -> None:
         try:
             result = getter()
+        except NotReadyError:
+            # An async source has no value yet. Keep the current content
+            # (the read already registered with the nearest Loading
+            # boundary and subscribed this hole to the resolution).
+            return
         except Exception as exc:
             if not _dispatch_to_error_boundary(exc):
                 log_error(f"Reactive hole getter raised: {exc}", exc)
@@ -431,7 +439,7 @@ def _mount_dynamic(
     if not callable(getter):
         return
 
-    vnode.render_effect = effect(_hole_updater(vnode, parent_id, end_id, getter))
+    vnode.render_effect = render_effect(_hole_updater(vnode, parent_id, end_id, getter))
 
 
 def _patch_dynamic(old: VNode, new: VNode, parent_id: int) -> None:
@@ -465,7 +473,7 @@ def _patch_dynamic(old: VNode, new: VNode, parent_id: int) -> None:
         return
 
     assert new._frag_end is not None
-    new.render_effect = effect(_hole_updater(new, parent_id, new._frag_end, new_getter))
+    new.render_effect = render_effect(_hole_updater(new, parent_id, new._frag_end, new_getter))
 
 
 # ---------------------------------------------------------------------------

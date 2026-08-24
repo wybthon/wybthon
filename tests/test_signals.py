@@ -51,6 +51,7 @@ def test_create_signal_re_renders_on_set(wyb, root_element):
     assert "Count: 0" in collect_texts(root_element.element)
 
     setter_ref[0](1)
+    reactivity.flush()
     assert len(render_log) == 2
     assert render_log[-1] == 1
     assert "Count: 1" in collect_texts(root_element.element)
@@ -76,6 +77,7 @@ def test_create_signal_updater_function(wyb, root_element):
     assert render_log == [10]
 
     setter_ref[0](15)
+    reactivity.flush()
     assert render_log[-1] == 15
 
 
@@ -152,9 +154,11 @@ def test_create_effect_auto_tracks_signals(wyb, root_element):
     assert effect_log == [0]
 
     setter_ref[0](1)
+    reactivity.flush()
     assert effect_log == [0, 1]
 
     setter_ref[0](1)
+    reactivity.flush()
     assert effect_log == [0, 1]
 
 
@@ -184,6 +188,7 @@ def test_create_effect_cleanup_per_run(wyb, root_element):
     assert log == ["run:0"]
 
     setter_ref[0](1)
+    reactivity.flush()
     assert "cleanup:0" in log
     assert "run:1" in log
 
@@ -255,6 +260,7 @@ def test_create_memo(wyb, root_element):
     assert "0" in collect_texts(root_element.element)
 
     setter_ref[0](1)
+    reactivity.flush()
     assert compute_calls[0] == 2
     assert "10" in collect_texts(root_element.element)
 
@@ -286,11 +292,13 @@ def test_multiple_signals(wyb, root_element):
     assert "42" in texts
 
     setter_a_ref[0]("world")
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "world" in texts
     assert "42" in texts
 
     setter_b_ref[0](99)
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "world" in texts
     assert "99" in texts
@@ -328,6 +336,7 @@ def test_nested_components(wyb, root_element):
     assert "child:0" in texts
 
     child_setter_ref[0](5)
+    reactivity.flush()
     texts = collect_texts(root_element.element)
     assert "parent" in texts
     assert "child:5" in texts
@@ -367,6 +376,7 @@ def test_function_component_runs_once_for_static_signal_read(wyb, root_element):
     assert "initial" in collect_texts(root_element.element)
 
     external_sig.set("updated")
+    reactivity.flush()
     assert render_count[0] == 1, "body must run exactly once"
     assert "initial" in collect_texts(root_element.element), "static read does not update DOM"
 
@@ -388,5 +398,6 @@ def test_function_component_signal_via_hole(wyb, root_element):
     assert "initial" in collect_texts(root_element.element)
 
     external_sig.set("updated")
+    reactivity.flush()
     assert render_count[0] == 1, "body still runs only once with the hole"
     assert "updated" in collect_texts(root_element.element), "hole updates the DOM"

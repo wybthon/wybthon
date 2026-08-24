@@ -46,6 +46,7 @@ def test_prop_accessor_passed_into_tree_is_auto_hole(wyb, root_element):
     assert child_runs[0] == 1
 
     parent_setter[0]("Bob")
+    reactivity.flush()
 
     assert "Bob" in collect_texts(root_element.element)
     assert child_runs[0] == 1, "child setup must run only once"
@@ -72,6 +73,7 @@ def test_prop_accessor_can_be_called_for_static_value(wyb, root_element):
     assert "Hello, Alice!" in collect_texts(root_element.element)
 
     parent_setter[0]("Bob")
+    reactivity.flush()
 
     assert "Hello, Alice!" in collect_texts(root_element.element)
 
@@ -114,6 +116,7 @@ def test_props_accept_static_value_or_getter(wyb, root_element):
     assert "v=dynamic" in txt
 
     set_src("updated")
+    reactivity.flush()
     assert "updated" in "".join(collect_texts(root_element.element))
 
 
@@ -151,6 +154,7 @@ def test_provider_value_updates_fine_grainedly(wyb, root_element):
     assert consumer_runs[0] == 1
 
     parent_setter[0]("dark")
+    reactivity.flush()
 
     assert "theme=dark" in "".join(collect_texts(root_element.element))
     assert consumer_runs[0] == 1, "consumer body must run only once; hole updates the DOM"
@@ -181,7 +185,7 @@ def test_provider_static_value_still_propagates(wyb, root_element):
 
 def test_signal_default_value_equality_skips_same_reference():
     """Default ``equals`` is value equality with an identity fast-path."""
-    from wybthon.reactivity import create_effect, create_signal
+    from wybthon.reactivity import create_effect, create_signal, flush
 
     log = []
     items = [1, 2, 3]
@@ -191,6 +195,7 @@ def test_signal_default_value_equality_skips_same_reference():
     assert log == [items]
 
     set_s(items)
+    flush()
     assert log == [items], "same reference → must skip via identity fast-path"
 
 
@@ -201,7 +206,7 @@ def test_signal_default_value_equality_skips_equal_value():
     unchanged value is a no-op.  Users who want SolidJS-style identity
     semantics opt in explicitly via ``equals=lambda a, b: a is b``.
     """
-    from wybthon.reactivity import create_effect, create_signal
+    from wybthon.reactivity import create_effect, create_signal, flush
 
     log = []
     s, set_s = create_signal([1, 2, 3])
@@ -210,15 +215,17 @@ def test_signal_default_value_equality_skips_equal_value():
     assert len(log) == 1
 
     set_s([1, 2, 3])
+    flush()
     assert len(log) == 1, "value-equal new object → must skip by default"
 
     set_s([1, 2, 4])
+    flush()
     assert len(log) == 2, "value-different → must notify"
 
 
 def test_signal_identity_equality_via_explicit_equals():
     """SolidJS-style identity-only semantics opt-in via custom comparator."""
-    from wybthon.reactivity import create_effect, create_signal
+    from wybthon.reactivity import create_effect, create_signal, flush
 
     log = []
     s, set_s = create_signal([1, 2, 3], equals=lambda a, b: a is b)
@@ -227,12 +234,13 @@ def test_signal_identity_equality_via_explicit_equals():
     assert len(log) == 1
 
     set_s([1, 2, 3])
+    flush()
     assert len(log) == 2, "different identity → must notify under identity-equals"
 
 
 def test_signal_equals_true_is_value_equality():
     """``equals=True`` is the same as the default (value equality)."""
-    from wybthon.reactivity import create_effect, create_signal
+    from wybthon.reactivity import create_effect, create_signal, flush
 
     log = []
     s, set_s = create_signal({"a": 1}, equals=True)
@@ -241,12 +249,13 @@ def test_signal_equals_true_is_value_equality():
     assert len(log) == 1
 
     set_s({"a": 1})
+    flush()
     assert len(log) == 1, "equals=True must skip on value-equal set"
 
 
 def test_signal_equals_false_always_notifies():
     """``equals=False`` forces notification on every set."""
-    from wybthon.reactivity import create_effect, create_signal
+    from wybthon.reactivity import create_effect, create_signal, flush
 
     log = []
     s, set_s = create_signal(0, equals=False)
@@ -254,6 +263,7 @@ def test_signal_equals_false_always_notifies():
 
     assert len(log) == 1
     set_s(0)
+    flush()
     assert len(log) == 2
 
 
