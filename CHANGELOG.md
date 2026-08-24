@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.28.0 (2026-08-24)
+
+### Documentation
+
+- Strip AI provenance metadata from logo image
+  ([`dd4e284`](https://github.com/wybthon/wybthon/commit/dd4e284f39f65fc6384ae1af63659cee65d0ee8b))
+
+### Features
+
+- **reactivity,loading,store**: Adopt Solid 2.0 async-first reactivity
+  ([#9](https://github.com/wybthon/wybthon/pull/9),
+  [`27d261e`](https://github.com/wybthon/wybthon/commit/27d261e5b0ecb586fc15666c4bdeeefe935ce987))
+
+
 ## v0.27.0 (2026-07-11)
 
 ### Features
