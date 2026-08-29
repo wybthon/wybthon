@@ -1191,7 +1191,7 @@
   <span class="md-ellipsis">
     
   
-    Demo App
+    Demo Apps
   
 
     
@@ -2756,36 +2756,36 @@
 
 <h3 id="dev-server">Dev Server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h3>
 <p>Run a static server with auto-reload over SSE.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>.
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>examples<span class="w"> </span>--open<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--mount<span class="w"> </span>/<span class="o">=</span>.<span class="w"> </span>--mount<span class="w"> </span>/examples<span class="o">=</span>examples<span class="w"> </span>--mount<span class="w"> </span>/src<span class="o">=</span>src
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>app<span class="w"> </span>--open<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--mount<span class="w"> </span>/<span class="o">=</span>.<span class="w"> </span>--mount<span class="w"> </span>/src<span class="o">=</span>src
 </span></code></pre></div>
 <p>Behavior:</p>
 <ul>
 <li>Watches <code>--watch</code> directories for file mtime changes</li>
-<li>Notifies browser via <code>/__sse</code> events; demo subscribes and reloads the page</li>
+<li>Notifies the browser via <code>/__sse</code> events; subscribed pages reload themselves</li>
 <li>Binds to the requested port or the next available up to +20</li>
 <li>Serves additional static directories using <code>--mount /prefix=path</code> (repeatable)</li>
-<li>Optionally opens the browser with <code>--open</code> and <code>--open-path /examples/demo/</code></li>
+<li>Optionally opens the browser with <code>--open</code> and <code>--open-path /app/</code></li>
 <li>Prints the resolved host/port, selected port (if your requested one was busy), active mounts, and watched paths at startup</li>
 </ul>
 <p>Options:</p>
 <ul>
 <li><code>--mount /prefix=path</code>: mount filesystem <code>path</code> at the given URL prefix. The longest-prefix match wins.</li>
 <li><code>--open</code>: open the default browser to the server URL after it starts.</li>
-<li><code>--open-path</code>: append this path when opening the browser, e.g., <code>/examples/demo/</code>.</li>
+<li><code>--open-path</code>: append this path when opening the browser, e.g., <code>/app/</code>.</li>
 </ul>
 <h4 id="advanced-usage">Advanced usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Multiple mounts and base URLs</li>
 <li>The server maps URL prefixes to filesystem directories. The longest-prefix match wins.</li>
 <li>
-<p>Example: serve repo root at <code>/</code>, demo at <code>/examples</code>, and source at <code>/src</code>:</p>
+<p>Example: serve the project root at <code>/</code>, your app at <code>/app</code>, and source at <code>/src</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--mount<span class="w"> </span>/<span class="o">=</span>.<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--mount<span class="w"> </span>/examples<span class="o">=</span>examples<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--mount<span class="w"> </span>/app<span class="o">=</span>app<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--mount<span class="w"> </span>/src<span class="o">=</span>src<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>--open<span class="w"> </span>--open-path<span class="w"> </span>/examples/demo/
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>--open<span class="w"> </span>--open-path<span class="w"> </span>/app/
 </span></code></pre></div>
 </li>
 <li>
@@ -2801,12 +2801,12 @@
 </li>
 <li><code>--open</code> launches your default browser to the server URL.</li>
 <li>
-<p>If <code>--open-path</code> is omitted, the server heuristically opens <code>/</code> if <code>index.html</code> exists under <code>--dir</code>, otherwise <code>/examples/demo/</code> if present, otherwise <code>/</code>.</p>
+<p>If <code>--open-path</code> is omitted, the server opens <code>/</code>.</p>
 </li>
 <li>
 <p>Watching and reload delay</p>
 </li>
-<li><code>--watch</code> accepts a list of directories; defaults to <code>src examples</code>.</li>
+<li><code>--watch</code> accepts a list of directories; defaults to <code>src</code>.</li>
 <li>File change detection is based on mtimes and checks ~every 0.5s. Expect a ~0.5–1.5s full page reload.</li>
 <li>
 <p>To disable auto-reload entirely, pass <code>--watch</code> with no values:</p>
@@ -2816,7 +2816,7 @@
 <li>
 <p>SSE endpoint for reloads</p>
 </li>
-<li>The dev server exposes <code>GET /__sse</code> which streams <code>reload</code> events. The demo subscribes and calls <code>location.reload()</code>.</li>
+<li>The dev server exposes <code>GET /__sse</code> which streams <code>reload</code> events.</li>
 <li>
 <p>Integrate into your own app with a minimal client:</p>
 <div class="language-js highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">es</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">EventSource</span><span class="p">(</span><span class="s2">"/__sse"</span><span class="p">);</span>
@@ -2890,18 +2890,13 @@
 <p>Cache busting (development):</p>
 <ul>
 <li>The server sends <code>Cache-Control: no-store</code> for all static responses to avoid stale assets during development.</li>
-<li>The demo HTML dynamically imports <code>bootstrap.js</code> with a timestamp query param to ensure the module itself is refreshed:</li>
+<li>Have your HTML dynamically import <code>bootstrap.js</code> with a timestamp query param to ensure the module itself is refreshed:</li>
 </ul>
 <div class="language-html highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">"module"</span><span class="p">&gt;</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">();</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="k">import</span><span class="p">(</span><span class="sb">`./bootstrap.js?v=</span><span class="si">${</span><span class="nx">v</span><span class="si">}</span><span class="sb">`</span><span class="p">);</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
 </span></code></pre></div>
-<p>Error overlay (development only):</p>
-<ul>
-<li>The demo <code>bootstrap.js</code> now shows a lightweight in-browser overlay when a Python exception or JS error occurs during app startup. It also listens for unhandled promise rejections.</li>
-<li>The overlay is dismissed via the "Dismiss" button and will be replaced on subsequent errors.</li>
-</ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>See the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;dev&lt;/span&gt;" href="../../api/dev/#wybthon.dev"><code>dev</code></a> API reference for the underlying server.</li>

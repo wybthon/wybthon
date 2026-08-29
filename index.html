@@ -1206,7 +1206,7 @@
   <span class="md-ellipsis">
     
   
-    Demo App
+    Demo Apps
   
 
     
@@ -2823,19 +2823,19 @@
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p>Run the demo straight from a checkout:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-m<span class="w"> </span>http.server
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># open http://localhost:8000/examples/demo/index.html</span>
+<p>Install Wybthon:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
 </span></code></pre></div>
 </li>
 <li>
-<p>Or run the dev server with auto-reload:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>.
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.
+<p>Clone the <a href="https://github.com/wybthon/demo-template">demo-template</a> and run the dev server with auto-reload:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/wybthon/demo-template.git<span class="w"> </span>my-app
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>my-app
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--watch<span class="w"> </span>app<span class="w"> </span>--open
 </span></code></pre></div>
 </li>
 <li>
-<p>Explore the demo app in <code>examples/demo</code> and the API in the Concepts and API sections.</p>
+<p>Explore the <a href="guides/demo-app/">demo apps</a> and the API in the Concepts and API sections.</p>
 </li>
 </ol>
 <h2 id="why-wybthon">Why Wybthon?<a class="headerlink" href="#why-wybthon" title="Permanent link">&para;</a></h2>
@@ -2853,10 +2853,10 @@
 </ul>
 <h2 id="documentation-map">Documentation map<a class="headerlink" href="#documentation-map" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Get started</strong>: install, run the demo, write your first component, explore the dev server.</li>
+<li><strong>Get started</strong>: install, write your first component, explore the dev server.</li>
 <li><strong>Concepts</strong>: deep dives into the <a href="concepts/mental-model/">mental model</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
 <li><strong>Guides</strong>: task-oriented recipes for <a href="concepts/forms/">forms</a>, <a href="concepts/router/">routing</a>, <a href="concepts/stores/">stores</a>, <a href="concepts/async-loading/">async and loading</a>, <a href="guides/testing/">testing</a>, and more.</li>
-<li><strong>Examples</strong>: walkthroughs of the demo app pages and patterns.</li>
+<li><strong>Examples</strong>: walkthroughs of core features and patterns.</li>
 <li><strong>API reference</strong>: auto-generated documentation per module via <code>mkdocstrings</code>.</li>
 <li><strong>Meta</strong>: contribution guide, <a href="meta/style-guide/">documentation style guide</a>, FAQ, and troubleshooting.</li>
 </ul>

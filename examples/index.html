@@ -1095,7 +1095,7 @@
   <span class="md-ellipsis">
     
   
-    Demo App
+    Demo Apps
   
 
     
@@ -2681,35 +2681,30 @@
 
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<p>Walk through focused examples that mirror the demo app pages. Each example links to a runnable file under <code>examples/demo/</code> in the repo and explains the patterns it demonstrates.</p>
+<p>Walk through focused examples of the framework's core features. Each page is a self-contained walkthrough with runnable code and an explanation of the patterns it demonstrates.</p>
 <table>
 <thead>
 <tr>
 <th>Example</th>
 <th>What it shows</th>
-<th>Source</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="counter/">Counter</a></td>
 <td>Signals, derived values, and event handlers.</td>
-<td><code>examples/demo/app/components/counter.py</code></td>
 </tr>
 <tr>
 <td><a href="fetch/">Async fetch</a></td>
 <td>Async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary.</td>
-<td><code>examples/demo/app/fetch/page.py</code></td>
 </tr>
 <tr>
 <td><a href="forms/">Forms</a></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/wybthon/#wybthon.form_state"><code>form_state</code></a> and accessibility-friendly bindings.</td>
-<td><code>examples/demo/app/forms/page.py</code></td>
 </tr>
 <tr>
 <td><a href="errors/">Error boundary</a></td>
 <td>Recovering from render errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../api/wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a>.</td>
-<td><code>examples/demo/app/errors/page.py</code></td>
 </tr>
 <tr>
 <td><a href="router/">Router</a></td>
@@ -2719,21 +2714,20 @@
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../api/wybthon/#wybthon.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/wybthon/#wybthon.Link"><code>Link</code></a>, and dynamic params.</td>
-<td><code>examples/demo/app/routes.py</code></td>
 </tr>
 <tr>
 <td><a href="authoring-patterns/">Authoring patterns</a></td>
 <td>Common idioms for building reusable components.</td>
-<td><code>examples/demo/app/patterns/page.py</code></td>
 </tr>
 </tbody>
 </table>
 <div class="admonition tip">
-<p class="admonition-title">Running the demo</p>
-<p>Run <code>python -m http.server</code> from the repository root and open
-<a href="http://localhost:8000/examples/demo/index.html"><code>/examples/demo/index.html</code></a>
-to see these examples in action. The dev server (<code>wyb dev --dir .</code>)
-additionally provides hot-reload on file changes.</p>
+<p class="admonition-title">Complete apps</p>
+<p>For full applications that put these patterns together, see the
+<a href="../guides/demo-app/">demo apps guide</a>: standalone repositories like
+<a href="https://github.com/wybthon/demo-template">demo-template</a> and
+<a href="https://github.com/wybthon/data-lab">data-lab</a> that run entirely
+in the browser.</p>
 </div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

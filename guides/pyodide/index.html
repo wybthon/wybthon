@@ -1098,7 +1098,7 @@
   <span class="md-ellipsis">
     
   
-    Demo App
+    Demo Apps
   
 
     
@@ -2773,7 +2773,7 @@
 <h2 id="the-basics">The basics<a class="headerlink" href="#the-basics" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> to install Python packages from PyPI at runtime.</li>
-<li>Import from <code>wybthon</code> after the library files exist in the Pyodide filesystem (the demo's <code>bootstrap.js</code> does this for you).</li>
+<li>Import from <code>wybthon</code> after the library exists in the Pyodide filesystem; installing via <code>micropip</code> (as in the <a href="https://github.com/wybthon/demo-template">demo-template</a>) handles this for you.</li>
 <li>Bridge to the browser using the <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js"><code>js</code> module</a> and <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html"><code>pyodide.ffi</code></a>.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
@@ -2811,7 +2811,7 @@
 <h2 id="lazy-imports-and-module-loading">Lazy imports and module loading<a class="headerlink" href="#lazy-imports-and-module-loading" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy()</code></a> uses Python's regular import system, so the only requirement is that the target module is reachable on <code>sys.path</code> at import time:</p>
 <ul>
-<li>Ensure module files exist in the Pyodide filesystem before the loader runs. The demo's <code>bootstrap.js</code> copies <code>examples/demo/app/**</code> into <code>/app</code>, so imports like <code>"app.about.page"</code> resolve.</li>
+<li>Ensure module files exist in the Pyodide filesystem before the loader runs. The demo apps' <code>bootstrap.js</code> copies the app package into <code>/app</code>, so imports like <code>"app.about.page"</code> resolve.</li>
 <li>For third-party packages, use an async loader that <code>await</code>s <code>micropip.install(...)</code> before importing.</li>
 <li>Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's <code>.preload()</code> method on user intent (e.g., link hover) to warm the import cache.</li>
 <li>Attribute resolution defaults to <code>Page</code> or <code>default</code> when unspecified; otherwise pass the export name explicitly.</li>
