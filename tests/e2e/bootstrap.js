@@ -1,9 +1,8 @@
 // E2E fixture bootstrap: loads Pyodide, mounts the Wybthon library from src/,
 // then loads the fixture app package (tests/e2e/app) and runs app.main.main().
 //
-// This mirrors examples/demo/bootstrap.js but targets the dedicated E2E
-// fixture app and records boot status on `window` so the Playwright harness
-// can detect a failed boot deterministically (instead of timing out).
+// It records boot status on `window` so the Playwright harness can detect a
+// failed boot deterministically (instead of timing out).
 
 const PYODIDE_VERSION = "0.25.1";
 const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;

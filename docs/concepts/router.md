@@ -76,10 +76,10 @@ Lazily load route components with [`lazy`][wybthon.lazy] to reduce initial load 
 from wybthon import lazy
 from wybthon.router import Route
 
-Docs = lazy(lambda: ("examples.demo.app.docs.page", "Page"))
+Docs = lazy(lambda: ("app.docs.page", "Page"))
 
 def AboutLazy():
-    return ("examples.demo.app.about.page", "Page")
+    return ("app.about.page", "Page")
 
 About = lazy(AboutLazy)
 

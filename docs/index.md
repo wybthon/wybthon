@@ -40,21 +40,21 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 
 ## Quickstart
 
-1. Run the demo straight from a checkout:
+1. Install Wybthon:
 
     ```bash
-    python -m http.server
-    # open http://localhost:8000/examples/demo/index.html
+    pip install wybthon
     ```
 
-2. Or run the dev server with auto-reload:
+2. Clone the [demo-template](https://github.com/wybthon/demo-template) and run the dev server with auto-reload:
 
     ```bash
-    pip install .
-    wyb dev --dir .
+    git clone https://github.com/wybthon/demo-template.git my-app
+    cd my-app
+    wyb dev --dir . --watch app --open
     ```
 
-3. Explore the demo app in `examples/demo` and the API in the Concepts and API sections.
+3. Explore the [demo apps](guides/demo-app.md) and the API in the Concepts and API sections.
 
 ## Why Wybthon?
 
@@ -71,10 +71,10 @@ Walk through this example end-to-end in [Getting started](getting-started.md), o
 
 ## Documentation map
 
-- **Get started**: install, run the demo, write your first component, explore the dev server.
+- **Get started**: install, write your first component, explore the dev server.
 - **Concepts**: deep dives into the [mental model](concepts/mental-model.md), reactivity, components, lifecycle, VDOM, and DOM interop.
 - **Guides**: task-oriented recipes for [forms](concepts/forms.md), [routing](concepts/router.md), [stores](concepts/stores.md), [async and loading](concepts/async-loading.md), [testing](guides/testing.md), and more.
-- **Examples**: walkthroughs of the demo app pages and patterns.
+- **Examples**: walkthroughs of core features and patterns.
 - **API reference**: auto-generated documentation per module via `mkdocstrings`.
 - **Meta**: contribution guide, [documentation style guide](meta/style-guide.md), FAQ, and troubleshooting.
 

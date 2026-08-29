@@ -1,6 +1,6 @@
 ### Authoring Patterns Example
 
-This example mirrors the demo app's Patterns page and showcases:
+This example showcases:
 
 - State with `create_signal` and derived values with `create_memo`
 - Children composition (a `Card` component)
@@ -8,7 +8,7 @@ This example mirrors the demo app's Patterns page and showcases:
 - Reactive expressions with `dynamic`
 - Cleanup via `on_cleanup` (a ticking `Timer`)
 
-Key snippets (see the demo under `examples/demo` for full code):
+Key snippets:
 
 ```python
 from wybthon import component, h3, section, untrack

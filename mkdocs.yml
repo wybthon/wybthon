@@ -81,7 +81,7 @@ nav:
     - Async and Loading: concepts/async-loading.md
   - Guides:
     - Dev Server: guides/dev-server.md
-    - Demo App: guides/demo-app.md
+    - Demo Apps: guides/demo-app.md
     - Authoring Patterns: guides/authoring-patterns.md
     - Pyodide: guides/pyodide.md
     - Deployment: guides/deployment.md
