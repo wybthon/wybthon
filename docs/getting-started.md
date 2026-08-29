@@ -1,27 +1,43 @@
 # Getting Started
 
-Follow these steps to run the demo and start hacking on Wybthon.
+Follow these steps to install Wybthon and build your first app.
 
 ## Prerequisites
 
 - Python 3.9+
 - A modern browser
 
-## Run the demo (no install)
+## Install
 
 ```bash
-python -m http.server
-# Then open http://localhost:8000/examples/demo/index.html
+pip install wybthon
 ```
 
-The demo loads Pyodide, mounts the library from `src/wybthon/`, then runs the app under `examples/demo/app/`.
+This installs the library and the `wyb` CLI. In Pyodide, install at runtime via `micropip`:
+
+```python
+import micropip
+await micropip.install("wybthon")
+```
+
+## Start from the template
+
+The fastest way to a running app is the [demo-template](https://github.com/wybthon/demo-template) repository: a static Wybthon app with `index.html`, a `bootstrap.js` that loads Pyodide, and an `app/` package ready to edit.
+
+```bash
+git clone https://github.com/wybthon/demo-template.git my-app
+cd my-app
+pip install wybthon
+wyb dev --dir . --watch app --open
+```
+
+For larger reference apps, see the [demo apps guide](guides/demo-app.md).
 
 ## Dev server with auto-reload
 
-Install the package locally (for the `wyb` CLI), then start the dev server:
+The `wyb dev` command serves your project with hot reload:
 
 ```bash
-pip install .
 wyb dev --dir .
 ```
 
@@ -29,22 +45,9 @@ Flags:
 
 - `--host` (default `127.0.0.1`)
 - `--port` (default `8000`, auto-increments on conflict)
-- `--watch` (defaults to `src` and `examples`)
+- `--watch` (defaults to `src`)
 
-The dev server exposes an SSE endpoint (`/__sse`) that the demo listens to for reload events.
-
-## Install from PyPI (experimental)
-
-```bash
-pip install wybthon
-```
-
-In Pyodide via `micropip`:
-
-```python
-import micropip
-await micropip.install("wybthon")
-```
+The dev server exposes an SSE endpoint (`/__sse`) that your page can listen to for reload events; see the [dev server guide](guides/dev-server.md).
 
 ## Minimal component example
 

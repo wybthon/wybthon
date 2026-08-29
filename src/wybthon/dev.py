@@ -78,7 +78,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
         """Respond with a JSON array of `.py` files under a requested directory.
 
         Usage:
-            `GET /__manifest?dir=examples/demo/app`
+            `GET /__manifest?dir=tests/e2e/app`
 
         The response is a sorted list of paths relative to the
         requested directory (e.g., `["app/__init__.py",
@@ -233,7 +233,7 @@ def serve(
     directory: str,
     host: str = "127.0.0.1",
     port: int = 8000,
-    watch: Iterable[str] = ("src", "examples"),
+    watch: Iterable[str] = ("src",),
     mounts: Iterable[str] | None = None,
     open_browser: bool = False,
     open_path: str | None = None,
@@ -251,8 +251,7 @@ def serve(
         open_browser: When `True`, open a browser tab to the served
             URL after binding.
         open_path: Path to open when `open_browser` is `True`. When
-            omitted, falls back to a sensible default based on
-            content found in `directory`.
+            omitted, defaults to `/`.
     """
     os.chdir(directory)
     SSEHandler.root = Path(directory)
@@ -333,21 +332,8 @@ def serve(
 
     # Optionally open a browser tab
     if open_browser:
-        # Heuristic default path if not provided
-        selected_path = open_path
-        base = Path(directory)
         try:
-            if not selected_path:
-                if (base / "index.html").exists():
-                    selected_path = "/"
-                elif (base / "examples" / "demo" / "index.html").exists():
-                    selected_path = "/examples/demo/"
-                else:
-                    selected_path = "/"
-        except Exception:
-            selected_path = selected_path or "/"
-        try:
-            webbrowser.open(url + (selected_path or "/"))
+            webbrowser.open(url + (open_path or "/"))
         except Exception:
             pass
     try:
@@ -376,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
     pdev.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]), help="Root dir to serve")
     pdev.add_argument("--host", default="127.0.0.1")
     pdev.add_argument("--port", type=int, default=8000)
-    pdev.add_argument("--watch", nargs="*", default=["src", "examples"])
+    pdev.add_argument("--watch", nargs="*", default=["src"])
     pdev.add_argument(
         "--mount",
         action="append",
@@ -384,7 +370,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Mount additional static paths as /prefix=path. Can be repeated.",
     )
     pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
-    pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /examples/demo/)")
+    pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /app/)")
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":

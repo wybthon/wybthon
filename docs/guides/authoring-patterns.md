@@ -219,7 +219,7 @@ def Page():
     )
 ```
 
-See the demo app "Patterns" page for a working version of these examples.
+See the [Authoring patterns example](../examples/authoring-patterns.md) for a working version of these examples.
 
 ## Next steps
 

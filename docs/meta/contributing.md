@@ -10,14 +10,14 @@ cd wybthon
 pip install -e .
 ```
 
-Everything you need to develop the framework, the docs site, and the demo app is now installed. Run the demo with `wyb dev --dir .` and open the URL it prints.
+Everything you need to develop the framework and the docs site is now installed.
 
 ## Where to make changes
 
 | Want to change... | Look here |
 | --- | --- |
 | Framework code | [`src/wybthon/`](https://github.com/wybthon/wybthon/tree/main/src/wybthon) |
-| Demo app | [`examples/demo/`](https://github.com/wybthon/wybthon/tree/main/examples/demo) |
+| Demo apps | Standalone repos under the [wybthon organization](https://github.com/wybthon), e.g. [`demo-template`](https://github.com/wybthon/demo-template) |
 | Documentation site | [`docs/`](https://github.com/wybthon/wybthon/tree/main/docs) |
 | Tests | [`tests/`](https://github.com/wybthon/wybthon/tree/main/tests) |
 | Lint / format / typing config | [`pyproject.toml`](https://github.com/wybthon/wybthon/blob/main/pyproject.toml) |

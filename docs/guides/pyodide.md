@@ -5,7 +5,7 @@ Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython d
 ## The basics
 
 - Use [`micropip`](https://micropip.pyodide.org/) to install Python packages from PyPI at runtime.
-- Import from `wybthon` after the library files exist in the Pyodide filesystem (the demo's `bootstrap.js` does this for you).
+- Import from `wybthon` after the library exists in the Pyodide filesystem; installing via `micropip` (as in the [demo-template](https://github.com/wybthon/demo-template)) handles this for you.
 - Bridge to the browser using the [`js` module](https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js) and [`pyodide.ffi`](https://pyodide.org/en/stable/usage/api/python-api/ffi.html).
 
 ```python
@@ -50,7 +50,7 @@ Async memos and [`action`][wybthon.action]s integrate with Pyodide's event loop 
 
 [`lazy()`][wybthon.lazy] uses Python's regular import system, so the only requirement is that the target module is reachable on `sys.path` at import time:
 
-- Ensure module files exist in the Pyodide filesystem before the loader runs. The demo's `bootstrap.js` copies `examples/demo/app/**` into `/app`, so imports like `"app.about.page"` resolve.
+- Ensure module files exist in the Pyodide filesystem before the loader runs. The demo apps' `bootstrap.js` copies the app package into `/app`, so imports like `"app.about.page"` resolve.
 - For third-party packages, use an async loader that `await`s `micropip.install(...)` before importing.
 - Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's `.preload()` method on user intent (e.g., link hover) to warm the import cache.
 - Attribute resolution defaults to `Page` or `default` when unspecified; otherwise pass the export name explicitly.

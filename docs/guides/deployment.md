@@ -16,10 +16,10 @@ Before you ship:
 
 GitHub Pages serves any directory you push to the `gh-pages` branch (or to `/docs` on `main`). The simplest deployment is to copy your built site into one of those locations and push.
 
-A minimal GitHub Actions workflow that publishes the `examples/demo/` directory looks like this:
+A minimal GitHub Actions workflow that publishes the repository root (where `index.html` lives in apps like the [demo-template](https://github.com/wybthon/demo-template)) looks like this:
 
 ```yaml
-name: Deploy Wybthon demo
+name: Deploy Wybthon app
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: examples/demo
+          path: .
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
@@ -52,7 +52,7 @@ Netlify treats your repository as a static site by default. Create `netlify.toml
 ```toml
 [build]
   command = ""           # nothing to build
-  publish = "examples/demo"
+  publish = "."
 
 [[headers]]
   for = "/*"
@@ -80,7 +80,7 @@ Vercel works similarly. Add a `vercel.json` at the repo root that points at your
 
 ```json
 {
-  "outputDirectory": "examples/demo",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*).py",

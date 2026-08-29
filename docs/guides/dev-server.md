@@ -3,38 +3,38 @@
 Run a static server with auto-reload over SSE.
 
 ```bash
-pip install .
-wyb dev --dir . --host 127.0.0.1 --port 8000 --watch src examples --open \
-  --mount /=. --mount /examples=examples --mount /src=src
+pip install wybthon
+wyb dev --dir . --host 127.0.0.1 --port 8000 --watch src app --open \
+  --mount /=. --mount /src=src
 ```
 
 Behavior:
 
 - Watches `--watch` directories for file mtime changes
-- Notifies browser via `/__sse` events; demo subscribes and reloads the page
+- Notifies the browser via `/__sse` events; subscribed pages reload themselves
 - Binds to the requested port or the next available up to +20
 - Serves additional static directories using `--mount /prefix=path` (repeatable)
-- Optionally opens the browser with `--open` and `--open-path /examples/demo/`
+- Optionally opens the browser with `--open` and `--open-path /app/`
 - Prints the resolved host/port, selected port (if your requested one was busy), active mounts, and watched paths at startup
 
 Options:
 
 - `--mount /prefix=path`: mount filesystem `path` at the given URL prefix. The longest-prefix match wins.
 - `--open`: open the default browser to the server URL after it starts.
-- `--open-path`: append this path when opening the browser, e.g., `/examples/demo/`.
+- `--open-path`: append this path when opening the browser, e.g., `/app/`.
 
 #### Advanced usage
 
 - Multiple mounts and base URLs
   - The server maps URL prefixes to filesystem directories. The longest-prefix match wins.
-  - Example: serve repo root at `/`, demo at `/examples`, and source at `/src`:
+  - Example: serve the project root at `/`, your app at `/app`, and source at `/src`:
 
     ```bash
     wyb dev --dir . \
       --mount /=. \
-      --mount /examples=examples \
+      --mount /app=app \
       --mount /src=src \
-      --open --open-path /examples/demo/
+      --open --open-path /app/
     ```
 
 - Host/port selection and fallbacks
@@ -44,10 +44,10 @@ Options:
 
 - Auto-open behavior
   - `--open` launches your default browser to the server URL.
-  - If `--open-path` is omitted, the server heuristically opens `/` if `index.html` exists under `--dir`, otherwise `/examples/demo/` if present, otherwise `/`.
+  - If `--open-path` is omitted, the server opens `/`.
 
 - Watching and reload delay
-  - `--watch` accepts a list of directories; defaults to `src examples`.
+  - `--watch` accepts a list of directories; defaults to `src`.
   - File change detection is based on mtimes and checks ~every 0.5s. Expect a ~0.5–1.5s full page reload.
   - To disable auto-reload entirely, pass `--watch` with no values:
 
@@ -56,7 +56,7 @@ Options:
     ```
 
 - SSE endpoint for reloads
-  - The dev server exposes `GET /__sse` which streams `reload` events. The demo subscribes and calls `location.reload()`.
+  - The dev server exposes `GET /__sse` which streams `reload` events.
   - Integrate into your own app with a minimal client:
 
     ```js
@@ -111,7 +111,7 @@ See also: the general troubleshooting page under Meta → Troubleshooting.
 Cache busting (development):
 
 - The server sends `Cache-Control: no-store` for all static responses to avoid stale assets during development.
-- The demo HTML dynamically imports `bootstrap.js` with a timestamp query param to ensure the module itself is refreshed:
+- Have your HTML dynamically import `bootstrap.js` with a timestamp query param to ensure the module itself is refreshed:
 
 ```html
 <script type="module">
@@ -119,11 +119,6 @@ Cache busting (development):
   import(`./bootstrap.js?v=${v}`);
 </script>
 ```
-
-Error overlay (development only):
-
-- The demo `bootstrap.js` now shows a lightweight in-browser overlay when a Python exception or JS error occurs during app startup. It also listens for unhandled promise rejections.
-- The overlay is dismissed via the "Dismiss" button and will be replaced on subsequent errors.
 
 ## Next steps
 
