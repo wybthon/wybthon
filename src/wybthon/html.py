@@ -66,6 +66,8 @@ __all__ = [
     "br",
     "hr",
     "blockquote",
+    "mark",
+    "time",
     # Lists
     "ul",
     "ol",
@@ -74,26 +76,34 @@ __all__ = [
     "table",
     "thead",
     "tbody",
+    "tfoot",
     "tr",
     "th",
     "td",
     "caption",
+    "colgroup",
+    "col",
     # Forms
     "form",
     "input_",
     "textarea",
     "select",
     "option",
+    "optgroup",
     "button",
     "label",
     "fieldset",
     "legend",
+    "progress",
+    "meter",
     # Media
     "img",
     "video",
     "audio",
     "source",
     "canvas",
+    "picture",
+    "track",
     # Interactive
     "details",
     "summary",
@@ -179,6 +189,8 @@ pre = _el("pre")
 br = _el("br")
 hr = _el("hr")
 blockquote = _el("blockquote")
+mark = _el("mark")
+time = _el("time")
 
 # Lists
 ul = _el("ul")
@@ -189,10 +201,13 @@ li = _el("li")
 table = _el("table")
 thead = _el("thead")
 tbody = _el("tbody")
+tfoot = _el("tfoot")
 tr = _el("tr")
 th = _el("th")
 td = _el("td")
 caption = _el("caption")
+colgroup = _el("colgroup")
+col = _el("col")
 
 # Forms
 form = _el("form")
@@ -200,10 +215,13 @@ input_ = _el("input")
 textarea = _el("textarea")
 select = _el("select")
 option = _el("option")
+optgroup = _el("optgroup")
 button = _el("button")
 label = _el("label")
 fieldset = _el("fieldset")
 legend = _el("legend")
+progress = _el("progress")
+meter = _el("meter")
 
 # Media
 img = _el("img")
@@ -211,6 +229,8 @@ video = _el("video")
 audio = _el("audio")
 source = _el("source")
 canvas = _el("canvas")
+picture = _el("picture")
+track = _el("track")
 
 # Interactive
 details = _el("details")
