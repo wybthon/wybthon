@@ -116,6 +116,51 @@ def test_select_with_options(browser_stubs):
     assert node.children[0].props.get("value") == "1"
 
 
+def test_new_helpers_create_correct_vnodes(browser_stubs):
+    _, _, html_mod = _load_modules()
+    for tag in ("tfoot", "colgroup", "col", "optgroup", "progress", "meter", "mark", "time", "picture", "track"):
+        node = getattr(html_mod, tag)()
+        assert node.tag == tag
+        assert node.props == {}
+        assert len(node.children) == 0
+
+
+def test_col_is_void_with_props(browser_stubs):
+    _, _, html_mod = _load_modules()
+    node = html_mod.col(span="2")
+    assert node.tag == "col"
+    assert node.props.get("span") == "2"
+    assert len(node.children) == 0
+
+
+def test_optgroup_with_label_and_options(browser_stubs):
+    _, _, html_mod = _load_modules()
+    node = html_mod.optgroup(
+        html_mod.option("One", value="1"),
+        html_mod.option("Two", value="2"),
+        label="Group",
+    )
+    assert node.tag == "optgroup"
+    assert node.props.get("label") == "Group"
+    assert len(node.children) == 2
+    assert all(c.tag == "option" for c in node.children)
+
+
+def test_time_with_datetime_prop(browser_stubs):
+    _, _, html_mod = _load_modules()
+    node = html_mod.time("Aug 30", datetime="2026-08-30")
+    assert node.tag == "time"
+    assert node.props.get("datetime") == "2026-08-30"
+    assert len(node.children) == 1
+
+
+def test_tfoot_nests_rows(browser_stubs):
+    _, _, html_mod = _load_modules()
+    node = html_mod.tfoot(html_mod.tr(html_mod.td("Total")))
+    assert node.tag == "tfoot"
+    assert node.children[0].tag == "tr"
+
+
 # ── Fragment tests ──
 
 
