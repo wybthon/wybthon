@@ -111,7 +111,7 @@ from .store import create_optimistic_store, create_projection, create_store, rec
 # Pure-Python VDOM data structures are available in any environment.
 from .vnode import Fragment, VNode, dynamic, h, is_getter
 
-__version__ = "0.28.0"
+__version__ = "0.29.0"
 
 _IN_BROWSER = False
 try:
