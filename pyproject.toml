@@ -25,6 +25,7 @@ classifiers = [
   "Environment :: WebAssembly",
   "Framework :: AsyncIO",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+  "Typing :: Typed",
 ]
 dependencies = []
 
@@ -66,6 +67,9 @@ Changelog = "https://github.com/wybthon/wybthon/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+wybthon = ["py.typed"]
 
 [tool.setuptools]
 license-files = ["LICENSE*"]
