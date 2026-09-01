@@ -15,19 +15,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: "3.12"
 
       - name: Install package
-        run: pip install -e .
+        run: uv sync --locked
 
       - name: Run benchmark
-        run: python benchmarks/bench_runner.py --memory
+        run: uv run python benchmarks/bench_runner.py --memory
 
       - name: Run benchmark (JSON)
-        run: python benchmarks/bench_runner.py --memory --json > bench_results.json
+        run: uv run python benchmarks/bench_runner.py --memory --json > bench_results.json
 
       - name: Upload results
         if: always()
@@ -45,33 +46,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: "3.12"
-          cache: pip
 
       - name: Install package and Playwright
-        run: |
-          pip install -e .
-          pip install playwright
+        run: uv sync --locked --group dev
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-bench-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-playwright-bench-${{ hashFiles('uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-playwright-bench-
 
       - name: Install Playwright browsers
-        run: python -m playwright install --with-deps chromium
+        run: uv run playwright install --with-deps chromium
 
       - name: Run browser benchmark
         # Explicit bash shell enables pipefail so a benchmark crash is not
         # masked by tee's exit code.
         shell: bash
-        run: python benchmarks/browser_bench.py --json | tee browser_bench_results.json
+        run: uv run python benchmarks/browser_bench.py --json | tee browser_bench_results.json
 
       - name: Upload results
         if: always()

@@ -6,21 +6,24 @@ Thanks for your interest in contributing. Wybthon is an experimental client-side
 
 Development uses Python ≥ 3.10.
 
+Wybthon manages its environment and dependencies with [uv](https://docs.astral.sh/uv/). Install uv, then:
+
 ```bash
 # clone
 git clone https://github.com/wybthon/wybthon.git
 cd wybthon
 
-# install package (editable) and dev tooling
-pip install -e .
-pip install -r requirements.txt   # currently: black
+# create .venv and install the package (editable) with dev tooling
+uv sync --group dev
 
 # format code
-black src
+uv run black src
 
 # run the unit tests
-pytest -q
+uv run pytest -q
 ```
+
+`uv sync` creates `.venv` and installs everything from `pyproject.toml`, so there's no separate virtual environment step. Pass `--locked` to make it fail when `uv.lock` is stale, which is what CI does.
 
 ## Project layout (high-level)
 
@@ -46,7 +49,7 @@ pytest -q
 
 ## Coding guidelines
 
-- **Style**: Black (see `requirements.txt`) plus Ruff (`ruff check .`).
+- **Style**: Black plus Ruff (`uv run ruff check .`); both ship in the `dev` dependency group.
 - **Naming**: prefer explicit, descriptive names; keep browser/runtime constraints in mind.
 - **Structure**: separate pure logic from DOM interop; keep render/diff paths lean.
 - **Examples**: keep docs examples minimal and reproducible; larger demo apps live in standalone repos under the [wybthon organization](https://github.com/wybthon).
@@ -59,8 +62,10 @@ pytest -q
 Common commands:
 
 ```bash
-black src
-wyb dev --dir .
+uv run black src
+uv run wyb dev --dir .
+uv run pytest -q
+./scripts/check.sh   # everything ci.yml runs, in order
 ```
 
 ## Conventional Commits
@@ -130,7 +135,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `warnings` – development mode warnings and error reporting
 
 - Other scopes:
-  - `deps` – dependency updates and version pins (e.g., `requirements.txt`)
+  - `deps` – dependency updates and version pins (e.g., `pyproject.toml`, `uv.lock`)
   - `mkdocs` – documentation site (MkDocs/Material) configuration and content under `docs/`
   - `pyproject` – `pyproject.toml` packaging/build metadata
   - `repo` – repository metadata and top-level files (e.g., `README.md`, `CONTRIBUTING.md`, `LICENSE`, `.gitignore`)

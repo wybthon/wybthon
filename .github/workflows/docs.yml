@@ -14,16 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: '3.11'
       - name: Install docs deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[docs]"
+        run: uv sync --locked --group docs
       - name: Build site
-        run: |
-          python -m mkdocs build --strict
+        run: uv run mkdocs build --strict
       - name: Deploy to GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
