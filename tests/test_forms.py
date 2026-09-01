@@ -4,7 +4,10 @@ from wybthon import (
     bind_select,
     bind_text,
     email,
+    error_message_attrs,
     form_state,
+    min_length,
+    on_submit,
     on_submit_validated,
     required,
     rules_from_schema,
@@ -89,6 +92,64 @@ def test_validate_form_and_a11y_attrs():
     is_valid2, errors2 = validate_form(form, rules)
     assert is_valid2 is True
     assert errors2["name"] is None
+
+
+def test_on_submit_calls_handler_and_prevents_default():
+    form = form_state({"name": "Alice"})
+    called = {"count": 0, "form": None}
+
+    def handler(f):
+        called["count"] += 1
+        called["form"] = f
+
+    submit = on_submit(handler, form)
+
+    evt = DummyEvent()
+    submit(evt)
+
+    assert called["count"] == 1
+    assert called["form"] is form
+
+
+def test_bind_text_with_validators_updates_error():
+    form = form_state({"name": ""})
+    name_field = form["name"]
+
+    bind = bind_text(name_field, validators=[required(), min_length(3)])
+
+    evt = DummyEvent(value="ab")
+    bind["on_input"](evt)
+    assert name_field.error.get() == "Minimum length is 3"
+
+    evt = DummyEvent(value="Alice")
+    bind["on_input"](evt)
+    assert name_field.error.get() is None
+
+
+def test_error_message_attrs_returns_polite_live_region():
+    attrs = error_message_attrs(id="name-err")
+    assert attrs["id"] == "name-err"
+    assert attrs["role"] == "alert"
+    assert attrs["aria-live"] == "polite"
+
+
+def test_rules_from_schema_uses_custom_messages():
+    form = form_state({"name": "", "email": "bad"})
+    schema = {
+        "name": {"required": "Name is required", "min_length": 3, "min_length_message": "Name is too short"},
+        "email": {"email": "Bad email address"},
+    }
+    rules = rules_from_schema(schema)
+
+    is_valid, errors = validate_form(form, rules)
+    assert is_valid is False
+    assert errors["name"] == "Name is required"
+    assert errors["email"] == "Bad email address"
+
+    form["name"].value.set("ab")
+    is_valid2, errors2 = validate_form(form, rules)
+    assert is_valid2 is False
+    assert errors2["name"] == "Name is too short"
 
 
 def test_on_submit_validated_calls_handler_only_when_valid():
