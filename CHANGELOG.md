@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.29.0 (2026-08-31)
+
+### Features
+
+- **html**: Add element helpers for tags the template engine supports
+  ([#17](https://github.com/wybthon/wybthon/pull/17),
+  [`0c53810`](https://github.com/wybthon/wybthon/commit/0c538104e655f2182f984d951775ff85a2ebc33b))
+
+Refs: #11
+
+### Refactoring
+
+- Remove bundled demo app in favor of demo repos ([#15](https://github.com/wybthon/wybthon/pull/15),
+  [`5130e2a`](https://github.com/wybthon/wybthon/commit/5130e2af1ac2c4497f3f4e08c48f1fe9a54cab64))
+
+
 ## v0.28.0 (2026-08-24)
 
 ### Documentation
