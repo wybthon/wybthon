@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.30.0 (2026-09-01)
+
+### Features
+
+- **package,pyproject**: Ship py.typed marker per PEP 561
+  ([#24](https://github.com/wybthon/wybthon/pull/24),
+  [`892d941`](https://github.com/wybthon/wybthon/commit/892d94153f4e607a4b0e515fe3ff6311eb797dc1))
+
+Refs: #18
+
+
 ## v0.29.0 (2026-08-31)
 
 ### Features
