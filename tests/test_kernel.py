@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_create_element_op(wyb):
     """CREATE_ELEMENT produces the expected stub-DOM state after commit()."""
     kernel = wyb["kernel"]

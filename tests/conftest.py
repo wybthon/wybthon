@@ -1,372 +1,219 @@
-"""Shared test fixtures for Wybthon browser/VDOM tests.
-
-Provides in-memory DOM stub classes and pytest fixtures that install fake
-``js`` / ``pyodide`` modules into ``sys.modules``, making it possible to
-test the VDOM reconciler, signals, components, and other browser-dependent
-modules without a real browser environment.
-"""
-
-import importlib
-import sys
-from html.parser import HTMLParser
-from types import ModuleType
-
-import pytest
-
-# ---------------------------------------------------------------------------
-# DOM stub classes
-# ---------------------------------------------------------------------------
-
-
-class StubClassList:
-    def __init__(self):
-        self._set = set()
-
-    def add(self, name):
-        self._set.add(name)
-
-    def remove(self, name):
-        self._set.discard(name)
-
-    def contains(self, name):
-        return name in self._set
-
-
-class StubStyle:
-    def __init__(self):
-        self._props = {}
-
-    def setProperty(self, name, value):
-        self._props[name] = str(value)
-
-    def removeProperty(self, name):
-        self._props.pop(name, None)
-
-
-class StubNode:
-    """In-memory stub for a browser DOM node."""
-
-    def __init__(self, tag=None, text=None):
-        self.tag = tag
-        self.nodeValue = text
-        self._is_text = text is not None
-        self.parentNode = None
-        self.childNodes = []
-        self.attributes = {}
-        self.classList = StubClassList()
-        self.style = StubStyle()
-        self.value = ""
-        self.checked = False
-
-    @property
-    def nextSibling(self):
-        if self.parentNode is None:
-            return None
-        try:
-            idx = self.parentNode.childNodes.index(self)
-        except ValueError:
-            return None
-        return self.parentNode.childNodes[idx + 1] if idx + 1 < len(self.parentNode.childNodes) else None
-
-    @property
-    def firstChild(self):
-        return self.childNodes[0] if self.childNodes else None
-
-    def appendChild(self, node):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        self.childNodes.append(node)
-        return node
-
-    def insertBefore(self, node, anchor):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        if anchor is None:
-            self.childNodes.append(node)
-            return node
-        try:
-            idx = self.childNodes.index(anchor)
-        except ValueError:
-            self.childNodes.append(node)
-            return node
-        self.childNodes.insert(idx, node)
-        return node
-
-    def removeChild(self, node):
-        try:
-            self.childNodes.remove(node)
-            node.parentNode = None
-        except ValueError:
-            pass
-        return node
-
-    def setAttribute(self, name, value):
-        self.attributes[name] = str(value)
-
-    def getAttribute(self, name):
-        return self.attributes.get(name)
-
-    def removeAttribute(self, name):
-        self.attributes.pop(name, None)
-
-
-_VOID_TAGS = {
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-}
-
-
-class _StubHTMLParser(HTMLParser):
-    """Minimal HTML parser building StubNode trees (backs template.innerHTML)."""
-
-    def __init__(self, root):
-        super().__init__(convert_charrefs=True)
-        self._stack = [root]
-
-    def _add_element(self, tag, attrs):
-        node = StubNode(tag=tag)
-        for name, value in attrs:
-            value = "" if value is None else value
-            node.setAttribute(name, value)
-            if name == "class":
-                for cls in value.split():
-                    node.classList.add(cls)
-            elif name == "style":
-                for decl in value.split(";"):
-                    if ":" in decl:
-                        k, v = decl.split(":", 1)
-                        node.style.setProperty(k.strip(), v.strip())
-        self._stack[-1].appendChild(node)
-        return node
-
-    def handle_starttag(self, tag, attrs):
-        node = self._add_element(tag, attrs)
-        if tag not in _VOID_TAGS:
-            self._stack.append(node)
-
-    def handle_startendtag(self, tag, attrs):
-        self._add_element(tag, attrs)
-
-    def handle_endtag(self, tag):
-        if len(self._stack) > 1:
-            self._stack.pop()
-
-    def handle_data(self, data):
-        if data:
-            self._stack[-1].appendChild(StubNode(text=data))
-
-    def handle_comment(self, data):
-        node = StubNode(text=data)
-        node._is_comment = True
-        self._stack[-1].appendChild(node)
-
-
-class StubTemplate(StubNode):
-    """Stub for `<template>`: parses innerHTML into a content fragment."""
-
-    def __init__(self):
-        super().__init__(tag="template")
-        self.content = StubNode(tag="#fragment")
-
-    @property
-    def innerHTML(self):
-        return ""
-
-    @innerHTML.setter
-    def innerHTML(self, html):
-        self.content.childNodes = []
-        if html:
-            parser = _StubHTMLParser(self.content)
-            parser.feed(html)
-            parser.close()
-
-
-class StubDocument:
-    """In-memory stub for the browser ``document`` object."""
-
-    def __init__(self):
-        self._listeners = {}
-
-    def createElement(self, tag):
-        if tag == "template":
-            return StubTemplate()
-        return StubNode(tag=tag)
-
-    def createTextNode(self, text):
-        return StubNode(text=str(text))
-
-    def createComment(self, text=""):
-        node = StubNode(text=str(text))
-        node._is_comment = True
-        return node
-
-    def addEventListener(self, event_type, proxy):
-        self._listeners.setdefault(event_type, set()).add(proxy)
-
-    def removeEventListener(self, event_type, proxy):
-        s = self._listeners.get(event_type)
-        if s is not None and proxy in s:
-            s.remove(proxy)
-
-    def querySelector(self, sel):
-        return StubNode(tag="div")
-
-    def querySelectorAll(self, sel):
-        return []
-
-
-# ---------------------------------------------------------------------------
-# Module stub management
-# ---------------------------------------------------------------------------
-
-_STUB_MODULE_NAMES = ("js", "pyodide", "pyodide.ffi")
-
-
-def install_browser_stubs():
-    """Install fake ``js`` and ``pyodide`` modules into ``sys.modules``.
-
-    Returns ``(saved_modules_dict, stub_document)`` so callers can restore
-    later via :func:`restore_modules`.
-    """
-    saved = {name: sys.modules.get(name) for name in _STUB_MODULE_NAMES}
-
-    js_mod = ModuleType("js")
-    doc = StubDocument()
-    js_mod.document = doc
-    js_mod.fetch = lambda url: None
-    sys.modules["js"] = js_mod
-
-    pyodide_mod = ModuleType("pyodide")
-    ffi_mod = ModuleType("pyodide.ffi")
-    ffi_mod.create_proxy = lambda fn: fn
-    sys.modules["pyodide"] = pyodide_mod
-    sys.modules["pyodide.ffi"] = ffi_mod
-    setattr(pyodide_mod, "ffi", ffi_mod)
-
-    return saved, doc
-
-
-def restore_modules(saved):
-    """Restore original ``sys.modules`` entries from a saved dict."""
-    for name, mod in saved.items():
-        if mod is None:
-            sys.modules.pop(name, None)
-        else:
-            sys.modules[name] = mod
-
-
-def reload_wybthon_modules(doc=None):
-    """Reload all browser-dependent wybthon submodules against current stubs.
-
-    Reloading ``kernel`` resets the op buffer, id counter, and backend;
-    when `doc` is provided a fresh :class:`wybthon.kernel.PythonBackend`
-    is installed so ops apply to the current stub document.
-
-    Returns a dict with keys ``kernel``, ``dom``, ``reconciler``,
-    ``component``, ``events``, ``context``, ``reactivity`` (and more)
-    pointing to the freshly reloaded module objects.
-    """
-    mods = {}
-    for name in ("kernel", "dom", "events", "reconciler"):
-        mod = importlib.import_module(f"wybthon.{name}")
-        importlib.reload(mod)
-        mods[name] = mod
-    for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template", "loading"):
-        mods[name] = importlib.import_module(f"wybthon.{name}")
-    if doc is not None:
-        kernel = mods["kernel"]
-        kernel.set_backend(kernel.PythonBackend(doc))
-    # Reloading ``kernel`` rebinds its module-level ``commit``; point the
-    # reactivity scheduler's cached reference at the fresh one and drop
-    # any effect queues left over from a previous test.
-    reactivity = mods["reactivity"]
-    reactivity._kernel_commit = mods["kernel"].commit
-    reactivity._reset_scheduler_for_tests()
-    return mods
-
-
-# ---------------------------------------------------------------------------
-# Tree traversal helpers
-# ---------------------------------------------------------------------------
-
-
-def collect_texts(node):
-    """Recursively collect all text-node values from a :class:`StubNode` tree."""
-    out = []
-    if getattr(node, "_is_text", False):
-        out.append(node.nodeValue)
-    for ch in getattr(node, "childNodes", []):
-        out.extend(collect_texts(ch))
-    return out
-
-
-def texts_of_children(node):
-    """Return the text content of each direct child of *node*.
-
-    Handles both plain text nodes and element nodes whose first child is text.
-    """
-    out = []
-    for child in node.childNodes:
-        if child.childNodes:
-            t = child.childNodes[0].nodeValue
-        else:
-            t = child.nodeValue
-        out.append(t)
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Pytest fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def browser_stubs():
-    """Install fake browser modules and tear them down after the test.
-
-    Yields ``(saved_modules, stub_document)``.
-    """
-    saved, doc = install_browser_stubs()
-    try:
-        yield saved, doc
-    finally:
-        restore_modules(saved)
-
-
-@pytest.fixture()
-def wyb(browser_stubs):
-    """Install browser stubs, reload wybthon modules, and yield a namespace.
-
-    The yielded dict has keys: ``kernel``, ``dom``, ``component``,
-    ``events``, ``context``, ``reactivity``, ``props``, ``reconciler``.
-    A fresh ``PythonBackend`` over the stub document is installed so
-    batched DOM ops apply to the in-memory tree.
-    """
-    _saved, doc = browser_stubs
-    return reload_wybthon_modules(doc)
-
-
-@pytest.fixture()
-def root_element(wyb):
-    """Create a fresh :class:`StubNode` container wrapped in ``wybthon.dom.Element``."""
-    return wyb["dom"].Element(node=StubNode(tag="div"))
+def test_create_element_op(wyb):
+    """CREATE_ELEMENT produces the expected stub-DOM state."""
+    kernel = wyb["kernel"]
+    node_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node_id, "div"))
+
+    # get_node() automatically calls commit()
+    node = kernel.get_node(node_id)
+    assert node is not None
+    assert node.tag == "div"
+
+
+def test_set_attr_removes_with_none(wyb):
+    """SET_ATTR with None removes the attribute."""
+    kernel = wyb["kernel"]
+    node_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node_id, "div"))
+    kernel.emit((kernel.OP_SET_ATTR, node_id, "id", "my-div"))
+
+    node = kernel.get_node(node_id)
+    assert node.getAttribute("id") == "my-div"
+
+    # Remove the attribute
+    kernel.emit((kernel.OP_SET_ATTR, node_id, "id", None))
+    node = kernel.get_node(node_id)
+    assert node.getAttribute("id") is None
+
+
+def test_insert_with_none_anchor_appends(wyb):
+    """INSERT with a None anchor appends to the parent."""
+    kernel = wyb["kernel"]
+    parent_id = kernel.alloc_id()
+    child_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, parent_id, "div"))
+    kernel.emit((kernel.OP_CREATE_ELEMENT, child_id, "span"))
+    kernel.emit((kernel.OP_INSERT, parent_id, child_id, None))
+
+    parent = kernel.get_node(parent_id)
+    child = kernel.get_node(child_id)
+    assert child in parent.childNodes
+
+
+def test_remove_op(wyb):
+    """REMOVE deletes the node from its parent."""
+    kernel = wyb["kernel"]
+    parent_id = kernel.alloc_id()
+    child_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, parent_id, "div"))
+    kernel.emit((kernel.OP_CREATE_ELEMENT, child_id, "span"))
+    kernel.emit((kernel.OP_INSERT, parent_id, child_id, None))
+
+    kernel.emit((kernel.OP_REMOVE, child_id))
+    parent = kernel.get_node(parent_id)
+    child = kernel.get_node(child_id)
+    assert child not in parent.childNodes
+
+
+def test_create_and_set_text(wyb):
+    """CREATE_TEXT and SET_TEXT modify a text node's value."""
+    kernel = wyb["kernel"]
+    text_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_TEXT, text_id, "hello"))
+    node = kernel.get_node(text_id)
+    assert node.nodeValue == "hello"
+
+    kernel.emit((kernel.OP_SET_TEXT, text_id, "world"))
+    node = kernel.get_node(text_id)
+    assert node.nodeValue == "world"
+
+
+def test_set_prop(wyb):
+    """SET_PROP applies a DOM property assignment."""
+    kernel = wyb["kernel"]
+    input_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, input_id, "input"))
+    kernel.emit((kernel.OP_SET_PROP, input_id, "value", "test-val"))
+
+    node = kernel.get_node(input_id)
+    assert node.value == "test-val"
+
+
+def test_set_style(wyb):
+    """SET_STYLE applies a style property, and None removes it."""
+    kernel = wyb["kernel"]
+    div_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, div_id, "div"))
+    kernel.emit((kernel.OP_SET_STYLE, div_id, {"color": "red", "margin": "10px"}))
+
+    node = kernel.get_node(div_id)
+    assert node.style._props.get("color") == "red"
+
+    # Remove color
+    kernel.emit((kernel.OP_SET_STYLE, div_id, {"color": None}))
+    node = kernel.get_node(div_id)
+    assert "color" not in node.style._props
+    assert node.style._props.get("margin") == "10px"
+
+
+def test_insert_with_anchor(wyb):
+    """INSERT with a real anchor places the child before the anchor."""
+    kernel = wyb["kernel"]
+    parent_id = kernel.alloc_id()
+    child1_id = kernel.alloc_id()
+    child2_id = kernel.alloc_id()
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, parent_id, "div"))
+    kernel.emit((kernel.OP_CREATE_ELEMENT, child1_id, "span"))
+    kernel.emit((kernel.OP_CREATE_ELEMENT, child2_id, "b"))
+
+    kernel.emit((kernel.OP_INSERT, parent_id, child1_id, None))
+    # Insert child2 BEFORE child1
+    kernel.emit((kernel.OP_INSERT, parent_id, child2_id, child1_id))
+
+    parent = kernel.get_node(parent_id)
+    child1 = kernel.get_node(child1_id)
+    child2 = kernel.get_node(child2_id)
+
+    # child2 should be first
+    assert parent.childNodes == [child2, child1]
+
+
+def test_register_and_clone_tpl(wyb):
+    """REGISTER_TPL and CLONE_TPL assign dense id blocks in pre-order."""
+    kernel = wyb["kernel"]
+    html = "<div><span></span>hello</div>"
+
+    # template_id() automatically emits OP_REGISTER_TPL if unseen
+    tpl_id = kernel.template_id(html)
+
+    # 3 nodes: div, span, text
+    count = 3
+    first_id = kernel.alloc_ids(count)
+
+    kernel.emit((kernel.OP_CLONE_TPL, first_id, count, tpl_id))
+
+    div = kernel.get_node(first_id)
+    span = kernel.get_node(first_id + 1)
+    txt = kernel.get_node(first_id + 2)
+
+    assert div.tag == "div"
+    assert span.tag == "span"
+    assert txt.nodeValue == "hello"
+
+
+def test_listen_unlisten_refcounting(wyb):
+    """Root listener is installed/removed based on active listener counts."""
+    kernel = wyb["kernel"]
+    node1_id = kernel.alloc_id()
+    node2_id = kernel.alloc_id()
+    backend = kernel._backend
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node1_id, "button"))
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node2_id, "button"))
+
+    # First listener installs root
+    kernel.emit((kernel.OP_LISTEN, node1_id, "click"))
+    kernel.commit()
+    assert "click" in backend._root_listeners
+
+    # Second listener doesn't break it
+    kernel.emit((kernel.OP_LISTEN, node2_id, "click"))
+    kernel.commit()
+
+    # Unlisten first, root remains
+    kernel.emit((kernel.OP_UNLISTEN, node1_id, "click"))
+    kernel.commit()
+    assert "click" in backend._root_listeners
+
+    # Unlisten last, root removed
+    kernel.emit((kernel.OP_UNLISTEN, node2_id, "click"))
+    kernel.commit()
+    assert "click" not in backend._root_listeners
+
+
+def test_release_op(wyb):
+    """RELEASE drops registry entries and listener sets."""
+    kernel = wyb["kernel"]
+    node_id = kernel.alloc_id()
+    backend = kernel._backend
+
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node_id, "div"))
+    kernel.emit((kernel.OP_LISTEN, node_id, "click"))
+    kernel.commit()
+
+    assert node_id in backend._nodes
+    assert "click" in backend._root_listeners
+
+    # Release node
+    kernel.emit((kernel.OP_RELEASE, [node_id]))
+    kernel.commit()
+
+    assert node_id not in backend._nodes
+    assert "click" not in backend._root_listeners
+
+
+def test_reset_behavior(wyb):
+    """reset() clears buffers and resets id allocation counters."""
+    kernel = wyb["kernel"]
+    backend = kernel._backend
+
+    # Emit something to make the state dirty
+    node_id = kernel.alloc_id()
+    kernel.emit((kernel.OP_CREATE_ELEMENT, node_id, "div"))
+
+    # Reset while passing the backend back in so it remains functional
+    kernel.reset(backend=backend)
+
+    # id allocation should start back at 1, buffer should be empty
+    new_id = kernel.alloc_id()
+    assert new_id == 1
+    # Because _ops is a private module-level list alias, we check it via the kernel
+    assert len(kernel._ops) == 0
