@@ -1,9 +1,11 @@
+import importlib.metadata
 from io import BytesIO
 from pathlib import Path
 
 from wybthon.dev import (
     SSEHandler,
     _walk_files,
+    main,
     parse_mounts,
     translate_request_path,
 )
@@ -95,3 +97,14 @@ def test_parse_mounts_relative_and_absolute(tmp_path: Path):
     # Ensure leading slash added and relative path resolved
     assert ("/static", (base / "public").resolve()) in m
     assert ("/assets", (base / "public").resolve()) in m
+
+
+def test_version_flag_prints_package_version_and_exits(capsys):
+    expected = importlib.metadata.version("wybthon")
+    for flag in ("--version", "-V"):
+        try:
+            main(["dev", flag])
+            raise AssertionError(f"expected SystemExit for {flag}")
+        except SystemExit as exc:
+            assert exc.code == 0
+        assert capsys.readouterr().out.strip() == expected
