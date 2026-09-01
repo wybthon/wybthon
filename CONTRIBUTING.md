@@ -22,6 +22,16 @@ black src
 pytest -q
 ```
 
+## Claiming an issue
+
+To avoid duplicate work, claim an issue before you start on it:
+
+1. Check the issue's assignee and any linked pull requests. If either exists, the issue is taken.
+2. Comment on the issue to claim it and wait for a maintainer to assign it to you before opening a pull request.
+3. If you stop working on an assigned issue, leave a comment so it can be reassigned.
+
+Unsolicited pull requests for issues that are already assigned or already have an open pull request will be closed as duplicates, even if the work is good.
+
 ## Project layout (high-level)
 
 - `src/wybthon/`
