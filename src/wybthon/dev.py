@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import http.server
+import importlib.metadata
 import os
 import socketserver
 import threading
@@ -360,9 +361,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")
     pdev.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]), help="Root dir to serve")
-    pdev.add_argument("--host", default="127.0.0.1")
-    pdev.add_argument("--port", type=int, default=8000)
-    pdev.add_argument("--watch", nargs="*", default=["src"])
+    pdev.add_argument("--host", default="127.0.0.1", help="Bind address")
+    pdev.add_argument("--port", type=int, default=8000, help="Port to bind")
+    pdev.add_argument("--watch", nargs="*", default=["src"], help="Directories to watch for live reload (default: src)")
     pdev.add_argument(
         "--mount",
         action="append",
@@ -371,6 +372,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
     pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /app/)")
+    pdev.add_argument(
+        "--version", "-V", action="version", version=importlib.metadata.version("wybthon"), help="Show version and exit"
+    )
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":
