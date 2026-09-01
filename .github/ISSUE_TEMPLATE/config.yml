@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://wybthon.com
+    about: Guides, API reference, and the style guide.
+  - name: Contributing guide
+    url: https://github.com/wybthon/wybthon/blob/main/CONTRIBUTING.md
+    about: Read this before opening a pull request.
