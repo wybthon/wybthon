@@ -362,7 +362,7 @@ def _flush_effects() -> None:
             guard += 1
             if guard > _MAX_FLUSH_ITER:
                 raise RuntimeError(
-                    "Wybthon: reactive update did not stabilize " "(possible cyclic effect writing its own dependency)."
+                    "Wybthon: reactive update did not stabilize (possible cyclic effect writing its own dependency)."
                 )
             if ri < len(render_queue):
                 comp = render_queue[ri]
