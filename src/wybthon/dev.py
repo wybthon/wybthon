@@ -358,6 +358,13 @@ def main(argv: list[str] | None = None) -> int:
         Process exit code: `0` on success, non-zero on usage errors.
     """
     parser = argparse.ArgumentParser(prog="wyb", description="Wybthon dev server")
+    parser.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {importlib.metadata.version('wybthon')}",
+        help="Show version and exit",
+    )
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")
     pdev.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]), help="Root dir to serve")
@@ -372,9 +379,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
     pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /app/)")
-    pdev.add_argument(
-        "--version", "-V", action="version", version=importlib.metadata.version("wybthon"), help="Show version and exit"
-    )
 
     args = parser.parse_args(argv)
     if args.cmd == "dev":
