@@ -1,0 +1,59 @@
+name: Bug report
+description: Report something in Wybthon that isn't working.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. The more of this you can fill in, the faster it can be reproduced and fixed.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did and what went wrong, including any error or traceback.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: The smallest component or script that triggers the bug, plus the steps to run it. A link to a repo or gist is fine.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: wybthon-version
+    attributes:
+      label: Wybthon version
+      description: From `pip show wybthon`, or the commit SHA if you're running from source.
+      placeholder: "0.30.0"
+    validations:
+      required: true
+  - type: input
+    id: pyodide-version
+    attributes:
+      label: Pyodide version
+      placeholder: "0.27.5"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and OS
+      placeholder: "Chrome 128 on macOS 14"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, console output, or how often it reproduces.
+    validations:
+      required: false
