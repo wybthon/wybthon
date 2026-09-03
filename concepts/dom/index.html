@@ -964,6 +964,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Refs: holding onto an element">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ref-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ref shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ownership-and-disposal-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and disposal order
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -978,10 +1006,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#styles-and-dataset-via-vdom" class="md-nav__link">
+  <a href="#element-helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Styles and dataset via VDOM
+        Element helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#styles-and-dataset-via-the-vdom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Styles and dataset via the VDOM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering-into-an-existing-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering into an existing node
       
     </span>
   </a>
@@ -1079,6 +1129,8 @@
   
     
     
+      
+        
       
         
       
@@ -1427,6 +1479,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1715,6 +1795,8 @@
   
     
     
+      
+        
       
         
       
@@ -2074,6 +2156,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2678,6 +2788,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Refs: holding onto an element">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ref-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ref shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ownership-and-disposal-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and disposal order
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2692,10 +2830,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#styles-and-dataset-via-vdom" class="md-nav__link">
+  <a href="#element-helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Styles and dataset via VDOM
+        Element helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#styles-and-dataset-via-the-vdom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Styles and dataset via the VDOM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering-into-an-existing-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering into an existing node
       
     </span>
   </a>
@@ -2747,51 +2907,175 @@
 
 
 <h1 id="dom-interop">DOM interop<a class="headerlink" href="#dom-interop" title="Permanent link">&para;</a></h1>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a> is Wybthon's thin wrapper around browser DOM nodes. It provides ergonomic helpers for attributes, classes, styles, and queries while still giving you the raw <code>element</code> for any escape hatches you need. For events, use the delegated <code>on_*</code> props (see <a href="../events/">Events</a>); for non-bubbling event types, attach a native listener via <code>ref.current.element.addEventListener</code> with a Pyodide proxy.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.dom</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a> is Wybthon's thin wrapper around browser
+DOM nodes. It provides helpers for attributes, classes, styles, and
+queries while still giving you the raw <code>element</code> for any escape hatch
+you need. For events, use the delegated <code>on_*</code> props (see
+<a href="../events/">Events</a>); for non-bubbling event types, attach a native
+listener via <code>ref.current.element.addEventListener</code> with a Pyodide
+proxy.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">root</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">"#app"</span><span class="p">,</span> <span class="n">existing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">div</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">"div"</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">div</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">div</span><span class="o">.</span><span class="n">append_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">box</span> <span class="o">=</span> <span class="n">Element</span><span class="p">(</span><span class="s2">"div"</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">box</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">box</span><span class="o">.</span><span class="n">append_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 </span></code></pre></div>
-<p>You rarely need to instantiate <code>Element</code> directly when authoring components; the renderer creates and manages elements for you. Use it when you need to bridge to imperative DOM APIs (focus management, scrolling, third-party widgets) or when you receive a node back from a <code>ref</code>.</p>
+<p>You rarely instantiate <code>Element</code> yourself when authoring components;
+the renderer creates and manages nodes for you. Reach for it when you
+need to bridge to imperative DOM APIs (focus management, scrolling,
+measuring, third-party widgets) or when you receive a node back from a
+<code>ref</code> or an event.</p>
 <h2 id="refs-holding-onto-an-element">Refs: holding onto an element<a class="headerlink" href="#refs-holding-onto-an-element" title="Permanent link">&para;</a></h2>
-<p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> is a small mutable container that the renderer fills with the mounted <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a>. Pass <code>ref=</code> to any host element and read <code>ref.current</code> inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a> to interact with the underlying node.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_mount</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">input_</span><span class="p">,</span> <span class="n">div</span>
+<p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> is a small mutable container that the renderer
+fills with the mounted <code>Element</code>. Pass <code>ref=</code> to any host element and
+read <code>ref.current</code> after mount:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_settled</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">input_</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@component</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">AutoFocusInput</span><span class="p">():</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">ref</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="nd">@on_mount</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_focus</span><span class="p">():</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>            <span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">focus</span><span class="p">():</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>            <span class="n">ref</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="n">focus</span><span class="p">)</span>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">"Focus me"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">))</span>
 </span></code></pre></div>
-<p>Because the ref is populated after mount, never read <code>ref.current</code> from the component body during initial render. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a>, an effect, or an event handler instead.</p>
+<p>Refs are assigned while the element mounts and reset to <code>None</code> when it
+unmounts. Read them in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a> (which runs
+after the first commit), in an effect, or in an event handler, never
+at the top of the component body during initial render.</p>
+<h3 id="ref-shapes">Ref shapes<a class="headerlink" href="#ref-shapes" title="Permanent link">&para;</a></h3>
+<p>The <code>ref</code> prop accepts three shapes:</p>
+<ul>
+<li>A <code>Ref</code> object: <code>ref.current</code> is set on mount and cleared on unmount.</li>
+<li>A callable: <code>ref(element)</code> is called once on mount. It isn't called again on unmount, so pair it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> if you need teardown.</li>
+<li>A list or tuple mixing both: every entry is assigned. This is how a component forwards a parent's ref while keeping one of its own:</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_settled</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">input_</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nd">@component</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">return</span> <span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">[</span><span class="n">local</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">peek</span><span class="p">()])</span>
+</span></code></pre></div>
+<p>Refs pass through components like any other prop; there's no special
+forwarding API. A <code>None</code> entry in the list is ignored.</p>
+<h2 id="ownership-and-disposal-order">Ownership and disposal order<a class="headerlink" href="#ownership-and-disposal-order" title="Permanent link">&para;</a></h2>
+<p>Refs follow the ownership tree. A component's <code>ref.current</code> is set from
+the first commit until the component unmounts. During unmount the
+component's own cleanups run first, then its host nodes' refs are
+cleared, then the freed node ids are released to the kernel. So an
+<code>on_cleanup</code> registered in the component body can still reach
+<code>ref.current</code> to tear down a native listener or a third-party widget.
+Materializing <code>ref.current.element</code> at that point commits the pending
+remove op, so the node may already be detached from the document; use
+it for teardown, not for measurements. Cleanups that run later (for
+example ones registered by an ancestor) see <code>ref.current is None</code>, so
+guard for it. See <a href="../lifecycle/">Lifecycle and ownership</a>.</p>
 <h2 id="how-the-renderer-relates-to-element">How the renderer relates to <code>Element</code><a class="headerlink" href="#how-the-renderer-relates-to-element" title="Permanent link">&para;</a></h2>
-<p>The renderer itself never touches raw DOM nodes or <code>Element</code> wrappers. Every host VNode is identified by an integer node id, and all mutations (create, insert, set-attr, listen) are emitted as compact operations into a command buffer that a small JavaScript kernel applies in one bridge crossing per commit.</p>
-<p><code>Element</code> sits <em>on top</em> of that system as the escape hatch for imperative work:</p>
+<p>The renderer itself never touches raw DOM nodes or <code>Element</code> wrappers.
+Every host VNode is identified by an integer node id, and all mutations
+(create, insert, set-attr, listen) are emitted as compact operations
+into a command buffer that a small JavaScript kernel applies in one
+bridge crossing per commit. See <a href="../vdom/">Virtual DOM</a>.</p>
+<p><code>Element</code> sits on top of that system as the escape hatch for imperative
+work:</p>
 <ul>
-<li>An <code>Element</code> can be backed by a raw DOM node (when you construct one yourself) or by a kernel node id (what the renderer hands out through <code>ref=</code> and <code>evt.current_target</code>).</li>
+<li>An <code>Element</code> can be backed by a raw DOM node (when you construct one yourself, or wrap one with <code>Element(node=...)</code>) or by a kernel node id (what the renderer hands out through <code>ref=</code> and <code>evt.current_target</code>).</li>
 <li>Id-backed elements materialize the raw node lazily: the first <code>element</code> access commits any pending batched ops, then fetches the node from the kernel's registry, so what you see always reflects every queued mutation.</li>
-<li>Query helpers (<code>Element.query</code>, <code>find</code>, ...) also commit pending ops first, so nodes created earlier in the same update are visible.</li>
+<li><code>node_id</code> goes the other way: it registers a raw-node-backed element with the kernel so the renderer can target it. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> uses this when you pass an <code>Element</code> container.</li>
+<li>Query helpers (<code>Element.query</code>, <code>Element.query_all</code>, <code>find</code>, <code>find_all</code>) also commit pending ops first, so nodes created earlier in the same update are visible.</li>
 </ul>
-<p>Because commits happen automatically at these boundaries, imperative work through a ref stays in sync with the framework's bookkeeping.</p>
-<h2 id="styles-and-dataset-via-vdom">Styles and dataset via VDOM<a class="headerlink" href="#styles-and-dataset-via-vdom" title="Permanent link">&para;</a></h2>
+<p>Because commits happen automatically at these boundaries, imperative
+work through a ref stays in sync with the framework's bookkeeping.</p>
+<div class="admonition warning">
+<p class="admonition-title">Don't fight the renderer</p>
+<p>Attributes, classes, and children that the renderer owns should be
+driven by reactive bindings, not by <code>Element</code> calls. The next
+reconciliation only patches what changed on the VNode, so it won't
+notice manual edits and may leave them in place, or overwrite them
+unexpectedly. Use <code>Element</code> for things the renderer doesn't manage:
+focus, selection, scroll position, measurements, and third-party
+widgets that own their subtree.</p>
+</div>
+<h2 id="element-helpers">Element helpers<a class="headerlink" href="#element-helpers" title="Permanent link">&para;</a></h2>
+<p>The wrapper mirrors familiar DOM names:</p>
+<table>
+<thead>
+<tr>
+<th>Helper</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>element</code></td>
+<td>The raw JS node (materialized lazily).</td>
+</tr>
+<tr>
+<td><code>value</code>, <code>checked</code>, <code>files</code></td>
+<td>Form-control state, readable and (for <code>value</code>, <code>checked</code>) writable.</td>
+</tr>
+<tr>
+<td><code>set_text</code>, <code>set_html</code>, <code>load_html</code></td>
+<td>Replace content. <code>set_html</code> bypasses diffing and doesn't sanitize.</td>
+</tr>
+<tr>
+<td><code>set_attr</code>, <code>get_attr</code>, <code>remove_attr</code></td>
+<td>Attribute access.</td>
+</tr>
+<tr>
+<td><code>set_style(dict_or_kwargs)</code></td>
+<td>Calls <code>style.setProperty</code> per entry.</td>
+</tr>
+<tr>
+<td><code>add_class</code>, <code>remove_class</code>, <code>toggle_class</code>, <code>has_class</code></td>
+<td><code>classList</code> shortcuts.</td>
+</tr>
+<tr>
+<td><code>append</code>, <code>append_to</code>, <code>remove</code></td>
+<td>Tree manipulation for nodes you own.</td>
+</tr>
+<tr>
+<td><code>Element.query</code>, <code>Element.query_all</code>, <code>find</code>, <code>find_all</code></td>
+<td>Selector queries (commit pending ops first).</td>
+</tr>
+<tr>
+<td><code>attach_ref(ref)</code></td>
+<td>Store this element on <code>ref.current</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="styles-and-dataset-via-the-vdom">Styles and dataset via the VDOM<a class="headerlink" href="#styles-and-dataset-via-the-vdom" title="Permanent link">&para;</a></h2>
+<p>You usually don't need <code>Element</code> for styling:</p>
 <ul>
-<li>Use the <code>style</code> prop with a dict of camelCase keys; the VDOM converts to kebab-case and calls <code>style.setProperty</code>. Missing keys on update are removed. Passing <code>None</code> clears previous styles.</li>
-<li>Use the <code>dataset</code> prop with a dict; entries render as <code>data-*</code> attributes. Missing keys on update are removed. Passing <code>None</code> clears previous dataset entries.</li>
+<li>The <code>style</code> prop takes a dict with camelCase or snake_case keys (<code>background_color</code>, <code>fontSize</code>); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing <code>None</code> clears earlier styles. Values may be accessors, and a raw style string is accepted too.</li>
+<li>The <code>dataset</code> prop takes a dict; entries render as <code>data-*</code> attributes and missing keys on update are removed. Keyword props like <code>data_testid="x"</code> also work.</li>
+<li><code>class_</code> accepts a string, a list of strings, a <code>{name: truthy_or_accessor}</code> dict, or an accessor returning any of those.</li>
 </ul>
+<h2 id="rendering-into-an-existing-node">Rendering into an existing node<a class="headerlink" href="#rendering-into-an-existing-node" title="Permanent link">&para;</a></h2>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render(vnode, container)</code></a> accepts an <code>Element</code>
+container and returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt;" href="../../api/wybthon/#wybthon.Root"><code>Root</code></a>. Call <code>root.dispose()</code> to
+unmount, run every cleanup, and clear the container's kernel bookkeeping:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span><span class="p">,</span> <span class="n">render</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">),</span> <span class="n">Element</span><span class="p">(</span><span class="s2">"#app"</span><span class="p">,</span> <span class="n">existing</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">root</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../events/">Events</a> for how delegated handlers attach to elements.</li>
 <li>See <a href="../forms/">Forms</a> for accessible patterns built on top of <code>Element</code>.</li>
+<li>Browse the <a href="../../api/dom/"><code>dom</code></a> API reference.</li>
 </ul>
 
 

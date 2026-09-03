@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1623,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -1983,6 +2015,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -3166,64 +3226,93 @@ the function returns <code>None</code>.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>router_core</code> contains the <em>browser-agnostic</em> path matching engine used
-by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;router&lt;/span&gt;" href="../router/#wybthon.router"><code>wybthon.router</code></a>. It exposes:</p>
-<ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteSpec&lt;/span&gt;
+<p><code>router_core</code> is the browser-agnostic matcher behind
+<a href="../router/"><code>wybthon.router</code></a>. It compiles route patterns to regular
+expressions, matches them against a pathname, and picks the most
+specific match. It has no browser dependency, so it runs in unit tests,
+tooling, and on a server.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="#wybthon.router_core.resolve"><code>resolve</code></a></td>
+<td><code>resolve(routes, pathname, base_path="")</code> returns <code>(route, {"params": {...}})</code> or <code>None</code>.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteSpec&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.router_core.RouteSpec"><code>RouteSpec</code></a>: a normalized route
-  description used internally by <code>Route</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="#wybthon.router_core.resolve"><code>resolve</code></a>: match a path against a list
-  of route specs and return the matched chain plus extracted params.</li>
-</ul>
-<p>You don't usually call this module directly. Write <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
+  &lt;/span&gt;" href="#wybthon.router_core.RouteSpec"><code>RouteSpec</code></a></td>
+<td>Minimal <code>path</code> plus <code>children</code> dataclass for pure-Python tests; any object with those attributes works, including <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../wybthon/#wybthon.Route"><code>Route</code></a>
-declarations and let <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../wybthon/#wybthon.Router"><code>Router</code></a> resolve them. Use
-<code>router_core</code> if you need to test routing logic outside a browser
-environment or build custom navigation tooling.</p>
+  &lt;/span&gt;" href="../wybthon/#wybthon.Route"><code>Route</code></a>.</td>
+</tr>
+</tbody>
+</table>
 <h4 id="path-patterns">Path patterns<a class="headerlink" href="#path-patterns" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
 <th>Pattern</th>
 <th>Matches</th>
-<th>Notes</th>
+<th>Params</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>/users</code></td>
 <td><code>/users</code></td>
-<td>Static segment.</td>
+<td><code>{}</code></td>
 </tr>
 <tr>
 <td><code>/users/:id</code></td>
 <td><code>/users/42</code></td>
-<td><code>:id</code> becomes a string param.</td>
+<td><code>{"id": "42"}</code></td>
 </tr>
 <tr>
-<td><code>/files/*splat</code></td>
-<td><code>/files/a/b/c</code></td>
-<td>Splat captures the remainder as a single string.</td>
+<td><code>/docs/*</code></td>
+<td><code>/docs</code>, <code>/docs/intro</code>, <code>/docs/a/b</code></td>
+<td><code>{"wildcard": None}</code> or <code>{"wildcard": "intro"}</code></td>
 </tr>
 <tr>
-<td><code>/(public|private)</code></td>
-<td><code>/public</code> or <code>/private</code></td>
-<td>Alternation works in the underlying regex.</td>
+<td><code>/files/*/raw</code></td>
+<td><code>/files/a/b/raw</code></td>
+<td><code>{"wildcard": "a/b"}</code></td>
 </tr>
 </tbody>
 </table>
-<p>Param values are URL-decoded before being passed to components.</p>
+<p>Nested <code>children</code> join their paths with the parent's (a child path
+starting with <code>/</code> is absolute). When several routes match, the longest
+full pattern wins. <code>base_path</code> is stripped before matching; a pathname
+outside the base returns <code>None</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router_core</span><span class="w"> </span><span class="kn">import</span> <span class="n">RouteSpec</span><span class="p">,</span> <span class="n">resolve</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">RouteSpec</span><span class="p">(</span><span class="s2">"/"</span><span class="p">),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">RouteSpec</span><span class="p">(</span><span class="s2">"/users"</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="n">RouteSpec</span><span class="p">(</span><span class="s2">":id"</span><span class="p">)]),</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">RouteSpec</span><span class="p">(</span><span class="s2">"/docs/*"</span><span class="p">),</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">]</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">resolve</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="s2">"/users/42"</span><span class="p">)</span>            <span class="c1"># (RouteSpec(path=':id', ...), {"params": {"id": "42"}})</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">resolve</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="s2">"/docs/intro/setup"</span><span class="p">)</span>    <span class="c1"># (..., {"params": {"wildcard": "intro/setup"}})</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">resolve</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="s2">"/app/users/7"</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">"/app"</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">resolve</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="s2">"/missing"</span><span class="p">)</span>             <span class="c1"># None</span>
+</span></code></pre></div>
+<p>Param values are the raw matched segments; the browser router decodes
+query strings separately.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;router&lt;/span&gt;" href="../router/#wybthon.router"><code>router</code></a>: the browser-side router and components.</li>
+<li><a href="../router/">Router</a>: <code>Route</code>, <code>Router</code>, <code>Link</code>, and navigation</li>
 <li><a href="../../concepts/router/">Concepts: Router</a></li>
 <li><a href="../../examples/router/">Examples: Router</a></li>
 </ul>

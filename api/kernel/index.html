@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1623,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2125,6 +2157,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.kernel.PythonBackend.roots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;roots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.kernel.PythonBackend.dispatch" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2296,10 +2339,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-op-protocol" class="md-nav__link">
+  <a href="#wire-protocol" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The op protocol
+        Wire protocol
       
     </span>
   </a>
@@ -2435,6 +2478,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -3235,6 +3306,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.kernel.PythonBackend.roots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;roots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.kernel.PythonBackend.dispatch" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3406,10 +3488,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-op-protocol" class="md-nav__link">
+  <a href="#wire-protocol" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The op protocol
+        Wire protocol
       
     </span>
   </a>
@@ -3971,6 +4053,14 @@ a browser.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;roots&lt;/span&gt; (&lt;code&gt;wybthon.kernel.PythonBackend.roots&lt;/code&gt;)" href="#wybthon.kernel.PythonBackend.roots">roots</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the registered delegation roots (test helper).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dispatch&lt;/span&gt; (&lt;code&gt;wybthon.kernel.PythonBackend.dispatch&lt;/code&gt;)" href="#wybthon.kernel.PythonBackend.dispatch">dispatch</a></code></td>
               <td>
                 <div class="doc-md-description">
@@ -4131,6 +4221,26 @@ a browser.</p>
     <div class="doc doc-contents ">
 
         <p>Return the raw event passed to the in-flight <code>dispatch</code>, or <code>None</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.kernel.PythonBackend.roots" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">roots</span>
+
+
+<a href="#wybthon.kernel.PythonBackend.roots" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">roots</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the registered delegation roots (test helper).</p>
 
 
     </div>
@@ -4447,23 +4557,47 @@ skeletons, so they must be re-sent on next use.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>kernel</code> is the single point of contact between Wybthon's renderer and
-the real DOM. The reconciler, prop appliers, and event system never
-call DOM APIs; they emit compact operations (JSON-serializable tuples
-against integer node ids) into a buffer that <code>commit()</code> flushes to the
-active backend in one Python-to-JS bridge crossing.</p>
-<p>Two backends implement the protocol:</p>
-<ul>
-<li><code>BrowserBackend</code> drives the real DOM through a small JavaScript
-  kernel evaluated once in the page. The kernel owns the id-to-node
-  registry, the registered template protos (parsed once, cloned per
-  mount), and native event delegation.</li>
-<li><code>PythonBackend</code> is a reference interpreter that applies the same ops
-  to any DOM-like stub document. The unit tests and the stubbed
-  benchmark run the full wire protocol through it, so protocol bugs
-  surface without a browser.</li>
-</ul>
-<h4 id="the-op-protocol">The op protocol<a class="headerlink" href="#the-op-protocol" title="Permanent link">&para;</a></h4>
+<p><code>kernel</code> is the single point of contact between the renderer and the
+real DOM. The reconciler, prop appliers, and event system emit compact
+ops (JSON-serializable tuples against integer node ids) into a buffer;
+<code>commit()</code> hands the whole buffer to the active backend in one
+Python-to-JS bridge crossing. Application code never imports this
+module; it matters when you're writing tests against the stub backend
+or debugging the wire protocol.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;commit&lt;/span&gt;" href="#wybthon.kernel.commit"><code>commit</code></a></td>
+<td>Flush every queued op to the backend in one crossing (no-op when empty).</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BrowserBackend&lt;/span&gt;" href="#wybthon.kernel.BrowserBackend"><code>BrowserBackend</code></a></td>
+<td>Drives the real DOM through the embedded JS kernel; created automatically in Pyodide.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;PythonBackend&lt;/span&gt;" href="#wybthon.kernel.PythonBackend"><code>PythonBackend</code></a></td>
+<td>Reference interpreter applying the same ops to a DOM-like stub document (used by the unit tests and the stubbed benchmark).</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_backend&lt;/span&gt;" href="#wybthon.kernel.set_backend"><code>set_backend</code></a></td>
+<td>Install a backend (tests pass a <code>PythonBackend</code>).</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reset&lt;/span&gt;" href="#wybthon.kernel.reset"><code>reset</code></a></td>
+<td>Test helper: clear the op buffer, id counters, and template registry, optionally installing a backend.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="wire-protocol">Wire protocol<a class="headerlink" href="#wire-protocol" title="Permanent link">&para;</a></h4>
+<p>Each op is a JSON array whose first element is the opcode. Node ids are
+allocated on the Python side, so no <code>JsProxy</code> objects flow through the
+hot path; <code>None</code> anchors mean "append".</p>
 <table>
 <thead>
 <tr>
@@ -4479,6 +4613,11 @@ active backend in one Python-to-JS bridge crossing.</p>
 <td><code>document.createElement</code></td>
 </tr>
 <tr>
+<td><code>CREATE_ELEMENT_NS</code></td>
+<td><code>id, namespace, tag</code></td>
+<td><code>document.createElementNS</code> (SVG, MathML)</td>
+</tr>
+<tr>
 <td><code>CREATE_TEXT</code></td>
 <td><code>id, text</code></td>
 <td><code>document.createTextNode</code></td>
@@ -4486,7 +4625,7 @@ active backend in one Python-to-JS bridge crossing.</p>
 <tr>
 <td><code>CREATE_COMMENT</code></td>
 <td><code>id</code></td>
-<td><code>document.createComment</code></td>
+<td>Empty comment marker (fragment and hole anchors)</td>
 </tr>
 <tr>
 <td><code>REGISTER_TPL</code></td>
@@ -4506,7 +4645,7 @@ active backend in one Python-to-JS bridge crossing.</p>
 <tr>
 <td><code>REMOVE</code></td>
 <td><code>id</code></td>
-<td>Detach from parent</td>
+<td>Detach from the parent</td>
 </tr>
 <tr>
 <td><code>SET_TEXT</code></td>
@@ -4516,37 +4655,52 @@ active backend in one Python-to-JS bridge crossing.</p>
 <tr>
 <td><code>SET_ATTR</code></td>
 <td><code>id, name, value</code></td>
-<td><code>setAttribute</code> / <code>removeAttribute</code> (<code>None</code> removes)</td>
+<td><code>setAttribute</code>, or <code>removeAttribute</code> when <code>value</code> is <code>None</code></td>
 </tr>
 <tr>
 <td><code>SET_PROP</code></td>
 <td><code>id, name, value</code></td>
-<td>DOM property assignment (<code>value</code>, <code>checked</code>)</td>
+<td>DOM property assignment (<code>value</code>, <code>checked</code>, <code>innerHTML</code>)</td>
 </tr>
 <tr>
 <td><code>SET_STYLE</code></td>
 <td><code>id, decls</code></td>
-<td><code>style.setProperty</code> / <code>removeProperty</code> per declaration</td>
+<td><code>style.setProperty</code> / <code>removeProperty</code> per kebab-case declaration</td>
 </tr>
 <tr>
 <td><code>LISTEN</code> / <code>UNLISTEN</code></td>
-<td><code>id, type</code></td>
-<td>Delegated handler bookkeeping plus root-listener refcounts</td>
+<td><code>id, event_type</code></td>
+<td>Delegated handler bookkeeping plus per-root listener refcounts</td>
 </tr>
 <tr>
 <td><code>RELEASE</code></td>
 <td><code>[ids]</code></td>
 <td>Drop registry entries and listener sets for a retired subtree</td>
 </tr>
+<tr>
+<td><code>ROOT</code> / <code>UNROOT</code></td>
+<td><code>id</code></td>
+<td>Start or stop delegating events from this container instead of <code>document</code></td>
+</tr>
 </tbody>
 </table>
-<p>Application code never imports this module directly; it's plumbing for
-the reconciler, <code>wybthon.props</code>, and <code>wybthon.events</code>.</p>
+<p>Events travel the other way: the JS kernel installs one native listener
+per event type on each render root, walks the ancestor chain natively,
+and calls the Python dispatcher once per matched handler with a small
+JSON payload (see <a href="../events/">events</a>).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">kernel</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># In a CPython test, install the stub backend over any DOM-like document</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># (the test suite's conftest does this for you).</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">kernel</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">PythonBackend</span><span class="p">(</span><span class="n">stub_document</span><span class="p">))</span>
+</span></code></pre></div>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
+<li><a href="../reconciler/">Reconciler</a>: emits the ops</li>
+<li><a href="../template/">Template</a>: <code>REGISTER_TPL</code> and <code>CLONE_TPL</code> in practice</li>
+<li><a href="../events/">Events</a>: the Python half of delegation</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../template/#wybthon.template"><code>template</code></a>: the skeleton registration fast path.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../reconciler/#wybthon.reconciler"><code>reconciler</code></a>: emits the ops.</li>
+<li><a href="../../guides/testing/">Guides: Testing</a></li>
 </ul>
 
 

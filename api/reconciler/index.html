@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1320,6 +1322,34 @@
     
   
     Migrating from Solid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
   
 
     
@@ -1668,6 +1698,8 @@
       
         
       
+        
+      
     
     
     
@@ -1914,6 +1946,45 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Root
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Root">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root.node_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root.dispose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;dispose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.reconciler.render" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1963,17 +2034,6 @@
     <span class="md-ellipsis">
       
         What's in this module
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-responsibilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key responsibilities
       
     </span>
   </a>
@@ -2137,6 +2197,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2754,6 +2842,45 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Root
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Root">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root.node_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;node_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.reconciler.Root.dispose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;dispose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.reconciler.render" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2803,17 +2930,6 @@
     <span class="md-ellipsis">
       
         What's in this module
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-responsibilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key responsibilities
       
     </span>
   </a>
@@ -2892,36 +3008,27 @@
     <div class="doc doc-contents first">
 
         <p>Reconciliation engine: mounting, patching, and unmounting VNode trees.</p>
-<p>This module translates VNode trees into batched DOM operations. It
-never touches the DOM directly: every mutation is emitted as a compact
-op against an integer node id (see <code>wybthon.kernel</code>), and the whole
-buffer is applied in a single bridge crossing at commit time (end of
-<code>render</code>, end of each effect flush).</p>
+<p>Translates VNode trees into batched DOM operations. Nothing here touches
+the DOM directly: every mutation is emitted as a compact op against an
+integer node id (see <code>wybthon.kernel</code>), and the whole buffer is applied
+in one bridge crossing at commit time (the end of <code>render</code>, the DOM
+phase of every flush).</p>
 <p>Mental model:</p>
 <ul>
-<li><strong>Components run once.</strong> A function component is invoked a single time
-  during mount. Its returned VNode tree is mounted directly. Reactive
-  updates flow through <em>reactive holes</em> embedded in that tree, not by
-  re-running the component body.</li>
-<li><strong>Reactive holes</strong> are <code>_dynamic</code> VNodes whose <code>getter</code> is re-evaluated
-  by an effect when its dependencies change. They're created automatically
-  whenever a callable child or callable prop value appears in the tree,
-  and explicitly via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>.</li>
-<li><strong>Components return a VNode</strong> (or a value coercible to one). The
-  idiomatic style is to return a static tree and use <code>dynamic</code> for
-  explicit reactive subtrees; a returned zero-arg callable is also
-  accepted and is wrapped in a single reactive hole for convenience
-  (handy when authoring higher-order components).</li>
+<li><strong>Components run once.</strong> A component body is invoked a single time
+  during mount and its returned tree is mounted directly. Updates flow
+  through reactive holes and prop bindings embedded in that tree, never
+  by re-running the body.</li>
+<li><strong>Reactive holes</strong> are <code>_hole</code> VNodes whose expression runs inside a
+  render effect; when its dependencies change, only that region is
+  patched. Holes are created for every reactive expression in a child
+  position and explicitly with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../wybthon/#wybthon.hole"><code>hole</code></a>.</li>
+<li><strong>Namespaces are inferred.</strong> An <code>svg</code> or <code>math</code> element switches its
+  subtree to the SVG or MathML namespace (<code>foreignObject</code> switches back
+  to HTML), so SVG works with the same helpers as HTML.</li>
 </ul>
-<p>Public surface:</p>
-<ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>: top-level entry point.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;mount&lt;/span&gt;" href="#wybthon.reconciler.mount"><code>mount</code></a>: emit ops creating DOM for a new
-  VNode under a parent node id.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unmount&lt;/span&gt;" href="#wybthon.reconciler.unmount"><code>unmount</code></a>: tear down a VNode and its DOM.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;patch&lt;/span&gt;" href="#wybthon.reconciler.patch"><code>patch</code></a>: diff two VNodes and emit the
-  difference.</li>
-</ul>
+<p>Public surface: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>, plus the lower-level
+<code>mount</code>, <code>unmount</code>, and <code>patch</code> used by control-flow primitives.</p>
 
 
 
@@ -2930,6 +3037,27 @@ buffer is applied in a single bridge crossing at commit time (end of
 
 
 
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.Root&lt;/code&gt;)" href="#wybthon.reconciler.Root">Root</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A mounted application root returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -2947,7 +3075,7 @@ buffer is applied in a single bridge crossing at commit time (end of
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.render&lt;/code&gt;)" href="#wybthon.reconciler.render">render</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Render a VNode tree into a container element.</p>
+                  <p>Render a tree into a container element.</p>
                 </div>
               </td>
             </tr>
@@ -2955,7 +3083,7 @@ buffer is applied in a single bridge crossing at commit time (end of
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;mount&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.mount&lt;/code&gt;)" href="#wybthon.reconciler.mount">mount</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Emit ops mounting a VNode (or string) under the node <code>parent_id</code>.</p>
+                  <p>Emit ops mounting a VNode (or string) under <code>parent_id</code>.</p>
                 </div>
               </td>
             </tr>
@@ -2963,7 +3091,7 @@ buffer is applied in a single bridge crossing at commit time (end of
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unmount&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.unmount&lt;/code&gt;)" href="#wybthon.reconciler.unmount">unmount</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Unmount <code>vnode</code>, disposing its effects, ownership scope, and DOM.</p>
+                  <p>Unmount <code>vnode</code>: dispose its scopes and effects, then remove its DOM.</p>
                 </div>
               </td>
             </tr>
@@ -2992,6 +3120,157 @@ buffer is applied in a single bridge crossing at commit time (end of
 
 
 
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon.reconciler.Root" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Root</span>
+
+
+<a href="#wybthon.reconciler.Root" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Root</span><span class="p">(</span><span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt; (&lt;code&gt;wybthon.reactivity._core.Owner&lt;/code&gt;)" href="../reactivity/#wybthon.reactivity.Owner">Owner</a></span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A mounted application root returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.reconciler.Root.container">container</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The container <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.reconciler.Root.vnode">vnode</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The currently rendered root VNode.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dispose&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.Root.dispose&lt;/code&gt;)" href="#wybthon.reconciler.Root.dispose">dispose</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Unmount the tree, dispose every reactive scope, and stop event delegation.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.reconciler.Root.node_id" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">node_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.reconciler.Root.node_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Kernel node id of the container.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.reconciler.Root.dispose" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">dispose</span>
+
+
+<a href="#wybthon.reconciler.Root.dispose" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dispose</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Unmount the tree, dispose every reactive scope, and stop event delegation.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -3001,15 +3280,16 @@ buffer is applied in a single bridge crossing at commit time (end of
 
 
 <a href="#wybthon.reconciler.render" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.Root&lt;/code&gt;)" href="#wybthon.reconciler.Root">Root</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Render a VNode tree into a container element.</p>
-<p>Subsequent calls with the same <code>container</code> <em>patch</em> the existing tree
-in place; only the differences are applied. All emitted DOM ops are
-committed to the backend in one batch before this returns.</p>
+        <p>Render a tree into a container element.</p>
+<p>Mounts <code>vnode</code> under <code>container</code>, commits every buffered DOM op in
+one bridge crossing, and registers the container as an event
+delegation root. Rendering into the same container again patches the
+existing tree in place.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3028,11 +3308,12 @@ committed to the backend in one batch before this returns.</p>
                 <code>vnode</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The root VNode to render.</p>
+                <p>The root VNode (or a component call, string, list, or
+reactive expression; anything a component may return).</p>
               </div>
             </td>
             <td>
@@ -3044,12 +3325,12 @@ committed to the backend in one batch before this returns.</p>
                 <code>container</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a> wrapper, a CSS selector
-string identifying an existing DOM node, or a kernel node id.</p>
+                <p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../wybthon/#wybthon.Element"><code>Element</code></a>, a CSS selector for
+an existing DOM node, or a kernel node id.</p>
               </div>
             </td>
             <td>
@@ -3071,21 +3352,11 @@ string identifying an existing DOM node, or a kernel node id.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt; (&lt;code&gt;wybthon.reconciler.Root&lt;/code&gt;)" href="#wybthon.reconciler.Root">Root</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The wrapped container <code>Element</code>. Useful for chaining or for</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt; (&lt;code&gt;wybthon.dom.Element&lt;/code&gt;)" href="../dom/#wybthon.dom.Element">Element</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>retaining a reference to the mount point.</p>
+                <p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt;" href="../wybthon/#wybthon.Root"><code>Root</code></a>; call <code>.dispose()</code> to tear the app down.</p>
               </div>
             </td>
           </tr>
@@ -3095,9 +3366,10 @@ string identifying an existing DOM node, or a kernel node id.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">render</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">render</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello, world!"</span><span class="p">),</span> <span class="s2">"#app"</span><span class="p">)</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello, world!"</span><span class="p">),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3113,15 +3385,15 @@ string identifying an existing DOM node, or a kernel node id.</p>
 
 
 <a href="#wybthon.reconciler.mount" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">mount</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">],</span> <span class="n">parent_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">anchor_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">mount</span><span class="p">(</span><span class="n">vnode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">anchor_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ns</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Emit ops mounting a VNode (or string) under the node <code>parent_id</code>.</p>
-<p>When the VNode carries an <code>owner_scope</code> (set by <code>For</code>/<code>Repeat</code> for
-cached rows), mounting runs under that reactive owner so the row's
-effects survive later list updates.</p>
+        <p>Emit ops mounting a VNode (or string) under <code>parent_id</code>.</p>
+<p>When the VNode carries an <code>owner_scope</code> (set by list primitives for
+cached rows), mounting runs under that owner with tracking suspended,
+so the row's effects survive later list updates.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3140,7 +3412,7 @@ effects survive later list updates.</p>
                 <code>vnode</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Union&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3172,12 +3444,27 @@ effects survive later list updates.</p>
                 <code>anchor_id</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional id of the sibling node to insert before.
-When <code>None</code>, the new nodes are appended to the parent.</p>
+                <p>Optional sibling id to insert before (<code>None</code> appends).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ns</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Namespace of the parent (<code>None</code> for HTML).</p>
               </div>
             </td>
             <td>
@@ -3205,44 +3492,8 @@ When <code>None</code>, the new nodes are appended to the parent.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Unmount <code>vnode</code>, disposing its effects, ownership scope, and DOM.</p>
-<p>Calls cleanup on the owning component context (if any), removes
-delegated event handlers, runs <code>on_cleanup</code> callbacks, and removes
-the subtree's DOM. The removal itself is a handful of ops (one
-<code>REMOVE</code> per top-level node plus one <code>RELEASE</code> for the whole
-subtree), applied in a single commit.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>vnode</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The VNode to tear down. Safe to call on already-unmounted
-nodes (becomes a no-op).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+        <p>Unmount <code>vnode</code>: dispose its scopes and effects, then remove its DOM.</p>
+<p>Safe to call on already-unmounted nodes (a no-op).</p>
 
 
     </div>
@@ -3257,81 +3508,15 @@ nodes (becomes a no-op).</p>
 
 
 <a href="#wybthon.reconciler.patch" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">patch</span><span class="p">(</span><span class="n">old</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">],</span> <span class="n">new</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">patch</span><span class="p">(</span><span class="n">old</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">ns</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Diff <code>old</code> against <code>new</code> and emit minimal DOM ops under <code>parent_id</code>.</p>
-<p>Identical VNode instances (<code>old is new</code>, e.g. cached <code>For</code> rows) are
-skipped entirely. Same-type VNodes are patched in place (props and
-children diffed); different types are unmounted and remounted at the
-same position.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>old</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The previously-rendered VNode, or <code>None</code> for the initial
-mount.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>new</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The new VNode to render.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>parent_id</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Kernel id of the node that directly contains this
-VNode's DOM.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+<p>Identical instances (<code>old is new</code>, e.g. cached list rows) are skipped.
+VNodes with the same type and key are patched in place; a different
+type or key is unmounted and remounted at the same position.</p>
 
 
     </div>
@@ -3345,57 +3530,79 @@ VNode's DOM.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p>The reconciler walks a previous and next VDOM tree and emits the
-minimal set of DOM operations to bring the page into sync. It never
-touches the DOM directly: every mutation is a compact op against an
-integer node id (see <code>wybthon.kernel</code>), applied in one bridge crossing
-per commit. It handles keyed lists, fragments, components, text nodes,
-and reactive holes.</p>
-<p>Most users never call into this module directly. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>
-mounts a tree and the reconciler kicks in for subsequent updates. Read
-this page if you're contributing to Wybthon, debugging a diffing bug, or
-curious how holes plug into the patching loop.</p>
-<h4 id="key-responsibilities">Key responsibilities<a class="headerlink" href="#key-responsibilities" title="Permanent link">&para;</a></h4>
+<p>The reconciler turns VNode trees into batched DOM operations. It never
+touches the DOM directly: every mutation is an op against an integer
+node id (see <a href="../kernel/">kernel</a>), and the whole buffer is applied in
+one bridge crossing at commit time. Components run once; updates flow
+through reactive holes and prop bindings, each patching only its own
+region. Static subtrees mount through the <a href="../template/">template</a> fast
+path.</p>
 <table>
 <thead>
 <tr>
-<th>Concern</th>
-<th>How the reconciler handles it</th>
+<th>Name</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Mounting</td>
-<td>Static subtrees mount through the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../template/#wybthon.template"><code>template</code></a> fast path: one clone op per mount of a registered skeleton, instead of one op per node.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a></td>
+<td>Mount a tree into a container (<code>Element</code>, CSS selector, or node id) and return a <code>Root</code>. Rendering into the same container again patches in place.</td>
 </tr>
 <tr>
-<td>Element diffing</td>
-<td>Matches by <code>tag</code>. If tags differ, the old subtree unmounts.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt;" href="../wybthon/#wybthon.Root"><code>Root</code></a></td>
+<td>Handle returned by <code>render</code>; <code>.container</code>, <code>.vnode</code>, <code>.node_id</code>, and <code>.dispose()</code>.</td>
 </tr>
 <tr>
-<td>Children</td>
-<td>A three-pass O(n) match (identity, then key, then type) with a longest-increasing-subsequence move pass keeps DOM moves minimal.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;mount&lt;/span&gt;" href="#wybthon.reconciler.mount"><code>mount</code></a></td>
+<td>Lower level: emit ops mounting a VNode under a parent id, optionally before an anchor.</td>
 </tr>
 <tr>
-<td>Components</td>
-<td>A component's body runs once; the reconciler updates props on the existing component instance.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;patch&lt;/span&gt;" href="#wybthon.reconciler.patch"><code>patch</code></a></td>
+<td>Lower level: diff an old VNode against a new one and emit minimal ops.</td>
 </tr>
 <tr>
-<td>Reactive holes</td>
-<td>Each hole is an effect; the reconciler patches only the affected region when the signal updates.</td>
-</tr>
-<tr>
-<td>Cleanup</td>
-<td>Unmounting disposes the owner recursively and retires the whole subtree with one <code>REMOVE</code> per top-level node plus one <code>RELEASE</code> op.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unmount&lt;/span&gt;" href="#wybthon.reconciler.unmount"><code>unmount</code></a></td>
+<td>Lower level: dispose a VNode's scopes and effects, then remove its DOM.</td>
 </tr>
 </tbody>
 </table>
+<p><code>render</code> and <code>Root</code> are re-exported from <code>wybthon</code>; <code>mount</code>, <code>patch</code>,
+and <code>unmount</code> are for control-flow primitives and tests.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">render</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@component</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">title</span><span class="p">,</span> <span class="n">set_title</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Rendered once; the heading is a hole."</span><span class="p">))</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Tear everything down: unmounts the tree, disposes every reactive</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># scope, and stops event delegation on the container.</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">root</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
+<p>What happens inside <code>render</code>:</p>
+<ol>
+<li>The container is resolved to a kernel node id and registered as an
+   event-delegation root (<code>ROOT</code> op).</li>
+<li>The tree mounts under a fresh <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../wybthon/#wybthon.Owner"><code>Owner</code></a>; component
+   bodies run once, and holes and reactive props create render effects.</li>
+<li><code>flush()</code> commits staged writes, runs effects, and sends the op
+   buffer across the bridge once.</li>
+</ol>
+<p>Patching matches VNodes by type and key: a different tag or key
+unmounts and remounts at the same position (so <code>Leaf(key=user_id())</code>
+restarts its state when the id changes). Keyed children use an
+identity, key, then type match with a longest-increasing-subsequence
+move pass to keep DOM moves minimal. Errors raised during mount or in a
+hole route to the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../wybthon/#wybthon.Errored"><code>Errored</code></a> boundary.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;template&lt;/span&gt;" href="../template/#wybthon.template"><code>template</code></a>: the template-based mounting fast path.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;vnode&lt;/span&gt;" href="../vnode/#wybthon.vnode"><code>vnode</code></a>: the data structure being diffed.</li>
+<li><a href="../kernel/">Kernel</a>: the op protocol and backends</li>
+<li><a href="../template/">Template</a>: the static-skeleton mounting fast path</li>
+<li><a href="../vnode/">VNode</a>: the data structure being diffed</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
-<li><a href="../../concepts/lifecycle/">Concepts: Lifecycle and Ownership</a></li>
+<li><a href="../../concepts/lifecycle/">Concepts: Lifecycle and ownership</a></li>
 </ul>
 
 

@@ -18,7 +18,7 @@
         <link rel="prev" href="../dom/">
       
       
-        <link rel="next" href="../events/">
+        <link rel="next" href="../svg/">
       
       
         
@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1623,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2064,6 +2096,67 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#wybthon.html.element" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;element
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" element">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-in-this-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's in this module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naming rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#svg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SVG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2073,6 +2166,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2692,6 +2813,67 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#wybthon.html.element" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;element
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" element">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-in-this-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's in this module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naming rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#svg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SVG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2758,22 +2940,22 @@ hyperscript. Instead of writing:</p>
 <p>Children are positional arguments and props are keyword arguments.</p>
 <p>Prop name mapping (Python keyword to HTML attribute):</p>
 <ul>
-<li><code>class_</code> → <code>class</code> (the canonical reserved-word workaround).</li>
-<li><code>html_for</code> → <code>for</code> (Python reserved word).</li>
-<li>All other kwargs pass through unchanged.</li>
+<li><code>class_</code> becomes <code>class</code> and <code>html_for</code> becomes <code>for</code> (reserved words).</li>
+<li>Underscores become hyphens: <code>aria_label</code>, <code>data_testid</code>, <code>tabindex</code>
+  stays as is. Event handlers keep the <code>on_</code> prefix (<code>on_click</code>).</li>
+<li><code>True</code> sets a boolean attribute, <code>False</code> or <code>None</code> omits it.</li>
 </ul>
-<p>Each helper exported here (e.g., <code>div</code>, <code>p</code>, <code>button</code>, <code>input_</code>) is a
-thin wrapper that returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>. Two element
-names collide with Python builtins, so they're exposed with a trailing
-underscore: <code>main_</code> and <code>input_</code>.</p>
+<p>Each helper returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>. Two element names
+collide with Python builtins, so they're exposed with a trailing
+underscore: <code>main_</code> and <code>input_</code>. SVG elements live in
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;svg&lt;/span&gt;" href="../svg/#wybthon.svg"><code>wybthon.svg</code></a>.</p>
 
 
 <details class="see-also" open>
   <summary>See Also</summary>
   <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a>: the underlying hyperscript constructor.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a>: wrap a list of children with no
-  DOM parent.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a>: group children with no DOM parent.</li>
 </ul>
 </details>
 
@@ -2800,7 +2982,15 @@ underscore: <code>main_</code> and <code>input_</code>.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt; (&lt;code&gt;wybthon.html.Fragment&lt;/code&gt;)" href="#wybthon.html.Fragment">Fragment</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Group multiple children without adding an extra DOM wrapper element.</p>
+                  <p>Group children without adding a wrapper element.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt; (&lt;code&gt;wybthon.html.element&lt;/code&gt;)" href="#wybthon.html.element">element</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Create a helper <code>fn(*children, **props) -&gt; VNode</code> for any tag name.</p>
                 </div>
               </td>
             </tr>
@@ -2835,11 +3025,10 @@ underscore: <code>main_</code> and <code>input_</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Group multiple children without adding an extra DOM wrapper element.</p>
-<p>Fragments use empty comment nodes as start/end markers and mount their
-children directly into the parent container. This avoids extra
-elements that would pollute selectors like <code>:first-child</code> or affect
-layout.</p>
+        <p>Group children without adding a wrapper element.</p>
+<p>Fragments mount their children directly into the parent between two
+empty comment markers, so they never pollute selectors like
+<code>:first-child</code> or affect layout.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2862,9 +3051,7 @@ layout.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Either a sequence of children (<code>Fragment(a, b, c)</code>) or a
-single dict containing a <code>children</code> key (the form used when
-<code>Fragment</code> is called as <code>h(Fragment, {}, a, b, c)</code>).</p>
+                <p>Children. Lists and tuples are flattened.</p>
               </div>
             </td>
             <td>
@@ -2890,7 +3077,7 @@ single dict containing a <code>children</code> key (the form used when
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A <code>_fragment</code> VNode that the reconciler will mount inline.</p>
+                <p>A <code>_fragment</code> VNode.</p>
               </div>
             </td>
           </tr>
@@ -2901,9 +3088,32 @@ single dict containing a <code>children</code> key (the form used when
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">h</span><span class="p">(</span><span class="n">Fragment</span><span class="p">,</span> <span class="p">{},</span> <span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body text"</span><span class="p">))</span>  <span class="c1"># same thing</span>
 </span></code></pre></div>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.html.element" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">element</span>
+
+
+<a href="#wybthon.html.element" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">element</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a helper <code>fn(*children, **props) -&gt; VNode</code> for any tag name.</p>
+<p>Use it for custom elements or tags without a built-in helper:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">my_widget</span> <span class="o">=</span> <span class="n">element</span><span class="p">(</span><span class="s2">"my-widget"</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">my_widget</span><span class="p">(</span><span class="s2">"content"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"large"</span><span class="p">)</span>
+</span></code></pre></div>
+
 
     </div>
 
@@ -2915,7 +3125,81 @@ single dict containing a <code>children</code> key (the form used when
 
     </div>
 
-</div>
+</div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
+<p>One helper per common HTML element, each calling
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a> with children as positional arguments and props as
+keyword arguments, plus <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt;" href="../wybthon/#wybthon.element"><code>element()</code></a> for tags without a
+built-in helper. Every helper is also re-exported from <code>wybthon</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Helpers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layout</td>
+<td><code>div</code>, <code>span</code>, <code>section</code>, <code>article</code>, <code>aside</code>, <code>header</code>, <code>footer</code>, <code>main_</code>, <code>nav</code></td>
+</tr>
+<tr>
+<td>Headings and text</td>
+<td><code>h1</code> to <code>h6</code>, <code>p</code>, <code>a</code>, <code>strong</code>, <code>em</code>, <code>small</code>, <code>code</code>, <code>pre</code>, <code>br</code>, <code>hr</code>, <code>blockquote</code>, <code>mark</code>, <code>time</code></td>
+</tr>
+<tr>
+<td>Lists and tables</td>
+<td><code>ul</code>, <code>ol</code>, <code>li</code>, <code>table</code>, <code>thead</code>, <code>tbody</code>, <code>tfoot</code>, <code>tr</code>, <code>th</code>, <code>td</code>, <code>caption</code>, <code>colgroup</code>, <code>col</code></td>
+</tr>
+<tr>
+<td>Forms</td>
+<td><code>form</code>, <code>input_</code>, <code>textarea</code>, <code>select</code>, <code>option</code>, <code>optgroup</code>, <code>button</code>, <code>label</code>, <code>fieldset</code>, <code>legend</code>, <code>progress</code>, <code>meter</code></td>
+</tr>
+<tr>
+<td>Media and interactive</td>
+<td><code>img</code>, <code>video</code>, <code>audio</code>, <code>source</code>, <code>canvas</code>, <code>picture</code>, <code>track</code>, <code>details</code>, <code>summary</code>, <code>dialog</code>, <code>figure</code>, <code>figcaption</code></td>
+</tr>
+<tr>
+<td>Factory</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt;" href="../wybthon/#wybthon.element"><code>element(tag)</code></a> returns a helper for any tag name (custom elements included).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="naming-rules">Naming rules<a class="headerlink" href="#naming-rules" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>class_</code> becomes <code>class</code> and <code>html_for</code> becomes <code>for</code> (Python reserved words).</li>
+<li>Other underscores become hyphens: <code>aria_label</code>, <code>data_testid</code>, <code>stroke_width</code>.</li>
+<li><code>input_</code> and <code>main_</code> carry a trailing underscore because <code>input</code> and <code>main</code> collide with Python builtins.</li>
+<li>Event handlers keep the <code>on_</code> prefix: <code>on_click</code>, <code>on_input</code>.</li>
+<li><code>True</code> sets a boolean attribute (<code>disabled=True</code>); <code>False</code> or <code>None</code> omits it. See <a href="../props/">props</a> for the full value rules.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">a</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">main_</span><span class="p">,</span> <span class="n">p</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">my_widget</span> <span class="o">=</span> <span class="n">element</span><span class="p">(</span><span class="s2">"my-widget"</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">view</span> <span class="o">=</span> <span class="n">main_</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">html_for</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">input_</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">aria_label</span><span class="o">=</span><span class="s2">"Your name"</span><span class="p">),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Save"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">,</span> <span class="n">disabled</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">()),</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">class_</span><span class="o">=</span><span class="s2">"form-row"</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">data_testid</span><span class="o">=</span><span class="s2">"name-row"</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">),</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">p</span><span class="p">(</span><span class="s2">"Read the "</span><span class="p">,</span> <span class="n">a</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"https://wybthon.com/"</span><span class="p">),</span> <span class="s2">"."</span><span class="p">),</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">my_widget</span><span class="p">(</span><span class="s2">"custom element content"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"large"</span><span class="p">),</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="svg">SVG<a class="headerlink" href="#svg" title="Permanent link">&para;</a></h4>
+<p>SVG elements live in <a href="../svg/"><code>wybthon.svg</code></a> with the same calling
+convention. The reconciler infers the SVG namespace from the <code>svg</code> root,
+so an SVG subtree drops straight into an HTML tree. Names that clash
+with HTML helpers (<code>a</code>, <code>title</code>, <code>text</code>) carry their SVG meaning there.</p>
+<h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a> in <a href="../vnode/">vnode</a></li>
+<li><a href="../props/">Props</a>: attribute, property, class, and style semantics</li>
+<li><a href="../events/">Events</a>: <code>on_*</code> handler props</li>
+<li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
+</ul>
 
 
 

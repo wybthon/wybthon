@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/examples/">
       
       
-        <link rel="prev" href="../guides/migrating-from-solid/">
+        <link rel="prev" href="../guides/migrating-from-0-x/">
       
       
         <link rel="next" href="counter/">
@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1320,6 +1322,34 @@
     
   
     Migrating from Solid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
   
 
     
@@ -1727,6 +1757,8 @@
       
         
       
+        
+      
     
     
     
@@ -2041,6 +2073,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2681,7 +2741,7 @@
 
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<p>Walk through focused examples of the framework's core features. Each page is a self-contained walkthrough with runnable code and an explanation of the patterns it demonstrates.</p>
+<p>Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a Pyodide page (or a test) and an explanation of the patterns it demonstrates.</p>
 <table>
 <thead>
 <tr>
@@ -2692,32 +2752,32 @@
 <tbody>
 <tr>
 <td><a href="counter/">Counter</a></td>
-<td>Signals, derived values, and event handlers.</td>
+<td>Signals, memos, holes, and <code>Prop</code> defaults.</td>
 </tr>
 <tr>
 <td><a href="fetch/">Async fetch</a></td>
-<td>Async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary.</td>
+<td>Async <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary, refetching, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a>.</td>
 </tr>
 <tr>
 <td><a href="forms/">Forms</a></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/wybthon/#wybthon.form_state"><code>form_state</code></a> and accessibility-friendly bindings.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/wybthon/#wybthon.form_state"><code>form_state</code></a>, bindings, validation, and accessibility helpers.</td>
 </tr>
 <tr>
-<td><a href="errors/">Error boundary</a></td>
-<td>Recovering from render errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../api/wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a>.</td>
+<td><a href="errors/">Error handling</a></td>
+<td>Recovering from render and async errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../api/wybthon/#wybthon.Errored"><code>Errored</code></a>.</td>
 </tr>
 <tr>
 <td><a href="router/">Router</a></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../api/wybthon/#wybthon.Router"><code>Router</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../api/wybthon/#wybthon.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/wybthon/#wybthon.Link"><code>Link</code></a>, and dynamic params.</td>
+  &lt;/span&gt;" href="../api/wybthon/#wybthon.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/wybthon/#wybthon.Link"><code>Link</code></a>, params, and lazy routes.</td>
 </tr>
 <tr>
 <td><a href="authoring-patterns/">Authoring patterns</a></td>
-<td>Common idioms for building reusable components.</td>
+<td>Composition with <code>children</code>, lists with <code>For</code>, stores, actions, and cleanup.</td>
 </tr>
 </tbody>
 </table>
@@ -2731,7 +2791,7 @@ in the browser.</p>
 </div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Read the <a href="../concepts/primitives/">Concepts</a> section for the underlying mental model.</li>
+<li>Read the <a href="../concepts/mental-model/">Concepts</a> section for the underlying mental model.</li>
 <li>Browse the <a href="../api/wybthon/">API reference</a> when you need precise function signatures.</li>
 </ul>
 

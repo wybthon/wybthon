@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1623,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -1983,6 +2015,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2507,17 +2567,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-live-reload-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How live reload works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2925,17 +2974,6 @@
     <span class="md-ellipsis">
       
         What's in this module
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-live-reload-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How live reload works
       
     </span>
   </a>
@@ -3763,12 +3801,34 @@ omitted, defaults to <code>/</code>.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>dev</code> implements the simple threaded development server invoked by the
-<code>wyb dev</code> command. It serves static files from your project, mounts
-extra directories at custom URL prefixes, and exposes a Server-Sent
-Events (SSE) endpoint at <code>/__sse</code> for live reload.</p>
-<p>You usually run it via the CLI:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>app
+<p><code>dev</code> is the threaded development server behind the <code>wyb dev</code> command.
+It serves static files from your project, mounts extra directories at
+custom URL prefixes, exposes a <code>/__manifest</code> endpoint that lists <code>.py</code>
+files so bootstrap scripts can discover modules, and pushes a <code>reload</code>
+event over Server-Sent Events at <code>/__sse</code> when watched files change.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a></td>
+<td>CLI entry point (<code>wyb dev ...</code>).</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a></td>
+<td>Start the server programmatically with the same options.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SSEHandler&lt;/span&gt;" href="#wybthon.dev.SSEHandler"><code>SSEHandler</code></a></td>
+<td>The request handler: static files, <code>/__sse</code>, <code>/__manifest</code>, and no-cache headers.</td>
+</tr>
+</tbody>
+</table>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>app<span class="w"> </span>--open<span class="w"> </span>--open-path<span class="w"> </span>/app/
 </span></code></pre></div>
 <table>
 <thead>
@@ -3781,7 +3841,7 @@ Events (SSE) endpoint at <code>/__sse</code> for live reload.</p>
 <tbody>
 <tr>
 <td><code>--dir</code></td>
-<td><code>.</code></td>
+<td>repository root</td>
 <td>Root directory to serve.</td>
 </tr>
 <tr>
@@ -3801,26 +3861,31 @@ Events (SSE) endpoint at <code>/__sse</code> for live reload.</p>
 </tr>
 <tr>
 <td><code>--mount</code></td>
-<td><em>(none)</em></td>
-<td><code>path=/url/prefix</code> mount; can be repeated.</td>
+<td>none</td>
+<td><code>path=/url/prefix</code> mount; repeatable.</td>
+</tr>
+<tr>
+<td><code>--open</code></td>
+<td>off</td>
+<td>Open a browser to the server URL.</td>
+</tr>
+<tr>
+<td><code>--open-path</code></td>
+<td>none</td>
+<td>Path to open, such as <code>/app/</code>.</td>
 </tr>
 </tbody>
 </table>
-<h4 id="how-live-reload-works">How live reload works<a class="headerlink" href="#how-live-reload-works" title="Permanent link">&para;</a></h4>
-<ol>
-<li>The browser opens an <code>EventSource</code> to <code>/__sse</code>.</li>
-<li>The server walks <code>--watch</code> directories and notes file modification
-   times.</li>
-<li>When something changes, the server pushes a <code>reload</code> event over SSE.</li>
-<li>The page reloads itself in response.</li>
-</ol>
-<p>A tiny <code>EventSource</code> snippet in your <code>index.html</code> is all it takes to
-listen for these events; see the <a href="../../guides/dev-server/">dev server guide</a>.</p>
+<p>Live reload: the page opens an <code>EventSource</code> to <code>/__sse</code>; the server
+polls the <code>--watch</code> directories for modification-time changes and
+broadcasts <code>reload</code>; the page reloads itself. A small <code>EventSource</code>
+snippet in <code>index.html</code> is all that's needed; see the
+<a href="../../guides/dev-server/">dev server guide</a>.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../../getting-started/">Getting started</a>: installing and running the dev server.</li>
-<li><a href="../../guides/dev-server/">Dev server guide</a>: deeper walkthrough.</li>
-<li><a href="../../guides/deployment/">Deployment guide</a>: production hosting.</li>
+<li><a href="../../getting-started/">Getting started</a></li>
+<li><a href="../../guides/dev-server/">Guides: Dev server</a></li>
+<li><a href="../../guides/deployment/">Guides: Deployment</a></li>
 </ul>
 
 

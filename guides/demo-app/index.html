@@ -1008,6 +1008,8 @@
       
         
       
+        
+      
     
     
     
@@ -1097,6 +1099,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -1139,6 +1143,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1147,18 +1153,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#demo-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo Apps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Demo Apps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#running-a-demo-locally" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1168,8 +1162,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#how-the-demos-bootstrap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1177,11 +1171,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1416,6 +1405,34 @@
     
   
     Migrating from Solid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
   
 
     
@@ -1717,6 +1734,8 @@
   
     
     
+      
+        
       
         
       
@@ -2076,6 +2095,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2662,6 +2709,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2670,18 +2719,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#demo-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo Apps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Demo Apps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#running-a-demo-locally" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2691,8 +2728,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#how-the-demos-bootstrap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2700,11 +2737,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2752,9 +2784,7 @@
   
 
 
-  <h1>Demo Apps</h1>
-
-<h3 id="demo-apps">Demo Apps<a class="headerlink" href="#demo-apps" title="Permanent link">&para;</a></h3>
+<h1 id="demo-apps">Demo apps<a class="headerlink" href="#demo-apps" title="Permanent link">&para;</a></h1>
 <p>Wybthon's demo applications live in standalone repositories under the <a href="https://github.com/wybthon">wybthon GitHub organization</a>. Each is a complete static site: Python in the browser via Pyodide, no JavaScript build step, and each installs Wybthon from PyPI the same way your own app would.</p>
 <table>
 <thead>
@@ -2782,7 +2812,11 @@
 </tr>
 </tbody>
 </table>
-<h4 id="running-a-demo-locally">Running a demo locally<a class="headerlink" href="#running-a-demo-locally" title="Permanent link">&para;</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Versions</p>
+<p>The demos are separate repositories with their own release cadence. If a demo hasn't been updated for the current API yet, the <a href="../migrating-from-0-x/">migration guide</a> maps every old name to its replacement.</p>
+</div>
+<h2 id="running-a-demo-locally">Running a demo locally<a class="headerlink" href="#running-a-demo-locally" title="Permanent link">&para;</a></h2>
 <p>Every demo is a static site, so the workflow is the same:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/wybthon/demo-template.git
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>demo-template
@@ -2790,12 +2824,13 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--watch<span class="w"> </span>app<span class="w"> </span>--open
 </span></code></pre></div>
 <p>The <code>wyb dev</code> server provides hot reload over SSE; see the <a href="../dev-server/">dev server guide</a>.</p>
-<h4 id="how-the-demos-bootstrap">How the demos bootstrap<a class="headerlink" href="#how-the-demos-bootstrap" title="Permanent link">&para;</a></h4>
+<h2 id="how-the-demos-bootstrap">How the demos bootstrap<a class="headerlink" href="#how-the-demos-bootstrap" title="Permanent link">&para;</a></h2>
 <p>Each demo follows the same pattern:</p>
 <ul>
 <li><code>index.html</code> loads <code>bootstrap.js</code> as an ES module.</li>
 <li><code>bootstrap.js</code> loads Pyodide, installs Wybthon (from PyPI via <code>micropip</code>, or by copying source files into the Pyodide filesystem), copies the app package under <code>/app</code>, then calls <code>app.main.main()</code>.</li>
-<li>Folders under <code>app/</code> mirror routes and components.</li>
+<li><code>app/main.py</code> builds the root component and calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> into the page's mount point, typically wrapping the tree in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundaries around a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/wybthon/#wybthon.Router"><code>Router</code></a>.</li>
+<li>Folders under <code>app/</code> mirror routes and components, and route pages are often loaded with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> so the initial import stays small.</li>
 </ul>
 <p>The <a href="../pyodide/">Pyodide guide</a> covers the runtime details, including module loading and lazy imports.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1621,6 +1651,8 @@
   
     
     
+      
+        
       
         
       
@@ -1980,6 +2012,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2794,11 +2854,17 @@
 <p>If something isn't working as expected, scan this page for the symptom you're seeing. Each entry includes the most likely cause and a fix; expand for more detail.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <details class="bug">
+<summary><code>SyntaxError</code> or <code>TypeError</code> on import under an older Python</summary>
+<p><strong>Symptoms:</strong> importing <code>wybthon</code> in CPython fails with a syntax error mentioning <code>class Accessor[T]</code> or <code>type Validator = ...</code>, or <code>pip</code> refuses to install.</p>
+<p><strong>Likely cause:</strong> Wybthon requires Python 3.12 or newer (PEP 695 generics and the <code>type</code> statement). In the browser that means Pyodide 0.27 or newer (Python 3.12).</p>
+<p><strong>Fix:</strong> upgrade the interpreter (<code>uv python install 3.12</code> works well) and re-create your virtual environment. Pin a Pyodide release that ships Python 3.12+ in <code>index.html</code>.</p>
+</details>
+<details class="bug">
 <summary>Pyodide fails to load</summary>
 <p><strong>Symptoms:</strong> the page renders nothing; the browser console shows a network error or an <code>Importing pyodide failed</code> message.</p>
 <p><strong>Likely causes:</strong></p>
 <ul>
-<li>The CDN URL referenced from your <code>index.html</code> is unreachable (offline development, corporate firewall, ad-blocker).</li>
+<li>The CDN URL referenced from your <code>index.html</code> is unreachable (offline development, corporate firewall, ad blocker).</li>
 <li>You bumped the Pyodide version but the matching <code>pyodide.js</code> and <code>pyodide.asm.wasm</code> files weren't refreshed together.</li>
 </ul>
 <p><strong>Fix:</strong></p>
@@ -2811,27 +2877,62 @@
 <details class="bug">
 <summary><code>mkdocs build --strict</code> fails after updating docs</summary>
 <p><strong>Symptoms:</strong> the docs site builds locally with <code>mkdocs serve</code> but <code>mkdocs build --strict</code> fails.</p>
-<p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link) or an unused <code>nav</code> entry.</p>
-<p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (e.g., while a feature is in flight), turn the link into plain text or remove it.</p>
+<p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link, or a link to a name that was removed in the API overhaul) or an unused <code>nav</code> entry.</p>
+<p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (for example, while a feature is in flight), turn the link into plain text or remove it.</p>
 </details>
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
-<summary>A component reads a prop but doesn't update when the parent changes it</summary>
-<p><strong>Symptoms:</strong> Wybthon prints a <code>[wybthon] Warning: Component &lt;X&gt; unwrapped prop '&lt;name&gt;' during setup.</code> warning during the first render.</p>
-<p><strong>Likely cause:</strong> you called <code>my_prop()</code> in the component body before returning the VNode tree, freezing the value in a closure.</p>
-<p><strong>Fix:</strong> pass the accessor itself into the rendered tree (<code>span(my_prop)</code>) or wrap dependent expressions in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic(lambda: ...)</code></a>. See <code>warn_destructured_prop</code> in <code>wybthon._warnings</code> for the full explanation.</p>
+<summary><code>WriteInScopeError: Cannot write a signal inside a tracking scope</code></summary>
+<p><strong>Symptoms:</strong> a <code>WriteInScopeError</code> is raised from a <code>set_*</code> call made inside a memo body, a single-function <code>create_effect</code>, a reactive hole (a lambda in the tree), or a store setter called from one of those.</p>
+<p><strong>Likely cause:</strong> writing a signal from a tracking scope is almost always a bug: it either creates a feedback loop or hides a value that should be derived.</p>
+<p><strong>Fix:</strong> derive the value with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> (or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a> for stores) instead of writing it, or move the write into the untracked <code>apply</code> stage of a split effect, <code>create_effect(compute, apply)</code>, an event handler, or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>. The check only runs in dev mode, but leaving the write in place means the bug ships silently; fix it rather than calling <code>set_dev_mode(False)</code>.</p>
+</details>
+<details class="bug">
+<summary>A component reads a prop or signal but doesn't update</summary>
+<p><strong>Symptoms:</strong> the console shows <code>[wybthon] Warning: Component &lt;X&gt; read reactive value prop '&lt;name&gt;' at the top level of its body.</code> during the first render, and the value never changes afterwards.</p>
+<p><strong>Likely cause:</strong> you called <code>my_prop()</code> or <code>count()</code> in the component body before returning the tree. Components run once, so that read isn't tracked and its value is frozen.</p>
+<p><strong>Fix:</strong> put the accessor itself in the tree (<code>span(my_prop)</code>), wrap the expression in a zero-arg lambda (<code>span(lambda: my_prop().upper())</code>), or derive it with <code>create_memo</code>. If a one-time read is what you want (seeding local state, for example), make it explicit with <code>my_prop.peek()</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a>; both silence the warning.</p>
+</details>
+<details class="bug">
+<summary>My signal read shows the old value right after I set it</summary>
+<p><strong>Symptoms:</strong> <code>set_count(1); assert count() == 1</code> fails; <code>count()</code> still returns <code>0</code>.</p>
+<p><strong>Likely cause:</strong> writes are <strong>staged</strong>. The setter records the new value, and reads return the committed value until the next flush. In the browser that happens automatically (a microtask, and at the end of every event handler), but synchronous test code observes the state before the flush.</p>
+<p><strong>Fix:</strong> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> after your writes in tests and scripts. Inside a handler, use a functional update (<code>set_count(lambda n: n + 1)</code>) when the next write depends on the previous one; updaters see the staged value.</p>
+</details>
+<details class="bug">
+<summary>My effect didn't run when I created it</summary>
+<p><strong>Symptoms:</strong> <code>create_effect(lambda: print(count()))</code> prints nothing until something changes (or until you call <code>flush()</code>).</p>
+<p><strong>Likely cause:</strong> the first run of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a> is deferred to the effect phase of the next flush, after the DOM commit, so effects created in a component body observe the mounted DOM.</p>
+<p><strong>Fix:</strong> in tests, call <code>flush()</code> after creating the effect. In components, this is the behavior you want; use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a> for one-time post-mount work and <code>.peek()</code> for a synchronous read during setup.</p>
+</details>
+<details class="bug">
+<summary><code>NotReadyError: Async computation has no value yet</code></summary>
+<p><strong>Symptoms:</strong> calling an async memo (one whose body is <code>async def</code>) from an event handler, a component body, or plain script code raises <code>NotReadyError</code>. Or, in the tree, a hole that reads the memo renders nothing and no loading indicator appears.</p>
+<p><strong>Likely cause:</strong> the read happened before the memo produced its first value. Inside a hole, memo, or effect the framework handles this: the reader stays pending and the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary shows its fallback. Without a <code>Loading</code> above it, the hole simply stays empty until the value arrives; outside any tracking scope the exception surfaces to your code.</p>
+<p><strong>Fix:</strong> wrap the consuming subtree in <code>Loading(..., fallback=...)</code>. To read from imperative code, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a> (returns the stale value or <code>None</code>), guard with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a>, or <code>await resolve(memo)</code> in async code.</p>
+</details>
+<details class="bug">
+<summary><code>ContextNotFoundError</code> from <code>use_context</code></summary>
+<p><strong>Symptoms:</strong> <code>use_context(Theme)</code> raises <code>ContextNotFoundError: use_context(Context(Theme)) found no provider above the caller and the context has no default.</code></p>
+<p><strong>Likely causes:</strong></p>
+<ul>
+<li>The provider isn't an ancestor in the <em>reactive</em> tree: <code>Theme(value, *children)</code> must wrap the component that reads it.</li>
+<li><code>use_context</code> was called outside any reactive scope (module level, or after an <code>await</code> without restoring the owner).</li>
+<li>The context was created without a default.</li>
+</ul>
+<p><strong>Fix:</strong> move the provider above the reader; capture <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.get_owner"><code>get_owner</code></a> before an <code>await</code> and call <code>use_context</code> inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run_with_owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.run_with_owner"><code>run_with_owner</code></a>; or pass a <code>default=</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_context&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_context"><code>create_context</code></a> when a missing provider is acceptable.</p>
 </details>
 <details class="bug">
 <summary><code>For</code> rendered once and never updated</summary>
-<p><strong>Symptoms:</strong> the list renders correctly the first time, then stops responding to updates. The console shows <code>[wybthon] Warning: &lt;For&gt; received a plain list for</code>each=<code>.</code></p>
-<p><strong>Likely cause:</strong> you passed a Python list instead of a signal accessor for <code>each=</code>.</p>
-<p><strong>Fix:</strong> make <code>each</code> a signal accessor (typically the getter returned by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>) so the list reacts to updates. See <code>warn_each_plain_list</code> in <code>wybthon._warnings</code>.</p>
+<p><strong>Symptoms:</strong> the list renders correctly the first time, then stops responding to updates. The console shows <code>[wybthon] Warning: For received a plain list for</code>each=<code>.</code></p>
+<p><strong>Likely cause:</strong> you passed a Python list instead of an accessor for <code>each</code>.</p>
+<p><strong>Fix:</strong> pass the accessor (the getter from <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>, a memo, or a store list) so the list reacts to updates. If the row callback needs the item to be live, use <code>keyed=False</code> or a key function so it receives an item accessor.</p>
 </details>
 <details class="bug">
-<summary>An effect didn't run right after a signal write</summary>
-<p><strong>Symptoms:</strong> in a test or a plain Python script, you call a setter and then assert on the effect's side effect, but nothing has happened yet.</p>
-<p><strong>Likely cause:</strong> effects are batched. Signal writes apply immediately, but dependent effects run on the next scheduled flush. In the browser that happens automatically (on a microtask, and at the end of every Wybthon event handler), but synchronous test code observes the state before the flush.</p>
-<p><strong>Fix:</strong> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> after your writes to run pending effects now. Multiple writes coalesce into a single effect run per flush, so effects also can't fire more often than expected inside one handler.</p>
+<summary>An effect fires forever or <code>reactive update did not stabilize</code></summary>
+<p><strong>Symptoms:</strong> the browser freezes, or a <code>RuntimeError: Wybthon: reactive update did not stabilize</code> is raised from <code>flush()</code>.</p>
+<p><strong>Likely cause:</strong> an effect writes a signal it also reads, so every flush dirties it again.</p>
+<p><strong>Fix:</strong> split the effect into <code>create_effect(compute, apply)</code> so the write happens in the untracked <code>apply</code> stage against a value that doesn't feed back, or replace the effect with a memo.</p>
 </details>
 <h2 id="dom-and-events">DOM and events<a class="headerlink" href="#dom-and-events" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -2839,17 +2940,24 @@
 <p><strong>Symptoms:</strong> no console log, no state change.</p>
 <p><strong>Likely causes:</strong></p>
 <ul>
-<li>The prop name is misspelled. Wybthon expects <code>on_click</code>, <code>on_input</code>, <code>on_change</code>, etc.</li>
-<li>The element is covered by another element with <code>pointer-events: auto</code>.</li>
+<li>The prop name is misspelled. Wybthon expects <code>on_click</code>, <code>on_input</code>, <code>on_change</code>, and so on (<code>onClick</code> also works).</li>
+<li>The event type doesn't bubble (<code>focus</code>, <code>blur</code>, <code>mouseenter</code>, <code>scroll</code>); delegation only sees bubbling events.</li>
+<li>The element lives outside every container passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> (for example a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a> mounted into <code>body</code>), so no delegation root receives the event.</li>
 <li>The handler returns a coroutine without scheduling it; nothing happens but no error is raised.</li>
 </ul>
-<p><strong>Fix:</strong> confirm the prop name (Wybthon doesn't coerce <code>onclick</code> to <code>on_click</code>), inspect the DOM tree for overlays, and ensure async handlers are scheduled with <code>asyncio.create_task(...)</code> if they should run.</p>
+<p><strong>Fix:</strong> confirm the prop name, switch to a bubbling type (<code>focusin</code>, <code>mouseover</code>) or attach a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, keep portal targets inside a render container, and schedule async handlers with <code>asyncio.create_task(...)</code> or wrap them in an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>.</p>
 </details>
 <details class="bug">
 <summary><code>ref.current</code> is <code>None</code> when I read it</summary>
 <p><strong>Symptoms:</strong> <code>ref.current</code> is <code>None</code> inside the component body, but works inside a click handler.</p>
 <p><strong>Likely cause:</strong> you read the ref before the element mounted.</p>
-<p><strong>Fix:</strong> read the ref inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_mount&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_mount"><code>on_mount</code></a>, an effect, or an event handler; all of which run after the first commit.</p>
+<p><strong>Fix:</strong> read the ref inside <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, an effect, or an event handler; all of them run after the first commit.</p>
+</details>
+<details class="bug">
+<summary>A boolean attribute renders as <code>disabled=\"false\"</code></summary>
+<p><strong>Symptoms:</strong> the element stays disabled even though you passed <code>False</code>.</p>
+<p><strong>Likely cause:</strong> you passed the string <code>"false"</code> rather than the boolean.</p>
+<p><strong>Fix:</strong> pass a real boolean or an accessor returning one. <code>True</code> sets the attribute, <code>False</code> or <code>None</code> removes it; see <a href="../../api/props/">props</a>.</p>
 </details>
 <h2 id="dev-server">Dev server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -2865,18 +2973,19 @@
 <details class="bug">
 <summary>Files served as <code>text/plain</code> instead of <code>text/x-python</code></summary>
 <p><strong>Symptoms:</strong> Pyodide can't import your modules in production; the browser console shows a content-type warning.</p>
-<p><strong>Fix:</strong> configure your static host to serve <code>.py</code> files as <code>text/x-python</code> (see the <a href="../../guides/deployment/">deployment guide</a> for Netlify/Vercel/GitHub Pages snippets).</p>
+<p><strong>Fix:</strong> configure your static host to serve <code>.py</code> files as <code>text/x-python</code> (see the <a href="../../guides/deployment/">deployment guide</a> for Netlify, Vercel, and GitHub Pages snippets).</p>
 </details>
 <h2 id="when-all-else-fails">When all else fails<a class="headerlink" href="#when-all-else-fails" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Re-run <code>python -m pytest</code> to confirm the framework itself still works in your environment.</li>
-<li>Capture a minimal reproduction (preferably under <code>examples/</code>) and <a href="https://github.com/wybthon/wybthon/issues/new">open an issue</a>.</li>
-<li>Toggle <code>set_dev_mode(False)</code> (from <code>wybthon._warnings</code>) only after you've confirmed the warnings aren't pointing at a real bug.</li>
+<li>Re-run <code>python -m pytest tests -q</code> to confirm the framework itself still works in your environment.</li>
+<li>Capture a minimal reproduction and <a href="https://github.com/wybthon/wybthon/issues/new">open an issue</a>.</li>
+<li>Toggle <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> only after you've confirmed the warnings aren't pointing at a real bug.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Skim the <a href="../faq/">FAQ</a> for common questions.</li>
 <li>Read <a href="../../concepts/reactivity/">Reactivity</a> for a refresher on signals, effects, and reactive holes.</li>
+<li>See the <a href="../../guides/testing/">testing guide</a> for driving flushes and events in CPython.</li>
 </ul>
 
 

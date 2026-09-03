@@ -648,10 +648,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-four-big-ideas" class="md-nav__link">
+  <a href="#the-five-big-ideas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The four big ideas
+        The five big ideas
       
     </span>
   </a>
@@ -685,6 +685,17 @@
     <span class="md-ellipsis">
       
         How props become reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-virtual-dom-at-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a virtual DOM at all?
       
     </span>
   </a>
@@ -1133,6 +1144,8 @@
       
         
       
+        
+      
     
     
     
@@ -1460,6 +1473,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1748,6 +1789,8 @@
   
     
     
+      
+        
       
         
       
@@ -2107,6 +2150,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2703,10 +2774,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-four-big-ideas" class="md-nav__link">
+  <a href="#the-five-big-ideas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The four big ideas
+        The five big ideas
       
     </span>
   </a>
@@ -2740,6 +2811,17 @@
     <span class="md-ellipsis">
       
         How props become reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-virtual-dom-at-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a virtual DOM at all?
       
     </span>
   </a>
@@ -2812,71 +2894,80 @@
   
 
 
-<h1 id="mental-model">Mental Model<a class="headerlink" href="#mental-model" title="Permanent link">&para;</a></h1>
-<p>A short tour of how Wybthon thinks. Read this once and the rest of the docs will click into place.</p>
-<h2 id="the-four-big-ideas">The four big ideas<a class="headerlink" href="#the-four-big-ideas" title="Permanent link">&para;</a></h2>
+<h1 id="mental-model">Mental model<a class="headerlink" href="#mental-model" title="Permanent link">&para;</a></h1>
+<p>Wybthon is SolidJS for Python: the same fine-grained reactive model, a Pythonic API, and a renderer built for Pyodide. Read this page once and the rest of the docs will click into place.</p>
+<h2 id="the-five-big-ideas">The five big ideas<a class="headerlink" href="#the-five-big-ideas" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Run-once components.</strong> Function components execute exactly once at mount. They build a virtual DOM tree and return it. The body never re-runs because a prop or signal changed.</li>
-<li><strong>Fine-grained reactivity.</strong> Updates flow through small, isolated subscriptions called <em>reactive holes</em>. Only the DOM nodes that depend on a changed signal are patched.</li>
-<li><strong>Props are accessors.</strong> Every prop a component receives is a zero-argument callable. Calling it inside an effect or as a child creates a subscription; reading it inside the body without an effect captures only the current value.</li>
-<li><strong>Ownership tree, not parent re-renders.</strong> Effects, memos, cleanups, and context all attach to the <em>owner</em> established when a component is mounted. Disposing the owner cleans everything up; there's no "render cycle" to coordinate.</li>
+<li><strong>Signals are the source of truth.</strong> A signal is a <code>(getter, setter)</code> pair. Reading it inside a tracking scope subscribes that scope; writing it stages a change that becomes visible at the next flush. Every write batches; there's no <code>batch()</code>.</li>
+<li><strong>Derivations are lazy and glitch-free.</strong> A memo recomputes only when it's read after a source changed, and it notifies its observers only when its value actually changed. An <code>async def</code> memo is the data-fetching primitive.</li>
+<li><strong>Components run once.</strong> The body executes a single time when the component mounts and returns a tree. Every parameter is a <code>Prop[T]</code> accessor. Anything reactive lives in a hole, a memo, or an effect, never in the body itself.</li>
+<li><strong>Holes, not re-renders.</strong> A reactive expression placed in the tree becomes a <em>hole</em>: its own render effect that re-renders only its subtree. A signal change re-runs the holes that read it, never whole components.</li>
+<li><strong>Ownership, not lifecycle methods.</strong> Effects, memos, cleanups, and context attach to the <em>owner</em> that was active when they were created. Disposing the owner tears everything down depth-first.</li>
 </ol>
 <h2 id="the-data-flow">The data flow<a class="headerlink" href="#the-data-flow" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart LR
-    A[Signal] --&gt;|notifies| B[Effect / Memo]
-    B --&gt;|updates| C[Reactive Hole]
-    C --&gt;|patches| D[DOM]</code></pre>
+    A[Signal write] --&gt;|staged| B[Flush]
+    B --&gt;|render phase| C[Holes and prop bindings]
+    C --&gt;|batched ops| D[JS kernel commits DOM]
+    D --&gt;|effect phase| E[create_effect]</code></pre>
 <ul>
-<li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>signal</code></a> is a getter/setter pair. Reading inside a tracking scope subscribes; writing notifies subscribers.</li>
-<li>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>effect</code></a> re-runs when its tracked signals change.</li>
-<li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>memo</code></a> is a derived signal: cached and lazy.</li>
-<li>A <em>reactive hole</em> is the framework's internal effect that wires a signal to a single DOM node (text, attribute, child slot, or component prop).</li>
-<li>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;reconciler&lt;/span&gt;" href="../../api/reconciler/#wybthon.reconciler"><code>reconciler</code></a> turns the resulting patches into batched DOM mutations.</li>
+<li>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a> write is staged. The graph flushes on the next microtask, at the end of every event handler, or when you call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> yourself (in tests).</li>
+<li>In the render phase, every dirty hole and reactive prop binding re-runs and emits DOM operations into a buffer.</li>
+<li>The buffer is handed to the JavaScript kernel in one bridge crossing.</li>
+<li>In the effect phase, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a> computations run and observe the committed DOM.</li>
 </ul>
 <h2 id="what-this-looks-like-in-practice">What this looks like in practice<a class="headerlink" href="#what-this-looks-like-in-practice" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">dynamic</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@component</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">():</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="mi">1</span><span class="p">)):</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Count: "</span><span class="p">,</span> <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">())),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"+1"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="n">count</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Count: "</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"+"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="n">step</span><span class="p">())),</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>What happens here:</p>
 <ul>
-<li><code>Counter</code> runs <strong>once</strong>. The <code>div</code>, <code>p</code>, and <code>button</code> virtual nodes are created exactly one time.</li>
-<li><code>dynamic(lambda: count())</code> creates a reactive hole around the text inside <code>&lt;p&gt;</code>. Only that text node patches when <code>count</code> changes.</li>
-<li>The <code>on_click</code> handler is delegated through <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;events&lt;/span&gt;" href="../../api/events/#wybthon.events"><code>events</code></a>; clicking calls <code>set_count</code>, which notifies the hole.</li>
+<li><code>Counter</code> runs <strong>once</strong>. The <code>div</code>, <code>p</code>, and <code>button</code> VNodes are created exactly one time.</li>
+<li><code>count</code> is an accessor placed as a child, so it becomes a hole. Only that text node patches when the count changes.</li>
+<li><code>step</code> is a <code>Prop[int]</code>. The parent may pass <code>step=5</code> or <code>step=my_signal</code>; the child reads <code>step()</code> either way.</li>
+<li>The click handler stages a functional update. The handler returns, the graph flushes, and the DOM op commits before the browser paints.</li>
 </ul>
 <h2 id="how-props-become-reactive">How props become reactive<a class="headerlink" href="#how-props-become-reactive" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@component</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"!"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@component</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"!"</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>name</code> arrives as a callable. Passing it into <code>p(...)</code> creates a reactive hole, so when the parent updates <code>name</code>, only that text node changes.</li>
-<li>Reading <code>name()</code> inside the body would freeze the value at mount. Read it inside an effect, memo, or callable child to stay reactive.</li>
+<li><code>name</code> is an accessor. Placing it in <code>p(...)</code> creates a hole, so when the parent's value changes only that text node updates.</li>
+<li>Calling <code>name()</code> at the top level of the body would freeze the value at mount, and dev mode warns about it. Read props inside holes, memos, and effects, or use <code>name.peek()</code> when a one-time read is what you want.</li>
 </ul>
-<p>See <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component">Components</a> for the full prop story.</p>
+<p>See <a href="../components/">Components</a> for the full prop story.</p>
+<h2 id="why-a-virtual-dom-at-all">Why a virtual DOM at all?<a class="headerlink" href="#why-a-virtual-dom-at-all" title="Permanent link">&para;</a></h2>
+<p>SolidJS compiles JSX into direct DOM instructions. Python has no JSX compiler, and in Pyodide every DOM call crosses the Python-to-JS bridge, which dominates rendering cost. Wybthon therefore keeps a small VDOM as an implementation detail: the reconciler diffs hole subtrees and emits compact ops that the JS kernel applies in one crossing per flush. Static subtrees are serialized once as HTML templates and cloned natively. The reactive model is Solid's; the VDOM is the batching layer that makes it fast under Pyodide. See <a href="../vdom/">Virtual DOM</a>.</p>
 <h2 id="where-it-differs-from-react">Where it differs from React<a class="headerlink" href="#where-it-differs-from-react" title="Permanent link">&para;</a></h2>
 <ul>
-<li>No virtual DOM diff cycles per-component. The tree is built once; updates target individual holes.</li>
-<li>No hooks rules. State and effects are created with normal Python functions and live for the lifetime of the owning component.</li>
-<li>Props don't need to be memoized for performance. Identity changes don't trigger re-renders.</li>
+<li>No per-component re-render. The tree is built once; updates target individual holes.</li>
+<li>No hooks rules. State and effects are created with ordinary Python calls and live for the lifetime of the owning scope.</li>
+<li>Props never need memoizing. A new object identity doesn't re-render anything; only reads inside holes react.</li>
+<li>Data fetching is a memo, not a hook. Read an async memo like any other accessor; the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary handles the not-ready state.</li>
 </ul>
 <p>If you're coming from React, read <a href="../../guides/migrating-from-react/">Migrating from React</a> next.</p>
 <h2 id="where-it-matches-solid">Where it matches Solid<a class="headerlink" href="#where-it-matches-solid" title="Permanent link">&para;</a></h2>
-<p>Wybthon is intentionally close to SolidJS: the same primitives, the same fine-grained model, the same "components run once" rule. The biggest differences are the language (Python vs JS), templates (Pythonic builders vs JSX), and a few API names. See <a href="../../guides/migrating-from-solid/">Migrating from Solid</a>.</p>
+<p>Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no <code>batch()</code>; async as part of the graph; <code>Loading</code>, <code>Reveal</code>, and <code>Errored</code> boundaries; draft-first stores; actions and optimistic state. The differences are the language, the tree builders (Python call syntax instead of JSX), and a handful of names. See <a href="../../guides/migrating-from-solid/">Migrating from Solid</a>.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Read <a href="../reactivity/">Reactivity</a> for the primitive reference.</li>
-<li>Read <a href="../lifecycle/">Lifecycle and Ownership</a> to understand when effects and cleanups run.</li>
-<li>Skim <a href="../primitives/#reactive-holes">Primitives</a> for the formal definition of a reactive hole.</li>
+<li>Read <a href="../reactivity/">Reactivity</a> for signals, memos, effects, and flush timing.</li>
+<li>Read <a href="../primitives/">Primitives</a> for the full primitive reference.</li>
+<li>Read <a href="../lifecycle/">Lifecycle and ownership</a> to understand when effects and cleanups run.</li>
 </ul>
 
 

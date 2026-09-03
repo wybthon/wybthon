@@ -89,6 +89,10 @@
          <lastmod>2026-09-03</lastmod>
     </url>
     <url>
+         <loc>https://wybthon.com/api/svg/</loc>
+         <lastmod>2026-09-03</lastmod>
+    </url>
+    <url>
          <loc>https://wybthon.com/api/template/</loc>
          <lastmod>2026-09-03</lastmod>
     </url>
@@ -194,6 +198,10 @@
     </url>
     <url>
          <loc>https://wybthon.com/guides/dev-server/</loc>
+         <lastmod>2026-09-03</lastmod>
+    </url>
+    <url>
+         <loc>https://wybthon.com/guides/migrating-from-0-x/</loc>
          <lastmod>2026-09-03</lastmod>
     </url>
     <url>

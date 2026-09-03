@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1623,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2003,6 +2035,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../events/" class="md-nav__link">
         
   
@@ -2210,10 +2270,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.store.unwrap_raw" class="md-nav__link">
+  <a href="#wybthon.store.store_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap_raw
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;store_path
       
     </span>
   </a>
@@ -2221,22 +2281,44 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.store.unwrap" class="md-nav__link">
+  <a href="#wybthon.store.snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;snapshot
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" unwrap">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.deep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;deep
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" deep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#public-api" class="md-nav__link">
+  <a href="#whats-in-this-module" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Public API
+        What's in this module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -2798,10 +2880,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.store.unwrap_raw" class="md-nav__link">
+  <a href="#wybthon.store.store_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap_raw
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;store_path
       
     </span>
   </a>
@@ -2809,22 +2891,44 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.store.unwrap" class="md-nav__link">
+  <a href="#wybthon.store.snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unwrap
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;snapshot
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" unwrap">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.store.deep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;deep
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" deep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#public-api" class="md-nav__link">
+  <a href="#whats-in-this-module" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Public API
+        What's in this module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -2900,19 +3004,24 @@ entire store.</p>
 <p>Writes are <strong>draft-first</strong>: the setter hands you a mutable draft of the
 state and you mutate it directly with normal Python. There is no path
 syntax and no <code>produce</code> wrapper; mutating the draft is just how stores
-work.</p>
+work. Like signal writes, store writes are staged and become visible
+on the next flush.</p>
 <p>Public surface:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../wybthon/#wybthon.create_store"><code>create_store</code></a>: build a store from an initial
-  value; returns <code>(store, set_store)</code>.</li>
+  value, or a <strong>derived store</strong> from a function; returns
+  <code>(store, set_store)</code>.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../wybthon/#wybthon.create_projection"><code>create_projection</code></a>: a read-only store
   derived from reactive sources, updated fine-grained.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a>: a store
   whose writes revert when in-flight <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../wybthon/#wybthon.action"><code>action</code></a>s settle.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a>: diff external data into a store,
   preserving object identity for unchanged items.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unwrap&lt;/span&gt;" href="../wybthon/#wybthon.unwrap"><code>unwrap</code></a>: read the raw (non-reactive) data behind
-  a store proxy.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;store_path&lt;/span&gt;" href="../wybthon/#wybthon.store_path"><code>store_path</code></a>: opt-in path-style setter helper.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;snapshot&lt;/span&gt;" href="../wybthon/#wybthon.snapshot"><code>snapshot</code></a>: the plain, non-reactive data behind a
+  store proxy.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;deep&lt;/span&gt;" href="../wybthon/#wybthon.deep"><code>deep</code></a>: a plain snapshot that subscribes to every
+  nested change.</li>
 </ul>
 
 
@@ -2974,7 +3083,7 @@ work.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt; (&lt;code&gt;wybthon.store.create_store&lt;/code&gt;)" href="#wybthon.store.create_store">create_store</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Create a reactive store from an initial value.</p>
+                  <p>Create a reactive store from an initial value or a deriving function.</p>
                 </div>
               </td>
             </tr>
@@ -3003,10 +3112,26 @@ work.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;unwrap&lt;/span&gt; (&lt;code&gt;wybthon.store.unwrap&lt;/code&gt;)" href="#wybthon.store.unwrap">unwrap</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;store_path&lt;/span&gt; (&lt;code&gt;wybthon.store.store_path&lt;/code&gt;)" href="#wybthon.store.store_path">store_path</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return the raw data behind a store proxy (non-reactive).</p>
+                  <p>Build a path-style write for a store setter (opt-in helper).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;snapshot&lt;/span&gt; (&lt;code&gt;wybthon.store.snapshot&lt;/code&gt;)" href="#wybthon.store.snapshot">snapshot</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the plain, non-reactive data behind a store proxy.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;deep&lt;/span&gt; (&lt;code&gt;wybthon.store.deep&lt;/code&gt;)" href="#wybthon.store.deep">deep</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Read a store deeply: subscribe to every nested change and return plain data.</p>
                 </div>
               </td>
             </tr>
@@ -3036,12 +3161,12 @@ work.</p>
 
 
 <a href="#wybthon.store.create_store" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_store</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><span title="wybthon.store._StoreSetter">_StoreSetter</span></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_store</span><span class="p">(</span><span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><span title="wybthon.store._StoreSetter">_StoreSetter</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Create a reactive store from an initial value.</p>
+        <p>Create a reactive store from an initial value or a deriving function.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3064,12 +3189,32 @@ work.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Initial state. Dicts and lists are wrapped in
-reactive proxies; other values are returned unchanged.</p>
+                <p>Initial state (a dict or list), or a <strong>function</strong> for a
+derived store. A function that accepts a draft mutates it
+on every run, like <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../wybthon/#wybthon.create_projection"><code>create_projection</code></a>;
+a zero-arg function's return value is reconciled into the
+store. Reads inside it are tracked.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>seed</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Initial backing state for the derived form (defaults to
+an empty dict).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3107,7 +3252,7 @@ reactive proxies; other values are returned unchanged.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3117,21 +3262,21 @@ reactive proxies; other values are returned unchanged.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>receives a mutable draft, or with a</p>
+                <p>receives a mutable draft, a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a></p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <span title="wybthon.store._StoreSetter">_StoreSetter</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a> result.</p>
+                <p>result, or a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;store_path&lt;/span&gt;" href="../wybthon/#wybthon.store_path"><code>store_path</code></a> write.</p>
               </div>
             </td>
           </tr>
@@ -3152,6 +3297,9 @@ reactive proxies; other values are returned unchanged.</p>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">set_store</span><span class="p">(</span><span class="n">rename</span><span class="p">)</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">set_store</span><span class="p">(</span><span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_state</span><span class="p">))</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Derived store: re-runs when `todos` changes.</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">stats</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"total"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">todos</span><span class="p">())}),</span> <span class="p">{</span><span class="s2">"total"</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
 </span></code></pre></div>
 </details>
 
@@ -3167,7 +3315,7 @@ reactive proxies; other values are returned unchanged.</p>
 
 
 <a href="#wybthon.store.create_projection" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_projection</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_projection</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3178,7 +3326,8 @@ inside a render-phase computation: any signals, memos, or other
 stores it reads become dependencies, and when they change <code>fn</code>
 re-runs against the same draft. Because writes go through
 fine-grained store signals, consumers re-render only for the paths
-that actually changed.</p>
+that actually changed. A zero-arg <code>fn</code> may instead return the data
+to reconcile in.</p>
 <p>Matches SolidJS 2.0's <code>createProjection</code>.</p>
 
 
@@ -3198,12 +3347,11 @@ that actually changed.</p>
                 <code>fn</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Draft mutator. Reads are tracked; mutate the draft to
-publish derived state.</p>
+                <p>Draft mutator (or zero-arg producer). Reads are tracked.</p>
               </div>
             </td>
             <td>
@@ -3215,7 +3363,7 @@ publish derived state.</p>
                 <code>initial</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3277,7 +3425,7 @@ empty dict.</p>
 
 
 <a href="#wybthon.store.create_optimistic_store" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_optimistic_store</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Tuple&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Tuple">Tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_optimistic_store</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">initial</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3326,7 +3474,7 @@ change) or a plain dict/list initial value.</p>
                 <code>initial</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3363,7 +3511,7 @@ before <code>source</code> first runs. Defaults to an empty dict.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], None]</code>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a>[[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], None]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3379,7 +3527,7 @@ before <code>source</code> first runs. Defaults to an empty dict.</p>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">todos</span><span class="p">,</span> <span class="n">set_todos</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deep</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@action</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
@@ -3401,7 +3549,7 @@ before <code>source</code> first runs. Defaults to an empty dict.</p>
 
 
 <a href="#wybthon.store.reconcile" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reconcile</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="s1">'id'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.store._ReconcileResult">_ReconcileResult</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reconcile</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s1">'id'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="wybthon.store._ReconcileResult">_ReconcileResult</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3448,7 +3596,7 @@ their DOM.</p>
                 <code>key</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Optional&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3500,18 +3648,29 @@ Pass <code>None</code> to disable key matching (positional replace).</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.store.unwrap_raw" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">unwrap_raw</span>
+<h3 id="wybthon.store.store_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">store_path</span>
 
 
-<a href="#wybthon.store.unwrap_raw" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap_raw</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<a href="#wybthon.store.store_path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">store_path</span><span class="p">(</span><span class="o">*</span><span class="n">path_and_value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Internal: return the raw data behind a proxy, or <code>value</code> unchanged.</p>
+        <p>Build a path-style write for a store setter (opt-in helper).</p>
+<p>The last argument is the value (or an updater <code>(current) -&gt; new</code>);
+everything before it is the path of keys and indices to walk. It
+returns a draft function, so it composes with everything a setter
+accepts.</p>
 
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">set_store</span><span class="p">(</span><span class="n">store_path</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="s2">"address"</span><span class="p">,</span> <span class="s2">"city"</span><span class="p">,</span> <span class="s2">"Paris"</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">set_store</span><span class="p">(</span><span class="n">store_path</span><span class="p">(</span><span class="s2">"todos"</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"done"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">done</span><span class="p">:</span> <span class="ow">not</span> <span class="n">done</span><span class="p">))</span>
+</span></code></pre></div>
+</details>
 
     </div>
 
@@ -3520,19 +3679,22 @@ Pass <code>None</code> to disable key matching (positional replace).</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.store.unwrap" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">unwrap</span>
+<h3 id="wybthon.store.snapshot" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">snapshot</span>
 
 
-<a href="#wybthon.store.unwrap" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+<a href="#wybthon.store.snapshot" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">snapshot</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Return the raw data behind a store proxy (non-reactive).</p>
-<p>Matches SolidJS's <code>unwrap</code>. Reading the result doesn't subscribe
-to anything; mutations to it bypass reactivity entirely.</p>
+        <p>Return the plain, non-reactive data behind a store proxy.</p>
+<p>Matches SolidJS 2.0's <code>snapshot</code> (the successor to <code>unwrap</code>).
+Reading the result doesn't subscribe to anything, so it's the right
+thing to hand to <code>json.dumps</code>, to compare, or to pass outside the
+reactive graph. Mutating it bypasses reactivity entirely; write
+through the setter instead.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3603,62 +3765,138 @@ to anything; mutations to it bypass reactivity entirely.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.store.deep" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">deep</span>
+
+
+<a href="#wybthon.store.deep" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">deep</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Read a store deeply: subscribe to every nested change and return plain data.</p>
+<p>Store tracking is normally per property. Use <code>deep</code> in the compute
+stage of a split effect when the whole structure matters, for
+example to persist or serialize it: the effect re-runs on any
+nested write and its apply stage receives a plain copy that's safe
+to read untracked.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deep</span><span class="p">(</span><span class="n">store</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">save</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
 
 
   </div>
 
     </div>
 
-</div><h4 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h4>
-<h5 id="store-creation">Store creation<a class="headerlink" href="#store-creation" title="Permanent link">&para;</a></h5>
-<ul>
-<li><code>create_store(initial) -&gt; (store, set_store)</code>. Create a reactive store from a dict or list. The <code>store</code> is a <strong>read-only fine-grained proxy</strong>: reads track per path, so <code>store.user.name</code> subscribes only to that leaf.</li>
-<li><code>create_projection(fn, initial=None) -&gt; store</code>. Read-only <strong>derived store</strong> (Solid's <code>createProjection</code>). <code>fn(draft)</code> runs in a render effect: reads inside it are tracked, and when a dependency changes <code>fn</code> re-runs against the same draft. Because writes go through fine-grained store signals, consumers re-render only for the paths that actually changed. <code>initial</code> is the backing state (defaults to an empty dict).</li>
-<li><code>create_optimistic_store(source, initial=None) -&gt; (store, set_optimistic)</code>. Store whose writes are <strong>optimistic</strong>: draft mutations through <code>set_optimistic</code> apply immediately, and the store reverts to its base state when every in-flight <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../wybthon/#wybthon.action"><code>action</code></a> has settled. <code>source</code> may be a tracked function returning the base state (derived form; re-runs and reconciles when its dependencies change, with <code>initial</code> as the state before the first run) or a plain dict/list (value form).</li>
-</ul>
-<h5 id="store-setter-draft-first">Store setter (draft-first)<a class="headerlink" href="#store-setter-draft-first" title="Permanent link">&para;</a></h5>
-<p><code>set_store</code> takes a <strong>draft function</strong>: it hands your function a mutable
-draft of the state, and you mutate it with normal Python. Attribute and
-index assignment, <code>append</code>, <code>insert</code>, <code>pop</code>, <code>remove</code>, <code>extend</code>,
-<code>clear</code>, <code>update</code>, and <code>del</code> all work at any depth. Only the leaves
-whose values actually changed notify.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="p">,</span> <span class="n">set_store</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">},</span> <span class="s2">"todos"</span><span class="p">:</span> <span class="p">[]})</span>
+</div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
+<p>Stores give fine-grained reactive access to nested dicts and lists.
+Every path is backed by its own signal, so reading <code>store.user.name</code>
+subscribes only to that leaf. Writes are <strong>draft-first</strong>: the setter
+hands you a mutable draft and you mutate it with ordinary Python. Like
+signal writes, store writes are staged until the next flush, and writing
+a store inside a tracking scope raises
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a> in dev mode.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../wybthon/#wybthon.create_store"><code>create_store</code></a></td>
+<td><code>(store, set_store)</code> from a dict or list; or <code>create_store(fn, seed)</code> for a derived store whose <code>fn</code> re-runs when its reads change.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../wybthon/#wybthon.create_projection"><code>create_projection</code></a></td>
+<td>Read-only store derived from reactive sources; <code>fn(draft)</code> mutates it in place, updated fine-grained.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a></td>
+<td><code>(store, set_optimistic)</code> whose writes revert to the base state when in-flight actions settle.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a></td>
+<td><code>set_store(reconcile(data, key="id"))</code>: diff external data in, keeping identity for unchanged items.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;store_path&lt;/span&gt;" href="../wybthon/#wybthon.store_path"><code>store_path</code></a></td>
+<td><code>set_store(store_path("user", "name", "Ada"))</code>: path-style write helper that returns a draft function.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;snapshot&lt;/span&gt;" href="../wybthon/#wybthon.snapshot"><code>snapshot</code></a></td>
+<td>The plain data behind a proxy, untracked (for <code>json.dumps</code>, comparisons, or leaving the graph).</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;deep&lt;/span&gt;" href="../wybthon/#wybthon.deep"><code>deep</code></a></td>
+<td>Tracked deep read: subscribes to every nested change and returns a plain copy.</td>
+</tr>
+</tbody>
+</table>
+<p>Read proxies support attribute and item access, <code>in</code>, <code>len()</code>,
+iteration, and <code>==</code> against plain data; they don't expose <code>.get()</code>,
+<code>.keys()</code>, or <code>.items()</code> (those would collide with data keys), so use
+<code>[]</code>, <code>in</code>, or <code>snapshot()</code> instead. Drafts additionally support
+assignment, <code>del</code>, <code>update</code>, and the list methods <code>append</code>, <code>extend</code>,
+<code>insert</code>, <code>pop</code>, <code>remove</code>, <code>clear</code>, <code>sort</code>, and <code>reverse</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">flush</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">,</span> <span class="n">store_path</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">s</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"Grace"</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">s</span><span class="o">.</span><span class="n">todos</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">})</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">set_store</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">store</span><span class="p">,</span> <span class="n">set_store</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">},</span> <span class="s2">"todos"</span><span class="p">:</span> <span class="p">[]})</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">s</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"Grace"</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">s</span><span class="o">.</span><span class="n">todos</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">,</span> <span class="s2">"done"</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">set_store</span><span class="p">(</span><span class="n">edit</span><span class="p">)</span>                                        <span class="c1"># draft form</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">set_store</span><span class="p">(</span><span class="n">store_path</span><span class="p">(</span><span class="s2">"todos"</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"done"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="ow">not</span> <span class="n">d</span><span class="p">))</span>   <span class="c1"># path form</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">set_store</span><span class="p">(</span><span class="n">reconcile</span><span class="p">({</span><span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Grace"</span><span class="p">},</span> <span class="s2">"todos"</span><span class="p">:</span> <span class="p">[]},</span> <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">))</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">store</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span>          <span class="c1"># "Grace" (tracked read)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">"todos"</span> <span class="ow">in</span> <span class="n">store</span>         <span class="c1"># True</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">snapshot</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>          <span class="c1"># {"user": {"name": "Grace"}, "todos": []}</span>
 </span></code></pre></div>
-<p>Alternatively, pass a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="../wybthon/#wybthon.reconcile"><code>reconcile</code></a> result to diff
-external data in:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">set_store</span><span class="p">(</span><span class="n">reconcile</span><span class="p">(</span><span class="n">fetched</span><span class="p">))</span>
+<p>Derived and optimistic stores:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">create_optimistic_store</span><span class="p">,</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">deep</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">flags</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"selected_id"</span><span class="p">:</span> <span class="n">selected</span><span class="p">()}),</span> <span class="p">{</span><span class="s2">"selected_id"</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">todos</span><span class="p">,</span> <span class="n">set_todos</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">stats</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"total"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">todos</span><span class="o">.</span><span class="n">items</span><span class="p">)}),</span> <span class="p">{</span><span class="s2">"total"</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deep</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nd">@action</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"saving"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">saved</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api_create</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">set_todos</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">))</span>
 </span></code></pre></div>
-<p>Those are the only two calling conventions; anything else raises
-<code>TypeError</code>.</p>
-<h5 id="reconcile-and-unwrap">Reconcile and unwrap<a class="headerlink" href="#reconcile-and-unwrap" title="Permanent link">&para;</a></h5>
+<p>Persist a whole store with a split effect:
+<code>create_effect(lambda: deep(store), lambda data: save(data))</code> re-runs on
+any nested write and hands the apply stage a plain copy.</p>
+<h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><code>reconcile(data, key="id")</code>. Create a reconcile marker for <code>set_store</code>: the new data is <strong>diffed</strong> into the existing state so only changed paths notify. List items are matched by <code>key</code>, preserving item identity across updates (important for <code>For</code>). Pass <code>key=None</code> to disable key matching (positional replace).</li>
-<li><code>unwrap(value)</code>. Return the raw data underneath a store proxy without tracking. Plain values pass through unchanged.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../wybthon/#wybthon.action"><code>action</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="../wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../wybthon/#wybthon.refresh"><code>refresh</code></a></li>
+<li><a href="../../concepts/stores/">Concepts: Stores</a></li>
+<li><a href="../../concepts/reactivity/">Concepts: Reactivity</a></li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">set_store</span><span class="p">(</span><span class="n">reconcile</span><span class="p">(</span><span class="n">fetched_todos</span><span class="p">))</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">)</span>
-</span></code></pre></div>
-<h5 id="optimistic-stores">Optimistic stores<a class="headerlink" href="#optimistic-stores" title="Permanent link">&para;</a></h5>
-<p>Pair <code>create_optimistic_store</code> with actions: mutate the optimistic
-store for instant UI, reconcile the real answer into a regular store,
-and let the overlay revert when the action settles.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">todos</span><span class="p">,</span> <span class="n">set_todos</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nd">@action</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"saving"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">saved</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api_create</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">set_todos</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">))</span>
-</span></code></pre></div>
-<p>Type hints are provided for all public functions and classes.</p>
 
 
 

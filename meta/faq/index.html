@@ -1006,6 +1006,8 @@
       
         
       
+        
+      
     
     
     
@@ -1333,6 +1335,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from 0.2x and 0.30
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1621,6 +1651,8 @@
   
     
     
+      
+        
       
         
       
@@ -1980,6 +2012,34 @@
     
   
     HTML helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/svg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SVG helpers
   
 
     
@@ -2539,10 +2599,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyodide-runtime" class="md-nav__link">
+  <a href="#pyodide-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pyodide &amp; runtime
+        Pyodide and runtime
       
     </span>
   </a>
@@ -2550,10 +2610,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-shipping-apps" class="md-nav__link">
+  <a href="#building-and-shipping-apps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building &amp; shipping apps
+        Building and shipping apps
       
     </span>
   </a>
@@ -2692,10 +2752,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyodide-runtime" class="md-nav__link">
+  <a href="#pyodide-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pyodide &amp; runtime
+        Pyodide and runtime
       
     </span>
   </a>
@@ -2703,10 +2763,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-shipping-apps" class="md-nav__link">
+  <a href="#building-and-shipping-apps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building &amp; shipping apps
+        Building and shipping apps
       
     </span>
   </a>
@@ -2773,61 +2833,86 @@
 <h2 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Is Wybthon production ready?</summary>
-<p>Not yet. The framework is experimental (pre-alpha) and the public API may shift between releases. We recommend it for prototypes, internal tools, and learning projects today, and we'll relax this guidance as the API stabilizes.</p>
+<p>Not yet. The framework is pre-1.0 and the public API may shift between minor releases (old APIs are removed outright rather than shimmed). We recommend it for prototypes, internal tools, and learning projects today, and we'll relax this guidance as the API stabilizes.</p>
 </details>
 <details class="question">
 <summary>Does it work outside the browser?</summary>
-<p>The core reactive primitives (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a>, stores) work in plain CPython and are tested with <code>pytest</code>. Rendering, DOM, and event APIs require Pyodide because they call into the browser's <code>document</code>, <code>window</code>, and friends.</p>
+<p>Everything except the real DOM. Signals, memos, effects, async computations, actions, stores, forms, context, flow control, and VDOM construction run in plain CPython and are tested with <code>pytest</code>. Rendering into a page, <code>Element</code> queries, and history navigation need Pyodide, or the stub backend the unit tests use (see the <a href="../../guides/testing/">testing guide</a>).</p>
+</details>
+<details class="question">
+<summary>Which Python version do I need?</summary>
+<p>Python 3.12 or newer in CPython (the framework uses PEP 695 generics such as <code>Accessor[T]</code>). In the browser, Pyodide 0.27 or newer (Python 3.12); the E2E suite pins Pyodide 314.x.</p>
 </details>
 <details class="question">
 <summary>Why Python in the browser?</summary>
-<p>Wybthon lets data scientists, researchers, and tooling teams build interactive UIs without context-switching to TypeScript. Pyodide makes the entire scientific Python stack (NumPy, pandas, scikit-learn, etc.) available client-side, so you can render results without a server round-trip.</p>
+<p>Wybthon lets data scientists, researchers, and tooling teams build interactive UIs without switching to TypeScript. Pyodide makes the scientific Python stack (NumPy, pandas, scikit-learn, and friends) available client-side, so you can render results without a server round-trip.</p>
 </details>
-<h2 id="pyodide-runtime">Pyodide &amp; runtime<a class="headerlink" href="#pyodide-runtime" title="Permanent link">&para;</a></h2>
+<details class="question">
+<summary>Why is there a virtual DOM if this is 'SolidJS for Python'?</summary>
+<p>Python has no JSX compiler to split static markup from dynamic parts, and every DOM call crosses the Python-to-JavaScript bridge. The VDOM is a rendering implementation detail: each reactive hole diffs only its own subtree, and the reconciler batches the resulting mutations through a JavaScript kernel in one bridge crossing. The reactive model is still fine-grained; a signal change re-runs the holes that read it, never whole components.</p>
+</details>
+<h2 id="pyodide-and-runtime">Pyodide and runtime<a class="headerlink" href="#pyodide-and-runtime" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Which Pyodide version should I target?</summary>
-<p>Pin a single version per deployment. Wybthon tracks the latest stable Pyodide release (currently the 0.27 series); using the same version locally and in production avoids subtle ABI mismatches.</p>
+<p>Pin a single version per deployment. Wybthon requires Pyodide 0.27 or newer, the first release with Python 3.12; using the same version locally and in production avoids subtle ABI mismatches.</p>
 </details>
 <details class="question">
 <summary>How do I install Python packages from PyPI?</summary>
 <p>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> inside Pyodide:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"httpx"</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"httpx"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The package must be either pure-Python or available as a Pyodide-compatible wheel. See the <a href="../../guides/pyodide/">Pyodide guide</a> for details.</p>
+<p>The package must be pure Python or available as a Pyodide-compatible wheel. See the <a href="../../guides/pyodide/">Pyodide guide</a> for details.</p>
 </details>
 <details class="question">
 <summary>How do I call a JavaScript API from Python?</summary>
-<p>Import names from the magic <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js"><code>js</code> module</a>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">fetch</span>
+<p>Import names from the <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js"><code>js</code> module</a> yourself (Wybthon doesn't re-export it):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">window</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">window</span><span class="o">.</span><span class="n">alert</span><span class="p">(</span><span class="s2">"hello!"</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="s2">"/api/users"</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_users</span><span class="p">():</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="s2">"/api/users"</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 </span></code></pre></div>
-<p>Convert Python objects with <code>pyodide.ffi.to_js(...)</code> when handing them to JS APIs that expect plain objects.</p>
+<p>Convert Python objects with <code>pyodide.ffi.to_js(...)</code> when handing them to JS APIs that expect plain objects. For DOM nodes Wybthon rendered, prefer <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a> over <code>document.querySelector</code>.</p>
 </details>
-<h2 id="building-shipping-apps">Building &amp; shipping apps<a class="headerlink" href="#building-shipping-apps" title="Permanent link">&para;</a></h2>
+<h2 id="building-and-shipping-apps">Building and shipping apps<a class="headerlink" href="#building-and-shipping-apps" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Do I need a bundler or a build step?</summary>
 <p>No. Wybthon serves Python source files directly via the dev server (<code>wyb dev --dir .</code>) and any static host can serve them in production. See the <a href="../../guides/deployment/">deployment guide</a> for hosting recipes.</p>
 </details>
 <details class="question">
 <summary>Can I lazy-load route components?</summary>
-<p>Yes; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a>. It's backed by an async memo, so it integrates with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> for declarative loading UIs and with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;ErrorBoundary&lt;/span&gt;" href="../../api/wybthon/#wybthon.ErrorBoundary"><code>ErrorBoundary</code></a> for load failures, and each lazy component has a <code>.preload()</code> method for warming the cache early.</p>
+<p>Yes; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a>. It's backed by an async memo, so it integrates with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> for declarative loading UIs and with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> for load failures, and each lazy component has a <code>.preload()</code> method for warming the cache early.</p>
 </details>
 <h2 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Why didn't my component re-run after a signal changed?</summary>
-<p>Because Wybthon's components run <strong>once</strong> by design. Reads inside the component body capture the value at setup time. To stay reactive, place signal accessors inside the rendered tree (<code>span(my_signal)</code>) or wrap them in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../../api/wybthon/#wybthon.dynamic"><code>dynamic(lambda: ...)</code></a>. The framework prints a dev-mode warning when it detects a destructured prop access (see <code>warn_destructured_prop</code> in <code>wybthon._warnings</code>).</p>
+<p>Because components run <strong>once</strong> by design. A read in the component body captures the value at setup time. To stay reactive, place the accessor itself in the rendered tree (<code>span(my_signal)</code>), wrap the expression in a zero-arg lambda (<code>span(lambda: f"{count()} items")</code>), or derive it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use <code>.peek()</code> when a one-time read is what you want.</p>
+</details>
+<details class="question">
+<summary>Why does my signal still show the old value right after I set it?</summary>
+<p>Writes are <strong>staged</strong>. <code>set_count(1)</code> records the new value, and <code>count()</code> keeps returning the committed value until the next flush: a browser microtask, the end of an event handler, or an explicit <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a>. Functional updates see the staged value, so <code>set_count(lambda n: n + 1)</code> twice in one handler adds two. In tests and plain scripts, call <code>flush()</code> after your writes before asserting.</p>
 </details>
 <details class="question">
 <summary>How do I batch multiple signal updates?</summary>
-<p>You don't need to; batching is automatic. Signal writes apply immediately, but dependent effects run on the next scheduled flush (a browser microtask), so consecutive writes coalesce into a single effect run:</p>
+<p>You don't need to; everything batches. Consecutive writes in one handler (or one synchronous block) coalesce into a single flush, so an effect that reads both fields runs once:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">set_first</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">set_last</span><span class="p">(</span><span class="s2">"Lovelace"</span><span class="p">)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># A name effect reading both runs once, not twice.</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">flush</span><span class="p">()</span>   <span class="c1"># the name effect runs once, not twice</span>
 </span></code></pre></div>
-<p>Wybthon event handlers flush automatically at the end of the handler. In plain Python (for example, in tests), call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> after your writes to run pending effects synchronously.</p>
+<p>There is no <code>batch()</code> function.</p>
+</details>
+<details class="question">
+<summary>Why didn't my effect run when I created it?</summary>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a> runs its first time on the next flush, after the DOM has been committed, so an effect created in a component body sees the mounted DOM. If you need code to run immediately during setup, just run it; if you need something after mount, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_render_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_render_effect"><code>create_render_effect</code></a> runs immediately, but it's meant for rendering primitives.</p>
+</details>
+<details class="question">
+<summary>How do I fetch data?</summary>
+<p>Write an <code>async def</code> and pass it to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. Reads before the first value raise <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../../api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>, which the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary turns into fallback UI; later refetches keep serving the stale value while revalidating. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a> for a refresh hint, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a> to peek without suspending, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../../api/wybthon/#wybthon.refresh"><code>refresh</code></a> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve"><code>resolve</code></a> to drive it imperatively. Mutations go through <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, optionally with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a> for instant UI.</p>
 </details>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
