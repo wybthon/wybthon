@@ -7,10 +7,10 @@ Welcome! This page is a quick orientation for contributors. The full and authori
 ```bash
 git clone https://github.com/wybthon/wybthon.git
 cd wybthon
-pip install -e .
+uv sync --group dev --group docs
 ```
 
-Everything you need to develop the framework and the docs site is now installed.
+[uv](https://docs.astral.sh/uv/) creates `.venv` and installs the framework, the dev tooling, and the docs site dependencies. Prefix commands with `uv run` to use that environment, for example `uv run pytest -q` or `uv run mkdocs serve`.
 
 ## Where to make changes
 

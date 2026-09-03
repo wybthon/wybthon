@@ -29,14 +29,7 @@ classifiers = [
 ]
 dependencies = []
 
-[project.optional-dependencies]
-docs = [
-  "mkdocs>=1.5",
-  "mkdocs-material[imaging]>=9.5",
-  "mkdocstrings[python]>=0.24",
-  "mkdocs-autorefs>=1.0",
-  "pymdown-extensions>=10.7",
-]
+[dependency-groups]
 dev = [
   "black>=24.0",
   "ruff>=0.5",
@@ -45,14 +38,18 @@ dev = [
   "pytest-cov>=4.1",
   "pytest-playwright>=0.5.0",
 ]
-ci = [
-  "black>=24.0",
-  "ruff>=0.5",
-  "mypy>=1.10",
-  "pytest>=8.0",
-  "pytest-cov>=4.1",
-  "pytest-playwright>=0.5.0",
+docs = [
+  "mkdocs>=1.5",
+  "mkdocs-material[imaging]>=9.5",
+  "mkdocstrings[python]>=0.24",
+  "mkdocs-autorefs>=1.0",
+  "pymdown-extensions>=10.7",
 ]
+
+[tool.uv]
+# Groups are opt-in so `uv sync` matches a plain end-user install; the
+# contributor commands and CI workflows pass `--group` explicitly.
+default-groups = []
 
 [project.scripts]
 wyb = "wybthon.dev:main"
@@ -112,6 +109,12 @@ version_variables = ["src/wybthon/__init__.py:__version__"]
 commit_message = "chore(release): v{version}"
 tag_format = "v{version}"
 major_on_zero = false
+build_command = """
+pip install uv
+uv lock --upgrade-package wybthon
+git add uv.lock
+uv build
+"""
 
 [tool.semantic_release.branches.main]
 match = "main"
