@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v0.31.0 (2026-09-03)
+
+### Build System
+
+- **pyproject,workflows**: Migrate development tooling from pip to uv
+  ([#29](https://github.com/wybthon/wybthon/pull/29),
+  [`847fce6`](https://github.com/wybthon/wybthon/commit/847fce6c420e61e75747c838a0d016e6ca725ad5))
+
+Refs: #16
+
+### Chores
+
+- **repo**: Add GitHub issue templates and PR template
+  ([#28](https://github.com/wybthon/wybthon/pull/28),
+  [`8485cac`](https://github.com/wybthon/wybthon/commit/8485cac2c90bf4ecfc8f661579a9c0e6208153a9))
+
+Refs: #19
+
+### Documentation
+
+- **repo**: Document issue claiming before opening PRs
+  ([`b4ae8ec`](https://github.com/wybthon/wybthon/commit/b4ae8ecae005b80b43b68afe0f842c1b7814ec7a))
+
+### Features
+
+- **package,reactivity**: Adopt SolidJS 2.0 API and semantics
+  ([#32](https://github.com/wybthon/wybthon/pull/32),
+  [`064c671`](https://github.com/wybthon/wybthon/commit/064c671c01780b6393b70d96c906d5499606369c))
+
+### Testing
+
+- **forms**: Add unit tests for uncovered helpers
+  ([#27](https://github.com/wybthon/wybthon/pull/27),
+  [`e04ac6b`](https://github.com/wybthon/wybthon/commit/e04ac6b37b0eeacaf5609682f2f8b800ec658183))
+
+Refs: #12
+
+
 ## v0.30.0 (2026-09-01)
 
 ### Features
