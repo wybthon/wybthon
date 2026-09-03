@@ -1,10 +1,21 @@
-"""`ErrorBoundary` component for catching render errors in subtrees.
+"""`Errored`: catch render and effect errors in a subtree.
 
-[`ErrorBoundary`][wybthon.ErrorBoundary] is a function component that
-installs an error handler on its owner scope. When a child render or
-effect raises, the boundary swaps in a fallback while leaving sibling
-trees untouched. It's the recommended way to surface unexpected
-errors without crashing the whole app.
+[`Errored`][wybthon.Errored] installs an error handler on its owner
+scope. When a child render, hole, or effect raises, the boundary swaps
+in a fallback while leaving sibling trees untouched. It's the
+recommended way to surface unexpected errors without crashing the
+whole app.
+
+Example:
+    ```python
+    Errored(
+        lambda: Dashboard(),
+        fallback=lambda err, reset: div(
+            p("Something went wrong: ", str(err)),
+            button("Retry", on_click=lambda e: reset()),
+        ),
+    )
+    ```
 
 See Also:
     - [Async and loading guide](../concepts/async-loading.md)
@@ -12,121 +23,121 @@ See Also:
 
 from __future__ import annotations
 
-from typing import Any, List
+from collections.abc import Callable
+from typing import Any
 
-from .reactivity import _get_component_ctx, create_signal
-from .vnode import Fragment, VNode, dynamic, to_text_vnode
+from .reactivity import _core
+from .reactivity._core import Signal, _positional_count
+from .reactivity._props import Props
+from .vnode import Fragment, VNode, h, to_text_vnode
 
-__all__ = ["ErrorBoundary"]
-
-
-def _compute_reset_token(props: Any) -> str:
-    """Derive a stable token from `reset_keys` / `reset_key` for auto-clear."""
-    try:
-        if "reset_keys" in props:
-            rk: Any = props.value("reset_keys")
-        elif "reset_key" in props:
-            rk = props.value("reset_key")
-        else:
-            return ""
-        if callable(rk):
-            rk = rk()
-        if isinstance(rk, (list, tuple)):
-            return repr(tuple(rk))
-        return repr(rk)
-    except Exception:
-        return ""
+__all__ = ["Errored"]
 
 
-def _render_fallback(err: Any, props: Any, reset_fn: Any) -> VNode:
-    """Build the fallback `VNode` from the boundary's `fallback` prop.
+def Errored(
+    children: Any = None,
+    *,
+    fallback: Any = None,
+    on_error: Callable[[BaseException], Any] | None = None,
+    reset_on: Any = None,
+) -> VNode:
+    """Catch errors raised while rendering `children` and show a fallback.
 
     Args:
-        err: The caught exception.
-        props: The boundary's prop bag.
-        reset_fn: Callable that clears the error state.
+        children: Content rendered while no error is active: a VNode, a
+            zero-arg callable, or a list of either.
+        fallback: A VNode, a string, or a callable
+            `(error, reset) -> VNode` (or `(error) -> VNode`). `reset()`
+            clears the error and re-renders the children.
+        on_error: Optional callback invoked with the caught exception.
+        reset_on: An accessor (or plain value) whose change clears the
+            current error automatically, for example the current route.
 
     Returns:
-        A `VNode` representing the fallback UI. Falls back to a text
-        node when the prop is missing or when the user-supplied
-        callable raises.
+        A component [`VNode`][wybthon.VNode] that swaps to the fallback
+        whenever a descendant raises.
     """
-    fb = props.value("fallback")
+    return h(_Errored, {"children": children, "fallback": fallback, "on_error": on_error, "reset_on": reset_on})
+
+
+def _render_content(value: Any) -> VNode:
+    if isinstance(value, VNode):
+        return value
+    if value is None:
+        return Fragment()
+    if isinstance(value, list):
+        items = [v() if callable(v) and not isinstance(v, VNode) else v for v in value]
+        return Fragment(*items)
+    if callable(value):
+        return _render_content(value())
+    return to_text_vnode(value)
+
+
+def _render_fallback(fb: Any, err: BaseException, reset: Callable[[], None]) -> VNode:
+    vnode: Any
     if callable(fb) and not isinstance(fb, VNode):
         try:
-            try:
-                vnode = fb(err, reset_fn)
-            except TypeError:
+            n = _positional_count(fb)
+            if n == 0:
+                vnode = fb()
+            elif n == 1:
                 vnode = fb(err)
+            else:
+                vnode = fb(err, reset)
         except Exception:
             vnode = to_text_vnode("Error rendering fallback")
+    elif isinstance(fb, VNode):
+        vnode = fb
     else:
-        vnode = fb if isinstance(fb, VNode) else to_text_vnode(str(fb) if fb is not None else "Something went wrong.")
+        vnode = to_text_vnode(str(fb) if fb is not None else "Something went wrong.")
+    if isinstance(vnode, list):
+        vnode = Fragment(*vnode)
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
     return vnode
 
 
-def ErrorBoundary(props: Any) -> Any:
-    """Catch render errors in children and display a fallback.
-
-    Args:
-        props: The component's props with the following keys:
-
-            - `fallback`: A `VNode`, a string, or a callable
-              `(error, reset) -> VNode`. The callable form may also
-              accept just `(error,)`.
-            - `on_error`: Optional callback invoked with the caught
-              exception (errors raised inside the callback are
-              swallowed).
-            - `reset_key` / `reset_keys`: When this value (or
-              callable result) changes, the boundary auto-clears the
-              current error.
-            - `children`: Children rendered when no error is active.
-
-    Returns:
-        A reactive [`VNode`][wybthon.VNode] subtree that swaps to the
-        fallback whenever a child raises.
-    """
-    error, set_error = create_signal(None)
-    last_token: List[str] = [""]
-    ctx = _get_component_ctx()
+def _Errored(props: Props) -> Any:
+    # Framework-internal signal: the handler runs inside whatever tracking
+    # scope raised, so it bypasses the dev-mode write guard.
+    error: Signal[BaseException | None] = Signal(None)
+    children = props.raw("children")
+    fallback = props.raw("fallback")
+    on_error = props.raw("on_error")
+    reset_on = props.reset_on
+    last_token: list[Any] = [_UNSET]
 
     def reset() -> None:
-        set_error(None)
+        error._set(None)
 
-    def _handle_error(err: Any) -> None:
-        set_error(err)
-        handler = props.value("on_error")
-        if callable(handler):
+    def handle(err: BaseException, _comp: Any) -> None:
+        error._set(err)
+        if callable(on_error):
             try:
-                handler(err)
+                on_error(err)
             except Exception:
                 pass
 
-    if ctx is not None:
-        ctx._error_handler = _handle_error
+    owner = _core._current_owner
+    if owner is not None:
+        owner._error_handler = handle
 
     def render() -> VNode:
         err = error()
-
-        token = _compute_reset_token(props)
-        if token != last_token[0] and err is not None:
-            set_error(None)
-            err = None
-        last_token[0] = token
-
+        token = reset_on()
+        if last_token[0] is _UNSET:
+            last_token[0] = token
+        elif token != last_token[0]:
+            last_token[0] = token
+            if err is not None:
+                error._set(None)
+                err = None
         if err is not None:
-            return _render_fallback(err, props, reset)
+            return _render_fallback(fallback, err, reset)
+        return _render_content(children)
 
-        children = props.value("children", [])
-        if children is None:
-            children = []
-        if not isinstance(children, list):
-            children = [children]
-        return Fragment(*children)
-
-    return dynamic(render)
+    return render
 
 
-ErrorBoundary._wyb_component = True  # type: ignore[attr-defined]
+_Errored.__name__ = "Errored"
+_UNSET = object()

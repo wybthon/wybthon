@@ -2,43 +2,37 @@
 
 from app.testkit import tid
 
-from wybthon import (
-    Provider,
-    button,
-    component,
-    create_context,
-    create_signal,
-    div,
-    dynamic,
-    h,
-    h2,
-    p,
-    span,
-    use_context,
-)
+from wybthon import Prop, button, component, create_context, create_signal, div, h2, p, span, use_context
 
 Theme = create_context("default-theme")
 
 
 @component
-def Page():
+def ThemeLabel(test_id: Prop[str]):
+    # The provided value is handed back as is: an accessor stays live, a
+    # plain string renders once.
+    theme = use_context(Theme)
+    return span(theme, **tid(test_id.peek()))
+
+
+@component
+def Page(**rest):
     theme, set_theme = create_signal("light")
 
     return div(
         h2("Context"),
-        h(
-            Provider,
-            {"context": Theme, "value": theme},
+        Theme(
+            theme,
             div(
-                p("outer: ", span(dynamic(lambda: use_context(Theme)), **tid("ctx-outer"))),
-                h(
-                    Provider,
-                    {"context": Theme, "value": "override"},
-                    p("inner: ", span(dynamic(lambda: use_context(Theme)), **tid("ctx-inner"))),
-                ),
+                p("outer: ", ThemeLabel(test_id="ctx-outer")),
+                Theme("override", p("inner: ", ThemeLabel(test_id="ctx-inner"))),
             ),
         ),
-        p("no provider: ", span(dynamic(lambda: use_context(Theme)), **tid("ctx-default"))),
-        button("toggle", on_click=lambda e: set_theme("dark" if theme() == "light" else "light"), **tid("ctx-toggle")),
+        p("no provider: ", ThemeLabel(test_id="ctx-default")),
+        button(
+            "toggle",
+            on_click=lambda e: set_theme(lambda t: "dark" if t == "light" else "light"),
+            **tid("ctx-toggle"),
+        ),
         **tid("page-context"),
     )

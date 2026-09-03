@@ -2,62 +2,64 @@
 
 ::: wybthon.store
 
-#### Public API
+#### What's in this module
 
-##### Store creation
+Stores give fine-grained reactive access to nested dicts and lists.
+Every path is backed by its own signal, so reading `store.user.name`
+subscribes only to that leaf. Writes are **draft-first**: the setter
+hands you a mutable draft and you mutate it with ordinary Python. Like
+signal writes, store writes are staged until the next flush, and writing
+a store inside a tracking scope raises
+[`WriteInScopeError`][wybthon.WriteInScopeError] in dev mode.
 
-- `create_store(initial) -> (store, set_store)`. Create a reactive store from a dict or list. The `store` is a **read-only fine-grained proxy**: reads track per path, so `store.user.name` subscribes only to that leaf.
-- `create_projection(fn, initial=None) -> store`. Read-only **derived store** (Solid's `createProjection`). `fn(draft)` runs in a render effect: reads inside it are tracked, and when a dependency changes `fn` re-runs against the same draft. Because writes go through fine-grained store signals, consumers re-render only for the paths that actually changed. `initial` is the backing state (defaults to an empty dict).
-- `create_optimistic_store(source, initial=None) -> (store, set_optimistic)`. Store whose writes are **optimistic**: draft mutations through `set_optimistic` apply immediately, and the store reverts to its base state when every in-flight [`action`][wybthon.action] has settled. `source` may be a tracked function returning the base state (derived form; re-runs and reconciles when its dependencies change, with `initial` as the state before the first run) or a plain dict/list (value form).
+| Name | Description |
+| --- | --- |
+| [`create_store`][wybthon.create_store] | `(store, set_store)` from a dict or list; or `create_store(fn, seed)` for a derived store whose `fn` re-runs when its reads change. |
+| [`create_projection`][wybthon.create_projection] | Read-only store derived from reactive sources; `fn(draft)` mutates it in place, updated fine-grained. |
+| [`create_optimistic_store`][wybthon.create_optimistic_store] | `(store, set_optimistic)` whose writes revert to the base state when in-flight actions settle. |
+| [`reconcile`][wybthon.reconcile] | `set_store(reconcile(data, key="id"))`: diff external data in, keeping identity for unchanged items. |
+| [`store_path`][wybthon.store_path] | `set_store(store_path("user", "name", "Ada"))`: path-style write helper that returns a draft function. |
+| [`snapshot`][wybthon.snapshot] | The plain data behind a proxy, untracked (for `json.dumps`, comparisons, or leaving the graph). |
+| [`deep`][wybthon.deep] | Tracked deep read: subscribes to every nested change and returns a plain copy. |
 
-##### Store setter (draft-first)
-
-`set_store` takes a **draft function**: it hands your function a mutable
-draft of the state, and you mutate it with normal Python. Attribute and
-index assignment, `append`, `insert`, `pop`, `remove`, `extend`,
-`clear`, `update`, and `del` all work at any depth. Only the leaves
-whose values actually changed notify.
+Read proxies support attribute and item access, `in`, `len()`,
+iteration, and `==` against plain data; they don't expose `.get()`,
+`.keys()`, or `.items()` (those would collide with data keys), so use
+`[]`, `in`, or `snapshot()` instead. Drafts additionally support
+assignment, `del`, `update`, and the list methods `append`, `extend`,
+`insert`, `pop`, `remove`, `clear`, `sort`, and `reverse`.
 
 ```python
+from wybthon import create_effect, create_store, flush, reconcile, snapshot, store_path
+
 store, set_store = create_store({"user": {"name": "Ada"}, "todos": []})
 
-def update(s):
+def edit(s):
     s.user.name = "Grace"
-    s.todos.append({"id": 1, "text": "hi"})
+    s.todos.append({"id": 1, "text": "hi", "done": False})
 
-set_store(update)
+set_store(edit)                                        # draft form
+set_store(store_path("todos", 0, "done", lambda d: not d))   # path form
+set_store(reconcile({"user": {"name": "Grace"}, "todos": []}, key="id"))
+flush()
+
+store.user.name          # "Grace" (tracked read)
+"todos" in store         # True
+snapshot(store)          # {"user": {"name": "Grace"}, "todos": []}
 ```
 
-Alternatively, pass a [`reconcile`][wybthon.reconcile] result to diff
-external data in:
+Derived and optimistic stores:
 
 ```python
-set_store(reconcile(fetched))
-```
+from wybthon import action, create_optimistic_store, create_projection, create_signal, create_store, deep
 
-Those are the only two calling conventions; anything else raises
-`TypeError`.
+selected, set_selected = create_signal(1)
+flags = create_projection(lambda d: d.update({"selected_id": selected()}), {"selected_id": None})
 
-##### Reconcile and unwrap
-
-- `reconcile(data, key="id")`. Create a reconcile marker for `set_store`: the new data is **diffed** into the existing state so only changed paths notify. List items are matched by `key`, preserving item identity across updates (important for `For`). Pass `key=None` to disable key matching (positional replace).
-- `unwrap(value)`. Return the raw data underneath a store proxy without tracking. Plain values pass through unchanged.
-
-```python
-set_store(reconcile(fetched_todos))
-raw = unwrap(store.todos)
-```
-
-##### Optimistic stores
-
-Pair `create_optimistic_store` with actions: mutate the optimistic
-store for instant UI, reconcile the real answer into a regular store,
-and let the overlay revert when the action settles.
-
-```python
 todos, set_todos = create_store({"items": []})
+stats, _ = create_store(lambda d: d.update({"total": len(todos.items)}), {"total": 0})
 
-shown, set_shown = create_optimistic_store(lambda: unwrap(todos)["items"], [])
+shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
 
 @action
 async def add(title):
@@ -66,4 +68,12 @@ async def add(title):
     set_todos(lambda s: s.items.append(saved))
 ```
 
-Type hints are provided for all public functions and classes.
+Persist a whole store with a split effect:
+`create_effect(lambda: deep(store), lambda data: save(data))` re-runs on
+any nested write and hands the apply stage a plain copy.
+
+#### See also
+
+- [`action`][wybthon.action], [`create_optimistic`][wybthon.create_optimistic], [`refresh`][wybthon.refresh]
+- [Concepts: Stores](../concepts/stores.md)
+- [Concepts: Reactivity](../concepts/reactivity.md)

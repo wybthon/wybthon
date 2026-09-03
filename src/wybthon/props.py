@@ -1,89 +1,125 @@
 """DOM property application and diffing for element VNodes.
 
-Translates VNode props into batched DOM ops (see `wybthon.kernel`),
-including:
+Translates VNode props into batched DOM ops (see `wybthon.kernel`):
 
+- **Attributes** with Pythonic names: `class_` and `html_for` map to
+  `class` and `for`, and underscores become hyphens (`aria_label`,
+  `data_id`, `stroke_width`).
+- **Boolean attributes**: `True` sets the attribute, `False`/`None`
+  removes it (`disabled=False` renders no attribute).
 - **Controlled form elements** (`value`, `checked`) via DOM properties.
-- **CSS style objects** (`{"backgroundColor": "red"}` → kebab-cased
-  inline styles).
-- **Dataset attributes** (`{"dataset": {"id": 5}}` → `data-id="5"`).
-- **Event delegation** for `on_click` / `onClick` style handlers.
-- **Reactive prop bindings**: callable prop values are wrapped in their
-  own effect so updates re-apply only the affected prop, never the
-  surrounding component.
+- **CSS style objects** (`{"background_color": "red"}` becomes
+  `background-color: red`) or raw style strings.
+- **Dataset attributes** (`{"dataset": {"id": 5}}` becomes `data-id="5"`).
+- **Event delegation** for `on_click`-style handlers.
+- **Refs**: a [`Ref`][wybthon.Ref], a callback `ref(el)`, or a list of
+  either.
+- **Reactive bindings**: an accessor or zero-arg function as a prop
+  value (or as a `class`/`style` dict value) is wrapped in its own render
+  effect so updates re-apply only that prop.
 
 Nothing here touches the DOM directly; every applier emits ops against
-an integer node id, and the kernel applies the whole batch in one
-bridge crossing at commit time.
-
-This module is consumed by the reconciler; most application code never
-imports from it directly.
+an integer node id and the kernel applies the batch in one bridge
+crossing at commit time. Application code never imports this module.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from . import kernel
 from ._warnings import log_error
 from .events import set_handler
 from .kernel import OP_SET_ATTR, OP_SET_PROP, OP_SET_STYLE
-from .vnode import is_getter
+from .reactivity import _core
+from .reactivity._core import _K_RENDER, Computation, NotReadyError, _unwrap, is_accessor
 
-__all__: list = []
+__all__: list[str] = []
 
-PropsDict = Dict[str, Any]
+PropsDict = dict[str, Any]
 
-CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
+_CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 
-# Sentinel used by reactive prop bindings to detect "first run".
+# Sentinel for "no previous value" in reactive bindings / initial apply.
 _UNSET = object()
+# Sentinel a binding's compute stage returns to keep the current DOM value.
+_KEEP = object()
 
-# Lazily-bound reference to ``wybthon.reactivity.render_effect`` (a
-# circular import at module load time; binding once avoids a per-binding
-# import).
-_render_effect: Any = None
+# Props the element applier never writes to the DOM.
+_SKIP = frozenset({"key", "ref", "children"})
+
+# Props written as DOM properties rather than attributes.
+_DOM_PROPS = frozenset({"value", "checked", "inner_html", "innerHTML"})
+
+# HTML boolean attributes: present/absent, never "true"/"false".
+_BOOLEAN_ATTRS = frozenset(
+    {
+        "allowfullscreen",
+        "async",
+        "autofocus",
+        "autoplay",
+        "checked",
+        "controls",
+        "default",
+        "defer",
+        "disabled",
+        "formnovalidate",
+        "hidden",
+        "inert",
+        "ismap",
+        "itemscope",
+        "loop",
+        "multiple",
+        "muted",
+        "nomodule",
+        "novalidate",
+        "open",
+        "playsinline",
+        "readonly",
+        "required",
+        "reversed",
+        "seamless",
+        "selected",
+    }
+)
+
+# Per-node reactive prop bindings: node_id -> {prop name: computation}.
+_bindings: dict[int, dict[str, Computation]] = {}
 
 
 def to_kebab(name: str) -> str:
-    """Convert a camelCase property name to kebab-case.
+    """Convert a camelCase or snake_case CSS property name to kebab-case."""
+    if "_" in name:
+        return name.replace("_", "-")
+    return _CAMEL_TO_KEBAB.sub("-", name).lower()
 
-    Args:
-        name: A camelCase string such as `"backgroundColor"`.
 
-    Returns:
-        The kebab-cased equivalent (e.g., `"background-color"`).
+def attr_name(name: str) -> str:
+    """Map a Pythonic prop name to its DOM attribute name.
+
+    `class_` becomes `class`, `html_for` and `for_` become `for`, and any
+    other name containing underscores has them replaced with hyphens
+    (`aria_label`, `stroke_width`, `data_testid`).
     """
-    return CAMEL_TO_KEBAB.sub("-", name).lower()
+    if name == "class_":
+        return "class"
+    if name == "html_for" or name == "for_":
+        return "for"
+    if "_" in name:
+        return name.replace("_", "-")
+    return name
 
 
 def is_event_prop(name: str) -> bool:
-    """Return True if `name` looks like an event handler prop.
-
-    Both `on_click` (snake-case) and `onClick` (camelCase) styles are
-    recognised.
-
-    Args:
-        name: Prop name to inspect.
-
-    Returns:
-        `True` for event handler props.
-    """
+    """Return True for `on_click`-style (or `onClick`-style) handler props."""
     if name.startswith("on_"):
         return True
     return len(name) > 2 and name.startswith("on") and name[2].isupper()
 
 
 def event_name_from_prop(name: str) -> str:
-    """Convert an `on_click` / `onClick` prop name to its DOM event name.
-
-    Args:
-        name: Event handler prop name.
-
-    Returns:
-        The DOM event name (e.g., `"click"`, `"mouseover"`).
-    """
+    """Convert an `on_click` / `onClick` prop name to its DOM event name."""
     if name.startswith("on_"):
         return name[3:]
     if name.startswith("on"):
@@ -91,35 +127,65 @@ def event_name_from_prop(name: str) -> str:
     return name
 
 
-def attach_ref(props: PropsDict, node_id: int) -> None:
-    """Point `props["ref"].current` at an id-backed `Element` when present."""
-    ref = props.get("ref")
-    if ref is not None and hasattr(ref, "current"):
-        from .dom import Element
+# ---------------------------------------------------------------------------
+# Refs
+# ---------------------------------------------------------------------------
 
-        ref.current = Element(node_id=node_id)
+
+def attach_ref(props: PropsDict, node_id: int) -> None:
+    """Assign the mounted element to the `ref` prop (Ref, callback, or list)."""
+    ref = props.get("ref")
+    if ref is None:
+        return
+    from .dom import Element
+
+    _assign_ref(ref, Element(node_id=node_id))
+
+
+def _assign_ref(ref: Any, element: Any) -> None:
+    if isinstance(ref, (list, tuple)):
+        for r in ref:
+            _assign_ref(r, element)
+        return
+    if hasattr(ref, "current"):
+        ref.current = element
+        return
+    if callable(ref):
+        try:
+            ref(element)
+        except Exception as exc:
+            log_error(f"ref callback raised: {exc}", exc)
 
 
 def detach_ref(props: PropsDict) -> None:
-    """Clear `props["ref"].current` when a `ref` prop is present."""
+    """Reset `Ref` objects in the `ref` prop to `None` (callbacks aren't re-invoked)."""
     ref = props.get("ref")
-    if ref is not None and hasattr(ref, "current"):
+    if ref is None:
+        return
+    _clear_ref(ref)
+
+
+def _clear_ref(ref: Any) -> None:
+    if isinstance(ref, (list, tuple)):
+        for r in ref:
+            _clear_ref(r)
+        return
+    if hasattr(ref, "current"):
         ref.current = None
 
 
 # ---------------------------------------------------------------------------
-# Per-prop appliers (used by both initial mount and per-prop reactive bindings)
+# Single-prop appliers
 # ---------------------------------------------------------------------------
 
 
 def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> None:
-    """Emit ops applying (or diffing) a single prop on a DOM node.
+    """Emit ops applying (or diffing) one prop on a DOM node.
 
-    `old_val` may be the sentinel `_UNSET` for an initial application; in
-    that case the prop is written unconditionally with no diff against
-    a previous value.
+    `old_val` may be `_UNSET` for an initial application, in which case
+    the prop is written unconditionally.
     """
-    if name in ("key", "ref"):
+    if name in _SKIP:
         return
 
     if is_event_prop(name):
@@ -128,8 +194,8 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         set_handler(node_id, name, new_val if callable(new_val) else None)
         return
 
-    if name in ("class", "className"):
-        kernel.emit((OP_SET_ATTR, node_id, "class", _class_string(new_val)))
+    if name == "class" or name == "class_":
+        kernel.emit((OP_SET_ATTR, node_id, "class", _class_string(new_val) or None))
         return
 
     if name == "style":
@@ -148,17 +214,28 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
         return
 
-    kernel.emit((OP_SET_ATTR, node_id, name, None if new_val is None else str(new_val)))
+    if name == "inner_html" or name == "innerHTML":
+        kernel.emit((OP_SET_PROP, node_id, "innerHTML", "" if new_val is None else str(new_val)))
+        return
+
+    attr = attr_name(name)
+    if new_val is None or new_val is False:
+        kernel.emit((OP_SET_ATTR, node_id, attr, None))
+        return
+    if new_val is True:
+        kernel.emit((OP_SET_ATTR, node_id, attr, "" if attr in _BOOLEAN_ATTRS else "true"))
+        return
+    kernel.emit((OP_SET_ATTR, node_id, attr, str(new_val)))
 
 
 def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
-    """Emit ops removing a single prop from a DOM node."""
-    if name in ("key", "ref"):
+    """Emit ops removing one prop from a DOM node."""
+    if name in _SKIP:
         return
     if is_event_prop(name):
         set_handler(node_id, name, None)
-    elif name in ("class", "className"):
-        kernel.emit((OP_SET_ATTR, node_id, "class", ""))
+    elif name == "class" or name == "class_":
+        kernel.emit((OP_SET_ATTR, node_id, "class", None))
     elif name == "style":
         _remove_styles(node_id, old_val)
     elif name == "dataset":
@@ -167,8 +244,42 @@ def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
         kernel.emit((OP_SET_PROP, node_id, "value", ""))
     elif name == "checked":
         kernel.emit((OP_SET_PROP, node_id, "checked", False))
+    elif name == "inner_html" or name == "innerHTML":
+        kernel.emit((OP_SET_PROP, node_id, "innerHTML", ""))
     else:
-        kernel.emit((OP_SET_ATTR, node_id, name, None))
+        kernel.emit((OP_SET_ATTR, node_id, attr_name(name), None))
+
+
+def _reactive_dict(value: Any) -> bool:
+    """Return True when `value` is a dict with at least one reactive value."""
+    if type(value) is not dict:
+        return False
+    for v in value.values():
+        if is_accessor(v):
+            return True
+    return False
+
+
+def _dict_getter(value: dict[str, Any]) -> Any:
+    def getter() -> dict[str, Any]:
+        return {k: _unwrap(v) for k, v in value.items()}
+
+    return getter
+
+
+def binding_value(name: str, value: Any) -> Any:
+    """Return the reactive expression for a prop value, or `None` when it's static.
+
+    A prop is reactive when its value is an accessor or zero-arg
+    function, or (for `class` and `style`) a dict containing one.
+    """
+    if name in _SKIP or is_event_prop(name):
+        return None
+    if is_accessor(value):
+        return value
+    if (name == "class" or name == "class_" or name == "style") and _reactive_dict(value):
+        return _dict_getter(value)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -176,134 +287,171 @@ def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
+def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
+    """Emit ops for a fresh element's props, wiring reactive bindings."""
+    for name, value in new_props.items():
+        if name in _SKIP:
+            continue
+        if is_event_prop(name):
+            set_handler(node_id, name, value if callable(value) else None)
+            continue
+        getter = binding_value(name, value)
+        if getter is not None:
+            _bind_reactive_prop(node_id, name, getter)
+        else:
+            _apply_single_prop(node_id, name, _UNSET, value)
+
+
 def apply_props(node_id: int, old_props: PropsDict, new_props: PropsDict) -> None:
-    """Emit ops for prop diffs on a node, including events and styles.
+    """Emit ops for prop diffs on an existing node (the patch path).
 
-    Used by the patch path; both old and new props are static (already-
-    resolved) values. For initial mount with potentially reactive prop
-    values, use [`apply_initial_props`][wybthon.props.apply_initial_props].
-
-    Args:
-        node_id: The target node id.
-        old_props: Previously-applied prop dict.
-        new_props: Newly-resolved prop dict.
+    Reactive values that are the same object on both sides are left
+    alone (their binding keeps running); a new reactive value replaces
+    the previous binding; a static value replaces a binding with a
+    plain write.
     """
     for name, old_val in old_props.items():
-        if name in ("key", "ref"):
+        if name in _SKIP:
             continue
         if name not in new_props:
+            _unbind(node_id, name)
             _remove_single_prop(node_id, name, old_val)
 
     for name, new_val in new_props.items():
-        if name in ("key", "ref"):
+        if name in _SKIP:
             continue
         old_val = old_props.get(name, _UNSET)
-        # Skip untouched props. Identity covers handlers/getters; scalar
-        # equality covers the common attribute case. `value`/`checked`
-        # are always re-asserted because the live DOM property can
-        # diverge from the last-applied prop (user input).
-        if name not in ("value", "checked"):
-            if old_val is new_val and old_val is not _UNSET:
+        if is_event_prop(name):
+            if old_val is not new_val:
+                set_handler(node_id, name, new_val if callable(new_val) else None)
+            continue
+        if old_val is new_val and old_val is not _UNSET and name != "value" and name != "checked":
+            continue
+        getter = binding_value(name, new_val)
+        if getter is not None:
+            if old_val is new_val:
                 continue
+            _unbind(node_id, name)
+            _bind_reactive_prop(node_id, name, getter)
+            continue
+        if _unbind(node_id, name):
+            old_val = _UNSET
+        # `value`/`checked` are always re-asserted: the live DOM property
+        # may have diverged from the last-applied prop (user input).
+        if name != "value" and name != "checked":
             if isinstance(new_val, (str, int, float, bool)) and type(old_val) is type(new_val) and old_val == new_val:
                 continue
         _apply_single_prop(node_id, name, old_val, new_val)
 
 
-def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
-    """Emit ops for a fresh set of props on initial mount, wiring reactive bindings.
-
-    Callable prop values (excluding event handlers and `ref`) are treated
-    as **reactive bindings**: each is wrapped in its own effect so that
-    updates re-apply only that single prop, with no re-render of the
-    surrounding component. Static values are applied once.
-
-    Args:
-        node_id: The target node id.
-        new_props: Initial prop dict.
-    """
-    for name, value in new_props.items():
-        if name in ("key", "ref"):
-            continue
-        if is_event_prop(name):
-            set_handler(node_id, name, value if callable(value) else None)
-            continue
-        if is_getter(value):
-            _bind_reactive_prop(node_id, name, value)
-        else:
-            _apply_single_prop(node_id, name, _UNSET, value)
+def _unbind(node_id: int, name: str) -> bool:
+    table = _bindings.get(node_id)
+    if table is None:
+        return False
+    comp = table.pop(name, None)
+    if not table:
+        _bindings.pop(node_id, None)
+    if comp is None:
+        return False
+    comp.dispose()
+    return True
 
 
-def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Any:
-    """Wrap `getter` in a render effect that re-applies prop `name` on changes.
+def remove_bindings_for(node_id: int) -> None:
+    """Dispose every reactive prop binding on `node_id` (called on unmount)."""
+    table = _bindings.pop(node_id, None)
+    if table:
+        for comp in table.values():
+            comp.dispose()
+
+
+def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Computation:
+    """Wrap `getter` in a render effect that re-applies prop `name` on change.
 
     Render-phase scheduling means every dirty binding in a flush emits
-    its op before the single commit, so one signal write that touches
-    many props still crosses the bridge once.
-
-    Returns the underlying `Computation` so callers can dispose it when
-    the element unmounts.
+    its op before the single DOM commit. Errors route to the nearest
+    [`Errored`][wybthon.Errored] boundary, or are logged.
     """
-    global _render_effect
-    if _render_effect is None:
-        from .reactivity import render_effect as _render_effect_fn
 
-        _render_effect = _render_effect_fn
-
-    from .reactivity import NotReadyError
-
-    last: list = [_UNSET]
-
-    def update() -> None:
+    def compute() -> Any:
         try:
-            new_val = getter()
+            return getter()
         except NotReadyError:
-            return  # keep the previous value until the async source resolves
+            return _KEEP
         except Exception as exc:
-            log_error(f"Reactive prop '{name}' getter raised: {exc}", exc)
+            from .reconciler import _dispatch_to_error_boundary
+
+            if not _dispatch_to_error_boundary(exc):
+                log_error(f"Reactive prop '{name}' raised: {exc}", exc)
+            return _KEEP
+
+    last: list[Any] = [_UNSET]
+
+    def apply(new_val: Any) -> None:
+        if new_val is _KEEP:
             return
         old_val = last[0]
         last[0] = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    return _render_effect(update)
+    comp = Computation(compute, kind=_K_RENDER, apply=apply, pass_prev=False)
+    owner = _core._current_owner
+    if owner is not None:
+        owner._add_child(comp)
+    table = _bindings.get(node_id)
+    if table is None:
+        _bindings[node_id] = {name: comp}
+    else:
+        table[name] = comp
+    comp._update_if_necessary()
+    return comp
 
 
 # ---------------------------------------------------------------------------
-# Class / Style / Dataset helpers
+# Class / style / dataset helpers
 # ---------------------------------------------------------------------------
 
 
 def _class_string(value: Any) -> str:
     """Normalize a class prop (string, list, or dict) to a class string."""
-    if value is None:
+    if value is None or value is False:
         return ""
     if isinstance(value, str):
         return value
     if isinstance(value, (list, tuple)):
         return " ".join(str(x) for x in value if x)
     if isinstance(value, dict):
-        # Accept {"name": truthy} mapping for conditional classes
         return " ".join(str(k) for k, v in value.items() if v)
     return str(value)
 
 
 def _remove_styles(node_id: int, old_val: Any) -> None:
-    """Emit ops removing previously applied inline styles."""
     if isinstance(old_val, dict) and old_val:
         kernel.emit((OP_SET_STYLE, node_id, {to_kebab(k): None for k in old_val}))
+    elif isinstance(old_val, str):
+        kernel.emit((OP_SET_ATTR, node_id, "style", None))
 
 
 def _apply_style(node_id: int, old_val: Any, new_val: Any) -> None:
-    """Diff style dicts and emit a single style op with the changes."""
+    """Diff style dicts (or set a raw style string) with a single op."""
+    if isinstance(new_val, str):
+        if old_val != new_val:
+            kernel.emit((OP_SET_ATTR, node_id, "style", new_val))
+        return
+    if isinstance(old_val, str):
+        kernel.emit((OP_SET_ATTR, node_id, "style", None))
+        old_val = None
     old_styles = old_val if isinstance(old_val, dict) else {}
     if isinstance(new_val, dict):
-        decls: Dict[str, Optional[str]] = {}
+        decls: dict[str, str | None] = {}
         for sk in old_styles:
             if sk not in new_val:
                 decls[to_kebab(sk)] = None
         for sk, sv in new_val.items():
-            decls[to_kebab(sk)] = str(sv)
+            if sv is None or sv is False:
+                decls[to_kebab(sk)] = None
+            elif old_styles.get(sk, _UNSET) != sv:
+                decls[to_kebab(sk)] = str(sv)
         if decls:
             kernel.emit((OP_SET_STYLE, node_id, decls))
     else:
@@ -311,20 +459,21 @@ def _apply_style(node_id: int, old_val: Any, new_val: Any) -> None:
 
 
 def _remove_dataset(node_id: int, old_val: Any) -> None:
-    """Emit ops removing previously applied data-* attributes."""
     if isinstance(old_val, dict):
         for dk in old_val:
-            kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", None))
+            kernel.emit((OP_SET_ATTR, node_id, f"data-{to_kebab(str(dk))}", None))
 
 
 def _apply_dataset(node_id: int, old_val: Any, new_val: Any) -> None:
-    """Diff and apply data-* attribute changes."""
     old_ds = old_val if isinstance(old_val, dict) else {}
     if isinstance(new_val, dict):
         for dk in old_ds:
             if dk not in new_val:
-                kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", None))
+                kernel.emit((OP_SET_ATTR, node_id, f"data-{to_kebab(str(dk))}", None))
         for dk, dv in new_val.items():
-            kernel.emit((OP_SET_ATTR, node_id, f"data-{dk}", str(dv)))
+            if dv is None or dv is False:
+                kernel.emit((OP_SET_ATTR, node_id, f"data-{to_kebab(str(dk))}", None))
+            elif old_ds.get(dk, _UNSET) != dv:
+                kernel.emit((OP_SET_ATTR, node_id, f"data-{to_kebab(str(dk))}", "" if dv is True else str(dv)))
     else:
         _remove_dataset(node_id, old_ds)

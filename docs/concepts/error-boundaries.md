@@ -1,91 +1,147 @@
-### Error Boundaries
+# Error boundaries
 
-`ErrorBoundary` catches errors thrown during render of its subtree and renders a fallback. You can reset the boundary imperatively or by changing a `reset_key(s)` prop.
-
-```python
-from wybthon import ErrorBoundary, h
-
-def Failing(_props):
-    raise RuntimeError("boom")
-
-def fallback(err, reset):
-    # reset is provided for convenience; you can also use reset_key(s)
-    return h("div", {"class": "error"},
-             h("p", {}, f"Oops: {err}"),
-             h("button", {"on_click": lambda e: reset()}, "Try again"))
-
-view = h(ErrorBoundary, {"fallback": fallback}, h(Failing, {}))
-```
-
-#### Auto-reset with keys
-
-When a `reset_key` (single) or `reset_keys` (list/tuple) value changes, the boundary clears its error and re-renders children on the next render.
+[`Errored`][wybthon.Errored] catches errors raised while rendering its
+subtree and shows a fallback in its place, leaving sibling trees
+untouched. It's the recommended way to surface unexpected errors
+without crashing the whole app.
 
 ```python
-from wybthon import ErrorBoundary, h, create_signal
+from wybthon import Errored, component
+from wybthon.html import button, div, p
 
-count, set_count = create_signal(0)
-
-def Counter(_props):
-    c = count()
-    if c % 2 == 1:
-        raise ValueError("odd!")
-    return h("span", {}, f"Count: {c}")
-
-view = h(
-    "div",
-    {},
-    h(ErrorBoundary, {"fallback": lambda err, reset: h("span", {}, f"Err: {err}")}, h(Counter, {})),
-    h("button", {"on_click": lambda e: set_count(count() + 1)}, "+1"),
-)
-
-# Or couple the boundary to a key so it resets when `count` changes:
-view_keyed = h(
-    ErrorBoundary,
-    {"fallback": lambda err, reset: h("span", {}, f"Err: {err}"), "reset_key": lambda: count()},
-    h(Counter, {}),
-)
-```
-
-#### on_error hook
-
-Provide `on_error` to observe errors when they're captured by the boundary:
-
-```python
-def observe(err):
-    print("Captured:", err)
-
-view = h(ErrorBoundary, {"fallback": lambda e, r: "Oops", "on_error": observe}, h(Failing, {}))
-```
-
-#### The `on_error` primitive
-
-Separately from the boundary's prop, the top-level
-[`on_error`][wybthon.on_error] primitive registers an error handler on
-the **current reactive scope** (mirroring Solid's `onError`). Errors
-raised by effects and computations created under that scope route to
-the nearest ancestor handler instead of propagating:
-
-```python
-from wybthon import component, on_error
 
 @component
-def Dashboard():
-    on_error(lambda exc: report_to_monitoring(exc))
-    ...
+def Failing():
+    raise RuntimeError("boom")
+
+
+def fallback(err, reset):
+    return div(
+        p(f"Oops: {err}"),
+        button("Try again", on_click=lambda e: reset()),
+        class_="error",
+    )
+
+
+view = Errored(lambda: Failing(), fallback=fallback)
 ```
 
-Use `ErrorBoundary` when you need fallback UI, and `on_error` (or
-[`catch_error`][wybthon.catch_error]) when you only need to observe or
-log.
+`children` may be a VNode, a zero-arg callable, or a list of either.
+Passing a callable defers building the subtree until the boundary
+mounts, which is what you want when the children can raise.
 
-#### Limitations
+## What gets caught
 
-- Only errors thrown during render of the child subtree are caught. Errors from event handlers should be handled separately.
-- Async work integrates through the reactive graph: an async memo stores its error and re-raises it on read, so a failed fetch reaches the boundary when the memo is read during render. Errors from an [`action`][wybthon.action] route to the nearest error-boundary scope captured at call time (and re-raise to the awaiter).
+The boundary installs an error handler on its owner scope. Errors from
+any of these route to the nearest enclosing boundary:
+
+- A component body raising during mount.
+- A hole's expression or a reactive prop binding raising when it (re-)evaluates.
+- An effect's compute stage raising, unless the effect has its own `error=` handler.
+- An async memo rejecting: the error is stored and re-raised when the memo is read, so it surfaces in the hole that reads it.
+- An [`action`][wybthon.action] raising: routed to the boundary that was active when the action was called, and re-raised to the awaiter.
+
+The nearest boundary wins. An inner `Errored` handles errors from its
+own subtree; only errors outside it reach the outer one:
+
+```python
+Errored(
+    lambda: div(
+        Sidebar(),
+        Errored(lambda: RiskyPanel(), fallback=lambda err: p("Panel failed")),
+    ),
+    fallback=lambda err: p("Page failed"),
+)
+```
+
+## Fallback shapes
+
+`fallback` may be:
+
+- a `VNode` or a string, shown as is;
+- a callable `(error) -> VNode`;
+- a callable `(error, reset) -> VNode`, where `reset()` clears the error and re-renders the children;
+- omitted, in which case the boundary renders the text "Something went wrong."
+
+A callable fallback runs each time an error is caught, so it can inspect
+the exception:
+
+```python
+def describe(err, reset):
+    if isinstance(err, PermissionError):
+        return p("You don't have access to this.")
+    return div(p(str(err)), button("Retry", on_click=lambda e: reset()))
+```
+
+## Resetting
+
+Call the `reset` argument from the fallback, or pass `reset_on=`: an
+accessor (or plain value) whose change clears the current error
+automatically. Coupling a boundary to the current route is the usual
+pattern, so navigating away from a broken page recovers on its own:
+
+```python
+from wybthon import Errored, current_path
+
+Errored(lambda: Outlet(), fallback=lambda err: p("This page failed"), reset_on=current_path)
+```
+
+Resetting re-renders the children. If the cause hasn't been fixed, the
+error is caught again and the fallback returns.
+
+## Observing errors with `on_error`
+
+Pass `on_error=` to be notified when the boundary catches something, for
+logging or monitoring. It runs in addition to showing the fallback:
+
+```python
+Errored(lambda: Dashboard(), fallback="Dashboard unavailable", on_error=report_to_monitoring)
+```
+
+## Effects with their own handler
+
+[`create_effect`][wybthon.create_effect] accepts `error=`. Exceptions
+raised by the compute stage (sync or async) go to that handler instead
+of the nearest boundary, so a failing background effect doesn't take
+down the UI around it:
+
+```python
+from wybthon import create_effect
+
+create_effect(
+    lambda: save_draft(draft()),
+    lambda result: set_status("saved"),
+    error=lambda exc: set_status(f"save failed: {exc}"),
+)
+```
+
+## Event handlers are not routed
+
+Like SolidJS, Wybthon runs event handlers outside rendering. An
+exception in an `on_click` handler is logged to the console (with a
+traceback in dev mode); the boundary isn't involved and the UI stays
+intact. Handle expected failures inside the handler, or move the work
+into an [`action`][wybthon.action], whose errors *are* routed to the
+boundary captured at call time.
+
+## Pairing with `Loading`
+
+`Errored` handles errors; [`Loading`][wybthon.Loading] handles
+not-ready state. Wrap async regions with both, `Errored` on the outside
+so a rejected fetch inside the loading content still has a fallback:
+
+```python
+from wybthon import Errored, Loading
+from wybthon.html import p
+
+Errored(
+    lambda: Loading(lambda: UserCard(), fallback=p("Loading...")),
+    fallback=lambda err, reset: div(p(f"Could not load: {err}"), button("Retry", on_click=lambda e: reset())),
+)
+```
 
 ## Next steps
 
-- See the [`error_boundary`][wybthon.error_boundary] API reference.
-- Read [Async and Loading](async-loading.md) for async error handling.
+- See the [`error_boundary`](../api/error_boundary.md) API reference.
+- Read [Async and loading](async-loading.md) for async error handling.
 - Walk through the [Error boundary example](../examples/errors.md).

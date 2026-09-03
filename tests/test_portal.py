@@ -1,91 +1,134 @@
-"""Tests for Portal – rendering children into a different container."""
-
 from conftest import StubNode, collect_texts
 
-import wybthon as _wybthon_pkg  # noqa: F401
+from wybthon.component import component
+from wybthon.context import create_context, use_context
+from wybthon.flow import Show
+from wybthon.html import div, p, span
 from wybthon.portal import Portal
-from wybthon.vnode import h
+from wybthon.reactivity import create_signal, flush
 
 
-def test_portal_renders_into_target_container(wyb, root_element):
-    portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
-
-    def App(props):
-        return h(
-            "div",
-            {},
-            h("p", {}, "In parent"),
-            Portal(h("p", {}, "In portal"), mount=portal_target),
-        )
-
-    wyb["reconciler"].render(h(App, {}), root_element)
-
-    parent_texts = collect_texts(root_element.element)
-    portal_texts = collect_texts(portal_target.element)
-
-    assert "In parent" in parent_texts
-    assert "In portal" not in parent_texts
-    assert "In portal" in portal_texts
+def texts(node):
+    return [t for t in collect_texts(node) if t]
 
 
-def test_portal_renders_list_of_children(wyb, root_element):
-    portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
-
-    children = [
-        h("p", {}, "Child A"),
-        h("p", {}, "Child B"),
-    ]
-
-    def App(props):
-        return h(
-            "div",
-            {},
-            Portal(children, mount=portal_target),
-        )
-
-    wyb["reconciler"].render(h(App, {}), root_element)
-
-    portal_texts = collect_texts(portal_target.element)
-    assert "Child A" in portal_texts
-    assert "Child B" in portal_texts
+def elements(node):
+    return [n for n in node.childNodes if n.tag]
 
 
-def test_portal_unmount_cleans_up(wyb, root_element):
-    portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
-
-    def App(props):
-        return h(
-            "div",
-            {},
-            Portal(h("span", {}, "Portal content"), mount=portal_target),
-        )
-
-    tree = h(App, {})
-    wyb["reconciler"].render(tree, root_element)
-
-    assert "Portal content" in collect_texts(portal_target.element)
-
-    wyb["reconciler"].unmount(tree)
-    assert "Portal content" not in collect_texts(portal_target.element)
+def make_target(wyb):
+    node = StubNode(tag="div")
+    return node, wyb["dom"].Element(node=node)
 
 
-def test_portal_placeholder_in_parent(wyb, root_element):
-    """Portal should leave an empty text placeholder in the parent container."""
-    portal_target = wyb["dom"].Element(node=StubNode(tag="div"))
+def test_portal_renders_children_into_mount_element(wyb, root_element):
+    target, target_el = make_target(wyb)
+    root = wyb["reconciler"].render(div(span("before"), Portal(p("modal"), mount=target_el)), root_element)
+    assert texts(target) == ["modal"]
+    assert elements(target)[0].tag == "p"
+    # Only the sibling element stays in the original spot; the portal leaves no element behind.
+    container_div = root_element.element.childNodes[0]
+    assert [n.tag for n in elements(container_div)] == ["span"]
+    assert texts(root_element.element) == ["before"]
+    root.dispose()
 
-    def App(props):
-        return h(
-            "div",
-            {},
-            h("p", {}, "Before"),
-            Portal(h("p", {}, "Modal"), mount=portal_target),
-            h("p", {}, "After"),
-        )
 
-    wyb["reconciler"].render(h(App, {}), root_element)
+def test_portal_children_update_reactively(wyb, root_element):
+    target, target_el = make_target(wyb)
+    msg, set_msg = create_signal("hi")
+    root = wyb["reconciler"].render(div(Portal(p(msg), mount=target_el)), root_element)
+    assert texts(target) == ["hi"]
+    set_msg("yo")
+    flush()
+    assert texts(target) == ["yo"]
+    root.dispose()
 
-    parent_texts = collect_texts(root_element.element)
-    assert "Before" in parent_texts
-    assert "After" in parent_texts
-    assert "Modal" not in parent_texts
-    assert "Modal" in collect_texts(portal_target.element)
+
+def test_portal_unmount_via_show_removes_children_from_target(wyb, root_element):
+    target, target_el = make_target(wyb)
+    show, set_show = create_signal(True)
+    root = wyb["reconciler"].render(div(Show(show, lambda: Portal(p("modal"), mount=target_el))), root_element)
+    assert texts(target) == ["modal"]
+    set_show(False)
+    flush()
+    assert texts(target) == []
+    assert elements(target) == []
+    set_show(True)
+    flush()
+    assert texts(target) == ["modal"]
+    root.dispose()
+
+
+def test_portal_target_outside_render_root_receives_delegated_events(wyb, root_element):
+    from wybthon.html import button
+
+    target, target_el = make_target(wyb)
+    clicks: list[str] = []
+    root = wyb["reconciler"].render(
+        div(Portal(button("go", on_click=lambda e: clicks.append("portal")), mount=target_el)), root_element
+    )
+    backend = wyb["kernel"]._backend
+    assert target in backend.roots()
+    backend.dispatch("click", elements(target)[0])
+    assert clicks == ["portal"]
+    root.dispose()
+    assert target not in backend.roots()
+
+
+def test_portal_into_the_render_root_keeps_delegation_after_unmount(wyb, root_element):
+    from wybthon.html import button
+
+    show, set_show = create_signal(True)
+    clicks: list[str] = []
+    wyb["reconciler"].render(
+        div(
+            button("app", on_click=lambda e: clicks.append("app")),
+            Show(show, lambda: Portal(p("modal"), mount=root_element)),
+        ),
+        root_element,
+    )
+    backend = wyb["kernel"]._backend
+    set_show(False)
+    flush()
+    # Unrooting the portal's target must not unroot the app root it shares.
+    assert root_element.element in backend.roots()
+    app_button = elements(root_element.element.childNodes[0])[0]
+    backend.dispatch("click", app_button)
+    assert clicks == ["app"]
+
+
+def test_root_dispose_removes_portal_children(wyb, root_element):
+    target, target_el = make_target(wyb)
+    root = wyb["reconciler"].render(div(Portal([p("a"), p("b")], mount=target_el)), root_element)
+    assert texts(target) == ["a", "b"]
+    root.dispose()
+    assert elements(target) == []
+    assert texts(target) == []
+
+
+def test_portal_mount_by_node_id_and_callable_children(wyb, root_element):
+    target, target_el = make_target(wyb)
+    count, set_count = create_signal(0)
+    root = wyb["reconciler"].render(
+        div(Portal(lambda: p(f"count={count()}"), mount=target_el.node_id)),
+        root_element,
+    )
+    assert texts(target) == ["count=0"]
+    set_count(3)
+    flush()
+    assert texts(target) == ["count=3"]
+    root.dispose()
+    assert texts(target) == []
+
+
+def test_portal_children_keep_context_from_original_tree(wyb, root_element):
+    target, target_el = make_target(wyb)
+    Theme = create_context("none")
+
+    @component
+    def Child():
+        return p(use_context(Theme))
+
+    root = wyb["reconciler"].render(Theme("dark", div(Portal(Child(), mount=target_el))), root_element)
+    assert texts(target) == ["dark"]
+    root.dispose()

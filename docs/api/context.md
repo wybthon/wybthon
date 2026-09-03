@@ -2,42 +2,55 @@
 
 ::: wybthon.context
 
-#### `create_context(default) -> Context`
+#### What's in this module
 
-Create a new context with a unique ID and a default value.  The default
-is returned by `use_context` when no ancestor `Provider` supplies a
-value.
+Context passes a value down the tree without threading props. A
+[`Context`][wybthon.Context] created by
+[`create_context`][wybthon.create_context] **is its own provider**: call
+it with a value and children to expose that value to every descendant,
+and read it with [`use_context`][wybthon.use_context]. Values live on the
+ownership tree, so `use_context` works anywhere an owner exists:
+component bodies, effects, memos, and `For` rows.
 
-#### `use_context(ctx) -> Any`
+| Name | Description |
+| --- | --- |
+| [`create_context`][wybthon.create_context] | `create_context(default=..., *, name=None)`; without a default, reading outside a provider raises. |
+| [`Context`][wybthon.Context] | The token; `Theme(value, *children)` returns a provider `VNode`. `.default`, `.name`, `.has_default`. |
+| [`use_context`][wybthon.use_context] | Nearest provided value, returned exactly as provided (an accessor stays an accessor). |
+| [`ContextNotFoundError`][wybthon.ContextNotFoundError] | Raised when no provider is above the reader and the context has no default. |
 
-Read the current value for `ctx` by walking up the **ownership tree**
-from `_current_owner`.  Searches each owner's `_context_map` for the
-context ID; returns the first match, or `ctx.default` if none is found.
-
-Can be called during a component's setup phase, inside a render
-function, or inside an effect: anywhere that runs under a reactive
-owner.
-
-#### `Provider(props) -> VNode`
-
-Function component that provides a context value to its subtree.  The
-reconciler sets the value on the provider's `_ComponentContext` via
-`_set_context`, making it visible to all descendant owners.
-
-Props:
-
-- `context`: a `Context` object created by `create_context`.
-- `value`: the value to provide.
-- `children`: child VNodes.
-
-Nested providers for the same context shadow outer ones.
-
-#### `Context.Provider(value=None, children=None) -> VNode`
-
-SolidJS-style shorthand on the context object itself. Equivalent to
-`h(Provider, {"context": ctx, "value": value, "children": children})`:
+The value is handed to consumers exactly as provided, so pass a signal
+or accessor when consumers should react to changes, and call it where
+you need the value.
 
 ```python
-Theme = create_context("light")
-view = Theme.Provider(value="dark", children=[h(Label, {})])
+from wybthon import Accessor, Context, button, component, create_context, create_signal, div, use_context
+
+Theme: Context[Accessor[str]] = create_context(name="Theme")
+
+@component
+def ThemedButton():
+    theme = use_context(Theme)                     # the accessor the provider passed
+    return button("Hi", class_=lambda: f"btn-{theme()}")
+
+@component
+def App():
+    theme, set_theme = create_signal("light")
+    return Theme(                                  # value first, then children
+        theme,
+        div(
+            ThemedButton(),
+            button("Toggle", on_click=lambda e: set_theme("dark" if theme.peek() == "light" else "light")),
+        ),
+    )
 ```
+
+Nested providers for the same context shadow outer ones. Outside a
+component, `use_context` still works inside any reactive scope
+(`create_root`, an effect, a memo).
+
+#### See also
+
+- [Concepts: Context](../concepts/context.md)
+- [`Owner`][wybthon.Owner]: where context values are stored
+- [Router](router.md): `use_params`, `use_query`, and `use_base_path` are context readers

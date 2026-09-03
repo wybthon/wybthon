@@ -50,10 +50,10 @@ identical tree (for example, the rows of a list) is a dictionary hit.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from .props import is_event_prop, to_kebab
-from .vnode import VNode, is_getter, normalize_children
+from .props import _BOOLEAN_ATTRS, _class_string, attr_name, binding_value, is_event_prop, to_kebab
+from .vnode import VNode, normalize_children
 
 __all__ = ["MountPlan", "build_plan"]
 
@@ -73,6 +73,9 @@ NODE_MOUNT = 2  # placeholder comment replaced by a component/fragment mount
 # below this, per-node ops are at least as fast as an HTML parse.
 MIN_TEMPLATE_NODES = 3
 
+# Props applied as DOM properties after the clone rather than serialized.
+_PROP_NAMES = frozenset({"value", "checked", "inner_html", "innerHTML"})
+
 _VOID_ELEMENTS = frozenset(
     {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 )
@@ -80,6 +83,11 @@ _VOID_ELEMENTS = frozenset(
 # Raw-text and escapable-raw-text elements whose children the fragment
 # parser treats specially; excluded from the fast path for safety.
 _RAW_TEXT_ELEMENTS = frozenset({"script", "style", "textarea", "title", "xmp", "iframe", "noscript"})
+
+# Namespace roots. SVG and MathML subtrees always mount with per-node
+# ``createElementNS`` ops: the HTML parser only preserves the case of
+# attribute names it knows about, so serializing them isn't safe.
+_FOREIGN_ROOTS = frozenset({"svg", "math"})
 
 # Elements whose content model forbids bare text children (the parser
 # would foster-parent the text outside the table).
@@ -180,7 +188,7 @@ _K_CLOSE = object()  # end of element
 # ineligible for the template fast path. Bounded to keep pathological
 # trees (unique static attr values per instance) from growing without
 # limit; entries past the cap simply aren't cached.
-_shape_cache: Dict[Tuple[Any, ...], Optional[str]] = {}
+_shape_cache: dict[tuple[Any, ...], str | None] = {}
 _SHAPE_CACHE_MAX = 2048
 
 
@@ -206,8 +214,8 @@ class MountPlan:
     def __init__(
         self,
         html: str,
-        order: List[Tuple[int, VNode, Optional[VNode]]],
-        bindings: List[Tuple[VNode, int, str, Any]],
+        order: list[tuple[int, VNode, VNode | None]],
+        bindings: list[tuple[VNode, int, str, Any]],
     ) -> None:
         self.html = html
         self.order = order
@@ -219,7 +227,7 @@ class MountPlan:
         return len(self.order)
 
 
-def build_plan(vnode: VNode) -> Optional[MountPlan]:
+def build_plan(vnode: VNode) -> MountPlan | None:
     """Serialize `vnode`'s static structure, or return `None` when ineligible.
 
     Eligible trees have an element root and contain only element/text
@@ -233,7 +241,7 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     on the first mount of each shape.
 
     Args:
-        vnode: An element VNode (string tag, not `_text`/`_dynamic`/
+        vnode: An element VNode (string tag, not `_text`/`_hole`/
             `_fragment`).
 
     Returns:
@@ -242,9 +250,9 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     if not isinstance(vnode.tag, str) or vnode.tag.startswith("_"):
         return None
 
-    key_parts: List[Any] = []
-    order: List[Tuple[int, VNode, Optional[VNode]]] = []
-    bindings: List[Tuple[VNode, int, str, Any]] = []
+    key_parts: list[Any] = []
+    order: list[tuple[int, VNode, VNode | None]] = []
+    bindings: list[tuple[VNode, int, str, Any]] = []
     try:
         _walk_shape(vnode, None, key_parts, order, bindings)
     except _NoCache:
@@ -266,11 +274,11 @@ def build_plan(vnode: VNode) -> Optional[MountPlan]:
     return plan
 
 
-def _build_plan_uncached(vnode: VNode) -> Optional[MountPlan]:
+def _build_plan_uncached(vnode: VNode) -> MountPlan | None:
     """Run the full serializer (validation + HTML) for one tree."""
-    parts: List[str] = []
-    order: List[Tuple[int, VNode, Optional[VNode]]] = []
-    bindings: List[Tuple[VNode, int, str, Any]] = []
+    parts: list[str] = []
+    order: list[tuple[int, VNode, VNode | None]] = []
+    bindings: list[tuple[VNode, int, str, Any]] = []
     try:
         _serialize_element(vnode, None, parts, order, bindings)
     except _NotEligible:
@@ -288,10 +296,10 @@ _KEYABLE_TYPES = (str, int, float, bool)
 
 def _walk_shape(
     vnode: VNode,
-    parent: Optional[VNode],
-    key_parts: List[Any],
-    order: List[Tuple[int, VNode, Optional[VNode]]],
-    bindings: List[Tuple[VNode, int, str, Any]],
+    parent: VNode | None,
+    key_parts: list[Any],
+    order: list[tuple[int, VNode, VNode | None]],
+    bindings: list[tuple[VNode, int, str, Any]],
 ) -> None:
     """Collect order/bindings for one tree while building its shape key.
 
@@ -312,17 +320,20 @@ def _walk_shape(
                 bindings.append((vnode, BIND_REF, name, value))
                 key_parts.append(_K_REF)
             continue
+        if name == "children":
+            continue
         if is_event_prop(name):
             bindings.append((vnode, BIND_EVENT, name, value))
             key_parts.append(_K_EVENT)
             key_parts.append(name)
             continue
-        if is_getter(value):
-            bindings.append((vnode, BIND_REACTIVE, name, value))
+        getter = binding_value(name, value)
+        if getter is not None:
+            bindings.append((vnode, BIND_REACTIVE, name, getter))
             key_parts.append(_K_GETTER)
             key_parts.append(name)
             continue
-        if name == "value" or name == "checked":
+        if name in _PROP_NAMES:
             bindings.append((vnode, BIND_PROP, name, value))
             key_parts.append(_K_PROP)
             key_parts.append(name)
@@ -346,7 +357,7 @@ def _walk_shape(
             key_parts.append(_K_TEXT)
         elif isinstance(ctag, str) and not ctag.startswith("_"):
             _walk_shape(child, vnode, key_parts, order, bindings)
-        elif ctag == "_dynamic":
+        elif ctag == "_hole":
             order.append((NODE_HOLE, child, vnode))
             key_parts.append(_K_HOLE)
         else:
@@ -358,15 +369,15 @@ def _walk_shape(
 
 def _serialize_element(
     vnode: VNode,
-    parent: Optional[VNode],
-    parts: List[str],
-    order: List[Tuple[int, VNode, Optional[VNode]]],
-    bindings: List[Tuple[VNode, int, str, Any]],
+    parent: VNode | None,
+    parts: list[str],
+    order: list[tuple[int, VNode, VNode | None]],
+    bindings: list[tuple[VNode, int, str, Any]],
 ) -> None:
     tag = vnode.tag
     assert isinstance(tag, str)
     lower = tag.lower()
-    if lower in _RAW_TEXT_ELEMENTS:
+    if lower in _RAW_TEXT_ELEMENTS or lower in _FOREIGN_ROOTS:
         raise _NotEligible
     order.append((NODE_STATIC, vnode, parent))
 
@@ -380,13 +391,16 @@ def _serialize_element(
             if value is not None:
                 bindings.append((vnode, BIND_REF, name, value))
             continue
+        if name == "children":
+            continue
         if is_event_prop(name):
             bindings.append((vnode, BIND_EVENT, name, value))
             continue
-        if is_getter(value):
-            bindings.append((vnode, BIND_REACTIVE, name, value))
+        getter = binding_value(name, value)
+        if getter is not None:
+            bindings.append((vnode, BIND_REACTIVE, name, getter))
             continue
-        if name in ("value", "checked"):
+        if name in _PROP_NAMES:
             # DOM properties, not attributes; applied post-clone so the
             # semantics match the per-node mount path exactly.
             bindings.append((vnode, BIND_PROP, name, value))
@@ -434,7 +448,7 @@ def _serialize_element(
         else:
             # Hole, fragment, or component: a comment placeholder marks
             # its position; the reconciler mounts it after id assignment.
-            kind = NODE_HOLE if ctag == "_dynamic" else NODE_MOUNT
+            kind = NODE_HOLE if ctag == "_hole" else NODE_MOUNT
             order.append((kind, child, vnode))
             parts.append("<!---->")
 
@@ -443,47 +457,55 @@ def _serialize_element(
     parts.append(">")
 
 
-def _serialize_attr(name: str, value: Any, parts: List[str]) -> None:
-    if not _VALID_ATTR_NAME.match(name):
-        raise _NotEligible
-    if name in ("class", "className"):
-        parts.append(' class="')
-        parts.append(_escape_attr(_class_string(value)))
-        parts.append('"')
+def _serialize_attr(name: str, value: Any, parts: list[str]) -> None:
+    if name == "class" or name == "class_":
+        cls = _class_string(value)
+        if cls:
+            parts.append(' class="')
+            parts.append(_escape_attr(cls))
+            parts.append('"')
         return
     if name == "style":
         if isinstance(value, dict):
-            css = ";".join(f"{to_kebab(k)}:{v}" for k, v in value.items())
+            css = ";".join(f"{to_kebab(k)}:{v}" for k, v in value.items() if v is not None and v is not False)
+            if css:
+                parts.append(' style="')
+                parts.append(_escape_attr(css))
+                parts.append('"')
+        elif isinstance(value, str) and value:
             parts.append(' style="')
-            parts.append(_escape_attr(css))
+            parts.append(_escape_attr(value))
             parts.append('"')
         return
     if name == "dataset":
         if isinstance(value, dict):
             for dk, dv in value.items():
-                if not _VALID_ATTR_NAME.match(str(dk)):
+                dname = to_kebab(str(dk))
+                if not _VALID_ATTR_NAME.match(dname):
                     raise _NotEligible
-                parts.append(f' data-{dk}="')
-                parts.append(_escape_attr(str(dv)))
+                if dv is None or dv is False:
+                    continue
+                parts.append(f' data-{dname}="')
+                parts.append(_escape_attr("" if dv is True else str(dv)))
                 parts.append('"')
         return
-    if value is None:
+    attr = attr_name(name)
+    if not _VALID_ATTR_NAME.match(attr):
+        raise _NotEligible
+    if value is None or value is False:
+        return
+    if value is True:
+        if attr in _BOOLEAN_ATTRS:
+            parts.append(" ")
+            parts.append(attr)
+            parts.append('=""')
+        else:
+            parts.append(" ")
+            parts.append(attr)
+            parts.append('="true"')
         return
     parts.append(" ")
-    parts.append(name)
+    parts.append(attr)
     parts.append('="')
     parts.append(_escape_attr(str(value)))
     parts.append('"')
-
-
-def _class_string(value: Any) -> str:
-    """Match `props._class_string` semantics for serialization."""
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, (list, tuple)):
-        return " ".join(str(x) for x in value if x)
-    if isinstance(value, dict):
-        return " ".join(str(k) for k, v in value.items() if v)
-    return str(value)

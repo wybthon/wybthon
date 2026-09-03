@@ -1,4 +1,4 @@
-"""Flow control: Show, For (keyed and index modes), Repeat, Switch/Match, and Dynamic."""
+"""Flow control: Show, For (keyed and positional modes), Repeat, Switch/Match, and Dynamic."""
 
 from app.testkit import tid
 
@@ -13,7 +13,6 @@ from wybthon import (
     component,
     create_signal,
     div,
-    dynamic,
     h2,
     li,
     span,
@@ -25,7 +24,7 @@ _NEXT_TAG = {"h3": "h2", "h2": "p", "p": "h3"}
 
 
 @component
-def Page():
+def Page(**rest):
     visible, set_visible = create_signal(True)
 
     items, set_items = create_signal(["alpha", "beta", "gamma"])
@@ -50,10 +49,10 @@ def Page():
     return div(
         h2("Flow"),
         div(
-            button("toggle", on_click=lambda e: set_visible(not visible()), **tid("flow-show-toggle")),
+            button("toggle", on_click=lambda e: set_visible(lambda v: not v), **tid("flow-show-toggle")),
             Show(
-                when=visible,
-                children=lambda: span("shown", **tid("flow-show-on")),
+                visible,
+                lambda: span("shown", **tid("flow-show-on")),
                 fallback=lambda: span("hidden", **tid("flow-show-off")),
             ),
         ),
@@ -61,46 +60,37 @@ def Page():
             button("add", on_click=add, **tid("flow-for-add")),
             button("remove", on_click=remove_last, **tid("flow-for-remove")),
             button("reverse", on_click=reverse, **tid("flow-for-reverse")),
-            span(dynamic(lambda: str(len(items()))), **tid("flow-for-count")),
+            span(lambda: str(len(items())), **tid("flow-for-count")),
             ul(
-                For(
-                    each=items,
-                    children=lambda item, idx: li(dynamic(lambda: f"{idx()}:{item()}"), key=item()),
-                ),
+                # Keyed by identity (strings match by value): rows move on reorder.
+                For(items, lambda item, index: li(lambda: f"{index()}:{item}")),
                 **tid("flow-for-list"),
             ),
             ul(
-                For(
-                    each=items,
-                    key="index",
-                    children=lambda item, index: li(dynamic(lambda: f"[{index()}]{item()}")),
-                ),
+                # Positional: slots are reused and their item accessor updates.
+                For(items, lambda item, index: li(lambda: f"[{index}]{item()}"), keyed=False),
                 **tid("flow-index-list"),
             ),
         ),
         div(
-            button("star +", on_click=lambda e: set_stars(stars() + 1), **tid("flow-repeat-inc")),
-            button("star -", on_click=lambda e: set_stars(max(0, stars() - 1)), **tid("flow-repeat-dec")),
+            button("star +", on_click=lambda e: set_stars(lambda n: n + 1), **tid("flow-repeat-inc")),
+            button("star -", on_click=lambda e: set_stars(lambda n: max(0, n - 1)), **tid("flow-repeat-dec")),
             ul(
-                Repeat(
-                    times=stars,
-                    children=lambda i: li(f"star-{i}"),
-                    fallback=lambda: li("no stars"),
-                ),
+                Repeat(stars, lambda i: li(f"star-{i}"), fallback=lambda: li("no stars")),
                 **tid("flow-repeat-list"),
             ),
         ),
         div(
             button("cycle status", on_click=lambda e: set_status(_NEXT_STATUS[status()]), **tid("flow-switch-cycle")),
             Switch(
-                Match(when=lambda: status() == "loading", children=lambda: span("loading", **tid("flow-switch-out"))),
-                Match(when=lambda: status() == "ready", children=lambda: span("ready", **tid("flow-switch-out"))),
+                Match(lambda: status() == "loading", lambda: span("loading", **tid("flow-switch-out"))),
+                Match(lambda: status() == "ready", lambda: span("ready", **tid("flow-switch-out"))),
                 fallback=lambda: span("idle", **tid("flow-switch-out")),
             ),
         ),
         div(
             button("cycle tag", on_click=lambda e: set_tag(_NEXT_TAG[tag()]), **tid("flow-dyn-cycle")),
-            Dynamic(component=lambda: tag(), children=["dyn"], **tid("flow-dyn-out")),
+            Dynamic(tag, children="dyn", **tid("flow-dyn-out")),
         ),
         **tid("page-flow"),
     )

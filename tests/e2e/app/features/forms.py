@@ -11,7 +11,6 @@ from wybthon import (
     component,
     create_signal,
     div,
-    dynamic,
     email,
     error_message_attrs,
     form,
@@ -29,19 +28,19 @@ from wybthon import (
 
 
 @component
-def Page():
+def Page(**rest):
     fs = form_state({"name": "", "email": "", "subscribe": False, "choice": ""})
     rules = {"name": [required(), min_length(2)], "email": [email()]}
 
     result, set_result = create_signal("")
 
-    def submit_handler(_form):
+    def submit_handler(fields):
         set_result(
             "name={};email={};subscribe={};choice={}".format(
-                fs["name"].value.get(),
-                fs["email"].value.get(),
-                fs["subscribe"].value.get(),
-                fs["choice"].value.get(),
+                fields["name"].value.peek(),
+                fields["email"].value.peek(),
+                fields["subscribe"].value.peek(),
+                fields["choice"].value.peek(),
             )
         )
 
@@ -61,7 +60,7 @@ def Page():
                     **tid("form-name"),
                 ),
                 span(
-                    dynamic(lambda: name_field.error.get() or ""),
+                    lambda: name_field.error() or "",
                     **error_message_attrs(id="f-name-err"),
                     **tid("form-name-err"),
                 ),
@@ -72,7 +71,7 @@ def Page():
                     **bind_text(email_field, validators=[email()]),
                     **tid("form-email"),
                 ),
-                span(dynamic(lambda: email_field.error.get() or ""), **tid("form-email-err")),
+                span(lambda: email_field.error() or "", **tid("form-email-err")),
             ),
             label(input_(type="checkbox", **bind_checkbox(fs["subscribe"]), **tid("form-sub")), " subscribe"),
             select(

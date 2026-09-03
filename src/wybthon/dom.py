@@ -30,13 +30,20 @@ See Also:
     - [Forms guide](../concepts/forms.md)
 """
 
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
 
-from js import document, fetch
+from typing import Any
 
 from . import kernel
 
 __all__ = ["Element", "Ref"]
+
+
+def _document() -> Any:
+    """Return the browser `document` (imported lazily so CPython can import this module)."""
+    from js import document
+
+    return document
 
 
 class Element:
@@ -61,10 +68,10 @@ class Element:
 
     def __init__(
         self,
-        tag: Optional[str] = None,
+        tag: str | None = None,
         existing: bool = False,
         node: Any = None,
-        node_id: Optional[int] = None,
+        node_id: int | None = None,
     ) -> None:
         """Create a new element, wrap an existing one, or wrap a node handle.
 
@@ -83,7 +90,7 @@ class Element:
                 `tag` is provided.
         """
         self._node: Any = None
-        self._id: Optional[int] = node_id
+        self._id: int | None = node_id
         if node_id is not None:
             return
         if node is not None:
@@ -91,11 +98,11 @@ class Element:
         elif existing:
             if tag is None:
                 raise ValueError("When existing=True, provide a CSS selector in 'tag'.")
-            self._node = document.querySelector(tag)
+            self._node = _document().querySelector(tag)
         else:
             if tag is None:
                 raise ValueError("Provide a tag name when creating a new element.")
-            self._node = document.createElement(tag)
+            self._node = _document().createElement(tag)
 
     @property
     def element(self) -> Any:
@@ -150,16 +157,16 @@ class Element:
         """Replace the text content of this element."""
         self.element.textContent = text
 
-    def append_to(self, parent: "Element") -> None:
+    def append_to(self, parent: Element) -> None:
         """Append this element to `parent`."""
         parent.element.appendChild(self.element)
 
-    def append(self, child: Union["Element", str]) -> None:
+    def append(self, child: Element | str) -> None:
         """Append an `Element` or a text string as a child node."""
         if isinstance(child, Element):
             self.element.appendChild(child.element)
         else:
-            self.element.appendChild(document.createTextNode(child))
+            self.element.appendChild(_document().createTextNode(child))
 
     def remove(self) -> None:
         """Detach this element from its parent (no-op if already detached)."""
@@ -172,6 +179,8 @@ class Element:
         Args:
             url: URL to fetch via the browser's `fetch` API.
         """
+        from js import fetch
+
         response = await fetch(url)
         html_content = await response.text()
         self.element.innerHTML = html_content
@@ -185,7 +194,7 @@ class Element:
         """
         self.element.innerHTML = html
 
-    def set_attr(self, name: str, value: Union[str, int, float, bool]) -> None:
+    def set_attr(self, name: str, value: str | int | float | bool) -> None:
         """Set an attribute on this element, with text-node fallbacks.
 
         Args:
@@ -200,7 +209,7 @@ class Element:
             else:
                 pass
 
-    def get_attr(self, name: str) -> Optional[str]:
+    def get_attr(self, name: str) -> str | None:
         """Return the attribute value for `name`, or `None` when absent."""
         value = self.element.getAttribute(name)
         return value if value is not None else None
@@ -209,7 +218,7 @@ class Element:
         """Remove an attribute from this element."""
         self.element.removeAttribute(name)
 
-    def set_style(self, styles: Optional[Dict[str, Union[str, int]]] = None, **style_kwargs: Union[str, int]) -> None:
+    def set_style(self, styles: dict[str, str | int] | None = None, **style_kwargs: str | int) -> None:
         """Set CSS properties using a dict and/or keyword arguments.
 
         Args:
@@ -234,7 +243,7 @@ class Element:
         for name in class_names:
             self.element.classList.remove(name)
 
-    def toggle_class(self, class_name: str, force: Optional[bool] = None) -> None:
+    def toggle_class(self, class_name: str, force: bool | None = None) -> None:
         """Toggle a CSS class, optionally forcing on/off.
 
         Args:
@@ -253,7 +262,7 @@ class Element:
         return bool(self.element.classList.contains(class_name))
 
     @classmethod
-    def query(cls, selector: str, within: Optional["Element"] = None) -> Optional["Element"]:
+    def query(cls, selector: str, within: Element | None = None) -> Element | None:
         """Query a single element by CSS selector.
 
         Commits pending batched DOM ops first so nodes created earlier
@@ -268,14 +277,14 @@ class Element:
             The first matching `Element`, or `None` if no node matches.
         """
         kernel.commit()
-        ctx = within.element if within is not None else document
+        ctx = within.element if within is not None else _document()
         node = ctx.querySelector(selector)
         if node is None:
             return None
         return cls(node=node)
 
     @classmethod
-    def query_all(cls, selector: str, within: Optional["Element"] = None) -> List["Element"]:
+    def query_all(cls, selector: str, within: Element | None = None) -> list[Element]:
         """Query all matching elements by CSS selector.
 
         Args:
@@ -287,48 +296,52 @@ class Element:
             A list of wrapped `Element` instances (possibly empty).
         """
         kernel.commit()
-        ctx = within.element if within is not None else document
+        ctx = within.element if within is not None else _document()
         nodes = ctx.querySelectorAll(selector)
         return [cls(node=n) for n in nodes]
 
-    def find(self, selector: str) -> Optional["Element"]:
+    def find(self, selector: str) -> Element | None:
         """Return the first matching descendant `Element`, or `None`."""
         kernel.commit()
         node = self.element.querySelector(selector)
         return Element(node=node) if node is not None else None
 
-    def find_all(self, selector: str) -> List["Element"]:
+    def find_all(self, selector: str) -> list[Element]:
         """Return all matching descendant elements as a list."""
         kernel.commit()
         nodes = self.element.querySelectorAll(selector)
         return [Element(node=n) for n in nodes]
 
-    def attach_ref(self, ref: "Ref") -> None:
+    def attach_ref(self, ref: Ref) -> None:
         """Store this element on `ref.current`."""
         ref.current = self
 
 
 class Ref:
-    """Mutable container holding a reference to an [`Element`][wybthon.Element].
+    """Mutable container holding a reference to a mounted [`Element`][wybthon.Element].
 
-    Instantiate with `Ref()` and pass to elements via the `ref=` prop. After
-    mount, `ref.current` points at the wrapped element; after unmount, it
-    is reset to `None`.
+    Pass a `Ref` to an element's `ref=` prop. After mount `ref.current`
+    is the wrapped element; after unmount it's reset to `None`. The `ref`
+    prop also accepts a callback `ref(el)` or a list mixing both, so a
+    component can forward a parent's ref and keep its own:
 
-    Example:
-        ```python
-        from wybthon import Ref, on_mount
-        from wybthon.html import input_
+    ```python
+    @component
+    def FancyInput(ref: Prop[Ref | None] = prop(None)):
+        local = Ref()
+        on_settled(lambda: local.current.element.focus())
+        return input_(type="text", ref=[local, ref.peek()])
+    ```
 
-        input_ref = Ref()
-
-        def focus_on_mount():
-            on_mount(lambda: input_ref.current and input_ref.current.element.focus())
-
-        input_(type="text", ref=input_ref)
-        ```
+    Refs are assigned during mount, so read them in
+    [`on_settled`][wybthon.on_settled] or an effect, not at the top of
+    the component body.
     """
 
+    __slots__ = ("current",)
+
     def __init__(self) -> None:
-        """Initialize an empty ref pointing at `None`."""
-        self.current: Optional[Element] = None
+        self.current: Element | None = None
+
+    def __repr__(self) -> str:
+        return f"Ref({self.current!r})"

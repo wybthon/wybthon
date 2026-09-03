@@ -14,5 +14,5 @@ def test_lazy_component_loads(goto_feature):
 def test_lazy_missing_module_shows_error(goto_path):
     page = goto_path("/lazy-error", wait_selector=".lazy-error")
     # A lazy loader pointing at a missing module raises into the
-    # surrounding ErrorBoundary, which renders the fallback.
+    # surrounding Errored boundary, which renders the fallback.
     expect(page.locator(".lazy-error")).to_contain_text("Failed to load")

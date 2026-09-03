@@ -1,8 +1,10 @@
 """Delegated event handling for the batched renderer.
 
 Event delegation lives in the rendering kernel: one native listener per
-event type is installed on `document`, walks the ancestor chain of the
-event target natively, and calls into Python once per matched handler.
+event type is installed on each render root (the container passed to
+[`render`][wybthon.render], plus any [`Portal`][wybthon.Portal] target),
+walks the ancestor chain of the event target natively, and calls into
+Python once per matched handler.
 The call carries a small JSON payload (event type, target value/checked
 state, key, mouse buttons, modifiers), so the common handler patterns
 (`evt.target.value`, `evt.key`, `evt.prevent_default()`) never touch a
@@ -32,7 +34,8 @@ See Also:
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from . import kernel
 from ._warnings import log_error
@@ -41,7 +44,7 @@ __all__ = ["DomEvent"]
 
 
 # Per-node handler tables: node_id -> {event_type: handler}.
-_handlers: Dict[int, Dict[str, Callable]] = {}
+_handlers: dict[int, dict[str, Callable[..., Any]]] = {}
 
 
 def _event_prop_to_type(name: str) -> str:
@@ -71,7 +74,7 @@ class _EventTarget:
 
     __slots__ = ("_payload", "_element")
 
-    def __init__(self, payload: Dict[str, Any]) -> None:
+    def __init__(self, payload: dict[str, Any]) -> None:
         self._payload = payload
         self._element: Any = None
 
@@ -145,7 +148,7 @@ class DomEvent:
         "_default_prevented",
     )
 
-    def __init__(self, payload: Dict[str, Any], current_target: Optional[Any] = None) -> None:
+    def __init__(self, payload: dict[str, Any], current_target: Any | None = None) -> None:
         """Build an event from a dispatch payload dict.
 
         Args:
@@ -190,7 +193,7 @@ class DomEvent:
         self._stopped = True
 
 
-def set_handler(node_id: int, event_prop_name: str, handler: Optional[Callable]) -> None:
+def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] | None) -> None:
     """Attach, update, or remove a handler for an event property on a node.
 
     Registration is batched: the kernel-side `LISTEN`/`UNLISTEN` ops

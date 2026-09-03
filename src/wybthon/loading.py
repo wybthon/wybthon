@@ -1,4 +1,4 @@
-"""`Loading` and `LoadingList`: fallback UI for async computations.
+"""`Loading` and `Reveal`: fallback UI for async computations.
 
 [`Loading`][wybthon.Loading] is the async boundary (SolidJS 2.0's
 `Loading`, the successor to `Suspense`). Any read of an async
@@ -12,9 +12,13 @@ has a value keeps serving it (stale-while-revalidate) while the
 recompute is in flight, so content stays visible during reloads. Use
 [`is_pending`][wybthon.is_pending] to render inline refresh hints.
 
-[`LoadingList`][wybthon.LoadingList] coordinates multiple `Loading`
-boundaries beneath it, controlling the order their contents reveal
-(`reveal_order`) and how many fallbacks show at once (`tail`).
+Pass `on=` to have the boundary wait for specific accessors as well,
+even if the children never read them; this is how you keep a layout
+from partially rendering while a critical query is still in flight.
+
+[`Reveal`][wybthon.Reveal] coordinates multiple `Loading` boundaries
+beneath it, controlling the order their contents reveal (`order`) and
+how many fallbacks show at once (`tail`).
 
 Example:
     ```python
@@ -24,8 +28,8 @@ Example:
     user = create_memo(load_user)
 
     Loading(
+        lambda: div(lambda: user()["name"]),
         fallback=lambda: p("Loading..."),
-        children=[div(lambda: user()["name"])],
     )
     ```
 
@@ -35,15 +39,19 @@ See Also:
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional, Set
+from collections.abc import Callable
+from typing import Any, Literal
 
-from .reactivity import LOADING_CONTEXT_KEY, Signal, _get_component_ctx
-from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
+from .reactivity import _core
+from .reactivity._core import LOADING_CONTEXT_KEY, Computation, NotReadyError, Signal
+from .reactivity._primitives import create_effect, create_signal, on_cleanup
+from .reactivity._props import Props
+from .vnode import Fragment, VNode, h, hole, to_text_vnode
 
-__all__ = ["Loading", "LoadingList"]
+__all__ = ["Loading", "Reveal"]
 
-# Owner-context key under which ``LoadingList`` stores its coordinator.
-LOADING_LIST_CONTEXT_KEY = "__wyb_loading_list__"
+# Owner-context key under which ``Reveal`` stores its coordinator.
+REVEAL_CONTEXT_KEY = "__wyb_reveal__"
 
 
 class _LoadingCollector:
@@ -53,14 +61,14 @@ class _LoadingCollector:
 
     def __init__(self) -> None:
         self._version: Signal[int] = Signal(0)
-        self._pending: Set[Any] = set()
+        self._pending: set[Computation] = set()
 
-    def register(self, comp: Any) -> None:
+    def register(self, comp: Computation) -> None:
         """Called by the reactive core when a read raises `NotReadyError`."""
         if comp in self._pending:
             return
         self._pending.add(comp)
-        self._version.set(self._version.peek() + 1)
+        self._version._set_now(self._version.peek() + 1)
 
     def is_loading(self) -> bool:
         """Tracked read: True while any registered computation has no value.
@@ -69,14 +77,14 @@ class _LoadingCollector:
         later revalidation (which serves the stale value instead of
         raising) can't re-trigger the boundary.
         """
-        self._version.get()
+        self._version()
         done = []
         for comp in self._pending:
             a = comp._async
-            still_loading = a is not None and a.pending and not a.has_value
+            still_loading = a is not None and a.pending and not a.has_value and not comp._disposed
             if still_loading:
                 # Subscribe to the transition out of the pending state.
-                comp._pending_sig().get()
+                comp._pending_sig()()
             else:
                 done.append(comp)
         for comp in done:
@@ -84,94 +92,154 @@ class _LoadingCollector:
         return bool(self._pending)
 
 
-def Loading(fallback: Any = None, children: Any = None) -> VNode:
+def Loading(
+    children: Any = None,
+    *,
+    fallback: Any = None,
+    on: Any = None,
+) -> VNode:
     """Show a fallback while async reads under the boundary aren't ready.
 
     Args:
-        fallback: `VNode`, string, or callable returning one of those.
-            Shown while any registered async computation has no value
-            yet.
-        children: Children rendered when nothing is loading. Async
-            computations read anywhere in this subtree self-register
-            with the boundary when a read raises
+        children: Content rendered when nothing is loading: a VNode, a
+            zero-arg callable, or a list of either. Async computations
+            read anywhere in this subtree self-register with the
+            boundary when a read raises
             [`NotReadyError`][wybthon.NotReadyError].
+        fallback: VNode, string, or callable returning one of those,
+            shown while any registered async computation has no value.
+        on: An accessor or list of accessors the boundary also waits
+            for, regardless of whether the children read them.
 
     Returns:
         A component [`VNode`][wybthon.VNode] that toggles between
         fallback and children.
+
+    Example:
+        ```python
+        Loading(
+            lambda: Fragment(Header(), Body()),
+            fallback=Spinner(),
+            on=[user, settings],
+        )
+        ```
     """
-    return h(_LoadingComponent, {"fallback": fallback, "children": children})
+    return h(_Loading, {"fallback": fallback, "children": children, "on": on})
 
 
-def _LoadingComponent(props: Any) -> Any:
-    """Internal component backing [`Loading`][wybthon.Loading]."""
+def _render_content(value: Any) -> VNode:
+    if isinstance(value, VNode):
+        return value
+    if value is None:
+        return Fragment()
+    if isinstance(value, list):
+        items = [v() if callable(v) and not isinstance(v, VNode) else v for v in value]
+        return Fragment(*items)
+    if callable(value):
+        return _render_content(value())
+    return to_text_vnode(value)
+
+
+def _render_fallback(fb: Any) -> VNode:
+    if callable(fb) and not isinstance(fb, VNode):
+        fb = fb()
+    if isinstance(fb, VNode):
+        return fb
+    if isinstance(fb, list):
+        return Fragment(*fb)
+    return to_text_vnode("" if fb is None else str(fb))
+
+
+def _Loading(props: Props) -> Any:
+    from . import reconciler
+
     collector = _LoadingCollector()
-    ctx = _get_component_ctx()
-    list_state: Optional[_LoadingListState] = None
-    list_index = -1
-    if ctx is not None:
-        ctx._set_context(LOADING_CONTEXT_KEY, collector)
-        list_state = ctx._lookup_context(LOADING_LIST_CONTEXT_KEY, None)
-        if list_state is not None:
-            list_index = list_state.register(collector.is_loading)
+    owner = _core._current_owner
+    reveal: _RevealState | None = None
+    reveal_index = -1
+    if owner is not None:
+        owner._set_context(LOADING_CONTEXT_KEY, collector)
+        reveal = owner._lookup_context(REVEAL_CONTEXT_KEY, None)
+        if reveal is not None:
+            reveal_index = reveal.register(collector.is_loading)
             # Boundaries nested inside this one coordinate with this
-            # boundary, not with the outer list.
-            ctx._set_context(LOADING_LIST_CONTEXT_KEY, None)
+            # boundary, not with the outer Reveal.
+            owner._set_context(REVEAL_CONTEXT_KEY, None)
 
-    def _render_children() -> VNode:
-        children = props.value("children")
-        if children is None:
-            children = []
-        if not isinstance(children, list):
-            children = [children]
-        return Fragment(*children)
+    children = props.raw("children")
+    fallback = props.raw("fallback")
+    on = props.raw("on")
+    waits: list[Callable[[], Any]] = []
+    if on is not None:
+        waits = list(on) if isinstance(on, (list, tuple)) else [on]
 
-    def _render_fallback() -> VNode:
-        fb = props.value("fallback")
-        vnode: Any
-        if callable(fb) and not isinstance(fb, VNode):
+    def wait_for_on() -> None:
+        # Reads register with our collector (via the owner context) and
+        # raise NotReadyError when a source has no value yet; the raise
+        # is swallowed because the collector now tracks the source.
+        for acc in waits:
             try:
-                vnode = fb()
-            except Exception:
-                vnode = to_text_vnode("Loading...")
-        else:
-            vnode = fb if isinstance(fb, VNode) else to_text_vnode("" if fb is None else str(fb))
-        if not isinstance(vnode, VNode):
-            vnode = to_text_vnode(vnode)
-        return vnode
+                acc()
+            except NotReadyError:
+                pass
 
-    def render() -> VNode:
-        if list_state is not None:
-            mode = list_state.display_mode(list_index)
-            if mode == "content":
-                return _render_children()
-            if mode == "fallback":
-                return _render_fallback()
-            return to_text_vnode("")
-        if collector.is_loading():
-            return _render_fallback()
-        return _render_children()
+    def mode() -> str:
+        wait_for_on()
+        if reveal is not None:
+            return reveal.display_mode(reveal_index)
+        return "fallback" if collector.is_loading() else "content"
 
-    return dynamic(render)
+    # The content stays mounted the whole time, so async computations
+    # created inside it keep running while the fallback shows. While
+    # pending, its DOM nodes are parked in a detached element and moved
+    # back in front of the fallback hole once everything has resolved.
+    shown, set_shown = create_signal("content")
+    content = hole(lambda: _render_content(children))
+    fallback_hole = hole(lambda: _render_fallback(fallback) if shown() == "fallback" else None)
+    lot = reconciler._create_lot()
+    on_cleanup(lambda: reconciler._release_lot(lot))
+    parked = False
+
+    def apply(current: str) -> None:
+        nonlocal parked
+        hide = current != "content"
+        if hide and not parked:
+            reconciler._park(content, lot)
+            parked = True
+        elif not hide and parked:
+            anchor = reconciler._first_dom_id(fallback_hole)
+            if anchor is not None:
+                reconciler._unpark(content, anchor)
+            parked = False
+        set_shown(current)
+
+    # A user effect: its first run happens after the initial mount has
+    # committed, when the content's DOM nodes exist to be parked.
+    create_effect(mode, apply)
+
+    return Fragment(content, fallback_hole)
 
 
-_LoadingComponent._wyb_component = True  # type: ignore[attr-defined]
+_Loading.__name__ = "Loading"
 
 
 # ---------------------------------------------------------------------------
-# LoadingList
+# Reveal
 # ---------------------------------------------------------------------------
 
+RevealOrder = Literal["forwards", "backwards", "together"]
+RevealTail = Literal["visible", "collapsed", "hidden"]
 
-class _LoadingListState:
-    """Coordinates reveal order across the boundaries under one list."""
 
-    __slots__ = ("_reveal_order", "_tail", "_getters", "_version")
+class _RevealState:
+    """Coordinates reveal order across the boundaries under one Reveal."""
 
-    def __init__(self, reveal_order: str, tail: Optional[str]) -> None:
-        self._reveal_order = reveal_order
+    __slots__ = ("_order", "_tail", "_getters", "_version")
+
+    def __init__(self, order: str, tail: str) -> None:
+        self._order = order
         self._tail = tail
-        self._getters: List[Callable[[], bool]] = []
+        self._getters: list[Callable[[], bool]] = []
         # Bumped when a boundary registers so already-rendered siblings
         # re-evaluate their display mode.
         self._version: Signal[int] = Signal(0)
@@ -179,7 +247,7 @@ class _LoadingListState:
     def register(self, loading_getter: Callable[[], bool]) -> int:
         """Add a boundary's tracked loading getter; returns its position."""
         self._getters.append(loading_getter)
-        self._version.set(self._version.peek() + 1)
+        self._version._set_now(self._version.peek() + 1)
         return len(self._getters) - 1
 
     def display_mode(self, idx: int) -> str:
@@ -188,9 +256,9 @@ class _LoadingListState:
         Returns:
             `"content"`, `"fallback"`, or `"hidden"`.
         """
-        self._version.get()
+        self._version()
         getters = self._getters
-        order = self._reveal_order
+        order = self._order
         tail = self._tail
 
         if order == "together":
@@ -210,8 +278,8 @@ class _LoadingListState:
         return self._pending_mode(idx, tail, getters, indices)
 
     @staticmethod
-    def _pending_mode(idx: int, tail: Optional[str], getters: List[Callable[[], bool]], indices: Any) -> str:
-        if tail is None:
+    def _pending_mode(idx: int, tail: str, getters: list[Callable[[], bool]], indices: Any) -> str:
+        if tail == "visible":
             return "fallback"
         if tail == "hidden":
             return "hidden"
@@ -223,71 +291,63 @@ class _LoadingListState:
         return "hidden"
 
 
-def LoadingList(children: Any = None, reveal_order: str = "forwards", tail: Optional[str] = None) -> VNode:
+def Reveal(
+    children: Any = None,
+    *,
+    order: RevealOrder = "forwards",
+    tail: RevealTail = "visible",
+) -> VNode:
     """Coordinate the reveal order of multiple [`Loading`][wybthon.Loading] boundaries.
 
     Each `Loading` boundary mounted underneath (that isn't nested
-    inside another boundary) registers with the list in mount order,
-    and the list decides when each may reveal its content and whether
-    it shows its fallback.
+    inside another boundary) registers with the `Reveal` in mount
+    order, and the `Reveal` decides when each may show its content and
+    whether it shows its fallback.
 
     Args:
-        children: Children containing one or more `Loading`
-            boundaries.
-        reveal_order: One of `"forwards"` (default; contents reveal
-            top-to-bottom, each waiting for the ones before it),
-            `"backwards"` (bottom-to-top), or `"together"` (all reveal
-            at once when every boundary has loaded).
-        tail: Fallback policy for still-pending boundaries. `None`
-            (default) shows every pending boundary's fallback,
-            `"collapsed"` shows only the next fallback in reveal order,
-            and `"hidden"` shows none.
+        children: Content containing one or more `Loading` boundaries.
+        order: `"forwards"` (default; contents reveal top-to-bottom,
+            each waiting for the ones before it), `"backwards"`
+            (bottom-to-top), or `"together"` (all reveal at once when
+            every boundary has loaded).
+        tail: Fallback policy for still-pending boundaries.
+            `"visible"` (default) shows every pending boundary's
+            fallback, `"collapsed"` shows only the next fallback in
+            reveal order, and `"hidden"` shows none.
 
     Returns:
         A component [`VNode`][wybthon.VNode].
 
     Example:
         ```python
-        LoadingList(
-            reveal_order="forwards",
-            tail="collapsed",
-            children=[
-                Loading(fallback=p("Loading A..."), children=[PanelA()]),
-                Loading(fallback=p("Loading B..."), children=[PanelB()]),
+        Reveal(
+            [
+                Loading(PanelA(), fallback=p("Loading A...")),
+                Loading(PanelB(), fallback=p("Loading B...")),
             ],
+            order="forwards",
+            tail="collapsed",
         )
         ```
 
     Note:
-        A boundary whose content hasn't mounted yet doesn't start its
-        async computations, so `"forwards"` reveals sequentially-loading
-        content as a cascade rather than loading everything in
-        parallel. Start the memos outside the boundaries (or pass them
-        down as props) when parallel loading matters.
+        Every boundary's content mounts immediately (parked
+        off-document while pending), so all of them load in parallel;
+        `order` only controls when each is revealed.
     """
-    if reveal_order not in ("forwards", "backwards", "together"):
-        raise ValueError('reveal_order must be "forwards", "backwards", or "together"')
-    if tail not in (None, "collapsed", "hidden"):
-        raise ValueError('tail must be None, "collapsed", or "hidden"')
-    return h(
-        _LoadingListComponent,
-        {"children": children, "reveal_order": reveal_order, "tail": tail},
-    )
+    if order not in ("forwards", "backwards", "together"):
+        raise ValueError('order must be "forwards", "backwards", or "together"')
+    if tail not in ("visible", "collapsed", "hidden"):
+        raise ValueError('tail must be "visible", "collapsed", or "hidden"')
+    return h(_Reveal, {"children": children, "order": order, "tail": tail})
 
 
-def _LoadingListComponent(props: Any) -> Any:
-    """Internal component backing [`LoadingList`][wybthon.LoadingList]."""
-    state = _LoadingListState(props.value("reveal_order"), props.value("tail"))
-    ctx = _get_component_ctx()
-    if ctx is not None:
-        ctx._set_context(LOADING_LIST_CONTEXT_KEY, state)
-
-    children = props.value("children")
-    if children is None:
-        children = []
-    if not isinstance(children, list):
-        children = [children]
-    return Fragment(*children)
+def _Reveal(props: Props) -> Any:
+    state = _RevealState(props.raw("order"), props.raw("tail"))
+    owner = _core._current_owner
+    if owner is not None:
+        owner._set_context(REVEAL_CONTEXT_KEY, state)
+    return _render_content(props.raw("children"))
 
 
-_LoadingListComponent._wyb_component = True  # type: ignore[attr-defined]
+_Reveal.__name__ = "Reveal"

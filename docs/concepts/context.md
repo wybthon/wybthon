@@ -1,105 +1,158 @@
-### Context
+# Context
 
-Provide and consume values across the component tree without prop
-drilling.
+Context passes values down the tree without threading props through
+every level. A [`Context`][wybthon.Context] created with
+[`create_context`][wybthon.create_context] is **its own provider**: call
+it with a value and children to expose that value to every descendant,
+and read it with [`use_context`][wybthon.use_context].
 
 ```python
-from wybthon import component, dynamic, h, p
-from wybthon.context import create_context, Provider, use_context
+from wybthon import component, create_context, use_context
+from wybthon.html import div, p
 
 Theme = create_context("light")
 
+
 @component
 def Label():
-    return p("Theme: ", dynamic(lambda: use_context(Theme)))
+    theme = use_context(Theme)
+    return p("Theme: ", theme)
 
-view = h(Provider, {"context": Theme, "value": "dark"}, h(Label, {}))
-```
-
-#### `Context.Provider` shorthand
-
-Every context also carries a SolidJS-style `Provider` method, which is
-often more readable than the explicit `h(Provider, ...)` form:
-
-```python
-view = Theme.Provider(value="dark", children=[h(Label, {})])
-```
-
-Both forms are equivalent; use whichever reads better in context.
-
-#### Reactive `value`
-
-`Provider`'s `value` prop is **signal-backed**: passing a getter (or a
-signal accessor) makes the provided value reactive.  Consumers that
-read `use_context` inside a reactive hole will update automatically
-when the value changes, without a subtree re-mount.
-
-```python
-from wybthon import component, create_signal, dynamic, h, p, use_context, Provider
 
 @component
 def App():
-    theme, set_theme = create_signal("dark")
-    return h(Provider, {"context": Theme, "value": theme},  # ← getter
-             h(Label, {}))
-
-@component
-def Label():
-    # Wrap in dynamic so the text node updates when ``theme`` flips.
-    return p(dynamic(lambda: f"Theme: {use_context(Theme)}"))
+    return div(Theme("dark", Label()))   # value first, then children
 ```
 
-If you only need a static value, pass it as-is; the Provider handles
-both shapes uniformly.
+## Providing a value
 
-#### How it works: the ownership tree
-
-Context values are stored directly on the **reactive ownership tree**,
-not on a separate render-time stack.  When a `Provider` component
-mounts, the reconciler creates a per-context signal on that component's
-`_ComponentContext` owner.  Consumers read the signal via
-`use_context`, so they participate in normal reactive tracking.
-
-```
-Root Owner
-└── ComponentContext (App)
-    └── ComponentContext (Provider)   ← _context_map = {Theme.id: signal("dark")}
-        └── ComponentContext (Label)
-            └── render effect
-                ← use_context(Theme) walks up, reads the signal,
-                  and tracks it for future updates.
-```
-
-This ownership-based lookup means context is available at any point
-during a component's lifecycle (setup phase, render function, or
-inside effects) as long as the code runs under an owner that's a
-descendant of the provider.
-
-#### Provider scoping
-
-Each `Provider` sets its value on its own component context.  Nested
-providers for the same context naturally shadow outer ones because the
-ownership-tree walk finds the nearest ancestor first:
+The context object is callable: `Theme(value, *children)` returns a
+provider VNode. Children may be VNodes, component calls, or lists;
+anything you'd pass to an element works.
 
 ```python
-h(Provider, {"context": Theme, "value": "light"},
-    h(Provider, {"context": Theme, "value": "dark"},
-        h(Label, {})),  # sees "dark"
-    h(Label, {}),       # sees "light"
+Theme("dark", Header(), Main())
+Theme("dark", [Header(), Main()])
+```
+
+There's no separate `Provider` component and no `Theme.Provider(...)`
+form.
+
+## Reading a value
+
+`use_context(Theme)` walks up the ownership tree from the active scope
+and returns the nearest provided value. Because values live on the
+ownership tree rather than a render-time stack, it works anywhere an
+owner exists: component bodies, effects, memos, holes, and `For` rows.
+
+```python
+@component
+def Button():
+    theme = use_context(Theme)          # read once, in the body
+    return button("Hi", class_=lambda: f"btn-{theme}")
+```
+
+## Defaults and `ContextNotFoundError`
+
+`create_context(default)` declares a value to return when no provider is
+above the reader. Without a default, reading outside a provider raises
+[`ContextNotFoundError`][wybthon.ContextNotFoundError]:
+
+```python
+from wybthon import ContextNotFoundError, create_context, use_context
+
+Session = create_context(name="Session")   # no default
+
+try:
+    use_context(Session)
+except ContextNotFoundError:
+    ...
+```
+
+Pass `name=` for readable diagnostics; it appears in the error message
+and the context's `repr`.
+
+## Live values: pass an accessor
+
+`use_context` returns the value **exactly as provided**. A static string
+stays a string; a signal or any accessor stays an accessor, so consumers
+call it where they need the value and stay reactive without the
+provider or the subtree re-mounting:
+
+```python
+from wybthon import Accessor, Context, component, create_context, create_signal, use_context
+from wybthon.html import button, div
+
+Theme: Context[Accessor[str]] = create_context()
+
+
+@component
+def ThemedButton():
+    theme = use_context(Theme)
+    return button("Hi", class_=lambda: f"btn-{theme()}")
+
+
+@component
+def App():
+    theme, set_theme = create_signal("light")
+    toggle = lambda e: set_theme(lambda t: "dark" if t == "light" else "light")
+    return div(
+        Theme(theme, ThemedButton()),
+        button("Toggle", on_click=toggle),
+    )
+```
+
+Provide a setter alongside the accessor when descendants need to write:
+
+```python
+Theme((theme, set_theme), App())
+
+theme, set_theme = use_context(Theme)
+```
+
+Passing a plain value is fine when it never changes. Don't pass a
+`lambda: theme()` unless you mean to; an accessor already is one.
+
+## How it works: the ownership tree
+
+The provider is a tiny component that stores `value` on its own
+[`Owner`][wybthon.Owner]. `use_context` walks parent pointers until it
+finds a scope that carries the context:
+
+```
+Root owner
+└── Component (App)
+    └── Provider owner        <- context map: {Theme: value}
+        └── Component (Label)
+            └── hole scope
+                └── render effect   <- use_context(Theme) walks up from here
+```
+
+The lookup is a parent-pointer walk with no copying, so cost is
+proportional to the depth between reader and provider. Nested providers
+for the same context shadow outer ones because the walk finds the
+nearest first:
+
+```python
+Theme("light",
+    Theme("dark", Label()),   # sees "dark"
+    Label(),                  # sees "light"
 )
 ```
 
-#### Performance
+## Where to call `use_context`
 
-Context lookup is a simple parent-pointer walk: no dict copies, no
-stack manipulation.  The cost is proportional to the depth between the
-consumer and the nearest provider, which is typically small.  When the
-`Provider` value is a getter, an internal effect mirrors it into the
-context signal so consumers update reactively without the `Provider`
-itself re-rendering.
+Call it in the component body (or at the top of an effect or memo) and
+close over the result. Calling it inside a hole works too, since holes
+are owners under the component, but reading once in the body is clearer
+and avoids repeating the walk on every re-evaluation. Context values are
+also visible inside [`Show`][wybthon.Show], [`For`][wybthon.For],
+[`Loading`][wybthon.Loading], and [`Portal`][wybthon.Portal] subtrees,
+because those primitives mount their content under the surrounding
+owner.
 
 ## Next steps
 
-- See the [`context`][wybthon.context] API for `Context`, `Provider`, and `use_context`.
-- Read [Lifecycle and Ownership](lifecycle.md) for how the ownership tree works.
-- Explore [Stores](stores.md) when you need a richer reactive container.
+- See the [`context`](../api/context.md) API for `Context`, `create_context`, and `use_context`.
+- Read [Lifecycle and ownership](lifecycle.md) for how the ownership tree works.
+- Explore [Stores](stores.md) when you need a richer reactive container to share.

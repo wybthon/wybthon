@@ -2,20 +2,21 @@
 
 The ``Index`` page links to sub-routes resolved by the app-level ``Router``
 (see :func:`app.routes.create_routes`). Each sub-page renders a marker plus
-the value the router extracted from the URL.
+the value the router extracted from the URL. ``Link`` joins ``href`` with
+the router's base path automatically because these pages render inside it.
 """
 
 from app.testkit import tid
 
-from wybthon import Link, component, div, dynamic, h, h2, span
+from wybthon import Link, Prop, component, div, h2, span
 
 
 def _link(to, label, slug):
-    return h(Link, {"to": to, "data-testid": f"router-link-{slug}"}, label)
+    return Link(label, href=to, **tid(f"router-link-{slug}"))
 
 
 @component
-def Index(query=None, params=None):
+def Index(**rest):
     return div(
         h2("Router"),
         _link("/router/user/42", "user 42", "user"),
@@ -29,35 +30,35 @@ def Index(query=None, params=None):
 
 
 @component
-def User(params=None, query=None):
+def User(params: Prop[dict], **rest):
     return div(
         span("user", **tid("router-user-marker")),
-        span(dynamic(lambda: (params() or {}).get("id", "")), **tid("router-user-id")),
+        span(lambda: (params() or {}).get("id", ""), **tid("router-user-id")),
         **tid("page-router-user"),
     )
 
 
 @component
-def Search(query=None, params=None):
+def Search(query: Prop[dict], **rest):
     return div(
-        span(dynamic(lambda: (query() or {}).get("q", "")), **tid("router-search-q")),
+        span(lambda: (query() or {}).get("q", ""), **tid("router-search-q")),
         **tid("page-router-search"),
     )
 
 
 @component
-def Docs(params=None, query=None):
+def Docs(params: Prop[dict], **rest):
     return div(
-        span(dynamic(lambda: (params() or {}).get("wildcard", "")), **tid("router-docs-rest")),
+        span(lambda: (params() or {}).get("wildcard", ""), **tid("router-docs-rest")),
         **tid("page-router-docs"),
     )
 
 
 @component
-def Parent(params=None, query=None):
+def Parent(**rest):
     return div(span("parent", **tid("router-parent-marker")), **tid("page-router-parent"))
 
 
 @component
-def Child(params=None, query=None):
+def Child(**rest):
     return div(span("child", **tid("router-child-marker")), **tid("page-router-child"))

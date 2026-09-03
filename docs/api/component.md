@@ -2,101 +2,63 @@
 
 ::: wybthon.component
 
-#### `@component`
+#### What's in this module
 
-Decorator that turns a function into a Wybthon component with
-**fully-reactive props**.
+The [`@component`][wybthon.component] decorator turns a function into a
+run-once [`Component`][wybthon.Component]. The body executes a single
+time when the component mounts and returns a tree; every parameter is
+bound to a [`Prop`][wybthon.Prop] accessor, and later prop changes flow
+into those accessors without re-running the body. Calling a component
+with keyword arguments returns a `VNode`, so trees compose like any
+other element.
 
-**Each parameter is a reactive accessor**, a zero-arg callable.
+| Name | Description |
+| --- | --- |
+| [`component`][wybthon.component] | Decorator producing a `Component` from a function. |
+| [`Component`][wybthon.Component] | Callable wrapper; `Counter(initial=5)` returns a `VNode`, `.defaults` lists declared defaults. |
 
-* Pass it directly into the tree to create a reactive auto-hole.
-* Call it (`name()`) to read the current value (tracked when called
-  inside an effect or hole).
-* Wrap with [`untrack`][wybthon.untrack] for a snapshot read.
+#### Binding rules
+
+How a mounted component's `Props` mapping is bound to the function:
+
+- **Named parameters** each become a `Prop`. Declare defaults with
+  [`prop`][wybthon.prop] so the annotation `Prop[T]` type-checks; a plain
+  default also works.
+- **`**rest`** receives every undeclared prop as a `Prop`; forward it
+  with `div(**rest)` or [`merge`][wybthon.merge].
+- **A single parameter named `props`** with no annotation, or any
+  parameter annotated `Props`, receives the whole
+  [`Props`][wybthon.Props] mapping instead. A lone annotated parameter
+  such as `def Card(title: Prop[str])` is an ordinary prop.
+- Positional arguments in a call become the `children` prop.
 
 ```python
-from wybthon import component, p
+from wybthon import Prop, Props, button, component, create_signal, div, p, prop
 
 @component
-def Greeting(name="world"):
-    # ``name`` is a getter; passing it as a child becomes a reactive hole.
-    return p("Hello, ", name, "!")
-```
-
-**Stateful** components create signals during setup and embed reactive
-holes (signal getters or `dynamic(lambda: ...)`).  The body runs once;
-seed local state from props using ``untrack``:
-
-```python
-from wybthon import component, create_signal, div, p, span, untrack
+def Counter(initial: Prop[int] = prop(0), label: Prop[str] = prop("Count"), **rest):
+    count, set_count = create_signal(initial.peek())   # one-time read: use .peek()
+    return div(
+        p(label, ": ", count),                          # Prop and accessor as reactive holes
+        button("+", on_click=lambda e: set_count(lambda n: n + 1)),
+        **rest,
+    )
 
 @component
-def Counter(initial=0):
-    count, set_count = create_signal(untrack(initial))
-    return div(p("Count: ", span(count)))
+def Card(props: Props):
+    return div(props.title, props.children, class_="card")
+
+Counter(initial=5, label="Clicks", id="main-counter")
+Card("body text", title=lambda: heading())              # accessors stay live
 ```
 
-**Children** is a normal prop, also a reactive accessor.  Most
-layouts read children once at setup; wrap with `untrack`:
+Reading a prop or signal at the top level of the body freezes the value
+and warns in dev mode; call it inside a hole, memo, or effect, or make
+the one-time read explicit with `.peek()`.
 
-```python
-from wybthon import component, h3, section, untrack
+#### See also
 
-@component
-def Card(title="", children=None):
-    kids = untrack(children) if callable(children) else children
-    if kids is None:
-        kids = []
-    if not isinstance(kids, list):
-        kids = [kids]
-    return section(h3(title), *kids, class_="card")
-```
-
-For memoized, reactive resolution of `children` (Solid-style), use the
-`children(fn)` helper with `get_props()`. See [Reactivity](reactivity.md).
-
-**Direct calls** with keyword arguments return a `VNode`:
-
-```python
-Counter(initial=5)
-Card("child1", "child2", title="My Card")
-```
-
-The component still works with `h()`:
-
-```python
-h(Counter, {"initial": 5})
-```
-
-#### Proxy mode
-
-When the component declares a single positional parameter with no
-default, the decorator passes the underlying `ReactiveProps` proxy
-directly:
-
-```python
-@component
-def DumpProps(props):
-    # ``props.x`` -> reactive accessor; ``props.x()`` -> current value.
-    return p(dynamic(lambda: ", ".join(sorted(list(props)))))
-```
-
-Use [`get_props`](reactivity.md) from inside any kwarg-style component
-to obtain the same proxy.
-
-#### forward_ref
-
-`forward_ref(render_fn)` creates a component that receives a `ref` prop
-and forwards it to a child element.
-
-The wrapped function receives `(props, ref)` instead of `(props,)`,
-and `ref` is **stripped** from props (matching React's `forwardRef`
-semantics).
-
-```python
-from wybthon import forward_ref, h
-
-FancyInput = forward_ref(lambda props, ref: h("input", {"type": "text", "ref": ref, "class_": "fancy"}))
-
-h(FancyInput, {"ref": my_ref, "placeholder": "Type here..."})
-```
+- [Concepts: Components](../concepts/components.md)
+- [Guides: Authoring patterns](../guides/authoring-patterns.md)
+- [Guides: Typing](../guides/typing.md)
+- [`Prop`][wybthon.Prop], [`Props`][wybthon.Props], [`prop`][wybthon.prop], [`merge`][wybthon.merge], [`omit`][wybthon.omit]

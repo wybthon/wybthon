@@ -1,498 +1,407 @@
-"""Tests for reactive flow control components (Show, For, Repeat, Switch, Match, Dynamic).
+"""Control flow: Show, For, Repeat, Switch/Match, Dynamic."""
 
-Flow controls are now reactive components that create isolated reactive
-scopes.  These tests verify both the VNode structure and the reactive
-behaviour (re-rendering only when dependencies change).
-"""
+from __future__ import annotations
 
-from conftest import collect_texts
+from conftest import StubNode, collect_texts
 
-from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch, _MatchResult
-from wybthon.vnode import VNode, h
-
-# ---------------------------------------------------------------------------
-# Show — VNode structure
-# ---------------------------------------------------------------------------
+from wybthon import _warnings
+from wybthon.component import component
+from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch
+from wybthon.html import div, h1, h2, li, p, span, ul
+from wybthon.reactivity import Prop, create_signal, flush, on_cleanup
 
 
-def test_show_returns_vnode():
-    result = Show(when=True, children=h("p", {}, "visible"))
-    assert isinstance(result, VNode)
+def texts(node: StubNode) -> list[str]:
+    return [t for t in collect_texts(node) if t]
 
 
-def test_show_with_false_returns_vnode():
-    result = Show(when=False, children=h("p", {}, "visible"))
-    assert isinstance(result, VNode)
-
-
-def test_show_with_fallback_returns_vnode():
-    result = Show(when=False, children=h("p", {}, "main"), fallback=h("p", {}, "fallback"))
-    assert isinstance(result, VNode)
-
-
-def test_show_callable_when():
-    result = Show(when=lambda: True, children=h("p", {}, "ok"))
-    assert isinstance(result, VNode)
-
-
-def test_show_callable_children():
-    result = Show(when=True, children=lambda cond: h("p", {}, f"got {cond}"))
-    assert isinstance(result, VNode)
+def elements(node: StubNode) -> list[StubNode]:
+    return [n for n in node.childNodes if n.tag]
 
 
 # ---------------------------------------------------------------------------
-# Show — rendered output with browser stubs
+# Show
 # ---------------------------------------------------------------------------
 
 
-def test_show_truthy_renders_child(wyb, root_element):
-    vdom = wyb["reconciler"]
-    child = h("p", {}, "visible")
-    vdom.render(Show(when=True, children=child), root_element)
-    texts = collect_texts(root_element.element)
-    assert "visible" in texts
+def test_show_toggles_children_and_fallback(wyb, root_element):
+    on, set_on = create_signal(False)
+    wyb["reconciler"].render(div(Show(on, lambda: p("yes"), fallback=lambda: p("no"))), root_element)
+    assert texts(root_element.element) == ["no"]
+    set_on(True)
+    flush()
+    assert texts(root_element.element) == ["yes"]
+    set_on(False)
+    flush()
+    assert texts(root_element.element) == ["no"]
 
 
-def test_show_falsy_renders_empty(wyb, root_element):
-    vdom = wyb["reconciler"]
-    child = h("p", {}, "visible")
-    vdom.render(Show(when=False, children=child), root_element)
-    texts = collect_texts(root_element.element)
-    assert "visible" not in texts
+def test_show_accepts_static_vnode_children(wyb, root_element):
+    on, set_on = create_signal(True)
+    wyb["reconciler"].render(div(Show(on, p("static"))), root_element)
+    assert texts(root_element.element) == ["static"]
+    set_on(False)
+    flush()
+    assert texts(root_element.element) == []
 
 
-def test_show_falsy_renders_fallback(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Show(when=False, children=h("p", {}, "main"), fallback=h("p", {}, "fallback")),
-        root_element,
+def test_show_callback_receives_accessor_and_is_not_recreated(wyb, root_element):
+    user, set_user = create_signal(None)
+    created: list[int] = []
+
+    def body(u):
+        created.append(1)
+        return p("hi ", lambda: u()["name"])
+
+    wyb["reconciler"].render(div(Show(user, body)), root_element)
+    assert texts(root_element.element) == []
+    set_user({"name": "Ada"})
+    flush()
+    assert texts(root_element.element) == ["hi ", "Ada"]
+    set_user({"name": "Grace"})
+    flush()
+    assert texts(root_element.element) == ["hi ", "Grace"]
+    assert created == [1]
+
+
+def test_show_keyed_passes_raw_value_and_recreates_on_change(wyb, root_element):
+    user, set_user = create_signal({"name": "Ada"})
+    created: list[str] = []
+
+    def body(u):
+        created.append(u["name"])
+        return p(u["name"])
+
+    wyb["reconciler"].render(div(Show(user, body, keyed=True)), root_element)
+    set_user({"name": "Grace"})
+    flush()
+    assert texts(root_element.element) == ["Grace"]
+    assert created == ["Ada", "Grace"]
+
+
+def test_show_disposes_children_scope_when_hidden(wyb, root_element):
+    on, set_on = create_signal(True)
+    log: list[str] = []
+
+    @component
+    def Child():
+        on_cleanup(lambda: log.append("cleanup"))
+        return p("c")
+
+    wyb["reconciler"].render(div(Show(on, lambda: Child())), root_element)
+    set_on(False)
+    flush()
+    assert log == ["cleanup"]
+
+
+def test_show_does_not_rerender_on_truthy_to_truthy_change(wyb, root_element):
+    count, set_count = create_signal(1)
+    renders: list[int] = []
+    wyb["reconciler"].render(div(Show(count, lambda: (renders.append(1), p("on"))[1])), root_element)
+    set_count(2)
+    flush()
+    assert renders == [1]
+
+
+# ---------------------------------------------------------------------------
+# For
+# ---------------------------------------------------------------------------
+
+
+def _items(*ids: int) -> list[dict]:
+    return [{"id": i, "t": f"t{i}"} for i in ids]
+
+
+def test_for_renders_rows_and_fallback(wyb, root_element):
+    items, set_items = create_signal([])
+    wyb["reconciler"].render(ul(For(items, lambda item, i: li(item["t"]), fallback=lambda: li("empty"))), root_element)
+    assert texts(root_element.element) == ["empty"]
+    set_items(_items(1, 2))
+    flush()
+    assert texts(root_element.element) == ["t1", "t2"]
+    set_items([])
+    flush()
+    assert texts(root_element.element) == ["empty"]
+
+
+def test_for_keyed_by_identity_moves_rows_and_updates_index(wyb, root_element):
+    a, b, c = _items(1, 2, 3)
+    items, set_items = create_signal([a, b])
+    created: list[int] = []
+
+    def row(item, index):
+        created.append(item["id"])
+        return li(lambda: f"{index()}:{item['t']}")
+
+    wyb["reconciler"].render(ul(For(items, row)), root_element)
+    assert texts(root_element.element) == ["0:t1", "1:t2"]
+    ul_node = elements(root_element.element)[0]
+    before = {n.nodeValue if False else id(n): n for n in elements(ul_node)}
+    set_items([b, c, a])
+    flush()
+    assert texts(root_element.element) == ["0:t2", "1:t3", "2:t1"]
+    assert created == [1, 2, 3]
+    after = [id(n) for n in elements(ul_node)]
+    assert set(before) <= set(after)
+
+
+def test_for_rows_are_disposed_when_removed(wyb, root_element):
+    a, b = _items(1, 2)
+    items, set_items = create_signal([a, b])
+    disposed: list[int] = []
+
+    def row(item, index):
+        on_cleanup(lambda: disposed.append(item["id"]))
+        return li(item["t"])
+
+    wyb["reconciler"].render(ul(For(items, row)), root_element)
+    set_items([b])
+    flush()
+    assert disposed == [1]
+    assert texts(root_element.element) == ["t2"]
+
+
+def test_for_unkeyed_reuses_rows_by_position(wyb, root_element):
+    items, set_items = create_signal(["a", "b"])
+    created: list[int] = []
+
+    def row(item, index):
+        created.append(index)
+        return li(lambda: f"{index}:{item()}")
+
+    wyb["reconciler"].render(ul(For(items, row, keyed=False)), root_element)
+    assert texts(root_element.element) == ["0:a", "1:b"]
+    set_items(["x", "y", "z"])
+    flush()
+    assert texts(root_element.element) == ["0:x", "1:y", "2:z"]
+    assert created == [0, 1, 2]
+
+
+def test_for_keyed_by_function(wyb, root_element):
+    items, set_items = create_signal(_items(1))
+    created: list[int] = []
+
+    def row(item, index):
+        created.append(item()["id"])
+        return li(lambda: f"{index()}:{item()['t']}")
+
+    wyb["reconciler"].render(ul(For(items, row, keyed=lambda x: x["id"])), root_element)
+    set_items([{"id": 2, "t": "new"}, {"id": 1, "t": "T1"}])
+    flush()
+    assert texts(root_element.element) == ["0:new", "1:T1"]
+    assert created == [1, 2]
+
+
+def test_for_with_plain_list_warns_once(wyb, root_element, capsys):
+    _warnings._reset_warning_dedupe()
+    wyb["reconciler"].render(ul(For(["a", "b"], lambda item, i: li(item))), root_element)
+    assert texts(root_element.element) == ["a", "b"]
+    assert "plain list" in capsys.readouterr().err
+
+
+def test_for_rows_are_isolated_scopes(wyb, root_element):
+    items, _ = create_signal(_items(1, 2))
+    hits, set_hits = create_signal({1: 0, 2: 0})
+    renders: list[int] = []
+
+    def row(item, index):
+        return li(lambda: (renders.append(item["id"]), str(hits()[item["id"]]))[1])
+
+    wyb["reconciler"].render(ul(For(items, row)), root_element)
+    set_hits({1: 1, 2: 0})
+    flush()
+    # Both holes read `hits`, so both re-render; the rows themselves are not
+    # recreated (no extra row creation, only hole updates).
+    assert texts(root_element.element) == ["1", "0"]
+    assert renders.count(1) == 2 and renders.count(2) == 2
+
+
+def test_for_inserted_rows_mount_in_document_order(wyb, root_element):
+    from wybthon.reactivity import on_settled
+
+    one = _items(1)
+    items, set_items = create_signal(one)
+    order: list[int] = []
+
+    @component
+    def Row(item: Prop[dict]):
+        iid = item.peek()["id"]
+        on_settled(lambda: order.append(iid))
+        return li(str(iid))
+
+    wyb["reconciler"].render(ul(For(items, lambda item, index: Row(item=item))), root_element)
+    assert order == [1]
+    # A run of appended siblings mounts front to back, so component bodies
+    # and on_settled run in DOM order.
+    set_items(one + _items(2, 3, 4))
+    flush()
+    assert order == [1, 2, 3, 4]
+    # The same holds for a run inserted in the middle.
+    set_items(one + _items(5, 6) + items()[1:])
+    flush()
+    assert order == [1, 2, 3, 4, 5, 6]
+    assert texts(root_element.element) == ["1", "5", "6", "2", "3", "4"]
+
+
+def test_for_never_patches_a_new_row_into_a_removed_one(wyb, root_element):
+    items, set_items = create_signal(_items(1))
+    bodies: list[int] = []
+
+    @component
+    def Row(item: Prop[dict]):
+        iid = item.peek()["id"]
+        bodies.append(iid)
+        return li(str(iid))
+
+    wyb["reconciler"].render(ul(For(items, lambda item, index: Row(item=item))), root_element)
+    # A new dict at the same position is a different item: the old row is
+    # disposed and a fresh component mounts (never a props patch into the
+    # disposed one).
+    set_items([{"id": 1, "t": "changed"}])
+    flush()
+    assert bodies == [1, 1]
+    assert texts(root_element.element) == ["1"]
+
+
+# ---------------------------------------------------------------------------
+# Repeat
+# ---------------------------------------------------------------------------
+
+
+def test_repeat_grows_and_shrinks(wyb, root_element):
+    n, set_n = create_signal(2)
+    created: list[int] = []
+
+    def row(i: int):
+        created.append(i)
+        return span(str(i))
+
+    wyb["reconciler"].render(div(Repeat(n, row)), root_element)
+    assert texts(root_element.element) == ["0", "1"]
+    set_n(4)
+    flush()
+    assert texts(root_element.element) == ["0", "1", "2", "3"]
+    set_n(1)
+    flush()
+    assert texts(root_element.element) == ["0"]
+    assert created == [0, 1, 2, 3]
+
+
+def test_repeat_with_start_and_fallback(wyb, root_element):
+    n, set_n = create_signal(0)
+    wyb["reconciler"].render(
+        div(Repeat(n, lambda i: span(str(i)), fallback=lambda: span("none"), start=5)), root_element
     )
-    texts = collect_texts(root_element.element)
-    assert "fallback" in texts
-    assert "main" not in texts
-
-
-def test_show_callable_when_renders(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Show(when=lambda: True, children=h("p", {}, "ok")), root_element)
-    texts = collect_texts(root_element.element)
-    assert "ok" in texts
-
-
-def test_show_callable_children_renders(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Show(when=True, children=lambda cond: h("p", {}, f"got {cond}")),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "got True" in texts
-
-
-def test_show_reactive_toggle(wyb, root_element):
-    """Show re-renders when its when-getter changes."""
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    visible, set_visible = reactivity.create_signal(True)
-
-    def App(props):
-        def render():
-            return Show(when=visible, children=lambda: h("p", {}, "on"), fallback=lambda: h("p", {}, "off"))
-
-        return render
-
-    vdom.render(h(App, {}), root_element)
-    assert "on" in collect_texts(root_element.element)
-
-    set_visible(False)
-    reactivity.flush()
-    assert "off" in collect_texts(root_element.element)
-
-    set_visible(True)
-    reactivity.flush()
-    assert "on" in collect_texts(root_element.element)
-
-
-def test_show_none_children():
-    """Show with no children renders empty text."""
-    result = Show(when=True)
-    assert isinstance(result, VNode)
-
-
-def test_show_callable_fallback(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Show(when=False, children=h("p", {}, "main"), fallback=lambda: h("p", {}, "lazy fallback")),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "lazy fallback" in texts
+    assert texts(root_element.element) == ["none"]
+    set_n(2)
+    flush()
+    assert texts(root_element.element) == ["5", "6"]
 
 
 # ---------------------------------------------------------------------------
-# For — VNode structure
+# Switch / Match
 # ---------------------------------------------------------------------------
 
 
-def test_for_returns_vnode():
-    result = For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item()))
-    assert isinstance(result, VNode)
-
-
-def test_for_empty_list():
-    result = For(each=[], children=lambda item, idx: h("li", {}, item()))
-    assert isinstance(result, VNode)
-
-
-def test_for_callable_each():
-    result = For(each=lambda: [1, 2], children=lambda item, idx: h("li", {}, str(item())))
-    assert isinstance(result, VNode)
-
-
-# ---------------------------------------------------------------------------
-# For — rendered output with browser stubs
-# ---------------------------------------------------------------------------
-
-
-def test_for_renders_items(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        For(each=["A", "B", "C"], children=lambda item, idx: h("li", {"key": idx()}, item())),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "A" in texts
-    assert "B" in texts
-    assert "C" in texts
-
-
-def test_for_empty_renders_nothing(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        For(each=[], children=lambda item, idx: h("li", {}, item())),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert texts == [""] or all(t.strip() == "" for t in texts)
-
-
-def test_for_index_getter(wyb, root_element):
-    vdom = wyb["reconciler"]
-    indices: list = []
-
-    def mapper(item, idx):
-        indices.append(idx())
-        return h("li", {}, str(item()))
-
-    vdom.render(For(each=[10, 20, 30], children=mapper), root_element)
-    assert indices == [0, 1, 2]
-
-
-def test_for_reactive_list(wyb, root_element):
-    """For re-renders when its list signal changes."""
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    items, set_items = reactivity.create_signal(["X", "Y"])
-
-    def App(props):
-        def render():
-            return For(each=items, children=lambda item, idx: h("li", {}, item()))
-
-        return render
-
-    vdom.render(h(App, {}), root_element)
-    texts = collect_texts(root_element.element)
-    assert "X" in texts and "Y" in texts
-
-    set_items(["A", "B", "C"])
-    reactivity.flush()
-    texts = collect_texts(root_element.element)
-    assert "A" in texts and "B" in texts and "C" in texts
-
-
-def test_for_fallback(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        For(each=[], children=lambda item, idx: h("li", {}, item()), fallback=h("p", {}, "empty")),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "empty" in texts
-
-
-# ---------------------------------------------------------------------------
-# For key="index" — per-position slots (the old Index component)
-# ---------------------------------------------------------------------------
-
-
-def test_for_index_mode_returns_vnode():
-    result = For(each=[10, 20], children=lambda item, idx: h("li", {}, str(item())), key="index")
-    assert isinstance(result, VNode)
-
-
-def test_for_index_mode_empty_list():
-    result = For(each=[], children=lambda item, idx: h("li", {}, str(item())), key="index")
-    assert isinstance(result, VNode)
-
-
-def test_for_index_mode_renders_items(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        For(each=[10, 20], children=lambda item, idx: h("li", {}, str(item())), key="index"),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "10" in texts
-    assert "20" in texts
-
-
-def test_for_index_mode_item_getter(wyb, root_element):
-    vdom = wyb["reconciler"]
-    captured: list = []
-
-    def mapper(item, idx):
-        captured.append(item())
-        return h("li", {}, str(item()))
-
-    vdom.render(For(each=["a", "b"], children=mapper, key="index"), root_element)
-    assert captured == ["a", "b"]
-
-
-def test_for_index_mode_reactive_list(wyb, root_element):
-    """key="index" re-renders when its list signal changes."""
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    items, set_items = reactivity.create_signal([1, 2])
-
-    def App(props):
-        def render():
-            return For(each=items, children=lambda item, idx: h("li", {}, item), key="index")
-
-        return render
-
-    vdom.render(h(App, {}), root_element)
-    texts = collect_texts(root_element.element)
-    assert "1" in texts and "2" in texts
-
-    set_items([10, 20, 30])
-    reactivity.flush()
-    texts = collect_texts(root_element.element)
-    assert "10" in texts and "20" in texts and "30" in texts
-
-
-# ---------------------------------------------------------------------------
-# Repeat — count-driven rendering
-# ---------------------------------------------------------------------------
-
-
-def test_repeat_returns_vnode():
-    result = Repeat(times=3, children=lambda i: h("li", {}, f"#{i}"))
-    assert isinstance(result, VNode)
-
-
-def test_repeat_renders_count(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Repeat(times=3, children=lambda i: h("li", {}, f"#{i}")), root_element)
-    texts = collect_texts(root_element.element)
-    assert "#0" in texts and "#1" in texts and "#2" in texts
-
-
-def test_repeat_reactive_count(wyb, root_element):
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    count, set_count = reactivity.create_signal(1)
-
-    vdom.render(Repeat(times=count, children=lambda i: h("li", {}, f"#{i}")), root_element)
-    assert "#0" in collect_texts(root_element.element)
-
-    set_count(3)
-    reactivity.flush()
-    texts = collect_texts(root_element.element)
-    assert "#1" in texts and "#2" in texts
-
-
-# ---------------------------------------------------------------------------
-# Switch / Match — VNode structure
-# ---------------------------------------------------------------------------
-
-
-def test_match_returns_match_result():
-    result = Match(True, h("p", {}, "yes"))
-    assert isinstance(result, _MatchResult)
-
-
-def test_switch_returns_vnode():
-    result = Switch(
-        Match(True, h("p", {}, "first")),
-        Match(True, h("p", {}, "second")),
-        fallback=h("p", {}, "default"),
-    )
-    assert isinstance(result, VNode)
-
-
-def test_switch_no_match():
-    result = Switch(
-        Match(False, h("p", {}, "nope")),
-        fallback=h("p", {}, "default"),
-    )
-    assert isinstance(result, VNode)
-
-
-def test_switch_no_match_no_fallback():
-    result = Switch(Match(False, h("p", {}, "nope")))
-    assert isinstance(result, VNode)
-
-
-# ---------------------------------------------------------------------------
-# Switch / Match — rendered output with browser stubs
-# ---------------------------------------------------------------------------
-
-
-def test_switch_first_match_renders(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Switch(
-            Match(True, h("p", {}, "first")),
-            Match(True, h("p", {}, "second")),
-            fallback=h("p", {}, "default"),
-        ),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "first" in texts
-    assert "second" not in texts
-
-
-def test_switch_fallback_renders(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Switch(Match(False, h("p", {}, "nope")), fallback=h("p", {}, "default")),
-        root_element,
-    )
-    texts = collect_texts(root_element.element)
-    assert "default" in texts
-
-
-def test_switch_no_fallback_renders_empty(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Switch(Match(False, h("p", {}, "nope"))), root_element)
-    texts = collect_texts(root_element.element)
-    assert all(t.strip() == "" for t in texts)
-
-
-def test_switch_callable_when(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Switch(Match(lambda: True, h("p", {}, "ok"))), root_element)
-    texts = collect_texts(root_element.element)
-    assert "ok" in texts
-
-
-def test_switch_reactive(wyb, root_element):
-    """Switch re-renders when its branch conditions change."""
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    status, set_status = reactivity.create_signal("loading")
-
-    def App(props):
-        def render():
-            return Switch(
-                Match(when=lambda: status() == "loading", children=lambda: h("p", {}, "Loading...")),
-                Match(when=lambda: status() == "ready", children=lambda: h("p", {}, "Ready")),
-                fallback=lambda: h("p", {}, "Unknown"),
+def test_switch_renders_first_matching_branch(wyb, root_element):
+    status, set_status = create_signal("loading")
+    wyb["reconciler"].render(
+        div(
+            Switch(
+                Match(lambda: status() == "loading", lambda: p("Loading")),
+                Match(lambda: status() == "ready", lambda: p("Ready")),
+                fallback=lambda: p("?"),
             )
-
-        return render
-
-    vdom.render(h(App, {}), root_element)
-    assert "Loading..." in collect_texts(root_element.element)
-
-    set_status("ready")
-    reactivity.flush()
-    assert "Ready" in collect_texts(root_element.element)
-
-    set_status("other")
-    reactivity.flush()
-    assert "Unknown" in collect_texts(root_element.element)
-
-
-def test_switch_callable_children(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(
-        Switch(
-            Match(True, lambda: h("p", {}, "lazy child")),
         ),
         root_element,
     )
-    texts = collect_texts(root_element.element)
-    assert "lazy child" in texts
+    assert texts(root_element.element) == ["Loading"]
+    set_status("ready")
+    flush()
+    assert texts(root_element.element) == ["Ready"]
+    set_status("zzz")
+    flush()
+    assert texts(root_element.element) == ["?"]
+
+
+def test_switch_match_callback_receives_accessor(wyb, root_element):
+    user, set_user = create_signal(None)
+    admin, set_admin = create_signal(None)
+    wyb["reconciler"].render(
+        div(
+            Switch(
+                Match(admin, lambda a: p("admin ", lambda: a()["name"])),
+                Match(user, lambda u: p("user ", lambda: u()["name"])),
+            )
+        ),
+        root_element,
+    )
+    assert texts(root_element.element) == []
+    set_user({"name": "u"})
+    flush()
+    assert texts(root_element.element) == ["user ", "u"]
+    set_admin({"name": "root"})
+    flush()
+    assert texts(root_element.element) == ["admin ", "root"]
+
+
+def test_switch_keyed_match_recreates_on_value_change(wyb, root_element):
+    value, set_value = create_signal("a")
+    created: list[str] = []
+
+    def body(v):
+        created.append(v)
+        return p(v)
+
+    wyb["reconciler"].render(div(Switch(Match(value, body, keyed=True))), root_element)
+    set_value("b")
+    flush()
+    assert texts(root_element.element) == ["b"]
+    assert created == ["a", "b"]
 
 
 # ---------------------------------------------------------------------------
-# Dynamic — VNode structure
+# Dynamic
 # ---------------------------------------------------------------------------
 
 
-def test_dynamic_with_string_tag():
-    result = Dynamic(component="div", children=["hello"])
-    assert isinstance(result, VNode)
+def test_dynamic_switches_tag(wyb, root_element):
+    tag, set_tag = create_signal("h1")
+    wyb["reconciler"].render(div(Dynamic(tag, children="T", class_="x")), root_element)
+    outer = elements(root_element.element)[0]
+    assert elements(outer)[0].tag == "h1"
+    assert elements(outer)[0].attributes["class"] == "x"
+    assert texts(root_element.element) == ["T"]
+    set_tag("h2")
+    flush()
+    assert elements(outer)[0].tag == "h2"
 
 
-def test_dynamic_with_component():
-    def MyComp(props):
-        return h("span", {}, props.get("text", ""))
+def test_dynamic_switches_component_and_passes_props(wyb, root_element):
+    @component
+    def A(label: Prop[str]):
+        return h1("A:", label)
 
-    result = Dynamic(component=MyComp, text="hi")
-    assert isinstance(result, VNode)
+    @component
+    def B(label: Prop[str]):
+        return h2("B:", label)
 
-
-def test_dynamic_with_none():
-    result = Dynamic(component=None)
-    assert isinstance(result, VNode)
-
-
-# ---------------------------------------------------------------------------
-# Dynamic — rendered output with browser stubs
-# ---------------------------------------------------------------------------
-
-
-def test_dynamic_renders_tag(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Dynamic(component="div", children=["hello"]), root_element)
-    texts = collect_texts(root_element.element)
-    assert "hello" in texts
+    which, set_which = create_signal(A)
+    label, set_label = create_signal("x")
+    wyb["reconciler"].render(div(Dynamic(which, label=label)), root_element)
+    assert texts(root_element.element) == ["A:", "x"]
+    set_label("y")
+    flush()
+    assert texts(root_element.element) == ["A:", "y"]
+    set_which(lambda _: B)
+    flush()
+    assert texts(root_element.element) == ["B:", "y"]
 
 
-def test_dynamic_renders_component(wyb, root_element):
-    vdom = wyb["reconciler"]
+def test_dynamic_with_static_component(wyb, root_element):
+    @component
+    def A():
+        return span("a")
 
-    def MyComp(props):
-        return h("span", {}, props.get("text", ""))
-
-    vdom.render(Dynamic(component=MyComp, text="hi"), root_element)
-    texts = collect_texts(root_element.element)
-    assert "hi" in texts
-
-
-def test_dynamic_renders_none(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Dynamic(component=None), root_element)
-    texts = collect_texts(root_element.element)
-    assert all(t.strip() == "" for t in texts)
-
-
-def test_dynamic_reactive(wyb, root_element):
-    """Dynamic re-renders when its component getter changes."""
-    vdom, reactivity = wyb["reconciler"], wyb["reactivity"]
-    level, set_level = reactivity.create_signal("h1")
-
-    def App(props):
-        def render():
-            return Dynamic(component=lambda: level(), children=["Title"])
-
-        return render
-
-    vdom.render(h(App, {}), root_element)
-    texts = collect_texts(root_element.element)
-    assert "Title" in texts
-
-
-def test_dynamic_kwargs(wyb, root_element):
-    vdom = wyb["reconciler"]
-    vdom.render(Dynamic(component="div", children=["content"], id="main"), root_element)
-    texts = collect_texts(root_element.element)
-    assert "content" in texts
+    wyb["reconciler"].render(div(Dynamic(A)), root_element)
+    assert texts(root_element.element) == ["a"]

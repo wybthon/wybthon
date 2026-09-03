@@ -1,4 +1,9 @@
-from wybthon import (
+from types import SimpleNamespace
+
+from conftest import collect_texts
+
+from wybthon.forms import (
+    Field,
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
@@ -11,189 +16,259 @@ from wybthon import (
     on_submit_validated,
     required,
     rules_from_schema,
+    validate_field,
     validate_form,
 )
+from wybthon.html import form, input_, option, select, span
+from wybthon.reactivity import flush
 
 
-class DummyTarget:
-    """Stand-in for ``DomEvent.target`` exposing ``value``/``checked`` directly.
-
-    Mirrors the ergonomic ``Element`` wrapper API so tests can assert
-    against the same handler surface real handlers see.
-    """
-
-    def __init__(self, value=None, checked=False):
-        self.value = value
-        self.checked = checked
+def texts(node):
+    return [t for t in collect_texts(node) if t]
 
 
-class DummyEvent:
-    def __init__(self, value=None, checked=False):
-        self.type = None
-        self.target = DummyTarget(value=value, checked=checked)
-        self.current_target = None
-        self._stopped = False
+class FakeEvent:
+    def __init__(self, **target):
+        self.target = SimpleNamespace(**target) if target else None
+        self.prevented = False
 
     def prevent_default(self):
-        pass
+        self.prevented = True
 
 
-def test_bind_text_updates_value_and_error():
-    form = form_state({"name": ""})
-    name_field = form["name"]
-
-    bind = bind_text(name_field)
-    # Simulate input event
-    evt = DummyEvent(value="Alice")
-    bind["on_input"](evt)
-
-    assert name_field.value.get() == "Alice"
-    assert name_field.touched.get() is True
-
-
-def test_bind_checkbox_updates_value():
-    form = form_state({"newsletter": False})
-    field = form["newsletter"]
-
-    bind = bind_checkbox(field)
-    evt = DummyEvent(checked=True)
-    bind["on_change"](evt)
-
-    assert field.value.get() is True
+def test_form_state_creates_fields_with_accessor_setter_pairs():
+    fields = form_state({"name": "", "agree": False})
+    assert set(fields) == {"name", "agree"}
+    assert all(isinstance(f, Field) for f in fields.values())
+    name = fields["name"]
+    assert name.value() == ""
+    assert name.error() is None
+    assert name.touched() is False
+    assert fields["agree"].value() is False
+    name.set_value("Ada")
+    name.set_touched(True)
+    name.set_error("bad")
+    flush()
+    assert (name.value(), name.touched(), name.error()) == ("Ada", True, "bad")
+    assert repr(name) == "Field(value='Ada', error='bad', touched=True)"
 
 
-def test_bind_select_updates_value():
-    form = form_state({"choice": ""})
-    field = form["choice"]
-
-    bind = bind_select(field)
-    evt = DummyEvent(value="b")
-    bind["on_change"](evt)
-
-    assert field.value.get() == "b"
-
-
-def test_validate_form_and_a11y_attrs():
-    form = form_state({"name": "", "email": ""})
-    rules = {"name": [required()], "email": [email()]}
-
-    # Initially, name is empty => required error; email empty => no error due to optional email
-    is_valid, errors = validate_form(form, rules)
-    assert is_valid is False
-    assert errors["name"] is not None
-    assert errors["email"] is None
-
-    # a11y control reflects error state
-    name_attrs = a11y_control_attrs(form["name"], described_by_id="name-err")
-    assert name_attrs.get("aria-invalid") == "true"
-
-    # Fix the name, then the form should be valid
-    form["name"].value.set("Alice")
-    is_valid2, errors2 = validate_form(form, rules)
-    assert is_valid2 is True
-    assert errors2["name"] is None
+def test_bind_text_returns_value_accessor_and_input_handler():
+    field = form_state({"name": ""})["name"]
+    props = bind_text(field)
+    assert set(props) == {"value", "on_input"}
+    assert props["value"] is field.value
+    props["on_input"](FakeEvent(value="Grace"))
+    flush()
+    assert field.value() == "Grace"
+    assert field.touched() is True
+    assert field.error() is None
+    props["on_input"](FakeEvent(value=None))
+    flush()
+    assert field.value() == ""
 
 
-def test_on_submit_calls_handler_and_prevents_default():
-    form = form_state({"name": "Alice"})
-    called = {"count": 0, "form": None}
-
-    def handler(f):
-        called["count"] += 1
-        called["form"] = f
-
-    submit = on_submit(handler, form)
-
-    evt = DummyEvent()
-    submit(evt)
-
-    assert called["count"] == 1
-    assert called["form"] is form
+def test_bind_text_with_validators_sets_error():
+    field = form_state({"name": ""})["name"]
+    props = bind_text(field, validators=[required(), min_length(3)])
+    props["on_input"](FakeEvent(value=""))
+    flush()
+    assert field.error() == "This field is required"
+    props["on_input"](FakeEvent(value="ab"))
+    flush()
+    assert field.error() == "Minimum length is 3"
+    props["on_input"](FakeEvent(value="abc"))
+    flush()
+    assert field.error() is None
 
 
-def test_bind_text_with_validators_updates_error():
-    form = form_state({"name": ""})
-    name_field = form["name"]
-
-    bind = bind_text(name_field, validators=[required(), min_length(3)])
-
-    evt = DummyEvent(value="ab")
-    bind["on_input"](evt)
-    assert name_field.error.get() == "Minimum length is 3"
-
-    evt = DummyEvent(value="Alice")
-    bind["on_input"](evt)
-    assert name_field.error.get() is None
-
-
-def test_error_message_attrs_returns_polite_live_region():
-    attrs = error_message_attrs(id="name-err")
-    assert attrs["id"] == "name-err"
-    assert attrs["role"] == "alert"
-    assert attrs["aria-live"] == "polite"
+def test_bind_checkbox_reads_checked_and_reflects_value():
+    field = form_state({"agree": False})["agree"]
+    field.set_error("stale")
+    flush()
+    props = bind_checkbox(field)
+    assert set(props) == {"checked", "on_change"}
+    assert props["checked"]() is False
+    props["on_change"](FakeEvent(checked=True))
+    flush()
+    assert field.value() is True
+    assert props["checked"]() is True
+    assert field.touched() is True
+    assert field.error() is None
+    props["on_change"](FakeEvent(checked=0))
+    flush()
+    assert field.value() is False
 
 
-def test_rules_from_schema_uses_custom_messages():
-    form = form_state({"name": "", "email": "bad"})
-    schema = {
-        "name": {"required": "Name is required", "min_length": 3, "min_length_message": "Name is too short"},
-        "email": {"email": "Bad email address"},
+def test_bind_select_reads_value():
+    field = form_state({"color": "red"})["color"]
+    props = bind_select(field)
+    assert set(props) == {"value", "on_change"}
+    assert props["value"] is field.value
+    props["on_change"](FakeEvent(value="blue"))
+    flush()
+    assert field.value() == "blue"
+    assert field.touched() is True
+
+
+def test_field_validate_marks_touched_and_stores_error():
+    field = Field("x")
+    assert field.validate([min_length(2)]) == "Minimum length is 2"
+    flush()
+    assert field.touched() is True
+    assert field.error() == "Minimum length is 2"
+    field.set_value("xy")
+    flush()
+    assert field.validate([min_length(2)]) is None
+    flush()
+    assert field.error() is None
+    assert validate_field(field, [required()]) is None
+    assert validate_field(field) is None
+
+
+def test_on_submit_prevents_default_and_passes_form():
+    fields = form_state({"name": "Ada"})
+    received = []
+    handler = on_submit(received.append, fields)
+    evt = FakeEvent()
+    handler(evt)
+    assert evt.prevented is True
+    assert received == [fields]
+    assert received[0]["name"].value() == "Ada"
+
+
+def test_on_submit_validated_only_calls_handler_when_valid():
+    fields = form_state({"name": "", "mail": "nope"})
+    rules = {"name": [required()], "mail": [email()]}
+    received = []
+    handler = on_submit_validated(rules, received.append, fields)
+
+    evt = FakeEvent()
+    handler(evt)
+    flush()
+    assert evt.prevented is True
+    assert received == []
+    assert fields["name"].error() == "This field is required"
+    assert fields["mail"].error() == "Invalid email address"
+    assert fields["name"].touched() is True and fields["mail"].touched() is True
+
+    fields["name"].set_value("Ada")
+    fields["mail"].set_value("ada@example.com")
+    flush()
+    handler(FakeEvent())
+    flush()
+    assert received == [fields]
+    assert fields["name"].error() is None
+    assert fields["mail"].error() is None
+
+
+def test_validate_form_reports_per_field_errors_and_ignores_unknown_fields():
+    fields = form_state({"name": "", "age": "42"})
+    rules = {"name": [required()], "age": [min_length(1)], "missing": [required()]}
+    ok, errors = validate_form(fields, rules)
+    assert ok is False
+    assert errors == {"name": "This field is required", "age": None, "missing": None}
+    fields["name"].set_value("Ada")
+    flush()
+    ok, errors = validate_form(fields, rules)
+    assert ok is True
+    assert errors["name"] is None
+
+
+def test_rules_from_schema_builds_validators():
+    rules = rules_from_schema(
+        {
+            "name": {"required": "Name please", "min_length": 2, "max_length": 4, "max_length_message": "Too long"},
+            "mail": {"email": True},
+            "free": {},
+        }
+    )
+    assert set(rules) == {"name", "mail", "free"}
+    assert rules["free"] == []
+    name_rules = rules["name"]
+    assert len(name_rules) == 3
+    assert [v("") for v in name_rules][0] == "Name please"
+    assert [v("a") for v in name_rules][1] == "Minimum length is 2"
+    assert [v("abcde") for v in name_rules][2] == "Too long"
+    assert rules["mail"][0]("bad") == "Invalid email address"
+    assert rules["mail"][0]("ok@example.com") is None
+
+
+def test_a11y_control_attrs_are_reactive():
+    field = Field("")
+    attrs = a11y_control_attrs(field, described_by_id="e")
+    assert set(attrs) == {"aria_invalid", "aria_describedby"}
+    assert attrs["aria_invalid"]() == "false"
+    assert attrs["aria_describedby"]() is None
+    field.set_error("Required")
+    flush()
+    assert attrs["aria_invalid"]() == "true"
+    assert attrs["aria_describedby"]() == "e"
+    assert set(a11y_control_attrs(field)) == {"aria_invalid"}
+
+
+def test_error_message_attrs():
+    assert error_message_attrs(id="name-error") == {"id": "name-error", "role": "alert", "aria_live": "polite"}
+
+
+def test_bound_input_end_to_end_in_dom(wyb, root_element):
+    fields = form_state({"name": "", "color": "red", "agree": False})
+    rules = {"name": [required(), min_length(2)]}
+    saved = []
+    name_attrs = {
+        **bind_text(fields["name"], validators=rules["name"]),
+        **a11y_control_attrs(fields["name"], described_by_id="e"),
     }
-    rules = rules_from_schema(schema)
+    root = wyb["reconciler"].render(
+        form(
+            input_(**name_attrs),
+            span(fields["name"].error, **error_message_attrs(id="e")),
+            select(option("red", value="red"), option("blue", value="blue"), **bind_select(fields["color"])),
+            input_(type="checkbox", **bind_checkbox(fields["agree"])),
+            on_submit=on_submit_validated(rules, lambda f: saved.append(f["name"].value()), fields),
+        ),
+        root_element,
+    )
+    backend = wyb["kernel"]._backend
+    frm = root_element.element.childNodes[0]
+    inp, err, sel, chk = [n for n in frm.childNodes if n.tag]
+    assert inp.attributes["aria-invalid"] == "false"
+    assert "aria-describedby" not in inp.attributes
+    assert err.attributes == {"id": "e", "role": "alert", "aria-live": "polite"}
+    assert inp.value == ""
 
-    is_valid, errors = validate_form(form, rules)
-    assert is_valid is False
-    assert errors["name"] == "Name is required"
-    assert errors["email"] == "Bad email address"
+    backend.dispatch("submit", frm)
+    assert saved == []
+    assert texts(err) == ["This field is required"]
+    assert inp.attributes["aria-invalid"] == "true"
+    assert inp.attributes["aria-describedby"] == "e"
 
-    form["name"].value.set("ab")
-    is_valid2, errors2 = validate_form(form, rules)
-    assert is_valid2 is False
-    assert errors2["name"] == "Name is too short"
+    inp.value = "A"
+    backend.dispatch("input", inp)
+    assert fields["name"].value() == "A"
+    assert texts(err) == ["Minimum length is 2"]
 
+    inp.value = "Ab"
+    backend.dispatch("input", inp)
+    assert fields["name"].value() == "Ab"
+    assert texts(err) == []
+    assert inp.attributes["aria-invalid"] == "false"
+    assert "aria-describedby" not in inp.attributes
 
-def test_on_submit_validated_calls_handler_only_when_valid():
-    # Arrange form and rules
-    form = form_state({"name": ""})
-    rules = {"name": [required()]}
-    called = {"count": 0}
+    sel.value = "blue"
+    backend.dispatch("change", sel)
+    assert fields["color"].value() == "blue"
 
-    def handler(_form):
-        called["count"] += 1
+    assert chk.checked is False
+    chk.checked = True
+    backend.dispatch("change", chk)
+    assert fields["agree"].value() is True
 
-    submit = on_submit_validated(rules, handler, form)
+    backend.dispatch("submit", frm)
+    assert saved == ["Ab"]
 
-    # Event with prevent_default no-op
-    evt = DummyEvent(value=None)
-
-    # Invalid initially
-    submit(evt)
-    assert called["count"] == 0
-
-    # Make valid and submit again
-    form["name"].value.set("Ok")
-    submit(evt)
-    assert called["count"] == 1
-
-
-def test_rules_from_schema_builds_rules_and_validates():
-    form = form_state({"name": "", "email": ""})
-    schema = {
-        "name": {"required": True, "min_length": 2},
-        "email": {"email": True},
-    }
-    rules = rules_from_schema(schema)
-
-    # initial: name invalid, email empty but allowed by email validator
-    is_valid, errors = validate_form(form, rules)
-    assert is_valid is False
-    assert errors["name"] is not None
-    assert errors["email"] is None
-
-    # fill values and revalidate
-    form["name"].value.set("Al")
-    form["email"].value.set("user@example.com")
-    is_valid2, errors2 = validate_form(form, rules)
-    assert is_valid2 is True
-    assert errors2["name"] is None
-    assert errors2["email"] is None
+    # Programmatic writes flow back into the DOM property.
+    fields["name"].set_value("Zed")
+    flush()
+    assert inp.value == "Zed"
+    root.dispose()

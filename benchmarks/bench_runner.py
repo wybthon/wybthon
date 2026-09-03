@@ -26,6 +26,7 @@ Reference: https://github.com/krausest/js-framework-benchmark
 """
 
 import argparse
+import gc
 import importlib
 import json as json_module
 import random
@@ -199,15 +200,24 @@ class _Node:
             except (ValueError, AttributeError):
                 pass
         node.parentNode = self
+        children = self.childNodes
         if anchor is None:
-            self.childNodes.append(node)
+            children.append(node)
             return node
+        # Inserting before a trailing marker (a list's end comment, followed
+        # by its hole's anchor) is the hot path; a browser's insertBefore is
+        # O(1), so check the tail before falling back to a linear search.
+        n = len(children)
+        for back in range(1, min(4, n) + 1):
+            if children[n - back] is anchor:
+                children.insert(n - back, node)
+                return node
         try:
-            idx = self.childNodes.index(anchor)
+            idx = children.index(anchor)
         except ValueError:
-            self.childNodes.append(node)
+            children.append(node)
             return node
-        self.childNodes.insert(idx, node)
+        children.insert(idx, node)
         return node
 
     def removeChild(self, node):
@@ -404,7 +414,13 @@ def _load_wybthon():
         "wybthon.vnode",
         "wybthon.events",
         "wybthon.props",
+        "wybthon.reactivity._core",
+        "wybthon.reactivity._primitives",
+        "wybthon.reactivity._actions",
+        "wybthon.reactivity._list",
+        "wybthon.reactivity._props",
         "wybthon.reactivity",
+        "wybthon.component",
         "wybthon.context",
         "wybthon.template",
         "wybthon.error_boundary",
@@ -451,13 +467,12 @@ class BenchState:
         app = h(
             "table",
             {"class": "table table-hover table-striped test-data"},
-            h("tbody", {"id": "tbody"}, For(each=self.data, children=self._row)),
+            h("tbody", {"id": "tbody"}, For(self.data, self._row)),
         )
         mods["wybthon.reconciler"].render(app, self.root)
 
-    def _row(self, item, idx):
+    def _row(self, d, idx):
         h = self._h
-        d = item()
         iid = d["id"]
         return h(
             "tr",
@@ -496,7 +511,9 @@ class BenchState:
         self.set_data(lambda rows: [r for r in rows if r["id"] != iid])
 
     def cleanup(self):
-        self._registry.pop(self.root.node_id, None)
+        root = self._registry.get(self.root.node_id)
+        if root is not None:
+            root.dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -615,7 +632,9 @@ class _HoleState:
         self.root = mods["wybthon.dom"].Element(node=_Node(tag="div"))
 
     def cleanup(self):
-        self._registry.pop(self.root.node_id, None)
+        root = self._registry.get(self.root.node_id)
+        if root is not None:
+            root.dispose()
 
 
 def _setup_hole(state):
@@ -693,6 +712,10 @@ def _bench_loop(make_state, setup_fn, op_fn, warmup, iterations):
         state = make_state()
         setup_fn(state)
 
+        # Start every timed op from a collected heap so a full (gen2)
+        # collection of the setup garbage doesn't land inside one
+        # iteration and swamp the measurement.
+        gc.collect()
         start = time.perf_counter()
         op_fn(state)
         elapsed_ms = (time.perf_counter() - start) * 1000
@@ -722,7 +745,7 @@ def _summarise(name, times):
 def run_benchmarks(warmup_override=None, iterations=10, include_memory=False, name_filter=None):
     _install_stubs()
     mods = _load_wybthon()
-    registry = mods["wybthon.reconciler"]._container_registry
+    registry = mods["wybthon.reconciler"]._roots
 
     def _accept(name):
         return name_filter is None or name_filter in name

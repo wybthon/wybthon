@@ -1,236 +1,260 @@
 # Migrating from Solid
 
-Wybthon is essentially SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the unified `For` plus `Repeat` flow components. Most of the primitives have direct equivalents, and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.
+Wybthon is SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the `For` plus `Repeat` flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.
 
-The differences are mostly cosmetic: Python instead of JavaScript, builder functions instead of JSX, and a few naming conventions to keep things idiomatic.
+The differences are mostly surface: Python instead of JavaScript, HTML helper functions instead of JSX, snake_case names, and a small number of deliberate semantic choices listed at the end.
 
 ## API mapping
 
 | SolidJS 2.0 | Wybthon |
 | --- | --- |
 | `createSignal(initial)` | [`create_signal(initial)`][wybthon.create_signal] |
-| `createEffect(fn)` | [`create_effect(fn)`][wybthon.create_effect] |
+| `createSignal(() => derived)` (function form) | `create_signal(lambda: derived())` |
+| `createMemo(fn, { equals })` | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
+| `createAsync(async fn)` | `create_memo(async_fn)`: an `async def` body makes an async memo |
 | `createEffect(compute, apply)` | [`create_effect(compute, apply)`][wybthon.create_effect] |
+| `createEffect(fn)` | `create_effect(fn)` (single function, tracked) |
 | `createRenderEffect(fn)` | [`create_render_effect(fn)`][wybthon.create_render_effect] |
-| `createMemo(fn, { equals })` (async supported) | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
-| `isPending(getter)` | [`is_pending(getter)`][wybthon.is_pending] |
-| `latest(getter)` | [`latest(getter)`][wybthon.latest] |
-| `action(fn)` | [`action(fn)`][wybthon.action] |
-| `createOptimistic(source)` | [`create_optimistic(source)`][wybthon.create_optimistic] |
-| `createProjection(fn)` | [`create_projection(fn)`][wybthon.create_projection] |
-| `createReaction(onInvalidate)` | [`create_reaction(on_invalidate)`][wybthon.create_reaction] |
-| `onError(handler)` | [`on_error(handler)`][wybthon.on_error] |
-| `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
-| `catchError(fn, handler)` | [`catch_error(fn, handler)`][wybthon.catch_error] |
-| `createSelector(source)` | [`create_selector(source)`][wybthon.create_selector] |
-| `mapArray` / `indexArray` | [`map_array`][wybthon.map_array] / [`index_array`][wybthon.index_array] |
-| `mergeProps` / `splitProps` | [`merge_props`][wybthon.merge_props] / [`split_props`][wybthon.split_props] |
-| `children(fn)` | [`children(fn)`][wybthon.children] |
-| `getOwner` / `runWithOwner` | [`get_owner`][wybthon.get_owner] / [`run_with_owner`][wybthon.run_with_owner] |
-| `createRoot(fn)` | [`create_root(fn)`][wybthon.create_root] |
-| `createContext(default)` / `useContext` | [`create_context`][wybthon.create_context] / [`use_context`][wybthon.use_context] |
-| `Ctx.Provider` | `ctx.Provider(value=..., children=[...])` |
-| `<Show when={...} fallback={...}>` | [`Show(when=..., fallback=...)`][wybthon.Show] |
-| `<For each={...}>` | [`For(each=..., children=...)`][wybthon.For] |
-| `<Repeat times={...}>` | [`Repeat(times=..., children=...)`][wybthon.Repeat] |
-| `<Switch>` / `<Match>` | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
-| `<Dynamic component={...} />` | [`Dynamic(component=...)`][wybthon.Dynamic] |
-| `<Portal mount={...}>` | [`Portal(mount=...)`][wybthon.Portal] |
-| `<ErrorBoundary fallback={...}>` | [`ErrorBoundary(fallback=...)`][wybthon.ErrorBoundary] |
-| `<Loading fallback={...}>` | [`Loading(fallback=...)`][wybthon.Loading] |
-| `<LoadingList revealOrder={...}>` | [`LoadingList(reveal_order=...)`][wybthon.LoadingList] |
-| `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
-| `onMount(fn)` | [`on_mount(fn)`][wybthon.on_mount] |
+| `onMount(fn)` | [`on_settled(fn)`][wybthon.on_settled] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
-| `untrack(fn)` | [`untrack(fn)`][wybthon.untrack] |
+| `createRoot(dispose => ...)` | [`create_root(lambda dispose: ...)`][wybthon.create_root] |
+| `getOwner()` / `runWithOwner(owner, fn)` | [`get_owner()`][wybthon.get_owner] / [`run_with_owner(owner, fn)`][wybthon.run_with_owner] |
+| `untrack(fn)` | [`untrack(fn)`][wybthon.untrack], or `accessor.peek()` for a single read |
+| `batch(fn)` | Nothing to call; every write batches until the next flush. [`flush()`][wybthon.flush] settles synchronously. |
+| `isPending(fn)` | [`is_pending(fn)`][wybthon.is_pending] |
+| `latest(fn)` | [`latest(fn)`][wybthon.latest] |
+| `resolve(fn)` | [`await resolve(fn)`][wybthon.resolve] |
+| `refresh(memo)` | [`await refresh(memo)`][wybthon.refresh] |
+| `action(fn)` | [`action(fn)`][wybthon.action], usable as `@action` |
+| `createOptimistic(source)` | [`create_optimistic(source)`][wybthon.create_optimistic] |
+| `createOptimisticStore(source)` | [`create_optimistic_store(source)`][wybthon.create_optimistic_store] |
 | `createStore(initial)` (draft setter) | [`create_store(initial)`][wybthon.create_store] |
-| `reconcile(data)` | [`reconcile(data, key="id")`][wybthon.reconcile] |
-| `unwrap(store)` | [`unwrap(store)`][wybthon.unwrap] |
+| `reconcile(data, key)` | [`reconcile(data, key="id")`][wybthon.reconcile] |
+| `createProjection(fn, initial)` | [`create_projection(fn, initial)`][wybthon.create_projection] |
+| `unwrap(store)` | [`snapshot(store)`][wybthon.snapshot] |
+| `<Suspense fallback>` | [`Loading(children, fallback=...)`][wybthon.Loading] |
+| `<SuspenseList revealOrder tail>` | [`Reveal(children, order=..., tail=...)`][wybthon.Reveal] |
+| `<ErrorBoundary fallback>` | [`Errored(children, fallback=...)`][wybthon.Errored] |
+| `<Show when fallback>` | [`Show(when, children, fallback=...)`][wybthon.Show] |
+| `<For each>` | [`For(each, children)`][wybthon.For] (keyed by identity) |
+| `<For each key>` | `For(each, children, keyed=lambda item: ...)` |
+| `<Index each>` | `For(each, children, keyed=False)` |
+| `<Repeat count>` | [`Repeat(count, children)`][wybthon.Repeat] |
+| `<Switch>` / `<Match when>` | [`Switch`][wybthon.Switch] / [`Match(when, children)`][wybthon.Match] |
+| `<Dynamic component>` | [`Dynamic(component, **props)`][wybthon.Dynamic] |
+| `<Portal mount>` | [`Portal(children, mount=...)`][wybthon.Portal] |
+| `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
+| `createContext(default)` | [`create_context(default)`][wybthon.create_context] |
+| `<Ctx.Provider value>` | `Ctx(value, *children)`: the context object is the provider |
+| `useContext(Ctx)` | [`use_context(Ctx)`][wybthon.use_context] |
+| `mergeProps(a, b)` | [`merge(a, b)`][wybthon.merge] |
+| `splitProps(props, keys)` | [`omit(props, *keys)`][wybthon.omit] (returns the remainder) |
+| `children(() => props.children)` | [`children(props.children)`][wybthon.children] |
+| `mapArray(source, fn)` | [`map_array(source, fn)`][wybthon.map_array] |
+| `indexArray(source, fn)` | `map_array(source, fn, keyed=False)` |
+| `createSelector(source)` | [`create_selector(source)`][wybthon.create_selector] |
+| `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
+| `NotReadyError` | [`NotReadyError`][wybthon.NotReadyError] |
+| `props.x` (getter) | `x: Prop[T]` parameter; place `x` in the tree or call `x()` in a scope |
+| `ref={el => ...}` | `ref=Ref()`; read `ref.current.element` after `on_settled` |
+| JSX | HTML helpers plus holes (below) |
 
-## Coming from Solid 1.x
+Solid 1.x primitives that 2.0 removed (`createResource`, `on`, `createComputed`, `createDeferred`, `produce`, `createMutable`, path-based store writes, `useTransition`) don't exist here either. The table above covers their 2.0 replacements.
 
-Wybthon follows SolidJS 2.0, so the primitives that Solid 2.0 removed don't exist here either:
-
-| Solid 1.x | Wybthon equivalent |
-| --- | --- |
-| `batch(fn)` | Nothing to call. Batching is automatic; every write batches until the next flush. Use [`flush()`][wybthon.flush] to settle effects synchronously. |
-| `on(deps, fn, { defer })` | Split effects: [`create_effect(compute, apply)`][wybthon.create_effect]. The tracked `compute` phase declares dependencies; the untracked `apply` phase receives its return value. |
-| `createComputed(fn)` | [`create_memo`][wybthon.create_memo] for derived values, or [`create_render_effect`][wybthon.create_render_effect] for pre-render side effects. |
-| `createDeferred(source)` | Removed with no direct replacement. |
-| `createResource(source, fetcher)` | Async memos: [`create_memo(async_fn)`][wybthon.create_memo], observed with [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest]. |
-| `<Suspense>` / `<SuspenseList>` | [`Loading`][wybthon.Loading] / [`LoadingList`][wybthon.LoadingList]. |
-| `<Index each={...}>` | [`For(each=..., key="index")`][wybthon.For]. |
-| `produce(fn)` | The store setter is draft-first: pass the mutator function directly, `set_store(fn)`. |
-| `createMutable` / `modifyMutable` | Draft-first store setters via [`create_store`][wybthon.create_store]. |
-| Path-based store writes (`setStore("a", "b", value)`) | Draft mutations: `set_store(lambda s: ...)` or `set_store(reconcile(data))`. |
-| `useTransition` / `startTransition` | [`action`][wybthon.action] plus [`create_optimistic`][wybthon.create_optimistic] / [`create_optimistic_store`][wybthon.create_optimistic_store]. |
-
-## Templates
-
-Solid uses JSX. Wybthon uses Python builders from [`wybthon.html`][wybthon.html]:
+## JSX becomes helpers and holes
 
 ```jsx
 function Greeting(props) {
-  return <p>Hello, {props.name}!</p>;
+  return <p class="greeting">Hello, {props.name}{props.excited ? "!" : "."}</p>;
 }
 ```
 
 ```python
-from wybthon import component
-from wybthon.html import p
+from wybthon import Prop, component, p, prop
+
 
 @component
-def Greeting(name):
-    return p("Hello, ", name, "!")
+def Greeting(name: Prop[str], excited: Prop[bool] = prop(False)):
+    return p("Hello, ", name, lambda: "!" if excited() else ".", class_="greeting")
 ```
 
-Tag helpers are defined for every standard HTML element. For custom elements, use [`h`][wybthon.h] directly.
+- Children are positional arguments; attributes are keyword arguments. Names that collide with Python keywords or builtins get a trailing underscore (`class_`, `input_`, `main_`), and `html_for` stands in for `for`.
+- `{expr}` in JSX becomes a **hole**: any zero-argument callable placed in the tree. An accessor (`name`) is already a callable, so it goes in directly; wrap other expressions in `lambda:`.
+- Attributes accept accessors and lambdas the same way: `class_=lambda: "on" if active() else ""`, `disabled=add.pending`.
+- Event handlers are `on_click=handler`; the handler receives a [`DomEvent`][wybthon.DomEvent] with `e.target`, `e.key`, `e.prevent_default()`, and friends.
+- Tag helpers exist for every HTML element (from `wybthon`) and SVG element (from [`wybthon.svg`][wybthon.svg]). For custom elements, use [`h("my-element", {...}, *children)`][wybthon.h].
 
-## Props
+## Components and props
 
-Solid props are reactive *getters* on a proxy object. Wybthon props arrive as **callables**:
+Solid props are getters on a proxy; Wybthon props are [`Prop[T]`][wybthon.Prop] accessors bound to named parameters. The rules are the same as Solid's:
 
 ```python
-@component
-def Card(title, body):
-    return div(h2(title), p(body))
-```
+from wybthon import Prop, component, div, h2, p, prop
 
-You can pass `title` straight through (creating a reactive hole) or read `title()` inside an effect. Destructuring (assigning the value to a local) freezes it at mount, just like Solid.
-
-For ergonomic prop manipulation Wybthon offers [`merge_props`][wybthon.merge_props] and [`split_props`][wybthon.split_props], matching Solid's helpers of the same name:
-
-```python
-from wybthon import component, merge_props, split_props
-from wybthon.html import button
 
 @component
-def Button(props):
-    final = merge_props({"variant": "solid"}, props)
-    local, rest = split_props(final, ["label", "variant"])
-    return button(local["label"], class_=lambda: f"btn-{local['variant']}")
+def Card(title: Prop[str], body: Prop[str] = prop(""), **rest):
+    return div(h2(title), p(body), class_="card", **rest)
 ```
+
+- Pass a prop straight into the tree to create a hole, or call it inside a memo, effect, or hole.
+- Assigning `value = title()` at the top of the body destructures and freezes, as in Solid; dev mode warns. Use `title.peek()` when you mean it.
+- `**rest` is the spread. [`merge`][wybthon.merge] and [`omit`][wybthon.omit] replace `mergeProps` and `splitProps`; both return mappings you can splat.
+- A component declared with a single `props` parameter receives a [`Props`][wybthon.Props] mapping instead, the closest match to Solid's props object.
 
 ## Signals and effects
 
-Identical in spirit and behavior:
-
 ```python
+from wybthon import create_effect, create_signal, flush
+
 count, set_count = create_signal(0)
-create_effect(lambda: print("count =", count()))
+
+
+def log(value: int, prev: int | None) -> None:
+    print("count =", value)
+
+
+create_effect(count, log)
+set_count(1)
+flush()
 ```
 
-`create_effect` re-runs whenever signals it tracked during the previous run change. There's no manual dep array. Like Solid 2.0, effects also come in a split form, `create_effect(compute, apply)`: the `compute` phase runs tracked, and its return value is passed to the untracked `apply` phase, replacing 1.x's `on(deps, fn)`. Effect bodies may be `async def`; reads after an `await` are still tracked.
+The split form is Solid 2.0's `createEffect(compute, apply)`: `compute` runs tracked, `apply` runs untracked with the value and previous value, and may return a cleanup. Effects run after the DOM commit; the first run happens on the flush after the component mounted. The single-function form `create_effect(fn)` also works.
 
-### Execution semantics carry over
+Signal semantics that carry over:
 
-The behaviors you rely on in Solid 2.0 hold in Wybthon too:
+- **Automatic batching.** All writes in one turn coalesce into one flush; there's no `batch()`.
+- **Glitch-free propagation.** An effect that reads several memos derived from the same signal runs once per flush and never sees an inconsistent pair.
+- **Lazy memos with equality short-circuit.** `create_memo` recomputes when read after a source changed and doesn't notify if the value is equal under `equals`.
+- **Async-first.** An `async def` passed to `create_memo` is an async computation. Reading it before the first value raises [`NotReadyError`][wybthon.NotReadyError] (which `Loading` catches); later recomputes serve the stale value while revalidating.
 
-- **Automatic batching.** Signal writes apply immediately (reads see the
-  new value right away), but effects are scheduled and run on the next
-  flush: a browser microtask, automatically at the end of each Wybthon
-  event handler, or an explicit [`flush()`][wybthon.flush]. Multiple
-  writes coalesce into one effect run per flush; there's no `batch()`
-  to call.
-- **Glitch-free.** An effect reading several memos derived from one signal
-  always sees a consistent combination and runs once per flush, never on an
-  intermediate state.
-- **Lazy memos.** `create_memo` recomputes only when read after a dependency
-  changed, and skips notifying consumers when its value is unchanged (same
-  `equals`-based short-circuit as Solid).
-- **Async-first.** `create_memo` accepts `async def` functions. Reading
-  an async memo before its first value raises
-  [`NotReadyError`][wybthon.NotReadyError] (which
-  [`Loading`][wybthon.Loading] boundaries catch); after the first value,
-  recomputes serve the stale value while revalidating.
+## Flow
 
-`For` matches Solid exactly: the mapping callback runs **once per unique
-item**, and its result is cached. On list changes only added items map,
-removed items dispose, and reorders move existing DOM nodes. Pass
-`key="index"` for per-position slots (Solid 1.x's `Index`). That means
-eager reads like `str(item())` inside the callback freeze at creation,
-just like destructuring props: pass the accessor itself (or
-`dynamic(lambda: ...)`) where the value should stay live.
+```python
+from wybthon import For, Match, Show, Switch, li, p, ul
+
+Show(lambda: user() is not None, lambda u: p("Hello, ", lambda: u()["name"]), fallback=p("Sign in"))
+
+ul(For(lambda: store.todos, lambda todo, i: li(lambda: todo()["title"]), keyed=lambda t: t["id"]))
+
+Switch(
+    Match(lambda: status() == "loading", lambda: p("Loading...")),
+    Match(lambda: status() == "ready", lambda: p("Ready")),
+    fallback=lambda: p("Unknown"),
+)
+```
+
+`For` mirrors Solid's unified `For`: with `keyed=True` (the default) rows match by identity and the callback receives `(item, index_accessor)`; with a key function or `keyed=False` the callback receives `(item_accessor, index_accessor)`. Pass an accessor or a store path for `each`, not a plain list. `Repeat(count, lambda i: ...)` matches Solid 2.0's `Repeat`.
+
+## Boundaries
+
+```python
+from wybthon import Errored, Loading, button, div, p
+
+Errored(
+    lambda: Loading(lambda: Dashboard(), fallback=p("Loading...")),
+    fallback=lambda err, reset: div(p(str(err)), button("Retry", on_click=lambda e: reset())),
+    reset_on=current_path,
+)
+```
+
+`Loading` and `Errored` are `Suspense` and `ErrorBoundary`. The error fallback receives `(error, reset)`; `reset_on` re-mounts when the given accessor changes. [`Reveal`][wybthon.Reveal] coordinates multiple boundaries like `SuspenseList`.
 
 ## Stores
 
-Stores are draft-first, matching Solid 2.0's `createStore`: the setter takes a function that mutates a draft with plain Python.
-
 ```python
-from wybthon import create_store, reconcile, unwrap
+from wybthon import create_store, reconcile, snapshot
 
 state, set_state = create_store({"count": 0, "items": []})
 
-# Atomic multi-mutation update (Immer-style draft):
+
 def update(s):
     s.count += 1
-    s.items.append("new")
+    s.items.append({"id": 3, "title": "new"})
+
 
 set_state(update)
-
-# Diff fresh server data in, preserving identity for unchanged items:
 set_state(reconcile({"count": 5, "items": fetched_items}, key="id"))
-
-# Get the raw data back out:
-raw = unwrap(state.items)
+raw = snapshot(state.items)
 ```
 
-Stores wrap nested data in lazy proxies so reads are tracked at the leaf level, exactly like Solid. Only the leaves your draft function actually changed notify. For read-only derived stores updated fine-grained, use [`create_projection`][wybthon.create_projection], the counterpart of Solid 2.0's `createProjection`.
+Setters are draft-first, as in Solid 2.0. Reads are tracked at the leaf, only leaves that changed notify, and `reconcile` preserves identity by key so `For` rows keep their DOM. [`create_projection`][wybthon.create_projection] and [`create_optimistic_store`][wybthon.create_optimistic_store] match their Solid 2.0 namesakes.
 
-## Async data, actions, and optimistic state
-
-Solid 2.0's async model carries over directly. An async memo is the unit of async data:
+## Context
 
 ```python
+from wybthon import component, create_context, create_signal, p, use_context
+
+Theme = create_context("light")
+
+
+@component
+def Root():
+    theme, set_theme = create_signal("dark")
+    return Theme(theme, Page())
+
+
+@component
+def Page():
+    theme = use_context(Theme)
+    return p(lambda: f"Theme: {theme()}")
+```
+
+There's no `.Provider`: calling the `Context` object with a value and children returns the provider node. `use_context` returns the value exactly as provided, so an accessor stays an accessor.
+
+## Async, actions, and optimistic state
+
+```python
+from js import fetch
+
+from wybthon import Loading, action, create_memo, create_optimistic, is_pending, p, refresh, span
+
+
 async def fetch_user():
-    resp = await js.fetch("/api/user")
-    return await resp.json()
+    resp = await fetch("/api/user")
+    return (await resp.json()).to_py()
+
 
 user = create_memo(fetch_user)
 
 Loading(
-    fallback=lambda: p("Loading..."),
-    children=lambda: p(dynamic(lambda: user().name)),
+    lambda: p(lambda: user()["name"], span(lambda: " (refreshing)" if is_pending(user) else "")),
+    fallback=p("Loading..."),
 )
+
+shown, set_shown = create_optimistic(likes)
+
+
+@action
+async def like():
+    set_shown(lambda n: n + 1)
+    await post_like()
+    await refresh(likes)
 ```
 
-[`is_pending(user)`][wybthon.is_pending] reports in-flight recomputation (tracked), and [`latest(user)`][wybthon.latest] reads without raising. For mutations, [`@action`][wybthon.action] wraps an async function, exposes a tracked `.pending()` getter, and routes errors to the nearest error boundary; [`create_optimistic`][wybthon.create_optimistic] and [`create_optimistic_store`][wybthon.create_optimistic_store] overlay temporary values that revert when in-flight actions settle.
-
-## Routing
-
-```python
-from wybthon import Route, Router, Link
-
-routes = [
-    Route(path="/", component=Home),
-    Route(path="/users/:id", component=User),
-]
-
-@component
-def App():
-    return Router(routes=routes)
-```
-
-Wybthon's router supports nested routes, dynamic params, query parsing, and lazy components; see [Routing][wybthon.Router].
+Everything here has the same name and shape as Solid 2.0, with `await` in place of promise chaining. `action.pending()` is tracked, so it works directly as `disabled=like.pending`.
 
 ## What's intentionally different
 
-- **Naming.** snake_case across the API (`create_signal`, not `createSignal`). Component names stay PascalCase.
-- **Signal equality.** The default `equals` policy is Python value equality (`==` with an identity fast path), not JS `===`. Pass `equals=lambda a, b: a is b` when you want identity-only semantics, or `equals=False` to always notify.
-- **Untracked reads.** Signal and memo getters expose `.peek()` (`count.peek()`), a shorthand for `untrack(count)`.
-- **Imports.** Pull from `wybthon` (and optionally `wybthon.html` for tag helpers).
-- **`Dynamic`.** Use `dynamic(lambda: ...)` to inline a reactive computation; component-style `Dynamic` exists too.
-- **JS interop.** Use `pyodide.ffi` to talk to the host. See [Pyodide guide](pyodide.md).
+- **Naming.** snake_case across the API; component names stay PascalCase; `_` suffix on tags that collide with Python keywords or builtins.
+- **A virtual DOM under the reactive graph.** Solid compiles JSX to direct DOM operations. Wybthon builds a lightweight VNode tree and a reconciler applies changes in batches through a small JS kernel. You still get fine-grained holes as the unit of update; the VDOM exists because Python can't compile templates ahead of time in the browser.
+- **Staged writes.** After `set_x(1)`, `x()` returns the old value until the flush (end of the handler, or `flush()`). Solid 2.0 leans the same way; Wybthon makes it strict. Use functional updates (`set_x(lambda v: v + 1)`) to compose writes, and `create_signal`'s returned setter gives back the staged value if you need it.
+- **Writes are forbidden inside tracking scopes.** Writing a signal from a memo body, a hole, or a single-function effect raises `WriteInScopeError` in dev mode. Write from handlers, actions, `on_settled`, or the `apply` stage.
+- **Equality.** The default `equals` is Python `==` with an identity fast path, not `===`. Pass `equals=lambda a, b: a is b` for identity-only, `equals=False` to always notify.
+- **`.peek()`.** Every accessor has `.peek()`, a one-read `untrack`.
+- **`on_settled` instead of `onMount`.** The name reflects when it runs: after the flush that mounted the component committed to the DOM. It may return a cleanup.
+- **Python 3.12+.** Type hints use PEP 695 generics, and the framework's own generics (`Accessor[T]`, `Prop[T]`) are meant to be written in your code.
+- **JS interop through Pyodide.** `from js import fetch`, `pyodide.ffi.create_proxy` for callbacks, `.to_py()` for JS objects. See the [Pyodide guide](pyodide.md).
 
 ## What carries over directly
 
-- The mental model (components run once, fine-grained reactivity).
-- Ownership semantics: `on_cleanup` attaches to the current owner.
-- Async loading UI: async memos integrate with `Loading` boundaries.
-- Patterns like keyed lists, conditional flows, and nested boundaries.
+- The mental model: components run once, reactivity is fine-grained, ownership handles cleanup.
+- The 2.0 async story: async memos, `Loading`, `is_pending`, `latest`, `resolve`, `refresh`, actions, optimistic state.
+- Draft-first stores, `reconcile`, projections.
+- Flow components, boundaries, context, lazy, portals.
 
 ## Next steps
 
-- Read [Mental model](../concepts/mental-model.md) for the framework's core ideas.
-- Explore [Authoring patterns](authoring-patterns.md); many should look familiar.
+- Read [Mental model](../concepts/mental-model.md) to see the formal definitions of holes and scopes.
+- Explore [Authoring patterns](authoring-patterns.md); most should look familiar.
 - Browse the [API reference](../api/wybthon.md) for the full set of primitives.

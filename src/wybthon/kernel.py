@@ -66,6 +66,9 @@ OP_LISTEN = 11  # [op, id, event_type]
 OP_UNLISTEN = 12  # [op, id, event_type]
 OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listener sets)
 OP_REGISTER_TPL = 14  # [op, tpl_id, html]  (parse once; cloned by OP_CLONE_TPL)
+OP_CREATE_ELEMENT_NS = 15  # [op, id, namespace, tag]  (SVG / MathML)
+OP_ROOT = 16  # [op, id]  (delegate events from this node instead of document)
+OP_UNROOT = 17  # [op, id]
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -257,6 +260,7 @@ _KERNEL_JS = r"""
   const listenTypes = new Map();    // id -> Set<eventType>
   const typeCounts = new Map();     // eventType -> number of listening nodes
   const rootListeners = new Map();  // eventType -> native listener
+  const roots = new Map();          // delegation root -> refcount (document when empty)
   const tplProtos = new Map();      // tpl_id -> parsed root node (cloned per mount)
   let dispatcher = null;            // Python callback (id, type, payloadJson) -> flags
   let currentEvent = null;
@@ -266,6 +270,34 @@ _KERNEL_JS = r"""
   function reg(id, node) {
     nodes.set(id, node);
     node.__wybId = id;
+  }
+
+  function delegationTargets() {
+    return roots.size ? Array.from(roots.keys()) : [doc];
+  }
+
+  // Roots are refcounted: a render root and a Portal target may be the
+  // same node, and each owner roots and unroots it independently.
+  function addRoot(node) {
+    const count = roots.get(node);
+    if (count !== undefined) { roots.set(node, count + 1); return; }
+    const wasEmpty = roots.size === 0;
+    roots.set(node, 1);
+    for (const [type, fn] of rootListeners) {
+      if (wasEmpty) doc.removeEventListener(type, fn);
+      node.addEventListener(type, fn);
+    }
+  }
+
+  function removeRoot(node) {
+    const count = roots.get(node);
+    if (count === undefined) return;
+    if (count > 1) { roots.set(node, count - 1); return; }
+    roots.delete(node);
+    for (const [type, fn] of rootListeners) {
+      node.removeEventListener(type, fn);
+      if (roots.size === 0) doc.addEventListener(type, fn);
+    }
   }
 
   // Pre-order walk registering a dense id block; must match the order the
@@ -327,7 +359,7 @@ _KERNEL_JS = r"""
       typeCounts.delete(type);
       const l = rootListeners.get(type);
       if (l !== undefined) {
-        doc.removeEventListener(type, l);
+        for (const target of delegationTargets()) target.removeEventListener(type, l);
         rootListeners.delete(type);
       }
     } else {
@@ -369,6 +401,10 @@ _KERNEL_JS = r"""
   function installRoot(type) {
     const fn = (ev) => {
       if (dispatcher === null) return;
+      // Nested roots (a portal inside the app root) see the same event
+      // as it bubbles; only the innermost root dispatches it.
+      if (ev.__wybHandled) return;
+      ev.__wybHandled = true;
       let node = ev.target;
       let payload = null;
       currentEvent = ev;
@@ -393,7 +429,7 @@ _KERNEL_JS = r"""
         currentEvent = null;
       }
     };
-    doc.addEventListener(type, fn);
+    for (const target of delegationTargets()) target.addEventListener(type, fn);
     rootListeners.set(type, fn);
   }
 
@@ -419,9 +455,15 @@ _KERNEL_JS = r"""
           break;
         }
         case 5: { // INSERT
-          const parent = nodes.get(op[1]);
-          const anchor = op[3] === null ? null : nodes.get(op[3]);
-          parent.insertBefore(nodes.get(op[2]), anchor === undefined ? null : anchor);
+          // The anchor's live parent wins over op[1]: a subtree parked
+          // off-document by a Loading boundary keeps receiving updates
+          // addressed to its original parent.
+          const anchor = op[3] === null ? undefined : nodes.get(op[3]);
+          if (anchor !== undefined && anchor.parentNode !== null) {
+            anchor.parentNode.insertBefore(nodes.get(op[2]), anchor);
+          } else {
+            nodes.get(op[1]).appendChild(nodes.get(op[2]));
+          }
           break;
         }
         case 6: { // REMOVE
@@ -467,6 +509,20 @@ _KERNEL_JS = r"""
         }
         case 14: { // REGISTER_TPL
           registerTpl(op[1], op[2]);
+          break;
+        }
+        case 15: { // CREATE_ELEMENT_NS
+          reg(op[1], doc.createElementNS(op[2], op[3]));
+          break;
+        }
+        case 16: { // ROOT
+          const n = nodes.get(op[1]);
+          if (n !== undefined) addRoot(n);
+          break;
+        }
+        case 17: { // UNROOT
+          const n = nodes.get(op[1]);
+          if (n !== undefined) removeRoot(n);
           break;
         }
         default:
@@ -574,6 +630,8 @@ class PythonBackend:
         self._listen: Dict[int, Set[str]] = {}
         self._type_counts: Dict[str, int] = {}
         self._root_listeners: Dict[str, Any] = {}
+        self._roots: List[Any] = []
+        self._root_counts: Dict[int, int] = {}
         self._dispatcher: Optional[Callable[[int, str, str], int]] = None
         self._current_event: Any = None
         self._tpl = self._probe_template(document)
@@ -610,7 +668,11 @@ class PythonBackend:
                 self._clone_tpl(op[1], op[2], op[3])
             elif code == OP_INSERT:
                 anchor = None if op[3] is None else nodes.get(op[3])
-                nodes[op[1]].insertBefore(nodes[op[2]], anchor)
+                anchor_parent = None if anchor is None else getattr(anchor, "parentNode", None)
+                if anchor_parent is not None:
+                    anchor_parent.insertBefore(nodes[op[2]], anchor)
+                else:
+                    nodes[op[1]].appendChild(nodes[op[2]])
             elif code == OP_REMOVE:
                 node = nodes.get(op[1])
                 if node is not None and getattr(node, "parentNode", None) is not None:
@@ -639,6 +701,18 @@ class PythonBackend:
                 self._release(op[1])
             elif code == OP_REGISTER_TPL:
                 self._register_tpl(op[1], op[2])
+            elif code == OP_CREATE_ELEMENT_NS:
+                create_ns = getattr(doc, "createElementNS", None)
+                node = create_ns(op[2], op[3]) if create_ns is not None else doc.createElement(op[3])
+                try:
+                    node.namespaceURI = op[2]
+                except Exception:
+                    pass
+                self._reg(op[1], node)
+            elif code == OP_ROOT:
+                self._add_root(nodes.get(op[1]))
+            elif code == OP_UNROOT:
+                self._remove_root(nodes.get(op[1]))
             else:
                 raise ValueError(f"wybthon kernel: unknown op {code}")
 
@@ -780,15 +854,59 @@ class PythonBackend:
                 for event_type in types:
                     self._drop_type_count(event_type)
 
+    def _targets(self) -> list[Any]:
+        return list(self._roots) if self._roots else [self._doc]
+
     def _install_root(self, event_type: str) -> None:
         def listener(event: Any) -> None:
             self.dispatch(event_type, getattr(event, "target", None), event)
 
-        try:
-            self._doc.addEventListener(event_type, listener)
-        except Exception:
-            pass
+        for target in self._targets():
+            try:
+                target.addEventListener(event_type, listener)
+            except Exception:
+                pass
         self._root_listeners[event_type] = listener
+
+    def _add_root(self, node: Any) -> None:
+        if node is None:
+            return
+        # Refcounted like the JS kernel: a render root and a Portal target
+        # may be the same node.
+        if node in self._roots:
+            self._root_counts[id(node)] += 1
+            return
+        was_empty = not self._roots
+        self._roots.append(node)
+        self._root_counts[id(node)] = 1
+        for event_type, listener in self._root_listeners.items():
+            try:
+                if was_empty:
+                    self._doc.removeEventListener(event_type, listener)
+                node.addEventListener(event_type, listener)
+            except Exception:
+                pass
+
+    def _remove_root(self, node: Any) -> None:
+        if node is None or node not in self._roots:
+            return
+        remaining = self._root_counts[id(node)] - 1
+        if remaining > 0:
+            self._root_counts[id(node)] = remaining
+            return
+        del self._root_counts[id(node)]
+        self._roots.remove(node)
+        for event_type, listener in self._root_listeners.items():
+            try:
+                node.removeEventListener(event_type, listener)
+                if not self._roots:
+                    self._doc.addEventListener(event_type, listener)
+            except Exception:
+                pass
+
+    def roots(self) -> list[Any]:
+        """Return the registered delegation roots (test helper)."""
+        return list(self._roots)
 
     # -- test helper ---------------------------------------------------------
 
