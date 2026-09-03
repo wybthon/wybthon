@@ -2795,9 +2795,9 @@
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/wybthon/wybthon.git
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>wybthon
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev<span class="w"> </span>--group<span class="w"> </span>docs
 </span></code></pre></div>
-<p>Everything you need to develop the framework and the docs site is now installed.</p>
+<p><a href="https://docs.astral.sh/uv/">uv</a> creates <code>.venv</code> and installs the framework, the dev tooling, and the docs site dependencies. Prefix commands with <code>uv run</code> to use that environment, for example <code>uv run pytest -q</code> or <code>uv run mkdocs serve</code>.</p>
 <h2 id="where-to-make-changes">Where to make changes<a class="headerlink" href="#where-to-make-changes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
