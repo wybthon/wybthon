@@ -19,7 +19,7 @@ from app.shell import Shell
 from js import document, window
 from pyodide.ffi import create_proxy
 
-from wybthon import Element, Router, current_path, h, navigate, render
+from wybthon import Element, Router, navigate, render
 
 
 def _compute_base_path() -> str:
@@ -31,13 +31,12 @@ def _compute_base_path() -> str:
 
 async def main() -> None:
     base_path = _compute_base_path()
-    current_path.set(base_path or "/")
+    navigate(base_path or "/", replace=True)
 
     routes = create_routes()
-    tree = h(
-        Shell,
-        {"base_path": base_path},
-        h(Router, {"routes": routes, "not_found": NotFound, "base_path": base_path}),
+    tree = Shell(
+        Router(routes, not_found=NotFound, base_path=base_path),
+        base_path=base_path,
     )
 
     container = Element("body", existing=True)

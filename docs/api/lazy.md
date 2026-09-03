@@ -4,45 +4,51 @@
 
 #### What's in this module
 
-[`lazy`][wybthon.lazy] defers loading a component until the first time
-it mounts. The load is backed by an async
-[`create_memo`][wybthon.create_memo], so it integrates with
-[`Loading`][wybthon.Loading] (fallback while loading) and
-[`ErrorBoundary`][wybthon.ErrorBoundary] (load failures)
-automatically, matching SolidJS's `lazy(() => import(...))`.
+[`lazy`][wybthon.lazy] defers loading a component until it first mounts.
+The load is backed by an async [`create_memo`][wybthon.create_memo], so
+it suspends into the nearest [`Loading`][wybthon.Loading] while in
+flight and raises into the nearest [`Errored`][wybthon.Errored] on
+failure, matching SolidJS's `lazy(() => import(...))` adapted to
+Python's import system.
 
-#### Quick example
+| Name | Description |
+| --- | --- |
+| [`lazy`][wybthon.lazy] | `lazy(loader)`; the loader is a zero-arg callable, sync or async, returning a component, a module, a module-path string, or a `(module_path, attr)` tuple. |
+| `LazyComponent` | What `lazy` returns: a `Component` with `.preload()` to start the load early. |
 
 ```python
-from wybthon import Loading, Route, Router, component, lazy
-from wybthon.html import p
+from wybthon import Link, Loading, Route, Router, component, lazy, p
 
-HeavyChart = lazy(lambda: ("app.heavy_chart", "Chart"))
+About = lazy(lambda: ("app.about.page", "Page"))     # importlib, attribute "Page"
 
-routes = [
-    Route(path="/charts", component=HeavyChart),
-]
+async def load_chart():
+    import micropip
+    await micropip.install("app-charts")
+    import app_charts
+    return app_charts.Chart
 
+Chart = lazy(load_chart)
 
 @component
 def App():
     return Loading(
-        fallback=lambda: p("Loading…"),
-        children=lambda: Router(routes=routes),
+        lambda: Router([Route("/about", About), Route("/chart", Chart)]),
+        fallback=lambda: p("Loading..."),
     )
+
+nav_link = Link("Chart", href="/chart", on_mouseover=lambda e: Chart.preload())
 ```
 
-- The loader may return a component callable, an imported module, a
-  module-path string, or a `(module_path, attr)` tuple.
-- Async loaders can `await` arbitrary work first (for example
-  `micropip.install(...)` in Pyodide) before returning the component.
-- The resolved component is cached; the loader runs at most once.
-- `HeavyChart.preload()` starts the load early (handy for hover or
-  focus warm-ups) and returns `None`.
-- A loader error raises into the nearest `ErrorBoundary`.
+- When the loader returns a module, the export is picked by convention:
+  `Page`, then `default`, then the first callable.
+- The loader runs at most once; the resolved component is cached across
+  unmounts.
+- Props and children passed to the lazy component are forwarded to the
+  loaded component unchanged.
 
 #### See also
 
-- [Concepts → Async and Loading](../concepts/async-loading.md)
-- [`Loading`][wybthon.Loading]
-- [Performance guide](../guides/performance.md)
+- [Loading](loading.md) and [Error boundary](error_boundary.md)
+- [Router](router.md): pair with `Route` for code-split pages
+- [Concepts: Async and loading](../concepts/async-loading.md)
+- [Guides: Performance](../guides/performance.md)

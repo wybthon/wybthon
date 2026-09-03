@@ -4,38 +4,40 @@
 
 #### What's in this module
 
-`dev` implements the simple threaded development server invoked by the
-`wyb dev` command. It serves static files from your project, mounts
-extra directories at custom URL prefixes, and exposes a Server-Sent
-Events (SSE) endpoint at `/__sse` for live reload.
+`dev` is the threaded development server behind the `wyb dev` command.
+It serves static files from your project, mounts extra directories at
+custom URL prefixes, exposes a `/__manifest` endpoint that lists `.py`
+files so bootstrap scripts can discover modules, and pushes a `reload`
+event over Server-Sent Events at `/__sse` when watched files change.
 
-You usually run it via the CLI:
+| Name | Description |
+| --- | --- |
+| [`main`][wybthon.dev.main] | CLI entry point (`wyb dev ...`). |
+| [`serve`][wybthon.dev.serve] | Start the server programmatically with the same options. |
+| [`SSEHandler`][wybthon.dev.SSEHandler] | The request handler: static files, `/__sse`, `/__manifest`, and no-cache headers. |
 
 ```bash
-wyb dev --dir . --port 8000 --watch src app
+wyb dev --dir . --port 8000 --watch src app --open --open-path /app/
 ```
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--dir` | `.` | Root directory to serve. |
+| `--dir` | repository root | Root directory to serve. |
 | `--host` | `127.0.0.1` | Host interface to bind. |
 | `--port` | `8000` | Starting port (auto-increments on conflict). |
 | `--watch` | `src` | Directories to watch for live reload. |
-| `--mount` | *(none)* | `path=/url/prefix` mount; can be repeated. |
+| `--mount` | none | `path=/url/prefix` mount; repeatable. |
+| `--open` | off | Open a browser to the server URL. |
+| `--open-path` | none | Path to open, such as `/app/`. |
 
-#### How live reload works
-
-1. The browser opens an `EventSource` to `/__sse`.
-2. The server walks `--watch` directories and notes file modification
-   times.
-3. When something changes, the server pushes a `reload` event over SSE.
-4. The page reloads itself in response.
-
-A tiny `EventSource` snippet in your `index.html` is all it takes to
-listen for these events; see the [dev server guide](../guides/dev-server.md).
+Live reload: the page opens an `EventSource` to `/__sse`; the server
+polls the `--watch` directories for modification-time changes and
+broadcasts `reload`; the page reloads itself. A small `EventSource`
+snippet in `index.html` is all that's needed; see the
+[dev server guide](../guides/dev-server.md).
 
 #### See also
 
-- [Getting started](../getting-started.md): installing and running the dev server.
-- [Dev server guide](../guides/dev-server.md): deeper walkthrough.
-- [Deployment guide](../guides/deployment.md): production hosting.
+- [Getting started](../getting-started.md)
+- [Guides: Dev server](../guides/dev-server.md)
+- [Guides: Deployment](../guides/deployment.md)

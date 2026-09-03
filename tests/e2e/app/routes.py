@@ -20,32 +20,32 @@ from app.features import router as router_feat
 from app.features import stores as stores_feat
 from app.testkit import tid
 
-from wybthon import ErrorBoundary, Route, component, div, h, lazy
+from wybthon import Errored, Route, component, div, lazy
 
 LazyPanel = lazy(lambda: ("app.features.lazy_target", "LoadedPanel"))
 _LazyMissingInner = lazy(lambda: ("app.features.does_not_exist", "Missing"))
 
 
 @component
-def LazyMissing(query=None, params=None):
+def LazyMissing(**rest):
     def fallback(err, reset):
         return div(f"Failed to load: {err}", class_="lazy-error")
 
-    return h(ErrorBoundary, {"fallback": fallback}, h(_LazyMissingInner, {}))
+    return Errored(lambda: _LazyMissingInner(), fallback=fallback)
 
 
 @component
-def Home():
+def Home(**rest):
     return div("home", **tid("page-home"))
 
 
 @component
-def Blank():
+def Blank(**rest):
     return div("blank", **tid("page-blank"))
 
 
 @component
-def NotFound(query=None, params=None):
+def NotFound(**rest):
     return div("not found", **tid("page-not-found"))
 
 

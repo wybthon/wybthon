@@ -12,13 +12,14 @@ Reference: https://github.com/krausest/js-framework-benchmark
 """
 
 import random
+from typing import Any
 
 from js import document
 from pyodide.ffi import create_proxy
 
 from wybthon.dom import Element
 from wybthon.flow import For
-from wybthon.reactivity import create_selector, create_signal, flush
+from wybthon.reactivity import Accessor, Setter, create_selector, create_signal, flush
 from wybthon.reconciler import render
 from wybthon.vnode import h
 
@@ -88,7 +89,14 @@ NOUNS = [
 
 _next_id = 1
 
-data, set_data = create_signal([])
+Row = dict[str, Any]
+
+data: Accessor[list[Row]]
+set_data: Setter[list[Row]]
+data, set_data = create_signal(list[Row]())
+
+selected: Accessor[int | None]
+set_selected: Setter[int | None]
 selected, set_selected = create_signal(None)
 _is_selected = create_selector(selected)
 
@@ -119,8 +127,7 @@ def build_data(count):
 # ---------------------------------------------------------------------------
 
 
-def _row(item, idx):
-    d = item()
+def _row(d, idx):
     iid = d["id"]
     return h(
         "tr",
@@ -153,7 +160,7 @@ def _row(item, idx):
 app = h(
     "table",
     {"class": "table table-hover table-striped test-data"},
-    h("tbody", {"id": "tbody"}, For(each=data, children=_row)),
+    h("tbody", {"id": "tbody"}, For(data, _row)),
 )
 render(app, container)
 

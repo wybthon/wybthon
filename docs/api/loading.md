@@ -4,71 +4,71 @@
 
 #### What's in this module
 
-[`Loading`][wybthon.Loading] renders a fallback while any async
-computation read under the boundary hasn't produced its first value.
-Reads that raise [`NotReadyError`][wybthon.NotReadyError] register the
-computation with the boundary; once every registered computation has a
-value, the children show. Revalidations don't re-trigger the boundary:
-an async memo that already has a value keeps serving it
-(stale-while-revalidate), so content stays visible during reloads. Use
-[`is_pending`][wybthon.is_pending] to render inline refresh hints
-instead.
+[`Loading`][wybthon.Loading] is the async boundary. Any read of an async
+computation under it that raises [`NotReadyError`][wybthon.NotReadyError]
+registers that computation with the boundary, and the boundary shows
+its fallback until every registered computation has a first value.
+Content **stays mounted** the whole time, parked off-document, so async
+memos created inside it keep running and nothing is torn down.
+Revalidations never re-trigger the boundary: a memo with a value keeps
+serving it (stale-while-revalidate), and [`is_pending`][wybthon.is_pending]
+is the tool for inline refresh hints.
 
-[`LoadingList`][wybthon.LoadingList] coordinates multiple sibling
-`Loading` boundaries, controlling the order their contents reveal
-(`reveal_order="forwards" | "backwards" | "together"`) and which
-fallbacks show while loading (`tail=None | "collapsed" | "hidden"`).
-With `"forwards"` (the default) contents reveal top to bottom, each
-waiting for the ones before it; `tail=None` shows every pending
-fallback, `"collapsed"` shows only the next one in reveal order, and
-`"hidden"` shows none.
+[`Reveal`][wybthon.Reveal] coordinates several `Loading` boundaries
+beneath it: the order their contents appear and how many fallbacks show
+at once.
 
-#### Usage
+| Name | Description |
+| --- | --- |
+| [`Loading`][wybthon.Loading] | `Loading(children, *, fallback=None, on=None)`; `children` is a VNode, callable, or list; `on` is an accessor or list of accessors to wait for as well. |
+| [`Reveal`][wybthon.Reveal] | `Reveal(children, *, order="forwards", tail="visible")`; `order` is `"forwards"`, `"backwards"`, or `"together"`; `tail` is `"visible"`, `"collapsed"`, or `"hidden"`. |
 
 ```python
-from wybthon import Loading, component, create_memo, create_signal, dynamic
-from wybthon.html import div, p, span
-
+from wybthon import Loading, Prop, Reveal, component, create_memo, div, is_pending, p, span
 
 @component
-def UserCard(id=0):
-    async def fetch_user() -> dict:
-        uid = id()  # tracked; refetches when it changes
-        resp = await js.fetch(f"/api/users/{uid}")
-        return await resp.json()
+def UserCard(user_id: Prop[int]):
+    async def load_user():
+        uid = user_id()                    # tracked: refetches when it changes
+        return await fetch_json(f"/api/users/{uid}")
 
-    user = create_memo(fetch_user)
-    return div(
-        p("Name: ", span(dynamic(lambda: user()["name"]))),
+    user = create_memo(load_user)
+    return Loading(
+        lambda: div(
+            p(lambda: user()["name"]),
+            span(lambda: "Refreshing..." if is_pending(user) else ""),
+        ),
+        fallback=lambda: p("Loading..."),
     )
 
-
 @component
-def Profile():
-    id_, _ = create_signal(42)
-    return Loading(
-        fallback=lambda: p("Loading…"),
-        children=lambda: UserCard(id=id_),
+def Dashboard(settings: Prop[object]):
+    return Reveal(
+        [
+            Loading(UserCard(user_id=1), fallback=p("Loading user...")),
+            Loading(Activity(), fallback=p("Loading activity..."), on=settings),
+        ],
+        order="forwards",
+        tail="collapsed",
     )
 ```
 
-- `fallback` may be a `VNode`, a string, or a callable returning one of
-  those; make it a callable so it can stay reactive too.
-- The boundary waits for **all** not-ready async computations read in
-  its subtree.
-- Boundaries nested inside another boundary coordinate with the inner
-  boundary, not with an enclosing `LoadingList`.
-
-!!! note "Sequential vs parallel loading under `LoadingList`"
-    A boundary whose content hasn't mounted yet doesn't start its async
-    computations, so `reveal_order="forwards"` reveals
-    sequentially-loading content as a cascade. Start the memos outside
-    the boundaries (or pass them down as props) when parallel loading
-    matters.
+- `on=` makes the boundary wait for specific accessors even if the
+  children never read them, so a layout doesn't partially render while a
+  critical query is in flight.
+- With `order="forwards"` contents reveal top to bottom, each waiting for
+  the ones before it; `"backwards"` reverses that; `"together"` reveals
+  all at once. `tail="visible"` shows every pending fallback,
+  `"collapsed"` only the next one in reveal order, `"hidden"` none.
+- Every boundary's content mounts immediately, so all of them load in
+  parallel; `order` only controls when each is revealed. Boundaries
+  nested inside another boundary coordinate with that boundary, not with
+  the outer `Reveal`.
 
 #### See also
 
-- [Concepts → Async and Loading](../concepts/async-loading.md)
-- [`create_memo`][wybthon.create_memo] (async memos)
-- [`ErrorBoundary`][wybthon.ErrorBoundary]
-- [Examples → Async fetch](../examples/fetch.md)
+- [`create_memo`][wybthon.create_memo] (async memos), [`latest`][wybthon.latest], [`resolve`][wybthon.resolve], [`refresh`][wybthon.refresh]
+- [Error boundary](error_boundary.md): `Errored` for the failure side
+- [Lazy loading](lazy.md): lazy components suspend into the nearest `Loading`
+- [Concepts: Async and loading](../concepts/async-loading.md)
+- [Examples: Async fetch](../examples/fetch.md)

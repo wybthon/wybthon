@@ -24,7 +24,7 @@ uv sync --group dev --group docs
 
 ## Coding standards
 
-- Source code targets **Python 3.10+** with type hints throughout.
+- Source code targets **Python 3.12+** (PEP 695 generics) with type hints throughout.
 - Docstrings use the **Google style** documented in the [docs style guide](style-guide.md). The Ruff `pydocstyle` ruleset enforces this.
 - Run `ruff check .` and `ruff format --check .` before pushing.
 - Run `mypy src` and `pytest` to verify types and tests.

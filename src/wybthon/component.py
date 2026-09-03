@@ -1,289 +1,163 @@
-"""`@component` decorator and `forward_ref` for function components.
+"""The `@component` decorator and the `Component` type it produces.
 
-Wybthon's component model is **fully reactive** and **runs once**:
+Wybthon components **run once**: the body executes a single time when
+the component mounts and returns a VNode tree. Every parameter is bound
+to a [`Prop`][wybthon.Prop] accessor; call it to read the current value
+(tracked), or embed it in the returned tree to create a reactive hole.
+Parents update a mounted component by passing new props, which flow
+into the same accessors; the body never re-runs.
 
-- The body of an `@component` function executes a single time when the
-  component mounts.
-- Each parameter declared in the function signature receives a
-  **reactive accessor** (a zero-argument callable). Calling the accessor
-  returns the *current* prop value and tracks it as a reactive
-  dependency.
-- Embedding an accessor directly inside a `VNode` tree turns the
-  surrounding region into a fine-grained **reactive hole** that updates
-  only the relevant DOM when the prop changes.
-- The decorator also enables a **direct call** style: invoking the
-  component with keyword arguments yields a `VNode` instead of running
-  the body, so trees can be authored ergonomically.
+Authoring:
 
-Authoring modes:
+- **Named parameters** (the common case). Each parameter becomes a
+  `Prop`. Declare defaults with [`prop`][wybthon.prop] so the type is
+  `Prop[T]`; a plain default also works when you don't need the type.
+- **`**rest`**. Undeclared props arrive as `Prop`s in `rest`; forward
+  them with `div(**rest)` or [`merge`][wybthon.merge].
+- **Single `props` parameter** (a lone positional parameter, or one
+  annotated `Props`). The function receives the whole
+  [`Props`][wybthon.Props] mapping.
 
-- **Named accessor mode**: used when the signature has zero args, kwargs
-  with defaults, or `**kwargs`. Each parameter becomes a reactive
-  accessor for the prop of the same name.
-- **Proxy mode**: used when the signature has exactly one positional-only
-  or positional-or-keyword parameter with no default and no
-  `*args`/`**kwargs`. The single parameter receives the full
-  [`ReactiveProps`][wybthon.ReactiveProps] proxy.
+Calling a component with keyword arguments returns a `VNode`
+(`Counter(initial=5)`), so trees compose like any other element.
 
 Example:
-    A trivial greeting and a counter::
+    ```python
+    @component
+    def Counter(initial: Prop[int] = prop(0), label: Prop[str] = prop("Count")):
+        count, set_count = create_signal(initial.peek())
+        return div(
+            p(label, ": ", count),
+            button("+", on_click=lambda e: set_count(lambda n: n + 1)),
+        )
 
-        @component
-        def Greet(name="world"):
-            return p("Hello, ", name, "!")
-
-        @component
-        def Counter(initial=0):
-            # ``untrack`` snapshots the seed value without subscribing
-            # (otherwise we would re-seed on every parent update, and
-            # dev mode would warn about a destructured prop).
-            count, set_count = create_signal(untrack(initial))
-            return div(
-                p("Count: ", count),
-                button("+", on_click=lambda e: set_count(count() + 1)),
-            )
-
-When you need the underlying `ReactiveProps` proxy (e.g., to iterate
-keys or forward unknown props), call
-[`get_props`][wybthon.reactivity.get_props] from inside the component
-body, or declare the component with a single positional parameter
-(proxy mode).
-
-Components are expected to return a [`VNode`][wybthon.VNode]. Use
-[`dynamic`][wybthon.dynamic] for explicit reactive holes when an entire
-subtree needs to swap based on a signal. A callable return is also
-accepted (it's wrapped in a single-root reactive hole) but the
-canonical style is "return a VNode and embed `dynamic(...)` where you
-need reactive swaps".
+    render(Counter(initial=10), "#app")
+    ```
 """
 
 from __future__ import annotations
 
+import functools
 import inspect
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple
+from collections.abc import Callable
+from typing import Any
 
-if TYPE_CHECKING:
-    pass
+from .reactivity._props import Props, default_value
+from .vnode import VNode, h
 
-from ._warnings import (
-    is_dev_mode,
-    warn_destructured_prop,
-)
-
-__all__ = ["component", "forward_ref"]
+__all__ = ["component", "Component"]
 
 
-def _build_param_plan(
-    fn: Callable[..., Any],
-) -> Tuple[List[str], Dict[str, Any], bool]:
-    """Inspect `fn` once and produce a `(param_names, defaults, proxy_mode)` plan.
+class _ParamPlan:
+    """How to bind a `Props` mapping to a component function's parameters."""
 
-    `proxy_mode` is True when the function takes a single positional or
-    positional-or-keyword parameter with no default; in that case the
-    decorator passes the `ReactiveProps` proxy directly instead of
-    destructuring kwargs.
+    __slots__ = ("names", "defaults", "var_keyword", "takes_props")
 
-    Args:
-        fn: The function to inspect.
-
-    Returns:
-        A tuple `(param_names, defaults, proxy_mode)`.
-    """
-    try:
-        sig = inspect.signature(fn)
-    except (ValueError, TypeError):
-        return [], {}, False
-
-    param_names: List[str] = []
-    defaults: Dict[str, Any] = {}
-    positional_no_default = 0
-    has_var = False
-
-    for name, param in sig.parameters.items():
-        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
-            has_var = True
-            continue
-        param_names.append(name)
-        if param.default is not inspect.Parameter.empty:
-            defaults[name] = param.default
-        else:
-            defaults[name] = None
-            if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
-                positional_no_default += 1
-
-    proxy_mode = not has_var and positional_no_default == 1 and len(param_names) == 1
-    return param_names, defaults, proxy_mode
+    def __init__(self, fn: Callable[..., Any]) -> None:
+        self.names: tuple[str, ...] = ()
+        self.defaults: dict[str, Any] = {}
+        self.var_keyword: bool = False
+        self.takes_props: bool = False
+        try:
+            sig = inspect.signature(fn)
+        except (TypeError, ValueError):
+            self.takes_props = True
+            return
+        names: list[str] = []
+        positional_required = 0
+        for name, param in sig.parameters.items():
+            if param.kind is inspect.Parameter.VAR_KEYWORD:
+                self.var_keyword = True
+                continue
+            if param.kind is inspect.Parameter.VAR_POSITIONAL:
+                continue
+            names.append(name)
+            if param.default is not inspect.Parameter.empty:
+                self.defaults[name] = default_value(param.default)
+            elif param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                positional_required += 1
+                ann = param.annotation
+                if ann is Props or (isinstance(ann, str) and ann.split(".")[-1] == "Props"):
+                    self.takes_props = True
+        self.names = tuple(names)
+        # `def Card(props): ...` receives the whole mapping; a single
+        # annotated parameter such as `def Card(title: Prop[str])` is a prop.
+        if len(names) == 1 and positional_required == 1 and not self.var_keyword:
+            only = sig.parameters[names[0]]
+            if only.annotation is inspect.Parameter.empty and names[0] == "props":
+                self.takes_props = True
 
 
-def _make_setup_getter(
-    base_getter: Callable[[], Any],
-    pname: str,
-    comp_fn: Callable[..., Any],
-    in_setup: list,
-) -> Callable[[], Any]:
-    """Wrap a prop accessor to fire a dev-mode warning on setup-time reads.
+class Component:
+    """A run-once component produced by [`component`][wybthon.component].
 
-    The wrapper is stable: it forwards every call through to `base_getter`
-    without changing tracking semantics. A warning fires only when **all**
-    of the following hold during setup:
-
-    - `in_setup[0]` is True; the component body hasn't returned yet.
-    - The read is **not** inside [`untrack`][wybthon.untrack] (the
-      canonical opt-out).
-    - No reactive computation is currently active (i.e., the read is a
-      raw setup-time call, not a read inside `create_effect` /
-      `create_memo`, which subscribe correctly).
-
-    Combined, these correctly target the actual footgun (`_ = name()` in
-    the component body) without false positives on legitimate patterns
-    like `create_effect(lambda: print(name()))`.
-
-    Args:
-        base_getter: The underlying reactive prop accessor.
-        pname: The prop name (used in the warning message).
-        comp_fn: The component function (used to identify the offender
-            in the warning).
-        in_setup: A single-element list flag toggled by the caller. While
-            `in_setup[0]` is True, setup-time reads warn.
-
-    Returns:
-        A new accessor with the same tracking semantics as `base_getter`.
+    Instances are callable: `MyComponent(child, other, key=value)` returns
+    a [`VNode`][wybthon.VNode] with the positional arguments as
+    `children`. The reconciler invokes the wrapped function once per
+    mount through `_render`.
     """
 
-    def getter() -> Any:
-        if in_setup[0]:
-            from .reactivity import _has_current_computation, _is_inside_untrack
+    __name__: str
+    __qualname__: str
 
-            if not _is_inside_untrack() and not _has_current_computation():
-                warn_destructured_prop(comp_fn, pname)
-        return base_getter()
+    def __init__(self, fn: Callable[..., Any]) -> None:
+        self.fn = fn
+        self._plan = _ParamPlan(fn)
+        functools.update_wrapper(self, fn, updated=())
 
-    getter._wyb_getter = True  # type: ignore[attr-defined]
-    getter.__qualname__ = f"{getattr(comp_fn, '__qualname__', '<component>')}.{pname}"
-    getter.__name__ = pname
-    return getter
+    def __call__(self, *children: Any, **props: Any) -> VNode:
+        """Return a `VNode` for this component with `children` as the `children` prop."""
+        all_props: dict[str, Any] = dict(props)
+        if children:
+            all_props["children"] = list(children)
+        return h(self, all_props)
 
+    @property
+    def defaults(self) -> dict[str, Any]:
+        """Declared parameter defaults (with `prop()` markers unwrapped)."""
+        return self._plan.defaults
 
-def component(fn: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorate a function as a Wybthon component.
+    def _render(self, props: Props) -> Any:
+        """Invoke the body once with `Prop` accessors bound to its parameters."""
+        plan = self._plan
+        if plan.takes_props:
+            return self.fn(props)
+        kwargs: dict[str, Any] = {name: props[name] for name in plan.names}
+        if plan.var_keyword:
+            declared = plan.names
+            for key in props:
+                if key not in declared and key != "key":
+                    kwargs[key] = props[key]
+        return self.fn(**kwargs)
 
-    The body of `fn` is invoked **once** per mount. Each declared parameter
-    is bound to a **reactive accessor**: call it to read the current
-    value (tracked) or pass it directly into a `VNode` tree to create a
-    reactive hole.
-
-    The decorated callable also supports a **direct call** style:
-    `Counter(initial=5)` returns a `VNode` (equivalent to
-    `h(Counter, {"initial": 5})`) so component composition feels natural.
-
-    See the module docstring for the complete authoring guide and the
-    full mode-selection table.
-
-    Args:
-        fn: The function to decorate. Its signature determines whether
-            named-accessor mode or proxy mode is used.
-
-    Returns:
-        A wrapped callable. When called by the reconciler with a single
-        props dict, it executes `fn` with the appropriate accessors;
-        when called by user code with kwargs, it returns a `VNode`.
-    """
-    from .reactivity import ReactiveProps, _get_component_ctx
-
-    param_names, defaults, proxy_mode = _build_param_plan(fn)
-
-    @wraps(fn)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        # VDOM engine path: invoked with a single dict / ReactiveProps and no kwargs.
-        if len(args) == 1 and isinstance(args[0], (dict, ReactiveProps)) and not kwargs:
-            props_input = args[0]
-
-            if isinstance(props_input, ReactiveProps):
-                reactive_props = props_input
-            else:
-                reactive_props = ReactiveProps(props_input, defaults)
-
-            ctx = _get_component_ctx()
-            if ctx is not None:
-                ctx._reactive_props = reactive_props
-
-            if proxy_mode:
-                return fn(reactive_props)
-
-            # Dev-mode path: wrap each prop accessor so we can detect
-            # setup-time unwraps (the destructured-prop footgun).  The
-            # wrapper has a small but non-zero per-read cost, so we
-            # skip it entirely in production.
-            if is_dev_mode():
-                in_setup = [True]
-                dev_kwargs: Dict[str, Any] = {}
-                for pname in param_names:
-                    base = reactive_props._make_getter(pname)
-                    dev_kwargs[pname] = _make_setup_getter(base, pname, fn, in_setup)
-                try:
-                    return fn(**dev_kwargs)
-                finally:
-                    in_setup[0] = False
-
-            getter_kwargs: Dict[str, Any] = {pname: reactive_props._make_getter(pname) for pname in param_names}
-            return fn(**getter_kwargs)
-
-        # Direct call: build a VNode for tree authoring (no body execution).
-        from .vnode import h
-
-        all_props: Dict[str, Any] = dict(kwargs)
-        if args:
-            all_props["children"] = list(args)
-        return h(wrapper, all_props)
-
-    wrapper._wyb_component = True  # type: ignore[attr-defined]
-    wrapper._wyb_defaults = defaults  # type: ignore[attr-defined]
-    return wrapper
+    def __repr__(self) -> str:
+        return f"<component {self.__qualname__}>"
 
 
-def forward_ref(render_fn: Callable[..., Any]) -> Callable[..., Any]:
-    """Create a component that forwards a `ref` prop to a child element.
+def component(fn: Callable[..., Any]) -> Component:
+    """Declare a function as a run-once Wybthon component.
 
-    The wrapped function receives `(props, ref)` instead of `(props,)`,
-    where `ref` is the value of the `ref` prop (or `None`). `ref` is
-    **stripped from props** (matching React's `forwardRef` semantics),
-    so the wrapped function only sees its own concerns.
+    Each parameter of `fn` becomes a [`Prop`][wybthon.Prop] accessor.
+    The decorated object is a [`Component`][wybthon.Component]: calling
+    it with children and keyword props returns a `VNode`.
 
     Args:
-        render_fn: A callable taking `(props, ref)` and returning a
-            `VNode` subtree.
+        fn: The component body. Runs once per mount and returns a
+            `VNode`, a string, a list, or a reactive expression.
 
     Returns:
-        A component callable that forwards the `ref` prop to `render_fn`.
+        A `Component`.
 
     Example:
         ```python
-        FancyInput = forward_ref(lambda props, ref: input_(
-            type="text", ref=ref, class_="fancy",
-        ))
+        @component
+        def Greeting(name: Prop[str] = prop("world")):
+            return p("Hello, ", name, "!")
 
-        my_ref = Ref()
-        h(FancyInput, {"ref": my_ref})
+        Greeting(name="Ada")           # -> VNode
+        Greeting(name=lambda: user())  # reactive: updates when user() changes
         ```
     """
-    from .reactivity import ReactiveProps
-
-    def ForwardRefWrapper(props: Any) -> Any:
-        if isinstance(props, ReactiveProps):
-            ref = props.value("ref")
-            raw = object.__getattribute__(props, "_raw")
-            defaults = object.__getattribute__(props, "_defaults")
-            stripped_raw = {k: v for k, v in raw.items() if k != "ref"}
-            stripped_defaults = {k: v for k, v in defaults.items() if k != "ref"}
-            stripped = ReactiveProps(stripped_raw, stripped_defaults)
-            return render_fn(stripped, ref)
-        ref = props.get("ref")
-        stripped_dict = {k: v for k, v in props.items() if k != "ref"}
-        return render_fn(stripped_dict, ref)
-
-    ForwardRefWrapper._wyb_forward_ref = True  # type: ignore[attr-defined]
-    ForwardRefWrapper._wyb_component = True  # type: ignore[attr-defined]
-    ForwardRefWrapper.__name__ = f"forward_ref({getattr(render_fn, '__name__', 'Component')})"
-    ForwardRefWrapper.__qualname__ = ForwardRefWrapper.__name__
-    return ForwardRefWrapper
+    if isinstance(fn, Component):
+        return fn
+    return Component(fn)

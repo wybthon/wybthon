@@ -4,51 +4,55 @@
 
 #### What's in this module
 
-`template` implements the template-based mounting fast path. When the
-reconciler mounts a host-element subtree, it first asks `build_plan` to
-serialize the static skeleton of the tree into a single HTML string
-(with text content hoisted out). The skeleton is registered with the
-rendering kernel once, parsed by the browser via a `<template>`
-element, and every mount is a single *clone* op. The kernel walks the
-clone in a deterministic pre-order, assigning a dense block of node
-ids, so Python can address every node with no read-backs; text,
-bindings, and dynamic children are then wired by id in the same
-batched commit.
+`template` is the runtime analogue of SolidJS's compiled templates. A
+run-once component returns a tree whose *structure* is static; only
+holes, event handlers, refs, and reactive prop bindings change after
+mount. So the static skeleton is serialized to an HTML string once,
+registered with the kernel (`REGISTER_TPL`), and every later mount of
+the same shape is a single `CLONE_TPL` op. The kernel walks the clone in
+pre-order and assigns a dense block of node ids, which the Python side
+predicts with no read-backs.
 
-Hoisting text is what makes templates shared: a thousand list rows
-that differ only in their ids and labels serialize to the *same*
-skeleton, so the browser parses it once and clones it a thousand
-times, exactly like SolidJS's compiled templates.
+| Name | Description |
+| --- | --- |
+| [`build_plan`][wybthon.template.build_plan] | Serialize an element VNode's static structure, or return `None` when the tree must use per-node ops. |
+| [`MountPlan`][wybthon.template.MountPlan] | The result: `html`, the pre-order `order` list, the dynamic `bindings`, and `node_count`. |
+
+Application code never calls these; the reconciler does.
 
 #### How a plan is built
 
-- Static tags, attributes, classes, styles, and datasets become part
-  of the HTML string directly.
-- Static text serializes as a one-space placeholder; the real value is
-  recorded as a `SET_TEXT` binding applied after the clone.
-- Reactive props (getter callables) are recorded as bindings; they're
-  wrapped in per-prop effects after id assignment.
-- Event handlers (`on_*`) are recorded as bindings and registered
-  through the kernel's delegated event system (`LISTEN` ops).
-- `value`/`checked` are recorded as DOM-property bindings and assigned
-  post-clone, matching the per-node mount path exactly.
-- Dynamic children (holes, components, fragments) are serialized as
-  comment placeholders; the reconciler mounts them at the placeholder
-  position after id assignment.
+- Static tags, attributes, classes, styles, and datasets go into the
+  HTML string directly.
+- Static text is **hoisted**: it serializes as a one-space placeholder
+  and is applied as a `SET_TEXT` binding after the clone. This is what
+  lets a thousand list rows that differ only in their text share one
+  skeleton.
+- Reactive props are recorded as bindings and wrapped in per-prop render
+  effects after ids are assigned; event handlers become `LISTEN` ops;
+  `value`, `checked`, and `innerHTML` are applied as DOM properties.
+- Dynamic children (holes, fragments, components) serialize as comment
+  placeholders and are mounted at that position afterwards.
+- Plans are cached per **shape**: serialization and eligibility checks
+  run on the first mount of a shape, and later structurally identical
+  trees are a dictionary hit.
 
 #### When the fast path is skipped
 
-`build_plan` refuses (and the reconciler falls back to per-node ops,
-still batched in the same commit) when the subtree can't be
-represented faithfully as HTML, for example: raw-text elements like
-`<script>`, adjacent text nodes that would merge during parsing,
-element nestings the parser rewrites (bare text in `<table>`,
-auto-closed `<p>`, and similar), or environments whose DOM stub has no
-`<template>` support. The fallback is purely a performance difference;
-behavior is identical.
+`build_plan` returns `None`, and the reconciler falls back to per-node
+ops (still batched into the same commit), when the HTML parser wouldn't
+reproduce the tree faithfully: fewer than three nodes, adjacent or empty
+text nodes, raw-text elements such as `<script>` and `<textarea>`, SVG
+and MathML subtrees (mounted with `CREATE_ELEMENT_NS` instead), invalid
+attribute names, or nestings the parser rewrites (bare text inside
+`<table>`, an implied `<tbody>`, an auto-closed `<p>`). The reconciler
+also skips templates when the backend can't parse HTML (a stub document
+without `<template>` support). The fallback is purely a performance
+difference; behavior is identical.
 
 #### See also
 
+- [Kernel](kernel.md): the `REGISTER_TPL` and `CLONE_TPL` ops
+- [Reconciler](reconciler.md): mounts plans and wires bindings
 - [Concepts: Virtual DOM](../concepts/vdom.md)
-- [`reconciler`][wybthon.reconciler]: mounts plans and wires bindings.
 - [Guides: Performance](../guides/performance.md)

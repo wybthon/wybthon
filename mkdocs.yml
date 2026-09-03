@@ -90,6 +90,7 @@ nav:
     - Typing: guides/typing.md
     - Migrating from React: guides/migrating-from-react.md
     - Migrating from Solid: guides/migrating-from-solid.md
+    - Migrating from 0.2x and 0.30: guides/migrating-from-0-x.md
   - Examples:
     - Overview: examples.md
     - Counter: examples/counter.md
@@ -109,6 +110,7 @@ nav:
     - Props: api/props.md
     - DOM: api/dom.md
     - HTML helpers: api/html.md
+    - SVG helpers: api/svg.md
     - Events: api/events.md
     - Forms: api/forms.md
     - Context: api/context.md

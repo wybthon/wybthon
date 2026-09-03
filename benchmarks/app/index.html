@@ -52,15 +52,17 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.js"></script>
   <script>
     const WYBTHON_MODULES = [
       '__init__.py', '_warnings.py', 'component.py', 'context.py',
       'dev.py', 'dom.py', 'error_boundary.py', 'events.py',
       'flow.py', 'forms.py', 'html.py', 'kernel.py', 'lazy.py',
-      'loading.py', 'portal.py', 'props.py', 'reactivity.py',
+      'loading.py', 'portal.py', 'props.py',
+      'reactivity/__init__.py', 'reactivity/_actions.py', 'reactivity/_core.py',
+      'reactivity/_list.py', 'reactivity/_primitives.py', 'reactivity/_props.py',
       'reconciler.py', 'router.py', 'router_core.py', 'store.py',
-      'template.py', 'vnode.py',
+      'svg.py', 'template.py', 'vnode.py',
     ];
 
     async function main() {
@@ -72,6 +74,7 @@
       statusEl.textContent = 'Loading Wybthon...';
 
       pyodide.FS.mkdir('/lib/wybthon');
+      pyodide.FS.mkdir('/lib/wybthon/reactivity');
       for (const mod of WYBTHON_MODULES) {
         const resp = await fetch('../../src/wybthon/' + mod);
         const text = await resp.text();

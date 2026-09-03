@@ -8,80 +8,72 @@ Common use cases include modals, tooltips, and toast notifications.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any
 
-from .reactivity import on_cleanup, on_mount
-from .vnode import Fragment, VNode, dynamic, h, to_text_vnode
+from .kernel import OP_ROOT, OP_UNROOT
+from .reactivity._primitives import on_cleanup
+from .reactivity._props import Props
+from .vnode import Fragment, VNode, h, hole
 
 __all__ = ["Portal"]
 
 
-def _PortalComponent(props: Any) -> Any:
-    """Internal stateful component that mounts children into another container."""
-    portal_tree: List[Optional[VNode]] = [None]
+def _resolve_container_id(container: Any) -> int:
+    from .dom import Element
 
-    def _resolve_container_id(container: Any) -> int:
-        from .dom import Element
-
-        if isinstance(container, int):
-            return container
-        if isinstance(container, str):
-            container = Element(container, existing=True)
-        return container.node_id
-
-    def _do_render() -> None:
-        from .reconciler import mount, patch
-
-        container_id = _resolve_container_id(props.value("mount"))
-
-        children = props.value("children", [])
-        if children is None:
-            children = []
-        if not isinstance(children, list):
-            children = [children]
-        new_tree = Fragment(*children)
-
-        old_tree = portal_tree[0]
-        portal_tree[0] = new_tree
-
-        if old_tree is None:
-            mount(new_tree, container_id)
-        else:
-            patch(old_tree, new_tree, container_id)
-
-    on_mount(_do_render)
-
-    def _cleanup() -> None:
-        if portal_tree[0] is not None:
-            from .reconciler import unmount
-
-            unmount(portal_tree[0])
-            portal_tree[0] = None
-
-    on_cleanup(_cleanup)
-
-    def render() -> VNode:
-        _ = props.value("children")
-        if portal_tree[0] is not None:
-            _do_render()
-        return to_text_vnode("")
-
-    return dynamic(render)
+    if isinstance(container, int):
+        return container
+    if isinstance(container, str):
+        container = Element(container, existing=True)
+    return int(container.node_id)
 
 
-_PortalComponent._wyb_component = True  # type: ignore[attr-defined]
+def _Portal(props: Props) -> Any:
+    from . import reconciler
+
+    container_id = _resolve_container_id(props.raw("mount"))
+    children = props.raw("children")
+    tree: VNode
+    if isinstance(children, VNode):
+        tree = children
+    elif isinstance(children, list):
+        tree = Fragment(*children)
+    elif callable(children):
+        tree = hole(children)
+    else:
+        tree = Fragment()
+
+    # The target becomes a delegation root so handlers inside the portal
+    # fire even when it sits outside the render root (the kernel refcounts
+    # roots, so a target that is also the app root is unaffected).
+    reconciler._emit((OP_ROOT, container_id))
+    # Mount under the current owner so context and disposal flow through
+    # the portal exactly as they would for in-place children.
+    reconciler.mount(tree, container_id)
+
+    def cleanup() -> None:
+        reconciler._unmount(tree)
+        reconciler._emit((OP_UNROOT, container_id))
+
+    on_cleanup(cleanup)
+    return None
 
 
-def Portal(children: Union[VNode, List[VNode], None] = None, mount: Any = "body") -> VNode:
+_Portal.__name__ = "Portal"
+
+
+def Portal(children: Any = None, *, mount: Any = "body") -> VNode:
     """Render children into a different DOM container.
 
     Matches SolidJS's `<Portal mount={...}>`. The children mount into
     `mount` (by default `document.body`) while remaining linked to the
     surrounding component's reactive scope, so signals, context, and
-    lifecycle hooks still apply.
+    lifecycle hooks still apply, and they're removed when the portal
+    unmounts.
 
     Args:
-        children: A single [`VNode`][wybthon.VNode] or a list of them.
+        children: A VNode, a list of VNodes, or a zero-arg callable
+            (rendered as a reactive hole).
         mount: The target container: an [`Element`][wybthon.Element]
             instance, a CSS selector string, or a kernel node id.
             Defaults to `"body"`.
@@ -92,16 +84,12 @@ def Portal(children: Union[VNode, List[VNode], None] = None, mount: Any = "body"
     Example:
         ```python
         Show(
-            when=show_modal,
-            children=lambda: Portal(
+            show_modal,
+            lambda: Portal(
                 div(p("Modal content"), class_="modal"),
                 mount="#modal-root",
             ),
         )
         ```
     """
-    if children is None:
-        children = []
-    elif not isinstance(children, list):
-        children = [children]
-    return h(_PortalComponent, {"children": children, "mount": mount})
+    return h(_Portal, {"children": children, "mount": mount})

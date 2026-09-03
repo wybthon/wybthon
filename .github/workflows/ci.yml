@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.12", "3.13"]
 
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
         run: |
           uv run pytest -q --cov=wybthon --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=45
       - name: Upload coverage to artifacts
-        if: ${{ always() && matrix.python-version == '3.11' }}
+        if: ${{ always() && matrix.python-version == '3.12' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml
@@ -57,7 +57,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: uv sync --locked --group dev

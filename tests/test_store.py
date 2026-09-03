@@ -1,538 +1,911 @@
-"""Tests for create_store's draft-first mutation model."""
+"""Tests for ``wybthon.store``: draft-first reactive stores.
+
+Covers proxy reads, staged draft writes, fine-grained tracking, ``reconcile``,
+``store_path``, ``snapshot``/``deep``, derived stores and projections,
+optimistic stores, and the dev-mode write-in-scope guard.
+"""
+
+import asyncio
 
 import pytest
 
-from wybthon.reactivity import create_effect, effect, flush
-from wybthon.store import create_store
+from wybthon import _warnings
+from wybthon.reactivity import (
+    WriteInScopeError,
+    action,
+    create_effect,
+    create_memo,
+    create_root,
+    create_signal,
+    flush,
+    untrack,
+)
+from wybthon.store import (
+    create_optimistic_store,
+    create_projection,
+    create_store,
+    deep,
+    reconcile,
+    snapshot,
+    store_path,
+)
 
-# --------------------------------------------------------------------------- #
-# create_store basics
-# --------------------------------------------------------------------------- #
+
+def _counting_memo(fn):
+    """Return ``(memo, runs)`` where ``runs`` grows by one per recompute."""
+    runs = []
+
+    def compute():
+        runs.append(1)
+        return fn()
+
+    return create_memo(compute), runs
 
 
-class TestCreateStore:
-    def test_basic_dict_store(self):
-        store, set_store = create_store({"count": 0, "name": "Ada"})
-        assert store.count == 0
-        assert store.name == "Ada"
+def _sample():
+    return create_store(
+        {
+            "count": 0,
+            "user": {"name": "Ada", "age": 36},
+            "items": [{"id": 1, "text": "a", "done": False}, {"id": 2, "text": "b", "done": True}],
+            "nums": [1, 2, 3],
+        }
+    )
 
-    def test_draft_set_top_level_value(self):
-        store, set_store = create_store({"count": 0})
-        set_store(lambda s: setattr(s, "count", 5))
-        assert store.count == 5
 
-    def test_draft_augmented_assignment(self):
-        store, set_store = create_store({"count": 10})
+# ---------------------------------------------------------------------------
+# Reads
+# ---------------------------------------------------------------------------
 
-        def bump(s):
-            s.count += 1
 
-        set_store(bump)
-        assert store.count == 11
+def test_attribute_and_bracket_reads(wyb):
+    store, _ = _sample()
+    assert store.count == 0
+    assert store["count"] == 0
+    assert store.user.name == "Ada"
+    assert store["user"]["age"] == 36
+    assert store.items[0].text == "a"
+    assert store.items[1]["done"] is True
+    assert store.nums[2] == 3
 
-    def test_nested_dict_read(self):
-        store, set_store = create_store({"user": {"name": "Ada", "age": 30}})
-        assert store.user.name == "Ada"
-        assert store.user.age == 30
 
-    def test_nested_dict_set(self):
-        store, set_store = create_store({"user": {"name": "Ada"}})
-        set_store(lambda s: setattr(s.user, "name", "Jane"))
-        assert store.user.name == "Jane"
+def test_missing_keys_and_indices_read_as_none(wyb):
+    store, _ = _sample()
+    assert store.missing is None
+    assert store["missing"] is None
+    assert store.nums[10] is None
 
-    def test_list_access(self):
-        store, set_store = create_store({"items": ["a", "b", "c"]})
-        assert store.items[0] == "a"
-        assert store.items[1] == "b"
-        assert store.items[2] == "c"
 
-    def test_list_length(self):
-        store, set_store = create_store({"items": [1, 2, 3]})
-        assert len(store.items) == 3
+def test_negative_index_and_slice_reads(wyb):
+    store, _ = _sample()
+    assert store.nums[-1] == 3
+    assert store.nums[0:2] == [1, 2]
+    assert store.items[-1].id == 2
 
-    def test_list_iteration(self):
-        store, set_store = create_store({"items": ["x", "y", "z"]})
-        result = list(store.items)
-        assert result == ["x", "y", "z"]
 
-    def test_list_contains(self):
-        store, set_store = create_store({"items": [1, 2, 3]})
-        assert 2 in store.items
-        assert 9 not in store.items
+def test_len_iteration_and_contains(wyb):
+    store, _ = _sample()
+    assert len(store) == 4
+    assert set(store) == {"count", "user", "items", "nums"}
+    assert "user" in store
+    assert "nope" not in store
+    assert len(store.nums) == 3
+    assert list(store.nums) == [1, 2, 3]
+    assert 2 in store.nums
+    assert 9 not in store.nums
+    assert [t.text for t in store.items] == ["a", "b"]
 
-    def test_nested_list_of_dicts(self):
-        store, set_store = create_store(
+
+def test_bool_of_store(wyb):
+    empty, _ = create_store({})
+    full, _ = create_store({"a": 1})
+    empty_list, _ = create_store([])
+    assert not empty
+    assert full
+    assert not empty_list
+
+
+def test_equality_against_plain_data(wyb):
+    store, _ = _sample()
+    assert store.user == {"name": "Ada", "age": 36}
+    assert store.nums == [1, 2, 3]
+    assert store.user != {"name": "Bob"}
+    assert store.nums != [1]
+    assert store.user == store["user"]
+    assert not (store.user == 5)
+
+
+def test_repr_does_not_raise(wyb):
+    store, _ = _sample()
+    assert "Ada" in repr(store)
+    assert repr(store.nums) == "StoreList([1, 2, 3])"
+    assert repr(store.user) == "Store({'name': 'Ada', 'age': 36})"
+
+
+def test_nested_proxy_identity_is_stable(wyb):
+    store, _ = _sample()
+    assert store.user is store.user
+    assert store.items[0] is store.items[0]
+    assert store.items is store["items"]
+
+
+def test_read_proxy_is_read_only(wyb):
+    store, _ = _sample()
+    with pytest.raises(AttributeError):
+        store.count = 5
+    with pytest.raises(TypeError):
+        store["count"] = 5
+    with pytest.raises(TypeError):
+        store.nums[0] = 5
+
+
+def test_keys_that_shadow_mapping_methods_are_plain_data(wyb):
+    store, set_store = create_store({"items": [1], "keys": "k", "values": "v", "get": "g", "update": "u"})
+    assert store.items == [1]
+    assert store.keys == "k"
+    assert store.values == "v"
+    assert store.get == "g"
+    assert store.update == "u"
+    assert store["keys"] == "k"
+
+    set_store(lambda s: s.__setitem__("keys", "K"))
+    flush()
+    assert store.keys == "K"
+
+
+def test_setter_rejects_unknown_modifier(wyb):
+    _, set_store = _sample()
+    with pytest.raises(TypeError):
+        set_store(5)
+
+
+def test_scalar_initial_returns_raw_value(wyb):
+    store, _ = create_store(5)
+    assert store == 5
+
+
+# ---------------------------------------------------------------------------
+# Writes
+# ---------------------------------------------------------------------------
+
+
+def test_write_is_staged_until_flush(wyb):
+    store, set_store = _sample()
+    assert store.count == 0
+    set_store(lambda s: setattr(s, "count", 1))
+    assert store.count == 0
+    flush()
+    assert store.count == 1
+
+
+def test_write_nested_keys_and_list_items(wyb):
+    store, set_store = _sample()
+
+    def edit(s):
+        s.user.name = "Grace"
+        s["user"]["age"] = 40
+        s.items[0].done = True
+        s.nums[1] = 20
+        s.nums[-1] = 30
+
+    set_store(edit)
+    flush()
+    assert store.user.name == "Grace"
+    assert store.user.age == 40
+    assert store.items[0].done is True
+    assert snapshot(store.nums) == [1, 20, 30]
+
+
+def test_add_new_key_and_delete_key(wyb):
+    store, set_store = _sample()
+    assert store.extra is None
+    set_store(lambda s: setattr(s, "extra", "yes"))
+    flush()
+    assert store.extra == "yes"
+    assert "extra" in store
+
+    set_store(lambda s: s.__delitem__("extra"))
+    flush()
+    assert "extra" not in store
+    assert store.extra is None
+
+    set_store(lambda s: delattr(s, "count"))
+    flush()
+    assert "count" not in store
+    assert store.count is None
+
+
+def test_replace_nested_dict_wholesale(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: store.user.name)
+    assert memo() == "Ada"
+
+    set_store(lambda s: setattr(s, "user", {"name": "Bob", "age": 1}))
+    flush()
+    assert memo() == "Bob"
+    assert len(runs) == 2
+    assert store.user.age == 1
+
+    set_store(lambda s: setattr(s, "user", None))
+    flush()
+    assert store.user is None
+
+
+def test_draft_reads_see_prior_writes_in_same_setter(wyb):
+    store, set_store = _sample()
+    seen = []
+
+    def edit(s):
+        s.count = 5
+        seen.append(s.count)
+        s.count = s.count + 1
+        s.nums.append(4)
+        seen.append(len(s.nums))
+        seen.append(4 in s.nums)
+        seen.append(list(s.nums))
+
+    set_store(edit)
+    assert seen == [5, 4, True, [1, 2, 3, 4]]
+    flush()
+    assert store.count == 6
+
+
+def test_successive_setters_before_flush_compose(wyb):
+    store, set_store = _sample()
+    assert store.count == 0
+    set_store(lambda s: setattr(s, "count", s.count + 1))
+    set_store(lambda s: setattr(s, "count", s.count + 1))
+    assert store.count == 0
+    flush()
+    assert store.count == 2
+
+
+def test_list_append_extend_insert(wyb):
+    store, set_store = _sample()
+
+    def edit(s):
+        s.nums.append(4)
+        s.nums.extend([5, 6])
+        s.nums.insert(0, 0)
+
+    set_store(edit)
+    flush()
+    assert snapshot(store.nums) == [0, 1, 2, 3, 4, 5, 6]
+    assert len(store.nums) == 7
+
+
+def test_list_pop_remove_clear(wyb):
+    store, set_store = _sample()
+    popped = []
+    set_store(lambda s: popped.append(s.nums.pop()))
+    set_store(lambda s: popped.append(s.nums.pop(0)))
+    flush()
+    assert popped == [3, 1]
+    assert snapshot(store.nums) == [2]
+
+    set_store(lambda s: s.nums.remove(2))
+    flush()
+    assert snapshot(store.nums) == []
+
+    set_store(lambda s: s.items.clear())
+    flush()
+    assert len(store.items) == 0
+    assert list(store.items) == []
+
+
+def test_list_del_and_slice_assignment(wyb):
+    store, set_store = _sample()
+    set_store(lambda s: s.nums.__delitem__(0))
+    flush()
+    assert snapshot(store.nums) == [2, 3]
+
+    set_store(lambda s: s.nums.__setitem__(slice(0, 1), [7, 8, 9]))
+    flush()
+    assert snapshot(store.nums) == [7, 8, 9, 3]
+
+
+def test_list_sort_and_reverse(wyb):
+    store, set_store = create_store({"nums": [3, 1, 2]})
+    set_store(lambda s: s.nums.sort())
+    flush()
+    assert snapshot(store.nums) == [1, 2, 3]
+
+    set_store(lambda s: s.nums.reverse())
+    flush()
+    assert snapshot(store.nums) == [3, 2, 1]
+
+    set_store(lambda s: s.nums.sort(key=lambda n: -n, reverse=True))
+    flush()
+    assert snapshot(store.nums) == [1, 2, 3]
+
+
+def test_list_of_dicts_append_then_read_new_item(wyb):
+    store, set_store = _sample()
+    set_store(lambda s: s.items.append({"id": 3, "text": "c", "done": False}))
+    flush()
+    assert len(store.items) == 3
+    assert store.items[2].text == "c"
+    assert store.items[-1]["id"] == 3
+
+
+def test_draft_update_merges_keys(wyb):
+    store, set_store = _sample()
+    set_store(lambda s: s.update({"count": 9, "flag": True}))
+    flush()
+    assert store.count == 9
+    assert store.flag is True
+    assert store.user.name == "Ada"
+
+
+def test_setter_returning_dict_replaces_state(wyb):
+    store, set_store = create_store({"a": 1, "b": 2})
+    set_store(lambda s: {"a": 10, "b": 20})
+    flush()
+    assert snapshot(store) == {"a": 10, "b": 20}
+    assert store.a == 10
+
+
+def test_setter_returning_list_replaces_state(wyb):
+    lst, set_lst = create_store([1, 2, 3])
+    set_lst(lambda s: s.append(4))
+    flush()
+    assert snapshot(lst) == [1, 2, 3, 4]
+    set_lst(lambda s: [9])
+    flush()
+    assert snapshot(lst) == [9]
+    assert len(lst) == 1
+
+
+def test_setter_accepts_plain_replacement_data(wyb):
+    store, set_store = create_store({"a": 1})
+    set_store({"a": 2})
+    flush()
+    assert store.a == 2
+
+
+def test_writing_a_proxy_stores_plain_data(wyb):
+    store, set_store = _sample()
+    set_store(lambda s: s.__setitem__("first", s.items[0]))
+    flush()
+    first = snapshot(store)["first"]
+    assert isinstance(first, dict)
+    assert first == {"id": 1, "text": "a", "done": False}
+    assert store.first.text == "a"
+
+
+# ---------------------------------------------------------------------------
+# store_path
+# ---------------------------------------------------------------------------
+
+
+def test_store_path_writes_nested_value(wyb):
+    store, set_store = _sample()
+    set_store(store_path("user", "name", "Linus"))
+    set_store(store_path("items", 0, "done", True))
+    flush()
+    assert store.user.name == "Linus"
+    assert store.items[0].done is True
+
+
+def test_store_path_with_updater_function(wyb):
+    store, set_store = _sample()
+    set_store(store_path("count", lambda c: c + 10))
+    set_store(store_path("items", 1, "done", lambda d: not d))
+    flush()
+    assert store.count == 10
+    assert store.items[1].done is False
+
+
+def test_store_path_requires_key_and_value(wyb):
+    with pytest.raises(TypeError):
+        store_path("only_key")
+
+
+# ---------------------------------------------------------------------------
+# reconcile
+# ---------------------------------------------------------------------------
+
+
+def test_reconcile_keeps_identity_of_unchanged_items(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: store.items[0].text)
+    assert memo() == "a"
+    first = snapshot(store)["items"][0]
+
+    set_store(
+        reconcile(
             {
-                "todos": [
-                    {"id": 1, "text": "Learn Wybthon", "done": False},
-                    {"id": 2, "text": "Build an app", "done": False},
-                ]
+                "count": 0,
+                "user": {"name": "Ada", "age": 36},
+                "items": [{"id": 1, "text": "a", "done": False}, {"id": 2, "text": "B", "done": True}],
+                "nums": [1, 2, 3],
             }
         )
-        assert store.todos[0].text == "Learn Wybthon"
-        assert store.todos[1].done is False
+    )
+    flush()
+    assert snapshot(store)["items"][0] is first
+    assert store.items[1].text == "B"
+    assert memo() == "a"
+    assert len(runs) == 1
 
-    def test_set_nested_list_item_property(self):
-        store, set_store = create_store({"todos": [{"id": 1, "text": "Test", "done": False}]})
-        set_store(lambda s: setattr(s.todos[0], "done", True))
-        assert store.todos[0].done is True
-
-    def test_store_repr(self):
-        store, _ = create_store({"count": 0})
-        r = repr(store)
-        assert "count" in r
-
-    def test_store_equality(self):
-        store, _ = create_store({"a": 1})
-        assert store == {"a": 1}
-
-    def test_store_contains(self):
-        store, _ = create_store({"a": 1, "b": 2})
-        assert "a" in store
-        assert "c" not in store
-
-    def test_store_iter(self):
-        store, _ = create_store({"a": 1, "b": 2})
-        keys = list(store)
-        assert "a" in keys
-        assert "b" in keys
-
-    def test_store_len(self):
-        store, _ = create_store({"a": 1, "b": 2, "c": 3})
-        assert len(store) == 3
-
-    def test_store_getitem_string(self):
-        store, _ = create_store({"key": "value"})
-        assert store["key"] == "value"
-
-    def test_store_read_only(self):
-        store, _ = create_store({"count": 0})
-        with pytest.raises(AttributeError, match="read-only"):
-            store.count = 5
-
-    def test_set_store_non_callable_raises(self):
-        _, set_store = create_store({"a": 1})
-        with pytest.raises(TypeError, match="draft function"):
-            set_store({"a": 10})
-
-    def test_draft_update_bulk_write(self):
-        store, set_store = create_store({"a": 1, "b": 2})
-        set_store(lambda s: s.update({"a": 10, "b": 20}))
-        assert store.a == 10
-        assert store.b == 20
+    set_store(reconcile({"items": [{"id": 1, "text": "A", "done": False}]}))
+    flush()
+    assert snapshot(store)["items"][0] is first
+    assert memo() == "A"
+    assert len(runs) == 2
 
 
-# --------------------------------------------------------------------------- #
-# Reactivity
-# --------------------------------------------------------------------------- #
+def test_reconcile_adds_removes_and_reorders_items(wyb):
+    store, set_store = create_store({"items": [{"id": 1, "v": 1}, {"id": 2, "v": 2}]})
+    second = snapshot(store)["items"][1]
+    set_store(reconcile({"items": [{"id": 2, "v": 2}, {"id": 3, "v": 3}]}))
+    flush()
+    raw = snapshot(store)["items"]
+    assert [i["id"] for i in raw] == [2, 3]
+    assert raw[0] is second
+    assert store.items[1].v == 3
+    assert len(store.items) == 2
 
 
-class TestStoreReactivity:
-    def test_effect_tracks_store_read(self):
-        store, set_store = create_store({"count": 0})
-        seen = []
+def test_reconcile_removes_missing_dict_keys(wyb):
+    store, set_store = create_store({"a": 1, "b": 2})
+    set_store(reconcile({"a": 1}))
+    flush()
+    assert snapshot(store) == {"a": 1}
+    assert "b" not in store
 
-        def watcher():
-            seen.append(store.count)
 
-        eff = effect(watcher)
-        assert seen == [0]
+def test_reconcile_without_key_replaces_positionally(wyb):
+    store, set_store = create_store({"items": [{"id": 1, "v": 1}]})
+    first = snapshot(store)["items"][0]
+    set_store(reconcile({"items": [{"id": 1, "v": 1}]}, key=None))
+    flush()
+    assert snapshot(store)["items"][0] == first
+    assert snapshot(store)["items"][0] is not first
 
-        set_store(lambda s: setattr(s, "count", 5))
+
+def test_reconcile_custom_key(wyb):
+    store, set_store = create_store([{"slug": "x", "n": 1}, {"slug": "y", "n": 2}])
+    x = snapshot(store)[0]
+    set_store(reconcile([{"slug": "y", "n": 20}, {"slug": "x", "n": 1}], key="slug"))
+    flush()
+    assert snapshot(store)[1] is x
+    assert store[0].n == 20
+
+
+# ---------------------------------------------------------------------------
+# Fine-grained tracking
+# ---------------------------------------------------------------------------
+
+
+def test_memo_tracks_only_its_path(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: store.user.name)
+    assert memo() == "Ada"
+    assert len(runs) == 1
+
+    set_store(lambda s: setattr(s.user, "age", 37))
+    set_store(lambda s: setattr(s, "count", 1))
+    flush()
+    assert memo() == "Ada"
+    assert len(runs) == 1
+
+    set_store(lambda s: setattr(s.user, "name", "Grace"))
+    flush()
+    assert memo() == "Grace"
+    assert len(runs) == 2
+
+
+def test_memo_not_rerun_when_same_value_written(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: store.count)
+    assert memo() == 0
+    set_store(lambda s: setattr(s, "count", 0))
+    flush()
+    assert memo() == 0
+    assert len(runs) == 1
+
+
+def test_memo_tracks_list_length(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: len(store.items))
+    assert memo() == 2
+
+    set_store(lambda s: setattr(s.items[0], "done", True))
+    flush()
+    assert memo() == 2
+    assert len(runs) == 1
+
+    set_store(lambda s: s.items.append({"id": 3, "text": "c", "done": False}))
+    flush()
+    assert memo() == 3
+    assert len(runs) == 2
+
+    def pop_last(s):
+        # A bare ``lambda s: s.items.pop()`` would return the popped dict, which the
+        # setter would merge in as replacement state.
+        s.items.pop()
+
+    set_store(pop_last)
+    flush()
+    assert memo() == 2
+    assert len(runs) == 3
+
+
+def test_memo_tracks_iteration(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: list(store.nums))
+    assert memo() == [1, 2, 3]
+
+    set_store(lambda s: s.nums.__setitem__(1, 20))
+    flush()
+    assert memo() == [1, 20, 3]
+    assert len(runs) == 2
+
+    set_store(lambda s: s.nums.append(4))
+    flush()
+    assert memo() == [1, 20, 3, 4]
+    assert len(runs) == 3
+
+    set_store(lambda s: setattr(s, "count", 5))
+    flush()
+    assert len(runs) == 3
+
+
+def test_memo_tracks_one_list_item_field(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: store.items[0].done)
+    assert memo() is False
+
+    set_store(lambda s: setattr(s.items[1], "done", False))
+    flush()
+    assert memo() is False
+    assert len(runs) == 1
+
+    set_store(lambda s: setattr(s.items[0], "done", True))
+    flush()
+    assert memo() is True
+    assert len(runs) == 2
+
+
+def test_memo_tracks_membership_and_dict_len(wyb):
+    store, set_store = create_store({"a": 1})
+    memo, runs = _counting_memo(lambda: ("b" in store, len(store)))
+    assert memo() == (False, 1)
+    set_store(lambda s: setattr(s, "b", 2))
+    flush()
+    assert memo() == (True, 2)
+    assert len(runs) == 2
+
+
+def test_effect_first_run_deferred_and_reruns_on_change(wyb):
+    store, set_store = _sample()
+    log = []
+    create_effect(lambda: store.count, lambda v: log.append(v))
+    assert log == []
+    flush()
+    assert log == [0]
+
+    set_store(lambda s: setattr(s, "count", 1))
+    assert log == [0]
+    flush()
+    assert log == [0, 1]
+
+    set_store(lambda s: setattr(s.user, "name", "Grace"))
+    flush()
+    assert log == [0, 1]
+
+
+def test_single_form_effect_tracks_nested_paths(wyb):
+    store, set_store = _sample()
+    log = []
+    create_effect(lambda: log.append((store.user.name, len(store.nums))))
+    flush()
+    assert log == [("Ada", 3)]
+
+    set_store(lambda s: s.nums.append(4))
+    flush()
+    assert log == [("Ada", 3), ("Ada", 4)]
+
+
+def test_effect_disposed_with_root_stops_tracking(wyb):
+    store, set_store = _sample()
+    log = []
+
+    def setup(dispose):
+        create_effect(lambda: store.count, lambda v: log.append(v))
+        return dispose
+
+    dispose = create_root(setup)
+    flush()
+    assert log == [0]
+    dispose()
+    set_store(lambda s: setattr(s, "count", 1))
+    flush()
+    assert log == [0]
+
+
+def test_untracked_reads_do_not_subscribe(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: untrack(lambda: store.count))
+    assert memo() == 0
+    set_store(lambda s: setattr(s, "count", 3))
+    flush()
+    assert memo() == 0
+    assert len(runs) == 1
+
+
+# ---------------------------------------------------------------------------
+# snapshot / deep
+# ---------------------------------------------------------------------------
+
+
+def test_snapshot_returns_plain_data(wyb):
+    initial = {"count": 0, "user": {"name": "Ada"}, "nums": [1, 2]}
+    store, _ = create_store(initial)
+    raw = snapshot(store)
+    assert raw is initial
+    assert type(raw) is dict
+    assert type(raw["user"]) is dict
+    assert type(snapshot(store.nums)) is list
+    assert snapshot(store.user) is initial["user"]
+    assert snapshot(42) == 42
+
+
+def test_snapshot_is_untracked(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: snapshot(store)["count"])
+    assert memo() == 0
+    set_store(lambda s: setattr(s, "count", 7))
+    flush()
+    assert memo() == 0
+    assert len(runs) == 1
+    assert snapshot(store)["count"] == 7
+
+
+def test_deep_returns_plain_copy(wyb):
+    store, _ = _sample()
+    copy_ = deep(store)
+    assert copy_ == snapshot(store)
+    assert copy_ is not snapshot(store)
+    assert copy_["user"] is not snapshot(store)["user"]
+    assert type(copy_["items"]) is list
+    copy_["user"]["name"] = "Mutated"
+    assert store.user.name == "Ada"
+    assert deep(5) == 5
+
+
+def test_deep_tracks_nested_changes(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: deep(store)["items"][1]["text"])
+    assert memo() == "b"
+
+    set_store(lambda s: setattr(s.items[0], "done", True))
+    flush()
+    assert memo() == "b"
+    assert len(runs) == 2
+
+    set_store(lambda s: setattr(s.items[1], "text", "B"))
+    flush()
+    assert memo() == "B"
+    assert len(runs) == 3
+
+
+def test_deep_on_nested_proxy(wyb):
+    store, set_store = _sample()
+    memo, runs = _counting_memo(lambda: deep(store.user))
+    assert memo() == {"name": "Ada", "age": 36}
+    assert type(memo()) is dict
+
+    set_store(lambda s: setattr(s.user, "age", 37))
+    flush()
+    assert memo() == {"name": "Ada", "age": 37}
+    assert len(runs) == 2
+
+    log = []
+    create_effect(lambda: deep(store.nums), lambda d: log.append(d))
+    flush()
+    set_store(lambda s: s.nums.append(4))
+    flush()
+    assert log == [[1, 2, 3], [1, 2, 3, 4]]
+
+
+# ---------------------------------------------------------------------------
+# Derived stores and projections
+# ---------------------------------------------------------------------------
+
+
+def test_derived_store_draft_form_recomputes(wyb):
+    n, set_n = create_signal(2)
+    stats, _ = create_store(lambda d: d.update({"double": n() * 2}), {"double": 0})
+    flush()
+    assert stats.double == 4
+    set_n(5)
+    flush()
+    assert stats.double == 10
+
+
+def test_derived_store_zero_arg_form_reconciles(wyb):
+    items, set_items = create_signal([{"id": 1, "v": 1}])
+    mirror, _ = create_store(lambda: items(), [])
+    flush()
+    assert snapshot(mirror) == [{"id": 1, "v": 1}]
+    first = snapshot(mirror)[0]
+
+    set_items([{"id": 1, "v": 1}, {"id": 2, "v": 3}])
+    flush()
+    assert snapshot(mirror) == [{"id": 1, "v": 1}, {"id": 2, "v": 3}]
+    assert snapshot(mirror)[0] is first
+    assert mirror[1].v == 3
+
+
+def test_derived_store_is_fine_grained(wyb):
+    a, set_a = create_signal(1)
+    b, set_b = create_signal(1)
+    derived, _ = create_store(lambda d: d.update({"a": a(), "b": b()}), {"a": 0, "b": 0})
+    flush()
+    memo, runs = _counting_memo(lambda: derived.a)
+    assert memo() == 1
+
+    set_b(2)
+    flush()
+    assert derived.b == 2
+    assert memo() == 1
+    assert len(runs) == 1
+
+    set_a(3)
+    flush()
+    assert memo() == 3
+    assert len(runs) == 2
+
+
+def test_create_projection_tracks_sources(wyb):
+    sel, set_sel = create_signal(1)
+    proj = create_projection(lambda d: d.update({"selected": sel()}), {"selected": None})
+    flush()
+    assert proj.selected == 1
+    set_sel(7)
+    flush()
+    assert proj.selected == 7
+
+
+def test_create_projection_zero_arg_and_read_only(wyb):
+    sel, set_sel = create_signal("x")
+    proj = create_projection(lambda: {"selected": sel()}, {"selected": None})
+    flush()
+    assert proj.selected == "x"
+    set_sel("y")
+    flush()
+    assert proj.selected == "y"
+    with pytest.raises(AttributeError):
+        proj.selected = "z"
+    with pytest.raises(TypeError):
+        proj["selected"] = "z"
+
+
+def test_projection_from_store_source(wyb):
+    store, set_store = _sample()
+    proj = create_projection(lambda d: d.update({"open": sum(1 for t in store.items if not t.done)}), {"open": 0})
+    flush()
+    assert proj.open == 1
+    set_store(lambda s: setattr(s.items[1], "done", False))
+    flush()
+    assert proj.open == 2
+
+
+# ---------------------------------------------------------------------------
+# Optimistic stores
+# ---------------------------------------------------------------------------
+
+
+def test_optimistic_store_value_form_applies_writes(wyb):
+    shown, set_shown = create_optimistic_store({"n": 0, "items": []})
+    assert shown.n == 0
+
+    def edit(s):
+        s.n = 1
+        s.items.append("x")
+
+    set_shown(edit)
+    flush()
+    assert shown.n == 1
+    assert list(shown.items) == ["x"]
+    assert snapshot(shown) == {"n": 1, "items": ["x"]}
+
+
+def test_optimistic_store_value_form_reverts_when_action_settles(wyb):
+    async def main():
+        shown, set_shown = create_optimistic_store({"n": 0})
+        gate = asyncio.Event()
+
+        @action
+        async def bump():
+            set_shown(lambda s: setattr(s, "n", 1))
+            await gate.wait()
+
+        bump()
         flush()
-        assert seen == [0, 5]
-        eff.dispose()
-
-    def test_effect_tracks_nested_read(self):
-        store, set_store = create_store({"user": {"name": "Ada"}})
-        seen = []
-
-        def watcher():
-            seen.append(store.user.name)
-
-        eff = effect(watcher)
-        assert seen == ["Ada"]
-
-        set_store(lambda s: setattr(s.user, "name", "Jane"))
+        assert shown.n == 1
+        assert bump.pending() is True
+        gate.set()
+        await asyncio.sleep(0.01)
         flush()
-        assert seen == ["Ada", "Jane"]
-        eff.dispose()
+        assert shown.n == 0
+        assert bump.pending() is False
 
-    def test_effect_tracks_list_item(self):
-        store, set_store = create_store({"items": ["a", "b"]})
-        seen = []
+    asyncio.run(main())
 
-        def watcher():
-            seen.append(store.items[0])
 
-        eff = effect(watcher)
-        assert seen == ["a"]
-
-        set_store(lambda s: s.items.__setitem__(0, "z"))
+def test_optimistic_store_derived_form_reverts_to_source(wyb):
+    async def main():
+        todos, set_todos = create_store({"items": []})
+        shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
         flush()
-        assert seen == ["a", "z"]
-        eff.dispose()
+        assert snapshot(shown) == []
+        gate = asyncio.Event()
 
-    def test_unrelated_leaf_does_not_notify(self):
-        """Mutating one leaf must not re-run effects reading another."""
-        store, set_store = create_store({"a": 1, "b": 2})
-        a_runs = []
-        b_runs = []
-        effect(lambda: a_runs.append(store.a))
-        effect(lambda: b_runs.append(store.b))
-        assert (a_runs, b_runs) == ([1], [2])
+        @action
+        async def add(title):
+            set_shown(lambda s: s.append({"id": 99, "title": title, "saving": True}))
+            await gate.wait()
+            set_todos(lambda s: s.items.append({"id": 1, "title": title}))
 
-        set_store(lambda s: setattr(s, "a", 100))
+        add("x")
         flush()
-        assert a_runs == [1, 100]
-        assert b_runs == [2], "b's effect must not re-run"
-
-    def test_effect_tracks_list_length(self):
-        store, set_store = create_store({"items": [1, 2, 3]})
-        seen = []
-
-        def watcher():
-            seen.append(len(store.items))
-
-        eff = effect(watcher)
-        assert seen == [3]
-
-        set_store(lambda s: s.items.append(4))
+        assert len(shown) == 1
+        assert shown[0].saving is True
+        gate.set()
+        await asyncio.sleep(0.01)
         flush()
-        assert seen[-1] == 4
-        eff.dispose()
+        assert snapshot(shown) == [{"id": 1, "title": "x"}]
 
-    def test_create_effect_with_store(self):
-        store, set_store = create_store({"value": "hello"})
-        log = []
+    asyncio.run(main())
 
-        comp = create_effect(lambda: log.append(store.value))
-        assert log == ["hello"]
 
-        set_store(lambda s: setattr(s, "value", "world"))
-        flush()
-        assert log == ["hello", "world"]
-        comp.dispose()
+def test_optimistic_store_derived_form_follows_source_changes(wyb):
+    base, set_base = create_signal({"n": 1})
+    shown, _ = create_optimistic_store(lambda: base(), {"n": 0})
+    flush()
+    assert shown.n == 1
+    set_base({"n": 2})
+    flush()
+    assert shown.n == 2
 
 
-# --------------------------------------------------------------------------- #
-# Draft mutations (the former `produce` behavior, now the only way)
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# Dev-mode guards
+# ---------------------------------------------------------------------------
 
 
-class TestDraftMutations:
-    def test_draft_setattr(self):
-        store, set_store = create_store({"count": 0})
-        set_store(lambda s: setattr(s, "count", 42))
-        assert store.count == 42
+def test_write_inside_memo_raises_write_in_scope_error(wyb, monkeypatch):
+    monkeypatch.setattr(_warnings, "DEV_MODE", True)
+    store, set_store = _sample()
 
-    def test_draft_nested_setattr(self):
-        store, set_store = create_store({"user": {"name": "Ada"}})
-        set_store(lambda s: setattr(s.user, "name", "Jane"))
-        assert store.user.name == "Jane"
+    def compute():
+        store.count
+        set_store(lambda s: setattr(s, "count", 1))
 
-    def test_draft_list_append(self):
-        store, set_store = create_store({"items": [1, 2]})
-        set_store(lambda s: s.items.append(3))
-        assert list(store.items) == [1, 2, 3]
+    memo = create_memo(compute)
+    with pytest.raises(WriteInScopeError):
+        memo()
 
-    def test_draft_list_pop(self):
-        store, set_store = create_store({"items": [1, 2, 3]})
-        set_store(lambda s: s.items.pop(-1))
-        assert list(store.items) == [1, 2]
 
-    def test_draft_list_item_set(self):
-        store, set_store = create_store({"items": ["a", "b", "c"]})
-        set_store(lambda s: s.items.__setitem__(1, "B"))
-        assert store.items[1] == "B"
+def test_write_inside_effect_compute_routes_to_error_handler(wyb, monkeypatch):
+    monkeypatch.setattr(_warnings, "DEV_MODE", True)
+    store, set_store = _sample()
+    errs = []
+    create_effect(lambda: (store.count, set_store(lambda s: None)), error=lambda e: errs.append(e))
+    flush()
+    assert len(errs) == 1
+    assert isinstance(errs[0], WriteInScopeError)
 
-    def test_draft_nested_dict_in_list(self):
-        store, set_store = create_store({"todos": [{"text": "Test", "done": False}]})
-        set_store(lambda s: setattr(s.todos[0], "done", True))
-        assert store.todos[0].done is True
 
-    def test_draft_triggers_reactivity(self):
-        store, set_store = create_store({"count": 0})
-        seen = []
-
-        eff = effect(lambda: seen.append(store.count))
-        assert seen == [0]
-
-        set_store(lambda s: setattr(s, "count", 99))
-        flush()
-        assert seen == [0, 99]
-        eff.dispose()
-
-    def test_draft_multiple_mutations(self):
-        store, set_store = create_store({"a": 1, "b": 2})
-
-        def mutate(s):
-            s.a = 10
-            s.b = 20
-
-        set_store(mutate)
-        assert store.a == 10
-        assert store.b == 20
-
-    def test_draft_multiple_mutations_flush_once(self):
-        """Several draft writes settle in one effect run."""
-        store, set_store = create_store({"a": 1, "b": 2})
-        runs = [0]
-
-        def watcher():
-            runs[0] += 1
-            store.a, store.b  # noqa: B018 - reads for tracking
-
-        effect(watcher)
-        assert runs[0] == 1
-
-        def mutate(s):
-            s.a = 10
-            s.b = 20
-
-        set_store(mutate)
-        flush()
-        assert runs[0] == 2, "two leaf writes coalesce into one effect run"
-
-    def test_draft_pop_front_updates_indices(self):
-        """Popping index 0 should shift all per-index values."""
-        store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
-        assert store.items[0].v == "A"
-
-        set_store(lambda s: s.items.pop(0))
-        assert len(store.items) == 2
-        assert store.items[0].v == "B"
-        assert store.items[1].v == "C"
-
-    def test_draft_pop_middle_updates_indices(self):
-        """Popping from the middle should shift subsequent indices."""
-        store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}, {"v": "D"}]})
-        assert store.items[1].v == "B"
-
-        set_store(lambda s: s.items.pop(1))
-        assert len(store.items) == 3
-        assert store.items[0].v == "A"
-        assert store.items[1].v == "C"
-        assert store.items[2].v == "D"
-
-    def test_draft_pop_front_triggers_effect(self):
-        """Effects reading list items should see correct values after pop(0)."""
-        store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
-        seen: list = []
-
-        def watcher():
-            seen.clear()
-            for item in store.items:
-                seen.append(item.v)
-
-        eff = effect(watcher)
-        assert seen == ["A", "B", "C"]
-
-        set_store(lambda s: s.items.pop(0))
-        flush()
-        assert seen == ["B", "C"]
-        eff.dispose()
-
-    def test_draft_append_then_pop_front(self):
-        """Append followed by pop(0) should leave correct items."""
-        store, set_store = create_store({"items": [{"v": "A"}]})
-        assert store.items[0].v == "A"
-
-        set_store(lambda s: s.items.append({"v": "B"}))
-        assert len(store.items) == 2
-        assert store.items[1].v == "B"
-
-        set_store(lambda s: s.items.pop(0))
-        assert len(store.items) == 1
-        assert store.items[0].v == "B"
-
-    def test_draft_read_during_mutation(self):
-        """Draft reads should return current values."""
-        store, set_store = create_store({"x": 10, "y": 20})
-        captured = []
-
-        def mutate(s):
-            captured.append(s.x)
-            s.y = s.x + 5
-
-        set_store(mutate)
-        assert captured == [10]
-        assert store.y == 15
-
-    def test_draft_list_insert_remove_extend_clear(self):
-        store, set_store = create_store({"items": [1, 3]})
-        set_store(lambda s: s.items.insert(1, 2))
-        assert list(store.items) == [1, 2, 3]
-
-        set_store(lambda s: s.items.remove(2))
-        assert list(store.items) == [1, 3]
-
-        set_store(lambda s: s.items.extend([4, 5]))
-        assert list(store.items) == [1, 3, 4, 5]
-
-        set_store(lambda s: s.items.clear())
-        assert list(store.items) == []
-
-
-# --------------------------------------------------------------------------- #
-# Edge cases
-# --------------------------------------------------------------------------- #
-
-
-class TestStoreEdgeCases:
-    def test_deeply_nested(self):
-        store, set_store = create_store({"a": {"b": {"c": {"d": 42}}}})
-        assert store.a.b.c.d == 42
-        set_store(lambda s: setattr(s.a.b.c, "d", 100))
-        assert store.a.b.c.d == 100
-
-    def test_set_replaces_entire_nested_dict(self):
-        store, set_store = create_store({"user": {"name": "Ada", "age": 30}})
-        set_store(lambda s: setattr(s, "user", {"name": "Jane", "age": 25}))
-        assert store.user.name == "Jane"
-        assert store.user.age == 25
-
-    def test_set_replaces_entire_list(self):
-        store, set_store = create_store({"items": [1, 2, 3]})
-        set_store(lambda s: setattr(s, "items", [4, 5]))
-        assert list(store.items) == [4, 5]
-
-    def test_none_values(self):
-        store, _ = create_store({"nullable": None})
-        assert store.nullable is None
-
-    def test_boolean_values(self):
-        store, set_store = create_store({"flag": False})
-        assert store.flag is False
-        set_store(lambda s: setattr(s, "flag", True))
-        assert store.flag is True
-
-    def test_numeric_values(self):
-        store, set_store = create_store({"pi": 3.14})
-        assert store.pi == 3.14
-        set_store(lambda s: setattr(s, "pi", 3.14159))
-        assert store.pi == 3.14159
-
-    def test_list_proxy_repr(self):
-        store, _ = create_store({"items": [1, 2]})
-        r = repr(store.items)
-        assert "1" in r and "2" in r
-
-    def test_list_proxy_equality(self):
-        store, _ = create_store({"items": [1, 2, 3]})
-        assert store.items == [1, 2, 3]
-
-    # ---- list replacement / pop correctness ---- #
-
-    def test_list_filter_removes_correct_item(self):
-        """Filtering a list via replacement should remove the right item.
-
-        Regression test for a bug where removing index 0 actually dropped the
-        last item because child-node signals were not refreshed after the list
-        reference was replaced.
-        """
-        store, set_store = create_store(
-            {
-                "todos": [
-                    {"id": 1, "text": "first", "done": True},
-                    {"id": 2, "text": "second", "done": False},
-                    {"id": 3, "text": "third", "done": False},
-                    {"id": 4, "text": "fourth", "done": False},
-                ]
-            }
-        )
-
-        assert store.todos[0].text == "first"
-
-        from wybthon.store import unwrap
-
-        set_store(lambda s: setattr(s, "todos", [t for i, t in enumerate(unwrap(store)["todos"]) if i != 0]))
-
-        assert len(store.todos) == 3
-        assert store.todos[0].text == "second"
-        assert store.todos[1].text == "third"
-        assert store.todos[2].text == "fourth"
-
-    def test_list_filter_with_effect(self):
-        """Effects tracking list items should see correct values after filter."""
-        from wybthon.store import unwrap
-
-        store, set_store = create_store(
-            {
-                "todos": [
-                    {"id": 1, "text": "A"},
-                    {"id": 2, "text": "B"},
-                    {"id": 3, "text": "C"},
-                ]
-            }
-        )
-        texts: list = []
-
-        def watcher():
-            texts.clear()
-            for item in store.todos:
-                texts.append(item.text)
-
-        eff = effect(watcher)
-        assert texts == ["A", "B", "C"]
-
-        set_store(lambda s: setattr(s, "todos", [t for t in unwrap(store)["todos"] if t["id"] != 1]))
-        flush()
-        assert texts == ["B", "C"]
-
-        set_store(lambda s: setattr(s, "todos", [t for t in unwrap(store)["todos"] if t["id"] != 3]))
-        flush()
-        assert texts == ["B"]
-        eff.dispose()
-
-    def test_replace_list_with_scalars_after_nested_reads(self):
-        """Replacing a list of dicts with scalars after reading nested props."""
-        store, set_store = create_store({"items": [{"name": "A"}, {"name": "B"}]})
-        assert store.items[0].name == "A"
-        assert store.items[1].name == "B"
-
-        set_store(lambda s: setattr(s, "items", [10, 20]))
-        assert store.items[0] == 10
-        assert store.items[1] == 20
-
-    def test_multiple_sequential_list_replacements(self):
-        """Multiple list replacements with reads between each."""
-        from wybthon.store import unwrap
-
-        store, set_store = create_store({"items": [{"v": "A"}, {"v": "B"}, {"v": "C"}]})
-        assert store.items[0].v == "A"
-
-        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "A"]))
-        assert store.items[0].v == "B"
-        assert store.items[1].v == "C"
-
-        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "B"]))
-        assert len(store.items) == 1
-        assert store.items[0].v == "C"
-
-        set_store(lambda s: setattr(s, "items", [t for t in unwrap(store)["items"] if t["v"] != "C"]))
-        assert len(store.items) == 0
-
-    def test_replace_nested_dict_after_reading_children(self):
-        """Replacing a nested dict should update child signals."""
-        store, set_store = create_store({"user": {"name": "Ada", "address": {"city": "London"}}})
-        assert store.user.address.city == "London"
-
-        set_store(lambda s: setattr(s, "user", {"name": "Jane", "address": {"city": "Paris"}}))
-        assert store.user.name == "Jane"
-        assert store.user.address.city == "Paris"
-
-    def test_grow_and_shrink_list_repeatedly(self):
-        """Grow then shrink a list multiple times."""
-        store, set_store = create_store({"items": []})
-
-        set_store(lambda s: setattr(s, "items", [1, 2, 3]))
-        assert list(store.items) == [1, 2, 3]
-
-        set_store(lambda s: setattr(s, "items", [1]))
-        assert list(store.items) == [1]
-        assert len(store.items) == 1
-
-        set_store(lambda s: setattr(s, "items", [10, 20, 30, 40]))
-        assert list(store.items) == [10, 20, 30, 40]
-        assert len(store.items) == 4
+def test_write_from_effect_apply_stage_is_allowed(wyb, monkeypatch):
+    monkeypatch.setattr(_warnings, "DEV_MODE", True)
+    store, set_store = _sample()
+    create_effect(lambda: store.count, lambda v: set_store(lambda s: setattr(s, "doubled", v * 2)))
+    flush()
+    assert store.doubled == 0
+    set_store(lambda s: setattr(s, "count", 4))
+    flush()
+    assert store.doubled == 8

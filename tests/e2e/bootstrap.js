@@ -4,7 +4,7 @@
 // It records boot status on `window` so the Playwright harness can detect a
 // failed boot deterministically (instead of timing out).
 
-const PYODIDE_VERSION = "0.25.1";
+const PYODIDE_VERSION = "314.0.6";
 const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
 
 window.__WYB_E2E_READY = false;

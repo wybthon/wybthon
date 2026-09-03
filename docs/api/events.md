@@ -2,87 +2,78 @@
 
 ::: wybthon.events
 
-Wybthon's event system provides kernel-delegated event handling and a payload-backed `DomEvent` object.
+#### What's in this module
 
-- `DomEvent`: built from a JSON payload assembled natively at dispatch time, with `type`, `target` (payload-backed view with `value`/`checked`/`files`/`element`), `current_target` (an id-backed `Element`), keyboard and mouse fields (`key`, `code`, modifier flags, `button`, `client_x`, `client_y`), `prevent_default()`, `stop_propagation()`, and `raw` (the native event, escape hatch).
-- Handlers can be attached via props like `on_click`, `on_input`, or `onChange`. Names are normalized to DOM event types.
-- Delegation is automatic and handlers are cleaned up on unmount. Document-level delegated listeners are installed on first use per event type and are automatically removed when no handlers remain for that type (e.g., after unmount/diff removes all handlers).
+Event handling is **delegated at the render root**. The JS kernel
+installs one native listener per event type on each container passed to
+[`render`][wybthon.render] (falling back to `document` when no root is
+registered), walks the ancestor chain natively when an event fires, and
+calls into Python once per matched handler with a small JSON payload.
+Handlers receive a [`DomEvent`][wybthon.DomEvent] built from that
+payload, so the common reads (`evt.target.value`, `evt.key`) never touch
+a `JsProxy`. Registering a handler is itself a batched `LISTEN` op.
 
-#### Naming and normalization
+| Name | Description |
+| --- | --- |
+| [`DomEvent`][wybthon.DomEvent] | The event object: `type`, `target` (`.value`, `.checked`, `.files`, `.element`), `current_target`, `key`, `code`, `alt_key`, `ctrl_key`, `meta_key`, `shift_key`, `button`, `client_x`, `client_y`, `prevent_default()`, `stop_propagation()`, `raw`. |
 
-- Any prop starting with `on_` or `on` is treated as an event handler and normalized to a DOM event type.
-- Normalization rules:
-  - `on_click` becomes "click"
-  - `onInput`/`on_input` becomes "input"
-  - `onClick`/`onclick` becomes "click"
-  - In general: remove the `on`/`on_` prefix and lowercase the remainder.
+`set_handler`, `remove_handlers_for`, and `dispatch_event` are internal
+entry points used by the renderer and the kernel.
 
-Handler signature:
+#### Handler props
 
-- All handlers receive a `DomEvent` object. Use `evt.prevent_default()` and `evt.stop_propagation()` as needed. Access the original JS event via `evt.raw` only if absolutely necessary, and only synchronously during dispatch.
-
-#### Delegation and bubbling
-
-Delegation runs inside the rendering kernel: one native document-level listener per event type walks up from the original `target`, and calls into Python once per node that registered a handler for that type, passing the payload as a single JSON string. Handler registration (`LISTEN`/`UNLISTEN`) rides the batched op buffer, so wiring thousands of handlers costs no extra bridge crossings. `stop_propagation()` prevents further delegated bubbling and stops native propagation.
-
-Cleanup guarantees:
-
-- When a node is unmounted, its handlers are dropped on the Python side, and the kernel's listener bookkeeping is cleared by the `RELEASE` op that retires the subtree's node ids.
-- When the last handler for an event type is removed across the entire document (e.g., via unmount or by diffing a handler to `None`), the document-level listener for that event type is automatically removed.
-
-#### Common event types
-
-You can attach handlers for any standard DOM event that bubbles. Commonly used types include:
-
-- Mouse: `click`, `dblclick`, `mousedown`, `mouseup`, `mousemove`, `mouseover`, `mouseout`, `contextmenu`, `wheel`
-- Keyboard: `keydown`, `keyup` (avoid deprecated `keypress`)
-- Input and form: `input`, `change`, `submit`, `reset`
-- Focus: use `focusin` and `focusout` (see non-bubbling notes below)
-- Pointer: `pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointercancel`
-- Touch: `touchstart`, `touchmove`, `touchend`, `touchcancel`
-- Composition/IME: `compositionstart`, `compositionupdate`, `compositionend`
-- Drag and drop: `dragstart`, `dragend`, `dragenter`, `dragleave`, `dragover`, `drop`
-
-Wybthon doesn't restrict event type names; if the browser fires it and it bubbles, the delegated listener will see it.
-
-#### Non-bubbling and special-case events
-
-Because Wybthon uses document-level delegation, event types that don't bubble won't trigger handlers when attached via props. Use the suggested alternatives or attach a direct native listener through Pyodide using a `Ref`.
-
-- Use `focusin`/`focusout` instead of `focus`/`blur` (which don't bubble).
-- Use `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave` (which don't bubble).
-- Many media events (e.g., `play`, `pause`) and `scroll` don't bubble; attach direct listeners to the element or use `window`/`document` as appropriate.
-
-Direct listeners example (when you need non-bubbling events or options like `passive`: False). Wrap the handler in `create_proxy` so Pyodide keeps it alive, and remove it on cleanup:
+- Any prop named `on_<type>` (or `on<Type>`) is a handler: `on_click`,
+  `on_input`, `on_keydown`, `onChange`. The prefix is stripped and the
+  remainder lower-cased to get the DOM event type.
+- Handlers take one argument, the `DomEvent`. Signal writes made inside
+  a handler are flushed automatically when it returns, so the DOM
+  updates before the browser paints.
+- `evt.raw` is the native event and is valid only synchronously during
+  dispatch.
 
 ```python
-from pyodide.ffi import create_proxy
+from wybthon import DomEvent, create_signal, form, input_, ul, li
 
-from wybthon import Ref, component, h, on_cleanup, on_mount
+items, set_items = create_signal([])
+draft, set_draft = create_signal("")
 
-@component
-def Video():
-    ref = Ref()
-    proxy = create_proxy(lambda e: print("playing"))
+def submit(evt: DomEvent) -> None:
+    evt.prevent_default()
+    set_items(lambda xs: [*xs, draft.peek()])
+    set_draft("")
 
-    def setup():
-        if ref.current is not None:
-            ref.current.element.addEventListener("play", proxy)
+def keydown(evt: DomEvent) -> None:
+    if evt.key == "Escape":
+        set_draft("")
 
-    def teardown():
-        if ref.current is not None:
-            ref.current.element.removeEventListener("play", proxy)
-        proxy.destroy()
-
-    on_mount(setup)
-    on_cleanup(teardown)
-
-    return h("video", {"ref": ref})
+view = form(
+    input_(value=draft, on_input=lambda e: set_draft(e.target.value), on_keydown=keydown),
+    ul(lambda: [li(x) for x in items()]),
+    on_submit=submit,
+)
 ```
 
-#### Pyodide and cross-browser notes
+#### Delegation notes
 
-- Event delegation relies on bubbling to `document`. For non-bubbling types, prefer the alternatives above or attach direct listeners via `addEventListener` and a `Ref`.
-- Chrome/Edge may treat `touchstart`/`touchmove` listeners on `document` as passive by default, making `preventDefault()` a no-op. If you need to prevent scrolling, attach a direct listener with `{"passive": False}` options and a `Ref`.
-- `keypress` is deprecated and may behave inconsistently across browsers; prefer `keydown`/`keyup`.
-- The `DomEvent` object exposes a stable, Python-friendly surface backed by the dispatch payload. Accessing `evt.raw` is possible but not recommended for portability across Pyodide and non-browser tests.
+- Because delegation relies on bubbling, non-bubbling types don't reach
+  prop handlers. Use `focusin`/`focusout` instead of `focus`/`blur`, and
+  `mouseover`/`mouseout` instead of `mouseenter`/`mouseleave`. For
+  `scroll`, media events, or listener options such as `passive`, attach
+  a native listener through a [`Ref`][wybthon.Ref] inside
+  [`on_settled`][wybthon.on_settled] and remove it in the cleanup it
+  returns.
+- `stop_propagation()` stops both the delegated walk and native
+  propagation; `prevent_default()` is applied by the kernel after the
+  handler returns.
+- Unmounting a subtree drops its handlers on the Python side, and the
+  `RELEASE` op clears the kernel's listener bookkeeping. `Root.dispose()`
+  unregisters the container as a delegation root.
+- In CPython tests the stub backend exposes `dispatch(event_type, node)`
+  to run the handler chain; see the [testing guide](../guides/testing.md).
+
+#### See also
+
+- [Props](props.md): how handler props are recognized
+- [Kernel](kernel.md): `LISTEN`, `UNLISTEN`, `ROOT`, and the dispatch payload
+- [Concepts: Events](../concepts/events.md)
+- [Concepts: Forms](../concepts/forms.md)

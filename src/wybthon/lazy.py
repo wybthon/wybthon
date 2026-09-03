@@ -5,7 +5,7 @@ produces a component. The component loads on first mount, backed by an
 async [`create_memo`][wybthon.create_memo]: while the load is in
 flight, the nearest [`Loading`][wybthon.Loading] boundary shows its
 fallback, and a load failure raises into the nearest
-[`ErrorBoundary`][wybthon.ErrorBoundary]. This matches SolidJS's
+[`Errored`][wybthon.Errored] boundary. This matches SolidJS's
 `lazy(() => import(...))` semantics, adapted to Python's import system.
 
 The loader may return:
@@ -32,7 +32,7 @@ Example:
     Chart = lazy(load_chart)
     Chart.preload()  # warm the cache on hover/intent
 
-    Loading(fallback=p("Loading..."), children=[About()])
+    Loading(lambda: About(), fallback=p("Loading..."))
     ```
 
 See Also:
@@ -43,26 +43,23 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Awaitable as AbcAwaitable
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
-from .reactivity import ReactiveProps, create_memo, latest, run_with_owner
-from .vnode import VNode, dynamic, h, to_text_vnode
+from .component import Component
+from .reactivity._core import Memo, run_with_owner
+from .reactivity._primitives import create_memo, latest
+from .reactivity._props import Props
+from .vnode import VNode, h
 
 __all__ = ["lazy"]
 
 
-def _resolve_attr(mod: Any, attr: Optional[str]) -> Any:
+def _resolve_attr(mod: Any, attr: str | None) -> Any:
     """Pick an exported component from `mod`, by name or by convention.
 
     When `attr` is omitted, prefers `Page`, then `default`, then the
     first callable export.
-
-    Args:
-        mod: The imported module.
-        attr: Optional attribute name to resolve.
-
-    Returns:
-        The resolved component object.
 
     Raises:
         AttributeError: When no suitable export can be found.
@@ -99,22 +96,61 @@ def _coerce_component(result: Any) -> Any:
     raise TypeError(f"lazy loader returned {result!r}, which is not a component, module, or module path")
 
 
-def _props_to_dict(props: Any) -> Dict[str, Any]:
-    """Convert [`ReactiveProps`][wybthon.ReactiveProps] (or a plain dict) into a snapshot."""
-    if isinstance(props, ReactiveProps):
-        return {k: props.value(k) for k in props}
-    return dict(props) if hasattr(props, "items") else {}
+class LazyComponent(Component):
+    """A component returned by [`lazy`][wybthon.lazy]; call `.preload()` to load early."""
+
+    def __init__(self, loader: Callable[[], Any]) -> None:
+        self._loader = loader
+        self._memo: Memo[Any] | None = None
+        super().__init__(self._render_lazy)
+        self.__name__ = "lazy"
+        self.__qualname__ = "lazy"
+
+    async def _load(self) -> Any:
+        result = self._loader()
+        if isinstance(result, AbcAwaitable):
+            result = await result
+        return _coerce_component(result)
+
+    def _ensure_memo(self) -> Memo[Any]:
+        memo = self._memo
+        if memo is None:
+            # Detached from the mounting component's ownership so the
+            # loaded component stays cached across unmounts.
+            memo = run_with_owner(None, lambda: create_memo(lambda: self._load()))
+            self._memo = memo
+        return memo
+
+    def _render_lazy(self, props: Props) -> Any:
+        memo = self._ensure_memo()
+
+        def render() -> VNode | None:
+            comp = memo()  # raises NotReadyError while loading
+            if comp is None:
+                return None
+            forwarded = {k: props.raw(k) for k in props}
+            children = forwarded.pop("children", None)
+            if children is None:
+                return h(comp, forwarded)
+            if not isinstance(children, list):
+                children = [children]
+            return h(comp, forwarded, *children)
+
+        return render
+
+    def preload(self) -> None:
+        """Start loading now (a no-op when already loading or loaded)."""
+        latest(self._ensure_memo())
 
 
-def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
+def lazy(loader: Callable[[], Any]) -> LazyComponent:
     """Create a lazily-loaded component from a loader callback.
 
-    The loader runs once, on the first mount (or on
-    [`preload`](#preload)); the resolved component is cached for every
-    later mount. While loading, the nearest
-    [`Loading`][wybthon.Loading] boundary shows its fallback. A loader
-    error raises into the nearest
-    [`ErrorBoundary`][wybthon.ErrorBoundary].
+    The loader runs once, on the first mount (or on `.preload()`); the
+    resolved component is cached for every later mount. While loading,
+    the nearest [`Loading`][wybthon.Loading] boundary shows its
+    fallback. A loader error raises into the nearest
+    [`Errored`][wybthon.Errored] boundary.
 
     Args:
         loader: Zero-arg callable, sync or async, returning a component
@@ -122,8 +158,8 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
             `(module_path, attr)` tuple.
 
     Returns:
-        A component callable with a `.preload()` method that starts the
-        load early.
+        A component with a `.preload()` method that starts the load
+        early.
 
     Example:
         ```python
@@ -133,41 +169,4 @@ def lazy(loader: Callable[[], Any]) -> Callable[..., Any]:
         Link("Team", href="/about/team", on_mouseenter=lambda e: Team.preload())
         ```
     """
-    holder: Dict[str, Optional[Callable[[], Any]]] = {"memo": None}
-
-    async def _load() -> Any:
-        result = loader()
-        if isinstance(result, AbcAwaitable):
-            result = await result
-        return _coerce_component(result)
-
-    def _ensure_memo() -> Callable[[], Any]:
-        memo = holder["memo"]
-        if memo is None:
-            # Detach from the mounting component's ownership so the
-            # loaded component stays cached across unmounts.
-            memo = run_with_owner(None, lambda: create_memo(lambda: _load()))
-            holder["memo"] = memo
-        return memo
-
-    def LazyComponent(props: Any) -> Any:
-        memo = _ensure_memo()
-
-        def render() -> VNode:
-            comp = memo()  # raises NotReadyError while loading
-            if comp is None:
-                return to_text_vnode("")
-            return h(comp, _props_to_dict(props))
-
-        return dynamic(render)
-
-    def preload() -> None:
-        """Start loading now (a no-op when already loading or loaded)."""
-        memo = _ensure_memo()
-        latest(memo)
-
-    LazyComponent.preload = preload  # type: ignore[attr-defined]
-    LazyComponent._wyb_component = True  # type: ignore[attr-defined]
-    LazyComponent.__name__ = "lazy"
-    LazyComponent.__qualname__ = "lazy"
-    return LazyComponent
+    return LazyComponent(loader)
