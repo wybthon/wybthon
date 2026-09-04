@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.32.0 (2026-09-04)
+
+### Features
+
+- **reactivity**: Adopt SolidJS 2.0 transitions and actions
+  ([#33](https://github.com/wybthon/wybthon/pull/33),
+  [`77a416f`](https://github.com/wybthon/wybthon/commit/77a416ff64c17e78d23067ebe7df83bb9fd411b4))
+
+
 ## v0.31.0 (2026-09-03)
 
 ### Build System

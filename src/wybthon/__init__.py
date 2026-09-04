@@ -215,7 +215,7 @@ from .store import (
 )
 from .vnode import Fragment, VNode, h, hole
 
-__version__ = "0.31.0"
+__version__ = "0.32.0"
 
 __all__ = [
     # Components
