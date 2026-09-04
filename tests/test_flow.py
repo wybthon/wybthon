@@ -6,7 +6,7 @@ from conftest import StubNode, collect_texts
 
 from wybthon import _warnings
 from wybthon.component import component
-from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch
+from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch, dynamic
 from wybthon.html import div, h1, h2, li, p, span, ul
 from wybthon.reactivity import Prop, create_signal, flush, on_cleanup
 
@@ -405,3 +405,29 @@ def test_dynamic_with_static_component(wyb, root_element):
 
     wyb["reconciler"].render(div(Dynamic(A)), root_element)
     assert texts(root_element.element) == ["a"]
+
+
+def test_dynamic_accepts_positional_children(wyb, root_element):
+    wyb["reconciler"].render(div(Dynamic("h2", "Heading", span("!"))), root_element)
+    outer = elements(root_element.element)[0]
+    assert elements(outer)[0].tag == "h2"
+    assert texts(root_element.element) == ["Heading", "!"]
+
+
+def test_dynamic_factory_is_a_reusable_component(wyb, root_element):
+    @component
+    def A(label: Prop[str]):
+        return h1("A:", label)
+
+    @component
+    def B(label: Prop[str]):
+        return h2("B:", label)
+
+    rich, set_rich = create_signal(False)
+    Editor = dynamic(lambda: B if rich() else A)
+    assert repr(Editor) == "dynamic(...)"
+    wyb["reconciler"].render(div(Editor(label="x"), Editor(label="y")), root_element)
+    assert texts(root_element.element) == ["A:", "x", "A:", "y"]
+    set_rich(True)
+    flush()
+    assert texts(root_element.element) == ["B:", "x", "B:", "y"]

@@ -60,7 +60,7 @@ render(TodoViewer(), "#app")
 
 Reading `todo()` inside the boundary is what wires it to `Loading`. Until the coroutine resolves for the first time, the read raises [`NotReadyError`][wybthon.NotReadyError]; the hole keeps its previous content and the nearest boundary shows its fallback. The content stays mounted the whole time (parked off-document), so any state created inside it survives.
 
-Once the memo has a value, the fallback never returns. When `todo_id` changes, the memo recomputes and keeps serving the previous todo until the new one arrives (stale-while-revalidate). [`is_pending`][wybthon.is_pending] is `True` during that window, which drives the inline hint.
+Once the memo has a value, the fallback never returns. When `todo_id` changes, the memo recomputes inside a transition: it keeps serving the previous todo, and the UI that read `todo_id` holds with it, until the new one arrives, so the id and the todo never disagree on screen. [`is_pending`][wybthon.is_pending] is `True` during that window, which drives the inline hint.
 
 If `load_todo` raises, the error routes to the nearest [`Errored`][wybthon.Errored] boundary. Its `reset` callback re-renders the children, which re-reads the memo.
 

@@ -65,12 +65,13 @@ class Setter[T](Protocol):
 class _WritableMemo[T](Memo[T]):
     """A derived signal that can also be written (the `create_signal(fn)` form)."""
 
-    __slots__ = ("_pending", "_staged")
+    __slots__ = ("_pending", "_staged", "_origin")
 
     def __init__(self, fn: Callable[..., T], *, equals: Any) -> None:
         super().__init__(fn, equals=equals)
         self._pending: Any = None
         self._staged: bool = False
+        self._origin: int = _core._O_NORMAL
 
     def set(self, value: T | Callable[[T], T]) -> T:
         if _core._current_observer is not None and _core._warnings.DEV_MODE:
@@ -81,12 +82,16 @@ class _WritableMemo[T](Memo[T]):
         if callable(value):
             current = self._pending if self._staged else self.peek()
             value = value(current)
+        origin = _core._write_origin()
         if self._staged:
             self._pending = value
+            if origin > self._origin:
+                self._origin = origin
         else:
             self._pending = value
             self._staged = True
-            _core._staged.append(self)  # type: ignore[arg-type]
+            self._origin = origin
+            _core._staged.append(self)
             _schedule_flush()
         return value
 
@@ -96,10 +101,15 @@ class _WritableMemo[T](Memo[T]):
         self._staged = False
         new = self._pending
         self._pending = None
-        if not _changed(self._equals, self._value, new):
+        origin = self._origin
+        self._origin = _core._O_NORMAL
+        old = self._value
+        if not _changed(self._equals, old, new):
             return
         self._first = False
         self._value = new
+        if _core._track:
+            _core._record(self, old, origin)
         obs = self._observers
         if obs:
             for o in list(obs):
@@ -181,6 +191,7 @@ def create_memo[T](
     lazy: bool = ...,
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
+    loading_value: T = ...,
 ) -> Memo[T]: ...
 
 
@@ -192,6 +203,7 @@ def create_memo[T](
     lazy: bool = ...,
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
+    loading_value: T = ...,
 ) -> Memo[T]: ...
 
 
@@ -203,6 +215,7 @@ def create_memo[T](
     lazy: bool = ...,
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
+    loading_value: T = ...,
 ) -> Memo[T]: ...
 
 
@@ -213,6 +226,7 @@ def create_memo(
     lazy: bool = False,
     unobserved: Callable[[], Any] | None = None,
     name: str | None = None,
+    loading_value: Any = _core._MISSING,
 ) -> Memo[Any]:
     """Create a derived value that recomputes when its sources change.
 
@@ -226,10 +240,13 @@ def create_memo(
     before the first value raises
     [`NotReadyError`][wybthon.NotReadyError], which the nearest
     [`Loading`][wybthon.Loading] boundary turns into fallback UI. Once
-    it has a value, reads during a recompute return the previous value
-    (stale while revalidating); use [`is_pending`][wybthon.is_pending]
-    to show a refresh hint. Reads after an `await` are tracked exactly
-    like reads before it.
+    it has a value, a recompute caused by an input change opens a
+    **transition**: readers keep the previous value and the parts of
+    the UI that depend on the changed input stay as they are until the
+    new value lands, so the screen never shows a new input next to
+    old data. Use [`is_pending`][wybthon.is_pending] to show a refresh
+    hint and [`latest`][wybthon.latest] to read the new state early.
+    Reads after an `await` are tracked exactly like reads before it.
 
     **Async generators.** An `async def` body containing `yield`
     streams: each yielded value becomes the memo's new value. Use it
@@ -245,6 +262,12 @@ def create_memo(
         unobserved: Optional callback fired when the memo loses its last
             subscriber; pair it with `lazy=True` for resource cleanup.
         name: Optional label used in dev-mode diagnostics.
+        loading_value: For async memos, a value to serve while the first
+            run is in flight instead of raising `NotReadyError`. The
+            memo is then never "not ready": it doesn't register with
+            `Loading`, doesn't report pending for its first run, and
+            never holds a transition on mount. Use it for
+            nice-to-have data (a recommendation panel, a badge count).
 
     Returns:
         A [`Memo`][wybthon.Memo] accessor.
@@ -258,9 +281,10 @@ def create_memo(
             return await fetch_json(f"/api/users/{uid}")
 
         user = create_memo(load_user)
+        suggestions = create_memo(load_suggestions, loading_value=[])
         ```
     """
-    return Memo(fn, equals=equals, lazy=lazy, unobserved=unobserved, name=name)
+    return Memo(fn, equals=equals, lazy=lazy, unobserved=unobserved, name=name, loading_value=loading_value)
 
 
 # ---------------------------------------------------------------------------
@@ -453,34 +477,56 @@ def create_root[T](fn: Callable[[Callable[[], None]], T]) -> T:
 def is_pending(fn: Callable[[], Any]) -> bool:
     """Return True while a change is in flight for the value `fn` reads.
 
-    Evaluates `fn` in probe mode: reads of async computations report
-    whether a recompute triggered by an input change is in flight
-    (a quiet [`refresh`][wybthon.refresh] is silent), reads of
-    optimistic values report whether an override is active, and a read
-    that raises [`NotReadyError`][wybthon.NotReadyError] counts as
-    pending. Tracked, so a hole using it updates as the state changes.
+    Evaluates `fn` in probe mode and reports whether any value it read
+    is waiting on a transition:
+
+    - a signal or memo whose new value is **held** (the batch that
+      changed it is waiting for async work to land, or the write was
+      made inside an [`action`][wybthon.action] that hasn't settled);
+    - an async computation whose recompute is **in flight** (a quiet
+      [`refresh`][wybthon.refresh] is silent);
+    - a value an in-flight action declared with
+      [`affects`][wybthon.affects];
+    - an optimistic value with an active override;
+    - a read that raises [`NotReadyError`][wybthon.NotReadyError].
+
+    The reads are tracked like any other, so a hole using `is_pending`
+    updates as the state changes, but they don't make the hole wait for
+    the transition: an indicator has to show *during* the hold.
 
     ```python
     span(lambda: "Refreshing..." if is_pending(user) else "")
+    button("Save", disabled=lambda: is_pending(lambda: store.items))
     ```
     """
-    _core._pending_probe.append(False)
+    saved = _core._probe_hit
+    _core._probe_hit = False
+    _core._probe_depth += 1
+    _core._update_slow_reads()
     try:
         try:
             fn()
         except NotReadyError:
-            _core._pending_probe[-1] = True
-        return _core._pending_probe[-1]
+            _core._probe_hit = True
+        return _core._probe_hit
     finally:
-        _core._pending_probe.pop()
+        _core._probe_hit = saved
+        _core._probe_depth -= 1
+        _core._update_slow_reads()
 
 
 def latest[T](fn: Callable[[], T]) -> T | None:
-    """Evaluate `fn` without ever raising [`NotReadyError`][wybthon.NotReadyError].
+    """Evaluate `fn` against the newest state, without ever suspending.
 
-    Not-ready async reads return their most recent value (or `None` if
-    they never resolved). Use it to peek at data from outside a
-    [`Loading`][wybthon.Loading] boundary.
+    Two things differ from a plain read:
+
+    - Not-ready async reads return their most recent value (or `None`
+      if they never resolved) instead of raising
+      [`NotReadyError`][wybthon.NotReadyError].
+    - Values a transition holds return the **new** value being computed
+      rather than the one the UI still shows. Use it when a piece of UI
+      should update ahead of the rest (a header that shows the newly
+      selected id while the detail pane keeps the old record).
     """
     _core._latest_depth += 1
     try:
@@ -519,8 +565,9 @@ class _Settle[T]:
                 _core._call_soon(comp.dispose)
                 return
             # A quiet refresh serves the previous value while its run is in
-            # flight; wait for the run to settle before resolving.
-            if isinstance(fn, Computation) and fn._async is not None and fn._inflight_sig()():
+            # flight; wait for the run to settle before resolving. The
+            # read above subscribed us, and landings always notify.
+            if isinstance(fn, Computation) and fn._async is not None and fn._async.inflight:
                 return
             future.set_result(value)
             _core._call_soon(comp.dispose)
@@ -554,6 +601,10 @@ def refresh(target: Any) -> Awaitable[Any]:
     flight: [`is_pending`][wybthon.is_pending] stays `False` and
     readers keep the previous value. Use it after a server write to
     re-ask for data derived from the source of truth.
+
+    Called inside an [`action`][wybthon.action], the refreshed value
+    lands into the action's transaction and reveals together with the
+    action's other writes when it settles.
 
     Args:
         target: A [`Memo`][wybthon.Memo] (including async memos and

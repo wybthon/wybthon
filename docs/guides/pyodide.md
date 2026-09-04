@@ -61,7 +61,7 @@ async def fetch_user() -> dict:
 user = create_memo(fetch_user)
 ```
 
-Async memos and [`action`][wybthon.action]s integrate with Pyodide's event loop automatically: `await` inside them runs on the same loop as the browser's microtask queue, so awaiting `fetch(...)` or any JS promise just works. [`create_memo`][wybthon.create_memo] with an `async def` body raises [`NotReadyError`][wybthon.NotReadyError] on reads before the first value (which [`Loading`][wybthon.Loading] boundaries catch to show fallbacks) and serves the stale value while revalidating on later recomputes. Use [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest] to observe in-flight state, [`resolve`][wybthon.resolve] to await the next settled value, and [`refresh`][wybthon.refresh] to recompute quietly.
+Async memos and [`action`][wybthon.action]s integrate with Pyodide's event loop automatically: `await` inside them runs on the same loop as the browser's microtask queue, so awaiting `fetch(...)` or any JS promise just works. [`create_memo`][wybthon.create_memo] with an `async def` body raises [`NotReadyError`][wybthon.NotReadyError] on reads before the first value (which [`Loading`][wybthon.Loading] boundaries catch to show fallbacks) and runs later recomputes as transitions that hold the dependent UI until the new value lands. Use [`is_pending`][wybthon.is_pending] and [`latest`][wybthon.latest] to observe in-flight state, [`resolve`][wybthon.resolve] to await the next settled value, and [`refresh`][wybthon.refresh] to recompute quietly.
 
 ## JavaScript interop tips
 

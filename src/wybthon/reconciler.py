@@ -92,10 +92,12 @@ _alloc_id = kernel.alloc_id
 # ---------------------------------------------------------------------------
 
 
-def _dispatch_to_error_boundary(exc: BaseException) -> bool:
+def _dispatch_to_error_boundary(exc: BaseException, comp: Computation | None = None) -> bool:
     """Route a mount or render error to the nearest ancestor `Errored` boundary.
 
     Walks the active ownership chain looking for an `_error_handler`.
+    `comp` is the computation that was running when the error surfaced;
+    the boundary uses its dependency set to heal when an input changes.
     Returns `True` when one handled the error, `False` when the caller
     should log it.
     """
@@ -104,7 +106,7 @@ def _dispatch_to_error_boundary(exc: BaseException) -> bool:
         handler = owner._error_handler
         if handler is not None:
             try:
-                handler(exc, None)
+                handler(exc, comp)
             except Exception as handler_exc:  # pragma: no cover - defensive
                 log_error(f"Error boundary handler raised: {handler_exc}", handler_exc)
             return True
@@ -516,15 +518,36 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
             # subscribed this hole to the resolution.
             return _KEEP
         except Exception as exc:
-            if not _dispatch_to_error_boundary(exc):
+            if not _dispatch_to_error_boundary(exc, _core._current_observer):
                 log_error(f"Reactive hole raised: {exc}", exc)
             return _KEEP
 
     def apply(result: Any) -> None:
         if result is _KEEP:
             return
-        new_node = _coerce_result(result)
         prev = vnode.subtree
+        rtype = type(result)
+        if rtype is str or rtype is int or rtype is float:
+            # Text fast path: a scalar result is a single text node. On
+            # first mount create it directly; afterwards write the new
+            # value into the existing node instead of diffing VNodes.
+            text = result if rtype is str else str(result)
+            if prev is None:
+                node = VNode("_text", {"nodeValue": text}, [])
+                node.ns = ns
+                nid = _alloc_id()
+                node.el = nid
+                _emit((OP_CREATE_TEXT, nid, text))
+                _emit((OP_INSERT, parent_id, nid, end_id))
+                vnode.subtree = node
+                return
+            if prev.tag == "_text" and prev.el is not None:
+                props = prev.props
+                if props.get("nodeValue") != text:
+                    props["nodeValue"] = text
+                    _emit((OP_SET_TEXT, prev.el, text))
+                return
+        new_node = _coerce_result(result)
         vnode.subtree = new_node
 
         def commit() -> None:
@@ -626,8 +649,8 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     ctx._vnode = vnode
     vnode.component_ctx = ctx
 
-    defaults = comp.defaults if isinstance(comp, Component) else None
-    props = Props(vnode.props, defaults)
+    declared: Component | None = comp if isinstance(comp, Component) else None
+    props = Props(vnode.props, declared.defaults if declared is not None else None)
     ctx._props = props
 
     parent_owner = _core._current_owner
@@ -637,7 +660,7 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     saved = _enter_component_setup(ctx)
     try:
         try:
-            result = comp._render(props) if isinstance(comp, Component) else comp(props)
+            result = declared._render(props) if declared is not None else comp(props)
         except Exception as exc:
             if _dispatch_to_error_boundary(exc):
                 result = None
@@ -650,7 +673,13 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     sub_tree = _coerce_result(result)
     vnode.subtree = sub_tree
 
-    def do_mount() -> None:
+    # Mount owned by the component and untracked (inlined
+    # `_run_owned_untracked`: this runs once per component instance).
+    prev_owner = _core._current_owner
+    prev_obs = _core._current_observer
+    _core._current_owner = ctx
+    _core._current_observer = None
+    try:
         try:
             mount(sub_tree, parent_id, anchor_id, ns)
             vnode.el = _first_dom_id(sub_tree)
@@ -662,8 +691,9 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
                 vnode.el = placeholder.el
             else:
                 raise
-
-    _core._run_owned_untracked(ctx, do_mount)
+    finally:
+        _core._current_owner = prev_owner
+        _core._current_observer = prev_obs
 
 
 def _patch_component(old: VNode, new: VNode, parent_id: int) -> None:

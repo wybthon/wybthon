@@ -17,7 +17,8 @@ arguments are positional except the keyword-only options noted below.
 | [`For`][wybthon.For] | `For(each, children, fallback=None, *, keyed=True)`: one cached row per item; rows move, never re-diff. |
 | [`Repeat`][wybthon.Repeat] | `Repeat(count, children, fallback=None, *, start=0)`: `children(i)` for `i` in `range(start, start + count)`. |
 | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] | `Switch(Match(when, children, keyed=False), ..., fallback=None)`: first truthy branch wins. |
-| [`Dynamic`][wybthon.Dynamic] | `Dynamic(component, **props)`: render a tag or component chosen at runtime. |
+| [`Dynamic`][wybthon.Dynamic] | `Dynamic(component, *children, **props)`: render a tag or component chosen at runtime. |
+| [`dynamic`][wybthon.dynamic] | `dynamic(source)`: a reusable component whose implementation is chosen by a reactive `source`; returns a [`DynamicComponent`][wybthon.DynamicComponent]. |
 
 #### `For` keying shapes
 

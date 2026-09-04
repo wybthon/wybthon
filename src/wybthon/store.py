@@ -70,7 +70,6 @@ from . import _warnings
 from .reactivity import _core
 from .reactivity._actions import _register_optimistic_revert
 from .reactivity._core import Signal, WriteInScopeError, untrack
-from .reactivity._primitives import create_render_effect
 
 __all__ = [
     "create_store",
@@ -101,13 +100,24 @@ def _raw_get(raw: Any, key: Any) -> Any:
 class _StoreRoot:
     """Per-store bookkeeping shared by every node: the deep-version signal."""
 
-    __slots__ = ("version",)
+    __slots__ = ("version", "optimistic")
 
     def __init__(self) -> None:
         self.version: Signal[int] = Signal(0)
+        # True while an optimistic overlay is applied (see
+        # ``create_optimistic_store``), so ``is_pending`` reports reads.
+        self.optimistic: bool = False
 
     def bump(self) -> None:
         self.version._set(self.version._latest() + 1)
+
+
+def _probe_store(root: _StoreRoot) -> None:
+    """In an ``is_pending`` probe, report optimistic overlays and ``affects`` marks."""
+    tx = _core._tx
+    if root.optimistic or (tx is not None and root in tx.affected):
+        _core._probe_mark()
+        _core._probe_register()
 
 
 class _StoreNode:
@@ -233,12 +243,17 @@ class _StoreProxy:
 
     def _read(self, key: Any) -> Any:
         node: _StoreNode = _getattribute(self, "_node")
+        if _core._probe_depth:
+            _probe_store(node._root)
         val = node._get_signal(key)()
         if isinstance(val, (dict, list)):
             child = node._get_child(key)
             child._raw = val
             return _wrap_value(val, child)
         return val
+
+    def _wyb_affect_node(self) -> Any:
+        return _getattribute(self, "_node")._root
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -301,8 +316,13 @@ class _StoreListProxy:
     def __init__(self, node: _StoreNode) -> None:
         object.__setattr__(self, "_node", node)
 
+    def _wyb_affect_node(self) -> Any:
+        return _getattribute(self, "_node")._root
+
     def __getitem__(self, index: Any) -> Any:
         node: _StoreNode = _getattribute(self, "_node")
+        if _core._probe_depth:
+            _probe_store(node._root)
         if isinstance(index, slice):
             return [self[i] for i in range(*index.indices(len(self)))]
         if index < 0:
@@ -316,11 +336,15 @@ class _StoreListProxy:
 
     def __len__(self) -> int:
         node: _StoreNode = _getattribute(self, "_node")
+        if _core._probe_depth:
+            _probe_store(node._root)
         node._get_signal("length")()
         return len(node._raw)
 
     def __iter__(self) -> Any:
         node: _StoreNode = _getattribute(self, "_node")
+        if _core._probe_depth:
+            _probe_store(node._root)
         node._get_signal("length")()
         for i in range(len(node._raw)):
             yield self[i]
@@ -649,7 +673,20 @@ def _run_projection(node: _StoreNode, fn: Callable[..., Any]) -> None:
         if result is not None and result is not node._raw:
             _merge_data_into(node, copy.deepcopy(snapshot(result)), "id")
 
-    create_render_effect(compute, apply)
+    _eager_render_effect(compute, apply)
+
+
+def _eager_render_effect(compute: Callable[[], Any], apply: Callable[[Any], None]) -> None:
+    """A render effect whose apply stage produces graph data.
+
+    It runs immediately rather than waiting for a transition to reveal,
+    and the store writes it makes are held with the data it read.
+    """
+    comp = _core.Computation(compute, kind=_core._K_RENDER, apply=apply, pass_prev=False, eager=True)
+    owner = _core._current_owner
+    if owner is not None:
+        owner._add_child(comp)
+    comp._update_if_necessary()
 
 
 def create_projection(fn: Callable[..., Any], initial: Any = None) -> Any:
@@ -744,13 +781,27 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
             base["value"] = data
             _reconcile_to(data)
 
-        create_render_effect(track_base, apply_base)
+        _eager_render_effect(track_base, apply_base)
+
+    root = node._root
 
     def revert() -> None:
-        _reconcile_to(base["value"])
+        root.optimistic = False
+        _core._optimistic_depth += 1
+        try:
+            _reconcile_to(base["value"])
+        finally:
+            _core._optimistic_depth -= 1
 
     def set_optimistic(modifier: Any) -> None:
-        _apply_modifier(node, modifier, "set_optimistic")
+        # Optimistic writes reveal immediately, even inside an action
+        # whose other writes are held.
+        root.optimistic = True
+        _core._optimistic_depth += 1
+        try:
+            _apply_modifier(node, modifier, "set_optimistic")
+        finally:
+            _core._optimistic_depth -= 1
         _register_optimistic_revert(lambda: untrack(revert))
 
     return _make_proxy(node), set_optimistic

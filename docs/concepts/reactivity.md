@@ -221,8 +221,9 @@ user = create_memo(load_user)
 ```
 
 - **Reading before the first value raises [`NotReadyError`][wybthon.NotReadyError].** The nearest [`Loading`][wybthon.Loading] boundary turns that into fallback UI; sync memos that read a pending value become pending themselves; a hole that hits it keeps its previous content.
-- **Stale-while-revalidate.** Once the memo has a value, recomputes serve the previous value while the new one is in flight.
-- **[`is_pending`][wybthon.is_pending]** is a tracked probe that's `True` while a change-triggered recompute is in flight; **[`latest`][wybthon.latest]** reads without ever raising; **[`resolve`][wybthon.resolve]** awaits the next settled value; **[`refresh`][wybthon.refresh]** recomputes quietly.
+- **Stale-while-revalidate.** Once the memo has a value, recomputes serve the previous value while the new one is in flight, and the change that caused the recompute is held with it.
+- **Transitions.** When a change makes an async memo that already has a value recompute, the flush holds that change and everything derived from it: the UI keeps the old state and updates all at once when the new value lands. Writes an [`action`][wybthon.action] makes are held the same way until the action settles.
+- **[`is_pending`][wybthon.is_pending]** is a tracked probe that's `True` while what it reads is held or recomputing; **[`latest`][wybthon.latest]** reads the newest state without ever raising; **[`resolve`][wybthon.resolve]** awaits the next settled value; **[`refresh`][wybthon.refresh]** recomputes quietly.
 - **Errors are stored and re-raised on read**, so a failed fetch reaches the nearest [`Errored`][wybthon.Errored] boundary.
 
 See [Async and loading](async-loading.md) for boundaries, actions, and

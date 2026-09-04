@@ -35,7 +35,7 @@ The runtime floor moved too: Wybthon now requires **Python 3.12+** in CPython an
 | One-parameter components inferred as "props proxy" | Only `def Foo(props)` (unannotated, named `props`) or a `Props` annotation gets the mapping |
 | Python 3.9+ | Python 3.12+ (PEP 695 generics), Pyodide 0.27+ / 314.x |
 
-New in this release: typed [`Accessor[T]`][wybthon.Accessor], [`Setter[T]`][wybthon.Setter], [`Prop[T]`][wybthon.Prop], [`Props`][wybthon.Props], and [`prop(default)`][wybthon.prop]; `Reveal(order=, tail=)`; `Loading(on=)`; `Errored(reset_on=)`; [`resolve`][wybthon.resolve], [`refresh`][wybthon.refresh], [`is_pending`][wybthon.is_pending], [`latest`][wybthon.latest]; [`action`][wybthon.action], [`create_optimistic`][wybthon.create_optimistic], [`create_optimistic_store`][wybthon.create_optimistic_store]; derived stores via `create_store(fn, seed)` and [`create_projection`][wybthon.create_projection]; `deep`, `snapshot`, `store_path`; a [`Root`][wybthon.Root] with `.dispose()` returned by `render`; root-scoped event delegation; boolean attribute handling; [`Ref`][wybthon.Ref] objects, callable refs, and lists of refs; [`wybthon.svg`][wybthon.svg] helpers; [`use_params`][wybthon.use_params], [`use_query`][wybthon.use_query], [`use_base_path`][wybthon.use_base_path]; [`a11y_control_attrs`][wybthon.a11y_control_attrs], [`error_message_attrs`][wybthon.error_message_attrs]; `WriteInScopeError` and top-level-read warnings in dev mode; a JS kernel wire protocol for batched DOM operations; template-based mounting of static subtrees.
+New in this release: typed [`Accessor[T]`][wybthon.Accessor], [`Setter[T]`][wybthon.Setter], [`Prop[T]`][wybthon.Prop], [`Props`][wybthon.Props], and [`prop(default)`][wybthon.prop]; `Reveal(order=, collapsed=)`; `Loading(on=)`; `Errored(reset_on=)`; [`resolve`][wybthon.resolve], [`refresh`][wybthon.refresh], [`is_pending`][wybthon.is_pending], [`latest`][wybthon.latest]; [`action`][wybthon.action], [`create_optimistic`][wybthon.create_optimistic], [`create_optimistic_store`][wybthon.create_optimistic_store]; derived stores via `create_store(fn, seed)` and [`create_projection`][wybthon.create_projection]; `deep`, `snapshot`, `store_path`; a [`Root`][wybthon.Root] with `.dispose()` returned by `render`; root-scoped event delegation; boolean attribute handling; [`Ref`][wybthon.Ref] objects, callable refs, and lists of refs; [`wybthon.svg`][wybthon.svg] helpers; [`use_params`][wybthon.use_params], [`use_query`][wybthon.use_query], [`use_base_path`][wybthon.use_base_path]; [`a11y_control_attrs`][wybthon.a11y_control_attrs], [`error_message_attrs`][wybthon.error_message_attrs]; `WriteInScopeError` and top-level-read warnings in dev mode; a JS kernel wire protocol for batched DOM operations; template-based mounting of static subtrees.
 
 ## Components and props
 
@@ -68,7 +68,7 @@ Place the prop in the tree to keep it live, or call `title()` inside a memo, eff
 
 ## Holes replace `dynamic()`
 
-Any zero-argument callable placed as a child (or as an attribute value) is a reactive hole. `dynamic()` is gone; `hole()` exists for the rare case you need a `key`.
+Any zero-argument callable placed as a child (or as an attribute value) is a reactive hole. The old `dynamic()` wrapper is gone; `hole()` exists for the rare case you need a `key`. (The name [`dynamic`][wybthon.dynamic] now means something else: Solid 2.0's factory for a component whose implementation a reactive source chooses.)
 
 Before:
 

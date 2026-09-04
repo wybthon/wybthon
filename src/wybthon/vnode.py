@@ -146,9 +146,12 @@ def flatten_children(items: Iterable[Any]) -> list[Any]:
     """Flatten nested child lists into a single list, dropping `None` entries."""
     out: list[Any] = []
     for item in items:
-        if item is None:
+        t = type(item)
+        if t is VNode or t is str:
+            out.append(item)
+        elif item is None:
             continue
-        if isinstance(item, (list, tuple)):
+        elif isinstance(item, (list, tuple)):
             out.extend(flatten_children(item))
         else:
             out.append(item)
@@ -167,11 +170,14 @@ def normalize_children(children: list[Any]) -> list[VNode]:
     """
     out: list[VNode] = []
     for ch in children:
-        if isinstance(ch, VNode):
+        t = type(ch)
+        if t is VNode or isinstance(ch, VNode):
             if ch.tag == "_fragment":
                 out.extend(normalize_children(ch.children))
             else:
                 out.append(ch)
+        elif t is str:
+            out.append(VNode("_text", {"nodeValue": ch}, []))
         elif ch is None or ch is True or ch is False:
             continue
         elif is_accessor(ch):

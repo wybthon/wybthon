@@ -16,6 +16,7 @@ FEATURES = [
     ("forms", "Forms"),
     ("stores", "Stores"),
     ("loading", "Loading"),
+    ("transitions", "Transitions"),
     ("errors", "Errors"),
     ("components", "Components"),
     ("lazy", "Lazy"),

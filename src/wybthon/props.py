@@ -113,9 +113,38 @@ def attr_name(name: str) -> str:
 
 def is_event_prop(name: str) -> bool:
     """Return True for `on_click`-style (or `onClick`-style) handler props."""
-    if name.startswith("on_"):
-        return True
-    return len(name) > 2 and name.startswith("on") and name[2].isupper()
+    return prop_kind(name) == KIND_EVENT
+
+
+# Prop-name classes. Names are classified once and memoized: every mount
+# of every element asks the same question about the same handful of
+# names, so a dict hit beats re-running the string tests each time.
+KIND_ATTR = 0  # attribute (or reactive attribute binding)
+KIND_SKIP = 1  # key / children: never written to the DOM
+KIND_REF = 2  # ref binding
+KIND_EVENT = 3  # on_click-style handler
+KIND_DOM_PROP = 4  # value / checked / inner_html: DOM property
+
+_prop_kinds: dict[str, int] = {}
+
+
+def prop_kind(name: str) -> int:
+    """Classify a prop name (memoized)."""
+    kind = _prop_kinds.get(name)
+    if kind is None:
+        if name == "key" or name == "children":
+            kind = KIND_SKIP
+        elif name == "ref":
+            kind = KIND_REF
+        elif name.startswith("on_") or (len(name) > 2 and name.startswith("on") and name[2].isupper()):
+            kind = KIND_EVENT
+        elif name in _DOM_PROPS:
+            kind = KIND_DOM_PROP
+        else:
+            kind = KIND_ATTR
+        if len(_prop_kinds) < 4096:
+            _prop_kinds[name] = kind
+    return kind
 
 
 def event_name_from_prop(name: str) -> str:
@@ -273,13 +302,21 @@ def binding_value(name: str, value: Any) -> Any:
     A prop is reactive when its value is an accessor or zero-arg
     function, or (for `class` and `style`) a dict containing one.
     """
-    if name in _SKIP or is_event_prop(name):
+    if type(value) in _STATIC_TYPES:
+        return None
+    kind = prop_kind(name)
+    if kind == KIND_SKIP or kind == KIND_REF or kind == KIND_EVENT:
         return None
     if is_accessor(value):
         return value
     if (name == "class" or name == "class_" or name == "style") and _reactive_dict(value):
         return _dict_getter(value)
     return None
+
+
+# Value types that can never be a reactive expression; checked first so
+# the common static string/number prop skips the classification work.
+_STATIC_TYPES = frozenset({str, int, float, bool, type(None)})
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""The reactive graph: accessors, signals, computations, and the scheduler.
+"""The reactive graph: accessors, signals, computations, transitions, and the scheduler.
 
 This module is the hot core of Wybthon's reactivity and is deliberately
 self-contained: every piece of state the read and write paths touch is
@@ -21,6 +21,16 @@ Semantics (matching SolidJS 2.0):
   [`NotReadyError`][wybthon.NotReadyError], reads during a recompute
   return the previous value, and every resume after an `await` tracks
   dependencies just like the code before it.
+- **Transitions keep the UI consistent.** When a batch of writes
+  causes an async computation that already has a value to recompute,
+  the batch becomes a *transition*: the graph computes the new state
+  immediately, but nothing that depends on the changed inputs is
+  revealed to the DOM (or to effects, or to reads outside tracking
+  scopes) until the async work lands. The old, self-consistent state
+  stays on screen; [`is_pending`][wybthon.is_pending] reports the
+  in-flight change and [`latest`][wybthon.latest] reads the new state
+  early. Actions hold a transition open for their whole duration, so
+  writes made inside one land together with the server's answer.
 - **One flush, three phases.** Render effects (holes and prop
   bindings) run first, then the buffered DOM ops are committed across
   the bridge once, then user effects run and observe the committed DOM.
@@ -50,6 +60,7 @@ __all__ = [
     "Memo",
     "Prop",
     "Owner",
+    "Transition",
     "NotReadyError",
     "WriteInScopeError",
     "flush",
@@ -76,6 +87,15 @@ _DIRTY: Final = 2
 _K_MEMO: Final = 0
 _K_RENDER: Final = 1
 _K_EFFECT: Final = 2
+
+# Write origins. They decide how a committed change participates in a
+# transition: a normal write is *tentative* (it reveals unless the batch
+# turns out to need a hold), a write made inside an action or derived
+# from held data is *held*, and framework/optimistic state *reveals*
+# immediately no matter what.
+_O_NORMAL: Final = 0
+_O_REVEAL: Final = 1
+_O_HELD: Final = 2
 
 # Safety valve: the maximum number of settle rounds in one flush before we
 # assume a runaway cycle (an effect writing its own dependency forever).
@@ -105,7 +125,7 @@ _setup_depth: int = 0
 _setup_component: Any = None
 
 # Signals with a staged (uncommitted) write, in write order.
-_staged: list[Signal[Any]] = []
+_staged: list[Any] = []
 
 # Effects dirtied since the last drain, by phase.
 _render_queue: list[Computation] = []
@@ -122,13 +142,64 @@ _unobserved_check: list[Any] = []
 _flushing: bool = False
 _flush_scheduled: bool = False
 
-# Stack of in-progress ``is_pending`` probes; while non-empty, async reads
-# record their pending state on the top entry instead of only returning.
-_pending_probe: list[bool] = []
+# Depth of tracked computations currently running (plus ``latest``
+# scopes). Reads at depth zero (event handlers, effect apply stages,
+# test code) see the *revealed* value of a held node; reads inside the
+# graph see the new value being computed.
+_layer_working: int = 0
 
 # Depth of nested ``latest`` calls; while positive, not-ready reads return
 # their placeholder instead of raising ``NotReadyError``.
 _latest_depth: int = 0
+
+# ``is_pending`` probes: while the depth is positive, reads that touch a
+# held or in-flight node set the hit flag.
+_probe_depth: int = 0
+_probe_hit: bool = False
+
+# ``until`` scopes: while positive, optimistic overrides are invisible so
+# the predicate observes the authoritative view.
+_authoritative_depth: int = 0
+
+# Number of live async computations. When zero and no transition is
+# open, the flush skips all transition bookkeeping.
+_async_live: int = 0
+
+# The open transition (if any) and an alias of its snapshot, kept as a
+# module global so the read path can test membership without an
+# attribute chain. ``_NO_HELD`` is never mutated.
+_NO_HELD: Final[dict[Any, Any]] = {}
+_tx: Transition | None = None
+_held: dict[Any, Any] = _NO_HELD
+
+# The transition of the action currently executing a synchronous
+# segment; writes made now are held until that action settles.
+_in_action: Transition | None = None
+
+# Depth of optimistic write scopes; writes inside reveal immediately and
+# revert when the enclosing transaction settles.
+_optimistic_depth: int = 0
+
+# True while an eager apply stage runs whose compute read held data, so
+# the signals it writes are held too (projections, selectors).
+_apply_held: bool = False
+
+# True when the read path needs the slow branch: a probe is active or a
+# transition holds nodes.
+_slow_reads: bool = False
+
+# Per-round transition bookkeeping.
+_track: bool = False
+_round: int = 0
+_deferred: list[tuple[Computation, Any, Any]] = []
+_newly_pending: list[Computation] = []
+_tentative: dict[Any, Any] = {}
+_probed_tentative: list[Computation] = []
+_reveal_effects: list[tuple[Computation, Any, Any]] = []
+
+# Optimistic reverts made outside any action; adopted by the next
+# transition and run when it settles.
+_ambient_reverts: list[Callable[[], None]] = []
 
 # Cached microtask scheduler: ``None`` = not probed, ``False`` = none
 # available, otherwise ``(queueMicrotask, create_once_callable)``.
@@ -266,6 +337,162 @@ def _positional_count(fn: Any) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Transitions
+# ---------------------------------------------------------------------------
+
+
+class Transition:
+    """Bookkeeping for the state a flush computed but hasn't revealed.
+
+    At most one transition is open at a time; concurrent actions and
+    overlapping async recomputes share it, so everything in flight lands
+    together. The framework creates and settles transitions itself; the
+    class is public so the type can appear in signatures and diagnostics.
+
+    Attributes:
+        snapshot: Held nodes mapped to the value the UI still shows.
+        pending: Async computations whose landing the transition waits for.
+        holds: Number of actions keeping the transition open.
+    """
+
+    __slots__ = ("snapshot", "pending", "holds", "held_applies", "reverts", "affected", "probers")
+
+    def __init__(self) -> None:
+        self.snapshot: dict[Any, Any] = {}
+        self.pending: set[Computation] = set()
+        self.holds: int = 0
+        # Effects whose apply stage is postponed to the reveal, with the
+        # latest value they computed (a re-run replaces the entry).
+        self.held_applies: dict[Computation, tuple[Any, Any]] = {}
+        self.reverts: list[Callable[[], None]] = []
+        # Nodes an action declared with ``affects``: pending until it settles.
+        self.affected: set[Any] = set()
+        # Computations whose ``is_pending`` probes touched held nodes; they
+        # re-run at the reveal so their answer flips back to False.
+        self.probers: set[Computation] = set()
+
+    def __repr__(self) -> str:
+        return f"Transition(held={len(self.snapshot)}, pending={len(self.pending)}, holds={self.holds})"
+
+
+def _update_slow_reads() -> None:
+    global _slow_reads
+    _slow_reads = bool(_held) or _probe_depth > 0 or (_tx is not None and bool(_tx.affected))
+
+
+def _ensure_tx() -> Transition:
+    """Return the open transition, creating one if needed."""
+    global _tx, _held
+    tx = _tx
+    if tx is None:
+        tx = _tx = Transition()
+        _held = tx.snapshot
+        if _ambient_reverts:
+            tx.reverts.extend(_ambient_reverts)
+            _ambient_reverts.clear()
+    return tx
+
+
+def _write_origin() -> int:
+    if _optimistic_depth:
+        return _O_REVEAL
+    if _in_action is not None or _apply_held:
+        return _O_HELD
+    if _held:
+        # A framework write made while a computation runs (a projection
+        # mutating its draft) is derived from what that computation read.
+        obs = _current_observer
+        if obs is not None and obs._is_held():
+            return _O_HELD
+    return _O_NORMAL
+
+
+def _hold(node: Any, old: Any) -> None:
+    """Put `node` in the open transition's snapshot with its revealed value."""
+    snap = _ensure_tx().snapshot
+    if node not in snap:
+        snap[node] = old
+        if not _slow_reads:
+            _update_slow_reads()
+
+
+def _record(node: Any, old: Any, origin: int) -> None:
+    """Classify a committed change for the current round."""
+    if node in _held:
+        return
+    if origin == _O_HELD:
+        _hold(node, old)
+    elif origin == _O_NORMAL and _flushing and node not in _tentative:
+        _tentative[node] = old
+
+
+def _record_derived(node: Any, old: Any, sources: Any) -> None:
+    """Classify a derived change (a memo, a row signal) by what it was computed from."""
+    if node in _held:
+        return
+    if _apply_held:
+        _hold(node, old)
+        return
+    tentative = False
+    if sources:
+        held = _held
+        tent = _tentative
+        for src in sources:
+            if src in held:
+                _hold(node, old)
+                return
+            if src in tent:
+                tentative = True
+    if tentative and _flushing and node not in _tentative:
+        _tentative[node] = old
+
+
+def _probe_mark() -> None:
+    """Record that the active ``is_pending`` probe touched in-flight state."""
+    global _probe_hit
+    _probe_hit = True
+
+
+def _probe_touch(node: Any) -> bool:
+    """Probe-mode read of `node`: report whether it's held, tentative, or affected."""
+    if node in _held:
+        obs = _current_observer
+        if obs is not None and _tx is not None:
+            _tx.probers.add(obs)
+        return True
+    if node in _tentative:
+        obs = _current_observer
+        if obs is not None:
+            _probed_tentative.append(obs)
+        return True
+    tx = _tx
+    if tx is not None and node in tx.affected:
+        _probe_register()
+        return True
+    return False
+
+
+def _probe_register() -> None:
+    """Re-run the active observer when the open transition settles.
+
+    Used by probes that hit in-flight state with no reactive source of
+    their own (``affects`` marks, optimistic store overlays) so their
+    ``is_pending`` answer flips back to False.
+    """
+    obs = _current_observer
+    tx = _tx
+    if obs is not None and tx is not None:
+        tx.probers.add(obs)
+
+
+def _track_source(node: Any) -> None:
+    """Subscribe the active observer to `node` without reading its value."""
+    obs = _current_observer
+    if obs is not None:
+        obs._add_source(node)
+
+
+# ---------------------------------------------------------------------------
 # Scheduling
 # ---------------------------------------------------------------------------
 
@@ -317,6 +544,11 @@ def flush() -> None:
     browser that happens automatically on a microtask and after every
     event handler; call `flush()` when you need the settled state
     *now*, for example right after a write in synchronous test code.
+
+    If the flush opens a transition (a write made an async computation
+    that already had a value recompute), the affected parts of the UI
+    stay on their previous state until that work lands; everything else
+    reveals as usual.
 
     Safe to call at any time; a no-op when nothing is pending, and a
     no-op inside an effect (the running flush finishes the work).
@@ -389,9 +621,94 @@ def _gc_resume() -> None:
         gc.enable()
 
 
+def _decide_round() -> None:
+    """Close a compute round: decide whether its tentative changes reveal or hold.
+
+    A round holds when an async computation that already had a value
+    went pending during it (unless the nearest `Loading` boundary asked
+    to show its fallback instead). Everything tentative then joins the
+    transition's snapshot; otherwise it reveals, and any effect whose
+    `is_pending` probe optimistically answered True re-runs.
+    """
+    global _tentative, _newly_pending, _probed_tentative
+    hold = False
+    if _newly_pending:
+        newly = _newly_pending
+        _newly_pending = []
+        for comp in newly:
+            a = comp._async
+            if comp._disposed or a is None or not a.pending:
+                continue
+            collector = comp._lookup_context(LOADING_CONTEXT_KEY, None)
+            if collector is not None and collector.wants_fallback(comp):
+                continue
+            _ensure_tx().pending.add(comp)
+            hold = True
+    if _tentative:
+        if hold:
+            snap = _ensure_tx().snapshot
+            for node, old in _tentative.items():
+                if node not in snap:
+                    snap[node] = old
+            _update_slow_reads()
+        _tentative = {}
+    if _probed_tentative:
+        probers = _probed_tentative
+        _probed_tentative = []
+        if hold:
+            _ensure_tx().probers.update(probers)
+        else:
+            for comp in probers:
+                comp._stale(_DIRTY)
+
+
+def _partition_applies() -> None:
+    """Run the apply stages deferred this round, holding the ones that read held data."""
+    global _deferred
+    items = _deferred
+    _deferred = []
+    held = _held
+    for comp, value, prev in items:
+        if comp._disposed:
+            continue
+        if held and comp._is_held():
+            _ensure_tx().held_applies[comp] = (value, prev)
+        else:
+            comp._run_apply(value, prev)
+
+
+def _reveal(tx: Transition) -> None:
+    """Settle `tx`: drop the snapshot, revert optimistic overrides, run held applies."""
+    global _tx, _held
+    _tx = None
+    _held = _NO_HELD
+    tx.snapshot.clear()
+    _update_slow_reads()
+    for comp in tx.probers:
+        if not comp._disposed:
+            comp._stale(_DIRTY)
+    tx.probers.clear()
+    reverts = tx.reverts
+    tx.reverts = []
+    for fn in reverts:
+        try:
+            fn()
+        except Exception as exc:
+            log_error(f"Optimistic revert raised: {exc}", exc)
+    applies = tx.held_applies
+    tx.held_applies = {}
+    for comp, (value, prev) in applies.items():
+        if comp._disposed:
+            continue
+        if comp._kind == _K_RENDER:
+            comp._run_apply(value, prev)
+        else:
+            _reveal_effects.append((comp, value, prev))
+
+
 def _flush() -> None:
     """Settle the graph: commit writes, run effects by phase, commit DOM, repeat."""
-    global _flushing
+    global _flushing, _track, _round, _reveal_effects
     if _flushing:
         return
     _flushing = True
@@ -406,16 +723,32 @@ def _flush() -> None:
                         "Wybthon: reactive update did not stabilize "
                         "(an effect is probably writing its own dependency)."
                     )
+                _round += 1
+                _track = _tx is not None or _async_live > 0
                 if _staged:
                     _commit_staged()
                 if _render_queue:
                     _drain(_render_queue)
+                if _track or _tentative or _probed_tentative:
+                    _decide_round()
+                if _deferred:
+                    _partition_applies()
+                if _render_queue or _staged:
                     continue
                 _commit_dom()
-                if _staged:
-                    continue
+                if _reveal_effects:
+                    effects = _reveal_effects
+                    _reveal_effects = []
+                    for comp, value, prev in effects:
+                        if not comp._disposed:
+                            comp._run_apply(value, prev)
                 if _effect_queue:
                     _drain(_effect_queue)
+                    if _track or _tentative or _probed_tentative:
+                        _decide_round()
+                    if _deferred:
+                        _partition_applies()
+                if _staged or _render_queue or _effect_queue:
                     continue
                 break
             if _settled_queue:
@@ -428,6 +761,10 @@ def _flush() -> None:
                         log_error(f"on_settled callback raised: {exc}", exc)
                 if _staged or _render_queue or _effect_queue or _settled_queue:
                     continue
+            tx = _tx
+            if tx is not None and tx.holds == 0 and not tx.pending:
+                _reveal(tx)
+                continue
             break
         if _unobserved_check:
             pending = list(_unobserved_check)
@@ -438,28 +775,48 @@ def _flush() -> None:
         _staged.clear()
         _render_queue.clear()
         _effect_queue.clear()
+        _deferred.clear()
+        _newly_pending.clear()
+        _tentative.clear()
+        _probed_tentative.clear()
         _flushing = False
         _gc_resume()
 
 
 def _reset_scheduler_for_tests() -> None:
-    """Test-only: drop staged writes, effect queues, and scheduler flags."""
+    """Test-only: drop staged writes, effect queues, transitions, and scheduler flags."""
     global _flush_scheduled, _flushing, _kernel_commit, _setup_depth, _setup_component
+    global _tx, _held, _in_action, _optimistic_depth, _apply_held, _slow_reads, _track
+    global _layer_working, _latest_depth, _probe_depth, _probe_hit, _authoritative_depth, _async_live
     _staged.clear()
     _render_queue.clear()
     _effect_queue.clear()
     _settled_queue.clear()
     _unobserved_check.clear()
-    _pending_probe.clear()
+    _deferred.clear()
+    _newly_pending.clear()
+    _tentative.clear()
+    _probed_tentative.clear()
+    _reveal_effects.clear()
+    _ambient_reverts.clear()
     _flush_scheduled = False
     _flushing = False
     _kernel_commit = None
     _setup_depth = 0
     _setup_component = None
-    from . import _actions
-
-    _actions._inflight = 0
-    _actions._reverts.clear()
+    _tx = None
+    _held = _NO_HELD
+    _in_action = None
+    _optimistic_depth = 0
+    _apply_held = False
+    _slow_reads = False
+    _track = False
+    _layer_working = 0
+    _latest_depth = 0
+    _probe_depth = 0
+    _probe_hit = False
+    _authoritative_depth = 0
+    _async_live = 0
 
 
 # ---------------------------------------------------------------------------
@@ -638,6 +995,11 @@ class Signal[T](Accessor[T]):
     subscribes the active tracking scope. [`set`][wybthon.Signal.set]
     stages a write that becomes visible at the next flush.
 
+    While a transition holds the signal (its last write is waiting for
+    async work to land), reads from outside the graph, such as event
+    handlers, keep returning the value the UI shows; reads inside
+    memos, effects, and holes see the new value.
+
     Most code destructures `create_signal` into `(getter, setter)`;
     `Signal` is public so it can appear in type hints and so
     self-contained reactive fields (as in
@@ -651,7 +1013,7 @@ class Signal[T](Accessor[T]):
         name: Optional label used in dev-mode diagnostics.
     """
 
-    __slots__ = ("_value", "_pending", "_staged", "_observers", "_equals", "_unobserved", "_name")
+    __slots__ = ("_value", "_pending", "_staged", "_origin", "_observers", "_equals", "_unobserved", "_name")
 
     def __init__(
         self,
@@ -664,6 +1026,7 @@ class Signal[T](Accessor[T]):
         self._value: T = value
         self._pending: Any = None
         self._staged: bool = False
+        self._origin: int = _O_NORMAL
         self._observers: dict[Computation, None] | None = None
         self._equals = equals
         self._unobserved = unobserved
@@ -699,6 +1062,12 @@ class Signal[T](Accessor[T]):
     def _update_if_necessary(self) -> None:
         """Source-interface no-op; a signal's committed value is always current."""
 
+    def _notify(self) -> None:
+        obs = self._observers
+        if obs:
+            for o in list(obs):
+                o._stale(_DIRTY)
+
     # -- reads ----------------------------------------------------------------
 
     def __call__(self) -> T:
@@ -707,10 +1076,22 @@ class Signal[T](Accessor[T]):
             obs._add_source(self)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
+        if _slow_reads:
+            return self._slow_read()
+        return self._value
+
+    def _slow_read(self) -> T:
+        """The read path while a probe is active or a transition holds nodes."""
+        if _probe_depth and _probe_touch(self):
+            _probe_mark()
+        if not _layer_working and not _latest_depth and self in _held:
+            return _held[self]
         return self._value
 
     def peek(self) -> T:
         """Return the committed value without subscribing."""
+        if _slow_reads and not _layer_working and not _latest_depth and self in _held:
+            return _held[self]
         return self._value
 
     def _latest(self) -> Any:
@@ -748,15 +1129,34 @@ class Signal[T](Accessor[T]):
         self._set(value)
         return value
 
-    def _set(self, value: Any) -> None:
-        """Stage `value` without the dev-mode scope check (framework internal)."""
+    def _set(self, value: Any, origin: int = -1) -> None:
+        """Stage `value` without the dev-mode scope check (framework internal).
+
+        `origin` overrides the write origin derived from the current
+        scope: pass `_O_REVEAL` for framework UI state that must never
+        be held by a transition.
+        """
+        if origin < 0:
+            origin = _write_origin()
+            if origin == _O_NORMAL and _flushing:
+                # A write made by an eager computation (a projection
+                # mutating its draft, an optimistic store's base) is
+                # derived from what it read: commit it now so the round
+                # classifies it with its sources instead of a round later.
+                obs = _current_observer
+                if obs is not None and obs._eager:
+                    self._commit_now(value)
+                    return
         if self._staged:
             self._pending = value
+            if origin > self._origin:
+                self._origin = origin
             return
         if not _changed(self._equals, self._value, value):
             return
         self._pending = value
         self._staged = True
+        self._origin = origin
         _staged.append(self)
         _schedule_flush()
 
@@ -766,34 +1166,49 @@ class Signal[T](Accessor[T]):
         self._staged = False
         new = self._pending
         self._pending = None
-        if not _changed(self._equals, self._value, new):
+        origin = self._origin
+        self._origin = _O_NORMAL
+        old = self._value
+        if not _changed(self._equals, old, new):
             return
         self._value = new
+        if _track:
+            _record(self, old, origin)
         obs = self._observers
         if obs:
             for o in list(obs):
                 o._stale(_DIRTY)
 
-    def _set_now(self, value: Any) -> None:
-        """Commit `value` immediately (framework internal, for derived per-row state).
+    def _commit_now(self, value: Any, origin: int = _O_NORMAL) -> None:
+        """Commit `value` immediately (framework internal, for derived state).
 
         Used where the signal's value is a function of data the graph is
-        already recomputing (a list row's index), so staging would only
-        delay consistency by a round.
+        already recomputing (a list row's index, a boundary's version),
+        so staging would only delay consistency by a round. Normal-origin
+        changes are classified by the running computation's sources, so
+        row state derived from held data is held with it.
         """
         if self._staged:
             self._staged = False
             self._pending = None
+            self._origin = _O_NORMAL
             try:
                 _staged.remove(self)
             except ValueError:
                 pass
-        if not _changed(self._equals, self._value, value):
+        old = self._value
+        if not _changed(self._equals, old, value):
             return
         self._value = value
-        obs = self._observers
-        if obs:
-            for o in list(obs):
+        if _track and origin != _O_REVEAL:
+            if origin == _O_HELD:
+                _record(self, old, origin)
+            else:
+                obs = _current_observer
+                _record_derived(self, old, obs._sources if obs is not None else None)
+        obs2 = self._observers
+        if obs2:
+            for o in list(obs2):
                 o._stale(_DIRTY)
 
     def __repr__(self) -> str:
@@ -882,7 +1297,7 @@ class Prop[T](Accessor[T]):
             obs._add_source(sig)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
-        value = sig._value
+        value = sig._slow_read() if _slow_reads else sig._value
         if isinstance(value, Accessor):
             return value()
         if type(value) is FunctionType:
@@ -894,7 +1309,7 @@ class Prop[T](Accessor[T]):
 
     def peek(self) -> T:
         """Return the current (unwrapped) value without subscribing."""
-        value = self._sig._value
+        value = self._sig.peek()
         if isinstance(value, Accessor):
             return value.peek()
         if type(value) is FunctionType:
@@ -916,19 +1331,17 @@ class Prop[T](Accessor[T]):
 class _AsyncState:
     """Per-computation async state, allocated on first use."""
 
-    __slots__ = ("pending", "has_value", "version", "pending_signal", "quiet", "inflight", "inflight_signal", "closer")
+    __slots__ = ("pending", "has_value", "version", "quiet", "inflight", "closer")
 
     def __init__(self) -> None:
         self.pending: bool = False
         self.has_value: bool = False
         self.version: int = 0
-        self.pending_signal: Signal[bool] | None = None
         # A quiet run (``refresh``) recomputes without reporting pending.
         self.quiet: bool = False
         # True while a launched run is outstanding, quiet or not, so
         # ``resolve``/``refresh`` awaiters can wait for it to settle.
         self.inflight: bool = False
-        self.inflight_signal: Signal[bool] | None = None
         # Cleanup for an in-flight async generator.
         self.closer: Callable[[], Any] | None = None
 
@@ -952,12 +1365,19 @@ class Computation(Owner):
       prop bindings) before the DOM commit.
     - **effect**: runs after the DOM commit and may have a split
       compute/apply shape.
+
+    Effects take part in transitions: when a re-run's compute stage read
+    data a transition holds, the apply stage is postponed until the
+    transition reveals. Eager effects (`eager=True`, used for
+    projections and selectors whose apply stage produces more graph
+    data) always apply immediately and hold what they write instead.
     """
 
     __slots__ = (
         "_fn",
         "_pass_prev",
         "_sources",
+        "_probe_srcs",
         "_state",
         "_kind",
         "_value",
@@ -969,6 +1389,8 @@ class Computation(Owner):
         "_apply_arity",
         "_defer",
         "_first",
+        "_eager",
+        "_land_held",
         "_apply_cleanup",
         "_error_fn",
         "_lazy",
@@ -990,11 +1412,16 @@ class Computation(Owner):
         unobserved: Callable[[], Any] | None = None,
         pass_prev: bool | None = None,
         name: str | None = None,
+        eager: bool = False,
     ) -> None:
         super().__init__()
         self._fn = fn
         self._pass_prev = _accepts_positional(fn) if pass_prev is None else pass_prev
         self._sources: dict[Any, None] | None = None
+        # Sources read inside an ``is_pending`` probe. They subscribe like
+        # any other but don't make the effect's apply wait for a reveal:
+        # a pending indicator has to show *during* the hold.
+        self._probe_srcs: set[Any] | None = None
         self._state: int = _DIRTY
         self._kind = kind
         self._value: Any = value
@@ -1006,6 +1433,10 @@ class Computation(Owner):
         self._apply_arity = _positional_count(apply) if apply is not None else 0
         self._defer = defer
         self._first = True
+        self._eager = eager
+        # Set by ``refresh`` inside an action: the run's landing is truth
+        # that belongs to the open transaction and reveals with it.
+        self._land_held = False
         self._apply_cleanup: Callable[[], Any] | None = None
         self._error_fn = error
         self._lazy = lazy
@@ -1045,6 +1476,13 @@ class Computation(Owner):
         if self._lazy:
             self.dispose()
 
+    def _notify(self, skip: Computation | None = None) -> None:
+        obs = self._observers
+        if obs:
+            for o in list(obs):
+                if o is not skip:
+                    o._stale(_DIRTY)
+
     # -- observer side ---------------------------------------------------------
 
     def _add_source(self, source: Any) -> None:
@@ -1055,6 +1493,12 @@ class Computation(Owner):
         elif source not in srcs:
             srcs[source] = None
             source._add_observer(self)
+        if _probe_depth:
+            ps = self._probe_srcs
+            if ps is None:
+                self._probe_srcs = {source}
+            else:
+                ps.add(source)
 
     def _clear_sources(self) -> None:
         srcs = self._sources
@@ -1062,6 +1506,24 @@ class Computation(Owner):
             for src in srcs:
                 src._remove_observer(self)
             srcs.clear()
+        self._probe_srcs = None
+
+    def _is_held(self) -> bool:
+        """True when a non-probe source of the last run is held by the transition."""
+        srcs = self._sources
+        if not srcs:
+            return False
+        held = _held
+        ps = self._probe_srcs
+        if ps is None:
+            for src in srcs:
+                if src in held:
+                    return True
+            return False
+        for src in srcs:
+            if src in held and src not in ps:
+                return True
+        return False
 
     # -- scheduling -------------------------------------------------------------
 
@@ -1074,7 +1536,10 @@ class Computation(Owner):
             self._state = state
             if was_clean:
                 kind = self._kind
-                if kind == _K_RENDER:
+                # Async memos recompute eagerly in the render phase so a
+                # pending recompute is known before any apply stage runs
+                # and the round can hold what caused it.
+                if kind == _K_RENDER or (kind == _K_MEMO and self._async is not None):
                     _render_queue.append(self)
                     _schedule_flush()
                 elif kind == _K_EFFECT:
@@ -1145,11 +1610,12 @@ class Computation(Owner):
                     closer()
                 except Exception:
                     pass
-        global _current_owner, _current_observer
+        global _current_owner, _current_observer, _layer_working
         prev_owner = _current_owner
         prev_obs = _current_observer
         _current_owner = self
         _current_observer = self
+        _layer_working += 1
         try:
             new_value = self._fn(self._value) if self._pass_prev else self._fn()
         except NotReadyError:
@@ -1159,6 +1625,7 @@ class Computation(Owner):
             self._fail(exc)
             return
         finally:
+            _layer_working -= 1
             _current_owner = prev_owner
             _current_observer = prev_obs
         if isinstance(new_value, AbcAwaitable):
@@ -1176,11 +1643,19 @@ class Computation(Owner):
         self._settle(new_value)
 
     def _settle(self, value: Any) -> None:
-        """Accept a new value: notify memo observers or run an effect's apply stage."""
+        """Accept a new value: notify memo observers or schedule an effect's apply stage."""
         if self._kind == _K_MEMO:
             if self._first or _changed(self._equals, self._value, value):
+                first = self._first
                 self._first = False
+                old = self._value
                 self._value = value
+                if _track and not first:
+                    if self._land_held:
+                        self._land_held = False
+                        _record(self, old, _O_HELD)
+                    else:
+                        _record_derived(self, old, self._sources)
                 obs = self._observers
                 if obs:
                     for o in list(obs):
@@ -1188,14 +1663,28 @@ class Computation(Owner):
             return
         prev = self._value
         self._value = value
+        if self._apply is None:
+            self._first = False
+            return
+        first = self._first
+        self._first = False
+        if first and self._defer:
+            return
+        # The first run of a fresh effect and eager effects apply at once.
+        # Re-runs inside a flush are collected and applied when the round
+        # decides whether they reveal or wait for the transition.
+        if first or self._eager or not _flushing:
+            self._run_apply(value, prev)
+        else:
+            _deferred.append((self, value, prev))
+
+    def _run_apply(self, value: Any, prev: Any) -> None:
+        """Run the apply stage untracked, with `(value, prev)` or `(value,)`."""
+        if self._disposed:
+            return
         apply = self._apply
         if apply is None:
-            self._first = False
             return
-        if self._first and self._defer:
-            self._first = False
-            return
-        self._first = False
         cleanup = self._apply_cleanup
         if cleanup is not None:
             self._apply_cleanup = None
@@ -1203,9 +1692,11 @@ class Computation(Owner):
                 cleanup()
             except Exception as exc:
                 log_error(f"Effect cleanup raised: {exc}", exc)
-        global _current_observer
+        global _current_observer, _apply_held
         prev_obs = _current_observer
+        prev_held = _apply_held
         _current_observer = None
+        _apply_held = bool(_held) and self._eager and self._is_held()
         try:
             result = apply(value) if self._apply_arity == 1 else apply(value, prev)
         except Exception as exc:
@@ -1214,6 +1705,7 @@ class Computation(Owner):
             return
         finally:
             _current_observer = prev_obs
+            _apply_held = prev_held
         if callable(result):
             self._apply_cleanup = result
             self._add_cleanup(self._run_apply_cleanup)
@@ -1245,40 +1737,29 @@ class Computation(Owner):
     def _ensure_async(self) -> _AsyncState:
         a = self._async
         if a is None:
+            global _async_live
             a = _AsyncState()
             self._async = a
+            _async_live += 1
         return a
 
-    def _pending_sig(self) -> Signal[bool]:
-        a = self._ensure_async()
-        if a.pending_signal is None:
-            a.pending_signal = Signal(a.pending)
-        return a.pending_signal
-
     def _set_pending(self, value: bool) -> None:
+        """Flip the pending flag; observers are notified because pending state is observable."""
         a = self._ensure_async()
         if a.pending == value:
             return
         a.pending = value
-        if a.pending_signal is not None:
-            a.pending_signal._set(value)
-
-    def _inflight_sig(self) -> Signal[bool]:
-        a = self._ensure_async()
-        if a.inflight_signal is None:
-            a.inflight_signal = Signal(a.inflight)
-        return a.inflight_signal
-
-    def _set_inflight(self, value: bool) -> None:
-        a = self._ensure_async()
-        if a.inflight == value:
-            return
-        a.inflight = value
-        if a.inflight_signal is not None:
-            # Committed immediately: an awaiter probes it synchronously right
-            # after the run launches, and the launch/settle paths schedule
-            # the flush that re-runs observers.
-            a.inflight_signal._set_now(value)
+        if value:
+            # Only data (memos) holds a transition; an async effect is a sink.
+            if a.has_value and _flushing and self._kind == _K_MEMO:
+                _newly_pending.append(self)
+        else:
+            tx = _tx
+            if tx is not None:
+                tx.pending.discard(self)
+        # The observer currently pulling us sees the new state on its own;
+        # everyone else re-runs so ``is_pending`` indicators update.
+        self._notify(skip=_current_observer)
 
     def _mark_pending(self) -> None:
         """A source isn't ready; stay pending until its resolution re-runs us."""
@@ -1297,7 +1778,7 @@ class Computation(Owner):
         quiet, a.quiet = a.quiet, False
         if not quiet:
             self._set_pending(True)
-        self._set_inflight(True)
+        a.inflight = True
         _schedule_flush()
 
         if asyncio.iscoroutine(awaitable):
@@ -1326,7 +1807,7 @@ class Computation(Owner):
         quiet, a.quiet = a.quiet, False
         if not quiet:
             self._set_pending(True)
-        self._set_inflight(True)
+        a.inflight = True
         _schedule_flush()
 
         def closer() -> None:
@@ -1356,8 +1837,9 @@ class Computation(Owner):
                     if not a2.has_value:
                         self._resolve(version, None)
                     else:
+                        a2.inflight = False
                         self._set_pending(False)
-                        self._set_inflight(False)
+                        self._notify()
                         _schedule_flush()
                 return
             self._reject(version, exc)
@@ -1389,9 +1871,12 @@ class Computation(Owner):
         a.has_value = True
         if final:
             a.closer = None
-            self._set_inflight(False)
+            a.inflight = False
         self._set_pending(False)
         self._settle(value)
+        # Awaiters of ``resolve``/``refresh`` watch ``inflight`` too, so an
+        # unchanged value must still wake them.
+        self._notify()
         _schedule_flush()
 
     def _reject(self, version: int, exc: BaseException) -> None:
@@ -1399,14 +1884,11 @@ class Computation(Owner):
         if self._disposed or a is None or a.version != version:
             return
         a.closer = None
-        self._set_inflight(False)
+        a.inflight = False
         if self._kind == _K_MEMO:
             self._error = exc
             self._set_pending(False)
-            obs = self._observers
-            if obs:
-                for o in list(obs):
-                    o._stale(_DIRTY)
+            self._notify()
         else:
             self._set_pending(False)
             if not self._handle_error(exc):
@@ -1426,6 +1908,8 @@ class Computation(Owner):
         if self._disposed:
             return
         self._ensure_async().quiet = True
+        if _in_action is not None:
+            self._land_held = True
         self._state = _DIRTY
         self._update_if_necessary()
 
@@ -1442,17 +1926,21 @@ class Computation(Owner):
             _warn_top_level_read(self)
         a = self._async
         if a is not None:
-            if _pending_probe and self._pending_sig()():
-                _pending_probe[-1] = True
+            if _probe_depth and a.pending:
+                _probe_mark()
             if a.pending and not a.has_value and self._error is None:
                 if _latest_depth == 0:
-                    if not _pending_probe:
-                        self._register_with_loading()
+                    self._register_with_loading()
                     raise NotReadyError(f"Async computation has no value yet: {self._label()}")
                 return self._value
         err = self._error
         if err is not None:
             raise err
+        if _slow_reads:
+            if _probe_depth and _probe_touch(self):
+                _probe_mark()
+            if not _layer_working and not _latest_depth and self in _held:
+                return _held[self]
         return self._value
 
     def dispose(self) -> None:
@@ -1461,6 +1949,8 @@ class Computation(Owner):
             return
         a = self._async
         if a is not None:
+            global _async_live
+            _async_live -= 1
             a.version += 1
             closer = a.closer
             if closer is not None:
@@ -1469,6 +1959,9 @@ class Computation(Owner):
                     closer()
                 except Exception:
                     pass
+            tx = _tx
+            if tx is not None:
+                tx.pending.discard(self)
         self._clear_sources()
         obs = self._observers
         if obs:
@@ -1507,12 +2000,16 @@ def _drive_coroutine(
     on_done: Callable[[Any], None],
     on_error: Callable[[BaseException], None],
     on_not_ready: Callable[[], None] | None = None,
+    action_tx: Transition | None = None,
 ) -> None:
     """Step `coro` manually so each resume runs under `owner` / `observer`.
 
     The first step runs synchronously (so code before the first `await`
     executes immediately, like a generator action in Solid); later steps
-    are scheduled by the awaited futures' completion callbacks.
+    are scheduled by the awaited futures' completion callbacks. When
+    `action_tx` is given, every step runs as that action's synchronous
+    segment: writes are held by the transaction and reads see the
+    graph's working values.
     """
 
     def step(exc: BaseException | None = None) -> None:
@@ -1522,11 +2019,15 @@ def _drive_coroutine(
             except Exception:
                 pass
             return
-        global _current_owner, _current_observer
+        global _current_owner, _current_observer, _layer_working, _in_action
         prev_owner = _current_owner
         prev_obs = _current_observer
+        prev_action = _in_action
         _current_owner = owner
         _current_observer = observer
+        if action_tx is not None:
+            _in_action = action_tx
+        _layer_working += 1
         try:
             yielded = coro.throw(exc) if exc is not None else coro.send(None)
         except StopIteration as si:
@@ -1542,6 +2043,8 @@ def _drive_coroutine(
             on_error(e)
             return
         finally:
+            _layer_working -= 1
+            _in_action = prev_action
             _current_owner = prev_owner
             _current_observer = prev_obs
 
@@ -1595,8 +2098,18 @@ class Memo[T](Computation, Accessor[T]):
         lazy: bool = False,
         unobserved: Callable[[], Any] | None = None,
         name: str | None = None,
+        loading_value: Any = _MISSING,
     ) -> None:
         super().__init__(fn, kind=_K_MEMO, equals=equals, lazy=lazy, unobserved=unobserved, name=name)
+        if loading_value is not _MISSING:
+            # Born with a value: the first async run serves it instead of
+            # raising NotReadyError, and stays quiet so it never opens a
+            # transition or reports pending.
+            self._value = loading_value
+            self._first = False
+            a = self._ensure_async()
+            a.has_value = True
+            a.quiet = True
         if _current_owner is not None:
             _current_owner._add_child(self)
 
@@ -1612,6 +2125,8 @@ class Memo[T](Computation, Accessor[T]):
             self._update_if_necessary()
         finally:
             _current_observer = prev
+        if _slow_reads and not _layer_working and not _latest_depth and self in _held:
+            return _held[self]
         return self._value
 
     def __repr__(self) -> str:
