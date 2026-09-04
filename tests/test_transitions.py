@@ -12,6 +12,7 @@ from wybthon.error_boundary import Errored
 from wybthon.html import div, p, span
 from wybthon.loading import Loading
 from wybthon.reactivity import (
+    Memo,
     NotReadyError,
     Setter,
     action,
@@ -208,7 +209,7 @@ def test_loading_value_never_suspends_or_holds(wyb, root_element):
             await gates[i].wait()
             return [f"tip{i}"]
 
-        tips = create_root(lambda d: create_memo(load, loading_value=[]))
+        tips: Memo[list[str]] = create_root(lambda d: create_memo(load, loading_value=[]))
         assert tips() == []
         assert not is_pending(tips)
         wyb["reconciler"].render(div(span(lambda: str(uid())), p(lambda: ",".join(tips()))), root_element)

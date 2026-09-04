@@ -317,7 +317,7 @@ def test_reveal_validates_arguments(wyb):
     with pytest.raises(ValueError):
         Reveal([], order="sideways")
     with pytest.raises(ValueError):
-        Reveal([], collapsed="nope")  # type: ignore[arg-type]
+        Reveal([], collapsed="nope")
 
 
 # ---------------------------------------------------------------------------
