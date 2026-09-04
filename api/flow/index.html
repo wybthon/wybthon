@@ -2321,6 +2321,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.flow.DynamicComponent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DynamicComponent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.flow.Show" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2373,7 +2384,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Dynamic">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.flow.dynamic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dynamic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" dynamic">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2847,6 +2869,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.flow.DynamicComponent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DynamicComponent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.flow.Show" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2899,7 +2932,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Dynamic">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.flow.dynamic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;dynamic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" dynamic">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3010,7 +3054,8 @@ or callables evaluated inside the primitive's own scope.</p>
   shapes depend on <code>keyed</code> (see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../wybthon/#wybthon.For"><code>For</code></a>).</li>
 <li><code>Repeat(count, children)</code>: <code>children(index: int)</code>.</li>
 <li><code>Switch(Match(when, children), ..., fallback=...)</code>.</li>
-<li><code>Dynamic(component, **props)</code>.</li>
+<li><code>Dynamic(component, *children, **props)</code>, or <code>dynamic(source)</code> for a
+  reusable component whose implementation is chosen reactively.</li>
 </ul>
 
 
@@ -3046,6 +3091,14 @@ or callables evaluated inside the primitive's own scope.</p>
             <td>
               <div class="doc-md-description">
                 <p>A branch of a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="../wybthon/#wybthon.Switch"><code>Switch</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DynamicComponent&lt;/span&gt; (&lt;code&gt;wybthon.flow.DynamicComponent&lt;/code&gt;)" href="#wybthon.flow.DynamicComponent">DynamicComponent</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A component whose implementation is chosen reactively; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -3101,6 +3154,14 @@ or callables evaluated inside the primitive's own scope.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Render a component or tag chosen at runtime.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt; (&lt;code&gt;wybthon.flow.dynamic&lt;/code&gt;)" href="#wybthon.flow.dynamic">dynamic</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Turn an accessor for a component (or tag) into a component you can call.</p>
                 </div>
               </td>
             </tr>
@@ -3202,6 +3263,58 @@ receiving an <code>Accessor</code> (or the raw value with <code>keyed=True</code
           </tr>
       </tbody>
     </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon.flow.DynamicComponent" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DynamicComponent</span>
+
+
+<a href="#wybthon.flow.DynamicComponent" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DynamicComponent</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A component whose implementation is chosen reactively; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>.</p>
 
 
 
@@ -3616,7 +3729,7 @@ value changes are ignored (unless a branch is <code>keyed</code>).</p>
 
 
 <a href="#wybthon.flow.Dynamic" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">**</span><span class="n">props</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Dynamic</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">**</span><span class="n">props</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3624,14 +3737,86 @@ value changes are ignored (unless a branch is <code>keyed</code>).</p>
         <p>Render a component or tag chosen at runtime.</p>
 <p><code>component</code> may be a tag name, a component, <code>None</code> (renders
 nothing), or an accessor returning any of those; the subtree
-re-mounts when the resolved component changes. Remaining keyword
-props are forwarded.</p>
+re-mounts when the resolved component changes. Remaining children
+and keyword props are forwarded. To choose the component once and
+render it in several places, or to pass it around like a regular
+component, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a>.</p>
 
 
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">components</span><span class="p">[</span><span class="n">kind</span><span class="p">()],</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Hello"</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">Dynamic</span><span class="p">(</span><span class="s2">"h2"</span><span class="p">,</span> <span class="s2">"Heading text"</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.flow.dynamic" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">dynamic</span>
+
+
+<a href="#wybthon.flow.dynamic" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dynamic</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DynamicComponent&lt;/span&gt; (&lt;code&gt;wybthon.flow.DynamicComponent&lt;/code&gt;)" href="#wybthon.flow.DynamicComponent">DynamicComponent</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Turn an accessor for a component (or tag) into a component you can call.</p>
+<p>The returned callable behaves like any component: call it with
+children and props to get a <code>VNode</code>. Each instance re-mounts when
+<code>source</code> resolves to a different component; while <code>source</code> is an
+async computation with no value yet, the instance keeps its current
+content and the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a> shows its
+fallback. Passing <code>None</code> renders nothing.</p>
+<p>This is the counterpart of SolidJS 2.0's <code>dynamic()</code>; the
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Dynamic&lt;/span&gt;" href="../wybthon/#wybthon.Dynamic"><code>Dynamic</code></a> control-flow form is the inline
+shorthand.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An accessor returning a component, a tag name, or
+<code>None</code>; a plain component or tag is accepted too.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Editor</span> <span class="o">=</span> <span class="n">dynamic</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">RichEditor</span> <span class="k">if</span> <span class="n">rich_mode</span><span class="p">()</span> <span class="k">else</span> <span class="n">PlainEditor</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">Editor</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">draft</span><span class="p">,</span> <span class="n">on_change</span><span class="o">=</span><span class="n">set_draft</span><span class="p">))</span>
 </span></code></pre></div>
 </details>
 
@@ -3678,7 +3863,11 @@ arguments are positional except the keyword-only options noted below.</p>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Dynamic&lt;/span&gt;" href="../wybthon/#wybthon.Dynamic"><code>Dynamic</code></a></td>
-<td><code>Dynamic(component, **props)</code>: render a tag or component chosen at runtime.</td>
+<td><code>Dynamic(component, *children, **props)</code>: render a tag or component chosen at runtime.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="../wybthon/#wybthon.dynamic"><code>dynamic</code></a></td>
+<td><code>dynamic(source)</code>: a reusable component whose implementation is chosen by a reactive <code>source</code>; returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DynamicComponent&lt;/span&gt;" href="../wybthon/#wybthon.DynamicComponent"><code>DynamicComponent</code></a>.</td>
 </tr>
 </tbody>
 </table>

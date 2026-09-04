@@ -1035,6 +1035,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#loading_value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loading_value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#async-generators" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1045,11 +1056,28 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#observing-in-flight-state" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Observing in-flight state
+        Transitions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#observing-a-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing a transition
       
     </span>
   </a>
@@ -1072,6 +1100,17 @@
   
     <nav class="md-nav" aria-label="Loading">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-a-fresh-boundary-for-a-new-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on=: a fresh boundary for a new record
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#nesting-boundaries" class="md-nav__link">
@@ -1119,6 +1158,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Actions and optimistic state">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#affects-and-until" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        affects and until
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2870,6 +2926,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#loading_value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loading_value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#async-generators" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2880,11 +2947,28 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#observing-in-flight-state" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Observing in-flight state
+        Transitions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#observing-a-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing a transition
       
     </span>
   </a>
@@ -2907,6 +2991,17 @@
   
     <nav class="md-nav" aria-label="Loading">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-a-fresh-boundary-for-a-new-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on=: a fresh boundary for a new record
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#nesting-boundaries" class="md-nav__link">
@@ -2954,6 +3049,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Actions and optimistic state">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#affects-and-until" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        affects and until
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3046,10 +3158,11 @@ resource primitive: a memo whose body is <code>async def</code> <em>is</em> the 
 primitive, and everything else builds on it.</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with an <code>async def</code> body creates an <strong>async memo</strong>: a derived value the graph knows may not be ready yet.</li>
+<li><strong>Transitions</strong> keep the screen consistent while async work is in flight: when a change makes an async memo recompute, the UI that depends on that change waits for the new value and then updates all at once.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> shows a fallback while async reads under it haven't produced a first value. Its content stays mounted the whole time.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates several boundaries.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> defers loading a component until it mounts, backed by an async memo.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> handle async <strong>mutations</strong> with instant, self-reverting UI.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> handle async <strong>mutations</strong> as transactions with instant, self-reverting UI.</li>
 </ul>
 <h2 id="when-to-reach-for-each">When to reach for each<a class="headerlink" href="#when-to-reach-for-each" title="Permanent link">&para;</a></h2>
 <table>
@@ -3069,8 +3182,12 @@ primitive, and everything else builds on it.</p>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a></td>
 </tr>
 <tr>
-<td>Reading async data without suspending</td>
+<td>Showing the new input while the rest of the page waits</td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a></td>
+</tr>
+<tr>
+<td>Nice-to-have data that shouldn't gate anything</td>
+<td><code>create_memo(fn, loading_value=...)</code></td>
 </tr>
 <tr>
 <td>Waiting for a value in imperative code</td>
@@ -3096,6 +3213,14 @@ primitive, and everything else builds on it.</p>
 <td>Async mutations (create, update, delete)</td>
 <td><code>@action</code> and optimistic state</td>
 </tr>
+<tr>
+<td>Marking data as "changing" before a write lands</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;affects&lt;/span&gt;" href="../../api/wybthon/#wybthon.affects"><code>affects</code></a></td>
+</tr>
+<tr>
+<td>Waiting for real data to reach a state</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;until&lt;/span&gt;" href="../../api/wybthon/#wybthon.until"><code>until</code></a></td>
+</tr>
 </tbody>
 </table>
 <h2 id="async-memos">Async memos<a class="headerlink" href="#async-memos" title="Permanent link">&para;</a></h2>
@@ -3115,80 +3240,123 @@ primitive, and everything else builds on it.</p>
 <p>The lifecycle:</p>
 <ul>
 <li><strong>Before the first value</strong>, reading <code>user()</code> raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../../api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>. You almost never handle this yourself: the nearest <code>Loading</code> boundary turns it into fallback UI, sync memos that read a pending value become pending themselves, and a hole that hits it keeps its previous content.</li>
-<li><strong>After the first value</strong>, recomputes serve the stale value while the new one is in flight (stale-while-revalidate). Content stays visible during refreshes, and revalidations never re-trigger a <code>Loading</code> boundary.</li>
+<li><strong>After the first value</strong>, a recompute caused by an input change opens a <strong>transition</strong> (below). Readers keep the previous value while the new one is in flight, and the UI that depends on the changed input waits with it.</li>
 <li><strong>Errors</strong> from the coroutine are stored and re-raised on read, so a failed fetch reaches the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundary.</li>
 </ul>
 <p>Signal reads inside the coroutine are tracked both before and after
 <code>await</code>, so an async memo refetches when its inputs change. Changing
 <code>user_id</code> above reruns the fetch; reading a <code>version</code> signal and bumping
 it is the manual equivalent.</p>
+<h3 id="loading_value"><code>loading_value</code><a class="headerlink" href="#loading_value" title="Permanent link">&para;</a></h3>
+<p>Some data is nice to have but shouldn't gate anything: a recommendation
+panel, a badge count. Give the memo a <code>loading_value</code> and it's never
+"not ready": it serves that value until the first run lands, doesn't
+register with <code>Loading</code>, and never holds a transition on mount.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">suggestions</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_suggestions</span><span class="p">,</span> <span class="n">loading_value</span><span class="o">=</span><span class="p">[])</span>
+</span></code></pre></div>
 <h3 id="async-generators">Async generators<a class="headerlink" href="#async-generators" title="Permanent link">&para;</a></h3>
 <p>An <code>async def</code> body containing <code>yield</code> streams: each yielded value
 becomes the memo's new value. Use it to adapt sockets, timers, or any
 async iterable:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_memo</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ticker</span><span class="p">():</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="k">yield</span> <span class="n">n</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">seconds</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_memo</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ticker</span><span class="p">():</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="k">yield</span> <span class="n">n</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">seconds</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The generator is closed when the memo re-runs or is disposed.</p>
-<h3 id="observing-in-flight-state">Observing in-flight state<a class="headerlink" href="#observing-in-flight-state" title="Permanent link">&para;</a></h3>
-<p>Four helpers work with async values without making you catch
+<h2 id="transitions">Transitions<a class="headerlink" href="#transitions" title="Permanent link">&para;</a></h2>
+<p>Consider a header that shows the selected user's id and a body that
+shows the fetched user:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">div</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">h1</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"User #</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>When <code>set_user_id(2)</code> runs, the header could update immediately while
+the body still shows user 1: a torn screen. Wybthon doesn't do that. The
+write to <code>user_id</code> makes <code>user</code> recompute; because <code>user</code> already had a
+value and is now waiting on the network, the flush <strong>holds</strong> the change:
+<code>user_id</code> keeps reporting <code>1</code> to the UI, the header stays on <code>#1</code>, and
+when the fetch lands both update in the same commit. Nothing about the
+code above asks for this; it's how every async recompute behaves.</p>
+<p>What's held is decided per flush, structurally:</p>
+<ul>
+<li>Every write committed in a round that made an async memo (that already had a value) pending is held, along with everything derived from those writes: memos, holes, prop bindings, effects, projections, list rows.</li>
+<li>Writes unrelated to the pending work reveal as usual. Typing into an unrelated search box while a fetch is in flight isn't delayed.</li>
+<li>Effects whose compute stage read held data run their apply stage at the reveal, so <code>create_effect</code> bodies see consistent state too.</li>
+<li>Async memos that hadn't produced a value yet don't hold anything; they're the <code>Loading</code> boundary's job.</li>
+</ul>
+<p>The transition is a single object: concurrent async work and in-flight
+actions share it and settle together, and a change that arrives while
+one is open joins it.</p>
+<h3 id="observing-a-transition">Observing a transition<a class="headerlink" href="#observing-a-transition" title="Permanent link">&para;</a></h3>
+<p>Three helpers work with in-flight state without making you catch
 <code>NotReadyError</code>:</p>
 <ul>
-<li><strong><code>is_pending(fn)</code></strong> is a tracked probe. It's <code>True</code> while a change-triggered recompute of any async value <code>fn</code> reads is in flight, while an optimistic override is active, or when <code>fn</code> raises <code>NotReadyError</code>.</li>
-<li><strong><code>latest(fn)</code></strong> evaluates <code>fn</code> without ever raising: not-ready reads return their most recent value, or <code>None</code> if they never resolved.</li>
-<li><strong><code>await resolve(fn)</code></strong> returns the next settled value of <code>fn()</code> (or raises the exception it raised).</li>
-<li><strong><code>await refresh(memo)</code></strong> recomputes quietly and returns the settled value. "Quiet" means <code>is_pending</code> stays <code>False</code> and readers keep the previous value while the run is in flight.</li>
+<li><strong><code>is_pending(fn)</code></strong> is a tracked probe. It's <code>True</code> while any value <code>fn</code> reads is held by a transition, while an async recompute of something it reads is in flight, while an in-flight action declared it with <code>affects</code>, while an optimistic override is active on it, or when it raises <code>NotReadyError</code>. The probe's reads don't wait for the transition: an indicator has to show <em>during</em> the hold.</li>
+<li><strong><code>latest(fn)</code></strong> evaluates <code>fn</code> against the newest state: held values return the value being computed, and not-ready async reads return their most recent value (or <code>None</code>). Use it for the one piece of UI that should move ahead of the rest.</li>
+<li><strong><code>await resolve(fn)</code></strong> returns the next settled value of <code>fn()</code> (or raises the exception it raised). It's for imperative code.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_pending</span><span class="p">,</span> <span class="n">latest</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">span</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">"Refreshing..."</span> <span class="k">if</span> <span class="n">is_pending</span><span class="p">(</span><span class="n">user</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">latest</span><span class="p">(</span><span class="n">user</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"anonymous"</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_pending</span><span class="p">,</span> <span class="n">latest</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span><span class="p">,</span> <span class="n">span</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">h1</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"User #</span><span class="si">{</span><span class="n">latest</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>                    <span class="c1"># moves ahead</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">"Loading..."</span> <span class="k">if</span> <span class="n">is_pending</span><span class="p">(</span><span class="n">user</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>    <span class="c1"># shows during the hold</span>
 </span></code></pre></div>
+<p>A quiet <strong><code>await refresh(memo)</code></strong> recomputes without opening a
+transition: <code>is_pending</code> stays <code>False</code> and readers keep the previous
+value while the run is in flight. Use it after a server write to re-ask
+for data.</p>
 <h2 id="loading">Loading<a class="headerlink" href="#loading" title="Permanent link">&para;</a></h2>
 <p><code>Loading</code> watches its subtree for async reads that aren't ready. While
 any registered computation has no value yet it shows <code>fallback</code>; once
 everything has a first value it reveals the content.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_user</span><span class="p">():</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="s2">"/api/user"</span><span class="p">)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="nd">@component</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Profile</span><span class="p">():</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">fetch_user</span><span class="p">)</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>            <span class="n">p</span><span class="p">(</span><span class="s2">"Name: "</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">])),</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>            <span class="n">p</span><span class="p">(</span><span class="s2">"Email: "</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"email"</span><span class="p">])),</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="p">),</span>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">),</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_memo</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">span</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_user</span><span class="p">():</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="s2">"/api/user"</span><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="nd">@component</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Profile</span><span class="p">():</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">fetch_user</span><span class="p">)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>            <span class="n">p</span><span class="p">(</span><span class="s2">"Name: "</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">])),</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>            <span class="n">p</span><span class="p">(</span><span class="s2">"Email: "</span><span class="p">,</span> <span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"email"</span><span class="p">])),</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="p">),</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">),</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li><code>children</code> may be a VNode, a zero-arg callable, or a list of either. <code>fallback</code> may be a VNode, a string, or a callable.</li>
 <li>Any read that raises <code>NotReadyError</code> under the boundary registers its computation automatically; there's no manual wiring.</li>
 <li><strong>Content stays mounted.</strong> The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.</li>
-<li><code>on=</code> takes an accessor (or a list of them) the boundary should also wait for, even if the children never read them. Use it to keep a layout from partially rendering while a critical query is in flight:</li>
+<li><strong>Refreshes don't re-trigger the boundary.</strong> Once the content has shown, a recompute is a transition (the old content stays put), not a return to the fallback.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Dashboard</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">Spinner</span><span class="p">(),</span> <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">settings</span><span class="p">])</span>
+<h3 id="on-a-fresh-boundary-for-a-new-record"><code>on=</code>: a fresh boundary for a new record<a class="headerlink" href="#on-a-fresh-boundary-for-a-new-record" title="Permanent link">&para;</a></h3>
+<p>Sometimes the old content <em>shouldn't</em> stay put. Navigating from user 1
+to user 2 is a new page, not a refresh of the old one, and a spinner is
+the honest thing to show. Name the boundary's inputs with <code>on=</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">UserPage</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">Spinner</span><span class="p">(),</span> <span class="n">on</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 </span></code></pre></div>
+<p>The boundary waits for the <code>on</code> accessors initially even if the children
+never read them, and when one of them <strong>changes</strong> while data under the
+boundary is pending, the fallback shows again instead of the change being
+held. Use it for identity changes (a route's <code>id</code>), not for refreshes.</p>
 <h3 id="nesting-boundaries">Nesting boundaries<a class="headerlink" href="#nesting-boundaries" title="Permanent link">&para;</a></h3>
 <p>Nest <code>Loading</code> boundaries to refine which parts of the page show
 fallbacks. The closest enclosing boundary handles each pending
@@ -3198,79 +3366,102 @@ one.</p>
 <p>When several sibling boundaries load in parallel, their contents pop in
 as each resolves. Wrap them in <code>Reveal</code> to control the order and how
 many fallbacks show at once:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">Reveal</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">Reveal</span><span class="p">(</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="p">[</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ProfilePanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading profile..."</span><span class="p">)),</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">FeedPanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading feed..."</span><span class="p">)),</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">TrendsPanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading trends..."</span><span class="p">)),</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="p">],</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">order</span><span class="o">=</span><span class="s2">"forwards"</span><span class="p">,</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">tail</span><span class="o">=</span><span class="s2">"collapsed"</span><span class="p">,</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">Reveal</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">Reveal</span><span class="p">(</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="p">[</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ProfilePanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading profile..."</span><span class="p">)),</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">FeedPanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading feed..."</span><span class="p">)),</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">TrendsPanel</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading trends..."</span><span class="p">)),</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">],</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>order</code> is <code>"forwards"</code> (top to bottom, the default; each boundary waits for the ones before it), <code>"backwards"</code>, or <code>"together"</code> (everything reveals at once).</li>
-<li><code>tail</code> controls pending fallbacks: <code>"visible"</code> (all, the default), <code>"collapsed"</code> (only the next one in reveal order), or <code>"hidden"</code> (none).</li>
+<li><code>order</code> is <code>"sequential"</code> (the default: contents reveal in DOM order, each waiting for the ones before it), <code>"together"</code> (the whole group reveals at once), or <code>"natural"</code> (each boundary reveals on its own data).</li>
+<li><code>collapsed=True</code> (sequential only) renders nothing for the boundaries past the current frontier, so only one fallback shows at a time.</li>
+<li>A <code>Reveal</code> nested inside another is one slot in the parent's order. Its boundaries wait for the parent to release the slot, then follow the inner <code>order</code>; <code>order="natural"</code> is the way to make a group count as one slot without coordinating internally.</li>
 </ul>
 <p>Every boundary's content mounts immediately, so they all load in
 parallel; <code>order</code> only controls when each is revealed.</p>
 <h3 id="errors-inside-a-boundary">Errors inside a boundary<a class="headerlink" href="#errors-inside-a-boundary" title="Permanent link">&para;</a></h3>
 <p><code>Loading</code> handles loading states only. Pair it with <code>Errored</code> to catch
 fetch failures and render errors:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Loading</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">Errored</span><span class="p">(</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">)),</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Something went wrong: "</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)),</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Loading</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">Errored</span><span class="p">(</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">)),</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Something went wrong: "</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)),</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">)</span>
 </span></code></pre></div>
+<p>An <code>Errored</code> boundary also <strong>heals</strong>: when any input the failing
+computation read changes (the fetch's <code>user_id</code>, say), the boundary
+resets and re-renders on its own. See <a href="../error-boundaries/">Error boundaries</a>.</p>
 <h2 id="actions-and-optimistic-state">Actions and optimistic state<a class="headerlink" href="#actions-and-optimistic-state" title="Permanent link">&para;</a></h2>
 <p>Data fetching covers reads; <strong>actions</strong> cover writes. <code>@action</code> wraps a
-mutation so the graph can track its in-flight state:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_optimistic</span><span class="p">,</span> <span class="n">refresh</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">likes</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">fetch_like_count</span><span class="p">)</span>          <span class="c1"># async source</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>     <span class="c1"># shadows it</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nd">@action</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">like</span><span class="p">():</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="n">n</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>   <span class="c1"># instant UI</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="k">await</span> <span class="n">api_like</span><span class="p">()</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="k">await</span> <span class="n">refresh</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>                <span class="c1"># real data lands quietly</span>
+mutation in a transaction:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_optimistic</span><span class="p">,</span> <span class="n">refresh</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">likes</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">fetch_like_count</span><span class="p">)</span>          <span class="c1"># async source</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>     <span class="c1"># shadows it</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nd">@action</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">like</span><span class="p">():</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="n">n</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>   <span class="c1"># instant UI</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="k">await</span> <span class="n">api_like</span><span class="p">()</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="k">await</span> <span class="n">refresh</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>                <span class="c1"># real data lands; the override reverts</span>
 </span></code></pre></div>
+<p>Inside an action:</p>
 <ul>
-<li>An action runs synchronously up to its first <code>await</code>, so optimistic writes at the top apply right away (visible at the next flush, like any write).</li>
-<li><code>like.pending()</code> is a tracked accessor that's <code>True</code> while any invocation is in flight; use it to disable buttons or show spinners.</li>
+<li><strong>Plain writes stage into the transaction.</strong> Signals and stores the action writes, before or after an <code>await</code>, commit to the graph but reveal together when the action settles, as does the landing of anything it <code>refresh</code>es. Reads inside the action see the staged values.</li>
+<li><strong>Optimistic writes reveal now.</strong> Values written through <code>create_optimistic</code> or <code>create_optimistic_store</code> show immediately and revert when the action settles.</li>
+<li><code>like.pending()</code> is a tracked accessor that's <code>True</code> from the call until it settles; it reveals immediately, so bind disabled buttons and spinners to it.</li>
+<li>Concurrent actions share one transaction and settle together.</li>
 <li>Errors route to the nearest <code>Errored</code> boundary captured at call time <em>and</em> re-raise to the awaiter, so <code>await like()</code> behaves like a normal call.</li>
-<li>A sync function may also be wrapped; it returns its result directly and is never pending.</li>
+<li>A sync function may also be wrapped; its writes reveal in the flush that commits them, and it's never pending.</li>
 </ul>
 <p><code>create_optimistic(source)</code> overlays a value: <code>source</code> is an accessor to
-shadow or a plain initial value. Writes through the returned setter show
-immediately, and when every in-flight action has settled the override
-<strong>reverts</strong> to the source, which by then reflects the server's answer.
-While an override is active, <code>is_pending</code> reports <code>True</code> for expressions
-that read it.</p>
+shadow or a plain initial value. While an override is active,
+<code>is_pending</code> reports <code>True</code> for expressions that read it, and <code>until</code>
+sees through it to the source. It serves for optimistic <em>data</em> (the
+like count you expect the server to confirm) and for process <em>state</em>
+that must show during an action (a "saving" flag).</p>
 <p><code>create_optimistic_store(source, initial=None)</code> is the store version,
 for nested optimistic state. <code>source</code> may be a tracked function
 returning the base state (derived form, reconciled when its dependencies
 change) or a plain dict or list. The setter applies draft mutations like
 a <a href="../stores/#writing-values">store setter</a>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">create_optimistic_store</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">deep</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">todos</span><span class="p">,</span> <span class="n">set_todos</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deep</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nd">@action</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"saving"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">saved</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api_create</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">set_todos</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">create_optimistic_store</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">deep</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">todos</span><span class="p">,</span> <span class="n">set_todos</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic_store</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deep</span><span class="p">(</span><span class="n">todos</span><span class="p">)[</span><span class="s2">"items"</span><span class="p">],</span> <span class="p">[])</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nd">@action</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"saving"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">saved</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api_create</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">set_todos</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">))</span>
+</span></code></pre></div>
+<h3 id="affects-and-until"><code>affects</code> and <code>until</code><a class="headerlink" href="#affects-and-until" title="Permanent link">&para;</a></h3>
+<p>Two helpers refine what an action reports while it's in flight:</p>
+<ul>
+<li><strong><code>affects(*targets)</code></strong> declares which signals, memos, or stores the action is going to change. Until it settles, <code>is_pending</code> is <code>True</code> for expressions that read them, even before anything was written. Use it when the pending state belongs on the <em>data</em> (dim the record being saved) rather than on the action.</li>
+<li><strong><code>await until(pred)</code></strong> resolves once <code>pred()</code> is truthy on the <strong>authoritative</strong> view: optimistic overrides are invisible, so it observes real data only. Inside an action, reads see the action's own staged writes; a <code>NotReadyError</code> simply waits.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">affects</span><span class="p">,</span> <span class="n">refresh</span><span class="p">,</span> <span class="n">until</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="nd">@action</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checkout</span><span class="p">(</span><span class="n">cart_id</span><span class="p">):</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">affects</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">order_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api_checkout</span><span class="p">(</span><span class="n">cart_id</span><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">refresh</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="k">await</span> <span class="n">until</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">any</span><span class="p">(</span><span class="n">o</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="o">==</span> <span class="n">order_id</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">()))</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">navigate</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/orders/</span><span class="si">{</span><span class="n">order_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="lazy-components">Lazy components<a class="headerlink" href="#lazy-components" title="Permanent link">&para;</a></h2>
 <p><code>lazy(loader)</code> returns a component backed by an async memo. The first
@@ -3278,15 +3469,15 @@ time it mounts (or when you call <code>.preload()</code>), the loader runs; whil
 it's in flight the nearest <code>Loading</code> boundary shows its fallback, and
 once resolved the real component mounts in place. The result is cached
 for every later mount.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lazy</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">HeavyChart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.heavy_chart"</span><span class="p">,</span> <span class="s2">"Chart"</span><span class="p">))</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nd">@component</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">Dashboard</span><span class="p">():</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">HeavyChart</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">chart_data</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Loading chart..."</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lazy</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">HeavyChart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.heavy_chart"</span><span class="p">,</span> <span class="s2">"Chart"</span><span class="p">))</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="nd">@component</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">Dashboard</span><span class="p">():</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">HeavyChart</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">chart_data</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Loading chart..."</span><span class="p">))</span>
 </span></code></pre></div>
 <ul>
 <li>The loader may return a component, an imported module (<code>Page</code>, then <code>default</code>, then the first callable export is used), a module-path string, or a <code>(module_path, attr)</code> tuple.</li>
@@ -3302,21 +3493,23 @@ for every later mount.</p>
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../api/wybthon/#wybthon.Route"><code>Route</code></a> accepts lazy components directly, which is the
 canonical way to code-split:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">lazy</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">Settings</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.settings"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">),</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">Settings</span><span class="p">),</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="p">]</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Settings"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">Settings</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">lazy</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">Settings</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.settings"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">),</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">Settings</span><span class="p">),</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="p">]</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Settings"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">Settings</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
 </span></code></pre></div>
 <h2 id="patterns-and-pitfalls">Patterns and pitfalls<a class="headerlink" href="#patterns-and-pitfalls" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Don't <code>await</code> async memos in render code.</strong> Read them like any accessor; the graph handles the not-ready state. Awaiting the fetch yourself bypasses <code>Loading</code>, <code>is_pending</code>, and stale-while-revalidate. <code>resolve</code> is for imperative code such as actions and tests.</li>
-<li><strong>Create memos where the data is needed.</strong> Because <code>Loading</code> keeps its content mounted while pending, memos created inside the content start immediately; you no longer need to hoist them above the boundary to load in parallel.</li>
+<li><strong>Don't <code>await</code> async memos in render code.</strong> Read them like any accessor; the graph handles the not-ready state. Awaiting the fetch yourself bypasses <code>Loading</code>, <code>is_pending</code>, transitions, and stale-while-revalidate. <code>resolve</code> is for imperative code such as actions and tests.</li>
+<li><strong>Create memos where the data is needed.</strong> Because <code>Loading</code> keeps its content mounted while pending, memos created inside the content start immediately; you don't need to hoist them above the boundary to load in parallel.</li>
+<li><strong>Let transitions do the holding.</strong> Don't hand-roll "previous value" signals to avoid tearing; a plain async memo already gives you that. Reach for <code>latest</code> only for the piece of UI that should move early.</li>
+<li><strong>Use <code>on=</code> for identity changes, not refreshes.</strong> A new record deserves a fallback; new data for the same record deserves a hold.</li>
 <li><strong>Prefer <code>refresh</code> after writes.</strong> A quiet refresh keeps the current value on screen and doesn't flicker <code>is_pending</code>.</li>
 <li><strong>Keep fallbacks cheap and stable.</strong> Avoid heavy components inside them.</li>
 <li><strong>Combine <code>Loading</code> with <code>Errored</code>.</strong> Async work can fail. Wrap user-facing async regions with both.</li>
@@ -3325,8 +3518,8 @@ canonical way to code-split:</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read the <a href="../../examples/fetch/">Async fetch example</a> for an end-to-end demo.</li>
-<li>See the <a href="../../api/loading/"><code>loading</code></a> API for <code>Loading</code> and <code>Reveal</code>, and <a href="../../api/reactivity/"><code>reactivity</code></a> for actions.</li>
-<li>Read <a href="../error-boundaries/">Error boundaries</a> for <code>Errored</code>.</li>
+<li>See the <a href="../../api/loading/"><code>loading</code></a> API for <code>Loading</code> and <code>Reveal</code>, and <a href="../../api/reactivity/"><code>reactivity</code></a> for actions, <code>affects</code>, and <code>until</code>.</li>
+<li>Read <a href="../error-boundaries/">Error boundaries</a> for <code>Errored</code> and healing.</li>
 </ul>
 
 

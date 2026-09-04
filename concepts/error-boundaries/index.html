@@ -1014,6 +1014,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Resetting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-healing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic healing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2804,6 +2821,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Resetting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-healing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic healing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2967,6 +3001,16 @@ pattern, so navigating away from a broken page recovers on its own:</p>
 </span></code></pre></div>
 <p>Resetting re-renders the children. If the cause hasn't been fixed, the
 error is caught again and the fallback returns.</p>
+<h3 id="automatic-healing">Automatic healing<a class="headerlink" href="#automatic-healing" title="Permanent link">&para;</a></h3>
+<p>A boundary also resets on its own when any <strong>input the failing
+computation read</strong> changes. The boundary records the signals behind
+the memo or hole that raised (the <code>user_id</code> a fetch read, the store
+path a hole formatted) and watches them; a change to one of them is a
+new situation, so the boundary re-renders the children without you
+wiring <code>reset_on=</code>. A fetch that failed for user 3 heals when the user
+picks user 4, and an async memo that errored heals when its inputs
+change and the retry succeeds. Explicit <code>reset()</code> and <code>reset_on=</code> still
+work for causes the graph can't see, such as a network that came back.</p>
 <h2 id="observing-errors-with-on_error">Observing errors with <code>on_error</code><a class="headerlink" href="#observing-errors-with-on_error" title="Permanent link">&para;</a></h2>
 <p>Pass <code>on_error=</code> to be notified when the boundary catches something, for
 logging or monitoring. It runs in addition to showing the fallback:</p>

@@ -2869,6 +2869,11 @@ scope. When a child render, hole, or effect raises, the boundary swaps
 in a fallback while leaving sibling trees untouched. It's the
 recommended way to surface unexpected errors without crashing the
 whole app.</p>
+<p>Boundaries <strong>heal automatically</strong>: the boundary remembers which
+reactive inputs the failing computation had read, and when any of them
+changes it re-renders its children. A fixed <code>user_id</code>, a re-fetched
+memo, or a corrected form field clears the error without an explicit
+<code>reset()</code>; <code>reset</code> and <code>reset_on</code> remain for manual retries.</p>
 
 
 <details class="example" open>

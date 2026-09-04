@@ -2887,34 +2887,35 @@
 
         <p><code>Loading</code> and <code>Reveal</code>: fallback UI for async computations.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a> is the async boundary (SolidJS 2.0's
-<code>Loading</code>, the successor to <code>Suspense</code>). Any read of an async
-computation under the boundary that raises
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a> registers the computation with
-the boundary, and the boundary shows its fallback until every
-registered computation has produced its first value.</p>
-<p>Revalidations don't re-trigger the boundary: an async memo that already
-has a value keeps serving it (stale-while-revalidate) while the
-recompute is in flight, so content stays visible during reloads. Use
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../wybthon/#wybthon.is_pending"><code>is_pending</code></a> to render inline refresh hints.</p>
-<p>Pass <code>on=</code> to have the boundary wait for specific accessors as well,
-even if the children never read them; this is how you keep a layout
-from partially rendering while a critical query is still in flight.</p>
+<code>Loading</code>, the successor to <code>Suspense</code>). It covers <strong>initial
+readiness</strong>: any read of an async computation under the boundary that
+raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a> registers the
+computation with the boundary, and the boundary shows its fallback
+until every registered computation has produced its first value.</p>
+<p>Once content is on screen the boundary gets out of the way. A recompute
+of an async memo that already has a value is a <em>transition</em>: the parts
+of the UI that depend on the changed input hold their previous state
+until the new value lands, and the boundary never shows its fallback
+again. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../wybthon/#wybthon.is_pending"><code>is_pending</code></a> to render inline refresh
+hints. Pass <code>on=</code> to opt back into the fallback for specific changes
+(swapping the record being shown rather than refreshing it).</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates multiple <code>Loading</code> boundaries
 beneath it, controlling the order their contents reveal (<code>order</code>) and
-how many fallbacks show at once (<code>tail</code>).</p>
+whether every pending boundary shows its own fallback (<code>collapsed</code>).</p>
 
 
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="s2">"/api/user"</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/api/users/</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_user</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">Loading</span><span class="p">(</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]),</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">),</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">on</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3051,8 +3052,13 @@ shown while any registered async computation has no value.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An accessor or list of accessors the boundary also waits
-for, regardless of whether the children read them.</p>
+                <p>An accessor, or list of accessors, naming the boundary's
+inputs. The boundary waits for them initially even if the
+children never read them, and when one of them <strong>changes</strong>
+while data under the boundary is pending, the fallback
+shows again instead of the old content being held. Use it
+for "new record, fresh boundary" (a route's <code>id</code>), not for
+refreshes.</p>
               </div>
             </td>
             <td>
@@ -3101,7 +3107,7 @@ for, regardless of whether the children read them.</p>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Loading</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">Header</span><span class="p">(),</span> <span class="n">Body</span><span class="p">()),</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">Spinner</span><span class="p">(),</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">settings</span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">on</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
 </span></code></pre></div>
 </details>
@@ -3118,7 +3124,7 @@ for, regardless of whether the children read them.</p>
 
 
 <a href="#wybthon.loading.Reveal" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Reveal</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n"><span title="wybthon.loading.RevealOrder">RevealOrder</span></span> <span class="o">=</span> <span class="s1">'forwards'</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n"><span title="wybthon.loading.RevealTail">RevealTail</span></span> <span class="o">=</span> <span class="s1">'visible'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Reveal</span><span class="p">(</span><span class="n">children</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n"><span title="wybthon.loading.RevealOrder">RevealOrder</span></span> <span class="o">=</span> <span class="s1">'sequential'</span><span class="p">,</span> <span class="n">collapsed</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3127,7 +3133,10 @@ for, regardless of whether the children read them.</p>
 <p>Each <code>Loading</code> boundary mounted underneath (that isn't nested
 inside another boundary) registers with the <code>Reveal</code> in mount
 order, and the <code>Reveal</code> decides when each may show its content and
-whether it shows its fallback.</p>
+whether it shows its fallback. A <code>Reveal</code> nested inside another is
+one composite slot in the parent's order: its boundaries stay on
+their fallbacks until the parent releases the slot, then follow the
+inner <code>order</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3166,33 +3175,34 @@ whether it shows its fallback.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>"forwards"</code> (default; contents reveal top-to-bottom,
-each waiting for the ones before it), <code>"backwards"</code>
-(bottom-to-top), or <code>"together"</code> (all reveal at once when
-every boundary has loaded).</p>
+                <p><code>"sequential"</code> (default; contents reveal in DOM order,
+each waiting for the ones before it), <code>"together"</code> (the
+whole group reveals at once when every boundary has
+loaded), or <code>"natural"</code> (each boundary reveals on its own
+data; useful for a nested group that should count as one
+slot in the parent without coordinating internally).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;forwards&#39;</code>
+                  <code>&#39;sequential&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>tail</code>
+                <code>collapsed</code>
             </td>
             <td>
-                  <code><span title="wybthon.loading.RevealTail">RevealTail</span></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fallback policy for still-pending boundaries.
-<code>"visible"</code> (default) shows every pending boundary's
-fallback, <code>"collapsed"</code> shows only the next fallback in
-reveal order, and <code>"hidden"</code> shows none.</p>
+                <p>Only consulted with <code>order="sequential"</code>. When
+<code>True</code>, boundaries past the current frontier render nothing
+instead of their own fallback, so only one fallback shows.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;visible&#39;</code>
+                  <code>False</code>
             </td>
           </tr>
       </tbody>
@@ -3229,9 +3239,8 @@ reveal order, and <code>"hidden"</code> shows none.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">Loading</span><span class="p">(</span><span class="n">PanelA</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading A..."</span><span class="p">)),</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">Loading</span><span class="p">(</span><span class="n">PanelB</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading B..."</span><span class="p">)),</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="p">],</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">order</span><span class="o">=</span><span class="s2">"forwards"</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">tail</span><span class="o">=</span><span class="s2">"collapsed"</span><span class="p">,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3259,9 +3268,11 @@ registers that computation with the boundary, and the boundary shows
 its fallback until every registered computation has a first value.
 Content <strong>stays mounted</strong> the whole time, parked off-document, so async
 memos created inside it keep running and nothing is torn down.
-Revalidations never re-trigger the boundary: a memo with a value keeps
-serving it (stale-while-revalidate), and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../wybthon/#wybthon.is_pending"><code>is_pending</code></a>
-is the tool for inline refresh hints.</p>
+Revalidations never re-trigger the boundary: a recompute of a memo that
+has a value is a <strong>transition</strong>, which holds the affected UI on the old
+state until the new value lands, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../wybthon/#wybthon.is_pending"><code>is_pending</code></a>
+is the tool for inline refresh hints. <code>on=</code> names inputs whose change
+should show the fallback again instead (a new record, not a refresh).</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates several <code>Loading</code> boundaries
 beneath it: the order their contents appear and how many fallbacks show
 at once.</p>
@@ -3275,11 +3286,11 @@ at once.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a></td>
-<td><code>Loading(children, *, fallback=None, on=None)</code>; <code>children</code> is a VNode, callable, or list; <code>on</code> is an accessor or list of accessors to wait for as well.</td>
+<td><code>Loading(children, *, fallback=None, on=None)</code>; <code>children</code> is a VNode, callable, or list; <code>on</code> is an accessor or list of accessors the boundary waits for, and whose change shows the fallback again.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../wybthon/#wybthon.Reveal"><code>Reveal</code></a></td>
-<td><code>Reveal(children, *, order="forwards", tail="visible")</code>; <code>order</code> is <code>"forwards"</code>, <code>"backwards"</code>, or <code>"together"</code>; <code>tail</code> is <code>"visible"</code>, <code>"collapsed"</code>, or <code>"hidden"</code>.</td>
+<td><code>Reveal(children, *, order="sequential", collapsed=False)</code>; <code>order</code> is <code>"sequential"</code>, <code>"together"</code>, or <code>"natural"</code>; <code>collapsed=True</code> shows only the next fallback in a sequential group.</td>
 </tr>
 </tbody>
 </table>
@@ -3307,22 +3318,22 @@ at once.</p>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>            <span class="n">Loading</span><span class="p">(</span><span class="n">UserCard</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading user..."</span><span class="p">)),</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            <span class="n">Loading</span><span class="p">(</span><span class="n">Activity</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading activity..."</span><span class="p">),</span> <span class="n">on</span><span class="o">=</span><span class="n">settings</span><span class="p">),</span>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="p">],</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">order</span><span class="o">=</span><span class="s2">"forwards"</span><span class="p">,</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="n">tail</span><span class="o">=</span><span class="s2">"collapsed"</span><span class="p">,</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="p">)</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li><code>on=</code> makes the boundary wait for specific accessors even if the
-  children never read them, so a layout doesn't partially render while a
-  critical query is in flight.</li>
-<li>With <code>order="forwards"</code> contents reveal top to bottom, each waiting for
-  the ones before it; <code>"backwards"</code> reverses that; <code>"together"</code> reveals
-  all at once. <code>tail="visible"</code> shows every pending fallback,
-  <code>"collapsed"</code> only the next one in reveal order, <code>"hidden"</code> none.</li>
+  children never read them, and when one of them changes while data
+  under the boundary is pending, the fallback shows again instead of
+  the old content being held.</li>
+<li>With <code>order="sequential"</code> contents reveal in DOM order, each waiting
+  for the ones before it; <code>"together"</code> reveals all at once;
+  <code>"natural"</code> lets each boundary reveal on its own data. With
+  <code>collapsed=True</code> only the next pending fallback shows.</li>
 <li>Every boundary's content mounts immediately, so all of them load in
-  parallel; <code>order</code> only controls when each is revealed. Boundaries
-  nested inside another boundary coordinate with that boundary, not with
-  the outer <code>Reveal</code>.</li>
+  parallel; <code>order</code> only controls when each is revealed. A <code>Reveal</code>
+  nested inside another is one slot in the parent's order; boundaries
+  nested inside another boundary coordinate with that boundary.</li>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
