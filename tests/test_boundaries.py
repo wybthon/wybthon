@@ -212,10 +212,10 @@ def _two_boundaries(ga: asyncio.Event, gb: asyncio.Event):
     return [Loading(lambda: p(ma), fallback=p("fa")), Loading(lambda: p(mb), fallback=p("fb"))]
 
 
-def test_reveal_forwards_collapsed(wyb, root_element):
+def test_reveal_sequential_collapsed(wyb, root_element):
     async def main() -> None:
         ga, gb = asyncio.Event(), asyncio.Event()
-        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), order="forwards", tail="collapsed")), root_element)
+        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), collapsed=True)), root_element)
         await _tick()
         assert texts(root_element.element) == ["fa"]
         gb.set()
@@ -228,34 +228,71 @@ def test_reveal_forwards_collapsed(wyb, root_element):
     asyncio.run(main())
 
 
-def test_reveal_forwards_visible_shows_every_fallback(wyb, root_element):
+def test_reveal_sequential_shows_every_fallback(wyb, root_element):
     async def main() -> None:
         ga, gb = asyncio.Event(), asyncio.Event()
-        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), order="forwards", tail="visible")), root_element)
+        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), order="sequential")), root_element)
         await _tick()
         assert texts(root_element.element) == ["fa", "fb"]
-        ga.set()
-        await _tick()
-        assert texts(root_element.element) == ["A", "fb"]
         gb.set()
+        await _tick()
+        assert texts(root_element.element) == ["fa", "fb"]  # B waits for A
+        ga.set()
         await _tick()
         assert texts(root_element.element) == ["A", "B"]
 
     asyncio.run(main())
 
 
-def test_reveal_backwards(wyb, root_element):
+def test_reveal_natural_reveals_independently(wyb, root_element):
     async def main() -> None:
         ga, gb = asyncio.Event(), asyncio.Event()
-        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), order="backwards", tail="hidden")), root_element)
+        wyb["reconciler"].render(div(Reveal(_two_boundaries(ga, gb), order="natural")), root_element)
         await _tick()
-        assert texts(root_element.element) == []
-        ga.set()
-        await _tick()
-        assert texts(root_element.element) == []  # A waits for B
+        assert texts(root_element.element) == ["fa", "fb"]
         gb.set()
         await _tick()
+        assert texts(root_element.element) == ["fa", "B"]
+        ga.set()
+        await _tick()
         assert texts(root_element.element) == ["A", "B"]
+
+    asyncio.run(main())
+
+
+def test_nested_natural_reveal_is_one_slot_in_parent(wyb, root_element):
+    async def main() -> None:
+        g_head, g1, g2 = asyncio.Event(), asyncio.Event(), asyncio.Event()
+        head = _gated_memo(g_head, "H")
+        c1 = _gated_memo(g1, "C1")
+        c2 = _gated_memo(g2, "C2")
+        wyb["reconciler"].render(
+            div(
+                Reveal(
+                    [
+                        Loading(lambda: p(head), fallback=p("fh")),
+                        Reveal(
+                            [Loading(lambda: p(c1), fallback=p("f1")), Loading(lambda: p(c2), fallback=p("f2"))],
+                            order="natural",
+                        ),
+                    ]
+                )
+            ),
+            root_element,
+        )
+        await _tick()
+        assert texts(root_element.element) == ["fh", "f1", "f2"]
+        g2.set()
+        await _tick()
+        # The inner group is held on its fallbacks until the header releases it.
+        assert texts(root_element.element) == ["fh", "f1", "f2"]
+        g_head.set()
+        await _tick()
+        # Released: each card reveals on its own data.
+        assert texts(root_element.element) == ["H", "f1", "C2"]
+        g1.set()
+        await _tick()
+        assert texts(root_element.element) == ["H", "C1", "C2"]
 
     asyncio.run(main())
 
@@ -280,7 +317,7 @@ def test_reveal_validates_arguments(wyb):
     with pytest.raises(ValueError):
         Reveal([], order="sideways")
     with pytest.raises(ValueError):
-        Reveal([], tail="nope")
+        Reveal([], collapsed="nope")  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------

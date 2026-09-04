@@ -67,7 +67,32 @@ Options:
 --memory           Include memory measurements (tracemalloc)
 --warmup N         Override warmup iterations (default: per-benchmark)
 --iterations N     Measured iterations (default: 10)
+--bench NAME       Run only benchmarks whose name contains NAME
+--cpu              Time with process CPU time instead of the wall clock
+--save FILE        Write the results as JSON to FILE
+--compare FILE     Diff against a saved run; exit 1 on regressions
+--threshold R      Slowdown of the best iteration that counts as a
+                   regression when comparing (default: 0.15)
 ```
+
+### Measuring a change
+
+Stubbed timings depend on the machine, so there's no checked-in
+baseline. Record one on the branch point, then compare after your
+change:
+
+```bash
+git stash                       # or check out main in a worktree
+python benchmarks/bench_runner.py --cpu --save /tmp/base.json
+git stash pop
+python benchmarks/bench_runner.py --cpu --compare /tmp/base.json
+```
+
+`--cpu` measures process CPU time, which is far less sensitive to
+other programs competing for the machine than the wall clock. The
+comparison uses each benchmark's best iteration (the one least
+disturbed by garbage collection) and fails when any benchmark is more
+than `--threshold` slower.
 
 ---
 

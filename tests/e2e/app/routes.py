@@ -18,6 +18,7 @@ from app.features import props as props_feat
 from app.features import reactivity as reactivity_feat
 from app.features import router as router_feat
 from app.features import stores as stores_feat
+from app.features import transitions as transitions_feat
 from app.testkit import tid
 
 from wybthon import Errored, Route, component, div, lazy
@@ -62,6 +63,7 @@ def create_routes():
         Route(path="/forms", component=forms_feat.Page),
         Route(path="/stores", component=stores_feat.Page),
         Route(path="/loading", component=loading_feat.Page),
+        Route(path="/transitions", component=transitions_feat.Page),
         Route(path="/errors", component=errors_feat.Page),
         Route(path="/components", component=components_feat.Page),
         Route(path="/lazy", component=LazyPanel),

@@ -17,6 +17,7 @@ from ._core import Accessor, Prop, Signal, _unwrap, untrack
 __all__ = ["Props", "prop", "merge", "omit"]
 
 _MISSING = object()
+_NO_DEFAULTS: Mapping[str, Any] = {}
 
 
 class _DefaultProp[T](Prop[T]):
@@ -97,7 +98,9 @@ class Props(Mapping[str, Prop[Any]]):
 
     def __init__(self, raw: Mapping[str, Any], defaults: Mapping[str, Any] | None = None) -> None:
         self._raw: dict[str, Any] = dict(raw)
-        self._defaults: dict[str, Any] = dict(defaults) if defaults else {}
+        # Read-only here, so the component's declared defaults are shared
+        # by every instance rather than copied per mount.
+        self._defaults: Mapping[str, Any] = defaults if defaults else _NO_DEFAULTS
         self._signals: dict[str, Signal[Any]] = {}
         self._props: dict[str, Prop[Any]] = {}
 

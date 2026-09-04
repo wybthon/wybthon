@@ -15,7 +15,8 @@ Callback shapes follow SolidJS 2.0:
   shapes depend on `keyed` (see [`For`][wybthon.For]).
 - `Repeat(count, children)`: `children(index: int)`.
 - `Switch(Match(when, children), ..., fallback=...)`.
-- `Dynamic(component, **props)`.
+- `Dynamic(component, *children, **props)`, or `dynamic(source)` for a
+  reusable component whose implementation is chosen reactively.
 
 Example:
     ```python
@@ -40,7 +41,7 @@ from .reactivity._primitives import create_memo
 from .reactivity._props import Props
 from .vnode import Fragment, VNode, h, to_text_vnode
 
-__all__ = ["Show", "For", "Repeat", "Switch", "Match", "Dynamic"]
+__all__ = ["Show", "For", "Repeat", "Switch", "Match", "Dynamic", "DynamicComponent", "dynamic"]
 
 
 def _render_slot(slot: Any, *args: Any) -> Any:
@@ -371,13 +372,15 @@ _Switch.__name__ = "Switch"
 # ---------------------------------------------------------------------------
 
 
-def Dynamic(component: Any, **props: Any) -> VNode:
+def Dynamic(component: Any, *children: Any, **props: Any) -> VNode:
     """Render a component or tag chosen at runtime.
 
     `component` may be a tag name, a component, `None` (renders
     nothing), or an accessor returning any of those; the subtree
-    re-mounts when the resolved component changes. Remaining keyword
-    props are forwarded.
+    re-mounts when the resolved component changes. Remaining children
+    and keyword props are forwarded. To choose the component once and
+    render it in several places, or to pass it around like a regular
+    component, use [`dynamic`][wybthon.dynamic].
 
     Example:
         ```python
@@ -385,7 +388,53 @@ def Dynamic(component: Any, **props: Any) -> VNode:
         Dynamic("h2", "Heading text")
         ```
     """
-    return h(_Dynamic, {"component": component, **props})
+    return h(_Dynamic, {"component": component, **props}, *children)
+
+
+class DynamicComponent:
+    """A component whose implementation is chosen reactively; see [`dynamic`][wybthon.dynamic]."""
+
+    __slots__ = ("_source", "__name__")
+
+    def __init__(self, source: Any) -> None:
+        self._source = source
+        self.__name__ = "dynamic"
+
+    def __call__(self, *children: Any, **props: Any) -> VNode:
+        """Return a `VNode` that renders whatever the source currently selects."""
+        return h(_Dynamic, {"component": self._source, **props}, *children)
+
+    def __repr__(self) -> str:
+        return "dynamic(...)"
+
+
+def dynamic(source: Any) -> DynamicComponent:
+    """Turn an accessor for a component (or tag) into a component you can call.
+
+    The returned callable behaves like any component: call it with
+    children and props to get a `VNode`. Each instance re-mounts when
+    `source` resolves to a different component; while `source` is an
+    async computation with no value yet, the instance keeps its current
+    content and the nearest [`Loading`][wybthon.Loading] shows its
+    fallback. Passing `None` renders nothing.
+
+    This is the counterpart of SolidJS 2.0's `dynamic()`; the
+    [`Dynamic`][wybthon.Dynamic] control-flow form is the inline
+    shorthand.
+
+    Args:
+        source: An accessor returning a component, a tag name, or
+            `None`; a plain component or tag is accepted too.
+
+    Example:
+        ```python
+        Editor = dynamic(lambda: RichEditor if rich_mode() else PlainEditor)
+
+        def Page():
+            return div(Editor(value=draft, on_change=set_draft))
+        ```
+    """
+    return DynamicComponent(source)
 
 
 def _Dynamic(props: Props) -> Any:

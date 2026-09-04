@@ -89,6 +89,18 @@ Errored(lambda: Outlet(), fallback=lambda err: p("This page failed"), reset_on=c
 Resetting re-renders the children. If the cause hasn't been fixed, the
 error is caught again and the fallback returns.
 
+### Automatic healing
+
+A boundary also resets on its own when any **input the failing
+computation read** changes. The boundary records the signals behind
+the memo or hole that raised (the `user_id` a fetch read, the store
+path a hole formatted) and watches them; a change to one of them is a
+new situation, so the boundary re-renders the children without you
+wiring `reset_on=`. A fetch that failed for user 3 heals when the user
+picks user 4, and an async memo that errored heals when its inputs
+change and the retry succeeds. Explicit `reset()` and `reset_on=` still
+work for causes the graph can't see, such as a network that came back.
+
 ## Observing errors with `on_error`
 
 Pass `on_error=` to be notified when the boundary catches something, for

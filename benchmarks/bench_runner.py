@@ -21,6 +21,9 @@ Usage:
     python benchmarks/bench_runner.py --memory           # include memory
     python benchmarks/bench_runner.py --warmup 3         # override warmup
     python benchmarks/bench_runner.py --iterations 5     # measured iterations
+    python benchmarks/bench_runner.py --cpu              # CPU time (robust under load)
+    python benchmarks/bench_runner.py --save base.json   # record a baseline
+    python benchmarks/bench_runner.py --compare base.json  # diff against it
 
 Reference: https://github.com/krausest/js-framework-benchmark
 """
@@ -706,8 +709,15 @@ HOLE_BENCHMARKS = [
 # ---------------------------------------------------------------------------
 
 
+# ``--cpu`` swaps the wall clock for process CPU time. Stubbed runs are
+# pure Python, so CPU time measures the same work while shrugging off
+# other processes competing for the machine.
+_clock = time.perf_counter
+
+
 def _bench_loop(make_state, setup_fn, op_fn, warmup, iterations):
     times = []
+    clock = _clock
     for i in range(warmup + iterations):
         state = make_state()
         setup_fn(state)
@@ -716,9 +726,9 @@ def _bench_loop(make_state, setup_fn, op_fn, warmup, iterations):
         # collection of the setup garbage doesn't land inside one
         # iteration and swamp the measurement.
         gc.collect()
-        start = time.perf_counter()
+        start = clock()
         op_fn(state)
-        elapsed_ms = (time.perf_counter() - start) * 1000
+        elapsed_ms = (clock() - start) * 1000
 
         state.cleanup()
 
@@ -814,16 +824,20 @@ def _measure_memory(make_state):
 # ---------------------------------------------------------------------------
 
 
-def format_table(results, memory=None):
+def format_table(results, memory=None, baseline=None):
     lines = []
     lines.append("")
     lines.append("Wybthon Framework Benchmark (stubbed DOM, fine-grained app)")
-    lines.append("=" * 78)
-    lines.append(
+    width = 78 + (22 if baseline else 0)
+    lines.append("=" * width)
+    header = (
         f"{'Benchmark':<24} {'Mean (ms)':>10} {'± 95% CI':>10} "
         f"{'Std Dev':>10} {'Min':>10} {'Max':>10} {'Slowdown':>10}"
     )
-    lines.append("-" * 78)
+    if baseline:
+        header += f" {'Base min':>10} {'Δ min':>10}"
+    lines.append(header)
+    lines.append("-" * width)
 
     fastest = min(r["mean_ms"] for r in results) if results else 1.0
     if fastest <= 0:
@@ -831,11 +845,19 @@ def format_table(results, memory=None):
 
     for r in results:
         slowdown = r["mean_ms"] / fastest
-        lines.append(
+        line = (
             f"{r['name']:<24} {r['mean_ms']:>10.2f} {r['ci95_ms']:>9.2f} "
             f"{r['stdev_ms']:>10.2f} {r['min_ms']:>10.2f} {r['max_ms']:>10.2f} "
             f"{slowdown:>9.2f}x"
         )
+        if baseline:
+            base = baseline.get(r["name"])
+            if base is None:
+                line += f" {'-':>10} {'-':>10}"
+            else:
+                delta = _delta(base, r)
+                line += f" {base['min_ms']:>10.2f} {delta * 100:>+9.1f}%"
+        lines.append(line)
 
     if memory:
         lines.append("")
@@ -850,11 +872,44 @@ def format_table(results, memory=None):
 
 
 # ---------------------------------------------------------------------------
+# Baselines
+# ---------------------------------------------------------------------------
+
+
+def _delta(base, current):
+    """Relative change of the best iteration against a baseline entry.
+
+    The minimum is the most stable statistic for a short run: it's the
+    iteration least disturbed by garbage collection or other processes.
+    """
+    ref = base["min_ms"] or 0.01
+    return (current["min_ms"] - ref) / ref
+
+
+def load_baseline(path):
+    """Load ``--json`` / ``--save`` output as a name -> result mapping."""
+    with open(path, encoding="utf-8") as fh:
+        data = json_module.load(fh)
+    return {r["name"]: r for r in data.get("benchmarks", [])}
+
+
+def regressions(results, baseline, threshold):
+    """Return the benchmarks whose best iteration slowed by more than ``threshold``."""
+    out = []
+    for r in results:
+        base = baseline.get(r["name"])
+        if base is not None and _delta(base, r) > threshold:
+            out.append((r["name"], _delta(base, r)))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 
 def main():
+    global _clock
     parser = argparse.ArgumentParser(
         description="Wybthon framework benchmark (js-framework-benchmark operations)",
     )
@@ -873,7 +928,28 @@ def main():
         help="Warmup iterations per benchmark (default: per-benchmark)",
     )
     parser.add_argument("--iterations", type=int, default=10, help="Measured iterations (default: 10)")
+    parser.add_argument(
+        "--cpu",
+        action="store_true",
+        help="Time with process CPU time instead of the wall clock (stable under load)",
+    )
+    parser.add_argument("--save", type=str, default=None, help="Write results as JSON to this file")
+    parser.add_argument(
+        "--compare",
+        type=str,
+        default=None,
+        help="Compare against a JSON file written by --save/--json and flag regressions",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.15,
+        help="Relative slowdown of the best iteration that counts as a regression (default: 0.15)",
+    )
     args = parser.parse_args()
+
+    if args.cpu:
+        _clock = time.process_time
 
     results, memory = run_benchmarks(
         warmup_override=args.warmup,
@@ -882,13 +958,25 @@ def main():
         name_filter=args.bench,
     )
 
+    output = {"benchmarks": results, "clock": "cpu" if args.cpu else "wall"}
+    if memory:
+        output["memory"] = memory
+    if args.save:
+        with open(args.save, "w", encoding="utf-8") as fh:
+            json_module.dump(output, fh, indent=2)
+
+    baseline = load_baseline(args.compare) if args.compare else None
     if args.json:
-        output = {"benchmarks": results}
-        if memory:
-            output["memory"] = memory
         print(json_module.dumps(output, indent=2))
     else:
-        print(format_table(results, memory))
+        print(format_table(results, memory, baseline))
+
+    if baseline:
+        slow = regressions(results, baseline, args.threshold)
+        if slow:
+            for name, delta in slow:
+                print(f"REGRESSION: {name} is {delta * 100:+.1f}% slower than the baseline", file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

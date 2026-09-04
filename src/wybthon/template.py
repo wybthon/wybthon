@@ -52,7 +52,20 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .props import _BOOLEAN_ATTRS, _class_string, attr_name, binding_value, is_event_prop, to_kebab
+from .props import (
+    _BOOLEAN_ATTRS,
+    KIND_ATTR,
+    KIND_DOM_PROP,
+    KIND_EVENT,
+    KIND_REF,
+    KIND_SKIP,
+    _class_string,
+    attr_name,
+    binding_value,
+    is_event_prop,
+    prop_kind,
+    to_kebab,
+)
 from .vnode import VNode, normalize_children
 
 __all__ = ["MountPlan", "build_plan"]
@@ -312,57 +325,71 @@ def _walk_shape(
     order.append((NODE_STATIC, vnode, parent))
     key_parts.append(tag)
 
-    for name, value in vnode.props.items():
-        if name == "key":
-            continue
-        if name == "ref":
-            if value is not None:
+    if vnode.props:
+        for name, value in vnode.props.items():
+            vtype = type(value)
+            if vtype in _KEYABLE_TYPES or value is None:
+                # A scalar can't be a binding; only its class matters.
+                kind = prop_kind(name)
+                if kind == KIND_ATTR:
+                    key_parts.append(name)
+                    key_parts.append(vtype)
+                    key_parts.append(value)
+                elif kind == KIND_DOM_PROP:
+                    bindings.append((vnode, BIND_PROP, name, value))
+                    key_parts.append(_K_PROP)
+                    key_parts.append(name)
+                elif kind == KIND_EVENT:
+                    bindings.append((vnode, BIND_EVENT, name, value))
+                    key_parts.append(_K_EVENT)
+                    key_parts.append(name)
+                # key / children / a None ref: nothing to record.
+                continue
+            kind = prop_kind(name)
+            if kind == KIND_SKIP:
+                continue
+            if kind == KIND_REF:
                 bindings.append((vnode, BIND_REF, name, value))
                 key_parts.append(_K_REF)
-            continue
-        if name == "children":
-            continue
-        if is_event_prop(name):
-            bindings.append((vnode, BIND_EVENT, name, value))
-            key_parts.append(_K_EVENT)
-            key_parts.append(name)
-            continue
-        getter = binding_value(name, value)
-        if getter is not None:
-            bindings.append((vnode, BIND_REACTIVE, name, getter))
-            key_parts.append(_K_GETTER)
-            key_parts.append(name)
-            continue
-        if name in _PROP_NAMES:
-            bindings.append((vnode, BIND_PROP, name, value))
-            key_parts.append(_K_PROP)
-            key_parts.append(name)
-            continue
-        if value is None or type(value) in _KEYABLE_TYPES:
-            key_parts.append(name)
-            key_parts.append(type(value))
-            key_parts.append(value)
-        else:
+                continue
+            if kind == KIND_EVENT:
+                bindings.append((vnode, BIND_EVENT, name, value))
+                key_parts.append(_K_EVENT)
+                key_parts.append(name)
+                continue
+            getter = binding_value(name, value)
+            if getter is not None:
+                bindings.append((vnode, BIND_REACTIVE, name, getter))
+                key_parts.append(_K_GETTER)
+                key_parts.append(name)
+                continue
+            if kind == KIND_DOM_PROP:
+                bindings.append((vnode, BIND_PROP, name, value))
+                key_parts.append(_K_PROP)
+                key_parts.append(name)
+                continue
             raise _NoCache
 
     key_parts.append(_K_OPEN)
 
-    norm_children = normalize_children(vnode.children)
-    vnode.children = norm_children
-    for child in norm_children:
-        ctag = child.tag
-        if ctag == "_text":
-            order.append((NODE_STATIC, child, vnode))
-            bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
-            key_parts.append(_K_TEXT)
-        elif isinstance(ctag, str) and not ctag.startswith("_"):
-            _walk_shape(child, vnode, key_parts, order, bindings)
-        elif ctag == "_hole":
-            order.append((NODE_HOLE, child, vnode))
-            key_parts.append(_K_HOLE)
-        else:
-            order.append((NODE_MOUNT, child, vnode))
-            key_parts.append(_K_MOUNT)
+    children = vnode.children
+    if children:
+        norm_children = normalize_children(children)
+        vnode.children = norm_children
+        for child in norm_children:
+            ctag = child.tag
+            if ctag == "_text":
+                order.append((NODE_STATIC, child, vnode))
+                bindings.append((child, BIND_TEXT, "", str(child.props.get("nodeValue", ""))))
+                key_parts.append(_K_TEXT)
+            elif ctag == "_hole":
+                order.append((NODE_HOLE, child, vnode))
+                key_parts.append(_K_HOLE)
+            elif isinstance(ctag, str) and not ctag.startswith("_"):
+                _walk_shape(child, vnode, key_parts, order, bindings)
+            else:
+                order.append((NODE_MOUNT, child, vnode))
+                key_parts.append(_K_MOUNT)
 
     key_parts.append(_K_CLOSE)
 

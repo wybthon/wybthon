@@ -33,7 +33,10 @@ The differences are mostly surface: Python instead of JavaScript, HTML helper fu
 | `createProjection(fn, initial)` | [`create_projection(fn, initial)`][wybthon.create_projection] |
 | `unwrap(store)` | [`snapshot(store)`][wybthon.snapshot] |
 | `<Suspense fallback>` | [`Loading(children, fallback=...)`][wybthon.Loading] |
-| `<SuspenseList revealOrder tail>` | [`Reveal(children, order=..., tail=...)`][wybthon.Reveal] |
+| `<Reveal order collapsed>` (was `SuspenseList`) | [`Reveal(children, order=..., collapsed=...)`][wybthon.Reveal] |
+| `affects(...)` | [`affects(...)`][wybthon.affects] |
+| `until(pred)` | [`await until(pred)`][wybthon.until] |
+| `createMemo(fn, { loadingValue })` | `create_memo(fn, loading_value=...)` |
 | `<ErrorBoundary fallback>` | [`Errored(children, fallback=...)`][wybthon.Errored] |
 | `<Show when fallback>` | [`Show(when, children, fallback=...)`][wybthon.Show] |
 | `<For each>` | [`For(each, children)`][wybthon.For] (keyed by identity) |
@@ -41,7 +44,8 @@ The differences are mostly surface: Python instead of JavaScript, HTML helper fu
 | `<Index each>` | `For(each, children, keyed=False)` |
 | `<Repeat count>` | [`Repeat(count, children)`][wybthon.Repeat] |
 | `<Switch>` / `<Match when>` | [`Switch`][wybthon.Switch] / [`Match(when, children)`][wybthon.Match] |
-| `<Dynamic component>` | [`Dynamic(component, **props)`][wybthon.Dynamic] |
+| `<Dynamic component>` | [`Dynamic(component, *children, **props)`][wybthon.Dynamic] |
+| `dynamic(source)` | [`dynamic(source)`][wybthon.dynamic] |
 | `<Portal mount>` | [`Portal(children, mount=...)`][wybthon.Portal] |
 | `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
 | `createContext(default)` | [`create_context(default)`][wybthon.create_context] |
@@ -126,7 +130,7 @@ Signal semantics that carry over:
 - **Automatic batching.** All writes in one turn coalesce into one flush; there's no `batch()`.
 - **Glitch-free propagation.** An effect that reads several memos derived from the same signal runs once per flush and never sees an inconsistent pair.
 - **Lazy memos with equality short-circuit.** `create_memo` recomputes when read after a source changed and doesn't notify if the value is equal under `equals`.
-- **Async-first.** An `async def` passed to `create_memo` is an async computation. Reading it before the first value raises [`NotReadyError`][wybthon.NotReadyError] (which `Loading` catches); later recomputes serve the stale value while revalidating.
+- **Async-first.** An `async def` passed to `create_memo` is an async computation. Reading it before the first value raises [`NotReadyError`][wybthon.NotReadyError] (which `Loading` catches); later recomputes run as transitions that hold the dependent UI on the previous state until the new value lands.
 
 ## Flow
 
@@ -234,6 +238,8 @@ async def like():
 
 Everything here has the same name and shape as Solid 2.0, with `await` in place of promise chaining. `action.pending()` is tracked, so it works directly as `disabled=like.pending`.
 
+The transition model is Solid 2.0's too. A change that makes an async memo recompute holds the UI that depends on it until the new value lands, so a header reading `user_id` and a body reading `user` never disagree; `is_pending` reports the hold and `latest` reads ahead of it. An action's writes are staged into the same transaction and reveal together when it settles, while optimistic writes reveal now and revert on settle. `Loading(on=...)` names the inputs whose change should show the fallback again instead of holding, and `Errored` heals when the failing computation's inputs change.
+
 ## What's intentionally different
 
 - **Naming.** snake_case across the API; component names stay PascalCase; `_` suffix on tags that collide with Python keywords or builtins.
@@ -249,7 +255,7 @@ Everything here has the same name and shape as Solid 2.0, with `await` in place 
 ## What carries over directly
 
 - The mental model: components run once, reactivity is fine-grained, ownership handles cleanup.
-- The 2.0 async story: async memos, `Loading`, `is_pending`, `latest`, `resolve`, `refresh`, actions, optimistic state.
+- The 2.0 async story: async memos, transitions, `Loading`, `Reveal`, `is_pending`, `latest`, `resolve`, `refresh`, actions as transactions, optimistic state, `affects`, `until`, error boundary healing.
 - Draft-first stores, `reconcile`, projections.
 - Flow components, boundaries, context, lazy, portals.
 

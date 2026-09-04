@@ -147,7 +147,7 @@ def _map_identity[T, U](
             if bucket:
                 row = bucket.pop(0)
                 if row.index._value != index:
-                    row.index._set_now(index)
+                    row.index._commit_now(index)
                 reused.add(id(row))
             else:
                 owner = Owner()
@@ -205,7 +205,7 @@ def _map_positional[T, U](
         n_old = len(rows)
         n_new = len(new_items)
         for i in range(min(n_old, n_new)):
-            rows[i].item._set_now(new_items[i])
+            rows[i].item._commit_now(new_items[i])
         if n_new < n_old:
             _dispose_rows(rows[n_new:])
             del rows[n_new:]
@@ -268,9 +268,9 @@ def _map_keyed[T, U](
             if row is not None and id(row) not in reused:
                 reused.add(id(row))
                 if row.item._value is not item:
-                    row.item._set_now(item)
+                    row.item._commit_now(item)
                 if row.index._value != index:
-                    row.index._set_now(index)
+                    row.index._commit_now(index)
             else:
                 owner = Owner()
                 if parent_owner is not None:
@@ -319,7 +319,10 @@ def create_selector[T](
             if now != was:
                 sig._set(now)
 
-    comp = _core.Computation(source, kind=_core._K_RENDER, apply=update, pass_prev=False)
+    # Eager: the apply stage writes graph data (the per-key flags), so it
+    # runs immediately and its writes are held with the selection when a
+    # transition holds it.
+    comp = _core.Computation(source, kind=_core._K_RENDER, apply=update, pass_prev=False, eager=True)
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)

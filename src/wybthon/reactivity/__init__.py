@@ -6,7 +6,7 @@ touches the DOM. Import from `wybthon` in application code; the
 submodules are implementation detail.
 """
 
-from ._actions import Action, action, create_optimistic
+from ._actions import Action, action, affects, create_optimistic, until
 from ._core import (
     Accessor,
     Computation,
@@ -15,6 +15,7 @@ from ._core import (
     Owner,
     Prop,
     Signal,
+    Transition,
     WriteInScopeError,
     flush,
     get_observer,
@@ -52,6 +53,7 @@ __all__ = [
     "Props",
     "Owner",
     "Computation",
+    "Transition",
     "Action",
     # Errors
     "NotReadyError",
@@ -76,6 +78,8 @@ __all__ = [
     "resolve",
     "action",
     "create_optimistic",
+    "affects",
+    "until",
     # Props
     "prop",
     "merge",

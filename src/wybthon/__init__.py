@@ -15,17 +15,22 @@ Highlights of the reactive model:
 - **Typed accessors.** [`create_signal`][wybthon.create_signal] returns
   `(Accessor[T], Setter[T])`; call the accessor to read (tracked),
   `.peek()` to read without subscribing.
-- **Async-first.** A memo whose body is `async def` (or an async
-  generator) is an async computation: [`Loading`][wybthon.Loading]
-  boundaries show fallbacks until it resolves, later recomputes serve
-  the stale value while revalidating, and
+- **Async-first, with transitions.** A memo whose body is `async def`
+  (or an async generator) is an async computation:
+  [`Loading`][wybthon.Loading] boundaries show fallbacks until it first
+  resolves. A later recompute opens a **transition**: the UI that
+  depends on the changed input holds its previous, consistent state
+  until the new value lands, so a new id never shows next to old data.
   [`is_pending`][wybthon.is_pending] / [`latest`][wybthon.latest]
-  observe in-flight state. [`refresh`][wybthon.refresh] and
+  observe the in-flight state; [`refresh`][wybthon.refresh] and
   [`resolve`][wybthon.resolve] drive it imperatively.
-- **Actions and optimistic state.** [`action`][wybthon.action] tracks
-  in-flight mutations; [`create_optimistic`][wybthon.create_optimistic]
-  and [`create_optimistic_store`][wybthon.create_optimistic_store]
-  hold temporary values that revert when the actions settle.
+- **Actions are transactions.** [`action`][wybthon.action] holds a
+  transition open while a mutation runs, so its writes land together;
+  [`create_optimistic`][wybthon.create_optimistic] and
+  [`create_optimistic_store`][wybthon.create_optimistic_store] show
+  temporary values immediately and revert when it settles;
+  [`affects`][wybthon.affects] and [`until`][wybthon.until] describe
+  what the action changes and wait for it to land.
 - **Draft-first stores.** [`create_store`][wybthon.create_store]
   setters take a function that mutates a draft with plain Python.
 - **Dev diagnostics.** Writes inside a tracking scope raise
@@ -64,7 +69,7 @@ from .context import Context, ContextNotFoundError, create_context, use_context
 from .dom import Element, Ref
 from .error_boundary import Errored
 from .events import DomEvent
-from .flow import Dynamic, For, Match, Repeat, Show, Switch
+from .flow import Dynamic, DynamicComponent, For, Match, Repeat, Show, Switch, dynamic
 from .forms import (
     Field,
     Validator,
@@ -166,8 +171,10 @@ from .reactivity import (
     Props,
     Setter,
     Signal,
+    Transition,
     WriteInScopeError,
     action,
+    affects,
     children,
     create_effect,
     create_memo,
@@ -192,6 +199,7 @@ from .reactivity import (
     refresh,
     resolve,
     run_with_owner,
+    until,
     untrack,
 )
 from .reconciler import Root, render
@@ -233,6 +241,7 @@ __all__ = [
     "Memo",
     "Computation",
     "Owner",
+    "Transition",
     "create_signal",
     "create_memo",
     "create_effect",
@@ -258,6 +267,8 @@ __all__ = [
     "action",
     "Action",
     "create_optimistic",
+    "affects",
+    "until",
     # Context
     "Context",
     "ContextNotFoundError",
@@ -270,6 +281,8 @@ __all__ = [
     "Switch",
     "Match",
     "Dynamic",
+    "DynamicComponent",
+    "dynamic",
     # Boundaries
     "Loading",
     "Reveal",

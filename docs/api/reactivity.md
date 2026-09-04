@@ -11,12 +11,15 @@ DOM, so everything works in CPython as well as Pyodide. Import from
 `wybthon` in application code; the `_core`, `_primitives`, `_actions`,
 `_list`, and `_props` submodules are implementation detail.
 
-Two rules shape every API here. Writes are **staged**: a setter records
+Three rules shape every API here. Writes are **staged**: a setter records
 a value, and reads keep returning the committed value until the next
 flush (a microtask, the end of an event handler, or an explicit
 [`flush`][wybthon.flush]). Effects are **deferred**: `create_effect`
 runs for the first time on the next flush, after the DOM has been
-committed, not at creation.
+committed, not at creation. Async work runs in **transitions**: when a
+change makes an async memo recompute, the UI that depends on the change
+holds on the old state until the new value lands, and an
+[`action`][wybthon.action]'s writes reveal together when it settles.
 
 #### Typed core
 
@@ -31,6 +34,7 @@ committed, not at creation.
 | [`Owner`][wybthon.Owner] | Ownership scope; disposing it disposes children and runs cleanups. |
 | [`Computation`][wybthon.Computation] | Tracked function node behind memos and effects; `.dispose()` stops it. |
 | [`Action`][wybthon.Action] | Wrapped mutation returned by `action`; `.pending` is a tracked accessor. |
+| [`Transition`][wybthon.Transition] | The open transaction holding in-flight changes (exposed for tooling; no public methods). |
 | [`NotReadyError`][wybthon.NotReadyError] | Raised when reading an async computation that has no value yet. |
 | [`WriteInScopeError`][wybthon.WriteInScopeError] | Raised in dev mode when a signal or store is written inside a tracking scope. |
 
@@ -39,7 +43,7 @@ committed, not at creation.
 | Name | Description |
 | --- | --- |
 | [`create_signal`][wybthon.create_signal] | `(getter, setter)` pair; `equals=` policy; function form makes a writable derived signal. |
-| [`create_memo`][wybthon.create_memo] | Lazy, glitch-free derived value; `async def` bodies become async computations. |
+| [`create_memo`][wybthon.create_memo] | Lazy, glitch-free derived value; `async def` bodies become async computations; `loading_value=` serves a value before the first run lands. |
 | [`create_effect`][wybthon.create_effect] | Side effect after DOM commit; split `(compute, apply)` form recommended. |
 | [`create_render_effect`][wybthon.create_render_effect] | Effect in the render phase, before the DOM commit; first run is immediate. |
 | [`on_settled`][wybthon.on_settled] | Run once after the flush that mounted the component; may return a cleanup. |
@@ -49,12 +53,14 @@ committed, not at creation.
 | [`untrack`][wybthon.untrack] | Run a function without tracking its reads. |
 | [`get_owner`][wybthon.get_owner], [`run_with_owner`][wybthon.run_with_owner] | Capture the owner before an `await` and restore it after. |
 | [`get_observer`][wybthon.get_observer] | The computation currently tracking reads, or `None`. |
-| [`is_pending`][wybthon.is_pending] | Tracked probe: `True` while a change-triggered recompute is in flight. |
-| [`latest`][wybthon.latest] | Evaluate without raising `NotReadyError` (stale value or `None`). |
-| [`refresh`][wybthon.refresh] | Quietly recompute a memo or derived store; returns an awaitable. |
+| [`is_pending`][wybthon.is_pending] | Tracked probe: `True` while what `fn` reads is held by a transition, recomputing, declared with `affects`, or optimistically overridden. |
+| [`latest`][wybthon.latest] | Evaluate against the newest state: held values return the value being computed; not-ready reads return the stale value or `None`. |
+| [`refresh`][wybthon.refresh] | Quietly recompute a memo or derived store; returns an awaitable. Inside an action, lands with the action. |
 | [`resolve`][wybthon.resolve] | Awaitable for the next settled value of an expression. |
-| [`action`][wybthon.action] | Wrap a mutation so its in-flight state is tracked. |
-| [`create_optimistic`][wybthon.create_optimistic] | Value override that reverts when in-flight actions settle. |
+| [`action`][wybthon.action] | Wrap a mutation in a transaction: its writes reveal together when it settles. |
+| [`create_optimistic`][wybthon.create_optimistic] | Value override that reveals now and reverts when the action settles. |
+| [`affects`][wybthon.affects] | Inside an action, mark values as pending before they're written. |
+| [`until`][wybthon.until] | Awaitable for a predicate to become truthy on the authoritative (non-optimistic) view. |
 | [`prop`][wybthon.prop] | Declare a typed component parameter default. |
 | [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive prop-mapping views (later sources win; drop keys). |
 | [`children`][wybthon.children] | Memo flattening a children getter into a list. |
@@ -82,7 +88,8 @@ count()   # 1
 Async data is an ordinary memo with an `async def` body. Reads before
 the first value raise `NotReadyError`, which the nearest
 [`Loading`][wybthon.Loading] boundary turns into fallback UI; later
-recomputes serve the stale value while revalidating.
+recomputes open a transition that holds the dependent UI on the old
+state until the new value lands.
 
 ```python
 from wybthon import action, create_memo, create_optimistic, is_pending, refresh, span
@@ -97,7 +104,7 @@ shown, set_shown = create_optimistic(likes)
 async def like():
     set_shown(lambda n: (n or 0) + 1)
     await api_like()
-    refresh(likes)
+    await refresh(likes)
 
 hint = span(lambda: "Refreshing..." if is_pending(likes) else "")
 ```
