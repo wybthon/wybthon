@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wybthon"
-version = "0.32.0"
+version = "0.33.0"
 description = "SolidJS for Python: a signals-first client-side SPA framework running on Pyodide"
 authors = [
   { name = "Owen Carey" }

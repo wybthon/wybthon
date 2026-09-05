@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.33.0 (2026-09-05)
+
+### Features
+
+- Rebuild reactive contracts and incremental VDOM rendering
+  ([#34](https://github.com/wybthon/wybthon/pull/34),
+  [`8136737`](https://github.com/wybthon/wybthon/commit/813673785b53d17f6a2c652e0cdb23e52bd93306))
+
+
 ## v0.32.0 (2026-09-04)
 
 ### Features
