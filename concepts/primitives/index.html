@@ -533,6 +533,8 @@
       
         
       
+        
+      
     
     
     
@@ -940,6 +942,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../vdom/" class="md-nav__link">
         
   
@@ -1200,8 +1230,6 @@
   
     
     
-      
-        
       
         
       
@@ -1550,34 +1578,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1866,6 +1866,8 @@
   
     
     
+      
+        
       
         
       
@@ -2604,6 +2606,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3112,7 +3142,7 @@ typed as <code>Accessor[T]</code> and <a class="autorefs autorefs-internal" titl
 </span></code></pre></div>
 <ul>
 <li><strong>Writes are staged.</strong> The setter records the value; reads keep returning the committed value until the next flush. See <a href="../reactivity/#staged-writes-and-flush-timing">Staged writes</a>.</li>
-<li><strong>Functional updates</strong> receive the latest staged value, so two <code>set(lambda n: n + 1)</code> calls in one handler add two. To store a callable as the value, wrap it: <code>set_fn(lambda _: my_callable)</code>.</li>
+<li><strong>Functional updates</strong> receive the latest staged value, so two <code>set(lambda n: n + 1)</code> calls in one handler add two. To store a callable as the value, use <code>set_fn(literal(my_callable))</code>.</li>
 <li><strong><code>equals</code></strong> decides when observers are notified. The default is an identity fast path followed by <code>==</code>; <code>equals=False</code> always notifies; a callable <code>(old, new) -&gt; bool</code> skips notification when it returns <code>True</code> (use <code>lambda a, b: a is b</code> for identity-only semantics).</li>
 <li><strong>Function form.</strong> <code>create_signal(lambda: a() + b())</code> returns a <em>writable derived signal</em>: it tracks what the function reads, and the setter overrides the value until the next source change.</li>
 </ul>
@@ -3128,11 +3158,11 @@ read-only accessor for a derived value.</p>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">doubled</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>   <span class="c1"># untracked read</span>
 </span></code></pre></div>
 <ul>
-<li><strong>Lazy and pull-based.</strong> The body runs when the memo is read after a source changed. A memo that's never read never runs.</li>
+<li><strong>Eager setup, pull-based updates.</strong> The body evaluates at creation unless <code>lazy=True</code>. After an input changes, reads bring the memo current.</li>
 <li><strong>Glitch-free.</strong> Reading a memo brings its sources current first, so a diamond of memos never observes a half-updated state.</li>
 <li><strong>Equality short-circuits.</strong> Observers are notified only when the value changed under <code>equals</code>.</li>
 <li><strong>Previous value.</strong> If the body accepts a positional parameter it receives the previous value (<code>None</code> on the first run).</li>
-<li><strong><code>lazy=True</code></strong> disposes the memo once it loses its last subscriber; <strong><code>unobserved=</code></strong> runs a callback at that moment (for resource cleanup).</li>
+<li><strong><code>lazy=True</code></strong> suspends the memo once it loses its last subscriber; a later read recomputes it; <strong><code>unobserved=</code></strong> runs a callback at that moment (for resource cleanup).</li>
 <li><strong>Async bodies.</strong> An <code>async def</code> body (or an async generator) makes the memo an async computation. See <a href="../async-loading/">Async and loading</a>.</li>
 </ul>
 <h2 id="create_effect"><code>create_effect</code><a class="headerlink" href="#create_effect" title="Permanent link">&para;</a></h2>
@@ -3140,7 +3170,7 @@ read-only accessor for a derived value.</p>
 re-runs when its tracked sources change. Effects run <strong>after the DOM
 commit</strong> in each flush, and the first run happens on the next flush,
 right after the component that created it has mounted.</p>
-<p>The <strong>split form</strong> is recommended: <code>compute</code> runs tracked and returns a
+<p>Both stages are required: <code>compute</code> runs tracked and returns a
 value; <code>apply</code> runs untracked with <code>(value, prev)</code> (or <code>(value,)</code>) and
 performs the side effect. Writes belong in <code>apply</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span>
@@ -3157,7 +3187,7 @@ and on disposal:</p>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">create_effect</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The <strong>single form</strong> <code>create_effect(fn)</code> makes <code>fn</code> both the tracking
+<p>The explicit <strong>tracked effect</strong> <code>create_tracked_effect(fn)</code> makes <code>fn</code> both the tracking
 stage and the side effect. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> for
 per-run teardown. Writing a signal inside it raises
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../../api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a> in dev mode.</p>
@@ -3209,13 +3239,13 @@ the DOM is live. It may return a cleanup that runs on unmount.</p>
 scope:</p>
 <ul>
 <li>In a component body: runs when the component unmounts.</li>
-<li>In an effect: runs before each re-run and on disposal.</li>
+<li>In a tracked effect or compute stage: runs before recomputation and on disposal. In a split effect's apply stage: runs before the next visible apply and on disposal.</li>
 <li>In a hole or <code>For</code> row: runs when that region is re-evaluated or removed.</li>
 </ul>
 <p>It raises <code>RuntimeError</code> outside any scope.</p>
 <h2 id="create_root-get_owner-and-run_with_owner"><code>create_root</code>, <code>get_owner</code>, and <code>run_with_owner</code><a class="headerlink" href="#create_root-get_owner-and-run_with_owner" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_root&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_root"><code>create_root</code></a> runs a function inside a new,
-independent ownership root and hands it a <code>dispose</code> callable. Use it for
+ownership root and hands it a <code>dispose</code> callable. The root belongs to its current owner; <code>detached=True</code> creates an independent lifetime. Use it for
 long-lived reactive work that shouldn't die with a component, such as
 global stores.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_root</span>
@@ -3259,10 +3289,10 @@ accept any of these. See the <a href="../../guides/typing/">Typing guide</a>.</p
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">rest_without_class</span> <span class="o">=</span> <span class="n">omit</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="s2">"class_"</span><span class="p">,</span> <span class="s2">"style"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="map_array"><code>map_array</code><a class="headerlink" href="#map_array" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/wybthon/#wybthon.map_array"><code>map_array</code></a> is the engine behind
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>: it maps a reactive list to rows with a stable
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/wybthon/#wybthon.map_array"><code>map_array</code></a> maps a reactive list to values with a stable
 owner scope per row. <code>keyed</code> selects how rows are matched, and with it
-the callback shape:</p>
+the callback shape. <code>For</code> uses mounted list regions with the same matching modes
+and can consume store edit records directly:</p>
 <table>
 <thead>
 <tr>

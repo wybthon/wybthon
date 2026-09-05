@@ -533,6 +533,8 @@
       
         
       
+        
+      
     
     
     
@@ -708,6 +710,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -987,6 +1017,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#async-handlers-and-native-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async handlers and native options
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1123,8 +1164,6 @@
   
     
     
-      
-        
       
         
       
@@ -1473,34 +1512,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1789,6 +1800,8 @@
   
     
     
+      
+        
       
         
       
@@ -2527,6 +2540,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2861,6 +2902,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#async-handlers-and-native-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async handlers and native options
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3048,6 +3100,13 @@ just as in the browser.</p>
 <li>See <a href="../dom/">DOM interop</a> for the underlying <code>Element</code> and <code>Ref</code> APIs.</li>
 <li>Browse the <a href="../../api/events/"><code>events</code></a> API reference for delegation internals.</li>
 </ul>
+<h2 id="async-handlers-and-native-options">Async handlers and native options<a class="headerlink" href="#async-handlers-and-native-options" title="Permanent link">&para;</a></h2>
+<p>An ordinary <code>async def</code> handler is scheduled automatically. It runs in an owned asyncio task and is canceled on handler replacement or unmount. Payload fields and <code>current_target</code> remain usable after an await; <code>event.raw</code> is valid only during synchronous dispatch. Call <code>prevent_default</code> before the first await when you need to prevent native behavior.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">event</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">button</span><span class="p">(</span><span class="s2">"Once"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">event</span><span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">once</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span></code></pre></div>
+<p><code>event(callback, capture=True, passive=False, once=False)</code> configures native listener options. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses <code>composedPath</code>, sends one route across the bridge, and flushes after its handlers. Custom event <code>detail</code>, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.</p>
 
 
 

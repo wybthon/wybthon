@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -987,8 +1017,6 @@
   
     
     
-      
-        
       
         
       
@@ -1380,6 +1408,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#owned-test-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owned test helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1488,34 +1527,6 @@
     
   
     Migrating from Solid
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
   
 
     
@@ -1817,6 +1828,8 @@
   
     
     
+      
+        
       
         
       
@@ -2555,6 +2568,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2917,6 +2958,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#owned-test-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Owned test helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3126,6 +3178,22 @@
 <li>Browse the <a href="../performance/">Performance guide</a> for benchmarking tips.</li>
 <li>See the <a href="../pyodide/">Pyodide guide</a> for browser environment notes.</li>
 </ul>
+<h2 id="owned-test-helpers">Owned test helpers<a class="headerlink" href="#owned-test-helpers" title="Permanent link">&para;</a></h2>
+<p><code>wybthon.testing</code> provides <code>reactive_scope()</code>, <code>render_test(view, container=None)</code>, <code>tick()</code>, and <code>wait_for(predicate, timeout=...)</code>. Use a configured native backend or run the same helpers in Pyodide; they exercise the real scheduler.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">flush</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">reactive_scope</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">with</span> <span class="n">reactive_scope</span><span class="p">():</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">value</span><span class="p">,</span> <span class="n">write</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">write</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+</span></code></pre></div>
+<p>Scope exit disposes the computations. <code>render_test</code> also releases a temporary container. Await <code>tick()</code> to drain ready asyncio continuations; use a bounded <code>wait_for</code> for an observable async result.</p>
+<p>The contract suites cover staged and held store reads, scoped drafts, entity identity, projection errors, cancellation, duplicate keys, ref cleanup, registry bounds, and collection work counts. The browser contracts combine edits, reorders, async filtering, optimistic saves, error recovery, and unmounting. Production tests boot generated bundles and exercise lazy chunk fetching.</p>
 
 
 

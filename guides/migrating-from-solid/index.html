@@ -18,7 +18,7 @@
         <link rel="prev" href="../migrating-from-react/">
       
       
-        <link rel="next" href="../migrating-from-0-x/">
+        <link rel="next" href="../../examples/">
       
       
         
@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -987,8 +1017,6 @@
   
     
     
-      
-        
       
         
       
@@ -1517,34 +1545,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1833,6 +1833,8 @@
   
     
     
+      
+        
       
         
       
@@ -2571,6 +2573,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3016,7 +3046,7 @@
 </tr>
 <tr>
 <td><code>createEffect(fn)</code></td>
-<td><code>create_effect(fn)</code> (single function, tracked)</td>
+<td><code>create_tracked_effect(fn)</code> (single function, tracked)</td>
 </tr>
 <tr>
 <td><code>createRenderEffect(fn)</code></td>
@@ -3261,7 +3291,7 @@
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">flush</span><span class="p">()</span>
 </span></code></pre></div>
-<p>The split form is Solid 2.0's <code>createEffect(compute, apply)</code>: <code>compute</code> runs tracked, <code>apply</code> runs untracked with the value and previous value, and may return a cleanup. Effects run after the DOM commit; the first run happens on the flush after the component mounted. The single-function form <code>create_effect(fn)</code> also works.</p>
+<p>The split form is Solid 2.0's <code>createEffect(compute, apply)</code>: <code>compute</code> runs tracked, <code>apply</code> runs untracked with the value and previous value, and may return a cleanup. Effects run after the DOM commit; the first run happens on the flush after the component mounted. The single-function form <code>create_tracked_effect(fn)</code> also works.</p>
 <p>Signal semantics that carry over:</p>
 <ul>
 <li><strong>Automatic batching.</strong> All writes in one turn coalesce into one flush; there's no <code>batch()</code>.</li>
@@ -3301,12 +3331,12 @@
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">s</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"new"</span><span class="p">})</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">s</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"new"</span><span class="p">})</span>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">set_state</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">set_state</span><span class="p">(</span><span class="n">reconcile</span><span class="p">({</span><span class="s2">"count"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="n">fetched_items</span><span class="p">},</span> <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">))</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">snapshot</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">snapshot</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"items"</span><span class="p">])</span>
 </span></code></pre></div>
 <p>Setters are draft-first, as in Solid 2.0. Reads are tracked at the leaf, only leaves that changed notify, and <code>reconcile</code> preserves identity by key so <code>For</code> rows keep their DOM. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> match their Solid 2.0 namesakes.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>

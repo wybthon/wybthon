@@ -12,13 +12,13 @@
         <meta name="author" content="Owen Carey">
       
       
-        <link rel="canonical" href="https://wybthon.com/guides/demo-app/">
+        <link rel="canonical" href="https://wybthon.com/concepts/runtime-contracts/">
       
       
-        <link rel="prev" href="../dev-server/">
+        <link rel="prev" href="../lifecycle/">
       
       
-        <link rel="next" href="../authoring-patterns/">
+        <link rel="next" href="../vdom/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Demo Apps - Wybthon</title>
+        <title>Runtime Contracts - Wybthon</title>
       
     
     
@@ -67,17 +67,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Demo Apps - Wybthon" />
+<meta property="og:title" content="Runtime Contracts - Wybthon" />
 <meta property="og:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="og:image" content="https://wybthon.com/assets/images/social/guides/demo-app.png" />
+<meta property="og:image" content="https://wybthon.com/assets/images/social/concepts/runtime-contracts.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://wybthon.com/guides/demo-app/" />
+<meta property="og:url" content="https://wybthon.com/concepts/runtime-contracts/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Demo Apps - Wybthon" />
+<meta property="twitter:title" content="Runtime Contracts - Wybthon" />
 <meta property="twitter:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="twitter:image" content="https://wybthon.com/assets/images/social/guides/demo-app.png" />
+<meta property="twitter:image" content="https://wybthon.com/assets/images/social/concepts/runtime-contracts.png" />
 </head>
   
   
@@ -97,7 +97,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#demo-apps" class="md-skip">
+        <a href="#runtime-contracts" class="md-skip">
           Skip to content
         </a>
       
@@ -133,7 +133,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Demo Apps
+              Runtime Contracts
             
           </span>
         </div>
@@ -281,11 +281,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../concepts/mental-model/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../mental-model/" class="md-tabs__link">
           
   
   
@@ -303,13 +305,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../dev-server/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../guides/dev-server/" class="md-tabs__link">
           
   
   
@@ -498,6 +498,8 @@
       
   
   
+    
+  
   
   
     
@@ -512,511 +514,6 @@
         
       
         
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Concepts
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Concepts
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/mental-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Mental Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/components/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Components
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/primitives/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Primitives
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/reactivity/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reactivity
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/lifecycle/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Lifecycle and Ownership
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Runtime Contracts
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/vdom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Virtual DOM
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/router/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/context/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Context
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/stores/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Stores
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/events/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Events
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/forms/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Forms
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/dom/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    DOM Interop
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/error-boundaries/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Error Boundaries
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../concepts/async-loading/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async and Loading
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
       
         
       
@@ -1054,17 +551,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Guides
+    Concepts
   
 
     
@@ -1075,12 +572,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Guides
+    Concepts
   
 
           </label>
@@ -1093,14 +590,126 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev-server/" class="md-nav__link">
+      <a href="../mental-model/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Dev Server
+    Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../primitives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primitives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reactivity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reactivity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lifecycle and Ownership
   
 
     
@@ -1137,7 +746,7 @@
   <span class="md-ellipsis">
     
   
-    Demo Apps
+    Runtime Contracts
   
 
     
@@ -1155,7 +764,7 @@
   <span class="md-ellipsis">
     
   
-    Demo Apps
+    Runtime Contracts
   
 
     
@@ -1181,10 +790,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#running-a-demo-locally" class="md-nav__link">
+  <a href="#reads-and-writes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running a demo locally
+        Reads and writes
       
     </span>
   </a>
@@ -1192,10 +801,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-demos-bootstrap" class="md-nav__link">
+  <a href="#ownership-and-resources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the demos bootstrap
+        Ownership and resources
       
     </span>
   </a>
@@ -1203,10 +812,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#async-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Async work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actions-and-optimistic-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions and optimistic stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#collection-and-memory-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection and memory limits
       
     </span>
   </a>
@@ -1229,7 +860,398 @@
   
   
     <li class="md-nav__item">
-      <a href="../authoring-patterns/" class="md-nav__link">
+      <a href="../vdom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual DOM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../router/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Router
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stores
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DOM Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../error-boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Boundaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../async-loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async and Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dev-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/demo-app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo Apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authoring-patterns/" class="md-nav__link">
         
   
   
@@ -1257,7 +1279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyodide/" class="md-nav__link">
+      <a href="../../guides/pyodide/" class="md-nav__link">
         
   
   
@@ -1285,7 +1307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/" class="md-nav__link">
+      <a href="../../guides/deployment/" class="md-nav__link">
         
   
   
@@ -1313,7 +1335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing/" class="md-nav__link">
+      <a href="../../guides/testing/" class="md-nav__link">
         
   
   
@@ -1341,7 +1363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../../guides/performance/" class="md-nav__link">
         
   
   
@@ -1369,7 +1391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../typing/" class="md-nav__link">
+      <a href="../../guides/typing/" class="md-nav__link">
         
   
   
@@ -1397,7 +1419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migrating-from-react/" class="md-nav__link">
+      <a href="../../guides/migrating-from-react/" class="md-nav__link">
         
   
   
@@ -1425,7 +1447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migrating-from-solid/" class="md-nav__link">
+      <a href="../../guides/migrating-from-solid/" class="md-nav__link">
         
   
   
@@ -2749,10 +2771,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#running-a-demo-locally" class="md-nav__link">
+  <a href="#reads-and-writes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running a demo locally
+        Reads and writes
       
     </span>
   </a>
@@ -2760,10 +2782,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-demos-bootstrap" class="md-nav__link">
+  <a href="#ownership-and-resources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the demos bootstrap
+        Ownership and resources
       
     </span>
   </a>
@@ -2771,10 +2793,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#async-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Async work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actions-and-optimistic-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions and optimistic stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#collection-and-memory-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection and memory limits
       
     </span>
   </a>
@@ -2798,7 +2842,7 @@
 
 
   
-    <a href="https://github.com/wybthon/wybthon/edit/main/docs/guides/demo-app.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/wybthon/wybthon/edit/main/docs/concepts/runtime-contracts.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
     </a>
@@ -2807,68 +2851,36 @@
     
       
     
-    <a href="https://github.com/wybthon/wybthon/raw/main/docs/guides/demo-app.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/wybthon/wybthon/raw/main/docs/concepts/runtime-contracts.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
     </a>
   
 
 
-<h1 id="demo-apps">Demo apps<a class="headerlink" href="#demo-apps" title="Permanent link">&para;</a></h1>
-<p>Wybthon's demo applications live in standalone repositories under the <a href="https://github.com/wybthon">wybthon GitHub organization</a>. Each is a complete static site: Python in the browser via Pyodide, no JavaScript build step, and each installs Wybthon from PyPI the same way your own app would.</p>
-<table>
-<thead>
-<tr>
-<th>Repository</th>
-<th>What it shows</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/wybthon/demo-template">demo-template</a></td>
-<td>A minimal starter: <code>index.html</code>, a Pyodide <code>bootstrap.js</code>, and an <code>app/</code> package ready to edit. Fork or clone it to begin a new app.</td>
-</tr>
-<tr>
-<td><a href="https://github.com/wybthon/reactive-profiler">reactive-profiler</a></td>
-<td>An interactive visualization of run-once components and fine-grained reactive holes, including a live profiler that tallies signal writes and DOM mutations. Live at <a href="https://profiler.wybthon.com/">profiler.wybthon.com</a>.</td>
-</tr>
-<tr>
-<td><a href="https://github.com/wybthon/data-lab">data-lab</a></td>
-<td>Explore, analyze, visualize, and export data entirely in the browser. A larger app exercising forms, stores, flow control, and async data.</td>
-</tr>
-<tr>
-<td><a href="https://github.com/wybthon/photo-lab">photo-lab</a></td>
-<td>Resize, compress, convert, and strip image metadata privately in the browser. Demonstrates file handling and JS interop.</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="admonition-title">Versions</p>
-<p>The demos are separate repositories with their own release cadence. Use <code>wyb init</code> for a starter that matches the installed version's API.</p>
-</div>
-<h2 id="running-a-demo-locally">Running a demo locally<a class="headerlink" href="#running-a-demo-locally" title="Permanent link">&para;</a></h2>
-<p>Every demo is a static site, so the workflow is the same:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/wybthon/demo-template.git
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>demo-template
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--watch<span class="w"> </span>app<span class="w"> </span>--open
-</span></code></pre></div>
-<p>The <code>wyb dev</code> server provides hot reload over SSE; see the <a href="../dev-server/">dev server guide</a>.</p>
-<h2 id="how-the-demos-bootstrap">How the demos bootstrap<a class="headerlink" href="#how-the-demos-bootstrap" title="Permanent link">&para;</a></h2>
-<p>Each demo follows the same pattern:</p>
-<ul>
-<li><code>index.html</code> loads <code>bootstrap.js</code> as an ES module.</li>
-<li><code>bootstrap.js</code> loads Pyodide, installs Wybthon (from PyPI via <code>micropip</code>, or by copying source files into the Pyodide filesystem), copies the app package under <code>/app</code>, then calls <code>app.main.main()</code>.</li>
-<li><code>app/main.py</code> builds the root component and calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> into the page's mount point, typically wrapping the tree in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundaries around a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/wybthon/#wybthon.Router"><code>Router</code></a>.</li>
-<li>Folders under <code>app/</code> mirror routes and components, and route pages are often loaded with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> so the initial import stays small.</li>
-</ul>
-<p>The <a href="../pyodide/">Pyodide guide</a> covers the runtime details, including module loading and lazy imports.</p>
-<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Start from the <a href="https://github.com/wybthon/demo-template">demo-template</a> for your own app.</li>
-<li>Explore the <a href="../../examples/">Examples</a> for individual feature walkthroughs.</li>
-<li>See the <a href="../dev-server/">Dev server guide</a> for the local feedback loop.</li>
-</ul>
+<h1 id="runtime-contracts">Runtime contracts<a class="headerlink" href="#runtime-contracts" title="Permanent link">&para;</a></h1>
+<p>Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM is the rendering implementation; it doesn't change which reactive reads subscribe to which computations.</p>
+<h2 id="reads-and-writes">Reads and writes<a class="headerlink" href="#reads-and-writes" title="Permanent link">&para;</a></h2>
+<p>Signal writes and successful store drafts stage a working version. Ordinary reads outside a computation keep seeing the last revealed version until the scheduler commits. This applies to properties you haven't read before, list length, membership, iteration, and snapshots. Observation history never chooses the version.</p>
+<p>Tracked computation reads see the working graph. During an async transition, computations can prepare new values while the visible DOM and ordinary reads keep their previous version. <code>latest(accessor)</code> deliberately reads the working value. An action reads its own staged writes. <code>is_pending(accessor)</code> observes readiness without turning an ordinary read of the same source into a pending-only read.</p>
+<p>A microtask flush batches writes. An ordinary bubbling event sends its whole matching route to Python and flushes once after the handlers finish. <code>flush()</code> is useful in native tests and for explicit synchronous boundaries.</p>
+<h2 id="ownership-and-resources">Ownership and resources<a class="headerlink" href="#ownership-and-resources" title="Permanent link">&para;</a></h2>
+<p>Components own their computations, nested roots, list rows, and event tasks. <code>create_root(fn)</code> joins the current owner. Use <code>detached=True</code> only when you intend to manage a separate lifetime, and retain its disposer.</p>
+<p>A split <code>create_effect(compute, apply)</code> tracks <code>compute</code> and runs <code>apply</code> untracked after the DOM commit. Cleanup returned by <code>apply</code>, or registered during <code>apply</code>, belongs to that committed application. It runs before the next visible apply or when the effect is disposed. Preparing a held replacement doesn't tear down a resource that still belongs to the visible UI.</p>
+<p><code>create_tracked_effect(fn)</code> explicitly combines tracking and side effects. Its <code>on_cleanup</code> callbacks run before recomputation. Use split effects for subscriptions, listeners, and other resources that must follow visible state.</p>
+<p><code>create_memo</code> evaluates initially unless <code>lazy=True</code>. A lazy memo suspends when its last observer leaves: its work, dependencies, and tasks are released. A later read starts it again. Explicit disposal is permanent.</p>
+<p><code>For</code> owns mounted rows. Entity moves preserve row state, refs, and fragment ranges. Removed rows are disposed when their removal becomes visible. <code>Repeat</code> grows and shrinks integer slots directly. A changed keyed <code>Show</code> value creates a new branch scope, including same-type child components.</p>
+<h2 id="async-work">Async work<a class="headerlink" href="#async-work" title="Permanent link">&para;</a></h2>
+<p>Async computations and event handlers run in real <code>asyncio.Task</code> instances. Dependencies read after an <code>await</code> remain tracked in computations. Ordinary <code>asyncio.timeout</code> and <code>TaskGroup</code> work inside them. Child tasks created explicitly with <code>asyncio.create_task</code> have their own ordinary asyncio lifetime; use <code>TaskGroup</code> when the parent should cancel them.</p>
+<p>A changed computation input cancels the superseded task. Disposal and action Future cancellation cancel suspended work and allow asynchronous <code>finally</code> cleanup. Cancellation is cooperative: a coroutine that blocks Python or suppresses cancellation can't be forcibly stopped. <code>resolve</code> and <code>until</code> release their temporary subscriptions when their caller is canceled.</p>
+<p>Derived stores use the same readiness, errors, Loading boundaries, and <code>refresh</code> behavior as memos. Their seed determines shape; an unresolved async projection still reports pending. Async generators publish each yielded projection and close when their owner is disposed.</p>
+<h2 id="actions-and-optimistic-stores">Actions and optimistic stores<a class="headerlink" href="#actions-and-optimistic-stores" title="Permanent link">&para;</a></h2>
+<p>Overlapping actions join the scheduler's current transition. Their ordinary writes reveal together when its work settles. This is one shared transaction, not independent per-action isolation.</p>
+<p>Optimistic stores replay draft edits in submission order over the latest authoritative source. All overlays in the transition are removed when it settles, including failure or cancellation. Authoritative updates must therefore arrive before the corresponding action completes. Overlay callbacks must be deterministic and free of external side effects because rebasing can run them again.</p>
+<p><code>until(predicate)</code> reads authoritative state, so an optimistic edit can't acknowledge itself. Ordinary UI reads see the optimistic overlay. <code>refresh</code> requests a quiet recomputation and returns an awaitable for completion; quiet refresh doesn't show a pending indicator.</p>
+<h2 id="collection-and-memory-limits">Collection and memory limits<a class="headerlink" href="#collection-and-memory-limits" title="Permanent link">&para;</a></h2>
+<p>Store lists use structurally shared sequence versions. Append and indexed updates avoid copying the entire sequence; a general splice can rebuild it. Mounted <code>For</code> regions consume recent edit records to handle local changes without mapping every existing row. Arbitrary replacement arrays use keyed matching and the generic VDOM diff. Removal still updates subsequent index accessors when indices change.</p>
+<p>Template prototypes use a bounded cache of 256 entries. Varying instance attributes don't create a template per instance. Node handles, listeners, and refs are released on unmount; selector-based root adoption is canonical. The diagnostic APIs expose registry and operation counts for regression tests.</p>
 
 
 

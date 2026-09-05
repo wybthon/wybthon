@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -985,8 +1015,6 @@
   
     
     
-      
-        
       
         
       
@@ -1335,34 +1363,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1653,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2623,6 +2625,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3192,7 +3222,7 @@ crossing at commit time. Application code never imports this module.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;attach_ref&lt;/span&gt; (&lt;code&gt;wybthon.props.attach_ref&lt;/code&gt;)" href="#wybthon.props.attach_ref">attach_ref</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Assign the mounted element to the <code>ref</code> prop (Ref, callback, or list).</p>
+                  <p>Assign a ref; a callback may return cleanup for replacement or unmount.</p>
                 </div>
               </td>
             </tr>
@@ -3200,7 +3230,7 @@ crossing at commit time. Application code never imports this module.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;detach_ref&lt;/span&gt; (&lt;code&gt;wybthon.props.detach_ref&lt;/code&gt;)" href="#wybthon.props.detach_ref">detach_ref</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Reset <code>Ref</code> objects in the <code>ref</code> prop to <code>None</code> (callbacks aren't re-invoked).</p>
+                  <p>Clear object refs and run callback cleanups exactly once.</p>
                 </div>
               </td>
             </tr>
@@ -3370,7 +3400,7 @@ other name containing underscores has them replaced with hyphens
 
     <div class="doc doc-contents ">
 
-        <p>Assign the mounted element to the <code>ref</code> prop (Ref, callback, or list).</p>
+        <p>Assign a ref; a callback may return cleanup for replacement or unmount.</p>
 
 
     </div>
@@ -3385,12 +3415,12 @@ other name containing underscores has them replaced with hyphens
 
 
 <a href="#wybthon.props.detach_ref" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">detach_ref</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n"><span title="wybthon.props.PropsDict">PropsDict</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">detach_ref</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Reset <code>Ref</code> objects in the <code>ref</code> prop to <code>None</code> (callbacks aren't re-invoked).</p>
+        <p>Clear object refs and run callback cleanups exactly once.</p>
 
 
     </div>

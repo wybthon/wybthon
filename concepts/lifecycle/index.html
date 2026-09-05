@@ -18,7 +18,7 @@
         <link rel="prev" href="../reactivity/">
       
       
-        <link rel="next" href="../vdom/">
+        <link rel="next" href="../runtime-contracts/">
       
       
         
@@ -533,6 +533,8 @@
       
         
       
+        
+      
     
     
     
@@ -858,10 +860,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#held-applications-and-async-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held applications and async cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1134,8 +1175,6 @@
   
     
     
-      
-        
       
         
       
@@ -1484,34 +1523,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1800,6 +1811,8 @@
   
     
     
+      
+        
       
         
       
@@ -2538,6 +2551,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2883,6 +2924,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#held-applications-and-async-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held applications and async cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2968,12 +3020,12 @@ disposed and the whole subtree goes with it.</p>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a></td>
-<td>Lazily on first read; recomputes when a source changed and it's read again.</td>
+<td>At creation unless <code>lazy=True</code>; later reads bring changed inputs current.</td>
 <td>Derived values.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> with <code>async def</code></td>
-<td>Starts the coroutine when first read; revalidates when tracked sources change.</td>
+<td>Starts at creation unless <code>lazy=True</code>; revalidates when tracked sources change.</td>
 <td>Data fetching with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a>.</td>
 </tr>
 </tbody>
@@ -3006,7 +3058,7 @@ disposed and the whole subtree goes with it.</p>
 <p>A cleanup registered inside an effect belongs to that <em>run</em> of the
 effect, not to the component. Each re-run fires the previous cleanup
 first:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">on_cleanup</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_tracked_effect</span><span class="p">,</span> <span class="n">on_cleanup</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">track_resize</span><span class="p">():</span>
@@ -3015,7 +3067,7 @@ first:</p>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">on_cleanup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">window</span><span class="o">.</span><span class="n">removeEventListener</span><span class="p">(</span><span class="s2">"resize"</span><span class="p">,</span> <span class="n">handler</span><span class="p">))</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">create_effect</span><span class="p">(</span><span class="n">track_resize</span><span class="p">)</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">create_tracked_effect</span><span class="p">(</span><span class="n">track_resize</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The split form expresses the same thing without <code>on_cleanup</code>: return the
 cleanup from <code>apply</code>, and it runs before the next <code>apply</code> and on
@@ -3098,6 +3150,9 @@ with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbo
 <li>See <a href="../async-loading/">Async and loading</a> for async data lifecycles.</li>
 <li>Browse <a href="../../guides/authoring-patterns/">Authoring patterns</a> for real-world recipes.</li>
 </ul>
+<h2 id="held-applications-and-async-cleanup">Held applications and async cleanup<a class="headerlink" href="#held-applications-and-async-cleanup" title="Permanent link">&para;</a></h2>
+<p>A split effect's apply scope survives while its replacement is held by an async transition. Returned cleanup and <code>on_cleanup</code> registered during apply run before the next visible apply. Compute-stage cleanup still follows recomputation.</p>
+<p>Nested <code>create_root</code> calls belong to the current owner by default. <code>detached=True</code> opts into an explicitly managed lifetime. Async computations and handlers are canceled when their owning scope is disposed; their asynchronous <code>finally</code> blocks can finish cleanup. See <a href="../runtime-contracts/">Runtime contracts</a>.</p>
 
 
 

@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -985,8 +1015,6 @@
   
     
     
-      
-        
       
         
       
@@ -1335,34 +1363,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1653,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2142,6 +2144,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.EventHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.DomEvent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2188,6 +2201,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;event
+      
+    </span>
+  </a>
   
 </li>
         
@@ -2596,6 +2620,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2864,6 +2916,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.EventHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventHandler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.DomEvent" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2910,6 +2973,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;event
+      
+    </span>
+  </a>
   
 </li>
         
@@ -3056,7 +3130,8 @@
 event type is installed on each render root (the container passed to
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a>, plus any <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../wybthon/#wybthon.Portal"><code>Portal</code></a> target),
 walks the ancestor chain of the event target natively, and calls into
-Python once per matched handler.
+Python once for the bubbling route. Non-bubbling events and explicit native
+listener options use direct listeners.
 The call carries a small JSON payload (event type, target value/checked
 state, key, mouse buttons, modifiers), so the common handler patterns
 (<code>evt.target.value</code>, <code>evt.key</code>, <code>evt.prevent_default()</code>) never touch a
@@ -3103,6 +3178,19 @@ is the entry point the kernel invokes when a native event fires.</p>
       </thead>
       <tbody>
           <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;EventHandler&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.events.EventHandler&lt;/code&gt;)" href="#wybthon.events.EventHandler">EventHandler</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A handler with native listener options, constructed with <code>event</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt; (&lt;code&gt;wybthon.events.DomEvent&lt;/code&gt;)" href="#wybthon.events.DomEvent">DomEvent</a></code></td>
             <td>
               <div class="doc-md-description">
@@ -3112,6 +3200,74 @@ is the entry point the kernel invokes when a native event fires.</p>
           </tr>
       </tbody>
     </table>
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;event&lt;/span&gt; (&lt;code&gt;wybthon.events.event&lt;/code&gt;)" href="#wybthon.events.event">event</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Configure a native listener. Ordinary handlers use batched delegation.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon.events.EventHandler" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">EventHandler</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#wybthon.events.EventHandler" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">EventHandler</span><span class="p">(</span><span class="n">callback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">capture</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">passive</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">once</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A handler with native listener options, constructed with <code>event</code>.</p>
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3128,6 +3284,15 @@ is the entry point the kernel invokes when a native event fires.</p>
 
 
 
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -3477,6 +3642,31 @@ fire.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.events.event" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">event</span>
+
+
+<a href="#wybthon.events.event" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">event</span><span class="p">(</span><span class="n">handler</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">capture</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">passive</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">once</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;EventHandler&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.events.EventHandler&lt;/code&gt;)" href="#wybthon.events.EventHandler">EventHandler</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Configure a native listener. Ordinary handlers use batched delegation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.events.set_handler" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">set_handler</span>
 
@@ -3601,7 +3791,7 @@ subtree removal, so no per-handler ops are needed.</p>
 
         <p>Invoke the handler for <code>(node_id, event_type)</code> with a payload.</p>
 <p>This is the entry point the kernel's native root listener calls,
-once per matched node while walking the ancestor chain.</p>
+once for the matching bubbling route, or once for a direct native listener.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3715,7 +3905,7 @@ once per matched node while walking the ancestor chain.</p>
 installs one native listener per event type on each container passed to
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../wybthon/#wybthon.render"><code>render</code></a> (falling back to <code>document</code> when no root is
 registered), walks the ancestor chain natively when an event fires, and
-calls into Python once per matched handler with a small JSON payload.
+calls into Python once for the matching bubbling route with a small JSON payload.
 Handlers receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> built from that
 payload, so the common reads (<code>evt.target.value</code>, <code>evt.key</code>) never touch
 a <code>JsProxy</code>. Registering a handler is itself a batched <code>LISTEN</code> op.</p>

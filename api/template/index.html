@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -985,8 +1015,6 @@
   
     
     
-      
-        
       
         
       
@@ -1335,34 +1363,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1653,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2552,6 +2554,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2999,12 +3029,13 @@ crossing) when they contain constructs the HTML parser would mangle:
 adjacent or empty text nodes, raw text elements, invalid attribute
 names, or element nestings the parser rewrites (implied <code>&lt;tbody&gt;</code>,
 auto-closed <code>&lt;p&gt;</code>, and similar).</p>
-<p>Plans are <strong>cached per shape</strong>: a single walk of the VNode tree
-collects the per-instance data (id order and bindings) while building
-a hashable <em>shape key</em> that uniquely determines the serialized HTML.
-Serialization, escaping, and eligibility validation run only on the
-first mount of each shape; every later mount of a structurally
-identical tree (for example, the rows of a list) is a dictionary hit.</p>
+<p>Plans are <strong>cached per shape</strong>. The generic walk collects instance data
+while building a hashable shape key; serialization and HTML eligibility
+validation run only on the first mount of that shape. Repeated shapes
+also receive a guarded Python extraction routine, avoiding generic tree
+walking and prop classification on subsequent mounts. The routine checks
+structure and binding kinds and falls back when they change. Both caches
+are bounded, and instance handlers, refs, and expressions aren't retained.</p>
 
 
 
@@ -3219,10 +3250,10 @@ after ids are assigned.</p>
 nodes plus dynamic placeholders (holes, fragments, components). The
 VNode tree is normalized in place (children lists become <code>VNode</code>
 lists) as a side effect, exactly as the per-node mount path does.</p>
-<p>A single walk collects the per-instance order and bindings while
-building the shape key. The HTML string (and the eligibility
-verdict) comes from the shape cache; the full serializer runs only
-on the first mount of each shape.</p>
+<p>A guarded extraction routine handles repeated shapes. If none matches,
+a generic walk collects instance bindings and a shape key. The HTML
+string and eligibility verdict come from the shape cache; the full
+serializer runs only on the first mount of each shape.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

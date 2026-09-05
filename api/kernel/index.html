@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -985,8 +1015,6 @@
   
     
     
-      
-        
       
         
       
@@ -1335,34 +1363,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1653,6 +1653,8 @@
   
     
     
+      
+        
       
         
       
@@ -2232,6 +2234,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.kernel.stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;stats
       
     </span>
   </a>
@@ -2855,6 +2868,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3388,6 +3429,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.kernel.stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.kernel.get_node" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3593,7 +3645,7 @@ one bridge crossing instead of tens of thousands.</p>
   the exact protocol the browser sees.</li>
 <li><strong>Events.</strong> Event delegation lives in the kernel: one native listener
   per event type walks the ancestor chain natively and calls into
-  Python once per matched handler with a JSON payload. See
+  Python once for the matching bubbling route with a JSON payload. See
   <code>wybthon.events</code> for the Python half.</li>
 </ul>
 <p>Application code never imports this module directly; it's plumbing for
@@ -3750,7 +3802,7 @@ the bridge.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;adopt&lt;/span&gt; (&lt;code&gt;wybthon.kernel.BrowserBackend.adopt&lt;/code&gt;)" href="#wybthon.kernel.BrowserBackend.adopt">adopt</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Register an existing raw DOM node under <code>node_id</code>.</p>
+                  <p>Return an existing handle or register the node under <code>node_id</code>.</p>
                 </div>
               </td>
             </tr>
@@ -3758,7 +3810,7 @@ the bridge.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;query&lt;/span&gt; (&lt;code&gt;wybthon.kernel.BrowserBackend.query&lt;/code&gt;)" href="#wybthon.kernel.BrowserBackend.query">query</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Register the first <code>selector</code> match under <code>node_id</code>; False when none.</p>
+                  <p>Return the canonical handle of a selector match, or None.</p>
                 </div>
               </td>
             </tr>
@@ -3853,12 +3905,12 @@ the bridge.</p>
 
 
 <a href="#wybthon.kernel.BrowserBackend.adopt" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">adopt</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">adopt</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Register an existing raw DOM node under <code>node_id</code>.</p>
+        <p>Return an existing handle or register the node under <code>node_id</code>.</p>
 
 
     </div>
@@ -3873,12 +3925,12 @@ the bridge.</p>
 
 
 <a href="#wybthon.kernel.BrowserBackend.query" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">query</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">query</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Register the first <code>selector</code> match under <code>node_id</code>; False when none.</p>
+        <p>Return the canonical handle of a selector match, or None.</p>
 
 
     </div>
@@ -4016,7 +4068,7 @@ a browser.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;adopt&lt;/span&gt; (&lt;code&gt;wybthon.kernel.PythonBackend.adopt&lt;/code&gt;)" href="#wybthon.kernel.PythonBackend.adopt">adopt</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Register an existing stub node under <code>node_id</code>.</p>
+                  <p>Return an existing handle or register this stub node.</p>
                 </div>
               </td>
             </tr>
@@ -4024,7 +4076,7 @@ a browser.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;query&lt;/span&gt; (&lt;code&gt;wybthon.kernel.PythonBackend.query&lt;/code&gt;)" href="#wybthon.kernel.PythonBackend.query">query</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Register the document's first <code>selector</code> match; False when none.</p>
+                  <p>Return the canonical handle of a selector match, or None.</p>
                 </div>
               </td>
             </tr>
@@ -4135,12 +4187,12 @@ a browser.</p>
 
 
 <a href="#wybthon.kernel.PythonBackend.adopt" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">adopt</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">adopt</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Register an existing stub node under <code>node_id</code>.</p>
+        <p>Return an existing handle or register this stub node.</p>
 
 
     </div>
@@ -4155,12 +4207,12 @@ a browser.</p>
 
 
 <a href="#wybthon.kernel.PythonBackend.query" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">query</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">query</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Register the document's first <code>selector</code> match; False when none.</p>
+        <p>Return the canonical handle of a selector match, or None.</p>
 
 
     </div>
@@ -4378,6 +4430,26 @@ needs it, so no extra bridge crossing occurs.</p>
 <p>No-op when the buffer is empty. Safe to call at any time; the
 renderer calls it at the end of <code>render</code>, at the end of every
 effect flush, and before any synchronous DOM read.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.kernel.stats" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">stats</span>
+
+
+<a href="#wybthon.kernel.stats" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">stats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return node, template, listener, and root registry sizes.</p>
 
 
     </div>
@@ -4648,6 +4720,26 @@ hot path; <code>None</code> anchors mean "append".</p>
 <td>Detach from the parent</td>
 </tr>
 <tr>
+<td><code>MOVE_RANGE</code></td>
+<td><code>parent_id, first_id, last_id, anchor_id</code></td>
+<td>Move a contiguous mounted range</td>
+</tr>
+<tr>
+<td><code>REMOVE_RANGE</code></td>
+<td><code>first_id, last_id</code></td>
+<td>Detach a contiguous mounted range</td>
+</tr>
+<tr>
+<td><code>HOLE_TEXT</code></td>
+<td><code>id, text</code></td>
+<td>Reuse a hole anchor as a visible text node</td>
+</tr>
+<tr>
+<td><code>RELEASE_TPL</code></td>
+<td><code>tpl_id</code></td>
+<td>Evict a native template prototype</td>
+</tr>
+<tr>
 <td><code>SET_TEXT</code></td>
 <td><code>id, text</code></td>
 <td><code>nodeValue</code> assignment</td>
@@ -4660,7 +4752,7 @@ hot path; <code>None</code> anchors mean "append".</p>
 <tr>
 <td><code>SET_PROP</code></td>
 <td><code>id, name, value</code></td>
-<td>DOM property assignment (<code>value</code>, <code>checked</code>, <code>innerHTML</code>)</td>
+<td>DOM property assignment (<code>value</code>, <code>checked</code>, <code>selectedValues</code>, <code>innerHTML</code>)</td>
 </tr>
 <tr>
 <td><code>SET_STYLE</code></td>
@@ -4669,8 +4761,8 @@ hot path; <code>None</code> anchors mean "append".</p>
 </tr>
 <tr>
 <td><code>LISTEN</code> / <code>UNLISTEN</code></td>
-<td><code>id, event_type</code></td>
-<td>Delegated handler bookkeeping plus per-root listener refcounts</td>
+<td><code>id, event_type[, options]</code></td>
+<td>Delegated bookkeeping or direct native options; unlisten omits options</td>
 </tr>
 <tr>
 <td><code>RELEASE</code></td>
@@ -4686,7 +4778,7 @@ hot path; <code>None</code> anchors mean "append".</p>
 </table>
 <p>Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,
-and calls the Python dispatcher once per matched handler with a small
+and calls the Python dispatcher once for the matching bubbling route with a small
 JSON payload (see <a href="../events/">events</a>).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">kernel</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>

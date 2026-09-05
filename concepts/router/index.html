@@ -533,6 +533,8 @@
       
         
       
+        
+      
     
     
     
@@ -708,6 +710,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -919,6 +949,17 @@
     <span class="md-ellipsis">
       
         Next steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navigation-intent-and-scroll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation intent and scroll
       
     </span>
   </a>
@@ -1145,8 +1186,6 @@
   
     
     
-      
-        
       
         
       
@@ -1495,34 +1534,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1811,6 +1822,8 @@
   
     
     
+      
+        
       
         
       
@@ -2549,6 +2562,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2905,6 +2946,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#navigation-intent-and-scroll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation intent and scroll
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2941,7 +2993,7 @@
 <h1 id="router">Router<a class="headerlink" href="#router" title="Permanent link">&para;</a></h1>
 <p>Client-side routing with path params, query parsing, nested routes, and
 active links.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">component</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Outlet</span><span class="p">,</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">component</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">nav</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
@@ -2986,7 +3038,7 @@ component instead of remounting it, so local state survives.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Route</span><span class="p">(</span><span class="s2">"/users/:id"</span><span class="p">,</span> <span class="n">User</span><span class="p">)</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># /users/42?tab=activity -&gt; params()["id"] == "42", query()["tab"] == "activity"</span>
 </span></code></pre></div>
-<p>Query values are URL-decoded strings. Any component under the router
+<p>Query values are URL-decoded strings. <code>query().get_all("tag")</code> preserves repeated parameters; ordinary lookup returns the last value. <code>use_hash()</code> returns a reactive decoded fragment. Any component under the router
 (not only the matched one) can read the same accessors with
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_params&lt;/span&gt;" href="../../api/wybthon/#wybthon.use_params"><code>use_params</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_query&lt;/span&gt;" href="../../api/wybthon/#wybthon.use_query"><code>use_query</code></a>,
 and the router's base path with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_base_path&lt;/span&gt;" href="../../api/wybthon/#wybthon.use_base_path"><code>use_base_path</code></a>:</p>
@@ -3001,43 +3053,48 @@ and the router's base path with <a class="autorefs autorefs-internal" title="&lt
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">params</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'slug'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">query</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'page'</span><span class="p">,</span><span class="w"> </span><span class="s1">'1'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Outside a router, <code>use_params()</code> and <code>use_query()</code> return accessors
-yielding <code>{}</code>, and <code>use_base_path()</code> returns <code>""</code>.</p>
+yielding empty mappings, and <code>use_base_path()</code> returns <code>""</code>.</p>
 <h2 id="nested-routes">Nested routes<a class="headerlink" href="#nested-routes" title="Permanent link">&para;</a></h2>
 <p>Child routes join their paths to the parent's. Params from every level
-are merged into <code>params</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">Route</span><span class="p">(</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="s2">"/about"</span><span class="p">,</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">About</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="n">children</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>            <span class="n">Route</span><span class="p">(</span><span class="s2">"team/:name"</span><span class="p">,</span> <span class="n">Team</span><span class="p">),</span>   <span class="c1"># matches /about/team/ada</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="p">],</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="p">),</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">]</span>
+are merged into <code>params</code>. A parent component renders <code>Outlet()</code> where its
+matched child belongs. Parent layouts stay mounted while child routes change:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@component</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">About</span><span class="p">():</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"About"</span><span class="p">),</span> <span class="n">Outlet</span><span class="p">())</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">Route</span><span class="p">(</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="s2">"/about"</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">About</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="n">Route</span><span class="p">(</span><span class="s2">"team/:name"</span><span class="p">,</span> <span class="n">Team</span><span class="p">),</span>   <span class="c1"># matches /about/team/ada</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="p">],</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="p">),</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">]</span>
 </span></code></pre></div>
 <h2 id="wildcards-and-not-found">Wildcards and not found<a class="headerlink" href="#wildcards-and-not-found" title="Permanent link">&para;</a></h2>
 <p>A trailing <code>*</code> matches the rest of the path (and the parent path itself)
 into <code>params()["wildcard"]</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Route</span><span class="p">(</span><span class="s2">"/docs/*"</span><span class="p">,</span> <span class="n">Docs</span><span class="p">)</span>   <span class="c1"># /docs and /docs/guide/intro both match</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Route</span><span class="p">(</span><span class="s2">"/docs/*"</span><span class="p">,</span> <span class="n">Docs</span><span class="p">)</span>   <span class="c1"># /docs and /docs/guide/intro both match</span>
 </span></code></pre></div>
 <p>When nothing matches, the router renders <code>not_found</code> (a component that
 also receives <code>params</code> and <code>query</code>) or, if none is given, a literal
 "Not Found" <code>&lt;div&gt;</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="n">not_found</span><span class="o">=</span><span class="n">NotFound</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="n">not_found</span><span class="o">=</span><span class="n">NotFound</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="base-path">Base path<a class="headerlink" href="#base-path" title="Permanent link">&para;</a></h2>
 <p>Pass <code>base_path</code> when the app is served under a prefix. It's stripped
 before matching, and every <code>Link</code> beneath the router prepends it:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">"/app"</span><span class="p">)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">)</span>   <span class="c1"># renders href="/app/about"</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">"/app"</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">)</span>   <span class="c1"># renders href="/app/about"</span>
 </span></code></pre></div>
 <p>Hrefs starting with <code>http://</code>, <code>https://</code>, or <code>#</code> are left alone.</p>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Users"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/users"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"nav-link"</span><span class="p">)</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Users"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/users"</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>              <span class="c1"># active only on an exact match</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Settings"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>    <span class="c1"># replace the history entry</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Home"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">active_class</span><span class="o">=</span><span class="s2">"is-current"</span><span class="p">)</span>   <span class="c1"># custom active class</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Home"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">active_class</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>           <span class="c1"># no active class</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Users"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/users"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"nav-link"</span><span class="p">)</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Users"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/users"</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>              <span class="c1"># active only on an exact match</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Settings"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>    <span class="c1"># replace the history entry</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Home"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">active_class</span><span class="o">=</span><span class="s2">"is-current"</span><span class="p">)</span>   <span class="c1"># custom active class</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Home"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">active_class</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>           <span class="c1"># no active class</span>
 </span></code></pre></div>
 <ul>
 <li>The link is active when the current path equals its target, or starts with it as a path prefix unless <code>end=True</code>. The active class (default <code>"active"</code>) is merged with any <code>class_</code> you pass.</li>
@@ -3046,11 +3103,11 @@ before matching, and every <code>Link</code> beneath the router prepends it:</p>
 <li>Other keyword arguments (<code>aria_label</code>, <code>on_click</code>, <code>data_*</code>) are forwarded to the <code>&lt;a&gt;</code> element. A user <code>on_click</code> runs before the router's navigation.</li>
 </ul>
 <h2 id="programmatic-navigation">Programmatic navigation<a class="headerlink" href="#programmatic-navigation" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_path</span><span class="p">,</span> <span class="n">navigate</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">navigate</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">)</span>                 <span class="c1"># pushState</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">navigate</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># replaceState</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">current_path</span><span class="p">()</span>                     <span class="c1"># "/about" (an accessor: pathname plus query string)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_path</span><span class="p">,</span> <span class="n">navigate</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">navigate</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">)</span>                 <span class="c1"># pushState</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">navigate</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># replaceState</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">current_path</span><span class="p">()</span>                     <span class="c1"># "/about" (an accessor: pathname, query string, and hash)</span>
 </span></code></pre></div>
 <p><code>current_path</code> also updates on the browser's back and forward buttons.
 Outside a browser (in tests), <code>navigate</code> only updates the signal; call
@@ -3064,19 +3121,19 @@ change in <em>which</em> route matches re-mounts the outlet.</p>
 module-path string, a <code>(module_path, attr)</code> tuple, a module, or a
 component, and it may be async. While the module loads, the nearest
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary shows its fallback.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">lazy</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">Docs</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.docs.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/docs/*"</span><span class="p">,</span> <span class="n">Docs</span><span class="p">),</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">About</span><span class="p">),</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="p">]</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading page..."</span><span class="p">))</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">About</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">lazy</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">Docs</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.docs.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/docs/*"</span><span class="p">,</span> <span class="n">Docs</span><span class="p">),</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">About</span><span class="p">),</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">]</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">Loading</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading page..."</span><span class="p">))</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">About</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
 </span></code></pre></div>
 <p>Notes for Pyodide:</p>
 <ul>
@@ -3087,10 +3144,10 @@ component, and it may be async. While the module loads, the nearest
 <p>Pair the router with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and reset the boundary
 when the route changes, so a broken page recovers as soon as the user
 navigates away:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">current_path</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">Errored</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"This page failed"</span><span class="p">),</span> <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">current_path</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">Errored</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Router</span><span class="p">(</span><span class="n">routes</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="s2">"This page failed"</span><span class="p">),</span> <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3098,6 +3155,10 @@ navigates away:</p>
 <li>See <a href="../async-loading/">Async and loading</a> for code-splitting.</li>
 <li>Browse the <a href="../../api/router/"><code>router</code></a> and <a href="../../api/router_core/"><code>router_core</code></a> API references.</li>
 </ul>
+<h2 id="navigation-intent-and-scroll">Navigation intent and scroll<a class="headerlink" href="#navigation-intent-and-scroll" title="Permanent link">&para;</a></h2>
+<p>A <code>Route(..., preload=callback)</code> can warm data using its decoded parameter dict. The callback can be async. Links preload matching route code and data on hover or focus; navigation waits on the same cached work. Preload entries are bounded and canceled when the router is disposed. Failed entries are evicted for retry.</p>
+<p>Static path segments take precedence over parameters, which take precedence over wildcards. Base paths match segment boundaries, so <code>/app</code> doesn't match <code>/application</code>. Parameters are percent-decoded, and trailing slashes normalize.</p>
+<p>Modified clicks, download links, explicit targets, already-prevented events, and external URLs keep normal browser behavior. <code>navigate(..., scroll=False)</code> opts out of scroll handling. Normal navigation scrolls to a hash target or the top after commit; back/forward restores the recorded position for that URL. Multiple history entries for the same URL share that recorded position.</p>
 
 
 

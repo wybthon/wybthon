@@ -533,6 +533,8 @@
       
         
       
+        
+      
     
     
     
@@ -708,6 +710,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -1004,6 +1034,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#dirty-state-reset-and-async-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dirty state, reset, and async workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1112,8 +1153,6 @@
   
     
     
-      
-        
       
         
       
@@ -1462,34 +1501,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1778,6 +1789,8 @@
   
     
     
+      
+        
       
         
       
@@ -2516,6 +2529,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2839,6 +2880,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#dirty-state-reset-and-async-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dirty state, reset, and async workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2939,8 +2991,8 @@ and <code>on_input</code> whenever the helpers don't fit.</p>
 </span></code></pre></div>
 <h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../../api/wybthon/#wybthon.form_state"><code>form_state</code></a> turns a dict of initial values into
-a dict of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/wybthon/#wybthon.Field"><code>Field</code></a> objects. Each field owns three
-signals:</p>
+a <code>FormState</code> mapping of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/wybthon/#wybthon.Field"><code>Field</code></a> objects. Each field exposes
+reactive values:</p>
 <table>
 <thead>
 <tr>
@@ -2980,7 +3032,7 @@ helpers call under the hood.</p>
 <h2 id="bindings">Bindings<a class="headerlink" href="#bindings" title="Permanent link">&para;</a></h2>
 <p>The <code>bind_*</code> helpers return prop dicts to spread onto a control:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_text"><code>bind_text(field, validators=[...])</code></a> gives <code>value</code> and <code>on_input</code>. The <code>value</code> entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_text"><code>bind_text(field, validators=[...])</code></a> gives <code>value</code>, <code>on_input</code>, and <code>on_compositionend</code>. Composition input waits until composition ends. The <code>value</code> entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_checkbox&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_checkbox"><code>bind_checkbox(field)</code></a> gives <code>checked</code> and <code>on_change</code> for a boolean field.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_select&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_select"><code>bind_select(field)</code></a> gives <code>value</code> and <code>on_change</code> for a <code>&lt;select&gt;</code>.</li>
 </ul>
@@ -2988,7 +3040,7 @@ helpers call under the hood.</p>
 revalidate on every input event. Add more props alongside the spread
 (<code>placeholder</code>, <code>class_</code>, <code>autocomplete</code>) as usual.</p>
 <h2 id="validators">Validators<a class="headerlink" href="#validators" title="Permanent link">&para;</a></h2>
-<p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-type_alias&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-type_alias-name&quot;&gt;Validator&lt;/span&gt;" href="../../api/wybthon/#wybthon.Validator"><code>Validator</code></a> is a function from a value to an
+<p>A <code>Validator</code> is a function from a value to an
 error string or <code>None</code>. The built-ins are factories so messages are
 customizable:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">email</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="n">min_length</span><span class="p">,</span> <span class="n">required</span>
@@ -3051,6 +3103,18 @@ so it's cheap even in large lists. See <a href="../events/">Events</a>.</p>
 <li>Browse the <a href="../../api/forms/"><code>forms</code></a> API reference for every helper.</li>
 <li>Read <a href="../events/">Events</a> for delegated handler details.</li>
 </ul>
+<h2 id="dirty-state-reset-and-async-workflows">Dirty state, reset, and async workflows<a class="headerlink" href="#dirty-state-reset-and-async-workflows" title="Permanent link">&para;</a></h2>
+<p>Each field has <code>dirty</code> and <code>validating</code> accessors. <code>field.reset()</code> restores its initial value and clears touched/error state; <code>field.reset(value)</code> establishes a new baseline. <code>FormState.dirty</code> and <code>.validating</code> aggregate fields, <code>.data()</code> returns current values, and <code>.reset(values=None)</code> resets the form.</p>
+<p><code>await field.validate_async(validators)</code> accepts synchronous or async validators. Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">post_profile</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">event</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">await</span> <span class="n">fields</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>FormState.submit</code> validates the fields, snapshots their values, and awaits the handler. <code>.submitting</code> and <code>.submit_error</code> expose the result. If values change during validation, that submission doesn't send stale values. The simpler <code>on_submit</code> helpers also propagate async handler results to the event task.</p>
+<p><code>bind_text(field, parse=..., format=...)</code> separates display text from stored values and reports conversion errors. <code>bind_number</code> handles numeric values and empty inputs. <code>bind_multiselect</code> binds all selected values through <code>selected_values</code>, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.</p>
 
 
 

@@ -531,6 +531,8 @@
       
         
       
+        
+      
     
     
     
@@ -705,6 +707,34 @@
     
   
     Lifecycle and Ownership
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/runtime-contracts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Contracts
   
 
     
@@ -985,8 +1015,6 @@
   
     
     
-      
-        
       
         
       
@@ -1335,34 +1363,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/migrating-from-0-x/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migrating from 0.2x and 0.30
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1651,6 +1651,8 @@
   
     
     
+      
+        
       
         
       
@@ -2389,6 +2391,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/app-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2883,7 +2913,7 @@
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
 <summary><code>WriteInScopeError: Cannot write a signal inside a tracking scope</code></summary>
-<p><strong>Symptoms:</strong> a <code>WriteInScopeError</code> is raised from a <code>set_*</code> call made inside a memo body, a single-function <code>create_effect</code>, a reactive hole (a lambda in the tree), or a store setter called from one of those.</p>
+<p><strong>Symptoms:</strong> a <code>WriteInScopeError</code> is raised from a <code>set_*</code> call made inside a memo body, a <code>create_tracked_effect</code>, a reactive hole (a lambda in the tree), or a store setter called from one of those.</p>
 <p><strong>Likely cause:</strong> writing a signal from a tracking scope is almost always a bug: it either creates a feedback loop or hides a value that should be derived.</p>
 <p><strong>Fix:</strong> derive the value with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a> (or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a> for stores) instead of writing it, or move the write into the untracked <code>apply</code> stage of a split effect, <code>create_effect(compute, apply)</code>, an event handler, or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>. The check only runs in dev mode, but leaving the write in place means the bug ships silently; fix it rather than calling <code>set_dev_mode(False)</code>.</p>
 </details>
@@ -2901,7 +2931,7 @@
 </details>
 <details class="bug">
 <summary>My effect didn't run when I created it</summary>
-<p><strong>Symptoms:</strong> <code>create_effect(lambda: print(count()))</code> prints nothing until something changes (or until you call <code>flush()</code>).</p>
+<p><strong>Symptoms:</strong> <code>create_tracked_effect(lambda: print(count()))</code> prints nothing until something changes (or until you call <code>flush()</code>).</p>
 <p><strong>Likely cause:</strong> the first run of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a> is deferred to the effect phase of the next flush, after the DOM commit, so effects created in a component body observe the mounted DOM.</p>
 <p><strong>Fix:</strong> in tests, call <code>flush()</code> after creating the effect. In components, this is the behavior you want; use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a> for one-time post-mount work and <code>.peek()</code> for a synchronous read during setup.</p>
 </details>
