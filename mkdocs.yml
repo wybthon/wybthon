@@ -123,6 +123,7 @@ nav:
     - Loading: api/loading.md
     - Portal: api/portal.md
     - Dev server (CLI): api/dev.md
+    - Warnings: api/warnings.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md
