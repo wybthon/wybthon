@@ -39,6 +39,7 @@ __all__ = [
 ]
 
 _ABSENT = object()
+_ATOMIC_TYPES = frozenset({str, int, float, bool, bytes, complex, type(None)})
 
 
 class DraftExpiredError(RuntimeError):
@@ -62,10 +63,11 @@ class _State:
 
 
 class _Root:
-    __slots__ = ("optimistic", "derivation", "authoritative", "authoritative_version")
+    __slots__ = ("optimistic", "derivation", "authoritative", "authoritative_version", "tracks_subtrees")
 
     def __init__(self) -> None:
         self.optimistic = False
+        self.tracks_subtrees = False
         self.authoritative: dict[_Node, Any] | None = None
         self.authoritative_version: Signal[int] = Signal(0)
         self.derivation: _core.Computation | None = None
@@ -106,9 +108,9 @@ class _Node:
         "properties",
         "indices",
         "membership",
-        "length",
-        "keys",
-        "version",
+        "_length",
+        "_keys",
+        "_version",
         "parents",
         "root",
         "proxy",
@@ -125,7 +127,7 @@ class _Node:
         self.membership: dict[Any, Signal[bool]] = {}
         self.parents: WeakKeyDictionary[_Node, int] = WeakKeyDictionary()
         self.proxy: Any = None
-        self.history: deque[tuple[int, tuple[ListChange, ...]]] = deque(maxlen=64)
+        self.history: deque[tuple[int, tuple[ListChange, ...]]] | None = None
         seen = {} if seen is None else seen
         if id(data) in seen:
             raise ValueError("Cyclic store data isn't supported")
@@ -139,11 +141,70 @@ class _Node:
         finally:
             seen.pop(id(data), None)
         self.state: Signal[_State] = Signal(_State(encoded), equals=False)
-        self.length: Signal[int] = Signal(len(encoded))
-        self.keys: Signal[int] = Signal(0)
-        self.version: Signal[int] = Signal(0)
+        # Most entities are read through individual fields. Allocate structural
+        # subscriptions only when someone actually reads that aspect of them.
+        self._length: Signal[int] | None = None
+        self._keys: Signal[int] | None = None
+        self._version: Signal[int] | None = None
         for value in encoded.values() if isinstance(encoded, dict) else encoded:
             self._link(value, 1)
+
+    @property
+    def length(self) -> Signal[int]:
+        if self._length is None:
+            self._length = Signal(len(self.state._value.data))
+            if self.state._staged:
+                self._length._set(len(self.state._latest().data))
+            held = _core._held.get(self.state)
+            if held is not None and len(held.data) != self._length._value:
+                _core._hold(self._length, len(held.data))
+        return self._length
+
+    @property
+    def keys(self) -> Signal[int]:
+        if self._keys is None:
+            self._keys = Signal(0)
+            if self.state._staged:
+                before, after = self.state._value.data, self.state._latest().data
+                changed = before.keys() != after.keys() if isinstance(before, dict) else len(before) != len(after)
+                if changed:
+                    self._keys._set(1)
+            held = _core._held.get(self.state)
+            if held is not None:
+                current = self.state._value.data
+                changed = (
+                    held.data.keys() != current.keys() if isinstance(current, dict) else len(held.data) != len(current)
+                )
+                if changed:
+                    _core._hold(self._keys, -1)
+        return self._keys
+
+    @property
+    def version(self) -> Signal[int]:
+        if self._version is None:
+            self._version = Signal(0)
+            self.root.tracks_subtrees = True
+            # A first deep subscriber can appear after the setter but before
+            # flush. It reads committed data and must see those staged edits
+            # when they land, including edits made below this container.
+            if _core._staged and self._has_unrevealed(set(), held=False):
+                self._version._set(1)
+            if _core._held and self._has_unrevealed(set(), held=True):
+                _core._hold(self._version, -1)
+        return self._version
+
+    def _has_unrevealed(self, seen: set[_Node], held: bool) -> bool:
+        pending = self.state in _core._held if held else self.state._staged
+        if pending:
+            return True
+        if self in seen:
+            return False
+        seen.add(self)
+        data = self.state._value.data
+        return any(
+            isinstance(value, _Node) and value._has_unrevealed(seen, held)
+            for value in (data.values() if isinstance(data, dict) else data)
+        )
 
     def _link(self, value: Any, amount: int) -> None:
         if isinstance(value, _Node):
@@ -173,7 +234,13 @@ class _Node:
                     shown = _lookup(held.data, key)
                     if not _same(shown, sig._value):
                         _core._hold(sig, shown)
-            sig()
+            value = sig()
+            if not _core._slow_reads and not _core._authoritative_depth:
+                if value is _ABSENT:
+                    if isinstance(self.state._value.data, dict):
+                        raise KeyError(key)
+                    raise IndexError("list index out of range")
+                return _wrap(value)
         # The container's revealed revision also covers properties that weren't
         # observed before a transition began. Read history can't change visibility.
         value = _lookup(self.visible(), key)
@@ -226,10 +293,13 @@ class _Node:
         revision = old.revision + 1
         self.state._set(_State(data, revision))
         if changes:
+            if self.history is None:
+                self.history = deque(maxlen=64)
             self.history.append((revision, tuple(changes)))
-        if structural:
-            self.keys._set(self.keys._latest() + 1)
-        self.length._set(len(data))
+        if structural and self._keys is not None:
+            self._keys._set(self._keys._latest() + 1)
+        if self._length is not None:
+            self._length._set(len(data))
         for key in changed:
             sig = self.properties.get(key)
             if sig is not None:
@@ -242,12 +312,15 @@ class _Node:
         if self in seen:
             return
         seen.add(self)
-        self.version._set(self.version._latest() + 1)
+        if self._version is not None:
+            self._version._set(self._version._latest() + 1)
         for parent in tuple(self.parents):
             parent.bump(seen)
 
 
 def _encode(value: Any, root: _Root, seen: dict[int, Any] | None = None) -> Any:
+    if type(value) in _ATOMIC_TYPES:
+        return value
     if isinstance(value, _Proxy):
         value._check()
         node = value._node
@@ -346,7 +419,7 @@ class _Session:
         for node, data in self.states.items():
             before = node.state._latest()
             node.publish(data, self.changes.get(node, []), self.touched.get(node, set()))
-            if before is not node.state._latest():
+            if node.root.tracks_subtrees and before is not node.state._latest():
                 node.bump(bumped)
         self.close()
 
@@ -481,7 +554,7 @@ class StoreList[T](_Proxy, Sequence[T]):
         current = self._node.state.peek().revision
         if current == revision:
             return ()
-        records = [(r, changes) for r, changes in self._node.history if revision < r <= current]
+        records = [(r, changes) for r, changes in self._node.history or () if revision < r <= current]
         if not records or records[0][0] != revision + 1 or records[-1][0] != current:
             return None
         return tuple(change for _, changes in records for change in changes)
@@ -883,6 +956,8 @@ def reconcile(data: Any, key: str | None = "id") -> Any:
 
 
 def _snapshot(value: Any, track: bool, memo: dict[int, Any]) -> Any:
+    if type(value) in _ATOMIC_TYPES:
+        return value
     if isinstance(value, _Proxy):
         value._check()
         node = value._node

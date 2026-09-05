@@ -205,3 +205,66 @@ extra_root = render(div(
     )
     expect(page.locator("#composition-value")).to_have_text("composed")
     python(page, "extra_root.dispose()\nhost.remove()")
+
+
+def test_specialized_templates_match_native_generic_mounts(goto_feature):
+    page = goto_feature("contracts")
+    python(
+        page,
+        """
+from js import document
+from wybthon import div, span, h, Fragment, create_signal, flush
+from wybthon import reconciler, template, kernel
+from wybthon.dom import Element
+host = document.createElement("section")
+reference_host = document.createElement("section")
+document.body.append(host, reference_host)
+container, reference_container = Element(node=host), Element(node=reference_host)
+text, write_text = create_signal("initial")
+clicked = []
+def view(label="base", extra=False):
+    return div(
+        h("button", {"on_click": lambda e: clicked.append(label)}, label),
+        span(text),
+        *([h("svg", {}, h("circle", {"viewBox": "0 0 2 2"}))] if extra else []),
+        class_=label,
+    )
+for _ in range(3):
+    current = reconciler.render(view(), container)
+    current.dispose()
+cases = [
+    lambda: view(),
+    lambda: view("changed"),
+    lambda: view("base", True),
+    lambda: div(h(Fragment, {"key": "fragment"}, span("first"), span("second")), span(text)),
+    lambda: h("table", {}, h("tbody", {}, h("tr", {}, h("td", {}, "cell")))),
+    lambda: div(h("input", {"value": text}), span("controlled")),
+    lambda: div(span("adjacent", "text"), span("tail")),
+]
+for make in cases:
+    optimized = reconciler.render(make(), container)
+    saved = reconciler.build_plan
+    reconciler.build_plan = template._build_plan_uncached
+    try:
+        reference = reconciler.render(make(), reference_container)
+    finally:
+        reconciler.build_plan = saved
+    assert str(host.innerHTML) == str(reference_host.innerHTML)
+    write_text("updated")
+    flush()
+    assert str(host.innerHTML) == str(reference_host.innerHTML)
+    button = host.querySelector("button")
+    if button:
+        button.click()
+        assert clicked[-1] == str(button.textContent)
+    optimized.dispose()
+    reference.dispose()
+    assert not host.childNodes.length and not reference_host.childNodes.length
+    write_text("initial")
+    flush()
+kernel.emit((kernel.OP_RELEASE, [container.node_id, reference_container.node_id]))
+kernel.commit()
+host.remove()
+reference_host.remove()
+""",
+    )

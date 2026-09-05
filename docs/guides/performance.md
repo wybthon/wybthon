@@ -32,9 +32,13 @@ print(measured.as_dict())
 print(runtime_stats())
 ```
 
-Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization/kernel time when those operations occur. `inspect_graph(owner)` reports ownership and dependencies without evaluating values.
+Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization/kernel time when those operations occur. `template_recipe_hits` counts mounts that reuse a prepared extraction routine; `template_shape_walks` counts mounts that need generic template discovery. `inspect_graph(owner)` reports ownership and dependencies without evaluating values.
 
 Template prototypes are bounded and reused across varying instance attributes. Text-only holes reuse their anchor handle as the text node. Range operations move or remove fragment rows in one command. Keep the JSON command transport unless profiling demonstrates a better tradeoff.
+
+Repeated VDOM shapes also reuse bounded Python extraction routines. Each mount checks the tree's structure, static attributes, and binding kinds before reusing a routine. Changed shapes fall back to ordinary template discovery. Handlers, refs, and reactive expressions come from the current VNode instance. This happens at runtime and doesn't require a compiler or a different component API.
+
+Direct signal bindings retain their dependency instead of rebuilding it on each update. Stores allocate length, key, and subtree subscriptions when they're first observed. These optimizations preserve staged writes, transition visibility, cleanup, and dynamic dependency tracking.
 
 ## Browser benchmark
 
@@ -48,5 +52,7 @@ uv run python benchmarks/browser_bench.py --mode store --json
 The benchmark drives ordinary delegated button events. Each scenario restores its own baseline, warms up, checks that the DOM actually changed, and reports separate synchronous commit and input-to-frame samples. Append starts from 10,000 rows and verifies 11,000 afterward. Selection toggles between distinct rows.
 
 Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.
+
+`benchmarks/compare_browser.py --baseline /path/to/baseline` alternates identical operations between isolated checkouts, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use `--mode store` for store comparisons and `--profile` for additional, untimed CPU profiles.
 
 A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.

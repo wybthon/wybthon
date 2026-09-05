@@ -184,9 +184,9 @@ render(app, container)
 #
 # Writes batch automatically; the explicit ``flush()`` settles effects
 # and commits the DOM synchronously so the benchmark measures the full
-# update inside the click handler (these handlers are wired straight to
-# addEventListener, bypassing Wybthon's event system which would
-# otherwise flush for us).
+# update inside the delegated click handler. The checkout comparison
+# also invokes these operations directly to isolate runtime work from
+# event dispatch.
 # ---------------------------------------------------------------------------
 
 

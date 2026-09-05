@@ -1,5 +1,7 @@
 # Runtime overhaul evaluation
 
+The [performance follow-up](runtime-performance.md) records the later optimization work and comparisons with this snapshot.
+
 These are local observations from September 5, 2026, on an Intel macOS machine using Chromium and Pyodide 314.0.6. Runs were serial, with one warmup and three measured samples. They aren't portable performance guarantees or cross-framework rankings. The baseline is commit `72bc523`.
 
 ## Comparable signal-array operations

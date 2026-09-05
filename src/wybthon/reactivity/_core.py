@@ -89,6 +89,10 @@ _K_MEMO: Final = 0
 _K_RENDER: Final = 1
 _K_EFFECT: Final = 2
 
+# Exact built-in results cannot implement an async protocol. Most render
+# bindings return one of these, so they needn't invoke the Awaitable ABC.
+_SYNC_RESULT_TYPES = frozenset({str, int, float, bool, list, tuple, dict, set, frozenset, bytes, type(None)})
+
 # Write origins. They decide how a committed change participates in a
 # transition: a normal write is *tentative* (it reveals unless the batch
 # turns out to need a hold), a write made inside an action or derived
@@ -1678,11 +1682,36 @@ class Computation(Owner):
             return
         if diagnostics._active is not None:
             diagnostics._active.counts["computations"] += 1
-        self._dispose_children()
-        self._run_cleanups()
-        self._clear_sources()
+        if self._children:
+            self._dispose_children()
+        if self._cleanups:
+            self._run_cleanups()
+        fn = self._fn
+        if (
+            type(fn) is Signal
+            and not self._pass_prev
+            and self._async is None
+            and not _slow_reads
+            and _in_action is None
+            and type(fn._value) in _SYNC_RESULT_TYPES
+        ):
+            # A direct signal read has a fixed dependency and can't execute
+            # user code. Keep that edge instead of unsubscribing/re-subscribing
+            # it, and avoid entering a tracking scope just to read the value.
+            if not self._sources:
+                self._sources = {fn: False}
+                fn._add_observer(self)
+            else:
+                self._sources[fn] = False
+            self._probe_srcs = None
+            self._error = None
+            self._settle(fn._value)
+            return
+        if self._sources:
+            self._clear_sources()
         a = self._async
-        self._cancel_async()
+        if a is not None:
+            self._cancel_async()
         global _current_owner, _current_observer, _layer_working
         prev_owner = _current_owner
         prev_obs = _current_observer
@@ -1701,12 +1730,13 @@ class Computation(Owner):
             _layer_working -= 1
             _current_owner = prev_owner
             _current_observer = prev_obs
-        if isinstance(new_value, AbcAwaitable):
-            self._launch(new_value)
-            return
-        if inspect.isasyncgen(new_value):
-            self._launch_gen(new_value)
-            return
+        if type(new_value) not in _SYNC_RESULT_TYPES:
+            if isinstance(new_value, AbcAwaitable):
+                self._launch(new_value)
+                return
+            if inspect.isasyncgen(new_value):
+                self._launch_gen(new_value)
+                return
         if a is not None:
             a.version += 1
             a.has_value = True
@@ -1762,7 +1792,8 @@ class Computation(Owner):
         apply = self._apply
         if apply is None:
             return
-        self._run_apply_cleanup()
+        if self._apply_cleanup is not None:
+            self._run_apply_cleanup()
         apply_owner = self._apply_owner
         if apply_owner is not None:
             apply_owner.dispose()

@@ -215,7 +215,12 @@ def h(tag: str | Callable[..., Any] | None, props: PropsDict | None = None, *chi
     """
     props = props or {}
     key = props.get("key")
-    flat_children = flatten_children(children)
+    if not children:
+        flat_children = []
+    elif len(children) == 1 and type(children[0]) in (VNode, str):
+        flat_children = [children[0]]
+    else:
+        flat_children = flatten_children(children)
     if tag is Fragment:
         return VNode(tag="_fragment", props={}, children=flat_children, key=key)
     if callable(tag):

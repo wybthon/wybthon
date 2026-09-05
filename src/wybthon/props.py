@@ -434,7 +434,13 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Computation:
         last[0] = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    comp = Computation(compute, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
+    comp = Computation(
+        getter if type(getter) is _core.Signal else compute,
+        kind=_K_RENDER,
+        apply_scope=False,
+        apply=apply,
+        pass_prev=False,
+    )
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)

@@ -275,3 +275,81 @@ def test_optimistic_store_until_reads_authoritative_state_and_rebases(wyb):
         assert snapshot(store) == {"n": 2, "other": 2}
 
     asyncio.run(main())
+
+
+def test_first_structural_subscribers_see_already_staged_edits(wyb):
+    from wybthon import create_memo
+
+    store, write = create_store({"rows": [{"value": 1}], "before": True})
+
+    def edit(draft):
+        draft.rows[0].value = 2
+        draft.rows.append({"value": 3})
+        del draft["before"]
+        draft["after"] = True
+
+    write(edit)
+    snapshots, lengths, keys = [], [], []
+    memos = [create_memo(lambda: deep(store)), create_memo(lambda: len(store.rows)), create_memo(lambda: list(store))]
+    assert memos[0]() == {"rows": [{"value": 1}], "before": True}
+    assert memos[1]() == 1
+    assert memos[2]() == ["rows", "before"]
+    effects = [
+        create_effect(memos[0], snapshots.append),
+        create_effect(memos[1], lengths.append),
+        create_effect(memos[2], keys.append),
+    ]
+    flush()
+    assert snapshots[-1] == {"rows": [{"value": 2}, {"value": 3}], "after": True}
+    assert lengths[-1] == 2
+    assert keys[-1] == ["rows", "after"]
+    write(lambda draft: setattr(draft.rows[0], "value", 4))
+    flush()
+    assert snapshots[-1]["rows"][0]["value"] == 4
+    for effect in effects:
+        effect.dispose()
+    for memo in memos:
+        memo.dispose()
+
+
+def test_first_deep_subscriber_observes_staged_descendant(wyb):
+    from wybthon import create_memo
+
+    store, write = create_store({"nested": {"value": 0}})
+    write(lambda draft: setattr(draft.nested, "value", 1))
+    seen = []
+    memo = create_memo(lambda: deep(store))
+    assert memo() == {"nested": {"value": 0}}
+    effect = create_effect(memo, seen.append)
+    flush()
+    assert seen[-1] == {"nested": {"value": 1}}
+    effect.dispose()
+    memo.dispose()
+
+
+def test_first_structural_subscribers_inherit_held_state(wyb):
+    async def main():
+        store, write = create_store({"rows": [1], "nested": {"value": 0}})
+        gate = asyncio.Event()
+
+        @action
+        async def edit():
+            def change(draft):
+                draft.rows.append(2)
+                draft.nested.value = 1
+                draft["added"] = True
+
+            write(change)
+            await gate.wait()
+
+        future = edit()
+        flush()
+        readers = [lambda: len(store.rows), lambda: list(store), lambda: deep(store.nested)]
+        assert all(is_pending(read) for read in readers)
+        gate.set()
+        await future
+        flush()
+        assert [read() for read in readers] == [2, ["rows", "nested", "added"], {"value": 1}]
+        assert not any(is_pending(read) for read in readers)
+
+    asyncio.run(main())

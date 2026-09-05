@@ -122,6 +122,93 @@ def test_selector_keeps_shared_key_subscribers(wyb):
     two.dispose()
 
 
+def test_generic_edits_preserve_duplicate_occurrence_identity(wyb, root_element):
+    import random
+    from collections import defaultdict, deque
+
+    rng = random.Random(8273)
+    initial = list(range(12))
+    values, write = create_signal(initial)
+    serial = 0
+    disposed = []
+
+    def row(item, index):
+        nonlocal serial
+        serial += 1
+        token = serial
+        on_cleanup(lambda: disposed.append(token))
+        return span(lambda: f"{item}:{index()}", data_token=token)
+
+    root = wyb["reconciler"].render(For(values, row), root_element)
+
+    def elements():
+        return [node for node in root_element.element.childNodes if node.tag == "span"]
+
+    previous = list(zip(initial, elements()))
+    # Include duplicates introduced before an otherwise unchanged suffix.
+    examples = [[11, *initial[1:]], [11, 11], [11], [1, 2, 1], [2, 1], initial]
+    examples += [[rng.randrange(9) for _ in range(rng.randrange(20))] for _ in range(100)]
+    for current in examples:
+        available = defaultdict(deque)
+        for value, node in previous:
+            available[value].append(node)
+        write(current)
+        flush()
+        nodes = elements()
+        assert len(nodes) == len(current)
+        for index, (value, node) in enumerate(zip(current, nodes)):
+            if available[value]:
+                assert node is available[value].popleft()
+            assert collect_texts(node) == [f"{value}:{index}"]
+        previous = list(zip(current, nodes))
+    root.dispose()
+    assert len(disposed) == serial
+    assert len(set(disposed)) == serial
+
+
+def test_unused_indices_can_become_reactive_after_edits(wyb, root_element):
+    store, write = create_store([{"id": i} for i in range(5)])
+    indices = {}
+
+    def row(item, index):
+        indices[item.id] = index
+        return span(str(item.id))
+
+    root = wyb["reconciler"].render(For(lambda: store, row), root_element)
+
+    def remove_first(draft):
+        del draft[0]
+
+    write(remove_first)
+    flush()
+    assert [indices[i]() for i in range(1, 5)] == [0, 1, 2, 3]
+    seen = []
+    effect = create_effect(lambda: [indices[i]() for i in range(1, 5)], seen.append)
+    flush()
+    write(lambda draft: draft.reverse())
+    flush()
+    assert seen == [[0, 1, 2, 3], [3, 2, 1, 0]]
+    effect.dispose()
+    root.dispose()
+
+
+def test_equal_custom_key_replacement_can_change_on_a_later_write(wyb, root_element):
+    original = {"id": 1, "label": "first"}
+    rows, write = create_signal([original], equals=False)
+    root = wyb["reconciler"].render(
+        For(rows, lambda item, index: span(lambda: item()["label"]), keyed=lambda item: item["id"]),
+        root_element,
+    )
+    replacement = dict(original)
+    write([replacement])
+    flush()
+    replacement["label"] = "second"
+    write([replacement])
+    flush()
+    assert texts(root_element.element) == ["second"]
+    root.dispose()
+
+
 def test_list_cleanup_waits_for_visible_transition(wyb, root_element):
     async def main():
         rows, write = create_store([1, 2])

@@ -40,14 +40,38 @@ class _Input:
 @dataclass(slots=True, eq=False)
 class _Row:
     owner: Owner
-    item: Signal[Any]
+    item: Any
+    value: Signal[Any] | None
     index: Signal[int]
     vnode: VNode
     key: Any
 
 
+def _update_index(signal: Signal[int], index: int) -> None:
+    if signal._value == index and not signal._staged:
+        return
+    if not signal._observers and not signal._staged and not _core._track and not _core._held:
+        # An unused integer index has no propagation or transition work.
+        # Keep its value current for a callback that starts reading it later.
+        signal._value = index
+    else:
+        signal._commit_now(index)
+
+
 class _ListRegion:
-    __slots__ = ("vnode", "parent", "scope", "rows", "keyed", "callback", "fallback", "previous", "repeat", "start")
+    __slots__ = (
+        "vnode",
+        "parent",
+        "scope",
+        "rows",
+        "keyed",
+        "callback",
+        "fallback",
+        "previous",
+        "repeat",
+        "start",
+        "unique",
+    )
 
     def __init__(self, vnode: VNode, parent: int) -> None:
         self.vnode, self.parent, self.scope = vnode, parent, vnode.scope
@@ -58,6 +82,7 @@ class _ListRegion:
         self.previous: _Input | None = None
         self.repeat = vnode.props.get("repeat", False)
         self.start: int | None = None
+        self.unique = True
 
     def prepare(self) -> _Input:
         value = self.vnode.props["source"]()
@@ -69,14 +94,15 @@ class _ListRegion:
     def key(self, item: Any) -> Any:
         return self.keyed(item) if callable(self.keyed) else _identity(item)
 
-    def new_row(self, item: Any, index: int) -> _Row:
+    def new_row(self, item: Any, index: int, key: Any) -> _Row:
         from .reconciler import _coerce_result
 
         if diagnostics._active is not None:
             diagnostics._active.counts["rows_created"] += 1
         owner = Owner()
         self.scope._add_child(owner)
-        item_signal, index_signal = Signal(item), Signal(index)
+        item_signal = None if self.repeat or self.keyed is True else Signal(item)
+        index_signal = Signal(index)
         try:
             args: tuple[Any, ...]
             if self.repeat:
@@ -90,14 +116,23 @@ class _ListRegion:
             result = _core._run_owned_untracked(owner, lambda: self.callback(*args))
             node = _coerce_result(result)
             node.owner_scope = owner
-            return _Row(owner, item_signal, index_signal, node, self.key(item))
+            return _Row(owner, item, item_signal, index_signal, node, key)
         except BaseException:
             owner.dispose()
             raise
 
     def update_row(self, row: _Row, item: Any, index: int) -> None:
-        row.item._commit_now(item)
-        row.index._commit_now(index)
+        if row.item is not item:
+            if row.value is not None:
+                row.value._commit_now(item)
+                # Equality can retain the previous object. Keep the cached
+                # identity in sync so a later mutation of an equal replacement
+                # still reaches the item accessor.
+                row.item = row.value._value
+            else:
+                row.item = item
+        if row.index._value != index or row.index._staged:
+            _update_index(row.index, index)
 
     def dispose_row(self, row: _Row) -> None:
         from .reconciler import _unmount
@@ -168,6 +203,10 @@ class _ListRegion:
     def apply_changes(self, changes: tuple[Any, ...], data: Any) -> bool:
         if not changes:
             return True
+        # Journal edits already have their own incremental paths. A later
+        # generic replacement must verify uniqueness again before trimming
+        # a suffix, because an indexed edit can introduce duplicate keys.
+        self.unique = False
         if diagnostics._active is not None:
             diagnostics._active.counts["list_edits"] += len(changes)
         if all(change.kind == "set" for change in changes):
@@ -181,7 +220,8 @@ class _ListRegion:
             replacements = []
             for index in indices:
                 item = _wrap(data[index])
-                bucket = available[self.key(item)]
+                key = self.key(item)
+                bucket = available.get(key)
                 if self.keyed is False:
                     row = self.rows[index]
                     reused.add(row)
@@ -189,7 +229,7 @@ class _ListRegion:
                     row = bucket.popleft()
                     reused.add(row)
                 else:
-                    row = self.new_row(item, index)
+                    row = self.new_row(item, index, key)
                 self.update_row(row, item, index)
                 replacements.append((index, row))
             from .reconciler import _first_dom_id, _move_range, mount
@@ -228,7 +268,7 @@ class _ListRegion:
         if self.keyed is False and not self.repeat and start + delete < len(self.rows):
             # Positional rows represent slots, not entities. The final values
             # are supplied by replace's positional pass.
-            data = [row.item._value for row in self.rows]
+            data = [row.item for row in self.rows]
             data[start : start + delete] = items
             self.replace(data)
             return
@@ -241,13 +281,14 @@ class _ListRegion:
         added = []
         reused = set()
         for i, item in enumerate(items, start):
-            bucket = available[self.key(item)]
+            key = self.key(item)
+            bucket = available.get(key)
             if bucket and self.keyed is not False:
                 row = bucket.popleft()
                 reused.add(row)
                 self.update_row(row, item, i)
             else:
-                row = self.new_row(item, i)
+                row = self.new_row(item, i, key)
             added.append(row)
         anchor = (
             _first_dom_id(self.rows[start + delete].vnode) if start + delete < len(self.rows) else self.vnode._frag_end
@@ -264,7 +305,9 @@ class _ListRegion:
         self.vnode.children[start : start + delete] = [row.vnode for row in added]
         if len(added) != delete:
             for i in range(start + len(added), len(self.rows)):
-                self.rows[i].index._commit_now(i)
+                _update_index(self.rows[i].index, i)
+        if added:
+            self.unique = len({row.key for row in added}) == len(added) if len(self.rows) == len(added) else False
 
     def replace(self, items: Any) -> None:
         if diagnostics._active is not None:
@@ -277,23 +320,66 @@ class _ListRegion:
                 self.update_row(self.rows[i], items[i], i)
             self.splice(common, len(self.rows) - common, items[common:])
             return
+        # Retaining the unchanged prefix avoids rebuilding a matching table
+        # for ordinary append/truncate operations. Match duplicates from the
+        # front, preserving occurrence identity just like the general path.
+        prefix = 0
+        common = min(len(self.rows), len(items))
+        while prefix < common:
+            row, item = self.rows[prefix], items[prefix]
+            if not (self.keyed is True and row.item is item) and row.key != self.key(item):
+                break
+            self.update_row(row, item, prefix)
+            prefix += 1
+        if prefix == common:
+            self.splice(prefix, len(self.rows) - prefix, items[prefix:])
+            return
+        suffix = 0
+        if self.unique:
+            while suffix < common - prefix:
+                row, item = self.rows[-1 - suffix], items[-1 - suffix]
+                if not (self.keyed is True and row.item is item) and row.key != self.key(item):
+                    break
+                suffix += 1
+            if suffix:
+                middle_keys = {self.key(items[i]) for i in range(prefix, len(items) - suffix)}
+                # A newly introduced duplicate must consume the old row at
+                # its first occurrence, not reserve it for the suffix.
+                if any(row.key in middle_keys for row in self.rows[len(self.rows) - suffix :]):
+                    suffix = 0
+        old_end, new_end = len(self.rows) - suffix, len(items) - suffix
         available: dict[Any, deque[_Row]] = defaultdict(deque)
-        for row in self.rows:
+        for row in self.rows[prefix:old_end]:
             available[row.key].append(row)
-        next_rows = []
+        next_rows = self.rows[:prefix]
         reused = set()
-        for i, item in enumerate(items):
-            bucket = available[self.key(item)]
+        for i in range(prefix, new_end):
+            item = items[i]
+            key = self.key(item)
+            bucket = available.get(key)
             if bucket:
                 row = bucket.popleft()
                 reused.add(row)
                 self.update_row(row, item, i)
             else:
-                row = self.new_row(item, i)
+                row = self.new_row(item, i, key)
+                self.unique = False
+            next_rows.append(row)
+        for offset in range(suffix):
+            row = self.rows[old_end + offset]
+            self.update_row(row, items[new_end + offset], new_end + offset)
             next_rows.append(row)
         children = [row.vnode for row in next_rows]
-        _reconcile_children(self.vnode.children, children, self.parent, self.vnode._frag_end, self.vnode.ns)
-        for row in self.rows:
+        from .reconciler import _first_dom_id
+
+        _reconcile_children(
+            self.vnode.children[prefix:old_end],
+            children[prefix:new_end],
+            self.parent,
+            _first_dom_id(children[new_end]) if suffix else self.vnode._frag_end,
+            self.vnode.ns,
+        )
+        for row in self.rows[prefix:old_end]:
             if row not in reused:
                 row.owner.dispose()
         self.rows = next_rows

@@ -39,19 +39,22 @@ adjacent or empty text nodes, raw text elements, invalid attribute
 names, or element nestings the parser rewrites (implied `<tbody>`,
 auto-closed `<p>`, and similar).
 
-Plans are **cached per shape**: a single walk of the VNode tree
-collects the per-instance data (id order and bindings) while building
-a hashable *shape key* that uniquely determines the serialized HTML.
-Serialization, escaping, and eligibility validation run only on the
-first mount of each shape; every later mount of a structurally
-identical tree (for example, the rows of a list) is a dictionary hit.
+Plans are **cached per shape**. The generic walk collects instance data
+while building a hashable shape key; serialization and HTML eligibility
+validation run only on the first mount of that shape. Repeated shapes
+also receive a guarded Python extraction routine, avoiding generic tree
+walking and prop classification on subsequent mounts. The routine checks
+structure and binding kinds and falls back when they change. Both caches
+are bounded, and instance handlers, refs, and expressions aren't retained.
 """
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from html import escape
-from typing import Any
+from typing import Any, Callable
 
+from . import diagnostics
 from .props import (
     _BOOLEAN_ATTRS,
     KIND_EVENT,
@@ -191,6 +194,9 @@ def _static_attribute(name: str, value: Any) -> bool:
 
 _shape_cache: dict[tuple[Any, ...], str | None] = {}
 _SHAPE_CACHE_MAX = 2048
+_RECIPE_CACHE_MAX = 256
+_recipes: OrderedDict[tuple[Any, ...], Callable[[VNode], Any] | None] = OrderedDict()
+_recent_recipes: OrderedDict[str, Callable[[VNode], Any]] = OrderedDict()
 
 
 class MountPlan:
@@ -236,10 +242,10 @@ def build_plan(vnode: VNode) -> MountPlan | None:
     VNode tree is normalized in place (children lists become `VNode`
     lists) as a side effect, exactly as the per-node mount path does.
 
-    A single walk collects the per-instance order and bindings while
-    building the shape key. The HTML string (and the eligibility
-    verdict) comes from the shape cache; the full serializer runs only
-    on the first mount of each shape.
+    A guarded extraction routine handles repeated shapes. If none matches,
+    a generic walk collects instance bindings and a shape key. The HTML
+    string and eligibility verdict come from the shape cache; the full
+    serializer runs only on the first mount of each shape.
 
     Args:
         vnode: An element VNode (string tag, not `_text`/`_hole`/
@@ -250,6 +256,17 @@ def build_plan(vnode: VNode) -> MountPlan | None:
     """
     if not isinstance(vnode.tag, str) or vnode.tag.startswith("_"):
         return None
+
+    recipe = _recent_recipes.get(vnode.tag)
+    if recipe is not None:
+        plan = recipe(vnode)
+        if plan is not None:
+            if diagnostics._active is not None:
+                diagnostics._active.counts["template_recipe_hits"] += 1
+            return plan
+
+    if diagnostics._active is not None:
+        diagnostics._active.counts["template_shape_walks"] += 1
 
     key_parts: list[Any] = []
     order: list[tuple[int, VNode, VNode | None]] = []
@@ -264,6 +281,22 @@ def build_plan(vnode: VNode) -> MountPlan | None:
         html = _shape_cache[key]
         if html is None:
             return None
+        if key not in _recipes:
+            from ._template_specialize import specialize
+
+            _recipes[key] = specialize(vnode, html)
+            if len(_recipes) > _RECIPE_CACHE_MAX:
+                retired_key, retired = _recipes.popitem(last=False)
+                if retired is not None and _recent_recipes.get(retired_key[0]) is retired:
+                    del _recent_recipes[retired_key[0]]
+        else:
+            _recipes.move_to_end(key)
+        recipe = _recipes[key]
+        if recipe is not None:
+            _recent_recipes[vnode.tag] = recipe
+            _recent_recipes.move_to_end(vnode.tag)
+            if len(_recent_recipes) > _RECIPE_CACHE_MAX:
+                _recent_recipes.popitem(last=False)
         return MountPlan(html, order, bindings)
 
     plan = _build_plan_uncached(vnode)

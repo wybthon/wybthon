@@ -30,6 +30,22 @@ The JSON includes runtime/browser metadata, individual samples, operation counte
 
 `check_work.py` gates operation counts for store selection, swap, and append. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
 
+## Comparing checkouts
+
+For a change that affects several operations, create an isolated baseline checkout and interleave it with the current code:
+
+```bash
+git worktree add --detach /tmp/wybthon-before <baseline-commit>
+uv run python benchmarks/compare_browser.py --baseline /tmp/wybthon-before > signal-comparison.json
+uv run python benchmarks/compare_browser.py --baseline /tmp/wybthon-before --mode store > store-comparison.json
+```
+
+Both checkouts run in separate pages of the same browser. Every operation restores its initial state, and the execution order alternates between samples. The default is one warmup and five measurements per operation. Avoid running other CPU-intensive work during comparisons; alternating order reduces drift but doesn't eliminate interference.
+
+These comparisons invoke the Python operation directly and measure through its synchronous DOM commit. They also record a subsequent frame opportunity. They don't include delegated event dispatch and shouldn't be mixed with the event-driven timings above. DOM snapshots verify row counts and visible changes. `--profile` appends separate, untimed cProfile reports, and `--scenarios` selects specific operations.
+
+For very short selection updates, `--scenarios select_toggle_10k --iterations 31` mounts each table once and then toggles between two rows, with a frame opportunity between samples. This measures repeated interaction separately from the first selection after constructing a fresh 10,000-row table. It isn't included in the default nine scenarios.
+
 ## Native benchmark
 
 ```bash
@@ -40,8 +56,12 @@ This uses the Python DOM backend. It includes the nine collection operations plu
 
 Use `--warmup`, `--iterations`, and `--bench` to focus a run. `--cpu --save report.json` records a comparison baseline, and `--cpu --compare report.json --threshold 0.15` compares best iterations. Create an isolated checkout for the baseline so measurement doesn't disturb ongoing changes.
 
+`uv run python benchmarks/store_memory.py --repo /path/to/checkout` measures native Python allocations retained by a 10,000-entity store before any fields are observed. Inputs and imports are excluded. Compare fresh processes using the same interpreter; this is a tracemalloc measurement, not browser memory or process RSS.
+
 ## Startup
 
 Generated production bundles expose `window.__WYB.timings`, including runtime loading, source archives, unpacking, application initialization, readiness, and a subsequent frame opportunity. Concurrent phases overlap. Startup is a separate measurement from these warmed collection scenarios. The production browser tests verify deep-link boot, lazy fetch timing, and development rebuild/reload.
 
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
+
+The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.

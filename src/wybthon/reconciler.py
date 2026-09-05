@@ -33,7 +33,7 @@ from . import kernel
 from ._warnings import component_name, log_error
 from .component import Component
 from .dom import Element
-from .events import remove_handlers_for, set_handler
+from .events import _handlers, remove_handlers_for, set_handler
 from .kernel import (
     OP_CLONE_TPL,
     OP_CREATE_COMMENT,
@@ -54,6 +54,8 @@ from .props import (
     _UNSET,
     _apply_single_prop,
     _bind_reactive_prop,
+    _bindings,
+    _ref_cleanups,
     apply_initial_props,
     apply_props,
     attach_ref,
@@ -586,7 +588,13 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
 
         _core._run_owned_untracked(vnode.scope, commit)
 
-    comp = Computation(compute, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
+    comp = Computation(
+        getter if type(getter) is _core.Signal else compute,
+        kind=_K_RENDER,
+        apply_scope=False,
+        apply=apply,
+        pass_prev=False,
+    )
     if scope_parent is not None:
         scope_parent._add_child(comp)
     comp._update_if_necessary()
@@ -807,9 +815,12 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
 
     if vnode.el is None:
         return
-    detach_ref(vnode.el)
-    remove_handlers_for(vnode.el)
-    remove_bindings_for(vnode.el)
+    if vnode.el in _ref_cleanups:
+        detach_ref(vnode.el)
+    if vnode.el in _handlers:
+        remove_handlers_for(vnode.el)
+    if vnode.el in _bindings:
+        remove_bindings_for(vnode.el)
     for child in vnode.children:
         if isinstance(child, VNode):
             _dispose_tree(child, released)
@@ -938,14 +949,16 @@ def _reconcile_children(
 
     prefix = 0
     while prefix < min(n_old, n) and same_edge(old_children[prefix], new_children[prefix]):
-        patch(old_children[prefix], new_children[prefix], parent_id, ns)
+        if old_children[prefix] is not new_children[prefix]:
+            patch(old_children[prefix], new_children[prefix], parent_id, ns)
         prefix += 1
     suffix = 0
     while suffix < min(n_old, n) - prefix and same_edge(old_children[-1 - suffix], new_children[-1 - suffix]):
         suffix += 1
     if prefix or suffix or not n_old or not n:
         for i in range(suffix, 0, -1):
-            patch(old_children[-i], new_children[-i], parent_id, ns)
+            if old_children[-i] is not new_children[-i]:
+                patch(old_children[-i], new_children[-i], parent_id, ns)
         old_middle = old_children[prefix : n_old - suffix]
         new_middle = new_children[prefix : n - suffix]
         anchor = _first_dom_id(new_children[n - suffix]) if suffix else end_marker

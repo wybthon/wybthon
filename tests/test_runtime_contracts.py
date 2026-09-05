@@ -91,6 +91,59 @@ def test_nested_roots_are_owned_and_detachment_is_explicit(wyb):
     assert events == ["owned", "detached"]
 
 
+def test_direct_signal_memo_reactivates_after_losing_its_observer(wyb):
+    signal, write = create_signal(1)
+    memo = create_memo(signal, lazy=True)
+    seen = []
+    effect = create_effect(memo, seen.append)
+    flush()
+    effect.dispose()
+    flush()
+    write(2)
+    flush()
+    effect = create_effect(memo, seen.append)
+    flush()
+    write(3)
+    flush()
+    assert seen == [1, 2, 3]
+    effect.dispose()
+    memo.dispose()
+
+
+def test_direct_signal_effect_retains_committed_cleanup_during_hold(wyb):
+    async def main():
+        value, write = create_signal(0)
+        gate = asyncio.Event()
+        events = []
+
+        def apply(current):
+            events.append(("apply", current))
+            on_cleanup(lambda: events.append(("cleanup", current)))
+
+        effect = create_effect(value, apply)
+        flush()
+
+        @action
+        async def change():
+            write(1)
+            await gate.wait()
+
+        future = change()
+        flush()
+        assert events == [("apply", 0)]
+        gate.set()
+        await future
+        flush()
+        assert events == [("apply", 0), ("cleanup", 0), ("apply", 1)]
+        write(2)
+        flush()
+        assert events[-2:] == [("cleanup", 1), ("apply", 2)]
+        effect.dispose()
+        assert events[-1] == ("cleanup", 2)
+
+    asyncio.run(main())
+
+
 def test_dispose_cancels_waiter_and_runs_async_finally(wyb):
     async def main():
         gate = asyncio.Event()

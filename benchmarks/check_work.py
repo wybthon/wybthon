@@ -17,6 +17,8 @@ def check(report):
     assert append.get("list_scanned", 0) == 0, append
     assert append["commits"] == 1, append
     assert append["dom_ops"] <= 8000, append
+    assert append.get("template_recipe_hits", 0) == 1000, append
+    assert append.get("template_shape_walks", 0) == 0, append
 
 
 if __name__ == "__main__":

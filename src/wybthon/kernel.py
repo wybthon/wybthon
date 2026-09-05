@@ -341,13 +341,16 @@ _KERNEL_JS = r"""
   // Python serializer counts nodes in (element, then children left to right).
   function walkAssign(root, firstId, count) {
     let id = firstId;
-    const stack = [root];
-    while (stack.length) {
-      const n = stack.pop();
+    let n = root;
+    while (n) {
       reg(id, n);
       id++;
-      const kids = n.childNodes;
-      for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+      if (n.firstChild) n = n.firstChild;
+      else {
+        while (n !== root && !n.nextSibling) n = n.parentNode;
+        if (n === root) break;
+        n = n.nextSibling;
+      }
     }
     if (id - firstId !== count) {
       throw new Error(
