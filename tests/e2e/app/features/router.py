@@ -8,7 +8,7 @@ the router's base path automatically because these pages render inside it.
 
 from app.testkit import tid
 
-from wybthon import Link, Prop, component, div, h2, span
+from wybthon import Link, Outlet, Prop, component, div, h2, span
 
 
 def _link(to, label, slug):
@@ -56,7 +56,7 @@ def Docs(params: Prop[dict], **rest):
 
 @component
 def Parent(**rest):
-    return div(span("parent", **tid("router-parent-marker")), **tid("page-router-parent"))
+    return div(span("parent", **tid("router-parent-marker")), Outlet(), **tid("page-router-parent"))
 
 
 @component

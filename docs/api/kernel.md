@@ -36,17 +36,21 @@ hot path; `None` anchors mean "append".
 | `CLONE_TPL` | `first_id, count, tpl_id` | Clone the proto; assign a dense id block in pre-order |
 | `INSERT` | `parent_id, id, anchor_id` | `insertBefore` (`None` anchor appends) |
 | `REMOVE` | `id` | Detach from the parent |
+| `MOVE_RANGE` | `parent_id, first_id, last_id, anchor_id` | Move a contiguous mounted range |
+| `REMOVE_RANGE` | `first_id, last_id` | Detach a contiguous mounted range |
+| `HOLE_TEXT` | `id, text` | Reuse a hole anchor as a visible text node |
+| `RELEASE_TPL` | `tpl_id` | Evict a native template prototype |
 | `SET_TEXT` | `id, text` | `nodeValue` assignment |
 | `SET_ATTR` | `id, name, value` | `setAttribute`, or `removeAttribute` when `value` is `None` |
-| `SET_PROP` | `id, name, value` | DOM property assignment (`value`, `checked`, `innerHTML`) |
+| `SET_PROP` | `id, name, value` | DOM property assignment (`value`, `checked`, `selectedValues`, `innerHTML`) |
 | `SET_STYLE` | `id, decls` | `style.setProperty` / `removeProperty` per kebab-case declaration |
-| `LISTEN` / `UNLISTEN` | `id, event_type` | Delegated handler bookkeeping plus per-root listener refcounts |
+| `LISTEN` / `UNLISTEN` | `id, event_type[, options]` | Delegated bookkeeping or direct native options; unlisten omits options |
 | `RELEASE` | `[ids]` | Drop registry entries and listener sets for a retired subtree |
 | `ROOT` / `UNROOT` | `id` | Start or stop delegating events from this container instead of `document` |
 
 Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,
-and calls the Python dispatcher once per matched handler with a small
+and calls the Python dispatcher once for the matching bubbling route with a small
 JSON payload (see [events](events.md)).
 
 ```python

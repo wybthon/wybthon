@@ -4,7 +4,7 @@ from conftest import collect_texts
 from wybthon.component import component
 from wybthon.html import div, h1, nav, p, span
 from wybthon.reactivity import Prop, Props, flush
-from wybthon.router import Link, Route, Router, current_path, navigate, use_base_path, use_params, use_query
+from wybthon.router import Link, Outlet, Route, Router, current_path, navigate, use_base_path, use_params, use_query
 
 
 def texts(node):
@@ -121,7 +121,7 @@ def test_use_params_and_use_query_outside_router(wyb, root_element):
 def test_nested_routes_match_children(wyb, root_element):
     @component
     def About():
-        return h1("About")
+        return div(h1("About"), Outlet())
 
     @component
     def Team(props: Props):
@@ -134,7 +134,7 @@ def test_nested_routes_match_children(wyb, root_element):
     assert texts(root_element.element) == ["About"]
     navigate("/about/team/core")
     flush()
-    assert texts(root_element.element) == ["Team ", "core"]
+    assert texts(root_element.element) == ["About", "Team ", "core"]
     root.dispose()
 
 
@@ -255,3 +255,104 @@ def test_router_accepts_accessor_routes(wyb, root_element):
     flush()
     assert texts(root_element.element) == ["User ", "3", " tab=", "-"]
     root.dispose()
+
+
+def test_nested_layout_persists_and_query_hash_decode(wyb, root_element):
+    from wybthon import use_hash
+
+    mounted = []
+
+    @component
+    def Layout():
+        mounted.append("layout")
+        return div(Outlet())
+
+    @component
+    def Child():
+        params, query, fragment = use_params(), use_query(), use_hash()
+        return p(lambda: f"{params()['id']}:{query().get_all('tag')}:{fragment()}")
+
+    routes = [Route("/parent", Layout, children=[Route(":id", Child), Route("", Home)])]
+    root = wyb["reconciler"].render(Router(routes), root_element)
+    navigate("/parent/hello%20world?tag=a&tag=b#some%20section")
+    flush()
+    assert texts(root_element.element) == ["hello world:['a', 'b']:some section"]
+    navigate("/parent/")
+    flush()
+    assert texts(root_element.element) == ["Home"]
+    assert mounted == ["layout"]
+    root.dispose()
+
+
+def test_route_preload_is_shared_and_owned(wyb, root_element):
+    import asyncio
+
+    from wybthon import Loading, preload
+
+    async def main():
+        gate = asyncio.Event()
+        called, closed = [], []
+
+        async def load(params):
+            called.append(params["id"])
+            try:
+                await gate.wait()
+            finally:
+                closed.append(params["id"])
+
+        @component
+        def Start():
+            return Link("Warm", href="/users/1", on_click=lambda e: preload("/users/1"))
+
+        routes = [Route("/", Start), Route("/users/:id", User, preload=load)]
+        root = wyb["reconciler"].render(Loading(lambda: Router(routes), fallback="wait"), root_element)
+        anchor = find(root_element.element, "a")[0]
+        wyb["kernel"]._backend.dispatch("mouseenter", anchor)
+        await asyncio.sleep(0)
+        assert called == ["1"]
+        navigate("/users/1")
+        flush()
+        await asyncio.sleep(0)
+        assert called == ["1"]
+        gate.set()
+        for _ in range(8):
+            await asyncio.sleep(0)
+            flush()
+        assert texts(root_element.element) == ["User ", "1", " tab=", "-"]
+        gate.clear()
+        navigate("/users/2")
+        flush()
+        await asyncio.sleep(0)
+        root.dispose()
+        for _ in range(4):
+            await asyncio.sleep(0)
+        assert closed == ["1", "2"]
+
+    asyncio.run(main())
+
+
+def test_async_link_callback_can_prevent_navigation_and_is_owned(wyb, root_element):
+    import asyncio
+
+    async def main():
+        events = []
+        gate = asyncio.Event()
+
+        async def clicked(event):
+            event.prevent_default()
+            events.append("started")
+            try:
+                await gate.wait()
+            finally:
+                events.append("closed")
+
+        root = wyb["reconciler"].render(Link("Go", href="/elsewhere", on_click=clicked), root_element)
+        wyb["kernel"]._backend.dispatch("click", find(root_element.element, "a")[0])
+        assert current_path() == "/"
+        assert events == ["started"]
+        root.dispose()
+        for _ in range(3):
+            await asyncio.sleep(0)
+        assert events == ["started", "closed"]
+
+    asyncio.run(main())

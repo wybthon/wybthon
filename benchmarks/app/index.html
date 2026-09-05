@@ -54,16 +54,7 @@
 
   <script src="https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.js"></script>
   <script>
-    const WYBTHON_MODULES = [
-      '__init__.py', '_warnings.py', 'component.py', 'context.py',
-      'dev.py', 'dom.py', 'error_boundary.py', 'events.py',
-      'flow.py', 'forms.py', 'html.py', 'kernel.py', 'lazy.py',
-      'loading.py', 'portal.py', 'props.py',
-      'reactivity/__init__.py', 'reactivity/_actions.py', 'reactivity/_core.py',
-      'reactivity/_list.py', 'reactivity/_primitives.py', 'reactivity/_props.py',
-      'reconciler.py', 'router.py', 'router_core.py', 'store.py',
-      'svg.py', 'template.py', 'vnode.py',
-    ];
+
 
     async function main() {
       const statusEl = document.createElement('p');
@@ -75,11 +66,14 @@
 
       pyodide.FS.mkdir('/lib/wybthon');
       pyodide.FS.mkdir('/lib/wybthon/reactivity');
-      for (const mod of WYBTHON_MODULES) {
+      const manifest = await fetch('/__manifest?dir=src/wybthon');
+      if (!manifest.ok) throw new Error('Run this benchmark through wyb dev');
+      const modules = await manifest.json();
+      await Promise.all(modules.map(async mod => {
         const resp = await fetch('../../src/wybthon/' + mod);
         const text = await resp.text();
         pyodide.FS.writeFile('/lib/wybthon/' + mod, text);
-      }
+      }));
       pyodide.runPython('import sys; sys.path.insert(0, "/lib")');
 
       statusEl.textContent = 'Starting benchmark app...';
@@ -116,54 +110,52 @@
         return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 0))));
       }
 
-      async function bench(name, code) {
-        await paint();
-        const t0 = performance.now();
-        py.runPython(code);
-        await paint();
-        const ms = performance.now() - t0;
-        log('[BENCH] ' + name + ': ' + ms.toFixed(1) + 'ms');
-        return ms;
+      function snapshot() {
+        const rows = document.querySelectorAll('#tbody > tr');
+        return JSON.stringify({count: rows.length, first: rows[0]?.textContent, last: rows[rows.length - 1]?.textContent,
+          second: rows[1]?.textContent, swapped: rows[998]?.textContent, selected: document.querySelector('#tbody .danger')?.textContent});
       }
-
       async function setup(code) {
         py.runPython(code);
         await paint();
       }
-
-      const results = {};
-
-      log('[BENCH] Starting full benchmark (3 iterations each)...');
-
-      const ops = [
-        { name: 'create_1k',   setup: 'clear()',                bench: 'run()' },
-        { name: 'replace_all', setup: null,                     bench: 'run()' },
-        { name: 'update_10th', setup: null,                     bench: 'update()' },
-        { name: 'select_row',  setup: null,                     bench: 'select(data()[0]["id"])' },
-        { name: 'swap_rows',   setup: null,                     bench: 'swap_rows()' },
-        { name: 'remove_row',  setup: 'run()',                  bench: 'delete(data()[0]["id"])' },
-        { name: 'create_10k',  setup: 'clear()',                bench: 'run_lots()' },
-        { name: 'append_1k',   setup: 'clear(); run()',         bench: 'add()' },
-        { name: 'clear_rows',  setup: 'run()',                  bench: 'clear()' },
+      const scenarios = [
+        {name: 'create_1k', setup: 'clear()', target: '#run'},
+        {name: 'replace_1k', setup: 'run()', target: '#run'},
+        {name: 'create_10k', setup: 'clear()', target: '#runlots'},
+        {name: 'update_10th_10k', setup: 'run_lots()', target: '#update'},
+        {name: 'select_10k', setup: 'run_lots()', target: '#tbody tr:first-child td:nth-child(2) a'},
+        {name: 'swap_10k', setup: 'run_lots()', target: '#swaprows'},
+        {name: 'remove_10k', setup: 'run_lots()', target: '#tbody tr:first-child td:nth-child(3) a'},
+        {name: 'append_to_10k', setup: 'run_lots()', target: '#add'},
+        {name: 'clear_10k', setup: 'run_lots()', target: '#clear'},
       ];
-
-      for (const op of ops) {
-        const times = [];
-        for (let i = 0; i < 3; i++) {
-          if (op.setup) await setup(op.setup);
-          const ms = await bench(op.name + ' [' + (i+1) + '/3]', op.bench);
-          times.push(ms);
+      const results = {mode: new URLSearchParams(location.search).get('mode') || 'signal', pyodide: '314.0.6', user_agent: navigator.userAgent, warmups: 1, samples: 3, scenarios: {}};
+      py.runPython('from wybthon.diagnostics import profile; import json');
+      for (const scenario of scenarios) {
+        const samples = [];
+        for (let i = 0; i < 4; i++) {
+          await setup(scenario.setup);
+          const before = snapshot();
+          py.runPython('_bench_scope = profile(); _bench_metrics = _bench_scope.__enter__()');
+          const start = performance.now();
+          document.querySelector(scenario.target).click();
+          const commit = performance.now() - start;
+          await paint();
+          const frame = performance.now() - start;
+          py.runPython('_bench_scope.__exit__(None, None, None)');
+          const metrics = JSON.parse(py.runPython('json.dumps(dict(_bench_metrics.counts))'));
+          if (snapshot() === before) throw new Error(`${scenario.name} did no observable work`);
+          const count = document.querySelectorAll('#tbody > tr').length;
+          if (scenario.name === 'append_to_10k' && count !== 11000) throw new Error('Append baseline must be 10,000 rows');
+          if (i) samples.push({sync_commit_ms: commit, input_to_frame_ms: frame, counts: metrics});
         }
-        times.sort((a,b) => a - b);
-        results[op.name] = parseFloat(times[1].toFixed(1));
-        log('[BENCH] ' + op.name + ' median: ' + times[1].toFixed(1) + 'ms');
-        log('');
+        samples.sort((a, b) => a.sync_commit_ms - b.sync_commit_ms);
+        const frames = samples.map(sample => sample.input_to_frame_ms).sort((a, b) => a - b);
+        results.scenarios[scenario.name] = {...samples[1], input_to_frame_ms: frames[1], samples};
+        log(`[BENCH] ${scenario.name}: commit ${samples[1].sync_commit_ms.toFixed(1)} ms, input-to-frame ${frames[1].toFixed(1)} ms`);
       }
-
-      log('[BENCH] === FINAL RESULTS (median of 3) ===');
-      for (const [k,v] of Object.entries(results)) {
-        log('[BENCH] ' + k + ': ' + v + 'ms');
-      }
+      results.registry = JSON.parse(py.runPython('json.dumps(__import__("wybthon").kernel.stats())'));
       log('[BENCH] RESULTS_JSON=' + JSON.stringify(results));
 
       btn.textContent = 'Benchmark Complete';

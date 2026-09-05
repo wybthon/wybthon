@@ -1,7 +1,7 @@
 """Tests for ``wybthon.store``: draft-first reactive stores.
 
 Covers proxy reads, staged draft writes, fine-grained tracking, ``reconcile``,
-``store_path``, ``snapshot``/``deep``, derived stores and projections,
+``snapshot``/``deep``, derived stores and projections,
 optimistic stores, and the dev-mode write-in-scope guard.
 """
 
@@ -17,6 +17,7 @@ from wybthon.reactivity import (
     create_memo,
     create_root,
     create_signal,
+    create_tracked_effect,
     flush,
     untrack,
 )
@@ -27,7 +28,6 @@ from wybthon.store import (
     deep,
     reconcile,
     snapshot,
-    store_path,
 )
 
 
@@ -64,23 +64,26 @@ def test_attribute_and_bracket_reads(wyb):
     assert store["count"] == 0
     assert store.user.name == "Ada"
     assert store["user"]["age"] == 36
-    assert store.items[0].text == "a"
-    assert store.items[1]["done"] is True
+    assert store["items"][0].text == "a"
+    assert store["items"][1]["done"] is True
     assert store.nums[2] == 3
 
 
-def test_missing_keys_and_indices_read_as_none(wyb):
+def test_missing_keys_and_indices_raise_python_errors(wyb):
     store, _ = _sample()
-    assert store.missing is None
-    assert store["missing"] is None
-    assert store.nums[10] is None
+    with pytest.raises(AttributeError):
+        _ = store.missing
+    with pytest.raises(KeyError):
+        _ = store["missing"]
+    with pytest.raises(IndexError):
+        _ = store.nums[10]
 
 
 def test_negative_index_and_slice_reads(wyb):
     store, _ = _sample()
     assert store.nums[-1] == 3
     assert store.nums[0:2] == [1, 2]
-    assert store.items[-1].id == 2
+    assert store["items"][-1].id == 2
 
 
 def test_len_iteration_and_contains(wyb):
@@ -93,7 +96,7 @@ def test_len_iteration_and_contains(wyb):
     assert list(store.nums) == [1, 2, 3]
     assert 2 in store.nums
     assert 9 not in store.nums
-    assert [t.text for t in store.items] == ["a", "b"]
+    assert [t.text for t in store["items"]] == ["a", "b"]
 
 
 def test_bool_of_store(wyb):
@@ -125,8 +128,8 @@ def test_repr_does_not_raise(wyb):
 def test_nested_proxy_identity_is_stable(wyb):
     store, _ = _sample()
     assert store.user is store.user
-    assert store.items[0] is store.items[0]
-    assert store.items is store["items"]
+    assert store["items"][0] is store["items"][0]
+    assert store["items"] is store["items"]
 
 
 def test_read_proxy_is_read_only(wyb):
@@ -139,18 +142,15 @@ def test_read_proxy_is_read_only(wyb):
         store.nums[0] = 5
 
 
-def test_keys_that_shadow_mapping_methods_are_plain_data(wyb):
-    store, set_store = create_store({"items": [1], "keys": "k", "values": "v", "get": "g", "update": "u"})
-    assert store.items == [1]
-    assert store.keys == "k"
-    assert store.values == "v"
-    assert store.get == "g"
-    assert store.update == "u"
-    assert store["keys"] == "k"
-
+def test_mapping_methods_take_precedence_over_data_keys(wyb):
+    store, set_store = create_store({"items": [1], "keys": "k", "values": "v", "get": "g"})
+    assert store["items"] == [1]
+    assert list(store.keys()) == ["items", "keys", "values", "get"]
+    assert dict(store.items()) == {"items": [1], "keys": "k", "values": "v", "get": "g"}
+    assert store.get("missing", 42) == 42
     set_store(lambda s: s.__setitem__("keys", "K"))
     flush()
-    assert store.keys == "K"
+    assert store["keys"] == "K"
 
 
 def test_setter_rejects_unknown_modifier(wyb):
@@ -159,9 +159,9 @@ def test_setter_rejects_unknown_modifier(wyb):
         set_store(5)
 
 
-def test_scalar_initial_returns_raw_value(wyb):
-    store, _ = create_store(5)
-    assert store == 5
+def test_scalar_initial_requires_signal(wyb):
+    with pytest.raises(TypeError):
+        create_store(5)
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ def test_write_nested_keys_and_list_items(wyb):
     def edit(s):
         s.user.name = "Grace"
         s["user"]["age"] = 40
-        s.items[0].done = True
+        s["items"][0].done = True
         s.nums[1] = 20
         s.nums[-1] = 30
 
@@ -192,13 +192,13 @@ def test_write_nested_keys_and_list_items(wyb):
     flush()
     assert store.user.name == "Grace"
     assert store.user.age == 40
-    assert store.items[0].done is True
+    assert store["items"][0].done is True
     assert snapshot(store.nums) == [1, 20, 30]
 
 
 def test_add_new_key_and_delete_key(wyb):
     store, set_store = _sample()
-    assert store.extra is None
+    assert store.get("extra") is None
     set_store(lambda s: setattr(s, "extra", "yes"))
     flush()
     assert store.extra == "yes"
@@ -207,12 +207,12 @@ def test_add_new_key_and_delete_key(wyb):
     set_store(lambda s: s.__delitem__("extra"))
     flush()
     assert "extra" not in store
-    assert store.extra is None
+    assert store.get("extra") is None
 
     set_store(lambda s: delattr(s, "count"))
     flush()
     assert "count" not in store
-    assert store.count is None
+    assert store.get("count") is None
 
 
 def test_replace_nested_dict_wholesale(wyb):
@@ -287,10 +287,10 @@ def test_list_pop_remove_clear(wyb):
     flush()
     assert snapshot(store.nums) == []
 
-    set_store(lambda s: s.items.clear())
+    set_store(lambda s: s["items"].clear())
     flush()
-    assert len(store.items) == 0
-    assert list(store.items) == []
+    assert len(store["items"]) == 0
+    assert list(store["items"]) == []
 
 
 def test_list_del_and_slice_assignment(wyb):
@@ -321,11 +321,11 @@ def test_list_sort_and_reverse(wyb):
 
 def test_list_of_dicts_append_then_read_new_item(wyb):
     store, set_store = _sample()
-    set_store(lambda s: s.items.append({"id": 3, "text": "c", "done": False}))
+    set_store(lambda s: s["items"].append({"id": 3, "text": "c", "done": False}))
     flush()
-    assert len(store.items) == 3
-    assert store.items[2].text == "c"
-    assert store.items[-1]["id"] == 3
+    assert len(store["items"]) == 3
+    assert store["items"][2].text == "c"
+    assert store["items"][-1]["id"] == 3
 
 
 def test_draft_update_merges_keys(wyb):
@@ -365,40 +365,12 @@ def test_setter_accepts_plain_replacement_data(wyb):
 
 def test_writing_a_proxy_stores_plain_data(wyb):
     store, set_store = _sample()
-    set_store(lambda s: s.__setitem__("first", s.items[0]))
+    set_store(lambda s: s.__setitem__("first", s["items"][0]))
     flush()
     first = snapshot(store)["first"]
     assert isinstance(first, dict)
     assert first == {"id": 1, "text": "a", "done": False}
     assert store.first.text == "a"
-
-
-# ---------------------------------------------------------------------------
-# store_path
-# ---------------------------------------------------------------------------
-
-
-def test_store_path_writes_nested_value(wyb):
-    store, set_store = _sample()
-    set_store(store_path("user", "name", "Linus"))
-    set_store(store_path("items", 0, "done", True))
-    flush()
-    assert store.user.name == "Linus"
-    assert store.items[0].done is True
-
-
-def test_store_path_with_updater_function(wyb):
-    store, set_store = _sample()
-    set_store(store_path("count", lambda c: c + 10))
-    set_store(store_path("items", 1, "done", lambda d: not d))
-    flush()
-    assert store.count == 10
-    assert store.items[1].done is False
-
-
-def test_store_path_requires_key_and_value(wyb):
-    with pytest.raises(TypeError):
-        store_path("only_key")
 
 
 # ---------------------------------------------------------------------------
@@ -408,9 +380,9 @@ def test_store_path_requires_key_and_value(wyb):
 
 def test_reconcile_keeps_identity_of_unchanged_items(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store.items[0].text)
+    memo, runs = _counting_memo(lambda: store["items"][0].text)
     assert memo() == "a"
-    first = snapshot(store)["items"][0]
+    first = store["items"][0]
 
     set_store(
         reconcile(
@@ -423,28 +395,28 @@ def test_reconcile_keeps_identity_of_unchanged_items(wyb):
         )
     )
     flush()
-    assert snapshot(store)["items"][0] is first
-    assert store.items[1].text == "B"
+    assert store["items"][0] is first
+    assert store["items"][1].text == "B"
     assert memo() == "a"
     assert len(runs) == 1
 
     set_store(reconcile({"items": [{"id": 1, "text": "A", "done": False}]}))
     flush()
-    assert snapshot(store)["items"][0] is first
+    assert store["items"][0] is first
     assert memo() == "A"
     assert len(runs) == 2
 
 
 def test_reconcile_adds_removes_and_reorders_items(wyb):
     store, set_store = create_store({"items": [{"id": 1, "v": 1}, {"id": 2, "v": 2}]})
-    second = snapshot(store)["items"][1]
+    second = store["items"][1]
     set_store(reconcile({"items": [{"id": 2, "v": 2}, {"id": 3, "v": 3}]}))
     flush()
     raw = snapshot(store)["items"]
     assert [i["id"] for i in raw] == [2, 3]
-    assert raw[0] is second
-    assert store.items[1].v == 3
-    assert len(store.items) == 2
+    assert store["items"][0] is second
+    assert store["items"][1].v == 3
+    assert len(store["items"]) == 2
 
 
 def test_reconcile_removes_missing_dict_keys(wyb):
@@ -457,19 +429,19 @@ def test_reconcile_removes_missing_dict_keys(wyb):
 
 def test_reconcile_without_key_replaces_positionally(wyb):
     store, set_store = create_store({"items": [{"id": 1, "v": 1}]})
-    first = snapshot(store)["items"][0]
+    first = store["items"][0]
     set_store(reconcile({"items": [{"id": 1, "v": 1}]}, key=None))
     flush()
-    assert snapshot(store)["items"][0] == first
-    assert snapshot(store)["items"][0] is not first
+    assert store["items"][0] == first
+    assert store["items"][0] is not first
 
 
 def test_reconcile_custom_key(wyb):
     store, set_store = create_store([{"slug": "x", "n": 1}, {"slug": "y", "n": 2}])
-    x = snapshot(store)[0]
+    x = store[0]
     set_store(reconcile([{"slug": "y", "n": 20}, {"slug": "x", "n": 1}], key="slug"))
     flush()
-    assert snapshot(store)[1] is x
+    assert store[1] is x
     assert store[0].n == 20
 
 
@@ -508,23 +480,23 @@ def test_memo_not_rerun_when_same_value_written(wyb):
 
 def test_memo_tracks_list_length(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: len(store.items))
+    memo, runs = _counting_memo(lambda: len(store["items"]))
     assert memo() == 2
 
-    set_store(lambda s: setattr(s.items[0], "done", True))
+    set_store(lambda s: setattr(s["items"][0], "done", True))
     flush()
     assert memo() == 2
     assert len(runs) == 1
 
-    set_store(lambda s: s.items.append({"id": 3, "text": "c", "done": False}))
+    set_store(lambda s: s["items"].append({"id": 3, "text": "c", "done": False}))
     flush()
     assert memo() == 3
     assert len(runs) == 2
 
     def pop_last(s):
-        # A bare ``lambda s: s.items.pop()`` would return the popped dict, which the
+        # A bare ``lambda s: s["items"].pop()`` would return the popped dict, which the
         # setter would merge in as replacement state.
-        s.items.pop()
+        s["items"].pop()
 
     set_store(pop_last)
     flush()
@@ -554,15 +526,15 @@ def test_memo_tracks_iteration(wyb):
 
 def test_memo_tracks_one_list_item_field(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store.items[0].done)
+    memo, runs = _counting_memo(lambda: store["items"][0].done)
     assert memo() is False
 
-    set_store(lambda s: setattr(s.items[1], "done", False))
+    set_store(lambda s: setattr(s["items"][1], "done", False))
     flush()
     assert memo() is False
     assert len(runs) == 1
 
-    set_store(lambda s: setattr(s.items[0], "done", True))
+    set_store(lambda s: setattr(s["items"][0], "done", True))
     flush()
     assert memo() is True
     assert len(runs) == 2
@@ -599,7 +571,7 @@ def test_effect_first_run_deferred_and_reruns_on_change(wyb):
 def test_single_form_effect_tracks_nested_paths(wyb):
     store, set_store = _sample()
     log = []
-    create_effect(lambda: log.append((store.user.name, len(store.nums))))
+    create_tracked_effect(lambda: log.append((store.user.name, len(store.nums))))
     flush()
     assert log == [("Ada", 3)]
 
@@ -644,11 +616,13 @@ def test_snapshot_returns_plain_data(wyb):
     initial = {"count": 0, "user": {"name": "Ada"}, "nums": [1, 2]}
     store, _ = create_store(initial)
     raw = snapshot(store)
-    assert raw is initial
+    assert raw == initial
+    assert raw is not initial
     assert type(raw) is dict
     assert type(raw["user"]) is dict
     assert type(snapshot(store.nums)) is list
-    assert snapshot(store.user) is initial["user"]
+    assert snapshot(store.user) == initial["user"]
+    assert snapshot(store.user) is not initial["user"]
     assert snapshot(42) == 42
 
 
@@ -680,12 +654,12 @@ def test_deep_tracks_nested_changes(wyb):
     memo, runs = _counting_memo(lambda: deep(store)["items"][1]["text"])
     assert memo() == "b"
 
-    set_store(lambda s: setattr(s.items[0], "done", True))
+    set_store(lambda s: setattr(s["items"][0], "done", True))
     flush()
     assert memo() == "b"
     assert len(runs) == 2
 
-    set_store(lambda s: setattr(s.items[1], "text", "B"))
+    set_store(lambda s: setattr(s["items"][1], "text", "B"))
     flush()
     assert memo() == "B"
     assert len(runs) == 3
@@ -730,12 +704,12 @@ def test_derived_store_zero_arg_form_reconciles(wyb):
     mirror, _ = create_store(lambda: items(), [])
     flush()
     assert snapshot(mirror) == [{"id": 1, "v": 1}]
-    first = snapshot(mirror)[0]
+    first = mirror[0]
 
     set_items([{"id": 1, "v": 1}, {"id": 2, "v": 3}])
     flush()
     assert snapshot(mirror) == [{"id": 1, "v": 1}, {"id": 2, "v": 3}]
-    assert snapshot(mirror)[0] is first
+    assert mirror[0] is first
     assert mirror[1].v == 3
 
 
@@ -785,10 +759,10 @@ def test_create_projection_zero_arg_and_read_only(wyb):
 
 def test_projection_from_store_source(wyb):
     store, set_store = _sample()
-    proj = create_projection(lambda d: d.update({"open": sum(1 for t in store.items if not t.done)}), {"open": 0})
+    proj = create_projection(lambda d: d.update({"open": sum(1 for t in store["items"] if not t.done)}), {"open": 0})
     flush()
     assert proj.open == 1
-    set_store(lambda s: setattr(s.items[1], "done", False))
+    set_store(lambda s: setattr(s["items"][1], "done", False))
     flush()
     assert proj.open == 2
 
@@ -804,12 +778,12 @@ def test_optimistic_store_value_form_applies_writes(wyb):
 
     def edit(s):
         s.n = 1
-        s.items.append("x")
+        s["items"].append("x")
 
     set_shown(edit)
     flush()
     assert shown.n == 1
-    assert list(shown.items) == ["x"]
+    assert list(shown["items"]) == ["x"]
     assert snapshot(shown) == {"n": 1, "items": ["x"]}
 
 
@@ -848,7 +822,7 @@ def test_optimistic_store_derived_form_reverts_to_source(wyb):
         async def add(title):
             set_shown(lambda s: s.append({"id": 99, "title": title, "saving": True}))
             await gate.wait()
-            set_todos(lambda s: s.items.append({"id": 1, "title": title}))
+            set_todos(lambda s: s["items"].append({"id": 1, "title": title}))
 
         add("x")
         flush()
@@ -894,7 +868,7 @@ def test_write_inside_effect_compute_routes_to_error_handler(wyb, monkeypatch):
     monkeypatch.setattr(_warnings, "DEV_MODE", True)
     store, set_store = _sample()
     errs = []
-    create_effect(lambda: (store.count, set_store(lambda s: None)), error=lambda e: errs.append(e))
+    create_tracked_effect(lambda: (store.count, set_store(lambda s: None)), error=lambda e: errs.append(e))
     flush()
     assert len(errs) == 1
     assert isinstance(errs[0], WriteInScopeError)

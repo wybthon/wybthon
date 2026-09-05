@@ -607,7 +607,7 @@ def test_projection_is_held_with_its_inputs(wyb, root_element):
 
 def test_optimistic_store_reveals_inside_action_and_reports_pending(wyb, root_element):
     async def main() -> None:
-        todos, set_todos = create_store({"items": []})
+        todos, set_todos = create_store({"items": list[dict[str, object]]()})
         shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
         gate = asyncio.Event()
 
@@ -615,13 +615,13 @@ def test_optimistic_store_reveals_inside_action_and_reports_pending(wyb, root_el
         async def add(title: str):
             set_shown(lambda s: s.append({"title": title}))
             await gate.wait()
-            set_todos(lambda s: s.items.append({"title": title}))
+            set_todos(lambda s: s["items"].append({"title": title}))
 
         wyb["reconciler"].render(
             div(
                 span(lambda: str(len(shown))),
                 span(lambda: "saving" if is_pending(lambda: len(shown)) else "idle"),
-                span(lambda: str(len(todos.items))),
+                span(lambda: str(len(todos["items"]))),
             ),
             root_element,
         )
@@ -648,17 +648,17 @@ def test_affects_store_marks_reads_pending(wyb):
         async def rename():
             affects(users)
             await gate.wait()
-            set_users(lambda s: s.items[0].update({"name": "b"}))
+            set_users(lambda s: s["items"][0].update({"name": "b"}))
 
-        assert not is_pending(lambda: users.items[0].name)
+        assert not is_pending(lambda: users["items"][0].name)
         fut = rename()
         flush()
-        assert is_pending(lambda: users.items[0].name)
+        assert is_pending(lambda: users["items"][0].name)
         gate.set()
         await fut
         await _tick()
-        assert not is_pending(lambda: users.items[0].name)
-        assert users.items[0].name == "b"
+        assert not is_pending(lambda: users["items"][0].name)
+        assert users["items"][0].name == "b"
 
     asyncio.run(main())
 

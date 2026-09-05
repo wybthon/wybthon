@@ -13,7 +13,7 @@ The differences are mostly surface: Python instead of JavaScript, HTML helper fu
 | `createMemo(fn, { equals })` | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
 | `createAsync(async fn)` | `create_memo(async_fn)`: an `async def` body makes an async memo |
 | `createEffect(compute, apply)` | [`create_effect(compute, apply)`][wybthon.create_effect] |
-| `createEffect(fn)` | `create_effect(fn)` (single function, tracked) |
+| `createEffect(fn)` | `create_tracked_effect(fn)` (single function, tracked) |
 | `createRenderEffect(fn)` | [`create_render_effect(fn)`][wybthon.create_render_effect] |
 | `onMount(fn)` | [`on_settled(fn)`][wybthon.on_settled] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
@@ -123,7 +123,7 @@ set_count(1)
 flush()
 ```
 
-The split form is Solid 2.0's `createEffect(compute, apply)`: `compute` runs tracked, `apply` runs untracked with the value and previous value, and may return a cleanup. Effects run after the DOM commit; the first run happens on the flush after the component mounted. The single-function form `create_effect(fn)` also works.
+The split form is Solid 2.0's `createEffect(compute, apply)`: `compute` runs tracked, `apply` runs untracked with the value and previous value, and may return a cleanup. Effects run after the DOM commit; the first run happens on the flush after the component mounted. The single-function form `create_tracked_effect(fn)` also works.
 
 Signal semantics that carry over:
 
@@ -174,12 +174,12 @@ state, set_state = create_store({"count": 0, "items": []})
 
 def update(s):
     s.count += 1
-    s.items.append({"id": 3, "title": "new"})
+    s["items"].append({"id": 3, "title": "new"})
 
 
 set_state(update)
 set_state(reconcile({"count": 5, "items": fetched_items}, key="id"))
-raw = snapshot(state.items)
+raw = snapshot(state["items"])
 ```
 
 Setters are draft-first, as in Solid 2.0. Reads are tracked at the leaf, only leaves that changed notify, and `reconcile` preserves identity by key so `For` rows keep their DOM. [`create_projection`][wybthon.create_projection] and [`create_optimistic_store`][wybthon.create_optimistic_store] match their Solid 2.0 namesakes.

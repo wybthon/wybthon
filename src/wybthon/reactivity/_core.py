@@ -47,10 +47,11 @@ import gc
 import inspect
 from collections.abc import Awaitable as AbcAwaitable
 from collections.abc import Callable
-from types import FunctionType, MethodType
+from dataclasses import dataclass
+from types import FunctionType, MethodType, coroutine
 from typing import Any, Final
 
-from .. import _warnings
+from .. import _warnings, diagnostics
 from .._warnings import log_error, warn_once
 
 __all__ = [
@@ -137,7 +138,7 @@ _settled_queue: list[Callable[[], Any]] = []
 
 # Sources that lost their last observer; checked after the flush so a
 # recompute that drops and re-adds an edge doesn't fire ``unobserved``.
-_unobserved_check: list[Any] = []
+_unobserved_check: set[Any] = set()
 
 _flushing: bool = False
 _flush_scheduled: bool = False
@@ -183,6 +184,7 @@ _optimistic_depth: int = 0
 # True while an eager apply stage runs whose compute read held data, so
 # the signals it writes are held too (projections, selectors).
 _apply_held: bool = False
+_applying: Computation | None = None
 
 # True when the read path needs the slow branch: a probe is active or a
 # transition holds nodes.
@@ -786,8 +788,12 @@ def _flush() -> None:
 def _reset_scheduler_for_tests() -> None:
     """Test-only: drop staged writes, effect queues, transitions, and scheduler flags."""
     global _flush_scheduled, _flushing, _kernel_commit, _setup_depth, _setup_component
-    global _tx, _held, _in_action, _optimistic_depth, _apply_held, _slow_reads, _track
+    global _tx, _held, _in_action, _optimistic_depth, _apply_held, _slow_reads, _track, _applying
     global _layer_working, _latest_depth, _probe_depth, _probe_hit, _authoritative_depth, _async_live
+    for task in tuple(_tasks):
+        if not task.done() and not task.get_loop().is_closed():
+            task.cancel()
+    _tasks.clear()
     _staged.clear()
     _render_queue.clear()
     _effect_queue.clear()
@@ -809,6 +815,7 @@ def _reset_scheduler_for_tests() -> None:
     _in_action = None
     _optimistic_depth = 0
     _apply_held = False
+    _applying = None
     _slow_reads = False
     _track = False
     _layer_working = 0
@@ -837,9 +844,10 @@ class Owner:
     handler installed by [`Errored`][wybthon.Errored].
     """
 
-    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map", "_error_handler")
+    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map", "_error_handler", "_tasks")
 
     def __init__(self) -> None:
+        self._tasks: set[asyncio.Task[Any]] | None = None
         self._parent: Owner | None = None
         # Keyed by ``id(child)`` so an individually disposed child detaches
         # in O(1); a row leaving a 10k-row list would otherwise pay a
@@ -851,6 +859,9 @@ class Owner:
         self._error_handler: Callable[[BaseException, Computation | None], Any] | None = None
 
     def _add_child(self, child: Owner) -> None:
+        if self._disposed:
+            child.dispose()
+            return
         child._parent = self
         if self._children is None:
             self._children = {id(child): child}
@@ -918,6 +929,10 @@ class Owner:
         if self._disposed:
             return
         self._disposed = True
+        if self._tasks:
+            for task in tuple(self._tasks):
+                task.cancel()
+            self._tasks.clear()
         self._dispose_children()
         self._run_cleanups()
         parent = self._parent
@@ -946,6 +961,18 @@ def _nearest_component() -> _ComponentContext | None:
             return owner
         owner = owner._parent
     return None
+
+
+@dataclass(frozen=True, slots=True)
+class LiteralValue[T]:
+    """An explicit value that mustn't be interpreted as a reactive expression."""
+
+    value: T
+
+
+def literal[T](value: T) -> LiteralValue[T]:
+    """Wrap a callable value for signals and component props: ``literal(callback)``."""
+    return LiteralValue(value)
 
 
 # ---------------------------------------------------------------------------
@@ -1049,7 +1076,7 @@ class Signal[T](Accessor[T]):
         if obs is not None:
             obs.pop(comp, None)
             if not obs and self._unobserved is not None:
-                _unobserved_check.append(self)
+                _unobserved_check.add(self)
                 _schedule_flush()
 
     def _check_unobserved(self) -> None:
@@ -1076,6 +1103,8 @@ class Signal[T](Accessor[T]):
             obs._add_source(self)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
+        if _in_action is not None and self._staged:
+            return self._pending
         if _slow_reads:
             return self._slow_read()
         return self._value
@@ -1090,6 +1119,8 @@ class Signal[T](Accessor[T]):
 
     def peek(self) -> T:
         """Return the committed value without subscribing."""
+        if _in_action is not None and self._staged:
+            return self._pending
         if _slow_reads and not _layer_working and not _latest_depth and self in _held:
             return _held[self]
         return self._value
@@ -1100,7 +1131,7 @@ class Signal[T](Accessor[T]):
 
     # -- writes ---------------------------------------------------------------
 
-    def set(self, value: T | Callable[[T], T]) -> T:
+    def set(self, value: T | Callable[[T], T] | LiteralValue[T]) -> T:
         """Stage a write; the new value is visible after the next flush.
 
         Supports **functional updates**: when `value` is callable it
@@ -1124,7 +1155,9 @@ class Signal[T](Accessor[T]):
                 "reactive hole). Derive the value with create_memo, or write it from the apply stage "
                 "of a split create_effect, an event handler, or an action."
             )
-        if callable(value):
+        if isinstance(value, LiteralValue):
+            value = value.value
+        elif callable(value):
             value = value(self._latest())
         self._set(value)
         return value
@@ -1138,6 +1171,9 @@ class Signal[T](Accessor[T]):
         """
         if origin < 0:
             origin = _write_origin()
+            if _applying is not None and _applying._eager and (_flushing or origin == _O_NORMAL):
+                self._commit_now(value, origin)
+                return
             if origin == _O_NORMAL and _flushing:
                 # A write made by an eager computation (a projection
                 # mutating its draft, an optimistic store's base) is
@@ -1204,7 +1240,7 @@ class Signal[T](Accessor[T]):
             if origin == _O_HELD:
                 _record(self, old, origin)
             else:
-                obs = _current_observer
+                obs = _current_observer or _applying
                 _record_derived(self, old, obs._sources if obs is not None else None)
         obs2 = self._observers
         if obs2:
@@ -1298,6 +1334,8 @@ class Prop[T](Accessor[T]):
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
         value = sig._slow_read() if _slow_reads else sig._value
+        if isinstance(value, LiteralValue):
+            return value.value
         if isinstance(value, Accessor):
             return value()
         if type(value) is FunctionType:
@@ -1310,6 +1348,8 @@ class Prop[T](Accessor[T]):
     def peek(self) -> T:
         """Return the current (unwrapped) value without subscribing."""
         value = self._sig.peek()
+        if isinstance(value, LiteralValue):
+            return value.value
         if isinstance(value, Accessor):
             return value.peek()
         if type(value) is FunctionType:
@@ -1331,7 +1371,7 @@ class Prop[T](Accessor[T]):
 class _AsyncState:
     """Per-computation async state, allocated on first use."""
 
-    __slots__ = ("pending", "has_value", "version", "quiet", "inflight", "closer")
+    __slots__ = ("pending", "has_value", "version", "quiet", "inflight", "task")
 
     def __init__(self) -> None:
         self.pending: bool = False
@@ -1342,8 +1382,7 @@ class _AsyncState:
         # True while a launched run is outstanding, quiet or not, so
         # ``resolve``/``refresh`` awaiters can wait for it to settle.
         self.inflight: bool = False
-        # Cleanup for an in-flight async generator.
-        self.closer: Callable[[], Any] | None = None
+        self.task: asyncio.Task[Any] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1380,6 +1419,7 @@ class Computation(Owner):
         "_probe_srcs",
         "_state",
         "_kind",
+        "_is_data",
         "_value",
         "_observers",
         "_equals",
@@ -1392,6 +1432,9 @@ class Computation(Owner):
         "_eager",
         "_land_held",
         "_apply_cleanup",
+        "_apply_owner",
+        "_uses_apply_scope",
+        "_applied_value",
         "_error_fn",
         "_lazy",
         "_unobserved",
@@ -1413,17 +1456,20 @@ class Computation(Owner):
         pass_prev: bool | None = None,
         name: str | None = None,
         eager: bool = False,
+        apply_scope: bool = True,
+        data: bool = False,
     ) -> None:
         super().__init__()
         self._fn = fn
         self._pass_prev = _accepts_positional(fn) if pass_prev is None else pass_prev
-        self._sources: dict[Any, None] | None = None
+        self._sources: dict[Any, bool] | None = None
         # Sources read inside an ``is_pending`` probe. They subscribe like
         # any other but don't make the effect's apply wait for a reveal:
         # a pending indicator has to show *during* the hold.
         self._probe_srcs: set[Any] | None = None
         self._state: int = _DIRTY
         self._kind = kind
+        self._is_data = data or kind == _K_MEMO
         self._value: Any = value
         self._observers: dict[Computation, None] | None = None
         self._equals = equals
@@ -1438,6 +1484,9 @@ class Computation(Owner):
         # that belongs to the open transaction and reveals with it.
         self._land_held = False
         self._apply_cleanup: Callable[[], Any] | None = None
+        self._apply_owner: Owner | None = None
+        self._uses_apply_scope = apply_scope
+        self._applied_value: Any = value
         self._error_fn = error
         self._lazy = lazy
         self._unobserved = unobserved
@@ -1462,7 +1511,7 @@ class Computation(Owner):
         if obs is not None:
             obs.pop(comp, None)
             if not obs and (self._unobserved is not None or self._lazy):
-                _unobserved_check.append(self)
+                _unobserved_check.add(self)
                 _schedule_flush()
 
     def _check_unobserved(self) -> None:
@@ -1474,7 +1523,33 @@ class Computation(Owner):
             except Exception as exc:
                 log_error(f"unobserved callback raised: {exc}", exc)
         if self._lazy:
-            self.dispose()
+            self._suspend()
+
+    def _cancel_async(self) -> None:
+        a = self._async
+        if a is None:
+            return
+        a.version += 1
+        task, a.task = a.task, None
+        if task is not None and not task.done():
+            task.cancel()
+        if _tx is not None:
+            _tx.pending.discard(self)
+
+    def _suspend(self) -> None:
+        """Release demand-driven work while preserving this accessor's identity."""
+        self._cancel_async()
+        self._clear_sources()
+        self._dispose_children()
+        self._run_cleanups()
+        self._error = None
+        self._value = None
+        self._first = True
+        self._state = _DIRTY
+        if self._async is not None:
+            global _async_live
+            _async_live -= 1
+            self._async = None
 
     def _notify(self, skip: Computation | None = None) -> None:
         obs = self._observers
@@ -1488,12 +1563,16 @@ class Computation(Owner):
     def _add_source(self, source: Any) -> None:
         srcs = self._sources
         if srcs is None:
-            self._sources = {source: None}
+            self._sources = {source: bool(_probe_depth)}
             source._add_observer(self)
         elif source not in srcs:
-            srcs[source] = None
+            srcs[source] = bool(_probe_depth)
             source._add_observer(self)
-        if _probe_depth:
+        elif not _probe_depth:
+            srcs[source] = False
+            if self._probe_srcs is not None:
+                self._probe_srcs.discard(source)
+        if _probe_depth and self._sources[source]:
             ps = self._probe_srcs
             if ps is None:
                 self._probe_srcs = {source}
@@ -1597,19 +1676,13 @@ class Computation(Owner):
         """Re-run the tracked function and refresh the dependency set."""
         if self._disposed:
             return
+        if diagnostics._active is not None:
+            diagnostics._active.counts["computations"] += 1
         self._dispose_children()
         self._run_cleanups()
         self._clear_sources()
         a = self._async
-        if a is not None:
-            a.version += 1
-            closer = a.closer
-            if closer is not None:
-                a.closer = None
-                try:
-                    closer()
-                except Exception:
-                    pass
+        self._cancel_async()
         global _current_owner, _current_observer, _layer_working
         prev_owner = _current_owner
         prev_obs = _current_observer
@@ -1663,6 +1736,10 @@ class Computation(Owner):
             return
         prev = self._value
         self._value = value
+        if self._is_data:
+            if _track and not self._first:
+                _record_derived(self, prev, self._sources)
+            self._notify(skip=_current_observer)
         if self._apply is None:
             self._first = False
             return
@@ -1685,40 +1762,52 @@ class Computation(Owner):
         apply = self._apply
         if apply is None:
             return
-        cleanup = self._apply_cleanup
-        if cleanup is not None:
-            self._apply_cleanup = None
-            try:
-                cleanup()
-            except Exception as exc:
-                log_error(f"Effect cleanup raised: {exc}", exc)
-        global _current_observer, _apply_held
+        self._run_apply_cleanup()
+        apply_owner = self._apply_owner
+        if apply_owner is not None:
+            apply_owner.dispose()
+        if self._uses_apply_scope:
+            apply_owner = self._apply_owner = Owner()
+            apply_owner._parent = self
+        else:
+            apply_owner = self
+        global _current_owner, _current_observer, _apply_held, _applying
+        prev_owner = _current_owner
         prev_obs = _current_observer
         prev_held = _apply_held
+        prev_applying = _applying
         _current_observer = None
+        _current_owner = apply_owner
+        _applying = self
         _apply_held = bool(_held) and self._eager and self._is_held()
         try:
-            result = apply(value) if self._apply_arity == 1 else apply(value, prev)
+            previous = self._applied_value
+            self._applied_value = value
+            result = apply(value) if self._apply_arity == 1 else apply(value, previous)
         except Exception as exc:
             if not self._handle_error(exc):
                 raise
             return
         finally:
             _current_observer = prev_obs
+            _current_owner = prev_owner
             _apply_held = prev_held
+            _applying = prev_applying
         if callable(result):
             self._apply_cleanup = result
-            self._add_cleanup(self._run_apply_cleanup)
 
     def _run_apply_cleanup(self) -> None:
         cleanup = self._apply_cleanup
         if cleanup is not None:
             self._apply_cleanup = None
-            cleanup()
+            try:
+                _run_owned_untracked(self._apply_owner or self, cleanup)
+            except Exception as exc:
+                log_error(f"Effect cleanup raised: {exc}", exc)
 
     def _fail(self, exc: BaseException) -> None:
         """Record or route an exception raised by the body."""
-        if self._kind == _K_MEMO:
+        if self._is_data:
             self._error = exc
             if self._async is not None:
                 self._set_pending(False)
@@ -1751,7 +1840,7 @@ class Computation(Owner):
         a.pending = value
         if value:
             # Only data (memos) holds a transition; an async effect is a sink.
-            if a.has_value and _flushing and self._kind == _K_MEMO:
+            if a.has_value and _flushing and self._is_data:
                 _newly_pending.append(self)
         else:
             tx = _tx
@@ -1799,7 +1888,7 @@ class Computation(Owner):
         self._step(coro, version, on_done, on_error)
 
     def _launch_gen(self, agen: Any) -> None:
-        """Drive an async generator: each yielded value becomes the new value."""
+        """Consume a stream in one cancellable task and close it on every exit."""
         a = self._ensure_async()
         a.version += 1
         version = a.version
@@ -1810,41 +1899,25 @@ class Computation(Owner):
         a.inflight = True
         _schedule_flush()
 
-        def closer() -> None:
+        async def consume() -> None:
             try:
-                res = agen.aclose()
-                if inspect.iscoroutine(res):
-                    res.close()
-            except Exception:
-                pass
+                async for value in agen:
+                    self._resolve(version, value, final=False)
+            finally:
+                await agen.aclose()
 
-        a.closer = closer
-
-        def advance() -> None:
-            if self._disposed or self._async is None or self._async.version != version:
+        def complete(_: Any) -> None:
+            if self._disposed or self._async is not a or a.version != version:
                 return
-            self._step(agen.__anext__(), version, on_value, on_error)
+            if not a.has_value:
+                self._resolve(version, None)
+            else:
+                a.inflight = False
+                self._set_pending(False)
+                self._notify()
+                _schedule_flush()
 
-        def on_value(value: Any) -> None:
-            self._resolve(version, value, final=False)
-            advance()
-
-        def on_error(exc: BaseException) -> None:
-            if isinstance(exc, StopAsyncIteration):
-                a2 = self._async
-                if a2 is not None and a2.version == version:
-                    a2.closer = None
-                    if not a2.has_value:
-                        self._resolve(version, None)
-                    else:
-                        a2.inflight = False
-                        self._set_pending(False)
-                        self._notify()
-                        _schedule_flush()
-                return
-            self._reject(version, exc)
-
-        advance()
+        self._step(consume(), version, complete, lambda exc: self._reject(version, exc))
 
     def _step(
         self,
@@ -1861,7 +1934,9 @@ class Computation(Owner):
         # A ``NotReadyError`` after an await means a pending source was read;
         # its subscription is in place, so its resolution re-runs us from the
         # top. Nothing to do here.
-        _drive_coroutine(coro, owner=self, observer=self, alive=alive, on_done=on_done, on_error=on_error)
+        task = _drive_coroutine(coro, owner=self, observer=self, alive=alive, on_done=on_done, on_error=on_error)
+        if self._async is not None and self._async.version == version:
+            self._async.task = task
 
     def _resolve(self, version: int, value: Any, *, final: bool = True) -> None:
         a = self._async
@@ -1870,7 +1945,6 @@ class Computation(Owner):
         self._error = None
         a.has_value = True
         if final:
-            a.closer = None
             a.inflight = False
         self._set_pending(False)
         self._settle(value)
@@ -1883,9 +1957,8 @@ class Computation(Owner):
         a = self._async
         if self._disposed or a is None or a.version != version:
             return
-        a.closer = None
         a.inflight = False
-        if self._kind == _K_MEMO:
+        if self._is_data:
             self._error = exc
             self._set_pending(False)
             self._notify()
@@ -1944,32 +2017,23 @@ class Computation(Owner):
         return self._value
 
     def dispose(self) -> None:
-        """Dispose the computation and drop every dependency edge."""
+        """Permanently dispose a computation and its committed resources."""
         if self._disposed:
             return
-        a = self._async
-        if a is not None:
+        self._cancel_async()
+        if self._async is not None:
             global _async_live
             _async_live -= 1
-            a.version += 1
-            closer = a.closer
-            if closer is not None:
-                a.closer = None
-                try:
-                    closer()
-                except Exception:
-                    pass
-            tx = _tx
-            if tx is not None:
-                tx.pending.discard(self)
+        self._run_apply_cleanup()
+        if self._apply_owner is not None:
+            self._apply_owner.dispose()
+            self._apply_owner = None
         self._clear_sources()
-        obs = self._observers
-        if obs:
-            for o in list(obs):
-                o_srcs = o._sources
-                if o_srcs is not None:
-                    o_srcs.pop(self, None)
-            obs.clear()
+        if self._observers:
+            for observer in list(self._observers):
+                if observer._sources is not None:
+                    observer._sources.pop(self, None)
+            self._observers.clear()
         super().dispose()
 
 
@@ -2001,72 +2065,102 @@ def _drive_coroutine(
     on_error: Callable[[BaseException], None],
     on_not_ready: Callable[[], None] | None = None,
     action_tx: Transition | None = None,
-) -> None:
-    """Step `coro` manually so each resume runs under `owner` / `observer`.
+) -> asyncio.Task[Any]:
+    """Run an owned asyncio task with tracking scoped to each synchronous resume.
 
-    The first step runs synchronously (so code before the first `await`
-    executes immediately, like a generator action in Solid); later steps
-    are scheduled by the awaited futures' completion callbacks. When
-    `action_tx` is given, every step runs as that action's synchronous
-    segment: writes are held by the transaction and reads see the
-    graph's working values.
+    The task owns cancellation, timeout contexts, and awaited futures. The
+    generator adapter only brackets execution with reactive context; it never
+    changes a Future's private state or installs its own wakeup callbacks.
+    Child asyncio tasks don't inherit tracking through module globals.
     """
+    iterator = coro.__await__() if hasattr(coro, "__await__") else coro
+    delivered = False
+    started = False
 
-    def step(exc: BaseException | None = None) -> None:
-        if not alive():
-            try:
-                coro.close()
-            except Exception:
-                pass
-            return
-        global _current_owner, _current_observer, _layer_working, _in_action
-        prev_owner = _current_owner
-        prev_obs = _current_observer
-        prev_action = _in_action
-        _current_owner = owner
-        _current_observer = observer
-        if action_tx is not None:
+    @coroutine
+    def scoped() -> Any:
+        nonlocal delivered, started
+        started = True
+        failure: BaseException | None = None
+        sent: Any = None
+        cancellation_delivered = False
+        while True:
+            global _current_owner, _current_observer, _layer_working, _in_action
+            saved = (_current_owner, _current_observer, _in_action)
+            valid = alive()
+            _current_owner, _current_observer = owner, observer if valid else None
             _in_action = action_tx
-        _layer_working += 1
-        try:
-            yielded = coro.throw(exc) if exc is not None else coro.send(None)
-        except StopIteration as si:
-            on_done(si.value)
-            return
-        except NotReadyError as nre:
-            if on_not_ready is not None:
-                on_not_ready()
-            elif observer is None:
-                on_error(nre)
-            return
-        except BaseException as e:  # noqa: BLE001 - mirrors asyncio.Task.__step
-            on_error(e)
-            return
-        finally:
-            _layer_working -= 1
-            _in_action = prev_action
-            _current_owner = prev_owner
-            _current_observer = prev_obs
-
-        blocking = getattr(yielded, "_asyncio_future_blocking", None)
-        if blocking is not None:
-            yielded._asyncio_future_blocking = False
-
-            def _wakeup(fut: Any) -> None:
-                try:
-                    fut.result()
-                except BaseException as e:  # noqa: BLE001
-                    step(e)
+            _layer_working += 1
+            try:
+                if not valid and not cancellation_delivered and failure is None:
+                    failure = asyncio.CancelledError()
+                if isinstance(failure, asyncio.CancelledError):
+                    cancellation_delivered = True
+                yielded = iterator.throw(failure) if failure is not None else iterator.send(sent)
+            except StopIteration as result:
+                delivered = True
+                on_done(result.value)
+                return result.value
+            except NotReadyError as exc:
+                delivered = True
+                if on_not_ready is not None:
+                    on_not_ready()
+                elif observer is not None:
+                    observer._mark_pending()
                 else:
-                    step()
+                    on_error(exc)
+                return None
+            except BaseException as exc:
+                delivered = True
+                on_error(exc)
+                if isinstance(exc, asyncio.CancelledError):
+                    raise
+                return None
+            finally:
+                _layer_working -= 1
+                _current_owner, _current_observer, _in_action = saved
+            try:
+                sent = yield yielded
+                failure = None
+            except BaseException as exc:
+                failure = exc
+                sent = None
 
-            yielded.add_done_callback(_wakeup)
-        elif yielded is None:
-            _call_soon(step)
-        else:
-            on_error(RuntimeError(f"Awaited an unsupported object in a reactive coroutine: {yielded!r}"))
+    async def run() -> Any:
+        return await scoped()
 
-    step()
+    loop = _event_loop()
+    # Python 3.12+ supports eager tasks. Running the initial segment within a
+    # real task makes asyncio.timeout() target this operation, not its caller.
+    task = asyncio.Task(run(), loop=loop, eager_start=loop.is_running())
+    _tasks.add(task)
+    if owner is not None and not task.done():
+        if owner._tasks is None:
+            owner._tasks = set()
+        owner._tasks.add(task)
+        if owner._disposed:
+            task.cancel()
+
+    def finished(done: asyncio.Task[Any]) -> None:
+        _tasks.discard(done)
+        if owner is not None and owner._tasks is not None:
+            owner._tasks.discard(done)
+        if not started:
+            iterator.close()
+        if done.cancelled() and not delivered:
+            on_error(asyncio.CancelledError())
+        elif not done.cancelled():
+            # Every failure is delivered explicitly above. Retrieve exceptions
+            # raised by a delivery callback so detached tasks never go silent.
+            error = done.exception()
+            if error is not None:
+                log_error("Reactive task callback failed", error)
+
+    task.add_done_callback(finished)
+    return task
+
+
+_tasks: set[asyncio.Task[Any]] = set()
 
 
 # ---------------------------------------------------------------------------

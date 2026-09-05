@@ -14,6 +14,7 @@ from wybthon.reactivity import (
     create_optimistic,
     create_root,
     create_signal,
+    create_tracked_effect,
     flush,
     is_pending,
     latest,
@@ -188,7 +189,7 @@ def test_async_effect_body_awaits_without_blocking(wyb):
             await asyncio.sleep(0)
             seen.append(v)
 
-        create_root(lambda d: create_effect(body))
+        create_root(lambda d: create_tracked_effect(body))
         await _tick()
         set_count(1)
         await _tick()

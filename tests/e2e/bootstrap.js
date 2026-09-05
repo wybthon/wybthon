@@ -61,6 +61,7 @@ async function bootstrap() {
     const { loadPyodide } = await import(`${PYODIDE_BASE_URL}pyodide.mjs`);
     const pyodide = await loadPyodide({ indexURL: PYODIDE_BASE_URL });
 
+    window.__wyb_test_python = pyodide;
     const cacheBust = Date.now();
 
     // Load the wybthon library package from src/ (../../ -> repo root).

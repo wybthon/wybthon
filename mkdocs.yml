@@ -70,6 +70,7 @@ nav:
     - Primitives: concepts/primitives.md
     - Reactivity: concepts/reactivity.md
     - Lifecycle and Ownership: concepts/lifecycle.md
+    - Runtime Contracts: concepts/runtime-contracts.md
     - Virtual DOM: concepts/vdom.md
     - Router: concepts/router.md
     - Context: concepts/context.md
@@ -90,7 +91,6 @@ nav:
     - Typing: guides/typing.md
     - Migrating from React: guides/migrating-from-react.md
     - Migrating from Solid: guides/migrating-from-solid.md
-    - Migrating from 0.2x and 0.30: guides/migrating-from-0-x.md
   - Examples:
     - Overview: examples.md
     - Counter: examples/counter.md
@@ -123,6 +123,7 @@ nav:
     - Loading: api/loading.md
     - Portal: api/portal.md
     - Dev server (CLI): api/dev.md
+    - Application Tools: api/app-tools.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

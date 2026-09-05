@@ -77,6 +77,7 @@ class VNode:
         "scope",
         "ns",
         "_frag_end",
+        "_hole_text",
     )
 
     def __init__(
@@ -101,6 +102,7 @@ class VNode:
         self.scope: Any = None
         self.ns: str | None = None
         self._frag_end: int | None = None
+        self._hole_text: str | None = None
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         tag = self.tag
@@ -172,7 +174,7 @@ def normalize_children(children: list[Any]) -> list[VNode]:
     for ch in children:
         t = type(ch)
         if t is VNode or isinstance(ch, VNode):
-            if ch.tag == "_fragment":
+            if ch.tag == "_fragment" and ch.owner_scope is None and ch.key is None:
                 out.extend(normalize_children(ch.children))
             else:
                 out.append(ch)

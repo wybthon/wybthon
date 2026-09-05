@@ -19,6 +19,7 @@ from ._core import (
     _K_RENDER,
     Accessor,
     Computation,
+    LiteralValue,
     Memo,
     NotReadyError,
     Owner,
@@ -34,6 +35,7 @@ __all__ = [
     "create_signal",
     "create_memo",
     "create_effect",
+    "create_tracked_effect",
     "create_render_effect",
     "on_settled",
     "on_cleanup",
@@ -54,7 +56,7 @@ class Setter[T](Protocol):
     functional update. Returns the value that was staged.
     """
 
-    def __call__(self, value: T | Callable[[T], T], /) -> T: ...
+    def __call__(self, value: T | Callable[[T], T] | LiteralValue[T], /) -> T: ...
 
 
 # ---------------------------------------------------------------------------
@@ -73,13 +75,15 @@ class _WritableMemo[T](Memo[T]):
         self._staged: bool = False
         self._origin: int = _core._O_NORMAL
 
-    def set(self, value: T | Callable[[T], T]) -> T:
+    def set(self, value: T | Callable[[T], T] | LiteralValue[T]) -> T:
         if _core._current_observer is not None and _core._warnings.DEV_MODE:
             raise _core.WriteInScopeError(
                 "Cannot write a derived signal inside a tracking scope. Write it from an event "
                 "handler, an action, or the apply stage of a split create_effect."
             )
-        if callable(value):
+        if isinstance(value, LiteralValue):
+            value = value.value
+        elif callable(value):
             current = self._pending if self._staged else self.peek()
             value = value(current)
         origin = _core._write_origin()
@@ -117,7 +121,7 @@ class _WritableMemo[T](Memo[T]):
 
 
 def create_signal[T](
-    value: T | Callable[[], T],
+    value: T | Callable[[], T] | LiteralValue[T],
     *,
     equals: Any = _DEFAULT_EQUALS,
     name: str | None = None,
@@ -133,7 +137,7 @@ def create_signal[T](
     The setter supports **functional updates**: pass `lambda n: n + 1`
     and it receives the latest staged value, so repeated updates in one
     handler compose. To store a callable as the value, wrap it:
-    `set_fn(lambda _: my_callable)`.
+    `set_fn(literal(my_callable))`.
 
     **Function form.** When `value` is a zero-argument callable, the
     result is a *writable derived signal*: the getter tracks whatever
@@ -171,6 +175,9 @@ def create_signal[T](
         doubled, _ = create_signal(lambda: count() * 2)   # derived form
         ```
     """
+    if isinstance(value, LiteralValue):
+        signal = Signal(value.value, equals=equals, name=name)
+        return signal, signal.set
     if callable(value) and _positional_count(value) == 0:
         derived: _WritableMemo[T] = _WritableMemo(value, equals=equals)
         return derived, derived.set
@@ -230,7 +237,8 @@ def create_memo(
 ) -> Memo[Any]:
     """Create a derived value that recomputes when its sources change.
 
-    Memos are **pull-based**: the body runs when the memo is read after
+    Memos evaluate once at creation unless ``lazy=True``. Updates are
+    **pull-based**: the body runs when the memo is read after
     a tracked source changed, and observers are notified only when the
     new value differs under `equals`. If `fn` accepts a positional
     parameter it receives the previous value (`None` on the first run).
@@ -256,7 +264,7 @@ def create_memo(
         fn: Zero- or one-arg callable producing the value (sync, async,
             or an async generator).
         equals: Equality policy; see [`create_signal`][wybthon.create_signal].
-        lazy: When `True`, the memo disposes itself once it loses its
+        lazy: When `True`, the memo suspends once it loses its
             last subscriber (and recomputes fresh if read again later).
             Non-lazy memos live for their owner's lifetime.
         unobserved: Optional callback fired when the memo loses its last
@@ -284,7 +292,10 @@ def create_memo(
         suggestions = create_memo(load_suggestions, loading_value=[])
         ```
     """
-    return Memo(fn, equals=equals, lazy=lazy, unobserved=unobserved, name=name, loading_value=loading_value)
+    memo = Memo(fn, equals=equals, lazy=lazy, unobserved=unobserved, name=name, loading_value=loading_value)
+    if not lazy:
+        memo._update_if_necessary()
+    return memo
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +305,7 @@ def create_memo(
 
 def create_effect(
     compute: Callable[..., Any],
-    apply: Callable[..., Any] | None = None,
+    apply: Callable[..., Any],
     *,
     defer: bool = False,
     error: Callable[[BaseException], Any] | None = None,
@@ -306,17 +317,16 @@ def create_effect(
     after the component that created it has mounted), not at creation.
     Inside a component they're disposed on unmount.
 
-    **Split form** (recommended): `compute` runs tracked and returns a
+    **Split effect**: `compute` runs tracked and returns a
     value; `apply` runs *untracked* with `(value, prev)` and performs
     the side effect. Incidental reads inside `apply` never
     over-subscribe the effect, and signal writes belong there. `apply`
     may return a cleanup callable that runs before the next `apply` and
     on disposal.
 
-    **Single form**: `compute` alone is both the tracking stage and the
-    side effect. Signal writes inside it raise
-    [`WriteInScopeError`][wybthon.WriteInScopeError] in dev mode. Use
-    [`on_cleanup`][wybthon.on_cleanup] for per-run cleanup.
+    Use [`create_tracked_effect`][wybthon.create_tracked_effect] when one
+    callback should combine tracking and side effects. Split effects keep
+    committed resources alive while replacement data is held.
 
     If `compute` accepts a positional parameter it receives its previous
     return value (`None` on the first run). `compute` may be
@@ -325,7 +335,7 @@ def create_effect(
 
     Args:
         compute: The tracked stage.
-        apply: Optional untracked side-effect stage receiving
+        apply: Untracked side-effect stage receiving
             `(value, prev)` (or just `(value,)` if it declares one
             parameter). May return a cleanup callable.
         defer: When `True`, skip the first `apply` (tracking still
@@ -356,6 +366,23 @@ def create_effect(
     # an effect created in a component body observes the mounted DOM.
     _core._effect_queue.append(comp)
     _core._schedule_flush()
+    return comp
+
+
+def create_tracked_effect(
+    fn: Callable[..., Any], *, error: Callable[[BaseException], Any] | None = None
+) -> Computation:
+    """Run a tracked callback after DOM commit, disposing its scope before each run.
+
+    Prefer split effects for external resources: a tracked callback can run
+    while async work is pending. Reads subscribe; put writes in a split effect's apply stage.
+    """
+    comp = Computation(fn, kind=_K_EFFECT, error=error)
+    owner = _core._current_owner
+    if owner is not None:
+        owner._add_child(comp)
+    _core._effect_queue.append(comp)
+    _schedule_flush()
     return comp
 
 
@@ -449,19 +476,22 @@ def on_cleanup(fn: Callable[[], Any]) -> None:
     owner._add_cleanup(fn)
 
 
-def create_root[T](fn: Callable[[Callable[[], None]], T]) -> T:
-    """Run `fn` inside a new, independent ownership root.
+def create_root[T](fn: Callable[[Callable[[], None]], T], *, detached: bool = False) -> T:
+    """Run `fn` inside a root owned by the current scope unless explicitly detached.
 
-    Use it for long-lived reactive work that shouldn't die with the
-    surrounding component (global stores, background subscriptions).
+    Use it for explicitly disposable reactive work. Pass ``detached=True``
+    for global stores or subscriptions that outlive the surrounding component.
 
     Args:
         fn: Receives a `dispose` callable that tears the root down.
+        detached: Create an independent lifetime instead of joining the current owner.
 
     Returns:
         Whatever `fn` returns.
     """
     root = Owner()
+    if not detached and _core._current_owner is not None:
+        _core._current_owner._add_child(root)
 
     def dispose() -> None:
         root.dispose()
@@ -567,7 +597,8 @@ class _Settle[T]:
             # A quiet refresh serves the previous value while its run is in
             # flight; wait for the run to settle before resolving. The
             # read above subscribed us, and landings always notify.
-            if isinstance(fn, Computation) and fn._async is not None and fn._async.inflight:
+            target = fn if isinstance(fn, Computation) else getattr(fn, "__self__", None)
+            if isinstance(target, Computation) and target._async is not None and target._async.inflight:
                 return
             future.set_result(value)
             _core._call_soon(comp.dispose)
@@ -576,7 +607,14 @@ class _Settle[T]:
         comp._update_if_necessary()
         if not future.done():
             _schedule_flush()
-        return future.__await__()
+
+        async def wait() -> T:
+            try:
+                return await future
+            finally:
+                comp.dispose()
+
+        return wait().__await__()
 
 
 def resolve[T](fn: Callable[[], T]) -> Awaitable[T]:
@@ -617,8 +655,17 @@ def refresh(target: Any) -> Awaitable[Any]:
     """
     hook = getattr(target, "_wyb_refresh", None)
     if hook is not None:
-        hook()
-        return _Settle(lambda: target)
+        comp = hook()
+
+        class Refreshed:
+            def __await__(self) -> Any:
+                async def wait() -> Any:
+                    await _Settle(comp._read)
+                    return target
+
+                return wait().__await__()
+
+        return Refreshed()
     if isinstance(target, Memo):
         target._refresh()
         return _Settle(target)

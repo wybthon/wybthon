@@ -174,3 +174,15 @@ just as in the browser.
 - Read [Forms](forms.md) for higher-level controlled-input patterns.
 - See [DOM interop](dom.md) for the underlying `Element` and `Ref` APIs.
 - Browse the [`events`](../api/events.md) API reference for delegation internals.
+
+## Async handlers and native options
+
+An ordinary `async def` handler is scheduled automatically. It runs in an owned asyncio task and is canceled on handler replacement or unmount. Payload fields and `current_target` remain usable after an await; `event.raw` is valid only during synchronous dispatch. Call `prevent_default` before the first await when you need to prevent native behavior.
+
+```python
+from wybthon import button, event
+
+button("Once", on_click=event(save, once=True))
+```
+
+`event(callback, capture=True, passive=False, once=False)` configures native listener options. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses `composedPath`, sends one route across the bridge, and flushes after its handlers. Custom event `detail`, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.

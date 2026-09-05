@@ -37,8 +37,8 @@ flowchart TD
 | [`on_settled`][wybthon.on_settled] | Once, after the flush that mounted the component has committed. May return a cleanup. | Imperative DOM access, focus, third-party widgets. |
 | [`on_cleanup`][wybthon.on_cleanup] | When the owning scope (component, effect run, hole, or row) is disposed. | Cancel timers, detach listeners, close subscriptions. |
 | [`create_effect`][wybthon.create_effect] | First on the flush after mount, then on each tracked change, always after the DOM commit. | Side effects driven by reactive state. |
-| [`create_memo`][wybthon.create_memo] | Lazily on first read; recomputes when a source changed and it's read again. | Derived values. |
-| [`create_memo`][wybthon.create_memo] with `async def` | Starts the coroutine when first read; revalidates when tracked sources change. | Data fetching with [`Loading`][wybthon.Loading]. |
+| [`create_memo`][wybthon.create_memo] | At creation unless `lazy=True`; later reads bring changed inputs current. | Derived values. |
+| [`create_memo`][wybthon.create_memo] with `async def` | Starts at creation unless `lazy=True`; revalidates when tracked sources change. | Data fetching with [`Loading`][wybthon.Loading]. |
 
 ```python
 from wybthon import component, create_effect, create_signal, on_cleanup, on_settled
@@ -73,7 +73,7 @@ effect, not to the component. Each re-run fires the previous cleanup
 first:
 
 ```python
-from wybthon import create_effect, on_cleanup
+from wybthon import create_effect, create_tracked_effect, on_cleanup
 
 
 def track_resize():
@@ -82,7 +82,7 @@ def track_resize():
     on_cleanup(lambda: window.removeEventListener("resize", handler))
 
 
-create_effect(track_resize)
+create_tracked_effect(track_resize)
 ```
 
 The split form expresses the same thing without `on_cleanup`: return the
@@ -185,3 +185,9 @@ Async memos and async effects do this for you: every resume after an
 - Read [Reactivity](reactivity.md) for flush phases and scheduling.
 - See [Async and loading](async-loading.md) for async data lifecycles.
 - Browse [Authoring patterns](../guides/authoring-patterns.md) for real-world recipes.
+
+## Held applications and async cleanup
+
+A split effect's apply scope survives while its replacement is held by an async transition. Returned cleanup and `on_cleanup` registered during apply run before the next visible apply. Compute-stage cleanup still follows recomputation.
+
+Nested `create_root` calls belong to the current owner by default. `detached=True` opts into an explicitly managed lifetime. Async computations and handlers are canceled when their owning scope is disposed; their asynchronous `finally` blocks can finish cleanup. See [Runtime contracts](runtime-contracts.md).

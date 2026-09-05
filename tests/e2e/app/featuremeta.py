@@ -7,6 +7,7 @@ marker test id (``page-<slug>``) that the Playwright harness waits on.
 """
 
 FEATURES = [
+    ("contracts", "Contracts"),
     ("reactivity", "Reactivity"),
     ("holes", "Holes"),
     ("props", "Props"),

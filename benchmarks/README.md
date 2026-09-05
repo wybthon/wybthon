@@ -1,154 +1,47 @@
-# Wybthon Benchmarks
+# Wybthon benchmarks
 
-Performance benchmarks modelled on the
-[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark)
-suite by Stefan Krause.  The same nine operations and data-generation
-approach are used so results are directly comparable.
-
-The app under test is built the idiomatic fine-grained way: the table
-mounts once, and every operation afterwards is a signal write.  Rows
-are cached per item via `For`, row labels are per-row signals, and
-selection flows through `create_selector`, so each operation touches
-only the DOM it must.  The stubbed DOM implements `<template>` +
-`innerHTML` parsing so the template-based mount fast path is exercised
-the same way it is in a real browser.
-
-## Benchmarked operations
-
-| # | Name | Description | Warmup |
-|---|------|-------------|--------|
-| 1 | create rows | Create 1,000 rows from scratch | 5 |
-| 2 | replace all rows | Replace all 1,000 rows with new data | 5 |
-| 3 | partial update | Update every 10th row's label | 3 |
-| 4 | select row | Highlight one row via CSS class | 5 |
-| 5 | swap rows | Swap rows at index 1 and 998 | 5 |
-| 6 | remove row | Remove one row from the middle | 5 |
-| 7 | create many rows | Create 10,000 rows from scratch | 5 |
-| 8 | append rows | Append 1,000 rows to a 10,000-row table | 5 |
-| 9 | clear rows | Clear all rows | 5 |
-
-### Reactive-hole microbenchmarks
-
-These two benchmarks are run after the standard nine to highlight the
-benefit of the fully-reactive component model.  Both mount a `<div>` of
-1,000 `<span>` children and then update one text node per iteration:
-
-| # | Name | Description | Warmup |
-|---|------|-------------|--------|
-| 10 | hole update (1k tree) | Single signal write plus `flush()` updates one reactive hole; the reconciler is **not** re-invoked | 5 |
-| 11 | full rerender (1k tree) | The whole tree is re-built and the reconciler diffs its way to the same single text update | 5 |
-
-The "hole update" path is typically several orders of magnitude faster
-than the "full rerender" path on the stubbed DOM, which is the whole
-point of fine-grained reactivity.
-
-Memory measurements (optional):
-- **ready**: baseline after page/module load
-- **run 1k**: after creating 1,000 rows
-- **create/clear 5×**: after 5 cycles of create-then-clear 1,000 rows
-
----
-
-## Quick start: stubbed-DOM benchmark
-
-Runs all nine operations against a lightweight DOM stub.
-No browser or Pyodide required.
+The browser benchmark measures real Pyodide applications through delegated events. Run signal and transactional store modes separately:
 
 ```bash
-# From the repository root
-pip install -e .
-python benchmarks/bench_runner.py
+uv sync --locked --group dev
+uv run playwright install chromium
+uv run python benchmarks/browser_bench.py --mode signal --json > signal.json
+uv run python benchmarks/browser_bench.py --mode store --json > store.json
+uv run python benchmarks/check_work.py store.json
 ```
 
-Options:
+To use the interactive app, run `wyb dev --dir .` and open `/benchmarks/app/index.html?mode=store`. Its source manifest requires the Wybthon server.
 
-```
---json             Output as JSON
---memory           Include memory measurements (tracemalloc)
---warmup N         Override warmup iterations (default: per-benchmark)
---iterations N     Measured iterations (default: 10)
---bench NAME       Run only benchmarks whose name contains NAME
---cpu              Time with process CPU time instead of the wall clock
---save FILE        Write the results as JSON to FILE
---compare FILE     Diff against a saved run; exit 1 on regressions
---threshold R      Slowdown of the best iteration that counts as a
-                   regression when comparing (default: 0.15)
-```
+Each browser scenario restores its baseline, performs one warmup, then records three samples. It reports median synchronous commit time separately from input-to-frame time. Frame time is a requestAnimationFrame opportunity, not a precise paint completion measurement. DOM snapshots verify that each sample changes the UI.
 
-### Measuring a change
+| Scenario | Initial state | Result |
+| --- | --- | --- |
+| Create 1,000 | Empty | 1,000 rows |
+| Replace 1,000 | 1,000 rows | 1,000 new rows |
+| Create 10,000 | Empty | 10,000 rows |
+| Update every tenth | 10,000 rows | 1,000 labels changed |
+| Select | 10,000 rows | A different selected row |
+| Swap | 10,000 rows | Rows 1 and 998 exchange positions |
+| Remove | 10,000 rows | First row removed |
+| Append | 10,000 rows | 11,000 rows |
+| Clear | 10,000 rows | Empty |
 
-Stubbed timings depend on the machine, so there's no checked-in
-baseline. Record one on the branch point, then compare after your
-change:
+The JSON includes runtime/browser metadata, individual samples, operation counters, and registry counts. Signal mode uses per-row label signals; store mode uses entity-preserving draft edits. Arbitrary replacement signal arrays still need list matching. Store edit records let the mounted list skip that scan for local updates.
+
+`check_work.py` gates operation counts for store selection, swap, and append. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
+
+## Native benchmark
 
 ```bash
-git stash                       # or check out main in a worktree
-python benchmarks/bench_runner.py --cpu --save /tmp/base.json
-git stash pop
-python benchmarks/bench_runner.py --cpu --compare /tmp/base.json
+uv run python benchmarks/bench_runner.py --memory --json
 ```
 
-`--cpu` measures process CPU time, which is far less sensitive to
-other programs competing for the machine than the wall clock. The
-comparison uses each benchmark's best iteration (the one least
-disturbed by garbage collection) and fails when any benchmark is more
-than `--threshold` slower.
+This uses the Python DOM backend. It includes the nine collection operations plus reactive-hole and whole-tree-diff microbenchmarks. It isolates native Python behavior from WebAssembly and browser rendering; its times aren't browser predictions.
 
----
+Use `--warmup`, `--iterations`, and `--bench` to focus a run. `--cpu --save report.json` records a comparison baseline, and `--cpu --compare report.json --threshold 0.15` compares best iterations. Create an isolated checkout for the baseline so measurement doesn't disturb ongoing changes.
 
-## Browser benchmark app
+## Startup
 
-A full interactive implementation that runs in a real browser via Pyodide.
-This is the version that could be submitted to
-`krausest/js-framework-benchmark`.
+Generated production bundles expose `window.__WYB.timings`, including runtime loading, source archives, unpacking, application initialization, readiness, and a subsequent frame opportunity. Concurrent phases overlap. Startup is a separate measurement from these warmed collection scenarios. The production browser tests verify deep-link boot, lazy fetch timing, and development rebuild/reload.
 
-### Running locally
-
-```bash
-# Serve the project root
-python -m http.server 8000
-
-# Open in browser
-open http://localhost:8000/benchmarks/app/index.html
-```
-
-The page loads Pyodide from CDN, copies the Wybthon source into Pyodide's
-virtual filesystem, and runs `main.py`.
-
-### Running headlessly
-
-`browser_bench.py` serves the repo, loads the app in headless Chromium
-via Playwright, clicks "Run Full Benchmark," and prints the medians:
-
-```bash
-pip install playwright
-python -m playwright install chromium
-python benchmarks/browser_bench.py          # table output
-python benchmarks/browser_bench.py --json   # JSON output
-```
-
-### Submitting to js-framework-benchmark
-
-To add Wybthon to the official benchmark:
-
-1. Fork [krausest/js-framework-benchmark](https://github.com/krausest/js-framework-benchmark)
-2. Create `frameworks/keyed/wybthon/`
-3. Copy `benchmarks/app/index.html` and `benchmarks/app/main.py`
-4. Add a `package.json` with a serve script
-5. Bundle or reference the Wybthon source (Pyodide loads it at runtime)
-6. Follow the repo's contribution guide to open a PR
-
----
-
-## CI integration
-
-The `.github/workflows/bench.yml` workflow runs two jobs on every push
-and PR to `main`:
-
-- **Framework Benchmark** runs the stubbed-DOM benchmark
-  (`bench_runner.py`) and uploads `bench_results.json`.
-- **Browser Benchmark (Pyodide)** runs the real browser app headlessly
-  (`browser_bench.py`) and uploads `browser_bench_results.json`.
-
-Both print results tables in the Actions log, which makes it easy to
-spot performance regressions.
+The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.

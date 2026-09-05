@@ -122,7 +122,7 @@ def _Errored(props: Props) -> Any:
         error._set(None, _core._O_REVEAL)
 
     def handle(err: BaseException, comp: Any) -> None:
-        heal_sources[:] = _leaf_inputs(comp)
+        heal_sources[:] = _leaf_inputs(comp, owner)
         error._set(err, _core._O_REVEAL)
         if callable(on_error):
             try:
@@ -153,7 +153,7 @@ def _Errored(props: Props) -> Any:
     return render
 
 
-def _leaf_inputs(comp: Any) -> list[Any]:
+def _leaf_inputs(comp: Any, boundary: Any) -> list[Any]:
     """Return the signals the failed computation depended on, through any memos.
 
     The memos themselves may live inside the subtree the fallback
@@ -171,6 +171,13 @@ def _leaf_inputs(comp: Any) -> list[Any]:
         seen.add(id(node))
         srcs = getattr(node, "_sources", None)
         if isinstance(node, Computation):
+            ancestor: _core.Owner | None = node
+            while ancestor is not None and ancestor is not boundary:
+                ancestor = ancestor._parent
+            if ancestor is None:
+                # External computations survive the fallback. Observe their
+                # recovery too, including a lazy import with no signal inputs.
+                leaves.append(node)
             if srcs:
                 stack.extend(srcs)
         else:

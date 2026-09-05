@@ -75,7 +75,7 @@ count.peek()     # 5: untracked read of the committed value
 ```
 
 - **Writes are staged.** The setter records the value; reads keep returning the committed value until the next flush. See [Staged writes](reactivity.md#staged-writes-and-flush-timing).
-- **Functional updates** receive the latest staged value, so two `set(lambda n: n + 1)` calls in one handler add two. To store a callable as the value, wrap it: `set_fn(lambda _: my_callable)`.
+- **Functional updates** receive the latest staged value, so two `set(lambda n: n + 1)` calls in one handler add two. To store a callable as the value, use `set_fn(literal(my_callable))`.
 - **`equals`** decides when observers are notified. The default is an identity fast path followed by `==`; `equals=False` always notifies; a callable `(old, new) -> bool` skips notification when it returns `True` (use `lambda a, b: a is b` for identity-only semantics).
 - **Function form.** `create_signal(lambda: a() + b())` returns a *writable derived signal*: it tracks what the function reads, and the setter overrides the value until the next source change.
 
@@ -95,11 +95,11 @@ doubled()        # tracked read
 doubled.peek()   # untracked read
 ```
 
-- **Lazy and pull-based.** The body runs when the memo is read after a source changed. A memo that's never read never runs.
+- **Eager setup, pull-based updates.** The body evaluates at creation unless `lazy=True`. After an input changes, reads bring the memo current.
 - **Glitch-free.** Reading a memo brings its sources current first, so a diamond of memos never observes a half-updated state.
 - **Equality short-circuits.** Observers are notified only when the value changed under `equals`.
 - **Previous value.** If the body accepts a positional parameter it receives the previous value (`None` on the first run).
-- **`lazy=True`** disposes the memo once it loses its last subscriber; **`unobserved=`** runs a callback at that moment (for resource cleanup).
+- **`lazy=True`** suspends the memo once it loses its last subscriber; a later read recomputes it; **`unobserved=`** runs a callback at that moment (for resource cleanup).
 - **Async bodies.** An `async def` body (or an async generator) makes the memo an async computation. See [Async and loading](async-loading.md).
 
 ## `create_effect`
@@ -109,7 +109,7 @@ re-runs when its tracked sources change. Effects run **after the DOM
 commit** in each flush, and the first run happens on the next flush,
 right after the component that created it has mounted.
 
-The **split form** is recommended: `compute` runs tracked and returns a
+Both stages are required: `compute` runs tracked and returns a
 value; `apply` runs untracked with `(value, prev)` (or `(value,)`) and
 performs the side effect. Writes belong in `apply`.
 
@@ -132,7 +132,7 @@ def start(interval_ms):
 create_effect(interval, start)
 ```
 
-The **single form** `create_effect(fn)` makes `fn` both the tracking
+The explicit **tracked effect** `create_tracked_effect(fn)` makes `fn` both the tracking
 stage and the side effect. Use [`on_cleanup`][wybthon.on_cleanup] for
 per-run teardown. Writing a signal inside it raises
 [`WriteInScopeError`][wybthon.WriteInScopeError] in dev mode.
@@ -197,7 +197,7 @@ def Chart(data: Prop[list[float]]):
 scope:
 
 - In a component body: runs when the component unmounts.
-- In an effect: runs before each re-run and on disposal.
+- In a tracked effect or compute stage: runs before recomputation and on disposal. In a split effect's apply stage: runs before the next visible apply and on disposal.
 - In a hole or `For` row: runs when that region is re-evaluated or removed.
 
 It raises `RuntimeError` outside any scope.
@@ -205,7 +205,7 @@ It raises `RuntimeError` outside any scope.
 ## `create_root`, `get_owner`, and `run_with_owner`
 
 [`create_root`][wybthon.create_root] runs a function inside a new,
-independent ownership root and hands it a `dispose` callable. Use it for
+ownership root and hands it a `dispose` callable. The root belongs to its current owner; `detached=True` creates an independent lifetime. Use it for
 long-lived reactive work that shouldn't die with a component, such as
 global stores.
 
@@ -260,10 +260,10 @@ rest_without_class = omit(props, "class_", "style")
 
 ## `map_array`
 
-[`map_array`][wybthon.map_array] is the engine behind
-[`For`][wybthon.For]: it maps a reactive list to rows with a stable
+[`map_array`][wybthon.map_array] maps a reactive list to values with a stable
 owner scope per row. `keyed` selects how rows are matched, and with it
-the callback shape:
+the callback shape. `For` uses mounted list regions with the same matching modes
+and can consume store edit records directly:
 
 | `keyed` | Rows matched by | `fn(item, index)` receives |
 | --- | --- | --- |

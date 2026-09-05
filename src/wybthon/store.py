@@ -1,959 +1,915 @@
-"""Reactive stores for nested state, matching SolidJS 2.0's draft-first model.
+"""Transactional, entity-based reactive mappings and sequences.
 
-Stores provide fine-grained reactive access to nested objects and
-lists. Each path through the store is backed by its own
-[`Signal`][wybthon.Signal], so reading `store.user.name` only
-subscribes the current computation to that specific leaf, not to the
-entire store.
-
-Writes are **draft-first**: the setter hands you a mutable draft of the
-state and you mutate it directly with normal Python. There is no path
-syntax and no `produce` wrapper; mutating the draft is just how stores
-work. Like signal writes, store writes are staged and become visible
-on the next flush.
-
-Public surface:
-
-- [`create_store`][wybthon.create_store]: build a store from an initial
-  value, or a **derived store** from a function; returns
-  `(store, set_store)`.
-- [`create_projection`][wybthon.create_projection]: a read-only store
-  derived from reactive sources, updated fine-grained.
-- [`create_optimistic_store`][wybthon.create_optimistic_store]: a store
-  whose writes revert when in-flight [`action`][wybthon.action]s settle.
-- [`reconcile`][wybthon.reconcile]: diff external data into a store,
-  preserving object identity for unchanged items.
-- [`store_path`][wybthon.store_path]: opt-in path-style setter helper.
-- [`snapshot`][wybthon.snapshot]: the plain, non-reactive data behind a
-  store proxy.
-- [`deep`][wybthon.deep]: a plain snapshot that subscribes to every
-  nested change.
-
-Example:
-    ```python
-    from wybthon import create_store, reconcile
-
-    store, set_store = create_store({
-        "count": 0,
-        "user": {"name": "Ada", "age": 30},
-        "todos": [
-            {"id": 1, "text": "Learn Wybthon", "done": False},
-        ],
-    })
-
-    store.count           # 0
-    store.user.name       # "Ada"
-    store.todos[0].text   # "Learn Wybthon"
-
-    def bump(s):
-        s.count += 1
-        s.user.name = "Jane"
-        s.todos[0].done = True
-        s.todos.append({"id": 2, "text": "New", "done": False})
-
-    set_store(bump)
-
-    set_store(reconcile(fetched_state))
-    ```
-
-See Also:
-    - [Reactivity guide](../concepts/reactivity.md)
+A setter opens a scoped mutable draft. Successful synchronous edits are
+staged together and become visible at the next flush. Read proxies retain
+entity identity through moves; dictionary methods have normal Python
+semantics. Use subscription for keys such as ``items`` or ``get``.
 """
 
 from __future__ import annotations
 
 import copy
-from collections.abc import Callable
-from typing import Any
+import inspect
+from bisect import bisect_left, insort
+from collections import deque
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, MutableSequence, Sequence
+from dataclasses import dataclass
+from typing import Any, overload
+from weakref import WeakKeyDictionary
 
 from . import _warnings
+from ._vector import Vector
 from .reactivity import _core
 from .reactivity._actions import _register_optimistic_revert
 from .reactivity._core import Signal, WriteInScopeError, untrack
 
 __all__ = [
+    "Store",
+    "StoreList",
+    "Draft",
+    "DraftList",
+    "StoreSetter",
+    "DraftExpiredError",
     "create_store",
     "create_projection",
     "create_optimistic_store",
     "reconcile",
-    "store_path",
     "snapshot",
     "deep",
 ]
 
-
-def _getattribute(obj: Any, name: str) -> Any:
-    return object.__getattribute__(obj, name)
+_ABSENT = object()
 
 
-def _raw_get(raw: Any, key: Any) -> Any:
-    if isinstance(raw, dict):
-        return raw.get(key)
-    if isinstance(raw, (list, tuple)):
-        try:
-            return raw[key]
-        except (IndexError, TypeError):
-            return None
-    return getattr(raw, key, None)
+class DraftExpiredError(RuntimeError):
+    """A draft was used after its setter or deriving function finished."""
 
 
-class _StoreRoot:
-    """Per-store bookkeeping shared by every node: the deep-version signal."""
+@dataclass(frozen=True, slots=True)
+class ListChange:
+    """Internal sequence edit. Indices refer to the state before this edit."""
 
-    __slots__ = ("version", "optimistic")
+    kind: str
+    index: int = 0
+    removed: tuple[Any, ...] = ()
+    added: tuple[Any, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class _State:
+    data: Any
+    revision: int = 0
+
+
+class _Root:
+    __slots__ = ("optimistic", "derivation", "authoritative", "authoritative_version")
 
     def __init__(self) -> None:
-        self.version: Signal[int] = Signal(0)
-        # True while an optimistic overlay is applied (see
-        # ``create_optimistic_store``), so ``is_pending`` reports reads.
-        self.optimistic: bool = False
+        self.optimistic = False
+        self.authoritative: dict[_Node, Any] | None = None
+        self.authoritative_version: Signal[int] = Signal(0)
+        self.derivation: _core.Computation | None = None
 
-    def bump(self) -> None:
-        self.version._set(self.version._latest() + 1)
-
-
-def _probe_store(root: _StoreRoot) -> None:
-    """In an ``is_pending`` probe, report optimistic overlays and ``affects`` marks."""
-    tx = _core._tx
-    if root.optimistic or (tx is not None and root in tx.affected):
-        _core._probe_mark()
-        _core._probe_register()
-
-
-class _StoreNode:
-    """Internal node holding one [`Signal`][wybthon.Signal] per property.
-
-    Child nodes are cached by key so that proxy reads and draft writes
-    for the same path always resolve to the same `Signal` instances.
-    """
-
-    __slots__ = ("_signals", "_raw", "_children", "_proxy", "_draft_proxy", "_root")
-
-    def __init__(self, raw: Any, root: _StoreRoot | None = None) -> None:
-        self._signals: dict[Any, Signal[Any]] = {}
-        self._raw: Any = raw
-        self._children: dict[Any, _StoreNode] = {}
-        self._proxy: Any = None
-        self._draft_proxy: Any = None
-        self._root: _StoreRoot = root if root is not None else _StoreRoot()
-
-    def _get_signal(self, key: Any) -> Signal[Any]:
-        sig = self._signals.get(key)
-        if sig is None:
-            sig = Signal(_raw_get(self._raw, key))
-            self._signals[key] = sig
-        return sig
-
-    def _get_child(self, key: Any) -> _StoreNode:
-        """Return (or create) a cached child node for `key`."""
-        child = self._children.get(key)
-        if child is None:
-            child = _StoreNode(_raw_get(self._raw, key), self._root)
-            self._children[key] = child
-        return child
-
-    def _set_value(self, key: Any, value: Any) -> None:
-        raw = self._raw
-        if isinstance(raw, (dict, list)):
-            raw[key] = value
-        else:
-            setattr(raw, key, value)
-
-        sig = self._signals.get(key)
-        if sig is not None:
-            sig._set(value)
-        else:
-            self._signals[key] = Signal(value)
-
-        child = self._children.get(key)
-        if child is not None:
-            if isinstance(value, (dict, list)):
-                child._replace_raw(value)
+    def ready(self) -> None:
+        if _core._authoritative_depth:
+            self.authoritative_version()
+        comp = self.derivation
+        if comp is not None:
+            comp._update_if_necessary()
+            # Ready reads depend on their properties. Pending/error reads also
+            # subscribe to the producer so that an eventual landing retries them.
+            if comp._error is not None or (comp._async is not None and comp._async.inflight):
+                comp._read()
             else:
-                self._children.pop(key, None)
-        self._root.bump()
+                untrack(comp._read)
+        if _core._probe_depth:
+            tx = _core._tx
+            if self.optimistic or (tx is not None and self in tx.affected):
+                _core._probe_mark()
+                _core._probe_register()
 
-    def _replace_raw(self, new_raw: Any) -> None:
-        """Replace the underlying raw data and update all affected signals."""
-        signals = self._signals
-        children = self._children
-        self._raw = new_raw
 
-        if isinstance(new_raw, dict):
-            keys = set(new_raw.keys()) | set(signals.keys())
-        elif isinstance(new_raw, (list, tuple)):
-            keys = set(range(len(new_raw))) | {k for k in signals if isinstance(k, int)}
+def _lookup(data: Any, key: Any) -> Any:
+    try:
+        return data[key]
+    except (KeyError, IndexError):
+        return _ABSENT
+
+
+def _same(a: Any, b: Any) -> bool:
+    return not _core._changed(_core._DEFAULT_EQUALS, a, b)
+
+
+class _Node:
+    __slots__ = (
+        "state",
+        "properties",
+        "indices",
+        "membership",
+        "length",
+        "keys",
+        "version",
+        "parents",
+        "root",
+        "proxy",
+        "history",
+        "__weakref__",
+    )
+
+    def __init__(self, data: Any, root: _Root | None = None, seen: dict[int, Any] | None = None) -> None:
+        if not isinstance(data, (Mapping, list, tuple, Vector)):
+            raise TypeError("A store root must be a mapping or sequence; use create_signal for scalar state")
+        self.root = root or _Root()
+        self.properties: dict[Any, Signal[Any]] = {}
+        self.indices: list[int] = []
+        self.membership: dict[Any, Signal[bool]] = {}
+        self.parents: WeakKeyDictionary[_Node, int] = WeakKeyDictionary()
+        self.proxy: Any = None
+        self.history: deque[tuple[int, tuple[ListChange, ...]]] = deque(maxlen=64)
+        seen = {} if seen is None else seen
+        if id(data) in seen:
+            raise ValueError("Cyclic store data isn't supported")
+        seen[id(data)] = None
+        try:
+            encoded: Any
+            if isinstance(data, Mapping):
+                encoded = {k: _encode(v, self.root, seen) for k, v in data.items()}
+            else:
+                encoded = Vector(_encode(v, self.root, seen) for v in data)
+        finally:
+            seen.pop(id(data), None)
+        self.state: Signal[_State] = Signal(_State(encoded), equals=False)
+        self.length: Signal[int] = Signal(len(encoded))
+        self.keys: Signal[int] = Signal(0)
+        self.version: Signal[int] = Signal(0)
+        for value in encoded.values() if isinstance(encoded, dict) else encoded:
+            self._link(value, 1)
+
+    def _link(self, value: Any, amount: int) -> None:
+        if isinstance(value, _Node):
+            count = value.parents.get(self, 0) + amount
+            if count:
+                value.parents[self] = count
+            else:
+                value.parents.pop(self, None)
+
+    def visible(self) -> Any:
+        if _core._authoritative_depth and self.root.authoritative is not None:
+            return self.root.authoritative.get(self, self.state.peek().data)
+        return self.state.peek().data
+
+    def read(self, key: Any) -> Any:
+        self.root.ready()
+        if _core._current_observer is not None or _core._probe_depth:
+            sig = self.properties.get(key)
+            if sig is None:
+                sig = self.properties[key] = Signal(_lookup(self.state._value.data, key))
+                if isinstance(self.state._value.data, Vector):
+                    insort(self.indices, key)
+                if self.state._staged:
+                    sig._set(_lookup(self.state._latest().data, key))
+                held = _core._held.get(self.state)
+                if held is not None:
+                    shown = _lookup(held.data, key)
+                    if not _same(shown, sig._value):
+                        _core._hold(sig, shown)
+            sig()
+        # The container's revealed revision also covers properties that weren't
+        # observed before a transition began. Read history can't change visibility.
+        value = _lookup(self.visible(), key)
+        if value is _ABSENT:
+            if isinstance(self.state._value.data, dict):
+                raise KeyError(key)
+            raise IndexError("list index out of range")
+        return _wrap(value)
+
+    def publish(self, data: Any, changes: list[ListChange], touched: set[Any]) -> None:
+        old = self.state._latest()
+        old_data = old.data
+        if isinstance(data, dict):
+            changed = {k for k in touched if not _same(_lookup(old_data, k), _lookup(data, k))}
+            if not changed:
+                return
+            structural = any((k in old_data) != (k in data) for k in changed)
+            for k in changed:
+                self._link(_lookup(old_data, k), -1)
+                self._link(_lookup(data, k), 1)
         else:
-            keys = set(signals.keys())
-
-        for key in keys:
-            new_val = _raw_get(new_raw, key)
-            sig = signals.get(key)
-            if sig is not None:
-                sig._set(new_val)
-            child = children.get(key)
-            if child is not None:
-                if isinstance(new_val, (dict, list)):
-                    child._replace_raw(new_val)
+            if not changes:
+                return
+            structural = len(old_data) != len(data)
+            changed = set()
+            reset = False
+            for change in changes:
+                if change.kind == "reset":
+                    reset = True
+                    break
+                for value in change.removed:
+                    self._link(value, -1)
+                for value in change.added:
+                    self._link(value, 1)
+                if change.kind == "set":
+                    changed.add(change.index)
                 else:
-                    children.pop(key, None)
+                    end = change.index + max(len(change.removed), len(change.added))
+                    shifted = len(change.removed) != len(change.added)
+                    start_slot = bisect_left(self.indices, change.index)
+                    end_slot = len(self.indices) if shifted else bisect_left(self.indices, end)
+                    changed.update(self.indices[start_slot:end_slot])
+            if reset:
+                # General replacement is deliberately the O(n) fallback.
+                for value in old_data:
+                    self._link(value, -1)
+                for value in data:
+                    self._link(value, 1)
+                changed.update(self.properties)
+        revision = old.revision + 1
+        self.state._set(_State(data, revision))
+        if changes:
+            self.history.append((revision, tuple(changes)))
+        if structural:
+            self.keys._set(self.keys._latest() + 1)
+        self.length._set(len(data))
+        for key in changed:
+            sig = self.properties.get(key)
+            if sig is not None:
+                sig._set(_lookup(data, key))
+            member = self.membership.get(key)
+            if member is not None:
+                member._set(key in data)
 
-        if isinstance(new_raw, (list, tuple)) and "length" in signals:
-            signals["length"]._set(len(new_raw))
-        self._root.bump()
+    def bump(self, seen: set[_Node]) -> None:
+        if self in seen:
+            return
+        seen.add(self)
+        self.version._set(self.version._latest() + 1)
+        for parent in tuple(self.parents):
+            parent.bump(seen)
 
 
-def _wrap_value(value: Any, node: _StoreNode, *, draft: bool = False) -> Any:
-    """Wrap a raw value in a reactive proxy backed by `node`.
+def _encode(value: Any, root: _Root, seen: dict[int, Any] | None = None) -> Any:
+    if isinstance(value, _Proxy):
+        value._check()
+        node = value._node
+        if node.root is root:
+            return node
+        value = snapshot(value)
+    if isinstance(value, _Node):
+        return value
+    if isinstance(value, (Mapping, list, tuple, Vector)):
+        return _Node(value, root, seen)
+    return copy.deepcopy(value)
 
-    Read proxies and draft proxies are cached separately per node so
-    repeated reads of the same path return the same proxy object
-    (stable identity).
-    """
-    if isinstance(value, (dict, list)):
-        expected: type
-        if isinstance(value, dict):
-            expected = _DraftProxy if draft else _StoreProxy
-        else:
-            expected = _DraftListProxy if draft else _StoreListProxy
-        cached = node._draft_proxy if draft else node._proxy
-        if type(cached) is expected:
-            return cached
-        proxy: Any = expected(node)
-        if draft:
-            node._draft_proxy = proxy
-        else:
-            node._proxy = proxy
+
+def _wrap(value: Any, session: _Session | None = None) -> Any:
+    if not isinstance(value, _Node):
+        return value
+    if session is not None:
+        session.check()
+        proxy = session.proxies.get(value)
+        if proxy is None:
+            cls: Any = Draft if isinstance(value.state._value.data, dict) else DraftList
+            proxy = session.proxies[value] = cls(value, session)
         return proxy
-    return value
+    if value.proxy is None:
+        cls = Store if isinstance(value.state._value.data, dict) else StoreList
+        value.proxy = cls(value)
+    return value.proxy
 
 
-class _StoreProxy:
-    """Reactive read proxy for dict-like store objects.
+class _Session:
+    __slots__ = ("active", "states", "changes", "touched", "proxies")
 
-    Attribute reads track the corresponding `Signal`; nested dicts and
-    lists are lazily wrapped in their own proxies via cached child
-    nodes. Writes must go through the store setter's draft.
-    """
+    def __init__(self) -> None:
+        self.active = True
+        self.states: dict[_Node, Any] = {}
+        self.changes: dict[_Node, list[ListChange]] = {}
+        self.touched: dict[_Node, set[Any]] = {}
+        self.proxies: dict[_Node, Any] = {}
 
-    __slots__ = ("_node",)
+    def check(self) -> None:
+        if not self.active:
+            raise DraftExpiredError("Drafts are valid only while their setter or deriving function runs")
 
-    def __init__(self, node: _StoreNode) -> None:
+    def close(self) -> None:
+        self.active = False
+        self.proxies.clear()
+
+    def data(self, node: _Node) -> Any:
+        self.check()
+        return self.states.get(node, node.state._latest().data)
+
+    def write(self, node: _Node, key: Any, value: Any) -> None:
+        data = self.data(node)
+        value = _encode(value, node.root)
+        old = _lookup(data, key)
+        if _same(old, value):
+            return
+        if isinstance(data, dict):
+            if node not in self.states:
+                data = dict(data)
+            data[key] = value
+            self.touched.setdefault(node, set()).add(key)
+        else:
+            key = data._index(key)
+            old = data[key]
+            data = data.set(key, value)
+            self.changes.setdefault(node, []).append(ListChange("set", key, (old,), (value,)))
+        self.states[node] = data
+
+    def delete_key(self, node: _Node, key: Any) -> None:
+        data = self.data(node)
+        if key not in data:
+            raise KeyError(key)
+        if node not in self.states:
+            data = dict(data)
+        del data[key]
+        self.states[node] = data
+        self.touched.setdefault(node, set()).add(key)
+
+    def splice(self, node: _Node, start: int, delete: int, values: Iterable[Any]) -> None:
+        data = self.data(node)
+        added = tuple(_encode(v, node.root) for v in values)
+        removed = tuple(data[i] for i in range(start, start + delete))
+        if not removed and not added:
+            return
+        self.states[node] = data.splice(start, delete, added)
+        self.changes.setdefault(node, []).append(ListChange("splice", start, removed, added))
+
+    def replace_list(self, node: _Node, values: Iterable[Any]) -> None:
+        self.check()
+        self.states[node] = Vector(_encode(v, node.root) for v in values)
+        self.changes[node] = [ListChange("reset")]
+
+    def commit(self) -> None:
+        bumped: set[_Node] = set()
+        for node, data in self.states.items():
+            before = node.state._latest()
+            node.publish(data, self.changes.get(node, []), self.touched.get(node, set()))
+            if before is not node.state._latest():
+                node.bump(bumped)
+        self.close()
+
+
+class _Proxy:
+    __slots__ = ("_node", "_session")
+    _node: _Node
+    _session: _Session | None
+
+    def __init__(self, node: _Node, session: _Session | None = None) -> None:
         object.__setattr__(self, "_node", node)
+        object.__setattr__(self, "_session", session)
+
+    def _check(self) -> None:
+        if self._session is not None:
+            self._session.check()
+
+    def _data(self) -> Any:
+        self._check()
+        if self._session is not None:
+            return self._session.data(self._node)
+        self._node.root.ready()
+        return self._node.visible()
 
     def _read(self, key: Any) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        if _core._probe_depth:
-            _probe_store(node._root)
-        val = node._get_signal(key)()
-        if isinstance(val, (dict, list)):
-            child = node._get_child(key)
-            child._raw = val
-            return _wrap_value(val, child)
-        return val
+        if self._session is not None:
+            return _wrap(self._data()[key], self._session)
+        return self._node.read(key)
 
     def _wyb_affect_node(self) -> Any:
-        return _getattribute(self, "_node")._root
+        return self._node.root
+
+    def _wyb_refresh(self) -> Any:
+        comp = self._node.root.derivation
+        if comp is None:
+            raise TypeError("Only derived stores can be refreshed")
+        comp._refresh()
+        return comp
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("Store is read-only; mutate a draft inside its setter")
+
+    def __len__(self) -> int:
+        if self._session is not None:
+            return len(self._data())
+        self._node.root.ready()
+        self._node.length()
+        return len(self._node.visible())
+
+    def __eq__(self, other: Any) -> bool:
+        return bool(deep(self) == deep(other))
+
+    __hash__ = None
+
+
+class Store[S](_Proxy, Mapping[str, Any]):
+    """Read-only reactive mapping with optional attribute access to data keys.
+
+    Missing subscriptions raise KeyError; missing attributes raise AttributeError.
+    Mapping methods take precedence over data keys: use ``store["items"]``.
+    """
+
+    __slots__ = ()
+
+    def __getitem__(self, key: str) -> Any:
+        return self._read(key)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
-            return _getattribute(self, name)
-        return _StoreProxy._read(self, name)
+            raise AttributeError(name)
+        try:
+            return self._read(name)
+        except KeyError as exc:
+            raise AttributeError(name) from exc
 
-    def __getitem__(self, key: Any) -> Any:
-        return _StoreProxy._read(self, key)
+    def __iter__(self) -> Iterator[str]:
+        if self._session is None:
+            self._node.keys()
+        return iter(self._data())
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_"):
-            object.__setattr__(self, name, value)
-            return
-        raise AttributeError("Store is read-only. Mutate the draft inside set_store(lambda s: ...) instead.")
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        raise TypeError("Store is read-only. Mutate the draft inside set_store(lambda s: ...) instead.")
+    def __contains__(self, key: object) -> bool:
+        if self._session is not None:
+            return key in self._data()
+        node = self._node
+        node.root.ready()
+        sig = node.membership.get(key)
+        if sig is None:
+            sig = node.membership[key] = Signal(key in node.state._value.data)
+            if node.state._staged:
+                sig._set(key in node.state._latest().data)
+        sig()
+        return key in node.visible()
 
     def __repr__(self) -> str:
-        node: _StoreNode = _getattribute(self, "_node")
-        return f"Store({node._raw!r})"
-
-    def __eq__(self, other: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        if isinstance(other, _StoreProxy):
-            other_node: _StoreNode = _getattribute(other, "_node")
-            return bool(node._raw == other_node._raw)
-        if isinstance(other, dict):
-            return bool(node._raw == other)
-        return NotImplemented
-
-    def __contains__(self, key: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        node._root.version()
-        return key in node._raw
-
-    def __iter__(self) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        node._root.version()
-        return iter(node._raw)
-
-    def __len__(self) -> int:
-        node: _StoreNode = _getattribute(self, "_node")
-        node._root.version()
-        return len(node._raw)
-
-    __hash__ = object.__hash__
+        return f"Store({snapshot(self)!r})"
 
 
-class _StoreListProxy:
-    """Reactive read proxy for list-like store values.
+class StoreList[T](_Proxy, Sequence[T]):
+    """Read-only reactive sequence. Entity proxies survive reorders."""
 
-    Index reads track the corresponding `Signal`. Supports `len()`,
-    iteration, and `in` checks; mutations must go through the store
-    setter's draft.
-    """
+    __slots__ = ()
 
-    __slots__ = ("_node",)
+    @overload
+    def __getitem__(self, index: int) -> T: ...
 
-    def __init__(self, node: _StoreNode) -> None:
-        object.__setattr__(self, "_node", node)
+    @overload
+    def __getitem__(self, index: slice) -> list[T]: ...
 
-    def _wyb_affect_node(self) -> Any:
-        return _getattribute(self, "_node")._root
-
-    def __getitem__(self, index: Any) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        if _core._probe_depth:
-            _probe_store(node._root)
+    def __getitem__(self, index: int | slice) -> T | list[T]:
         if isinstance(index, slice):
             return [self[i] for i in range(*index.indices(len(self)))]
+        if not isinstance(index, int):
+            raise TypeError("list indices must be integers or slices")
         if index < 0:
-            index += len(node._raw)
-        val = node._get_signal(index)()
-        if isinstance(val, (dict, list)):
-            child = node._get_child(index)
-            child._raw = val
-            return _wrap_value(val, child)
-        return val
+            index += len(self)
+        if index < 0:
+            raise IndexError("list index out of range")
+        return self._read(index)
 
-    def __len__(self) -> int:
-        node: _StoreNode = _getattribute(self, "_node")
-        if _core._probe_depth:
-            _probe_store(node._root)
-        node._get_signal("length")()
-        return len(node._raw)
-
-    def __iter__(self) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        if _core._probe_depth:
-            _probe_store(node._root)
-        node._get_signal("length")()
-        for i in range(len(node._raw)):
+    def __iter__(self) -> Iterator[T]:
+        for i in range(len(self)):
             yield self[i]
-
-    def __contains__(self, item: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        node._root.version()
-        return item in node._raw
 
     def __repr__(self) -> str:
-        node: _StoreNode = _getattribute(self, "_node")
-        return f"StoreList({node._raw!r})"
+        return f"StoreList({snapshot(self)!r})"
 
-    def __eq__(self, other: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        if isinstance(other, _StoreListProxy):
-            other_node: _StoreNode = _getattribute(other, "_node")
-            return bool(node._raw == other_node._raw)
-        if isinstance(other, list):
-            return bool(node._raw == other)
-        return NotImplemented
+    def _wyb_list_state(self) -> _State:
+        self._node.root.ready()
+        return self._node.state()
 
-    __hash__ = object.__hash__
-
-
-# --------------- draft proxies (handed to set_store callbacks) ---------------
+    def _wyb_changes_since(self, revision: int) -> tuple[ListChange, ...] | None:
+        current = self._node.state.peek().revision
+        if current == revision:
+            return ()
+        records = [(r, changes) for r, changes in self._node.history if revision < r <= current]
+        if not records or records[0][0] != revision + 1 or records[-1][0] != current:
+            return None
+        return tuple(change for _, changes in records for change in changes)
 
 
-class _DraftProxy(_StoreProxy):
-    """Writable draft over a dict store node.
-
-    Handed to `set_store(fn)` callbacks. Reads are untracked and see
-    the latest written value; writes apply to the underlying raw data
-    and stage exactly the affected leaf signals, which become visible
-    on the next flush.
-    """
+class Draft[S](Store[S], MutableMapping[str, Any]):
+    """A mapping draft that expires when its callback returns."""
 
     __slots__ = ()
 
-    def _read(self, key: Any) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        val = _raw_get(node._raw, key)
-        if isinstance(val, (dict, list)):
-            child = node._get_child(key)
-            child._raw = val
-            return _wrap_value(val, child, draft=True)
-        return val
-
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            return _getattribute(self, name)
-        return _DraftProxy._read(self, name)
-
-    def __getitem__(self, key: Any) -> Any:
-        return _DraftProxy._read(self, key)
-
-    def __contains__(self, key: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        return key in node._raw
-
-    def __iter__(self) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        return iter(node._raw)
-
-    def __len__(self) -> int:
-        node: _StoreNode = _getattribute(self, "_node")
-        return len(node._raw)
+    def __setitem__(self, key: str, value: Any) -> None:
+        assert self._session is not None
+        self._session.write(self._node, key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_"):
-            object.__setattr__(self, name, value)
-            return
-        node: _StoreNode = _getattribute(self, "_node")
-        node._set_value(name, _plain(value))
+        self[name] = value
 
-    def __setitem__(self, key: Any, value: Any) -> None:
-        node: _StoreNode = _getattribute(self, "_node")
-        node._set_value(key, _plain(value))
-
-    def __delitem__(self, key: Any) -> None:
-        node: _StoreNode = _getattribute(self, "_node")
-        raw = node._raw
-        if isinstance(raw, dict):
-            raw.pop(key, None)
-        node._replace_raw(raw)
+    def __delitem__(self, key: str) -> None:
+        assert self._session is not None
+        self._session.delete_key(self._node, key)
 
     def __delattr__(self, name: str) -> None:
-        self.__delitem__(name)
-
-    def update(self, values: dict[str, Any]) -> None:
-        """Merge `values` into this draft (dict-style bulk write)."""
-        node: _StoreNode = _getattribute(self, "_node")
-        for k, v in values.items():
-            node._set_value(k, _plain(v))
-
-    __hash__ = object.__hash__
+        try:
+            del self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
 
 
-class _DraftListProxy(_StoreListProxy):
-    """Writable draft over a list store node.
-
-    Supports index assignment plus `append`, `insert`, `pop`, `remove`,
-    `extend`, `sort`, `reverse`, and `clear`, staging index and length
-    subscribers.
-    """
+class DraftList[T](StoreList[T], MutableSequence[T]):
+    """A sequence draft with standard Python mutation methods."""
 
     __slots__ = ()
 
-    def __getitem__(self, index: Any) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        raw: list[Any] = node._raw
+    @overload
+    def __setitem__(self, index: int, value: T) -> None: ...
+
+    @overload
+    def __setitem__(self, index: slice, value: Iterable[T]) -> None: ...
+
+    def __setitem__(self, index: int | slice, value: Any) -> None:
+        session = self._session
+        assert session is not None
         if isinstance(index, slice):
-            return [self[i] for i in range(*index.indices(len(raw)))]
-        if index < 0:
-            index += len(raw)
-        val = raw[index]
-        if isinstance(val, (dict, list)):
-            child = node._get_child(index)
-            child._raw = val
-            return _wrap_value(val, child, draft=True)
-        return val
+            start, stop, step = index.indices(len(self))
+            values = list(value)
+            if step == 1:
+                session.splice(self._node, start, max(0, stop - start), values)
+            else:
+                indices = range(start, stop, step)
+                if len(indices) != len(values):
+                    raise ValueError("attempt to assign sequence of different size to extended slice")
+                for i, v in zip(indices, values, strict=True):
+                    session.write(self._node, i, v)
+        else:
+            session.write(self._node, index, value)
 
-    def __len__(self) -> int:
-        node: _StoreNode = _getattribute(self, "_node")
-        return len(node._raw)
-
-    def __iter__(self) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        for i in range(len(node._raw)):
-            yield self[i]
-
-    def __contains__(self, item: Any) -> bool:
-        node: _StoreNode = _getattribute(self, "_node")
-        return item in node._raw
-
-    def __setitem__(self, index: Any, value: Any) -> None:
-        node: _StoreNode = _getattribute(self, "_node")
+    def __delitem__(self, index: int | slice) -> None:
+        session = self._session
+        assert session is not None
+        data = self._data()
         if isinstance(index, slice):
-            node._raw[index] = [_plain(v) for v in value]
-            node._replace_raw(node._raw)
-            return
-        if index < 0:
-            index += len(node._raw)
-        node._set_value(index, _plain(value))
+            start, stop, step = index.indices(len(data))
+            if step == 1:
+                session.splice(self._node, start, max(0, stop - start), ())
+            else:
+                for i in sorted(range(start, stop, step), reverse=True):
+                    session.splice(self._node, i, 1, ())
+        else:
+            session.splice(self._node, data._index(index), 1, ())
 
-    def __delitem__(self, index: Any) -> None:
-        node: _StoreNode = _getattribute(self, "_node")
-        del node._raw[index]
-        node._replace_raw(node._raw)
+    def insert(self, index: int, value: T) -> None:
+        """Insert a value at a draft index."""
+        session = self._session
+        assert session is not None
+        n = len(self)
+        index = max(0, n + index) if index < 0 else min(index, n)
+        session.splice(self._node, index, 0, (value,))
 
-    def _mutate(self, op: Callable[[list[Any]], Any]) -> Any:
-        node: _StoreNode = _getattribute(self, "_node")
-        result = op(node._raw)
-        node._replace_raw(node._raw)
-        return result
+    def extend(self, values: Iterable[T]) -> None:
+        """Append values in one recorded splice."""
+        session = self._session
+        assert session is not None
+        session.splice(self._node, len(self), 0, tuple(values))
 
-    def append(self, value: Any) -> None:
-        """Append `value`, notifying index and length subscribers."""
-        self._mutate(lambda raw: raw.append(_plain(value)))
-
-    def extend(self, values: Any) -> None:
-        """Append every item in `values`."""
-        self._mutate(lambda raw: raw.extend(_plain(v) for v in values))
-
-    def insert(self, index: int, value: Any) -> None:
-        """Insert `value` at `index`, shifting later items."""
-        self._mutate(lambda raw: raw.insert(index, _plain(value)))
-
-    def pop(self, index: int = -1) -> Any:
-        """Remove and return the item at `index` (default: last)."""
-        return self._mutate(lambda raw: raw.pop(index))
-
-    def remove(self, value: Any) -> None:
-        """Remove the first occurrence of `value`."""
-        self._mutate(lambda raw: raw.remove(_plain(value)))
-
-    def clear(self) -> None:
-        """Remove every item."""
-        self._mutate(lambda raw: raw.clear())
-
-    def sort(self, *, key: Any = None, reverse: bool = False) -> None:
-        """Sort in place."""
-        self._mutate(lambda raw: raw.sort(key=key, reverse=reverse))
+    def sort(self, *, key: Callable[[T], Any] | None = None, reverse: bool = False) -> None:
+        """Sort entities without changing their identities."""
+        session = self._session
+        assert session is not None
+        session.replace_list(self._node, sorted(self, key=key, reverse=reverse))
 
     def reverse(self) -> None:
-        """Reverse in place."""
-        self._mutate(lambda raw: raw.reverse())
+        """Reverse entity order in the draft."""
+        session = self._session
+        assert session is not None
+        session.replace_list(self._node, reversed(self))
 
-    __hash__ = object.__hash__
-
-
-def _plain(value: Any) -> Any:
-    """Strip store proxies from a value being written into a store."""
-    if isinstance(value, (_StoreProxy, _StoreListProxy)):
-        return _getattribute(value, "_node")._raw
-    return value
-
-
-def _make_draft(node: _StoreNode) -> Any:
-    raw = node._raw
-    if isinstance(raw, (dict, list)):
-        return _wrap_value(raw, node, draft=True)
-    return raw
+    def move(self, start: int, target: int, count: int = 1) -> None:
+        """Move a contiguous range to a final index, preserving its entities."""
+        n = len(self)
+        if count < 0 or start < 0 or start + count > n or not 0 <= target <= n - count:
+            raise IndexError("invalid list move range")
+        if not count or start == target:
+            return
+        items = self[start : start + count]
+        del self[start : start + count]
+        self[target:target] = items
 
 
-def _make_proxy(node: _StoreNode) -> Any:
-    raw = node._raw
-    if isinstance(raw, dict):
-        return _StoreProxy(node)
-    if isinstance(raw, list):
-        return _StoreListProxy(node)
-    return raw
+def _merge(session: _Session, node: _Node, data: Any, key: str | None) -> None:
+    if isinstance(data, _Proxy):
+        data = snapshot(data)
+    current = session.data(node)
+    if isinstance(current, dict) and isinstance(data, Mapping):
+        for k in tuple(current):
+            if k not in data:
+                session.delete_key(node, k)
+        for k, value in data.items():
+            old = _lookup(session.data(node), k)
+            if isinstance(old, _Node) and _compatible(old, value):
+                _merge(session, old, value, key)
+            else:
+                session.write(node, k, value)
+    elif isinstance(current, Vector) and isinstance(data, (Sequence, Vector)) and not isinstance(data, (str, bytes)):
+        by_key: dict[Any, deque[_Node]] = {}
+        if key is not None:
+            for item in current:
+                if isinstance(item, _Node) and isinstance(item.state._value.data, dict):
+                    ident = _lookup(session.data(item), key)
+                    if ident is not _ABSENT:
+                        by_key.setdefault(ident, deque()).append(item)
+        result = []
+        for item in data:
+            bucket = by_key.get(item.get(key, _ABSENT)) if key is not None and isinstance(item, Mapping) else None
+            if bucket:
+                old = bucket.popleft()
+                _merge(session, old, item, key)
+                result.append(old)
+            else:
+                result.append(_encode(item, node.root))
+        if len(current) != len(result) or any(not _same(a, b) for a, b in zip(current, result)):
+            session.replace_list(node, result)
+    else:
+        raise TypeError("A store's root container type can't change")
 
 
-def _apply_modifier(node: _StoreNode, modifier: Any, what: str) -> None:
-    """Run a setter argument against `node`: a draft fn, a reconcile marker, or a value."""
-    if isinstance(modifier, _ReconcileResult):
-        modifier._apply(node)
-        return
-    if callable(modifier):
-        result = modifier(_make_draft(node))
-        if result is not None and result is not node._raw:
-            _merge_data_into(node, _plain(result), None)
-        return
-    if isinstance(modifier, (dict, list)):
-        _merge_data_into(node, _plain(modifier), None)
-        return
-    raise TypeError(f"{what}() takes a draft function, a reconcile() result, or replacement data")
+def _compatible(node: _Node, data: Any) -> bool:
+    current = node.state._value.data
+    return (
+        isinstance(current, dict)
+        and isinstance(data, Mapping)
+        or isinstance(current, Vector)
+        and isinstance(data, (list, tuple, StoreList))
+    )
 
 
-def _merge_data_into(node: _StoreNode, data: Any, key: str | None) -> None:
-    merged = _merge_data(node._raw, data, key)
-    node._replace_raw(merged)
+def _modify(session: _Session, node: _Node, modifier: Any) -> None:
+    if isinstance(modifier, _Reconcile):
+        _merge(session, node, modifier.data, modifier.key)
+    elif callable(modifier):
+        result = modifier(_wrap(node, session))
+        if inspect.isawaitable(result):
+            if inspect.iscoroutine(result):
+                result.close()
+            raise TypeError("Store setters are synchronous; await work in an action before opening a draft")
+        if result is not None:
+            _merge(session, node, result, None)
+    elif isinstance(modifier, (Mapping, list, tuple, StoreList)):
+        _merge(session, node, modifier, None)
+    else:
+        raise TypeError("set_store expects a draft callback, reconcile result, or replacement data")
 
 
-class _StoreSetter:
-    """Callable that applies draft mutations to a store.
-
-    Calling conventions, matching SolidJS 2.0 `setStore`:
-
-    - `set_store(fn)`: `fn` receives a mutable **draft** of the state;
-      mutate it with normal Python (attribute and index assignment,
-      list methods). Only the leaf signals whose values actually
-      changed notify. If `fn` returns a dict or list, that value is
-      merged in as a shallow replacement.
-    - `set_store(reconcile(data))`: merge external data in, preserving
-      object identity for unchanged items (see
-      [`reconcile`][wybthon.reconcile]).
-    - `set_store(store_path("user", "name", "Ada"))`: path-style write
-      (see [`store_path`][wybthon.store_path]).
-    """
+class StoreSetter[D]:
+    """Apply an atomic draft edit. Exceptions discard all changes from the call."""
 
     __slots__ = ("_node",)
 
-    def __init__(self, node: _StoreNode) -> None:
+    def __init__(self, node: _Node) -> None:
         self._node = node
 
-    def __call__(self, modifier: Any) -> None:
+    def __call__(self, modifier: Callable[[D], Any] | Mapping[str, Any] | list[Any] | _Reconcile) -> None:
+        """Stage a synchronous atomic edit or replacement."""
         if _core._current_observer is not None and _warnings.DEV_MODE:
             raise WriteInScopeError(
-                "Cannot write a store inside a tracking scope (memo, effect compute stage, or reactive "
-                "hole). Derive the value with create_projection, or write from the apply stage of a "
-                "split create_effect, an event handler, or an action."
+                "Cannot write a store inside a tracking scope; use an effect's apply stage or an action"
             )
-        _apply_modifier(self._node, modifier, "set_store")
+        session = _Session()
+        try:
+            _modify(session, self._node, modifier)
+            session.commit()
+        finally:
+            session.close()
 
 
-def create_store(initial: Any, seed: Any = None) -> tuple[Any, _StoreSetter]:
-    """Create a reactive store from an initial value or a deriving function.
+@overload
+def create_store[T](initial: list[T], seed: None = None) -> tuple[StoreList[T], StoreSetter[DraftList[T]]]: ...
 
-    Args:
-        initial: Initial state (a dict or list), or a **function** for a
-            derived store. A function that accepts a draft mutates it
-            on every run, like [`create_projection`][wybthon.create_projection];
-            a zero-arg function's return value is reconciled into the
-            store. Reads inside it are tracked.
-        seed: Initial backing state for the derived form (defaults to
-            an empty dict).
 
-    Returns:
-        A tuple `(store, set_store)` where `store` is a read-only
-        reactive proxy that tracks reads per-path, and `set_store`
-        applies **draft mutations**: call it with a function that
-        receives a mutable draft, a [`reconcile`][wybthon.reconcile]
-        result, or a [`store_path`][wybthon.store_path] write.
+@overload
+def create_store[S: Mapping[str, Any]](initial: S, seed: None = None) -> tuple[Store[S], StoreSetter[Draft[S]]]: ...
 
-    Example:
-        ```python
-        store, set_store = create_store({"count": 0, "user": {"name": "Ada"}})
 
-        store.count         # 0
-        store.user.name     # "Ada"
+@overload
+def create_store(initial: Callable[..., Any], seed: Any = None) -> tuple[Any, StoreSetter[Any]]: ...
 
-        def rename(s):
-            s.count += 1
-            s.user.name = "Jane"
 
-        set_store(rename)
-        set_store(reconcile(fetched_state))
+def create_store(initial: Any, seed: Any = None) -> tuple[Any, StoreSetter]:
+    """Create a reactive mapping or sequence and its atomic draft setter.
 
-        # Derived store: re-runs when `todos` changes.
-        stats, _ = create_store(lambda d: d.update({"total": len(todos())}), {"total": 0})
-        ```
+    A deriving function may return data or mutate its draft, synchronously or
+    asynchronously. Its reads are tracked and its writes are staged together.
     """
-    if callable(initial) and not isinstance(initial, (dict, list)):
-        node = _StoreNode(seed if seed is not None else {})
+    if callable(initial):
+        node = _Node({} if seed is None else seed)
         _run_projection(node, initial)
-        return _make_proxy(node), _StoreSetter(node)
-    node = _StoreNode(initial)
-    return _make_proxy(node), _StoreSetter(node)
+    else:
+        node = _Node(initial)
+    return _wrap(node), StoreSetter(node)
 
 
-# --------------- projections ---------------
-
-
-def _run_projection(node: _StoreNode, fn: Callable[..., Any]) -> None:
-    draft = _make_draft(node)
+def _run_projection(node: _Node, fn: Callable[..., Any]) -> None:
     takes_draft = _core._positional_count(fn) != 0
 
     def compute() -> Any:
-        if takes_draft:
-            return fn(draft)
-        return fn()
+        session = _Session()
+        try:
+            result = fn(_wrap(node, session)) if takes_draft else fn()
+        except BaseException:
+            session.close()
+            raise
+        if inspect.isasyncgen(result):
 
-    def apply(result: Any) -> None:
-        if result is not None and result is not node._raw:
-            _merge_data_into(node, copy.deepcopy(snapshot(result)), "id")
+            async def stream() -> Any:
+                emitted = False
+                try:
+                    async for value in result:
+                        if value is not None:
+                            _merge(session, node, value, "id")
+                        landing = _Session()
+                        landing.states, session.states = session.states, {}
+                        landing.changes, session.changes = session.changes, {}
+                        landing.touched, session.touched = session.touched, {}
+                        landing.close()
+                        emitted = True
+                        yield landing
+                    if not emitted:
+                        empty = _Session()
+                        empty.close()
+                        yield empty
+                finally:
+                    session.close()
+                    await result.aclose()
 
-    _eager_render_effect(compute, apply)
+            return stream()
+        if inspect.isawaitable(result):
 
+            async def wait() -> Any:
+                try:
+                    value = await result
+                    if value is not None:
+                        _merge(session, node, value, "id")
+                    return session
+                finally:
+                    session.close()
 
-def _eager_render_effect(compute: Callable[[], Any], apply: Callable[[Any], None]) -> None:
-    """A render effect whose apply stage produces graph data.
+            return wait()
+        try:
+            if result is not None:
+                _merge(session, node, result, "id")
+            return session
+        finally:
+            session.close()
 
-    It runs immediately rather than waiting for a transition to reveal,
-    and the store writes it makes are held with the data it read.
-    """
-    comp = _core.Computation(compute, kind=_core._K_RENDER, apply=apply, pass_prev=False, eager=True)
-    owner = _core._current_owner
-    if owner is not None:
-        owner._add_child(comp)
+    def apply(session: _Session) -> None:
+        session.commit()
+
+    comp = _core.Computation(
+        compute, kind=_core._K_RENDER, apply_scope=False, apply=apply, pass_prev=False, eager=True, data=True
+    )
+    if _core._current_owner is not None:
+        _core._current_owner._add_child(comp)
+    node.root.derivation = comp
     comp._update_if_necessary()
 
 
 def create_projection(fn: Callable[..., Any], initial: Any = None) -> Any:
-    """Create a read-only store derived from reactive sources.
-
-    `fn` receives a mutable draft of the projection's state and runs
-    inside a render-phase computation: any signals, memos, or other
-    stores it reads become dependencies, and when they change `fn`
-    re-runs against the same draft. Because writes go through
-    fine-grained store signals, consumers re-render only for the paths
-    that actually changed. A zero-arg `fn` may instead return the data
-    to reconcile in.
-
-    Matches SolidJS 2.0's `createProjection`.
-
-    Args:
-        fn: Draft mutator (or zero-arg producer). Reads are tracked.
-        initial: Initial backing state (a dict or list). Defaults to an
-            empty dict.
-
-    Returns:
-        A read-only store proxy.
-
-    Example:
-        ```python
-        selected, set_selected = create_signal(1)
-
-        flags = create_projection(
-            lambda draft: draft.update({"selected_id": selected()}),
-            {"selected_id": None},
-        )
-        ```
-    """
-    node = _StoreNode(initial if initial is not None else {})
+    """Create a read-only derived store with memo readiness and refresh semantics."""
+    node = _Node({} if initial is None else initial)
     _run_projection(node, fn)
-    return _make_proxy(node)
-
-
-# --------------- optimistic stores ---------------
+    return _wrap(node)
 
 
 def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Callable[[Any], None]]:
-    """Create a store whose writes revert when in-flight actions settle.
+    """Layer optimistic draft edits over a reactive authoritative source.
 
-    Reads behave like a normal store. Writes (draft mutations through
-    the returned setter) apply immediately; when every in-flight
-    [`action`][wybthon.action] has settled, the store **reverts** to its
-    base state: the tracked `source` function's latest result (derived
-    form), or the initial value (value form). Pair it with actions that
-    reconcile real data into a regular store; the optimistic overlay
-    bridges the latency gap.
-
-    Args:
-        source: Either a tracked function returning the base state
-            (derived form; re-runs and reconciles when its dependencies
-            change) or a plain dict/list initial value.
-        initial: Initial backing state for the derived form, used
-            before `source` first runs. Defaults to an empty dict.
-
-    Returns:
-        A `(store, set_optimistic)` tuple. `set_optimistic(fn)` applies
-        a draft mutation, like a store setter.
-
-    Example:
-        ```python
-        todos, set_todos = create_store({"items": []})
-
-        shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
-
-        @action
-        async def add(title):
-            set_shown(lambda s: s.append({"title": title, "saving": True}))
-            saved = await api_create(title)
-            set_todos(lambda s: s.items.append(saved))
-        ```
+    Active edits replay in submission order when the source changes. They are
+    removed together when their enclosing transition settles. Draft callbacks
+    must be deterministic: replay mustn't perform network or other side effects.
     """
-    derived = callable(source) and not isinstance(source, (dict, list))
-    state: Any = (initial if initial is not None else {}) if derived else source
-    node = _StoreNode(state)
+    derived = callable(source)
+    state = ({} if initial is None else initial) if derived else source
+    node = _Node(state)
+    base = [snapshot(state)]
+    overlays: list[Any] = []
 
-    base: dict[str, Any] = {"value": copy.deepcopy(snapshot(state))}
+    def capture_base(session: _Session) -> None:
+        captured: dict[_Node, Any] = {}
+        queue = [node]
+        while queue:
+            current = queue.pop()
+            if current in captured:
+                continue
+            data = session.data(current)
+            captured[current] = dict(data) if isinstance(data, dict) else data
+            queue.extend(
+                value for value in (data.values() if isinstance(data, dict) else data) if isinstance(value, _Node)
+            )
+        node.root.authoritative = captured
+        version = node.root.authoritative_version
+        version._set(version._latest() + 1, _core._O_REVEAL)
 
-    def _reconcile_to(data: Any) -> None:
-        _merge_data_into(node, copy.deepcopy(data), "id")
+    def rebuild() -> None:
+        session = _Session()
+        try:
+            _merge(session, node, base[0], "id")
+            capture_base(session)
+            for modifier in overlays:
+                _modify(session, node, modifier)
+            session.commit()
+        finally:
+            session.close()
 
     if derived:
 
-        def track_base() -> Any:
-            return copy.deepcopy(snapshot(source()))
-
         def apply_base(data: Any) -> None:
-            base["value"] = data
-            _reconcile_to(data)
+            base[0] = snapshot(data)
+            rebuild()
 
-        _eager_render_effect(track_base, apply_base)
+        def read_base() -> Any:
+            value = source()
+            if inspect.isawaitable(value):
 
-    root = node._root
+                async def wait() -> Any:
+                    return deep(await value)
 
-    def revert() -> None:
-        root.optimistic = False
-        _core._optimistic_depth += 1
-        try:
-            _reconcile_to(base["value"])
-        finally:
-            _core._optimistic_depth -= 1
+                return wait()
+            return deep(value)
+
+        comp = _core.Computation(
+            read_base, kind=_core._K_RENDER, apply_scope=False, apply=apply_base, pass_prev=False, eager=True, data=True
+        )
+        if _core._current_owner is not None:
+            _core._current_owner._add_child(comp)
+        node.root.derivation = comp
+        comp._update_if_necessary()
 
     def set_optimistic(modifier: Any) -> None:
-        # Optimistic writes reveal immediately, even inside an action
-        # whose other writes are held.
-        root.optimistic = True
         _core._optimistic_depth += 1
         try:
-            _apply_modifier(node, modifier, "set_optimistic")
+            if not node.root.optimistic:
+                session = _Session()
+                try:
+                    capture_base(session)
+                finally:
+                    session.close()
+            StoreSetter(node)(modifier)
+            overlays.append(modifier)
+            node.root.optimistic = True
         finally:
             _core._optimistic_depth -= 1
-        _register_optimistic_revert(lambda: untrack(revert))
 
-    return _make_proxy(node), set_optimistic
+        def revert() -> None:
+            overlays.clear()
+            node.root.optimistic = False
+            _core._optimistic_depth += 1
+            try:
+                untrack(rebuild)
+            finally:
+                _core._optimistic_depth -= 1
+
+        _register_optimistic_revert(revert)
+
+    return _wrap(node), set_optimistic
 
 
-# --------------- reconcile / store_path / snapshot / deep ---------------
+@dataclass(frozen=True, slots=True)
+class _Reconcile:
+    data: Any
+    key: str | None
 
 
-def _merge_data(old: Any, new: Any, key: str | None) -> Any:
-    """Merge `new` into `old` in place where container types match.
+def reconcile(data: Any, key: str | None = "id") -> Any:
+    """Prepare replacement data, preserving matched list entity identities.
 
-    Dicts are updated key by key; lists of dicts are matched by `key`
-    so that unchanged items keep their **object identity** (which is
-    what [`For`][wybthon.For] uses to preserve row DOM). Returns the
-    merged value, which is `old` whenever an in-place merge happened.
+    ``key=None`` replaces list entities positionally. Duplicate keys are matched
+    in occurrence order, without assigning the same entity to multiple rows.
     """
-    if isinstance(old, dict) and isinstance(new, dict):
-        for k in [k for k in old.keys() if k not in new]:
-            del old[k]
-        for k, v in new.items():
-            if k in old:
-                old[k] = _merge_data(old[k], v, key)
-            else:
-                old[k] = v
-        return old
-    if isinstance(old, list) and isinstance(new, list):
-        if key:
-            by_key: dict[Any, Any] = {}
-            for item in old:
-                if isinstance(item, dict) and key in item:
-                    by_key.setdefault(item[key], item)
-            merged: list[Any] = []
-            for item in new:
-                if isinstance(item, dict) and key in item and item[key] in by_key:
-                    merged.append(_merge_data(by_key.pop(item[key]), item, key))
-                else:
-                    merged.append(item)
-            old[:] = merged
+    return _Reconcile(snapshot(data), key)
+
+
+def _snapshot(value: Any, track: bool, memo: dict[int, Any]) -> Any:
+    if isinstance(value, _Proxy):
+        value._check()
+        node = value._node
+        if id(node) in memo:
+            return memo[id(node)]
+        if value._session is not None:
+            data = value._session.data(node)
         else:
-            old[:] = new
-        return old
-    return new
-
-
-class _ReconcileResult:
-    """Marker wrapping data for [`reconcile`][wybthon.reconcile]."""
-
-    __slots__ = ("_data", "_key")
-
-    def __init__(self, data: Any, key: str | None) -> None:
-        self._data = data
-        self._key = key
-
-    def _apply(self, node: _StoreNode) -> None:
-        _merge_data_into(node, _plain(self._data), self._key)
-
-
-def reconcile(data: Any, key: str | None = "id") -> _ReconcileResult:
-    """Diff external data into a store, keeping identity for unchanged items.
-
-    Matches SolidJS's `reconcile`. Pass the result to a store setter;
-    instead of replacing the state wholesale, the incoming data is
-    merged: dicts update key by key, and lists of dicts are matched by
-    `key` so existing item objects are **updated in place** rather than
-    replaced. Only the leaf signals whose values actually changed
-    notify, and [`For`][wybthon.For] rows for unchanged items keep
-    their DOM.
-
-    Args:
-        data: The incoming plain data (dict, list, or scalar).
-        key: Dict key used to match list items. Defaults to `"id"`.
-            Pass `None` to disable key matching (positional replace).
-
-    Returns:
-        A marker object recognized by the store setter.
-
-    Example:
-        ```python
-        set_store(reconcile(fetched_state))
-        ```
-    """
-    return _ReconcileResult(data, key)
-
-
-def store_path(*path_and_value: Any) -> Callable[[Any], None]:
-    """Build a path-style write for a store setter (opt-in helper).
-
-    The last argument is the value (or an updater `(current) -> new`);
-    everything before it is the path of keys and indices to walk. It
-    returns a draft function, so it composes with everything a setter
-    accepts.
-
-    Example:
-        ```python
-        set_store(store_path("user", "address", "city", "Paris"))
-        set_store(store_path("todos", 0, "done", lambda done: not done))
-        ```
-    """
-    if len(path_and_value) < 2:
-        raise TypeError("store_path() needs at least one key and a value")
-    *path, value = path_and_value
-
-    def write(draft: Any) -> None:
-        target = draft
-        for key in path[:-1]:
-            target = target[key]
-        last = path[-1]
-        if callable(value):
-            target[last] = value(target[last])
+            node.root.ready()
+            if track:
+                node.version()
+            data = node.visible()
+        result: Any = {} if isinstance(data, dict) else []
+        memo[id(node)] = result
+        if isinstance(data, dict):
+            result.update((k, _snapshot(_wrap(v, value._session), False, memo)) for k, v in data.items())
         else:
-            target[last] = value
-
-    return write
+            result.extend(_snapshot(_wrap(v, value._session), False, memo) for v in data)
+        return result
+    return copy.deepcopy(value)
 
 
 def snapshot(value: Any) -> Any:
-    """Return the plain, non-reactive data behind a store proxy.
-
-    Matches SolidJS 2.0's `snapshot` (the successor to `unwrap`).
-    Reading the result doesn't subscribe to anything, so it's the right
-    thing to hand to `json.dumps`, to compare, or to pass outside the
-    reactive graph. Mutating it bypasses reactivity entirely; write
-    through the setter instead.
-
-    Args:
-        value: A store proxy (or any value).
-
-    Returns:
-        The underlying dict/list for proxies; `value` unchanged
-        otherwise.
-    """
-    if isinstance(value, (_StoreProxy, _StoreListProxy)):
-        return _getattribute(value, "_node")._raw
-    return value
+    """Return a detached, untracked copy of the currently visible state."""
+    return untrack(lambda: _snapshot(value, False, {}))
 
 
 def deep(value: Any) -> Any:
-    """Read a store deeply: subscribe to every nested change and return plain data.
-
-    Store tracking is normally per property. Use `deep` in the compute
-    stage of a split effect when the whole structure matters, for
-    example to persist or serialize it: the effect re-runs on any
-    nested write and its apply stage receives a plain copy that's safe
-    to read untracked.
-
-    Example:
-        ```python
-        create_effect(lambda: deep(store), lambda data: save(json.dumps(data)))
-        ```
-    """
-    if isinstance(value, (_StoreProxy, _StoreListProxy)):
-        node: _StoreNode = _getattribute(value, "_node")
-        node._root.version()
-        return copy.deepcopy(node._raw)
-    return value
+    """Return a detached snapshot, tracking changes only within this subtree."""
+    return _snapshot(value, True, {})

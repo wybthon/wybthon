@@ -177,3 +177,34 @@ def test_props_and_children_pass_through_to_loaded_component(wyb, root_element):
     flush()
     assert texts(container) == ["two", "kid-a", "kid-b"]
     root.dispose()
+
+
+def test_failed_lazy_load_can_retry_and_recover(wyb, root_element):
+    async def main():
+        attempts = []
+
+        async def load():
+            attempts.append(1)
+            await asyncio.sleep(0)
+            if len(attempts) == 1:
+                raise ValueError("temporary")
+            return Page
+
+        panel = lazy(load)
+        root = wyb["reconciler"].render(
+            Errored(lambda: Loading(lambda: panel(), fallback="loading"), fallback=lambda error: p(str(error))),
+            root_element,
+        )
+        for _ in range(5):
+            await asyncio.sleep(0)
+            flush()
+        assert texts(root_element.element) == ["temporary"]
+        panel.retry()
+        for _ in range(5):
+            await asyncio.sleep(0)
+            flush()
+        assert "temporary" not in texts(root_element.element)
+        assert len(attempts) == 2
+        root.dispose()
+
+    asyncio.run(main())

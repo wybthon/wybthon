@@ -106,10 +106,14 @@ class LazyComponent(Component):
         self.__name__ = "lazy"
         self.__qualname__ = "lazy"
 
-    async def _load(self) -> Any:
+    def _load(self) -> Any:
         result = self._loader()
         if isinstance(result, AbcAwaitable):
-            result = await result
+
+            async def wait() -> Any:
+                return _coerce_component(await result)
+
+            return wait()
         return _coerce_component(result)
 
     def _ensure_memo(self) -> Memo[Any]:
@@ -138,12 +142,19 @@ class LazyComponent(Component):
 
         return render
 
+    def retry(self) -> None:
+        """Retry a failed load, notifying mounted error boundaries on recovery."""
+        if self._memo is None:
+            self._ensure_memo()
+        else:
+            self._memo._refresh()
+
     def preload(self) -> None:
         """Start loading now (a no-op when already loading or loaded)."""
         latest(self._ensure_memo())
 
 
-def lazy(loader: Callable[[], Any]) -> LazyComponent:
+def lazy(loader: Callable[[], Any], *, chunk: str | None = None) -> LazyComponent:
     """Create a lazily-loaded component from a loader callback.
 
     The loader runs once, on the first mount (or on `.preload()`); the
@@ -156,6 +167,7 @@ def lazy(loader: Callable[[], Any]) -> LazyComponent:
         loader: Zero-arg callable, sync or async, returning a component
             callable, a module, a module-path string, or a
             `(module_path, attr)` tuple.
+        chunk: Optional named build chunk to fetch before invoking the loader.
 
     Returns:
         A component with a `.preload()` method that starts the load
@@ -169,4 +181,14 @@ def lazy(loader: Callable[[], Any]) -> LazyComponent:
         Link("Team", href="/about/team", on_mouseenter=lambda e: Team.preload())
         ```
     """
+    if chunk is not None:
+
+        async def load() -> Any:
+            from .assets import load_chunk
+
+            await load_chunk(chunk)
+            value = loader()
+            return await value if isinstance(value, AbcAwaitable) else value
+
+        return LazyComponent(load)
     return LazyComponent(loader)

@@ -39,19 +39,37 @@ See Also:
 
 from __future__ import annotations
 
+import asyncio
+import inspect
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import parse_qsl, urljoin, urlsplit
 
 from .component import component
 from .context import Context, create_context, use_context
 from .html import a
+from .reactivity import _core
 from .reactivity._core import Accessor, Prop, Signal, is_accessor
 from .reactivity._primitives import create_memo
 from .reactivity._props import Props, prop
 from .router_core import resolve as _resolve_core
 from .vnode import VNode, h
 
-__all__ = ["Route", "Router", "Link", "navigate", "current_path", "use_params", "use_query", "use_base_path"]
+__all__ = [
+    "Route",
+    "Router",
+    "Link",
+    "navigate",
+    "current_path",
+    "use_params",
+    "use_query",
+    "use_base_path",
+    "use_hash",
+    "Outlet",
+    "QueryParams",
+    "preload",
+]
 
 
 def _current_url() -> str:
@@ -59,7 +77,7 @@ def _current_url() -> str:
     try:
         from js import window
 
-        return str(window.location.pathname) + str(window.location.search)
+        return str(window.location.pathname) + str(window.location.search) + str(getattr(window.location, "hash", ""))
     except Exception:
         return "/"
 
@@ -89,8 +107,17 @@ def _install_popstate() -> None:
         def _on_popstate(_evt: Any) -> None:
             _path._set(_current_url())
 
+            def restore() -> None:
+                if _core._tx is not None:
+                    _core._tx.reverts.append(lambda: _core._settled_queue.append(_restore_scroll))
+                else:
+                    _restore_scroll()
+
+            _core._settled_queue.append(restore)
+
         _popstate_proxy = create_proxy(_on_popstate)
         window.addEventListener("popstate", _popstate_proxy)
+        window.addEventListener("hashchange", _popstate_proxy)
     except Exception:
         pass
 
@@ -98,40 +125,92 @@ def _install_popstate() -> None:
 _install_popstate()
 
 
-def navigate(path: str, *, replace: bool = False) -> None:
-    """Programmatically change the current path and update `current_path`.
+_scroll_positions: dict[str, tuple[float, float]] = {}
 
-    Args:
-        path: Target URL path, including any query string.
-        replace: When `True`, use `history.replaceState` so the
-            current history entry is overwritten instead of appended.
-    """
+
+def _restore_scroll() -> None:
     try:
         from js import window
 
-        if replace:
-            window.history.replaceState(None, "", path)
-        else:
-            window.history.pushState(None, "", path)
-    except Exception:
+        position = _scroll_positions.get(_path.peek(), (0, 0))
+        window.scrollTo(*position)
+    except (ImportError, AttributeError):
         pass
-    _path._set(path)
 
 
-def _parse_query(search: str) -> dict[str, str]:
-    """Parse a query string like `"?a=1&b=2"` into a dict, decoding values."""
-    if not search or not search.startswith("?"):
-        return {}
-    out: dict[str, str] = {}
-    for part in search[1:].split("&"):
-        if not part:
-            continue
-        if "=" in part:
-            k, v = part.split("=", 1)
+def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
+    """Navigate within this origin, resolving relative URLs and preserving hashes.
+
+    External URLs use normal browser navigation. Back/forward restores recorded
+    scroll positions; ordinary navigation scrolls to a hash target or the top
+    once the destination's transition commits.
+    """
+    target = urlsplit(path)
+    external = bool(target.scheme or target.netloc)
+    try:
+        from js import window
+
+        origin = str(window.location.origin)
+        if external and target.scheme + "://" + target.netloc != origin:
+            window.location.assign(path)
+            return
+        _scroll_positions[_path.peek()] = (float(getattr(window, "scrollX", 0)), float(getattr(window, "scrollY", 0)))
+        if len(_scroll_positions) > 256:
+            _scroll_positions.pop(next(iter(_scroll_positions)))
+        resolved = urlsplit(urljoin(origin + _current_url(), path))
+        canonical = (
+            resolved.path
+            + ("?" + resolved.query if resolved.query else "")
+            + ("#" + resolved.fragment if resolved.fragment else "")
+        )
+        if replace:
+            window.history.replaceState(None, "", canonical)
         else:
-            k, v = part, ""
-        out[_decode(k)] = _decode(v)
-    return out
+            window.history.pushState(None, "", canonical)
+    except (ImportError, AttributeError):
+        if external:
+            return
+        canonical = urljoin(_path.peek(), path)
+    _path._set(canonical)
+    if scroll:
+
+        def after_commit() -> None:
+            def position() -> None:
+                try:
+                    from js import document, window
+
+                    fragment = urlsplit(canonical).fragment
+                    element = document.getElementById(_decode(fragment)) if fragment else None
+                    if element is not None:
+                        element.scrollIntoView()
+                    else:
+                        window.scrollTo(0, 0)
+                except (ImportError, AttributeError):
+                    pass
+
+            if _core._tx is not None:
+                _core._tx.reverts.append(lambda: _core._settled_queue.append(position))
+            else:
+                position()
+
+        _core._settled_queue.append(after_commit)
+
+
+class QueryParams(dict[str, str]):
+    """Decoded query parameters with last-value lookup and ``get_all``."""
+
+    def __init__(self, search: str = "") -> None:
+        self._pairs = parse_qsl(search.removeprefix("?"), keep_blank_values=True)
+        super().__init__(self._pairs)
+
+    def get_all(self, key: str) -> list[str]:
+        """Return every occurrence in URL order."""
+        return [value for name, value in self._pairs if name == key]
+
+
+def _parse_query(search: str) -> QueryParams:
+    """Parse a query string like `"?a=1&b=2"` into a dict, decoding values."""
+    return QueryParams(search)
 
 
 def _decode(s: str) -> str:
@@ -145,10 +224,8 @@ def _decode(s: str) -> str:
 
 
 def _split_path(path: str) -> tuple[str, str]:
-    if "?" in path:
-        pathname, search = path.split("?", 1)
-        return pathname, "?" + search
-    return path, ""
+    parsed = urlsplit(path)
+    return parsed.path or "/", "?" + parsed.query if parsed.query else ""
 
 
 @dataclass
@@ -167,15 +244,17 @@ class Route:
     path: str
     component: Any
     children: list[Route] = field(default_factory=list)
+    preload: Callable[[dict[str, Any]], Any] | None = None
 
 
 class _RouteState:
-    __slots__ = ("params", "query", "base_path")
+    __slots__ = ("params", "query", "base_path", "preload")
 
-    def __init__(self, params: Accessor[dict[str, Any]], query: Accessor[dict[str, str]], base_path: str) -> None:
+    def __init__(self, params: Accessor[dict[str, Any]], query: Accessor[QueryParams], base_path: str) -> None:
         self.params = params
         self.query = query
         self.base_path = base_path
+        self.preload: Callable[[str], Any] | None = None
 
 
 RouteContext: Context[_RouteState | None] = create_context(None, name="Route")
@@ -190,11 +269,11 @@ def use_params() -> Accessor[dict[str, Any]]:
     return state.params
 
 
-def use_query() -> Accessor[dict[str, str]]:
+def use_query() -> Accessor[QueryParams]:
     """Accessor for the parsed query string (`{}` outside a router)."""
     state = use_context(RouteContext)
     if state is None:
-        return create_memo(lambda: {})
+        return create_memo(QueryParams)
     return state.query
 
 
@@ -232,36 +311,147 @@ def _Router(routes: Prop[list[Route]], base_path: Prop[str] = prop(""), not_foun
     pathname = create_memo(lambda: location()[0])
     query = create_memo(lambda: _parse_query(location()[1]))
 
-    def resolved() -> tuple[Route | None, dict[str, Any]]:
+    def resolved() -> Any:
         result = _resolve_core(routes() or [], pathname(), base_path() or "")
-        if result is None:
-            return None, {}
-        route, info = result
-        return route, dict(info.get("params") or {})
+        return result[1] if result is not None else {"params": {}, "matches": []}
 
     match = create_memo(resolved)
-    route = create_memo(lambda: match()[0])
-    params = create_memo(lambda: match()[1])
+    matches = create_memo(lambda: match()["matches"])
+    params = create_memo(lambda: match()["params"])
+    state = _RouteState(params, query, base_path.peek() or "")
+    warmed: dict[tuple[int, str], Any] = {}
 
-    def outlet() -> Any:
-        matched = route()
-        if matched is None:
-            nf = not_found()
-            if nf is not None:
-                return h(nf, {"params": params, "query": query})
-            return h("div", {}, "Not Found")
-        return h(matched.component, {"params": params, "query": query})
+    def preload_path(path: str) -> Any:
+        result = _resolve_core(routes(), path, base_path() or "")
+        if result is None:
+            return None
+        _, info = result
+        tasks = []
+        for route in info["matches"]:
+            loader = getattr(route.component, "preload", None)
+            if loader is not None:
+                loader()
+            if route.preload is not None:
+                key = (id(route), path)
+                if key not in warmed:
+                    value = route.preload(info["params"])
+                    warmed[key] = asyncio.ensure_future(value) if inspect.isawaitable(value) else value
+                    if isinstance(warmed[key], asyncio.Future):
 
-    return RouteContext(_RouteState(params, query, base_path.peek() or ""), outlet)
+                        def settled(future: asyncio.Future[Any], key: tuple[int, str] = key) -> None:
+                            if future.cancelled() or future.exception() is not None:
+                                if warmed.get(key) is future:
+                                    warmed.pop(key, None)
+
+                        warmed[key].add_done_callback(settled)
+                    if len(warmed) > 64:
+                        removed = warmed.pop(next(iter(warmed)))
+                        if isinstance(removed, asyncio.Future) and not removed.done():
+                            removed.cancel()
+                value = warmed[key]
+                if inspect.isawaitable(value):
+                    tasks.append(value)
+        if tasks:
+
+            async def wait() -> None:
+                await asyncio.gather(*(asyncio.shield(task) for task in tasks))
+
+            return wait()
+        return None
+
+    state.preload = preload_path
+
+    def ready() -> Any:
+        path = current_path()
+        value = preload_path(path)
+        if inspect.isawaitable(value):
+
+            async def wait() -> bool:
+                await value
+                return True
+
+            return wait()
+        return True
+
+    readiness = create_memo(ready)
+
+    def level(depth: int) -> VNode:
+        def outlet() -> Any:
+            readiness()
+            chain = matches()
+            if depth >= len(chain):
+                if depth:
+                    return None
+                nf = not_found()
+                return h(nf, {"params": params, "query": query}) if nf else h("div", {}, "Not Found")
+            matched = chain[depth]
+            return h(
+                _RouteEntry,
+                {
+                    "route": matched,
+                    "params": params,
+                    "query": query,
+                    "matches": matches,
+                    "router_state": state,
+                    "key": id(matched),
+                },
+            )
+
+        return OutletContext(lambda: level(depth + 1), outlet)
+
+    def cleanup() -> None:
+        for value in warmed.values():
+            if isinstance(value, asyncio.Future) and not value.done():
+                value.cancel()
+        warmed.clear()
+
+    _core._current_owner._add_cleanup(cleanup)
+    return RouteContext(state, lambda: level(0))
+
+
+def _RouteEntry(props: Props) -> Any:
+    route = props.raw("route")
+    parent = props.raw("router_state")
+    # A departing route keeps its last inputs until unmount. Preparing the
+    # destination mustn't give its still-mounted predecessor missing params.
+    params = create_memo(lambda previous: props.params() if route in props.matches() else (previous or {}))
+    query = create_memo(lambda previous: props.query() if route in props.matches() else (previous or QueryParams()))
+    state = _RouteState(params, query, parent.base_path)
+    state.preload = parent.preload
+    return RouteContext(state, lambda: h(route.component, {"params": params, "query": query}))
 
 
 _Router.__name__ = "Router"
 
 
+OutletContext: Context[Any] = create_context(None, name="Outlet")
+
+
+def Outlet() -> VNode:
+    """Render the next matched child route inside a persistent parent layout."""
+    return h(_Outlet)
+
+
+def _Outlet(props: Props) -> Any:
+    child = use_context(OutletContext)
+    return child if child is not None else None
+
+
+def use_hash() -> Accessor[str]:
+    """Read the decoded current URL fragment, without its leading hash."""
+    return create_memo(lambda: _decode(urlsplit(current_path()).fragment))
+
+
+def preload(path: str) -> Any:
+    """Warm route code and data through the surrounding router."""
+    state = use_context(RouteContext)
+    return state.preload(_with_base(path, state.base_path)) if state is not None and state.preload else None
+
+
 def _with_base(target: str, base_path: str) -> str:
     if not isinstance(target, str):
         return "/"
-    if target.startswith(("http://", "https://", "#")):
+    if urlsplit(target).scheme or target.startswith(("//", "#", "?")):
         return target
     if not base_path:
         return target
@@ -350,7 +540,6 @@ def _Link(props: Props) -> Any:
     active_class = props.active_class
     end = props.end
     user_class = props.raw("class_")
-    user_click = props.raw("on_click")
     children = props.raw("children") or []
     forwarded = {k: props.raw(k) for k in props if k not in _LINK_OWN}
 
@@ -374,13 +563,38 @@ def _Link(props: Props) -> Any:
         return " ".join(dict.fromkeys(names)) or None
 
     def handle_click(evt: DomEvent) -> None:
+        user_click = props.raw("on_click")
         if callable(user_click):
-            user_click(evt)
-        if evt.meta_key or evt.ctrl_key or evt.shift_key or evt.button != 0:
+            result = user_click(evt)
+            if inspect.isawaitable(result):
+                from .events import _handle_async_error
+
+                owner = _core._current_owner
+                _core._drive_coroutine(
+                    result,
+                    owner=owner,
+                    observer=None,
+                    alive=lambda: owner is None or not owner._disposed,
+                    on_done=lambda value: None,
+                    on_error=_handle_async_error,
+                )
+        if evt._default_prevented or evt.meta_key or evt.ctrl_key or evt.shift_key or evt.alt_key or evt.button != 0:
+            return
+        target = full_href()
+        if props.raw("download") is not None or props.raw("target") not in (None, "", "_self"):
+            return
+        if target.startswith("#") or urlsplit(target).scheme or target.startswith("//"):
             return
         evt.prevent_default()
         navigate(full_href(), replace=bool(replace()))
 
+    route_state = use_context(RouteContext)
+
+    def warm(evt: Any) -> Any:
+        return route_state.preload(full_href()) if route_state is not None and route_state.preload else None
+
+    forwarded.setdefault("on_mouseenter", warm)
+    forwarded.setdefault("on_focus", warm)
     return a(*children, href=full_href, class_=classes, on_click=handle_click, **forwarded)
 
 

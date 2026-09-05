@@ -24,7 +24,7 @@ Core concepts:
   the exact protocol the browser sees.
 - **Events.** Event delegation lives in the kernel: one native listener
   per event type walks the ancestor chain natively and calls into
-  Python once per matched handler with a JSON payload. See
+  Python once for the matching bubbling route with a JSON payload. See
   `wybthon.events` for the Python half.
 
 Application code never imports this module directly; it's plumbing for
@@ -34,7 +34,10 @@ the reconciler, `wybthon.props`, and `wybthon.events`.
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Set
+
+from . import diagnostics
 
 __all__ = [
     "commit",
@@ -69,6 +72,10 @@ OP_REGISTER_TPL = 14  # [op, tpl_id, html]  (parse once; cloned by OP_CLONE_TPL)
 OP_CREATE_ELEMENT_NS = 15  # [op, id, namespace, tag]  (SVG / MathML)
 OP_ROOT = 16  # [op, id]  (delegate events from this node instead of document)
 OP_UNROOT = 17  # [op, id]
+OP_MOVE_RANGE = 18  # [op, parent, first, last, anchor]
+OP_REMOVE_RANGE = 19  # [op, first, last]
+OP_RELEASE_TPL = 20  # [op, tpl_id]
+OP_HOLE_TEXT = 21  # [op, anchor_id, text]  (reuse the anchor as visible text)
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -84,7 +91,8 @@ _next_id: int = 1
 # Registered template skeletons: html -> tpl_id. The backend parses each
 # skeleton once (OP_REGISTER_TPL) and clones it per mount (OP_CLONE_TPL).
 # Bounded by the number of distinct static skeletons in the app.
-_tpl_ids: Dict[str, int] = {}
+_tpl_ids: OrderedDict[str, int] = OrderedDict()
+_TEMPLATE_LIMIT = 256
 _next_tpl_id: int = 1
 
 _backend: Optional[Any] = None
@@ -128,6 +136,11 @@ def template_id(html: str) -> int:
         _next_tpl_id = tid + 1
         _tpl_ids[html] = tid
         _ops.append((OP_REGISTER_TPL, tid, html))
+        if len(_tpl_ids) > _TEMPLATE_LIMIT:
+            _, retired = _tpl_ids.popitem(last=False)
+            _ops.append((OP_RELEASE_TPL, retired))
+    else:
+        _tpl_ids.move_to_end(html)
     return tid
 
 
@@ -148,7 +161,28 @@ def commit() -> None:
     backend = _backend if _backend is not None else _ensure_backend()
     ops = list(_ops)
     _ops.clear()
+    if diagnostics._active is not None:
+        counts = diagnostics._active.counts
+        counts["commits"] += 1
+        counts["dom_ops"] += len(ops)
+        for op in ops:
+            counts[f"op_{op[0]}"] += 1
     backend.apply(ops)
+
+
+def stats() -> dict[str, int]:
+    """Return node, template, listener, and root registry sizes."""
+    backend = _backend
+    if backend is None:
+        return {"nodes": 0, "templates": 0, "listeners": 0, "roots": 0}
+    if isinstance(backend, BrowserBackend):
+        return json.loads(str(backend._kernel.stats()))
+    return {
+        "nodes": len(backend._nodes),
+        "templates": len(backend._tpl_protos),
+        "listeners": len(backend._listen),
+        "roots": len(backend._roots),
+    }
 
 
 def get_node(node_id: int) -> Any:
@@ -162,8 +196,7 @@ def adopt(node: Any) -> int:
     """Register an existing raw DOM node and return its new id."""
     backend = _backend if _backend is not None else _ensure_backend()
     nid = alloc_id()
-    backend.adopt(nid, node)
-    return nid
+    return int(backend.adopt(nid, node))
 
 
 def query(selector: str) -> Optional[int]:
@@ -175,9 +208,8 @@ def query(selector: str) -> Optional[int]:
     commit()
     backend = _backend if _backend is not None else _ensure_backend()
     nid = alloc_id()
-    if backend.query(nid, selector):
-        return nid
-    return None
+    result = backend.query(nid, selector)
+    return int(result) if result else None
 
 
 def supports_html() -> bool:
@@ -257,6 +289,11 @@ def _ensure_backend() -> Any:
 _KERNEL_JS = r"""
 (() => {
   const nodes = new Map();          // id -> Node
+  const directListeners = new Map(); // id -> Map<eventKey, {type, fn, options}>
+  const nonBubbling = new Set([
+    "focus", "blur", "mouseenter", "mouseleave", "pointerenter", "pointerleave",
+    "scroll", "load", "error", "invalid", "toggle"
+  ]);
   const listenTypes = new Map();    // id -> Set<eventType>
   const typeCounts = new Map();     // eventType -> number of listening nodes
   const rootListeners = new Map();  // eventType -> native listener
@@ -332,7 +369,26 @@ _KERNEL_JS = r"""
     walkAssign(root, firstId, count);
   }
 
-  function listen(id, type) {
+  function listen(id, key, options = {}) {
+    const type = key.endsWith(":capture") ? key.slice(0, -8) : key;
+    if (options.capture || options.passive || nonBubbling.has(type)) {
+      let entries = directListeners.get(id);
+      if (!entries) { entries = new Map(); directListeners.set(id, entries); }
+      if (entries.has(key)) return;
+      const fn = (ev) => {
+        if (dispatcher === null) return;
+        const saved = currentEvent;
+        currentEvent = ev;
+        try {
+          const flags = dispatcher(id, key, buildPayload(ev));
+          if (flags & 2) ev.preventDefault();
+          if (flags & 1) ev.stopPropagation();
+        } finally { currentEvent = saved; }
+      };
+      entries.set(key, {type, fn, options});
+      nodes.get(id).addEventListener(type, fn, options);
+      return;
+    }
     let set = listenTypes.get(id);
     if (set === undefined) {
       set = new Set();
@@ -345,7 +401,17 @@ _KERNEL_JS = r"""
     if (n === 1) installRoot(type);
   }
 
-  function unlisten(id, type) {
+  function unlisten(id, key) {
+    const entries = directListeners.get(id);
+    const entry = entries && entries.get(key);
+    if (entry) {
+      const node = nodes.get(id);
+      if (node) node.removeEventListener(entry.type, entry.fn, entry.options);
+      entries.delete(key);
+      if (!entries.size) directListeners.delete(id);
+      return;
+    }
+    const type = key;
     const set = listenTypes.get(id);
     if (set === undefined || !set.has(type)) return;
     set.delete(type);
@@ -367,9 +433,15 @@ _KERNEL_JS = r"""
     }
   }
 
+  const controlledSelects = new Map();
   function release(ids) {
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
+      controlledSelects.delete(id);
+      const entries = directListeners.get(id);
+      if (entries) for (const key of Array.from(entries.keys())) unlisten(id, key);
+      const node = nodes.get(id);
+      if (node && node.__wybId === id) delete node.__wybId;
       nodes.delete(id);
       const set = listenTypes.get(id);
       if (set !== undefined) {
@@ -379,9 +451,18 @@ _KERNEL_JS = r"""
     }
   }
 
-  function buildPayload(ev) {
-    const t = ev.target;
+  function buildPayload(ev, route = undefined) {
+    const path = ev.composedPath ? ev.composedPath() : [];
+    const t = path.length ? path[0] : ev.target;
+    let detail = ev.detail;
+    try { detail = detail === undefined ? null : JSON.parse(JSON.stringify(detail)); }
+    catch (_) { detail = null; }
     return JSON.stringify({
+      route, detail,
+      defaultPrevented: !!ev.defaultPrevented,
+      isComposing: !!ev.isComposing,
+      scrollTop: t && t.scrollTop !== undefined ? t.scrollTop : 0,
+      selectedValues: t && t.selectedOptions ? Array.from(t.selectedOptions, option => option.value) : [],
       type: ev.type,
       value: t && t.value !== undefined ? t.value : null,
       checked: t && t.checked !== undefined ? !!t.checked : false,
@@ -405,29 +486,22 @@ _KERNEL_JS = r"""
       // as it bubbles; only the innermost root dispatches it.
       if (ev.__wybHandled) return;
       ev.__wybHandled = true;
-      let node = ev.target;
-      let payload = null;
+      const route = [];
+      const path = ev.composedPath ? ev.composedPath() : [];
+      if (!path.length) for (let node = ev.target; node; node = node.parentNode) path.push(node);
+      for (const node of path) {
+        const id = node.__wybId;
+        const set = id === undefined ? undefined : listenTypes.get(id);
+        if (set && set.has(type)) route.push([id, type]);
+      }
+      if (!route.length) return;
+      const saved = currentEvent;
       currentEvent = ev;
       try {
-        while (node !== null) {
-          const id = node.__wybId;
-          if (id !== undefined) {
-            const set = listenTypes.get(id);
-            if (set !== undefined && set.has(type)) {
-              if (payload === null) payload = buildPayload(ev);
-              const flags = dispatcher(id, type, payload);
-              if (flags & 2) ev.preventDefault();
-              if (flags & 1) {
-                ev.stopPropagation();
-                return;
-              }
-            }
-          }
-          node = node.parentNode;
-        }
-      } finally {
-        currentEvent = null;
-      }
+        const flags = dispatcher(0, type, buildPayload(ev, route));
+        if (flags & 2) ev.preventDefault();
+        if (flags & 1) ev.stopPropagation();
+      } finally { currentEvent = saved; }
     };
     for (const target of delegationTargets()) target.addEventListener(type, fn);
     rootListeners.set(type, fn);
@@ -482,7 +556,10 @@ _KERNEL_JS = r"""
           break;
         }
         case 9: { // SET_PROP
-          nodes.get(op[1])[op[2]] = op[3];
+          const node = nodes.get(op[1]);
+          if (node.localName === "select" && (op[2] === "value" || op[2] === "selectedValues")) {
+            controlledSelects.set(op[1], [op[2], op[3]]);
+          } else if (node[op[2]] !== op[3]) node[op[2]] = op[3];
           break;
         }
         case 10: { // SET_STYLE
@@ -496,7 +573,7 @@ _KERNEL_JS = r"""
           break;
         }
         case 11: { // LISTEN
-          listen(op[1], op[2]);
+          listen(op[1], op[2], op[3]);
           break;
         }
         case 12: { // UNLISTEN
@@ -525,27 +602,84 @@ _KERNEL_JS = r"""
           if (n !== undefined) removeRoot(n);
           break;
         }
+        case 21: { // HOLE_TEXT
+          const node = nodes.get(op[1]);
+          if (node.nodeType === 3) node.nodeValue = op[2];
+          else {
+            const text = doc.createTextNode(op[2]);
+            if (node.parentNode) node.parentNode.replaceChild(text, node);
+            reg(op[1], text);
+          }
+          break;
+        }
+        case 20: { // RELEASE_TPL
+          tplProtos.delete(op[1]);
+          break;
+        }
+        case 18: { // MOVE_RANGE
+          const first = nodes.get(op[2]), last = nodes.get(op[3]);
+          const anchor = op[4] === null ? null : nodes.get(op[4]);
+          const parent = anchor && anchor.parentNode ? anchor.parentNode : nodes.get(op[1]);
+          if (!first || !last || anchor === first || (last.parentNode === parent && last.nextSibling === anchor)) break;
+          const fragment = doc.createDocumentFragment();
+          const after = last.nextSibling;
+          let current = first;
+          while (current && current !== after) {
+            const next = current.nextSibling;
+            fragment.appendChild(current);
+            current = next;
+          }
+          parent.insertBefore(fragment, anchor);
+          break;
+        }
+        case 19: { // REMOVE_RANGE
+          const first = nodes.get(op[1]), last = nodes.get(op[2]);
+          if (!first || !last) break;
+          const after = last.nextSibling;
+          let current = first;
+          while (current && current !== after) {
+            const next = current.nextSibling;
+            if (current.parentNode) current.parentNode.removeChild(current);
+            current = next;
+          }
+          break;
+        }
         default:
           throw new Error(`wybthon kernel: unknown op ${op[0]}`);
       }
     }
+    // Options may be inserted after the select's property op, or in a later
+    // commit. Reapply controlled selection once all structural ops finish.
+    for (const [id, [prop, value]] of controlledSelects) {
+      const node = nodes.get(id);
+      if (prop === "selectedValues") {
+        const selected = new Set(value || []);
+        for (const option of node.options) option.selected = selected.has(option.value);
+      } else if (node.value !== value) node.value = value;
+    }
+
   }
 
   return {
     apply,
     getNode: (id) => nodes.get(id),
-    adopt: (id, node) => { reg(id, node); },
+    adopt: (id, node) => {
+      if (node.__wybId !== undefined && nodes.get(node.__wybId) === node) return node.__wybId;
+      reg(id, node); return id;
+    },
     adoptQuery: (id, selector) => {
       const n = doc.querySelector(selector);
-      if (n === null) return false;
+      if (n === null) return 0;
+      if (n.__wybId !== undefined && nodes.get(n.__wybId) === n) return n.__wybId;
       reg(id, n);
-      return true;
+      return id;
     },
     setDispatcher: (fn) => { dispatcher = fn; },
     getCurrentEvent: () => currentEvent,
     stats: () => JSON.stringify({
       nodes: nodes.size,
-      listeners: listenTypes.size,
+      listeners: listenTypes.size + directListeners.size,
+      roots: roots.size,
       types: typeCounts.size,
       templates: tplProtos.size,
     }),
@@ -579,19 +713,33 @@ class BrowserBackend:
 
     def apply(self, ops: List[Any]) -> None:
         """Serialize `ops` to JSON and apply them in one kernel call."""
-        self._kernel.apply(json.dumps(ops, separators=(",", ":"), ensure_ascii=False))
+        measured = diagnostics._active
+        if measured is None:
+            self._kernel.apply(json.dumps(ops, separators=(",", ":"), ensure_ascii=False))
+            return
+        from time import perf_counter
+
+        started = perf_counter()
+        encoded = json.dumps(ops, separators=(",", ":"), ensure_ascii=False)
+        serialized = perf_counter()
+        self._kernel.apply(encoded)
+        finished = perf_counter()
+        measured.counts["serialized_bytes"] += len(encoded.encode("utf-8"))
+        measured.counts["serialize_us"] += round((serialized - started) * 1000000)
+        measured.counts["kernel_us"] += round((finished - serialized) * 1000000)
 
     def get_node(self, node_id: int) -> Any:
         """Return the raw DOM node registered under `node_id`."""
         return self._kernel.getNode(node_id)
 
-    def adopt(self, node_id: int, node: Any) -> None:
-        """Register an existing raw DOM node under `node_id`."""
-        self._kernel.adopt(node_id, node)
+    def adopt(self, node_id: int, node: Any) -> int:
+        """Return an existing handle or register the node under `node_id`."""
+        return int(self._kernel.adopt(node_id, node))
 
-    def query(self, node_id: int, selector: str) -> bool:
-        """Register the first `selector` match under `node_id`; False when none."""
-        return bool(self._kernel.adoptQuery(node_id, selector))
+    def query(self, node_id: int, selector: str) -> int | None:
+        """Return the canonical handle of a selector match, or None."""
+        result = self._kernel.adoptQuery(node_id, selector)
+        return int(result) if result else None
 
     def supports_html(self) -> bool:
         """The browser can always parse template HTML."""
@@ -627,7 +775,9 @@ class PythonBackend:
     def __init__(self, document: Any) -> None:
         self._doc = document
         self._nodes: Dict[int, Any] = {}
+        self._controlled_selects: dict[int, tuple[str, Any]] = {}
         self._listen: Dict[int, Set[str]] = {}
+        self._listener_options: dict[tuple[int, str], dict[str, Any]] = {}
         self._type_counts: Dict[str, int] = {}
         self._root_listeners: Dict[str, Any] = {}
         self._roots: List[Any] = []
@@ -677,6 +827,45 @@ class PythonBackend:
                 node = nodes.get(op[1])
                 if node is not None and getattr(node, "parentNode", None) is not None:
                     node.parentNode.removeChild(node)
+            elif code == OP_MOVE_RANGE:
+                first, last = nodes.get(op[2]), nodes.get(op[3])
+                anchor = nodes.get(op[4]) if op[4] is not None else None
+                if first is None or last is None or anchor is first:
+                    continue
+                parent = getattr(anchor, "parentNode", None) if anchor is not None else None
+                if parent is None:
+                    parent = nodes[op[1]]
+                if last.parentNode is parent and last.nextSibling is anchor:
+                    continue
+                after = last.nextSibling
+                current = first
+                moving = []
+                while current is not None and current is not after:
+                    moving.append(current)
+                    current = current.nextSibling
+                for node in moving:
+                    parent.insertBefore(node, anchor)
+            elif code == OP_REMOVE_RANGE:
+                first, last = nodes.get(op[1]), nodes.get(op[2])
+                if first is None or last is None:
+                    continue
+                after = last.nextSibling
+                current = first
+                while current is not None and current is not after:
+                    following = current.nextSibling
+                    if current.parentNode is not None:
+                        current.parentNode.removeChild(current)
+                    current = following
+            elif code == OP_HOLE_TEXT:
+                node = nodes[op[1]]
+                if getattr(node, "_is_text", False) and not getattr(node, "_is_comment", False):
+                    node.nodeValue = op[2]
+                else:
+                    text = doc.createTextNode(op[2])
+                    if node.parentNode is not None:
+                        node.parentNode.insertBefore(text, node)
+                        node.parentNode.removeChild(node)
+                    self._reg(op[1], text)
             elif code == OP_SET_TEXT:
                 nodes[op[1]].nodeValue = op[2]
             elif code == OP_SET_ATTR:
@@ -685,7 +874,11 @@ class PythonBackend:
                 else:
                     nodes[op[1]].setAttribute(op[2], op[3])
             elif code == OP_SET_PROP:
-                setattr(nodes[op[1]], op[2], op[3])
+                node = nodes[op[1]]
+                if (getattr(node, "tag", "") or "").lower() == "select" and op[2] in ("value", "selectedValues"):
+                    self._controlled_selects[op[1]] = (op[2], op[3])
+                else:
+                    setattr(node, op[2], op[3])
             elif code == OP_SET_STYLE:
                 style = nodes[op[1]].style
                 for key, value in op[2].items():
@@ -695,10 +888,13 @@ class PythonBackend:
                         style.setProperty(key, value)
             elif code == OP_LISTEN:
                 self._listen_op(op[1], op[2])
+                self._listener_options[(op[1], op[2])] = op[3] if len(op) > 3 else {}
             elif code == OP_UNLISTEN:
                 self._unlisten_op(op[1], op[2])
             elif code == OP_RELEASE:
                 self._release(op[1])
+            elif code == OP_RELEASE_TPL:
+                self._tpl_protos.pop(op[1], None)
             elif code == OP_REGISTER_TPL:
                 self._register_tpl(op[1], op[2])
             elif code == OP_CREATE_ELEMENT_NS:
@@ -716,21 +912,35 @@ class PythonBackend:
             else:
                 raise ValueError(f"wybthon kernel: unknown op {code}")
 
+        for node_id, (prop, value) in self._controlled_selects.items():
+            node = nodes[node_id]
+            setattr(node, prop, value)
+            pending = list(node.childNodes)
+            while pending:
+                child = pending.pop()
+                if (getattr(child, "tag", "") or "").lower() == "option":
+                    option_value = getattr(child, "value", None) or child.getAttribute("value")
+                    child.selected = (
+                        option_value in (value or []) if prop == "selectedValues" else option_value == value
+                    )
+                pending.extend(child.childNodes)
+
     def get_node(self, node_id: int) -> Any:
         """Return the stub node registered under `node_id`, or `None`."""
         return self._nodes.get(node_id)
 
-    def adopt(self, node_id: int, node: Any) -> None:
-        """Register an existing stub node under `node_id`."""
+    def adopt(self, node_id: int, node: Any) -> int:
+        """Return an existing handle or register this stub node."""
+        current = getattr(node, "_wyb_id", None)
+        if current is not None and self._nodes.get(current) is node:
+            return int(current)
         self._reg(node_id, node)
+        return node_id
 
-    def query(self, node_id: int, selector: str) -> bool:
-        """Register the document's first `selector` match; False when none."""
+    def query(self, node_id: int, selector: str) -> int | None:
+        """Return the canonical handle of a selector match, or None."""
         node = self._doc.querySelector(selector)
-        if node is None:
-            return False
-        self._reg(node_id, node)
-        return True
+        return None if node is None else self.adopt(node_id, node)
 
     def supports_html(self) -> bool:
         """Whether the stub document parses `<template>` innerHTML."""
@@ -829,6 +1039,7 @@ class PythonBackend:
         if types is None or event_type not in types:
             return
         types.discard(event_type)
+        self._listener_options.pop((node_id, event_type), None)
         if not types:
             self._listen.pop(node_id, None)
         self._drop_type_count(event_type)
@@ -848,10 +1059,14 @@ class PythonBackend:
 
     def _release(self, ids: List[int]) -> None:
         for node_id in ids:
-            self._nodes.pop(node_id, None)
+            self._controlled_selects.pop(node_id, None)
+            node = self._nodes.pop(node_id, None)
+            if node is not None and getattr(node, "_wyb_id", None) == node_id:
+                delattr(node, "_wyb_id")
             types = self._listen.pop(node_id, None)
             if types:
                 for event_type in types:
+                    self._listener_options.pop((node_id, event_type), None)
                     self._drop_type_count(event_type)
 
     def _targets(self) -> list[Any]:
@@ -922,6 +1137,8 @@ class PythonBackend:
         base = {
             "type": event_type,
             "value": getattr(target, "value", None),
+            "scrollTop": getattr(target, "scrollTop", 0),
+            "selectedValues": getattr(target, "selectedValues", []),
             "checked": bool(getattr(target, "checked", False)),
             "key": None,
             "code": None,
@@ -936,18 +1153,43 @@ class PythonBackend:
         }
         if payload:
             base.update(payload)
-        payload_json = json.dumps(base)
+        path = []
+        node = target
+        while node is not None:
+            path.append(node)
+            node = getattr(node, "parentNode", None)
+        route = []
+        non_bubbling = event_type in {
+            "focus",
+            "blur",
+            "mouseenter",
+            "mouseleave",
+            "pointerenter",
+            "pointerleave",
+            "scroll",
+            "load",
+            "error",
+            "invalid",
+            "toggle",
+        }
+        for node in reversed(path):
+            nid = getattr(node, "_wyb_id", None)
+            key = event_type + ":capture"
+            if nid is not None and key in self._listen.get(nid, ()):
+                route.append([nid, key])
+        for node in path[:1] if non_bubbling else path:
+            nid = getattr(node, "_wyb_id", None)
+            if nid is not None and event_type in self._listen.get(nid, ()):
+                route.append([nid, event_type])
+        base["route"] = route
+        previous_event = self._current_event
         self._current_event = raw_event
         try:
-            node = target
-            while node is not None:
-                node_id = getattr(node, "_wyb_id", None)
-                if node_id is not None:
-                    types = self._listen.get(node_id)
-                    if types and event_type in types:
-                        flags = self._dispatcher(node_id, event_type, payload_json)
-                        if flags & FLAG_STOP_PROPAGATION:
-                            return
-                node = getattr(node, "parentNode", None)
+            flags = self._dispatcher(0, event_type, json.dumps(base))
+            if raw_event is not None:
+                if flags & FLAG_PREVENT_DEFAULT and hasattr(raw_event, "preventDefault"):
+                    raw_event.preventDefault()
+                if flags & FLAG_STOP_PROPAGATION and hasattr(raw_event, "stopPropagation"):
+                    raw_event.stopPropagation()
         finally:
-            self._current_event = None
+            self._current_event = previous_event

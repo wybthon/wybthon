@@ -40,9 +40,12 @@ from .kernel import (
     OP_CREATE_ELEMENT,
     OP_CREATE_ELEMENT_NS,
     OP_CREATE_TEXT,
+    OP_HOLE_TEXT,
     OP_INSERT,
+    OP_MOVE_RANGE,
     OP_RELEASE,
     OP_REMOVE,
+    OP_REMOVE_RANGE,
     OP_ROOT,
     OP_SET_TEXT,
     OP_UNROOT,
@@ -127,13 +130,14 @@ class Root:
         vnode: The currently rendered root VNode.
     """
 
-    __slots__ = ("container", "vnode", "_owner", "_disposed")
+    __slots__ = ("container", "vnode", "_owner", "_disposed", "_release_container")
 
     def __init__(self, container: Element, vnode: VNode, owner: Owner) -> None:
         self.container = container
         self.vnode = vnode
         self._owner = owner
         self._disposed = False
+        self._release_container = False
 
     @property
     def node_id(self) -> int:
@@ -150,6 +154,8 @@ class Root:
         _unmount(self.vnode)
         self._owner.dispose()
         _emit((OP_UNROOT, container_id))
+        if self._release_container:
+            _emit((OP_RELEASE, [container_id]))
         kernel.commit()
 
 
@@ -204,6 +210,7 @@ def render(vnode: Any, container: Element | str | int) -> Root:
 
         owner = Owner()
         root = Root(container_el, node, owner)
+        root._release_container = isinstance(container, str)
         _roots[container_id] = root
         _emit((OP_ROOT, container_id))
         _core.run_with_owner(owner, lambda: mount(node, container_id))
@@ -233,6 +240,20 @@ def _first_dom_id(vnode: VNode) -> int | None:
         return vnode.el
 
 
+def _range_bounds(vnode: VNode) -> tuple[int | None, int | None]:
+    first = _first_dom_id(vnode)
+    while vnode.subtree is not None and vnode.tag != "_hole":
+        vnode = vnode.subtree
+    last = vnode._frag_end if vnode._frag_end is not None else vnode.el
+    return first, last
+
+
+def _move_range(vnode: VNode, parent_id: int, anchor: int | None) -> None:
+    first, last = _range_bounds(vnode)
+    if first is not None:
+        _emit((OP_MOVE_RANGE, parent_id, first, last, anchor))
+
+
 def _dom_node_ids(vnode: VNode) -> list[int]:
     """Return the ids of all top-level DOM nodes belonging to this vnode."""
     if vnode.tag == "_hole":
@@ -244,7 +265,7 @@ def _dom_node_ids(vnode: VNode) -> list[int]:
         return nodes
     if vnode.subtree is not None:
         return _dom_node_ids(vnode.subtree)
-    if vnode.tag == "_fragment":
+    if vnode.tag in ("_fragment", "_list", "_branch"):
         if vnode.el is None:
             return []
         frag_nodes: list[int] = [vnode.el]
@@ -355,6 +376,12 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
 
     if tag == "_hole":
         _mount_hole(vnode, parent_id, anchor_id)
+        return
+
+    if tag in ("_list", "_branch"):
+        from ._regions import mount_branch, mount_list
+
+        (mount_list if tag == "_list" else mount_branch)(vnode, parent_id, anchor_id)
         return
 
     if tag == "_fragment":
@@ -507,7 +534,7 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
     context lookups from inside them resolve through the tree.
     """
     ns = vnode.ns
-    scope: Owner = vnode.scope
+    scope_parent = _core._current_owner
 
     def compute() -> Any:
         try:
@@ -528,25 +555,22 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
         prev = vnode.subtree
         rtype = type(result)
         if rtype is str or rtype is int or rtype is float:
-            # Text fast path: a scalar result is a single text node. On
-            # first mount create it directly; afterwards write the new
-            # value into the existing node instead of diffing VNodes.
             text = result if rtype is str else str(result)
-            if prev is None:
-                node = VNode("_text", {"nodeValue": text}, [])
-                node.ns = ns
-                nid = _alloc_id()
-                node.el = nid
-                _emit((OP_CREATE_TEXT, nid, text))
-                _emit((OP_INSERT, parent_id, nid, end_id))
-                vnode.subtree = node
-                return
-            if prev.tag == "_text" and prev.el is not None:
-                props = prev.props
-                if props.get("nodeValue") != text:
-                    props["nodeValue"] = text
-                    _emit((OP_SET_TEXT, prev.el, text))
-                return
+            if prev is not None:
+                _unmount(prev)
+                vnode.subtree = None
+            if vnode._hole_text != text:
+                _emit((OP_HOLE_TEXT, end_id, text))
+                vnode._hole_text = text
+            return
+        if vnode._hole_text is not None:
+            if vnode._hole_text:
+                _emit((OP_SET_TEXT, end_id, ""))
+            vnode._hole_text = None
+        if vnode.scope is None:
+            vnode.scope = Owner()
+            if scope_parent is not None:
+                scope_parent._add_child(vnode.scope)
         new_node = _coerce_result(result)
         vnode.subtree = new_node
 
@@ -560,10 +584,11 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
                 if not _dispatch_to_error_boundary(exc):
                     log_error(f"Reactive hole update failed: {exc}", exc)
 
-        _core._run_owned_untracked(scope, commit)
+        _core._run_owned_untracked(vnode.scope, commit)
 
-    comp = Computation(compute, kind=_K_RENDER, apply=apply, pass_prev=False)
-    scope._add_child(comp)
+    comp = Computation(compute, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
+    if scope_parent is not None:
+        scope_parent._add_child(comp)
     comp._update_if_necessary()
     return comp
 
@@ -592,12 +617,6 @@ def _mount_hole(
     vnode.el = end_id
     vnode._frag_end = end_id
 
-    scope = Owner()
-    parent_owner = _core._current_owner
-    if parent_owner is not None:
-        parent_owner._add_child(scope)
-    vnode.scope = scope
-
     getter = vnode.props.get("getter")
     if not callable(getter):
         return
@@ -611,6 +630,7 @@ def _patch_hole(old: VNode, new: VNode, parent_id: int) -> None:
     new.subtree = old.subtree
     new.ns = old.ns
     new.scope = old.scope
+    new._hole_text = old._hole_text
 
     old_getter = old.props.get("getter")
     new_getter = new.props.get("getter")
@@ -728,9 +748,9 @@ def unmount(vnode: VNode) -> None:
 
 
 def _unmount(vnode: VNode) -> None:
-    top_ids = _dom_node_ids(vnode)
-    for nid in top_ids:
-        _emit((OP_REMOVE, nid))
+    first, last = _range_bounds(vnode)
+    if first is not None:
+        _emit((OP_REMOVE_RANGE, first, last))
     released: list[int] = []
     _dispose_tree(vnode, released)
     if released:
@@ -767,7 +787,13 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
         vnode.el = None
         return
 
-    if tag == "_fragment":
+    if tag in ("_fragment", "_list", "_branch"):
+        if vnode.render_effect is not None:
+            vnode.render_effect.dispose()
+            vnode.render_effect = None
+        if vnode.scope is not None:
+            vnode.scope.dispose()
+            vnode.scope = None
         for child in vnode.children:
             if isinstance(child, VNode):
                 _dispose_tree(child, released)
@@ -781,7 +807,7 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
 
     if vnode.el is None:
         return
-    detach_ref(vnode.props)
+    detach_ref(vnode.el)
     remove_handlers_for(vnode.el)
     remove_bindings_for(vnode.el)
     for child in vnode.children:
@@ -848,6 +874,10 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
         _patch_hole(old, new, parent_id)
         return
 
+    if tag in ("_list", "_branch"):
+        _replace(old, new, parent_id, ns)
+        return
+
     if tag == "_fragment":
         _patch_fragment(old, new, parent_id)
         return
@@ -860,6 +890,7 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
     new.el = old.el
     apply_props(new.el, old.props, new.props)
     if new.props.get("ref") is not old.props.get("ref"):
+        detach_ref(new.el)
         attach_ref(new.props, new.el)
 
     new_children = normalize_children(new.children)
@@ -895,6 +926,39 @@ def _reconcile_children(
     """
     n_old = len(old_children)
     n = len(new_children)
+
+    def same_edge(old: VNode, new: VNode) -> bool:
+        return old is new or (
+            old.owner_scope is None
+            and new.owner_scope is None
+            and old.key is not None
+            and old.key == new.key
+            and old.tag == new.tag
+        )
+
+    prefix = 0
+    while prefix < min(n_old, n) and same_edge(old_children[prefix], new_children[prefix]):
+        patch(old_children[prefix], new_children[prefix], parent_id, ns)
+        prefix += 1
+    suffix = 0
+    while suffix < min(n_old, n) - prefix and same_edge(old_children[-1 - suffix], new_children[-1 - suffix]):
+        suffix += 1
+    if prefix or suffix or not n_old or not n:
+        for i in range(suffix, 0, -1):
+            patch(old_children[-i], new_children[-i], parent_id, ns)
+        old_middle = old_children[prefix : n_old - suffix]
+        new_middle = new_children[prefix : n - suffix]
+        anchor = _first_dom_id(new_children[n - suffix]) if suffix else end_marker
+        if not old_middle:
+            for child in new_middle:
+                mount(child, parent_id, anchor, ns)
+        elif not new_middle:
+            for child in old_middle:
+                _unmount(child)
+        else:
+            _reconcile_children(old_middle, new_middle, parent_id, anchor, ns)
+        return
+
     used_old: list[bool] = [False] * n_old
     sources: list[int] = [-1] * n
     needs_patch: list[bool] = [False] * n
@@ -952,27 +1016,37 @@ def _reconcile_children(
         if needs_patch[i]:
             patch(old_children[sources[i]], new_children[i], parent_id, ns)
 
-    tails: list[int] = []
-    tails_idx: list[int] = []
-    prev_idx: list[int] = [-1] * n
-    for i in range(n):
-        s = sources[i]
-        if s == -1:
-            continue
-        pos = bisect_left(tails, s)
-        if pos == len(tails):
-            tails.append(s)
-            tails_idx.append(i)
-        else:
-            tails[pos] = s
-            tails_idx[pos] = i
-        prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
+    previous_source = -1
+    ordered = True
+    for source in sources:
+        if source >= 0:
+            if source < previous_source:
+                ordered = False
+                break
+            previous_source = source
+    lis_set: set[int] | None = None
+    if not ordered:
+        tails: list[int] = []
+        tails_idx: list[int] = []
+        prev_idx: list[int] = [-1] * n
+        for i in range(n):
+            s = sources[i]
+            if s == -1:
+                continue
+            pos = bisect_left(tails, s)
+            if pos == len(tails):
+                tails.append(s)
+                tails_idx.append(i)
+            else:
+                tails[pos] = s
+                tails_idx[pos] = i
+            prev_idx[i] = tails_idx[pos - 1] if pos > 0 else -1
 
-    lis_set: set[int] = set()
-    k = tails_idx[-1] if tails_idx else -1
-    while k != -1:
-        lis_set.add(k)
-        k = prev_idx[k]
+        lis_set = set()
+        k = tails_idx[-1] if tails_idx else -1
+        while k != -1:
+            lis_set.add(k)
+            k = prev_idx[k]
 
     next_anchor = end_marker
     i = n - 1
@@ -1002,9 +1076,8 @@ def _reconcile_children(
         new_child = new_children[i]
         first_dom = _first_dom_id(new_child)
         if first_dom is not None:
-            if i not in lis_set:
-                for nid in _dom_node_ids(new_child):
-                    _emit((OP_INSERT, parent_id, nid, next_anchor))
+            if lis_set is not None and i not in lis_set:
+                _move_range(new_child, parent_id, next_anchor)
             next_anchor = first_dom
         i -= 1
 

@@ -50,7 +50,7 @@ _KEEP = object()
 _SKIP = frozenset({"key", "ref", "children"})
 
 # Props written as DOM properties rather than attributes.
-_DOM_PROPS = frozenset({"value", "checked", "inner_html", "innerHTML"})
+_DOM_PROPS = frozenset({"value", "checked", "selected_values", "inner_html", "innerHTML"})
 
 # HTML boolean attributes: present/absent, never "true"/"false".
 _BOOLEAN_ATTRS = frozenset(
@@ -161,46 +161,43 @@ def event_name_from_prop(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+_ref_cleanups: dict[int, list[Any]] = {}
+
+
 def attach_ref(props: PropsDict, node_id: int) -> None:
-    """Assign the mounted element to the `ref` prop (Ref, callback, or list)."""
+    """Assign a ref; a callback may return cleanup for replacement or unmount."""
     ref = props.get("ref")
     if ref is None:
         return
     from .dom import Element
 
-    _assign_ref(ref, Element(node_id=node_id))
+    cleanups = _ref_cleanups.setdefault(node_id, [])
+    _assign_ref(ref, Element(node_id=node_id), cleanups)
 
 
-def _assign_ref(ref: Any, element: Any) -> None:
+def _assign_ref(ref: Any, element: Any, cleanups: list[Any]) -> None:
     if isinstance(ref, (list, tuple)):
-        for r in ref:
-            _assign_ref(r, element)
-        return
-    if hasattr(ref, "current"):
+        for item in ref:
+            _assign_ref(item, element, cleanups)
+    elif hasattr(ref, "current"):
         ref.current = element
-        return
-    if callable(ref):
+        cleanups.append(lambda: setattr(ref, "current", None))
+    elif callable(ref):
         try:
-            ref(element)
+            cleanup = ref(element)
+            if callable(cleanup):
+                cleanups.append(cleanup)
         except Exception as exc:
             log_error(f"ref callback raised: {exc}", exc)
 
 
-def detach_ref(props: PropsDict) -> None:
-    """Reset `Ref` objects in the `ref` prop to `None` (callbacks aren't re-invoked)."""
-    ref = props.get("ref")
-    if ref is None:
-        return
-    _clear_ref(ref)
-
-
-def _clear_ref(ref: Any) -> None:
-    if isinstance(ref, (list, tuple)):
-        for r in ref:
-            _clear_ref(r)
-        return
-    if hasattr(ref, "current"):
-        ref.current = None
+def detach_ref(node_id: int) -> None:
+    """Clear object refs and run callback cleanups exactly once."""
+    for cleanup in reversed(_ref_cleanups.pop(node_id, [])):
+        try:
+            cleanup()
+        except Exception as exc:
+            log_error(f"ref cleanup raised: {exc}", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +236,10 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
         return
 
+    if name == "selected_values":
+        kernel.emit((OP_SET_PROP, node_id, "selectedValues", [str(value) for value in (new_val or [])]))
+        return
+
     if name == "checked":
         kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
         return
@@ -273,6 +274,8 @@ def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
         kernel.emit((OP_SET_PROP, node_id, "value", ""))
     elif name == "checked":
         kernel.emit((OP_SET_PROP, node_id, "checked", False))
+    elif name == "selected_values":
+        kernel.emit((OP_SET_PROP, node_id, "selectedValues", []))
     elif name == "inner_html" or name == "innerHTML":
         kernel.emit((OP_SET_PROP, node_id, "innerHTML", ""))
     else:
@@ -431,7 +434,7 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Computation:
         last[0] = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    comp = Computation(compute, kind=_K_RENDER, apply=apply, pass_prev=False)
+    comp = Computation(compute, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)

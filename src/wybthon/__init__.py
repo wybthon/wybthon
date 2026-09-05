@@ -68,13 +68,17 @@ from .component import Component, component
 from .context import Context, ContextNotFoundError, create_context, use_context
 from .dom import Element, Ref
 from .error_boundary import Errored
-from .events import DomEvent
+from .events import DomEvent, EventHandler, event
 from .flow import Dynamic, DynamicComponent, For, Match, Repeat, Show, Switch, dynamic
 from .forms import (
+    AsyncValidator,
     Field,
+    FormState,
     Validator,
     a11y_control_attrs,
     bind_checkbox,
+    bind_multiselect,
+    bind_number,
     bind_select,
     bind_text,
     email,
@@ -164,6 +168,7 @@ from .reactivity import (
     Accessor,
     Action,
     Computation,
+    LiteralValue,
     Memo,
     NotReadyError,
     Owner,
@@ -183,6 +188,7 @@ from .reactivity import (
     create_root,
     create_selector,
     create_signal,
+    create_tracked_effect,
     create_unique_id,
     flush,
     get_observer,
@@ -190,6 +196,7 @@ from .reactivity import (
     is_accessor,
     is_pending,
     latest,
+    literal,
     map_array,
     merge,
     omit,
@@ -203,21 +210,46 @@ from .reactivity import (
     untrack,
 )
 from .reconciler import Root, render
-from .router import Link, Route, Router, current_path, navigate, use_base_path, use_params, use_query
+from .router import (
+    Link,
+    Outlet,
+    QueryParams,
+    Route,
+    Router,
+    current_path,
+    navigate,
+    preload,
+    use_base_path,
+    use_hash,
+    use_params,
+    use_query,
+)
+from .scheduling import map_cooperative, yield_to_browser
 from .store import (
+    Draft,
+    DraftExpiredError,
+    DraftList,
+    Store,
+    StoreList,
+    StoreSetter,
     create_optimistic_store,
     create_projection,
     create_store,
     deep,
     reconcile,
     snapshot,
-    store_path,
 )
+from .virtual import VirtualFor, Virtualizer, create_virtualizer
 from .vnode import Fragment, VNode, h, hole
 
 __version__ = "0.32.0"
 
 __all__ = [
+    "VirtualFor",
+    "Virtualizer",
+    "create_virtualizer",
+    "map_cooperative",
+    "yield_to_browser",
     # Components
     "component",
     "Component",
@@ -236,6 +268,8 @@ __all__ = [
     "is_accessor",
     # Reactivity
     "Accessor",
+    "LiteralValue",
+    "literal",
     "Setter",
     "Signal",
     "Memo",
@@ -245,6 +279,7 @@ __all__ = [
     "create_signal",
     "create_memo",
     "create_effect",
+    "create_tracked_effect",
     "create_render_effect",
     "create_root",
     "create_unique_id",
@@ -290,15 +325,24 @@ __all__ = [
     "Portal",
     "lazy",
     # Stores
+    "Store",
+    "StoreList",
+    "Draft",
+    "DraftList",
+    "StoreSetter",
+    "DraftExpiredError",
     "create_store",
     "create_projection",
     "create_optimistic_store",
     "reconcile",
-    "store_path",
     "snapshot",
     "deep",
     # Forms
     "Field",
+    "FormState",
+    "AsyncValidator",
+    "bind_number",
+    "bind_multiselect",
     "Validator",
     "form_state",
     "bind_text",
@@ -322,8 +366,14 @@ __all__ = [
     "render",
     "Root",
     "DomEvent",
+    "EventHandler",
+    "event",
     # Router
     "Router",
+    "Outlet",
+    "QueryParams",
+    "preload",
+    "use_hash",
     "Route",
     "Link",
     "navigate",

@@ -39,7 +39,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
 ??? bug "`WriteInScopeError: Cannot write a signal inside a tracking scope`"
 
-    **Symptoms:** a `WriteInScopeError` is raised from a `set_*` call made inside a memo body, a single-function `create_effect`, a reactive hole (a lambda in the tree), or a store setter called from one of those.
+    **Symptoms:** a `WriteInScopeError` is raised from a `set_*` call made inside a memo body, a `create_tracked_effect`, a reactive hole (a lambda in the tree), or a store setter called from one of those.
 
     **Likely cause:** writing a signal from a tracking scope is almost always a bug: it either creates a feedback loop or hides a value that should be derived.
 
@@ -63,7 +63,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
 ??? bug "My effect didn't run when I created it"
 
-    **Symptoms:** `create_effect(lambda: print(count()))` prints nothing until something changes (or until you call `flush()`).
+    **Symptoms:** `create_tracked_effect(lambda: print(count()))` prints nothing until something changes (or until you call `flush()`).
 
     **Likely cause:** the first run of [`create_effect`][wybthon.create_effect] is deferred to the effect phase of the next flush, after the DOM commit, so effects created in a component body observe the mounted DOM.
 

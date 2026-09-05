@@ -8,7 +8,7 @@ Event handling is **delegated at the render root**. The JS kernel
 installs one native listener per event type on each container passed to
 [`render`][wybthon.render] (falling back to `document` when no root is
 registered), walks the ancestor chain natively when an event fires, and
-calls into Python once per matched handler with a small JSON payload.
+calls into Python once for the matching bubbling route with a small JSON payload.
 Handlers receive a [`DomEvent`][wybthon.DomEvent] built from that
 payload, so the common reads (`evt.target.value`, `evt.key`) never touch
 a `JsProxy`. Registering a handler is itself a batched `LISTEN` op.

@@ -20,7 +20,9 @@ See Also:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from urllib.parse import unquote, urlsplit
 
 
 @dataclass
@@ -44,6 +46,7 @@ def _escape_re(s: str) -> str:
     return _re.escape(s)
 
 
+@lru_cache(maxsize=512)
 def _compile_pattern(path: str) -> Tuple[str, List[str]]:
     """Compile a route path to a regex and the list of captured param names.
 
@@ -112,7 +115,7 @@ def _match_path(pathname: str, pattern: str) -> Optional[Dict[str, str]]:
         return None
     params: Dict[str, str] = {}
     for i, name in enumerate(names, start=1):
-        params[name] = m.group(i)
+        params[name] = unquote(m.group(i) or "")
     return params
 
 
@@ -125,21 +128,10 @@ def _join(parent: str, child: str) -> str:
     return parent.rstrip("/") + "/" + child.strip("/")
 
 
-def _flatten(routes: Iterable[Any], parent: str = "/") -> List[Tuple[str, Any]]:
-    """Flatten nested route specs into a list of `(full_path, route)` pairs."""
-    flat: List[Tuple[str, Any]] = []
-    for r in routes:
-        full = _join(parent, getattr(r, "path", ""))
-        flat.append((full, r))
-        children = getattr(r, "children", None) or []
-        flat.extend(_flatten(children, full))
-    return flat
-
-
 def resolve(routes: List[Any], pathname: str, base_path: str = "") -> Optional[Tuple[Any, Dict[str, Any]]]:
     """Resolve a pathname to the best matching route and params.
 
-    The router prefers the most specific (longest) match and honors a
+    The router prefers the most specific segment match and honors a
     `base_path` prefix when provided.
 
     Args:
@@ -154,24 +146,39 @@ def resolve(routes: List[Any], pathname: str, base_path: str = "") -> Optional[T
         A tuple `(route, payload)` where `payload` contains a
         `"params"` dict, or `None` when no route matches.
     """
+    pathname = urlsplit(pathname).path or "/"
+    if pathname != "/":
+        pathname = pathname.rstrip("/")
     if base_path:
         base = base_path.rstrip("/") or "/"
         if base != "/":
-            if not pathname.startswith(base):
+            if pathname != base and not pathname.startswith(base + "/"):
                 return None
             pathname = "/" + pathname[len(base) :].lstrip("/")
 
-    flat = _flatten(routes, "/")
-    best: Optional[Tuple[str, Any, Dict[str, str]]] = None
-    for full, r in flat:
+    candidates: list[tuple[str, Any, list[Any]]] = []
+
+    def walk(items: Iterable[Any], parent: str, chain: list[Any]) -> None:
+        for route in items:
+            full = _join(parent, getattr(route, "path", ""))
+            lineage = [*chain, route]
+            candidates.append((full, route, lineage))
+            walk(getattr(route, "children", None) or [], full, lineage)
+
+    walk(routes, "/", [])
+    best: Any = None
+    for full, route, chain in candidates:
         params = _match_path(pathname, full)
         if params is None:
             continue
-        if best is None or len(full) > len(best[0]):
-            best = (full, r, params)
-
+        # Segment order matters: static literals beat parameters, which beat
+        # wildcards. An exact endpoint beats its optional wildcard extension.
+        segments = full.strip("/").split("/") if full != "/" else []
+        score = tuple(0 if part == "*" else 1 if part.startswith(":") else 2 for part in segments)
+        rank = (*score, 3)
+        if best is None or rank > best[0] or (rank == best[0] and len(chain) > len(best[3])):
+            best = rank, route, params, chain
     if best is None:
         return None
-
-    _, route, params = best
-    return route, {"params": params}
+    _, route, params, chain = best
+    return route, {"params": params, "matches": chain}

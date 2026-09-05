@@ -82,5 +82,5 @@ render(Counter(), "#app")
 
 - New to Wybthon? Start with [Getting started](getting-started.md).
 - Coming from React or SolidJS? Read [Mental model](concepts/mental-model.md) and the migration guides ([from React](guides/migrating-from-react.md), [from Solid](guides/migrating-from-solid.md)).
-- Upgrading from an earlier Wybthon release? See [Migrating from 0.2x and 0.30](guides/migrating-from-0-x.md).
+- Review [runtime contracts](concepts/runtime-contracts.md) for state visibility, ownership, and async behavior.
 - Looking for an API symbol? Use the search box at the top of the page or jump to the [API reference](api/wybthon.md).

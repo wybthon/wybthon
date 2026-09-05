@@ -11,12 +11,12 @@ pages linked in the left column carry the details.
 | --- | --- |
 | [Components](component.md) | `component`, `Component`, `Prop`, `Props`, `prop`, `merge`, `omit`, `children` |
 | [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `element`, `is_accessor` |
-| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Computation`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_render_effect`, `create_root`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `create_selector`, `WriteInScopeError` |
+| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Computation`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_root`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `create_selector`, `WriteInScopeError` |
 | [Async](reactivity.md) | `NotReadyError`, `Transition`, `is_pending`, `latest`, `refresh`, `resolve`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Context](context.md) | `Context`, `ContextNotFoundError`, `create_context`, `use_context` |
 | [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `Dynamic` |
 | Boundaries | [`Loading`, `Reveal`](loading.md), [`Errored`](error_boundary.md), [`Portal`](portal.md), [`lazy`](lazy.md) |
-| [Stores](store.md) | `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `store_path`, `snapshot`, `deep` |
+| [Stores](store.md) | `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
 | [Forms](forms.md) | `Field`, `Validator`, `form_state`, `bind_text`, `bind_checkbox`, `bind_select`, `validate`, `validate_field`, `validate_form`, `required`, `min_length`, `max_length`, `email`, `on_submit`, `on_submit_validated`, `rules_from_schema`, `a11y_control_attrs`, `error_message_attrs` |
 | DOM and rendering | [`Element`, `Ref`](dom.md), [`render`, `Root`](reconciler.md), [`DomEvent`](events.md) |
 | [Router](router.md) | `Router`, `Route`, `Link`, `navigate`, `current_path`, `use_params`, `use_query`, `use_base_path` |
