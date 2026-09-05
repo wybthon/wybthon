@@ -70,8 +70,8 @@ def SignupForm():
 ## Fields
 
 [`form_state`][wybthon.form_state] turns a dict of initial values into
-a dict of [`Field`][wybthon.Field] objects. Each field owns three
-signals:
+a `FormState` mapping of [`Field`][wybthon.Field] objects. Each field exposes
+reactive values:
 
 | Attribute | Type | Meaning |
 | --- | --- | --- |
@@ -98,7 +98,7 @@ helpers call under the hood.
 
 The `bind_*` helpers return prop dicts to spread onto a control:
 
-- [`bind_text(field, validators=[...])`][wybthon.bind_text] gives `value` and `on_input`. The `value` entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.
+- [`bind_text(field, validators=[...])`][wybthon.bind_text] gives `value`, `on_input`, and `on_compositionend`. Composition input waits until composition ends. The `value` entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.
 - [`bind_checkbox(field)`][wybthon.bind_checkbox] gives `checked` and `on_change` for a boolean field.
 - [`bind_select(field)`][wybthon.bind_select] gives `value` and `on_change` for a `<select>`.
 
@@ -108,7 +108,7 @@ revalidate on every input event. Add more props alongside the spread
 
 ## Validators
 
-A [`Validator`][wybthon.Validator] is a function from a value to an
+A `Validator` is a function from a value to an
 error string or `None`. The built-ins are factories so messages are
 customizable:
 
@@ -184,3 +184,22 @@ so it's cheap even in large lists. See [Events](events.md).
 - See the [Forms example](../examples/forms.md) for an end-to-end form.
 - Browse the [`forms`](../api/forms.md) API reference for every helper.
 - Read [Events](events.md) for delegated handler details.
+
+## Dirty state, reset, and async workflows
+
+Each field has `dirty` and `validating` accessors. `field.reset()` restores its initial value and clears touched/error state; `field.reset(value)` establishes a new baseline. `FormState.dirty` and `.validating` aggregate fields, `.data()` returns current values, and `.reset(values=None)` resets the form.
+
+`await field.validate_async(validators)` accepts synchronous or async validators. Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.
+
+```python
+async def save(values):
+    return await post_profile(values)
+
+async def submit(event):
+    event.prevent_default()
+    await fields.submit(save, rules=rules)
+```
+
+`FormState.submit` validates the fields, snapshots their values, and awaits the handler. `.submitting` and `.submit_error` expose the result. If values change during validation, that submission doesn't send stale values. The simpler `on_submit` helpers also propagate async handler results to the event task.
+
+`bind_text(field, parse=..., format=...)` separates display text from stored values and reports conversion errors. `bind_number` handles numeric values and empty inputs. `bind_multiselect` binds all selected values through `selected_values`, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.

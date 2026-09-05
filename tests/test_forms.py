@@ -56,7 +56,7 @@ def test_form_state_creates_fields_with_accessor_setter_pairs():
 def test_bind_text_returns_value_accessor_and_input_handler():
     field = form_state({"name": ""})["name"]
     props = bind_text(field)
-    assert set(props) == {"value", "on_input"}
+    assert set(props) == {"value", "on_input", "on_compositionend"}
     assert props["value"] is field.value
     props["on_input"](FakeEvent(value="Grace"))
     flush()

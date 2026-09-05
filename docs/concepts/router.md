@@ -4,7 +4,7 @@ Client-side routing with path params, query parsing, nested routes, and
 active links.
 
 ```python
-from wybthon import Link, Prop, Route, Router, component
+from wybthon import Link, Outlet, Prop, Route, Router, component
 from wybthon.html import div, h1, nav
 
 
@@ -43,7 +43,7 @@ Route("/users/:id", User)
 # /users/42?tab=activity -> params()["id"] == "42", query()["tab"] == "activity"
 ```
 
-Query values are URL-decoded strings. Any component under the router
+Query values are URL-decoded strings. `query().get_all("tag")` preserves repeated parameters; ordinary lookup returns the last value. `use_hash()` returns a reactive decoded fragment. Any component under the router
 (not only the matched one) can read the same accessors with
 [`use_params`][wybthon.use_params] and [`use_query`][wybthon.use_query],
 and the router's base path with [`use_base_path`][wybthon.use_base_path]:
@@ -61,12 +61,19 @@ def Breadcrumb():
 ```
 
 Outside a router, `use_params()` and `use_query()` return accessors
-yielding `{}`, and `use_base_path()` returns `""`.
+yielding empty mappings, and `use_base_path()` returns `""`.
 
 ## Nested routes
 
 Child routes join their paths to the parent's. Params from every level
-are merged into `params`:
+are merged into `params`. A parent component renders `Outlet()` where its
+matched child belongs. Parent layouts stay mounted while child routes change:
+
+```python
+@component
+def About():
+    return div(h1("About"), Outlet())
+```
 
 ```python
 routes = [
@@ -131,7 +138,7 @@ from wybthon import current_path, navigate
 
 navigate("/about")                 # pushState
 navigate("/about", replace=True)   # replaceState
-current_path()                     # "/about" (an accessor: pathname plus query string)
+current_path()                     # "/about" (an accessor: pathname, query string, and hash)
 ```
 
 `current_path` also updates on the browser's back and forward buttons.
@@ -190,3 +197,11 @@ Errored(lambda: Router(routes), fallback=lambda err: p("This page failed"), rese
 - Walk through the [Router example](../examples/router.md).
 - See [Async and loading](async-loading.md) for code-splitting.
 - Browse the [`router`](../api/router.md) and [`router_core`](../api/router_core.md) API references.
+
+## Navigation intent and scroll
+
+A `Route(..., preload=callback)` can warm data using its decoded parameter dict. The callback can be async. Links preload matching route code and data on hover or focus; navigation waits on the same cached work. Preload entries are bounded and canceled when the router is disposed. Failed entries are evicted for retry.
+
+Static path segments take precedence over parameters, which take precedence over wildcards. Base paths match segment boundaries, so `/app` doesn't match `/application`. Parameters are percent-decoded, and trailing slashes normalize.
+
+Modified clicks, download links, explicit targets, already-prevented events, and external URLs keep normal browser behavior. `navigate(..., scroll=False)` opts out of scroll handling. Normal navigation scrolls to a hash target or the top after commit; back/forward restores the recorded position for that URL. Multiple history entries for the same URL share that recorded position.

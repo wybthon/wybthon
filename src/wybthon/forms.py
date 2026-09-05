@@ -45,16 +45,24 @@ See Also:
 
 from __future__ import annotations
 
+import asyncio
+import copy
+import inspect
 import re
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
-from .reactivity._core import Accessor
-from .reactivity._primitives import Setter, create_signal
+from .reactivity import _core
+from .reactivity._core import Accessor, Signal
+from .reactivity._primitives import Setter, create_memo, create_signal
 
 __all__ = [
     "Validator",
     "Field",
+    "FormState",
+    "AsyncValidator",
+    "bind_number",
+    "bind_multiselect",
     "form_state",
     "bind_text",
     "bind_checkbox",
@@ -76,6 +84,7 @@ __all__ = [
 # ----------------- Validation primitives -----------------
 
 type Validator = Callable[[Any], str | None]
+type AsyncValidator = Callable[[Any], str | None | Awaitable[str | None]]
 """A validator takes a value and returns an error message, or `None` when valid."""
 
 
@@ -160,12 +169,32 @@ class Field[T]:
         set_touched: Setter for the touched flag.
     """
 
-    __slots__ = ("value", "set_value", "error", "set_error", "touched", "set_touched")
+    __slots__ = (
+        "value",
+        "error",
+        "set_error",
+        "touched",
+        "set_touched",
+        "dirty",
+        "validating",
+        "_initial",
+        "_revision",
+        "_validation",
+        "_input_error",
+    )
 
     def __init__(self, initial: T) -> None:
-        self.value: Accessor[T]
-        self.set_value: Setter[T]
-        self.value, self.set_value = create_signal(initial)
+        self.value: Signal[T] = Signal(copy.deepcopy(initial))
+        self._initial: Signal[T] = Signal(copy.deepcopy(initial))
+        self._revision = 0
+        self._validation: asyncio.Task[Any] | None = None
+        self.validating: Signal[bool] = Signal(False)
+        self._input_error: Signal[str | None] = Signal(None)
+        self.dirty: Accessor[bool] = create_memo(
+            lambda: self._input_error() is not None or self.value() != self._initial()
+        )
+        if _core._current_owner is not None:
+            _core._current_owner._add_cleanup(self._cancel_validation)
         self.error: Accessor[str | None]
         self.set_error: Setter[str | None]
         self.error, self.set_error = create_signal(None)
@@ -175,28 +204,137 @@ class Field[T]:
 
     def validate(self, validators: list[Validator]) -> str | None:
         """Validate the current value, mark the field touched, and store the error."""
-        err = validate(self.value.peek(), validators) if validators else None
+        self._cancel_validation()
+        err = self._input_error._latest() or (validate(self.value._latest(), validators) if validators else None)
         self.set_touched(True)
         self.set_error(err)
         return err
+
+    def _cancel_validation(self) -> None:
+        self._revision += 1
+        if self._validation is not None and not self._validation.done():
+            self._validation.cancel()
+        self._validation = None
+        self.validating._set(False, _core._O_REVEAL)
+
+    def set_value(self, value: T | Callable[[T], T]) -> T:
+        """Stage a value and invalidate any validation for an earlier edit."""
+        self._cancel_validation()
+        self._input_error._set(None)
+        return self.value.set(value)
+
+    def reset(self, value: Any = _core._MISSING) -> None:
+        """Reset value, errors, and interaction state; optionally set a new baseline."""
+        self._cancel_validation()
+        if value is not _core._MISSING:
+            self._initial._set(copy.deepcopy(value))
+        self.value._set(copy.deepcopy(self._initial._latest()))
+        self._input_error._set(None)
+        self.set_error(None)
+        self.set_touched(False)
+
+    async def validate_async(self, validators: list[AsyncValidator]) -> str | None:
+        """Validate the latest edit; stale responses never overwrite newer state."""
+        self._cancel_validation()
+        revision = self._revision
+        value = copy.deepcopy(self.value._latest())
+        self.set_touched(True)
+        self.validating._set(True, _core._O_REVEAL)
+
+        async def run() -> str | None:
+            if self._input_error._latest() is not None:
+                return self._input_error._latest()
+            for validator in validators:
+                result = validator(value)
+                message = await result if inspect.isawaitable(result) else result
+                if message:
+                    return message
+            return None
+
+        task = self._validation = asyncio.create_task(run())
+        try:
+            error = await task
+            if revision == self._revision:
+                self.set_error(error)
+                return error
+            return None
+        except asyncio.CancelledError:
+            if revision == self._revision:
+                raise
+            return None
+        finally:
+            if revision == self._revision:
+                self._validation = None
+                self.validating._set(False, _core._O_REVEAL)
 
     def __repr__(self) -> str:
         return f"Field(value={self.value.peek()!r}, error={self.error.peek()!r}, touched={self.touched.peek()!r})"
 
 
-def form_state(initial: dict[str, Any]) -> dict[str, Field[Any]]:
-    """Create a form state map from a dict of initial values.
+class FormState(dict[str, Field[Any]]):
+    """Fields plus aggregate dirty, validating, and submission state."""
 
-    Returns:
-        A dict mapping each field name to a fresh [`Field`][wybthon.Field].
-    """
-    return {name: Field(val) for name, val in initial.items()}
+    def __init__(self, initial: Mapping[str, Any]) -> None:
+        super().__init__((name, Field(value)) for name, value in initial.items())
+        self.dirty = create_memo(lambda: any(field.dirty() for field in self.values()))
+        self.validating = create_memo(lambda: any(field.validating() for field in self.values()))
+        self.submitting = Signal(False)
+        self.submit_error: Signal[Exception | None] = Signal(None)
+
+    def data(self) -> dict[str, Any]:
+        """Read the current values as a detached mapping."""
+        return {name: copy.deepcopy(field.value()) for name, field in self.items()}
+
+    def reset(self, values: Mapping[str, Any] | None = None) -> None:
+        """Reset all fields, optionally replacing their initial values."""
+        if values is not None and set(values) != set(self):
+            raise ValueError("Reset values must contain exactly the form's field names")
+        for name, field in self.items():
+            field.reset(values[name] if values is not None else _core._MISSING)
+        self.submit_error._set(None, _core._O_REVEAL)
+
+    async def submit(
+        self, handler: Callable[[dict[str, Any]], Any], *, rules: Mapping[str, list[AsyncValidator]] | None = None
+    ) -> Any:
+        """Validate and submit a value snapshot, exposing pending and failure state."""
+        if self.submitting._latest():
+            raise RuntimeError("This form already has a submission in flight")
+        self.submitting._set(True, _core._O_REVEAL)
+        self.submit_error._set(None, _core._O_REVEAL)
+        revisions = {name: field._revision for name, field in self.items()}
+        try:
+            errors = await asyncio.gather(
+                *(field.validate_async((rules or {}).get(name, [])) for name, field in self.items())
+            )
+            # validate_async increments once when it starts. Any further edit
+            # invalidates this submission instead of sending mixed revisions.
+            if any(errors) or any(field._revision != revisions[name] + 1 for name, field in self.items()):
+                return None
+            data = {name: copy.deepcopy(field.value._latest()) for name, field in self.items()}
+            result = handler(data)
+            return await result if inspect.isawaitable(result) else result
+        except Exception as exc:
+            self.submit_error._set(exc, _core._O_REVEAL)
+            raise
+        finally:
+            self.submitting._set(False, _core._O_REVEAL)
+
+
+def form_state(initial: Mapping[str, Any]) -> FormState:
+    """Create fields and aggregate form state from initial values."""
+    return FormState(initial)
 
 
 # ----------------- Binding helpers -----------------
 
 
-def bind_text(field: Field[Any], *, validators: list[Validator] | None = None) -> dict[str, Any]:
+def bind_text(
+    field: Field[Any],
+    *,
+    validators: list[Validator] | None = None,
+    parse: Callable[[str], Any] | None = None,
+    format: Callable[[Any], str] | None = None,
+) -> dict[str, Any]:
     """Bind a text input to a field with validation on every `input` event.
 
     Returns:
@@ -207,14 +345,29 @@ def bind_text(field: Field[Any], *, validators: list[Validator] | None = None) -
     rules = validators or []
 
     def on_input(evt: Any) -> None:
+        if getattr(evt, "is_composing", False):
+            return
         val = evt.target.value if evt.target is not None else ""
         if val is None:
             val = ""
+        try:
+            val = parse(val) if parse is not None else val
+        except (ValueError, TypeError) as exc:
+            field._cancel_validation()
+            message = str(exc) or "Enter a valid value"
+            field._input_error._set(message)
+            field.set_error(message)
+            field.set_touched(True)
+            return
         field.set_value(val)
         field.set_touched(True)
         field.set_error(validate(val, rules))
 
-    return {"value": field.value, "on_input": on_input}
+    return {
+        "value": (lambda: format(field.value())) if format else field.value,
+        "on_input": on_input,
+        "on_compositionend": on_input,
+    }
 
 
 def bind_checkbox(field: Field[bool]) -> dict[str, Any]:
@@ -243,12 +396,37 @@ def bind_select(field: Field[Any]) -> dict[str, Any]:
     return {"value": field.value, "on_change": on_change}
 
 
+def bind_number(field: Field[float | None], *, validators: list[Validator] | None = None) -> dict[str, Any]:
+    """Bind a numeric input, preserving an empty value as None."""
+    return {
+        "type": "number",
+        "step": "any",
+        **bind_text(
+            field,
+            validators=validators,
+            parse=lambda text: float(text) if text.strip() else None,
+            format=lambda value: "" if value is None else str(value),
+        ),
+    }
+
+
+def bind_multiselect(field: Field[list[str]]) -> dict[str, Any]:
+    """Bind all selected option values without per-option bridge reads."""
+
+    def changed(evt: Any) -> None:
+        field.set_value(list(evt.target.selected_values))
+        field.set_touched(True)
+        field.set_error(None)
+
+    return {"multiple": True, "selected_values": field.value, "on_change": changed}
+
+
 def on_submit(handler: Callable[[dict[str, Field[Any]]], Any], form: dict[str, Field[Any]]) -> Callable[[Any], Any]:
     """Create a submit handler that prevents default and forwards to `handler`."""
 
-    def _onsubmit(evt: Any) -> None:
+    def _onsubmit(evt: Any) -> Any:
         evt.prevent_default()
-        handler(form)
+        return handler(form)
 
     return _onsubmit
 
@@ -292,11 +470,10 @@ def on_submit_validated(
 ) -> Callable[[Any], Any]:
     """Submit handler that validates the whole form before calling `handler`."""
 
-    def _onsubmit(evt: Any) -> None:
+    def _onsubmit(evt: Any) -> Any:
         evt.prevent_default()
         is_valid, _ = validate_form(form, rules)
-        if is_valid:
-            handler(form)
+        return handler(form) if is_valid else None
 
     return _onsubmit
 

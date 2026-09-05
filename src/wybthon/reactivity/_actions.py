@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable as AbcAwaitable
 from collections.abc import Callable, Generator
-from typing import Any, overload
+from typing import Any, cast, overload
 
 from . import _core
 from ._core import _MISSING, Accessor, Computation, Memo, NotReadyError, Owner, Signal, Transition, untrack
@@ -45,7 +45,7 @@ async def _await(awaitable: AbcAwaitable[Any]) -> Any:
     return await awaitable
 
 
-class Action:
+class Action[**P, R]:
     """A wrapped mutation returned by [`action`][wybthon.action].
 
     Calling it invokes the wrapped function inside a transaction. The
@@ -56,7 +56,7 @@ class Action:
 
     __slots__ = ("_fn", "_count", "pending", "__name__", "__qualname__")
 
-    def __init__(self, fn: Callable[..., Any]) -> None:
+    def __init__(self, fn: Callable[P, Any]) -> None:
         self._fn = fn
         self._count: Signal[int] = Signal(0)
         count = self._count
@@ -66,7 +66,7 @@ class Action:
         self.__name__ = name
         self.__qualname__ = getattr(fn, "__qualname__", name)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         owner = _core._current_owner
         tx = _core._ensure_tx()
         tx.holds += 1
@@ -91,7 +91,13 @@ class Action:
         count._set(count._latest() + 1, _core._O_REVEAL)
         future: asyncio.Future[Any] = _core._event_loop().create_future()
 
+        settled = False
+
         def settle() -> None:
+            nonlocal settled
+            if settled:
+                return
+            settled = True
             count._set(count._latest() - 1, _core._O_REVEAL)
             tx.holds -= 1
             _core._schedule_flush()
@@ -103,6 +109,9 @@ class Action:
 
         def on_error(exc: BaseException) -> None:
             settle()
+            if isinstance(exc, asyncio.CancelledError):
+                future.cancel()
+                return
             scope: Owner | None = owner
             while scope is not None:
                 handler = scope._error_handler
@@ -122,7 +131,7 @@ class Action:
         coro = result if asyncio.iscoroutine(result) else _await(result)
         # Run synchronously up to the first ``await`` so optimistic writes
         # made at the top of the action apply immediately.
-        _core._drive_coroutine(
+        task = _core._drive_coroutine(
             coro,
             owner=owner,
             observer=None,
@@ -131,10 +140,24 @@ class Action:
             on_error=on_error,
             action_tx=tx,
         )
-        return future
+
+        def cancel_task(done: asyncio.Future[Any]) -> None:
+            if done.cancelled() and not task.done():
+                task.cancel()
+
+        future.add_done_callback(cancel_task)
+        return cast(R, future)
 
     def __repr__(self) -> str:
         return f"Action({self.__name__})"
+
+
+@overload
+def action[**P, R](fn: Callable[P, AbcAwaitable[R]]) -> Action[P, asyncio.Future[R]]: ...
+
+
+@overload
+def action[**P, R](fn: Callable[P, R]) -> Action[P, R]: ...
 
 
 def action(fn: Callable[..., Any]) -> Action:
@@ -178,7 +201,7 @@ def action(fn: Callable[..., Any]) -> Action:
         async def add_todo(title):
             set_shown(lambda s: s.append({"title": title, "saving": True}))
             saved = await api_create(title)
-            set_todos(lambda s: s.items.append(saved))
+            set_todos(lambda s: s["items"].append(saved))
         ```
     """
     return Action(fn)
@@ -388,7 +411,16 @@ class _Until:
 
                 handle = loop.call_later(self._timeout, on_timeout)
             _core._schedule_flush()
-        return future.__await__()
+
+        async def wait() -> None:
+            try:
+                await future
+            finally:
+                if handle is not None:
+                    handle.cancel()
+                comp.dispose()
+
+        return wait().__await__()
 
 
 def until(pred: Callable[[], Any], *, timeout: float | None = None) -> _Until:

@@ -7,6 +7,7 @@ params, query strings, wildcards, nested children, and the not-found path.
 
 from app.features import components as components_feat
 from app.features import context as context_feat
+from app.features import contracts as contracts_feat
 from app.features import errors as errors_feat
 from app.features import events as events_feat
 from app.features import flow as flow_feat
@@ -53,6 +54,7 @@ def NotFound(**rest):
 def create_routes():
     return [
         Route(path="/", component=Home),
+        Route(path="/contracts", component=contracts_feat.Page),
         Route(path="/blank", component=Blank),
         Route(path="/reactivity", component=reactivity_feat.Page),
         Route(path="/holes", component=holes_feat.Page),

@@ -88,7 +88,7 @@ class _ParamPlan:
                 self.takes_props = True
 
 
-class Component:
+class Component[F: Callable[..., Any]]:
     """A run-once component produced by [`component`][wybthon.component].
 
     Instances are callable: `MyComponent(child, other, key=value)` returns
@@ -100,7 +100,7 @@ class Component:
     __name__: str
     __qualname__: str
 
-    def __init__(self, fn: Callable[..., Any]) -> None:
+    def __init__(self, fn: F) -> None:
         self.fn = fn
         self._plan = _ParamPlan(fn)
         functools.update_wrapper(self, fn, updated=())
@@ -134,7 +134,7 @@ class Component:
         return f"<component {self.__qualname__}>"
 
 
-def component(fn: Callable[..., Any]) -> Component:
+def component[F: Callable[..., Any]](fn: F) -> Component[F]:
     """Declare a function as a run-once Wybthon component.
 
     Each parameter of `fn` becomes a [`Prop`][wybthon.Prop] accessor.

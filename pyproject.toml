@@ -65,7 +65,7 @@ Changelog = "https://github.com/wybthon/wybthon/blob/main/CHANGELOG.md"
 where = ["src"]
 
 [tool.setuptools.package-data]
-wybthon = ["py.typed"]
+wybthon = ["py.typed", "_bootstrap.js"]
 
 [tool.setuptools]
 license-files = ["LICENSE*"]

@@ -203,3 +203,25 @@ uv run pytest -q --cov=wybthon --cov-branch --cov-report=term-missing
 - Read the [Contributing guide](../meta/contributing.md) for the full local workflow.
 - Browse the [Performance guide](performance.md) for benchmarking tips.
 - See the [Pyodide guide](pyodide.md) for browser environment notes.
+
+## Owned test helpers
+
+`wybthon.testing` provides `reactive_scope()`, `render_test(view, container=None)`, `tick()`, and `wait_for(predicate, timeout=...)`. Use a configured native backend or run the same helpers in Pyodide; they exercise the real scheduler.
+
+```python
+from wybthon import create_effect, create_signal, flush
+from wybthon.testing import reactive_scope
+
+with reactive_scope():
+    value, write = create_signal(1)
+    seen = []
+    create_effect(value, seen.append)
+    flush()
+    write(2)
+    flush()
+    assert seen == [1, 2]
+```
+
+Scope exit disposes the computations. `render_test` also releases a temporary container. Await `tick()` to drain ready asyncio continuations; use a bounded `wait_for` for an observable async result.
+
+The contract suites cover staged and held store reads, scoped drafts, entity identity, projection errors, cancellation, duplicate keys, ref cleanup, registry bounds, and collection work counts. The browser contracts combine edits, reorders, async filtering, optimistic saves, error recovery, and unmounting. Production tests boot generated bundles and exercise lazy chunk fetching.

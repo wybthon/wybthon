@@ -10,6 +10,7 @@ from ._actions import Action, action, affects, create_optimistic, until
 from ._core import (
     Accessor,
     Computation,
+    LiteralValue,
     Memo,
     NotReadyError,
     Owner,
@@ -21,6 +22,7 @@ from ._core import (
     get_observer,
     get_owner,
     is_accessor,
+    literal,
     run_with_owner,
     untrack,
 )
@@ -33,6 +35,7 @@ from ._primitives import (
     create_render_effect,
     create_root,
     create_signal,
+    create_tracked_effect,
     create_unique_id,
     is_pending,
     latest,
@@ -46,6 +49,8 @@ from ._props import Props, merge, omit, prop
 __all__ = [
     # Types
     "Accessor",
+    "LiteralValue",
+    "literal",
     "Setter",
     "Signal",
     "Memo",
@@ -62,6 +67,7 @@ __all__ = [
     "create_signal",
     "create_memo",
     "create_effect",
+    "create_tracked_effect",
     "create_render_effect",
     "on_settled",
     "on_cleanup",

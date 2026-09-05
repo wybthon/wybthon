@@ -286,7 +286,7 @@ that must show during an action (a "saving" flag).
 for nested optimistic state. `source` may be a tracked function
 returning the base state (derived form, reconciled when its dependencies
 change) or a plain dict or list. The setter applies draft mutations like
-a [store setter](stores.md#writing-values):
+a [store setter](stores.md#collection-protocols):
 
 ```python
 from wybthon import action, create_optimistic_store, create_store, deep
@@ -299,7 +299,7 @@ shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
 async def add(title):
     set_shown(lambda s: s.append({"title": title, "saving": True}))
     saved = await api_create(title)
-    set_todos(lambda s: s.items.append(saved))
+    set_todos(lambda s: s["items"].append(saved))
 ```
 
 ### `affects` and `until`

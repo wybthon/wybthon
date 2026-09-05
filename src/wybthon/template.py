@@ -39,32 +39,31 @@ adjacent or empty text nodes, raw text elements, invalid attribute
 names, or element nestings the parser rewrites (implied `<tbody>`,
 auto-closed `<p>`, and similar).
 
-Plans are **cached per shape**: a single walk of the VNode tree
-collects the per-instance data (id order and bindings) while building
-a hashable *shape key* that uniquely determines the serialized HTML.
-Serialization, escaping, and eligibility validation run only on the
-first mount of each shape; every later mount of a structurally
-identical tree (for example, the rows of a list) is a dictionary hit.
+Plans are **cached per shape**. The generic walk collects instance data
+while building a hashable shape key; serialization and HTML eligibility
+validation run only on the first mount of that shape. Repeated shapes
+also receive a guarded Python extraction routine, avoiding generic tree
+walking and prop classification on subsequent mounts. The routine checks
+structure and binding kinds and falls back when they change. Both caches
+are bounded, and instance handlers, refs, and expressions aren't retained.
 """
 
 from __future__ import annotations
 
-import re
-from typing import Any
+from collections import OrderedDict
+from html import escape
+from typing import Any, Callable
 
+from . import diagnostics
 from .props import (
     _BOOLEAN_ATTRS,
-    KIND_ATTR,
-    KIND_DOM_PROP,
     KIND_EVENT,
     KIND_REF,
     KIND_SKIP,
-    _class_string,
     attr_name,
     binding_value,
     is_event_prop,
     prop_kind,
-    to_kebab,
 )
 from .vnode import VNode, normalize_children
 
@@ -87,7 +86,7 @@ NODE_MOUNT = 2  # placeholder comment replaced by a component/fragment mount
 MIN_TEMPLATE_NODES = 3
 
 # Props applied as DOM properties after the clone rather than serialized.
-_PROP_NAMES = frozenset({"value", "checked", "inner_html", "innerHTML"})
+_PROP_NAMES = frozenset({"value", "checked", "selected_values", "inner_html", "innerHTML"})
 
 _VOID_ELEMENTS = frozenset(
     {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
@@ -160,29 +159,9 @@ _P_CLOSERS = frozenset(
 # element of the same tag.
 _NO_SELF_NESTING = frozenset({"a", "button", "form", "li", "dt", "dd", "option"})
 
-_VALID_ATTR_NAME = re.compile(r"^[a-zA-Z_:][-a-zA-Z0-9_:.]*$")
-
-_ESCAPE_ATTR = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}
-
-
-def _escape_attr(value: str) -> str:
-    if "&" in value or "<" in value or ">" in value or '"' in value:
-        for ch, rep in _ESCAPE_ATTR.items():
-            value = value.replace(ch, rep)
-    return value
-
 
 class _NotEligible(Exception):
     """Raised internally when a subtree can't use the template fast path."""
-
-
-class _NoCache(Exception):
-    """Raised internally when a tree contains props the shape key can't hash.
-
-    Non-scalar static prop values (style dicts, class lists, datasets)
-    would need per-value serialization to key correctly, so such trees
-    skip the shape cache and run the full serializer on every mount.
-    """
 
 
 # Sentinel markers used in shape keys. Distinct objects (hashed by id)
@@ -201,8 +180,23 @@ _K_CLOSE = object()  # end of element
 # ineligible for the template fast path. Bounded to keep pathological
 # trees (unique static attr values per instance) from growing without
 # limit; entries past the cap simply aren't cached.
+# Low-cardinality semantic attributes remain in the native skeleton so cloning
+# copies them for free. Instance ids, dataset values, text, and arbitrary attrs
+# are bindings. Both shape and native-template caches have explicit bounds.
+_STATIC_TEMPLATE_ATTRS = frozenset({"class", "class_", "role", "type", "aria_hidden", "aria-hidden"})
+
+
+def _static_attribute(name: str, value: Any) -> bool:
+    if name in {"class", "class_"}:
+        return isinstance(value, str)
+    return name in _STATIC_TEMPLATE_ATTRS and type(value) in (str, int, float, bool, type(None))
+
+
 _shape_cache: dict[tuple[Any, ...], str | None] = {}
 _SHAPE_CACHE_MAX = 2048
+_RECIPE_CACHE_MAX = 256
+_recipes: OrderedDict[tuple[Any, ...], Callable[[VNode], Any] | None] = OrderedDict()
+_recent_recipes: OrderedDict[str, Callable[[VNode], Any]] = OrderedDict()
 
 
 class MountPlan:
@@ -248,10 +242,10 @@ def build_plan(vnode: VNode) -> MountPlan | None:
     VNode tree is normalized in place (children lists become `VNode`
     lists) as a side effect, exactly as the per-node mount path does.
 
-    A single walk collects the per-instance order and bindings while
-    building the shape key. The HTML string (and the eligibility
-    verdict) comes from the shape cache; the full serializer runs only
-    on the first mount of each shape.
+    A guarded extraction routine handles repeated shapes. If none matches,
+    a generic walk collects instance bindings and a shape key. The HTML
+    string and eligibility verdict come from the shape cache; the full
+    serializer runs only on the first mount of each shape.
 
     Args:
         vnode: An element VNode (string tag, not `_text`/`_hole`/
@@ -263,13 +257,21 @@ def build_plan(vnode: VNode) -> MountPlan | None:
     if not isinstance(vnode.tag, str) or vnode.tag.startswith("_"):
         return None
 
+    recipe = _recent_recipes.get(vnode.tag)
+    if recipe is not None:
+        plan = recipe(vnode)
+        if plan is not None:
+            if diagnostics._active is not None:
+                diagnostics._active.counts["template_recipe_hits"] += 1
+            return plan
+
+    if diagnostics._active is not None:
+        diagnostics._active.counts["template_shape_walks"] += 1
+
     key_parts: list[Any] = []
     order: list[tuple[int, VNode, VNode | None]] = []
     bindings: list[tuple[VNode, int, str, Any]] = []
-    try:
-        _walk_shape(vnode, None, key_parts, order, bindings)
-    except _NoCache:
-        return _build_plan_uncached(vnode)
+    _walk_shape(vnode, None, key_parts, order, bindings)
 
     if len(order) < MIN_TEMPLATE_NODES:
         return None
@@ -279,6 +281,22 @@ def build_plan(vnode: VNode) -> MountPlan | None:
         html = _shape_cache[key]
         if html is None:
             return None
+        if key not in _recipes:
+            from ._template_specialize import specialize
+
+            _recipes[key] = specialize(vnode, html)
+            if len(_recipes) > _RECIPE_CACHE_MAX:
+                retired_key, retired = _recipes.popitem(last=False)
+                if retired is not None and _recent_recipes.get(retired_key[0]) is retired:
+                    del _recent_recipes[retired_key[0]]
+        else:
+            _recipes.move_to_end(key)
+        recipe = _recipes[key]
+        if recipe is not None:
+            _recent_recipes[vnode.tag] = recipe
+            _recent_recipes.move_to_end(vnode.tag)
+            if len(_recent_recipes) > _RECIPE_CACHE_MAX:
+                _recent_recipes.popitem(last=False)
         return MountPlan(html, order, bindings)
 
     plan = _build_plan_uncached(vnode)
@@ -301,12 +319,6 @@ def _build_plan_uncached(vnode: VNode) -> MountPlan | None:
     return MountPlan("".join(parts), order, bindings)
 
 
-# Static prop value types the shape key can represent directly. Two
-# values that compare equal but serialize differently (5 vs 5.0 vs
-# True) are disambiguated by including the type in the key.
-_KEYABLE_TYPES = (str, int, float, bool)
-
-
 def _walk_shape(
     vnode: VNode,
     parent: VNode | None,
@@ -325,50 +337,30 @@ def _walk_shape(
     order.append((NODE_STATIC, vnode, parent))
     key_parts.append(tag)
 
-    if vnode.props:
-        for name, value in vnode.props.items():
-            vtype = type(value)
-            if vtype in _KEYABLE_TYPES or value is None:
-                # A scalar can't be a binding; only its class matters.
-                kind = prop_kind(name)
-                if kind == KIND_ATTR:
-                    key_parts.append(name)
-                    key_parts.append(vtype)
-                    key_parts.append(value)
-                elif kind == KIND_DOM_PROP:
-                    bindings.append((vnode, BIND_PROP, name, value))
-                    key_parts.append(_K_PROP)
-                    key_parts.append(name)
-                elif kind == KIND_EVENT:
-                    bindings.append((vnode, BIND_EVENT, name, value))
-                    key_parts.append(_K_EVENT)
-                    key_parts.append(name)
-                # key / children / a None ref: nothing to record.
-                continue
-            kind = prop_kind(name)
-            if kind == KIND_SKIP:
-                continue
-            if kind == KIND_REF:
+    for name, value in vnode.props.items():
+        kind = prop_kind(name)
+        if kind == KIND_SKIP:
+            continue
+        if kind == KIND_REF:
+            if value is not None:
                 bindings.append((vnode, BIND_REF, name, value))
                 key_parts.append(_K_REF)
-                continue
-            if kind == KIND_EVENT:
-                bindings.append((vnode, BIND_EVENT, name, value))
-                key_parts.append(_K_EVENT)
-                key_parts.append(name)
-                continue
-            getter = binding_value(name, value)
-            if getter is not None:
-                bindings.append((vnode, BIND_REACTIVE, name, getter))
-                key_parts.append(_K_GETTER)
-                key_parts.append(name)
-                continue
-            if kind == KIND_DOM_PROP:
-                bindings.append((vnode, BIND_PROP, name, value))
-                key_parts.append(_K_PROP)
-                key_parts.append(name)
-                continue
-            raise _NoCache
+            continue
+        if kind == KIND_EVENT:
+            bindings.append((vnode, BIND_EVENT, name, value))
+            key_parts.extend((_K_EVENT, name))
+            continue
+        getter = binding_value(name, value)
+        if getter is not None:
+            bindings.append((vnode, BIND_REACTIVE, name, getter))
+            key_parts.extend((_K_GETTER, name))
+        elif _static_attribute(name, value):
+            key_parts.extend((_K_PROP, name, type(value), value))
+        else:
+            # Instance attributes never identify a native template. This also
+            # handles style, dataset, and class mappings without cache bypasses.
+            bindings.append((vnode, BIND_PROP, name, value))
+            key_parts.extend((_K_PROP, name))
 
     key_parts.append(_K_OPEN)
 
@@ -432,7 +424,13 @@ def _serialize_element(
             # semantics match the per-node mount path exactly.
             bindings.append((vnode, BIND_PROP, name, value))
             continue
-        _serialize_attr(name, value, parts)
+        if _static_attribute(name, value):
+            if value is not None and value is not False:
+                attribute = attr_name(name)
+                text = ("" if attribute in _BOOLEAN_ATTRS else "true") if value is True else str(value)
+                parts.append(f' {attribute}="{escape(text, quote=True)}"')
+        else:
+            bindings.append((vnode, BIND_PROP, name, value))
 
     is_void = lower in _VOID_ELEMENTS
     if is_void:
@@ -482,57 +480,3 @@ def _serialize_element(
     parts.append("</")
     parts.append(tag)
     parts.append(">")
-
-
-def _serialize_attr(name: str, value: Any, parts: list[str]) -> None:
-    if name == "class" or name == "class_":
-        cls = _class_string(value)
-        if cls:
-            parts.append(' class="')
-            parts.append(_escape_attr(cls))
-            parts.append('"')
-        return
-    if name == "style":
-        if isinstance(value, dict):
-            css = ";".join(f"{to_kebab(k)}:{v}" for k, v in value.items() if v is not None and v is not False)
-            if css:
-                parts.append(' style="')
-                parts.append(_escape_attr(css))
-                parts.append('"')
-        elif isinstance(value, str) and value:
-            parts.append(' style="')
-            parts.append(_escape_attr(value))
-            parts.append('"')
-        return
-    if name == "dataset":
-        if isinstance(value, dict):
-            for dk, dv in value.items():
-                dname = to_kebab(str(dk))
-                if not _VALID_ATTR_NAME.match(dname):
-                    raise _NotEligible
-                if dv is None or dv is False:
-                    continue
-                parts.append(f' data-{dname}="')
-                parts.append(_escape_attr("" if dv is True else str(dv)))
-                parts.append('"')
-        return
-    attr = attr_name(name)
-    if not _VALID_ATTR_NAME.match(attr):
-        raise _NotEligible
-    if value is None or value is False:
-        return
-    if value is True:
-        if attr in _BOOLEAN_ATTRS:
-            parts.append(" ")
-            parts.append(attr)
-            parts.append('=""')
-        else:
-            parts.append(" ")
-            parts.append(attr)
-            parts.append('="true"')
-        return
-    parts.append(" ")
-    parts.append(attr)
-    parts.append('="')
-    parts.append(_escape_attr(str(value)))
-    parts.append('"')

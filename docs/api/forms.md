@@ -17,7 +17,7 @@ validators, submit wrappers, and reactive ARIA attributes.
 | [`bind_select`][wybthon.bind_select] | `{"value": accessor, "on_change": handler}` for `<select>`. |
 | [`on_submit`][wybthon.on_submit] | Submit handler that prevents default and calls `handler(form)`. |
 | [`on_submit_validated`][wybthon.on_submit_validated] | Same, but validates the whole form against `rules` first. |
-| [`Validator`][wybthon.Validator] | Type alias: `(value) -> str | None`. |
+| `Validator` | Type alias: `(value) -> str | None`. |
 | [`required`][wybthon.required], [`min_length`][wybthon.min_length], [`max_length`][wybthon.max_length], [`email`][wybthon.email] | Validator factories with optional custom messages. |
 | [`validate`][wybthon.validate], [`validate_field`][wybthon.validate_field], [`validate_form`][wybthon.validate_form] | Run validators on a value, a field, or a whole form. |
 | [`rules_from_schema`][wybthon.rules_from_schema] | Build a rules map from `{"name": {"required": True, "min_length": 2}, ...}`. |

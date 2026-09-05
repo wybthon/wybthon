@@ -14,13 +14,15 @@ Reference: https://github.com/krausest/js-framework-benchmark
 import random
 from typing import Any
 
-from js import document
-from pyodide.ffi import create_proxy
+from js import document, window
 
+from wybthon import kernel
 from wybthon.dom import Element
+from wybthon.events import set_handler
 from wybthon.flow import For
 from wybthon.reactivity import Accessor, Setter, create_selector, create_signal, flush
 from wybthon.reconciler import render
+from wybthon.store import create_store
 from wybthon.vnode import h
 
 # ---------------------------------------------------------------------------
@@ -88,12 +90,21 @@ NOUNS = [
 # ---------------------------------------------------------------------------
 
 _next_id = 1
+random.seed(42)
+STORE_MODE = "mode=store" in str(window.location.search)
 
 Row = dict[str, Any]
 
-data: Accessor[list[Row]]
-set_data: Setter[list[Row]]
-data, set_data = create_signal(list[Row]())
+data: Any
+set_data: Any
+if STORE_MODE:
+    _store, set_data = create_store(list[Row]())
+
+    def data():
+        return _store
+
+else:
+    data, set_data = create_signal(list[Row]())
 
 selected: Accessor[int | None]
 set_selected: Setter[int | None]
@@ -116,8 +127,11 @@ def build_data(count):
             f"{COLOURS[_random(len(COLOURS))]} "
             f"{NOUNS[_random(len(NOUNS))]}"
         )
-        label_get, label_set = create_signal(label)
-        result.append({"id": _next_id, "label": label_get, "set_label": label_set})
+        if STORE_MODE:
+            result.append({"id": _next_id, "label": label})
+        else:
+            label_get, label_set = create_signal(label)
+            result.append({"id": _next_id, "label": label_get, "set_label": label_set})
         _next_id += 1
     return result
 
@@ -136,7 +150,7 @@ def _row(d, idx):
         h(
             "td",
             {"class": "col-md-4"},
-            h("a", {"on_click": lambda e: set_selected(iid)}, d["label"]),
+            h("a", {"on_click": lambda e: set_selected(iid)}, (lambda: d["label"]) if STORE_MODE else d["label"]),
         ),
         h(
             "td",
@@ -170,9 +184,9 @@ render(app, container)
 #
 # Writes batch automatically; the explicit ``flush()`` settles effects
 # and commits the DOM synchronously so the benchmark measures the full
-# update inside the click handler (these handlers are wired straight to
-# addEventListener, bypassing Wybthon's event system which would
-# otherwise flush for us).
+# update inside the delegated click handler. The checkout comparison
+# also invokes these operations directly to isolate runtime work from
+# event dispatch.
 # ---------------------------------------------------------------------------
 
 
@@ -189,14 +203,25 @@ def run_lots(e=None):
 
 
 def add(e=None):
-    set_data(lambda rows: rows + build_data(1000))
+    if STORE_MODE:
+        set_data(lambda rows: rows.extend(build_data(1000)))
+    else:
+        set_data(lambda rows: rows + build_data(1000))
     flush()
 
 
 def update(e=None):
-    rows = data()
-    for i in range(0, len(rows), 10):
-        rows[i]["set_label"](lambda label: label + " !!!")
+    if STORE_MODE:
+
+        def edit(rows):
+            for i in range(0, len(rows), 10):
+                rows[i]["label"] += " !!!"
+
+        set_data(edit)
+    else:
+        rows = data()
+        for i in range(0, len(rows), 10):
+            rows[i]["set_label"](lambda label: label + " !!!")
     flush()
 
 
@@ -207,10 +232,16 @@ def clear(e=None):
 
 
 def swap_rows(e=None):
-    rows = list(data())
-    if len(rows) > 998:
-        rows[1], rows[998] = rows[998], rows[1]
-    set_data(rows)
+    def swap(rows):
+        if len(rows) > 998:
+            rows[1], rows[998] = rows[998], rows[1]
+
+    if STORE_MODE:
+        set_data(swap)
+    else:
+        rows = list(data())
+        swap(rows)
+        set_data(rows)
     flush()
 
 
@@ -220,7 +251,15 @@ def select(item_id):
 
 
 def delete(item_id):
-    set_data(lambda rows: [d for d in rows if d["id"] != item_id])
+    if STORE_MODE:
+        index = next(index for index, row in enumerate(data()) if row["id"] == item_id)
+
+        def remove(draft):
+            del draft[index]
+
+        set_data(remove)
+    else:
+        set_data(lambda rows: [d for d in rows if d["id"] != item_id])
     flush()
 
 
@@ -228,9 +267,14 @@ def delete(item_id):
 # Wire up button handlers
 # ---------------------------------------------------------------------------
 
-document.getElementById("run").addEventListener("click", create_proxy(run))
-document.getElementById("runlots").addEventListener("click", create_proxy(run_lots))
-document.getElementById("add").addEventListener("click", create_proxy(add))
-document.getElementById("update").addEventListener("click", create_proxy(update))
-document.getElementById("clear").addEventListener("click", create_proxy(clear))
-document.getElementById("swaprows").addEventListener("click", create_proxy(swap_rows))
+for button_id, handler in (
+    ("run", run),
+    ("runlots", run_lots),
+    ("add", add),
+    ("update", update),
+    ("clear", clear),
+    ("swaprows", swap_rows),
+):
+    set_handler(kernel.adopt(document.getElementById(button_id)), "on_click", handler)
+kernel.emit((kernel.OP_ROOT, kernel.adopt(document.getElementById("main"))))
+kernel.commit()

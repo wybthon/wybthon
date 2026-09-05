@@ -14,6 +14,7 @@ from wybthon.reactivity import (
     create_render_effect,
     create_root,
     create_signal,
+    create_tracked_effect,
     flush,
     get_owner,
     is_accessor,
@@ -126,12 +127,12 @@ def test_is_accessor(wyb):
 # ---------------------------------------------------------------------------
 
 
-def test_memo_is_lazy_and_cached(wyb):
+def test_memo_is_eager_and_cached(wyb):
     count, set_count = create_signal(1)
     runs: list[int] = []
     doubled = create_memo(lambda: (runs.append(1), count() * 2)[1])
     assert isinstance(doubled, Memo)
-    assert runs == []
+    assert runs == [1]
     assert doubled() == 2
     assert doubled() == 2
     assert runs == [1]
@@ -189,7 +190,10 @@ def test_memo_unobserved_and_lazy(wyb):
     assert events == ["v2"]
     flush()
     assert events == ["v2", "unobserved"]
-    assert m._disposed
+    assert not m._disposed
+    set_count(3)
+    flush()
+    assert m() == 6
 
 
 def test_memo_write_in_scope_raises_in_dev_mode(wyb):
@@ -261,7 +265,7 @@ def test_effect_apply_may_write_signals(wyb):
 def test_effect_single_form_write_raises(wyb):
     _, set_other = create_signal(0)
     errors: list[BaseException] = []
-    create_effect(lambda: set_other(1), error=errors.append)
+    create_tracked_effect(lambda: set_other(1), error=errors.append)
     flush()
     assert len(errors) == 1
     assert isinstance(errors[0], WriteInScopeError)
@@ -315,7 +319,7 @@ def test_effect_on_cleanup_runs_before_rerun_and_on_dispose(wyb):
         on_cleanup(lambda: log.append(f"clean{v}"))
         log.append(f"run{v}")
 
-    eff = create_effect(body)
+    eff = create_tracked_effect(body)
     flush()
     set_count(1)
     flush()
@@ -332,7 +336,7 @@ def test_effect_error_handler(wyb):
         if count() > 0:
             raise ValueError("boom")
 
-    create_effect(body, error=lambda e: errors.append(str(e)))
+    create_tracked_effect(body, error=lambda e: errors.append(str(e)))
     flush()
     set_count(1)
     flush()
@@ -435,7 +439,7 @@ def test_nested_effect_is_disposed_with_parent(wyb):
         outer()
         create_effect(inner, lambda v: seen.append(f"inner{v}"))
 
-    create_effect(body)
+    create_tracked_effect(body)
     flush()
     flush()
     assert seen == ["inner0"]

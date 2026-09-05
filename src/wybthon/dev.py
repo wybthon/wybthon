@@ -38,6 +38,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
     watchers = []  # type: ignore[var-annotated]
     root: Path = Path.cwd()
     mounts: list[tuple[str, Path]] = []
+    app_base: str | None = None
 
     def end_headers(self) -> None:
         """Append no-cache headers to every response to avoid stale assets."""
@@ -126,6 +127,16 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
 
     def translate_path(self, path: str) -> str:
         """Translate a URL path to a filesystem path honoring configured mounts."""
+        if self.app_base is not None:
+            requested = urlsplit(path).path
+            base = self.app_base.rstrip("/")
+            if base and requested != base and not requested.startswith(base + "/"):
+                return str(self.root / "__missing__")
+            relative = requested[len(base) :]
+            target = translate_request_path(relative, self.root, [])
+            if not target.exists() and "." not in target.name:
+                target = self.root / "index.html"
+            return str(target)
         return str(translate_request_path(path, self.root, self.mounts))
 
     @classmethod
@@ -253,8 +264,32 @@ def serve(
         open_path: Path to open when `open_browser` is `True`. When
             omitted, defaults to `/`.
     """
-    os.chdir(directory)
-    SSEHandler.root = Path(directory)
+    project = Path(directory).resolve()
+    os.chdir(project)
+    rebuild = None
+    SSEHandler.app_base = None
+    if (project / "wybthon.toml").exists():
+        import tomllib
+
+        from .build import build_app
+
+        config = tomllib.loads((project / "wybthon.toml").read_text())
+
+        def rebuild() -> None:
+            manifest = build_app(project)
+            SSEHandler.app_base = manifest["base"]
+            index = project / "dist" / "index.html"
+            reload_script = (
+                "<script>new EventSource('/__sse').addEventListener('reload', () => location.reload());</script>"
+            )
+            index.write_text(index.read_text().replace("</body>", reload_script + "</body>"))
+
+        rebuild()
+        SSEHandler.root = project / "dist"
+        watch = (config.get("app-dir", "app"), "public", "index.html", "wybthon.toml")
+        open_path = open_path or SSEHandler.app_base
+    else:
+        SSEHandler.root = project
     handler_cls = SSEHandler
     # Configure static mounts
     handler_cls.mounts = parse_mounts(mounts or [], Path(directory))
@@ -266,24 +301,31 @@ def serve(
         allow_reuse_address = True
 
     def watcher() -> None:
-        mtimes: dict[Path, float] = {}
         roots = [Path(w) for w in watch]
+
+        def scan() -> dict[Path, int]:
+            result = {}
+            for path in _walk_files(roots):
+                if "__pycache__" not in path.parts:
+                    try:
+                        result[path] = path.stat().st_mtime_ns
+                    except OSError:
+                        pass
+            return result
+
+        mtimes = scan()
         while True:
-            changed = False
-            for f in _walk_files(roots):
-                try:
-                    m = f.stat().st_mtime
-                except Exception:
-                    continue
-                prev = mtimes.get(f)
-                if prev is None:
-                    mtimes[f] = m
-                elif m > prev:
-                    mtimes[f] = m
-                    changed = True
-            if changed:
-                handler_cls.notify_reload()
             time.sleep(0.5)
+            current = scan()
+            if current != mtimes:
+                mtimes = current
+                try:
+                    if rebuild is not None:
+                        rebuild()
+                except Exception as exc:
+                    print(f"Build failed: {exc}", flush=True)
+                    continue
+                handler_cls.notify_reload()
 
     t = threading.Thread(target=watcher, daemon=True)
     t.start()
@@ -356,10 +398,10 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Process exit code: `0` on success, non-zero on usage errors.
     """
-    parser = argparse.ArgumentParser(prog="wyb", description="Wybthon dev server")
+    parser = argparse.ArgumentParser(prog="wyb", description="Wybthon development and production tools")
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")
-    pdev.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]), help="Root dir to serve")
+    pdev.add_argument("--dir", default=".", help="Project or static root to serve")
     pdev.add_argument("--host", default="127.0.0.1")
     pdev.add_argument("--port", type=int, default=8000)
     pdev.add_argument("--watch", nargs="*", default=["src"])
@@ -372,7 +414,33 @@ def main(argv: list[str] | None = None) -> int:
     pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
     pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /app/)")
 
+    pinit = sub.add_parser("init", help="Create a starter application")
+    pinit.add_argument("directory", nargs="?", default=".")
+    pbuild = sub.add_parser("build", help="Build deterministic static assets")
+    pbuild.add_argument("--dir", default=".")
+    pbuild.add_argument("--out", default=None)
+    pbuild.add_argument("--base", default=None)
+    ppreview = sub.add_parser("preview", help="Serve a production build")
+    ppreview.add_argument("--dir", default="dist")
+    ppreview.add_argument("--host", default="127.0.0.1")
+    ppreview.add_argument("--port", type=int, default=8000)
+
     args = parser.parse_args(argv)
+    if args.cmd in {"init", "build", "preview"}:
+        from .build import build_app, init_app, preview
+
+        try:
+            if args.cmd == "init":
+                init_app(Path(args.directory))
+                print(f"Created {Path(args.directory).resolve()}")
+            elif args.cmd == "build":
+                build_app(Path(args.dir), output=Path(args.out) if args.out else None, base=args.base)
+                print(f"Built {Path(args.out or Path(args.dir) / 'dist').resolve()}")
+            else:
+                preview(Path(args.dir), host=args.host, port=args.port)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        return 0
     if args.cmd == "dev":
         serve(
             args.dir,

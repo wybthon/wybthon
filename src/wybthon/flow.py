@@ -34,12 +34,10 @@ from collections.abc import Callable
 from typing import Any
 
 from ._warnings import warn_each_plain_list
-from .reactivity import _core
-from .reactivity._core import Accessor, _positional_count, is_accessor
-from .reactivity._list import map_array
+from .reactivity._core import _positional_count
 from .reactivity._primitives import create_memo
 from .reactivity._props import Props
-from .vnode import Fragment, VNode, h, to_text_vnode
+from .vnode import VNode, h
 
 __all__ = ["Show", "For", "Repeat", "Switch", "Match", "Dynamic", "DynamicComponent", "dynamic"]
 
@@ -112,24 +110,15 @@ def _Show(props: Props) -> Any:
     children = _callback(props.raw("children"))
     fallback = props.raw("fallback")
 
-    if keyed:
-
-        def render_keyed() -> Any:
-            value = when()
-            if value:
-                return _render_slot(children, value)
-            return _render_slot(fallback)
-
-        return render_keyed
-
     truthy = create_memo(lambda: bool(when()))
 
-    def render() -> Any:
-        if truthy():
-            return _render_slot(children, when)
-        return _render_slot(fallback)
+    def choose() -> Any:
+        if keyed:
+            value = when()
+            return ((True, value), children, (value,)) if value else ((False,), fallback, ())
+        return ((True,), children, (when,)) if truthy() else ((False,), fallback, ())
 
-    return render
+    return VNode("_branch", {"choose": choose})
 
 
 _Show.__name__ = "Show"
@@ -180,30 +169,6 @@ def For(
     return h(_For, {"each": each, "children": children, "fallback": fallback, "keyed": keyed})
 
 
-def _wrap_row(fn: Callable[..., Any]) -> Callable[..., Any]:
-    """Pin each row's VNode to the row owner so its effects survive list updates."""
-
-    def row(*args: Any) -> Any:
-        result = fn(*args)
-        node = result if isinstance(result, VNode) else _to_vnode(result)
-        node.owner_scope = _core._current_owner
-        return node
-
-    return row
-
-
-def _to_vnode(value: Any) -> VNode:
-    if isinstance(value, VNode):
-        return value
-    if isinstance(value, (list, tuple)):
-        return Fragment(*value)
-    if is_accessor(value):
-        from .vnode import hole
-
-        return hole(value)
-    return to_text_vnode(value)
-
-
 def _For(props: Props) -> Any:
     raw_each = props.raw("each")
     if isinstance(raw_each, (list, tuple)):
@@ -215,15 +180,7 @@ def _For(props: Props) -> Any:
     if children is None:
         return None
 
-    rows = map_array(lambda: each() or None, _wrap_row(children), keyed=keyed)
-
-    def render() -> Any:
-        vnodes = rows()
-        if not vnodes:
-            return _render_slot(fallback)
-        return Fragment(*vnodes)
-
-    return render
+    return VNode("_list", {"source": each, "children": children, "keyed": keyed, "fallback": fallback})
 
 
 _For.__name__ = "For"
@@ -261,28 +218,12 @@ def _Repeat(props: Props) -> Any:
     count = props.count
     start = props.start
 
-    def source() -> list[int] | None:
-        try:
-            n = int(count() or 0)
-        except (TypeError, ValueError):
-            n = 0
-        if n <= 0:
-            return None
+    def source() -> range:
+        n = max(0, int(count() or 0))
         s = int(start() or 0)
-        return list(range(s, s + n))
+        return range(s, s + n)
 
-    def row(item: Accessor[int], index: int) -> Any:
-        return children(item.peek())
-
-    slots = map_array(source, _wrap_row(row), keyed=False)
-
-    def render() -> Any:
-        vnodes = slots()
-        if not vnodes:
-            return _render_slot(fallback)
-        return Fragment(*vnodes)
-
-    return render
+    return VNode("_list", {"source": source, "children": children, "fallback": fallback, "repeat": True})
 
 
 _Repeat.__name__ = "Repeat"
@@ -352,16 +293,17 @@ def _Switch(props: Props) -> Any:
 
     index = create_memo(active)
 
-    def render() -> Any:
+    def choose() -> Any:
         i = index()
         if i < 0:
-            return _render_slot(fallback)
-        m = matches[i]
+            return ((-1,), fallback, ())
+        match = matches[i]
         acc = accessors[i]
-        # A keyed branch reads the value here, so it re-renders on change.
-        return _render_slot(_callback(m.children), acc() if m.keyed else acc)
+        value = acc() if match.keyed else acc
+        token = (i, value) if match.keyed else (i,)
+        return token, _callback(match.children), (value,)
 
-    return render
+    return VNode("_branch", {"choose": choose})
 
 
 _Switch.__name__ = "Switch"

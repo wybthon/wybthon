@@ -67,14 +67,15 @@ jobs:
         run: uv run playwright install --with-deps chromium
 
       - name: Run browser benchmark
-        # Explicit bash shell enables pipefail so a benchmark crash is not
-        # masked by tee's exit code.
         shell: bash
-        run: uv run python benchmarks/browser_bench.py --json | tee browser_bench_results.json
+        run: |
+          uv run python benchmarks/browser_bench.py --mode signal --json > browser_signal_results.json
+          uv run python benchmarks/browser_bench.py --mode store --json > browser_store_results.json
+          uv run python benchmarks/check_work.py browser_store_results.json
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-benchmark-results
-          path: browser_bench_results.json
+          path: browser_*_results.json

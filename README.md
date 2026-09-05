@@ -103,13 +103,13 @@ def Todos():
 
     @action
     async def add(title: str):
-        set_store(lambda s: s.items.append({"id": len(s.items) + 1, "title": title}))
+        set_store(lambda s: s["items"].append({"id": len(s["items"]) + 1, "title": title}))
         set_draft("")
 
     return div(
         input_(value=draft, on_input=lambda e: set_draft(e.target.value)),
         button("Add", on_click=lambda e: add(draft.peek()), disabled=add.pending),
-        ul(For(lambda: store.items, lambda item, i: li(lambda: item()["title"]), keyed=lambda t: t["id"])),
+        ul(For(lambda: store["items"], lambda item, i: li(lambda: item()["title"]), keyed=lambda t: t["id"])),
     )
 
 
@@ -135,3 +135,20 @@ Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for set
 ## License
 
 [MIT](LICENSE)
+
+## Application workflow
+
+```bash
+wyb init my-app
+cd my-app
+wyb dev --open
+# Production output:
+wyb build
+wyb preview
+```
+
+The build packages hashed Python archives and explicit lazy chunks with a pinned Pyodide bootstrap. See [deployment](https://wybthon.com/guides/deployment/).
+
+Stores use staged versions and scoped mutable drafts. `snapshot` returns detached data, and store lists preserve entity identity through moves. `create_effect(compute, apply)` separates tracked preparation from committed resource lifetime; `create_tracked_effect(fn)` is the explicit combined callback. Nested roots are owned by default. See [runtime contracts](https://wybthon.com/concepts/runtime-contracts/) for pending reads, asyncio cancellation, optimistic rebasing, and collection guarantees.
+
+Enable `plugins = wybthon.mypy_plugin` in mypy for decorated component props and TypedDict store fields. `wybthon.testing` and `wybthon.diagnostics` expose owned test scopes, work counters, and graph inspection.

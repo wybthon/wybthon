@@ -43,12 +43,13 @@ holds on the old state until the new value lands, and an
 | Name | Description |
 | --- | --- |
 | [`create_signal`][wybthon.create_signal] | `(getter, setter)` pair; `equals=` policy; function form makes a writable derived signal. |
-| [`create_memo`][wybthon.create_memo] | Lazy, glitch-free derived value; `async def` bodies become async computations; `loading_value=` serves a value before the first run lands. |
-| [`create_effect`][wybthon.create_effect] | Side effect after DOM commit; split `(compute, apply)` form recommended. |
+| [`create_memo`][wybthon.create_memo] | Glitch-free derived value, eager initially unless `lazy=True`; `async def` bodies become async computations; `loading_value=` serves a value before the first run lands. |
+| [`create_effect`][wybthon.create_effect] | Side effect after DOM commit; requires tracked `compute` and untracked `apply`. |
+| [`create_tracked_effect`][wybthon.create_tracked_effect] | Explicit combined tracking and side-effect callback. |
 | [`create_render_effect`][wybthon.create_render_effect] | Effect in the render phase, before the DOM commit; first run is immediate. |
 | [`on_settled`][wybthon.on_settled] | Run once after the flush that mounted the component; may return a cleanup. |
 | [`on_cleanup`][wybthon.on_cleanup] | Register a cleanup on the active scope. |
-| [`create_root`][wybthon.create_root] | Independent ownership root; `fn(dispose)`. |
+| [`create_root`][wybthon.create_root] | Owned root; `fn(dispose)`, with explicit `detached=True` for independence. |
 | [`flush`][wybthon.flush] | Apply staged writes, run dirty effects, commit the DOM now. |
 | [`untrack`][wybthon.untrack] | Run a function without tracking its reads. |
 | [`get_owner`][wybthon.get_owner], [`run_with_owner`][wybthon.run_with_owner] | Capture the owner before an `await` and restore it after. |
@@ -64,7 +65,7 @@ holds on the old state until the new value lands, and an
 | [`prop`][wybthon.prop] | Declare a typed component parameter default. |
 | [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive prop-mapping views (later sources win; drop keys). |
 | [`children`][wybthon.children] | Memo flattening a children getter into a list. |
-| [`map_array`][wybthon.map_array] | Reactive list mapping with per-row scopes; the engine behind `For`. |
+| [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes; DOM lists use mounted regions. |
 | [`create_selector`][wybthon.create_selector] | `is_selected(key)` that notifies only the affected rows. |
 | [`create_unique_id`][wybthon.create_unique_id] | Process-unique id string for `id`/`for` pairs. |
 | [`is_accessor`][wybthon.is_accessor] | `True` for an `Accessor` or a zero-arg function. |

@@ -10,7 +10,7 @@ Wybthon's demo applications live in standalone repositories under the [wybthon G
 | [photo-lab](https://github.com/wybthon/photo-lab) | Resize, compress, convert, and strip image metadata privately in the browser. Demonstrates file handling and JS interop. |
 
 !!! note "Versions"
-    The demos are separate repositories with their own release cadence. If a demo hasn't been updated for the current API yet, the [migration guide](migrating-from-0-x.md) maps every old name to its replacement.
+    The demos are separate repositories with their own release cadence. Use `wyb init` for a starter that matches the installed version's API.
 
 ## Running a demo locally
 
