@@ -70,6 +70,7 @@ nav:
     - Primitives: concepts/primitives.md
     - Reactivity: concepts/reactivity.md
     - Lifecycle and Ownership: concepts/lifecycle.md
+    - Runtime Contracts: concepts/runtime-contracts.md
     - Virtual DOM: concepts/vdom.md
     - Router: concepts/router.md
     - Context: concepts/context.md
@@ -109,6 +110,7 @@ nav:
     - Props: api/props.md
     - DOM: api/dom.md
     - HTML helpers: api/html.md
+    - SVG helpers: api/svg.md
     - Events: api/events.md
     - Forms: api/forms.md
     - Context: api/context.md
@@ -122,6 +124,7 @@ nav:
     - Portal: api/portal.md
     - Dev server (CLI): api/dev.md
     - Warnings: api/warnings.md
+    - Application Tools: api/app-tools.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

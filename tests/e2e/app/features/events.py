@@ -2,25 +2,25 @@
 
 from app.testkit import tid
 
-from wybthon import button, component, create_signal, div, dynamic, h2, input_, p, span
+from wybthon import button, component, create_signal, div, h2, input_, p, span
 
 
 @component
-def Page():
+def Page(**rest):
     outer, set_outer = create_signal(0)
     inner, set_inner = create_signal(0)
     text, set_text = create_signal("")
     checked, set_checked = create_signal(False)
 
     def on_outer(_e):
-        set_outer(outer() + 1)
+        set_outer(lambda n: n + 1)
 
     def on_inner_stop(e):
         e.stop_propagation()
-        set_inner(inner() + 1)
+        set_inner(lambda n: n + 1)
 
     def on_inner_bubble(_e):
-        set_inner(inner() + 1)
+        set_inner(lambda n: n + 1)
 
     return div(
         h2("Events"),
@@ -36,7 +36,7 @@ def Page():
             input_(on_input=lambda e: set_text(e.target.value), **tid("ev-input")),
             span(text, **tid("ev-input-echo")),
             input_(type="checkbox", on_change=lambda e: set_checked(e.target.checked), **tid("ev-check")),
-            span(dynamic(lambda: "on" if checked() else "off"), **tid("ev-check-echo")),
+            span(lambda: "on" if checked() else "off", **tid("ev-check-echo")),
         ),
         **tid("page-events"),
     )

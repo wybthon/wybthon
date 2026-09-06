@@ -3,9 +3,9 @@
 
 Serves the repository root over HTTP, loads ``benchmarks/app/index.html``
 in headless Chromium via Playwright, clicks "Run Full Benchmark", and
-prints the median results the page reports. This measures the real
-end-to-end cost (Pyodide FFI + browser layout), unlike the stubbed
-``bench_runner.py`` which isolates Python-side framework cost.
+prints separate median synchronous commit and input-to-frame times.
+The frame measurement is a rendering opportunity, not a precise paint
+completion timestamp. ``bench_runner.py`` measures the native Python backend.
 
 Requires Playwright with Chromium installed:
 
@@ -58,12 +58,12 @@ def _wait_for_http(url: str, timeout_s: float = 30.0) -> None:
     raise RuntimeError(f"HTTP server did not become ready at {url}: {last_err}")
 
 
-def run_browser_benchmark() -> dict:
+def run_browser_benchmark(mode: str = "signal") -> dict:
     from playwright.sync_api import sync_playwright
 
     port = _free_port()
     server = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(REPO_ROOT)],
         cwd=str(REPO_ROOT),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -85,7 +85,7 @@ def run_browser_benchmark() -> dict:
                     print(text, file=sys.stderr)
 
             page.on("console", on_console)
-            page.goto(f"{base_url}{APP_URL_PATH}")
+            page.goto(f"{base_url}{APP_URL_PATH}?mode={mode}")
 
             # The benchmark panel appears once Pyodide and the app have loaded.
             page.wait_for_selector("#bench-panel", state="visible", timeout=BOOT_TIMEOUT_MS)
@@ -111,9 +111,10 @@ def run_browser_benchmark() -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Wybthon browser benchmark (Pyodide + Playwright)")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
+    parser.add_argument("--mode", choices=["signal", "store"], default="signal")
     args = parser.parse_args()
 
-    results = run_browser_benchmark()
+    results = run_browser_benchmark(args.mode)
 
     if args.json:
         print(json.dumps({"benchmarks": results}, indent=2))
@@ -123,8 +124,8 @@ def main() -> None:
         print("=" * 60)
         print(f"{'Benchmark':<24} {'Median (ms)':>12}")
         print("-" * 60)
-        for name, ms in results.items():
-            print(f"{name:<24} {ms:>12.1f}")
+        for name, result in results["scenarios"].items():
+            print(f"{name:<24} {result['sync_commit_ms']:>12.1f}")
         print()
 
 

@@ -1,165 +1,139 @@
-"""Context system for passing values through the component tree.
+"""Context: pass values down the tree without threading props.
 
-Context values are stored on the reactive ownership tree.
-[`use_context`][wybthon.use_context] walks up the owner chain to find
-the nearest [`Provider`][wybthon.Provider], eliminating the need for a
-separate render-time stack.
+A [`Context`][wybthon.Context] is created with
+[`create_context`][wybthon.create_context] and **is its own provider**:
+call it with a `value` and children to expose that value to every
+descendant, and read it with [`use_context`][wybthon.use_context].
 
-The provider's `value` is wrapped in a [`Signal`][wybthon.Signal], so
-descendants that read it inside a tracking scope (e.g., a reactive hole
-or [`create_effect`][wybthon.create_effect]) automatically re-run when
-the provider's value changes, without re-mounting any subtrees.
+Values live on the reactive ownership tree, so `use_context` works
+anywhere an owner exists: component bodies, effects, memos, and list
+rows. The value is handed to consumers exactly as provided, so pass a
+signal (or any accessor) when consumers should react to changes.
 
-See Also:
-    - [Components guide](../concepts/components.md)
+Example:
+    ```python
+    Theme: Context[Accessor[str]] = create_context()
+
+    @component
+    def Button():
+        theme = use_context(Theme)
+        return button("Hi", class_=lambda: f"btn-{theme()}")
+
+    @component
+    def App():
+        theme, set_theme = create_signal("light")
+        return Theme(theme, Button())   # value first, then children
+    ```
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
-__all__ = ["Context", "create_context", "use_context", "Provider"]
+from .reactivity import _core
+from .reactivity._props import Props
+from .vnode import VNode, h
 
-_next_context_id = 0
+__all__ = ["Context", "ContextNotFoundError", "create_context", "use_context"]
+
+_MISSING = object()
 
 
-@dataclass(frozen=True)
-class Context:
-    """Opaque context identifier paired with a default value.
+class ContextNotFoundError(LookupError):
+    """Raised by [`use_context`][wybthon.use_context] when no provider is found and no default exists."""
 
-    Returned by [`create_context`][wybthon.create_context]. Treat the
-    object as opaque: pass it to a [`Provider`][wybthon.Provider] and
-    to [`use_context`][wybthon.use_context] but don't rely on its
-    fields.
+
+class Context[T]:
+    """A context token that also acts as its provider component.
+
+    Created by [`create_context`][wybthon.create_context]. Calling the
+    context with a value and children returns a provider `VNode`:
+
+    ```python
+    Theme(value, *children)
+    Theme("dark", App())
+    Theme(lambda: theme(), App())     # reactive value
+    ```
 
     Attributes:
-        id: Process-unique integer used as the storage key on owner
-            scopes.
-        default: Value returned by `use_context` when no enclosing
-            provider is found.
+        default: Value returned by `use_context` when no provider is
+            found, if one was declared.
+        name: Optional label for diagnostics.
     """
 
-    id: int
-    default: Any
+    __slots__ = ("default", "name", "_id")
 
-    def Provider(self, value: Any = None, children: Any = None) -> Any:
-        """Build a provider VNode for this context (SolidJS-style shorthand).
+    _counter = 0
 
-        Equivalent to `h(Provider, {"context": self, "value": value,
-        "children": children})`.
+    def __init__(self, default: Any = _MISSING, name: str | None = None) -> None:
+        self.default = default
+        self.name = name
+        Context._counter += 1
+        self._id = Context._counter
 
-        Args:
-            value: The value to expose to descendants.
-            children: A `VNode` or list of `VNode`s rendered
-                transparently.
+    @property
+    def has_default(self) -> bool:
+        """Whether the context was created with a default value."""
+        return self.default is not _MISSING
 
-        Returns:
-            A provider component [`VNode`][wybthon.VNode].
+    def __call__(self, value: Any, *children: Any) -> VNode:
+        """Return a provider `VNode` exposing `value` to `children`."""
+        return h(_provider, {"context": self, "value": value, "children": list(children)})
 
-        Example:
-            ```python
-            Theme = create_context("light")
-            Theme.Provider(value="dark", children=[App()])
-            ```
-        """
-        from .vnode import h
+    def __repr__(self) -> str:
+        return f"Context({self.name or self._id})"
 
-        if children is None:
-            children = []
-        if not isinstance(children, list):
-            children = [children]
-        return h(Provider, {"context": self, "value": value, "children": children})
+    __hash__ = object.__hash__
 
 
-def create_context(default: Any) -> Context:
-    """Create a new [`Context`][wybthon.Context] with the given default value.
+def create_context[T](default: Any = _MISSING, *, name: str | None = None) -> Context[T]:
+    """Create a [`Context`][wybthon.Context].
 
     Args:
-        default: Value returned by [`use_context`][wybthon.use_context]
-            when no provider is found above the consumer.
+        default: Optional value returned by `use_context` when no
+            provider is above the reader. Without one, reading outside
+            a provider raises
+            [`ContextNotFoundError`][wybthon.ContextNotFoundError].
+        name: Optional label for diagnostics.
 
     Returns:
-        A fresh `Context` token. Each call returns a context with a
-        unique id, even when `default` is the same.
+        A new `Context`; call it to provide, pass it to `use_context` to read.
     """
-    global _next_context_id
-    _next_context_id += 1
-    return Context(id=_next_context_id, default=default)
+    return Context(default, name)
 
 
-def use_context(ctx: Context) -> Any:
-    """Read the current value for `ctx` from the ownership tree.
+def use_context[T](ctx: Context[T]) -> T:
+    """Read the nearest provided value for `ctx`.
 
-    Walks up the owner chain looking for the nearest provider that
-    stored a value for this context. The returned value is unwrapped
-    from the provider's signal so callers always observe the current
-    value. When invoked inside a tracking scope (a reactive hole or
-    effect), the dependency on the provider signal is recorded so the
-    scope re-runs whenever the provider updates.
+    Walks up the ownership tree from the active scope and returns the
+    value exactly as the provider received it: a signal or accessor
+    stays a signal or accessor (call it where you need the value), a
+    static value is returned directly.
 
-    Args:
-        ctx: The context token created by
-            [`create_context`][wybthon.create_context].
-
-    Returns:
-        The nearest provider's current value, or
-        `ctx.default` when no provider exists above the caller.
+    Raises:
+        ContextNotFoundError: No provider is above the caller and the
+            context has no default.
     """
-    from .reactivity import Signal, _current_owner
-
-    owner = _current_owner
+    owner = _core._current_owner
     while owner is not None:
-        if owner._context_map is not None and ctx.id in owner._context_map:
-            stored = owner._context_map[ctx.id]
-            if isinstance(stored, Signal):
-                return stored.get()
-            return stored
+        cm = owner._context_map
+        if cm is not None and ctx in cm:
+            return cm[ctx]
         owner = owner._parent
+    if ctx.default is _MISSING:
+        raise ContextNotFoundError(
+            f"use_context({ctx!r}) found no provider above the caller and the context has no default."
+        )
     return ctx.default
 
 
-def Provider(props: Any) -> Any:
-    """Context provider component.
-
-    Renders its children transparently. The reconciler stores `value`
-    as a [`Signal`][wybthon.Signal] on this component's ownership
-    scope so that descendants can find it via
-    [`use_context`][wybthon.use_context] and react to updates with
-    fine-grained precision.
-
-    Children are wrapped in a reactive hole so updates from the parent
-    (for example a router swapping the matched route component) flow
-    into the subtree even though the provider body itself runs only
-    once.
-
-    Args:
-        props: The component's props with the following keys:
-
-            - `context` ([`Context`][wybthon.Context]): The context
-              being provided.
-            - `value`: The current value to expose to descendants.
-            - `children`: A `VNode` or list of `VNode`s rendered
-              transparently.
-
-    Returns:
-        A reactive [`VNode`][wybthon.VNode] subtree containing the
-        provider's children.
-    """
-    from .vnode import Fragment, dynamic
-
-    children_getter = props.children
-
-    def _render() -> Any:
-        kids = children_getter()
-        if kids is None:
-            kids = []
-        if not isinstance(kids, list):
-            kids = [kids]
-        return Fragment(*kids)
-
-    return dynamic(_render)
+def _provider(props: Props) -> Any:
+    """Internal provider component: stores `value` on its own owner scope."""
+    owner = _core._current_owner
+    assert owner is not None
+    owner._set_context(props.raw("context"), props.raw("value"))
+    kids = props.children
+    return lambda: kids()
 
 
-Provider._wyb_provider = True  # type: ignore[attr-defined]
-Provider._wyb_component = True  # type: ignore[attr-defined]
+_provider.__name__ = "Provider"

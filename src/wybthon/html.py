@@ -17,27 +17,31 @@ Children are positional arguments and props are keyword arguments.
 
 Prop name mapping (Python keyword to HTML attribute):
 
-- `class_` → `class` (the canonical reserved-word workaround).
-- `html_for` → `for` (Python reserved word).
-- All other kwargs pass through unchanged.
+- `class_` becomes `class` and `html_for` becomes `for` (reserved words).
+- Underscores become hyphens: `aria_label`, `data_testid`, `tabindex`
+  stays as is. Event handlers keep the `on_` prefix (`on_click`).
+- `True` sets a boolean attribute, `False` or `None` omits it.
 
-Each helper exported here (e.g., `div`, `p`, `button`, `input_`) is a
-thin wrapper that returns a [`VNode`][wybthon.VNode]. Two element
-names collide with Python builtins, so they're exposed with a trailing
-underscore: `main_` and `input_`.
+Each helper returns a [`VNode`][wybthon.VNode]. Two element names
+collide with Python builtins, so they're exposed with a trailing
+underscore: `main_` and `input_`. SVG elements live in
+[`wybthon.svg`][wybthon.svg].
 
 See Also:
     - [`h`][wybthon.h]: the underlying hyperscript constructor.
-    - [`Fragment`][wybthon.Fragment]: wrap a list of children with no
-      DOM parent.
+    - [`Fragment`][wybthon.Fragment]: group children with no DOM parent.
 """
 
-from typing import Any, Callable
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
 
 from .vnode import Fragment, VNode, h
 
 __all__ = [
     "Fragment",
+    "element",
     # Layout
     "div",
     "span",
@@ -114,49 +118,46 @@ __all__ = [
 ]
 
 
-def _process_props(kwargs: dict) -> dict:
-    """Convert Python keyword arguments to a VNode props dict.
+def _process_props(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Map reserved-word workarounds (`class_`, `html_for`) to their attribute names.
 
-    Maps the reserved-word workarounds `class_` to `class` and
-    `html_for` to `for`. All other keys pass through unchanged.
-
-    Args:
-        kwargs: Keyword arguments captured from an element helper.
-
-    Returns:
-        A new props dictionary suitable for passing to
-        [`h`][wybthon.h].
+    Other names are left alone; the prop applier converts underscores to
+    hyphens when it writes attributes.
     """
-    props: dict = {}
-    for key, value in kwargs.items():
-        if key == "class_":
-            props["class"] = value
-        elif key == "html_for":
-            props["for"] = value
-        else:
-            props[key] = value
-    return props
+    if "class_" in kwargs or "html_for" in kwargs:
+        props: dict[str, Any] = {}
+        for key, value in kwargs.items():
+            if key == "class_":
+                props["class"] = value
+            elif key == "html_for":
+                props["for"] = value
+            else:
+                props[key] = value
+        return props
+    return kwargs
 
 
-def _el(tag: str) -> Callable[..., VNode]:
-    """Create a helper function for the given HTML tag name.
+def element(tag: str) -> Callable[..., VNode]:
+    """Create a helper `fn(*children, **props) -> VNode` for any tag name.
 
-    Args:
-        tag: HTML tag name (e.g., `"div"`, `"section"`).
+    Use it for custom elements or tags without a built-in helper:
 
-    Returns:
-        A callable `element_fn(*children, **props) -> VNode` that
-        constructs a `VNode` for the requested tag.
+    ```python
+    my_widget = element("my-widget")
+    my_widget("content", size="large")
+    ```
     """
 
     def element_fn(*children: Any, **props: Any) -> VNode:
-        """Create a `<{tag}>` element. Children are positional, props are keyword."""
         return h(tag, _process_props(props), *children)
 
-    element_fn.__name__ = tag
-    element_fn.__qualname__ = tag
+    element_fn.__name__ = tag.replace("-", "_")
+    element_fn.__qualname__ = element_fn.__name__
     element_fn.__doc__ = f"Create a `<{tag}>` element. Children are positional args, props are keyword args."
     return element_fn
+
+
+_el = element
 
 
 # Layout / Structure

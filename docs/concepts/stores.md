@@ -1,185 +1,78 @@
-### Stores
+# Stores
 
-Stores provide reactive state management for nested objects and lists. Inspired by SolidJS `createStore`, they let you work with complex state while maintaining fine-grained reactivity, since each property path is tracked independently.
-
-#### Creating a store
+Stores are read-only reactive mappings and sequences. Update them with a synchronous, scoped draft. Containers have entity identity: moving a row changes its position without changing which object its proxy represents.
 
 ```python
-from wybthon import create_store
+from wybthon import create_store, flush, snapshot
 
-store, set_store = create_store({
-    "count": 0,
-    "user": {"name": "Ada", "age": 30},
-    "todos": [
-        {"id": 1, "text": "Learn Wybthon", "done": False},
-    ],
+state, write = create_store({
+    "user": {"name": "Ada"},
+    "items": [{"id": 1, "title": "Build a Python UI"}],
 })
-```
 
-`create_store` returns a `(store, set_store)` tuple, similar to `create_signal`.
+def edit(draft):
+    draft.user.name = "Grace"
+    draft["items"].append({"id": 2, "title": "Test it in the browser"})
 
-#### Reading values
-
-Access store values via attribute syntax. Reads are reactive: any effect or render function that reads a store property will re-run when that specific property changes:
-
-```python
-store.count           # 0
-store.user.name       # "Ada"
-store.todos[0].text   # "Learn Wybthon"
-```
-
-Nested dicts become store proxies and list values become list proxies, so reactivity extends to any depth. Reading `store.user.name` subscribes only to that leaf, not to the entire store.
-
-#### Writing values
-
-Writes are **draft-first**: call `set_store` with a function, and it receives a mutable draft of the state. Mutate the draft with normal Python:
-
-```python
-def update(s):
-    s.count += 1                     # attribute assignment
-    s.user.name = "Grace"            # nested write
-    s.todos[0].done = True           # index path
-    s.todos.append({"id": 2, "text": "New", "done": False})
-
-set_store(update)
-
-# Small updates read fine as lambdas:
-set_store(lambda s: s.user.update({"name": "Jane", "age": 36}))
-```
-
-The draft supports:
-
-- Attribute and item assignment (`s.name = "new"`, `s.items[0] = "x"`)
-- `del s.items[0]` and `del`-style dict key removal
-- List methods: `append`, `insert`, `pop`, `remove`, `extend`, `clear`
-- Dict bulk merge: `s.update({...})`
-
-Only the leaves that actually changed notify their subscribers, and because effects run once per flush, a draft function making many writes still produces a single settled update.
-
-The store itself is **read-only**: writing directly via `store.count = 5` raises an error. Always mutate through the setter's draft.
-
-#### Reactivity with effects
-
-Store reads inside `create_effect` and render functions are tracked automatically:
-
-```python
-from wybthon import create_effect, flush
-
-create_effect(lambda: print("Count is:", store.count))
-# Prints: Count is: 0
-
-set_store(lambda s: setattr(s, "count", 10))
+write(edit)
 flush()
-# Prints: Count is: 10
+assert state.user.name == "Grace"
 ```
 
-Only effects that read the changed path re-run. Changing `store.user.name` won't re-trigger an effect that only reads `store.count`. In the browser the flush happens automatically; see [Automatic batching](reactivity.md#automatic-batching).
+## Collection protocols
 
-#### Using stores in components
+`Store` implements `Mapping`, and `StoreList` implements `Sequence`. Use indexing, iteration, `len`, membership, and ordinary mapping methods such as `.get()`, `.items()`, and `.keys()`. Attribute access is convenient for nonconflicting string keys. A key named `items` is `state["items"]`; `state.items()` is the mapping method. Missing entries raise ordinary Python exceptions.
 
-Stores pair naturally with the `@component` decorator:
+Drafts implement `MutableMapping` and `MutableSequence`. Use assignment, deletion, `update`, `append`, `extend`, `insert`, `pop`, slices, `reverse`, and `sort` as appropriate. A draft and every nested draft expire when the callback returns. Escaped reads or writes raise `DraftExpiredError`.
+
+A callback that raises leaves the published store unchanged. Return `None` after mutations. Returning replacement mapping or sequence data replaces the draft contents; don't accidentally return the result of `pop` or a tuple of mutations. Async setters are rejected. Await external work in an action, then perform a synchronous draft edit.
+
+## Versions and subscriptions
+
+Successful edits stage versions without changing the revealed data. Before a flush, ordinary reads keep seeing the previous version, even for a key that has never been read. During held transitions the previous version remains visible until reveal. Actions see their own staged edits.
+
+Property reads, membership, list length, mapping keys, and subtree versions have separate dependencies. Changing a sibling subtree doesn't rerun an effect that reads `deep(state.user)`. Negative list indices also track length.
 
 ```python
-from wybthon import For, button, component, create_store, div, dynamic, p
+from wybthon import create_effect, deep
 
-@component
-def TodoApp():
-    store, set_store = create_store({
-        "todos": [],
-        "next_id": 1,
-    })
-
-    def add_todo(e):
-        def update(s):
-            s.todos.append({"id": s.next_id, "text": f"Item {s.next_id}", "done": False})
-            s.next_id += 1
-        set_store(update)
-
-    def toggle(idx):
-        def flip(s):
-            s.todos[idx].done = not s.todos[idx].done
-        return lambda e: set_store(flip)
-
-    return div(
-        button("Add", on_click=add_todo),
-        For(
-            each=lambda: list(store.todos),
-            children=lambda todo, i: p(
-                dynamic(lambda: f"{'[x]' if todo().done else '[ ]'} {todo().text}"),
-                on_click=toggle(i()),
-            ),
-        ),
-    )
+create_effect(lambda: state.user.name, print)
+create_effect(lambda: deep(state.user), lambda user: print(user))
 ```
 
-#### Reconciling external data
+`snapshot(value)` returns detached plain data without tracking. Changing the snapshot can't change the store. `deep(value)` returns detached plain data and subscribes to that subtree. Neither exposes mutable backing data.
 
-When fresh data arrives from a server, replacing whole subtrees would
-re-run every effect under them. `reconcile` diffs the new data into the
-store instead, updating only the paths that actually changed. List items
-are matched by a key (default `"id"`) so their proxies keep a stable
-identity across updates, which is exactly what `For` needs:
+## Identity and reconciliation
+
+`For(lambda: state["items"], row)` can use store edit records directly. Default matching preserves entity identity. Use `keyed=lambda item: item.id` when replacement objects represent the same application entity; that callback receives item and index accessors.
 
 ```python
 from wybthon import reconcile
 
-set_store(reconcile(fetched_state))               # match list items by "id"
-set_store(reconcile(fetched_state, key="uuid"))   # custom key
+write(reconcile({"user": {"name": "Grace"}, "items": [
+    {"id": 2, "title": "Updated"},
+    {"id": 1, "title": "Build a Python UI"},
+]}, key="id"))
 ```
 
-#### Projections
+Keyed reconciliation updates matching entities in place and matches duplicate keys in occurrence order. `key=None` replaces list entities. Store drafts preserve entities when moving existing proxies. Initial cyclic input isn't supported.
 
-`create_projection(fn, initial=None)` creates a **read-only derived
-store**. `fn` receives a mutable draft and runs inside a render effect:
-any signals, memos, or other stores it reads become dependencies, and
-when they change, `fn` re-runs against the same draft. Consumers get
-fine-grained updates for exactly the paths that changed:
+## Derived and optimistic stores
+
+`create_projection(fn, seed)` and `create_store(fn, seed)` derive a read-only store from tracked reads. The callback may return data or mutate a draft argument. It can await work or yield values from an async generator. Draft changes publish atomically when that result is ready.
 
 ```python
-from wybthon import create_signal, create_projection
+from wybthon import create_projection, is_pending, refresh
 
-selected, set_selected = create_signal(1)
+async def load_user():
+    return await fetch_user(user_id())
 
-flags = create_projection(
-    lambda draft: draft.update({"selected_id": selected()}),
-    {"selected_id": None},
-)
-
-flags.selected_id   # tracked read; updates when ``selected`` changes
+user = create_projection(load_user, {"name": ""})
+# Read user.name inside Loading content.
+busy = lambda: is_pending(lambda: user.name)
+# In an async handler: await refresh(user)
 ```
 
-#### Optimistic stores
+Errors surface when the projection is read, so `Errored` handles them. Refresh is quiet and awaitable. Disposing the owner cancels the producer.
 
-`create_optimistic_store(source, initial=None)` creates a store whose
-writes revert when all in-flight [`action`][wybthon.action]s settle.
-`source` may be a tracked function returning the base state (derived
-form) or a plain dict/list (value form). See
-[Async and Loading](async-loading.md#actions-and-optimistic-state) for
-the full pattern.
-
-#### Unwrap
-
-`unwrap(value)` returns the raw data underneath a store proxy (untracked),
-for example to serialize it or hand it to a non-reactive API:
-
-```python
-from wybthon import unwrap
-
-raw = unwrap(store.todos)   # plain list of dicts
-```
-
-#### Stores vs signals
-
-| | `create_signal` | `create_store` |
-|---|---|---|
-| **Best for** | Primitive values, simple state | Nested objects, lists, complex state |
-| **Read** | `count()` (call getter) | `store.count` (attribute access) |
-| **Write** | `set_count(5)` | `set_store(lambda s: ...)` (draft mutation) |
-| **Nested** | Manual (separate signals) | Automatic (fine-grained proxies) |
-| **Granularity** | Entire value | Per-property |
-
-## Next steps
-
-- See the [`store`][wybthon.store] API for `create_store`, `create_projection`, and `reconcile`.
-- Read [Reactivity](reactivity.md) for the underlying signal model.
-- Browse [Authoring patterns](../guides/authoring-patterns.md) for store recipes.
+`create_optimistic_store(source, seed)` returns a store and an optimistic draft setter. Active edits replay over new authoritative data, then disappear when the shared action transition settles. Keep draft callbacks deterministic. See [Runtime contracts](runtime-contracts.md) for concurrent action, acknowledgment, and cancellation semantics.

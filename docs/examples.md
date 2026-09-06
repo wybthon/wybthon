@@ -1,15 +1,15 @@
 # Examples
 
-Walk through focused examples of the framework's core features. Each page is a self-contained walkthrough with runnable code and an explanation of the patterns it demonstrates.
+Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a Pyodide page (or a test) and an explanation of the patterns it demonstrates.
 
 | Example | What it shows |
 | --- | --- |
-| [Counter](examples/counter.md) | Signals, derived values, and event handlers. |
-| [Async fetch](examples/fetch.md) | Async [`create_memo`][wybthon.create_memo] with a [`Loading`][wybthon.Loading] boundary. |
-| [Forms](examples/forms.md) | [`form_state`][wybthon.form_state] and accessibility-friendly bindings. |
-| [Error boundary](examples/errors.md) | Recovering from render errors with [`ErrorBoundary`][wybthon.ErrorBoundary]. |
-| [Router](examples/router.md) | [`Route`][wybthon.Route], [`Link`][wybthon.Link], and dynamic params. |
-| [Authoring patterns](examples/authoring-patterns.md) | Common idioms for building reusable components. |
+| [Counter](examples/counter.md) | Signals, memos, holes, and `Prop` defaults. |
+| [Async fetch](examples/fetch.md) | Async [`create_memo`][wybthon.create_memo] with a [`Loading`][wybthon.Loading] boundary, refetching, and [`is_pending`][wybthon.is_pending]. |
+| [Forms](examples/forms.md) | [`form_state`][wybthon.form_state], bindings, validation, and accessibility helpers. |
+| [Error handling](examples/errors.md) | Recovering from render and async errors with [`Errored`][wybthon.Errored]. |
+| [Router](examples/router.md) | [`Router`][wybthon.Router], [`Route`][wybthon.Route], [`Link`][wybthon.Link], params, and lazy routes. |
+| [Authoring patterns](examples/authoring-patterns.md) | Composition with `children`, lists with `For`, stores, actions, and cleanup. |
 
 !!! tip "Complete apps"
 
@@ -21,5 +21,5 @@ Walk through focused examples of the framework's core features. Each page is a s
 
 ## Next steps
 
-- Read the [Concepts](concepts/primitives.md) section for the underlying mental model.
+- Read the [Concepts](concepts/mental-model.md) section for the underlying mental model.
 - Browse the [API reference](api/wybthon.md) when you need precise function signatures.

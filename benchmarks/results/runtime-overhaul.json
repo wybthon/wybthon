@@ -1,0 +1,1419 @@
+{
+  "date": "2026-09-05",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "baseline_commit": "72bc523",
+  "pyodide": "314.0.6",
+  "method": "Serial local Chromium runs; one warmup and median of three samples per scenario. Direct Python operation instrumentation is separate from the delegated browser harness. Timings are exploratory observations, not CI thresholds.",
+  "direct_python_baseline": {
+    "create_1k": {
+      "serialize_ms": 4.700000000000593,
+      "kernel_ms": 12.399999999999523,
+      "ops": 8010,
+      "bytes": 164330,
+      "total_ms": 106.70000000000002,
+      "python_other_ms": 89.59999999999991,
+      "commits": 1
+    },
+    "create_10k": {
+      "serialize_ms": 45.49999999999965,
+      "kernel_ms": 136.8999999999998,
+      "ops": 80010,
+      "bytes": 1759990,
+      "total_ms": 889.5,
+      "python_other_ms": 707.1000000000006,
+      "commits": 1
+    },
+    "update_10th_10k": {
+      "serialize_ms": 0.700000000000145,
+      "kernel_ms": 1.6999999999995907,
+      "ops": 1000,
+      "bytes": 39938,
+      "total_ms": 10.399999999998855,
+      "python_other_ms": 7.999999999999119,
+      "commits": 1
+    },
+    "select_toggle_10k": {
+      "serialize_ms": 0.09999999999976694,
+      "kernel_ms": 0.09999999999976694,
+      "ops": 2,
+      "bytes": 53,
+      "total_ms": 3.0000000000001137,
+      "python_other_ms": 2.80000000000058,
+      "commits": 1
+    },
+    "swap_10k": {
+      "serialize_ms": 0.0,
+      "kernel_ms": 0.09999999999976694,
+      "ops": 2,
+      "bytes": 41,
+      "total_ms": 59.40000000000012,
+      "python_other_ms": 59.30000000000035,
+      "commits": 1
+    },
+    "append_to_10k": {
+      "serialize_ms": 4.799999999999471,
+      "kernel_ms": 11.400000000001853,
+      "ops": 8000,
+      "bytes": 185938,
+      "total_ms": 146.20000000000033,
+      "python_other_ms": 129.999999999999,
+      "commits": 1
+    }
+  },
+  "direct_python_overhaul": {
+    "create_1k": {
+      "serialize_ms": 3.8000000000000256,
+      "kernel_ms": 10.600000000000165,
+      "ops": 7000,
+      "bytes": 138944,
+      "total_ms": 109.20000000000041,
+      "python_other_ms": 94.80000000000022,
+      "commits": 1
+    },
+    "create_10k": {
+      "serialize_ms": 44.90000000000016,
+      "kernel_ms": 102.39999999999938,
+      "ops": 70000,
+      "bytes": 1469930,
+      "total_ms": 1019.8000000000001,
+      "python_other_ms": 872.5000000000005,
+      "commits": 1
+    },
+    "update_10th_10k": {
+      "serialize_ms": 0.8999999999979025,
+      "kernel_ms": 1.7999999999993577,
+      "ops": 1000,
+      "bytes": 49017,
+      "total_ms": 12.199999999999989,
+      "python_other_ms": 9.500000000002728,
+      "commits": 1
+    },
+    "select_toggle_10k": {
+      "serialize_ms": 0.0,
+      "kernel_ms": 0.09999999999976694,
+      "ops": 2,
+      "bytes": 53,
+      "total_ms": 0.39999999999906777,
+      "python_other_ms": 0.2999999999993008,
+      "commits": 1
+    },
+    "swap_10k": {
+      "serialize_ms": 0.0,
+      "kernel_ms": 0.09999999999976694,
+      "ops": 2,
+      "bytes": 57,
+      "total_ms": 42.79999999999973,
+      "python_other_ms": 42.69999999999996,
+      "commits": 1
+    },
+    "append_to_10k": {
+      "serialize_ms": 4.5000000000001705,
+      "kernel_ms": 30.400000000000205,
+      "ops": 7000,
+      "bytes": 146737,
+      "total_ms": 172.20000000000013,
+      "python_other_ms": 137.29999999999976,
+      "commits": 1
+    }
+  },
+  "browser_signal": {
+    "mode": "signal",
+    "pyodide": "314.0.6",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "warmups": 1,
+    "samples": 3,
+    "scenarios": {
+      "create_1k": {
+        "sync_commit_ms": 140.09999999776483,
+        "input_to_frame_ms": 213.5,
+        "counts": {
+          "computations": 2001,
+          "list_scanned": 1000,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 7000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 138912,
+          "serialize_us": 4700,
+          "kernel_us": 15500
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 134,
+            "input_to_frame_ms": 203.20000000298023,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138944,
+              "serialize_us": 4100,
+              "kernel_us": 12900
+            }
+          },
+          {
+            "sync_commit_ms": 140.09999999776483,
+            "input_to_frame_ms": 213.5,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138912,
+              "serialize_us": 4700,
+              "kernel_us": 15500
+            }
+          },
+          {
+            "sync_commit_ms": 163.30000000074506,
+            "input_to_frame_ms": 229.40000000223517,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138969,
+              "serialize_us": 3900,
+              "kernel_us": 10900
+            }
+          }
+        ]
+      },
+      "replace_1k": {
+        "sync_commit_ms": 158.69999999925494,
+        "input_to_frame_ms": 225.10000000149012,
+        "counts": {
+          "computations": 2001,
+          "list_scanned": 1000,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 9000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "op_19": 1000,
+          "op_13": 1000,
+          "serialized_bytes": 242858,
+          "serialize_us": 7200,
+          "kernel_us": 20900
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 149.80000000074506,
+            "input_to_frame_ms": 209.69999999925494,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 222977,
+              "serialize_us": 6000,
+              "kernel_us": 20300
+            }
+          },
+          {
+            "sync_commit_ms": 158.69999999925494,
+            "input_to_frame_ms": 225.10000000149012,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 242858,
+              "serialize_us": 7200,
+              "kernel_us": 20900
+            }
+          },
+          {
+            "sync_commit_ms": 163.80000000074506,
+            "input_to_frame_ms": 231.80000000074506,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 223010,
+              "serialize_us": 6900,
+              "kernel_us": 27000
+            }
+          }
+        ]
+      },
+      "create_10k": {
+        "sync_commit_ms": 1493.800000000745,
+        "input_to_frame_ms": 2175.5,
+        "counts": {
+          "computations": 20001,
+          "list_scanned": 10000,
+          "rows_created": 10000,
+          "commits": 1,
+          "dom_ops": 70000,
+          "op_4": 10000,
+          "op_8": 10000,
+          "op_7": 10000,
+          "op_11": 20000,
+          "op_5": 10000,
+          "op_21": 10000,
+          "serialized_bytes": 1469736,
+          "serialize_us": 45000,
+          "kernel_us": 168400
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 1449.4000000022352,
+            "input_to_frame_ms": 2175.5,
+            "counts": {
+              "computations": 20001,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469982,
+              "serialize_us": 44200,
+              "kernel_us": 146300
+            }
+          },
+          {
+            "sync_commit_ms": 1493.800000000745,
+            "input_to_frame_ms": 2305,
+            "counts": {
+              "computations": 20001,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469736,
+              "serialize_us": 45000,
+              "kernel_us": 168400
+            }
+          },
+          {
+            "sync_commit_ms": 1499.300000000745,
+            "input_to_frame_ms": 2143.5,
+            "counts": {
+              "computations": 20001,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469603,
+              "serialize_us": 44900,
+              "kernel_us": 108300
+            }
+          }
+        ]
+      },
+      "update_10th_10k": {
+        "sync_commit_ms": 15,
+        "input_to_frame_ms": 111.80000000074506,
+        "counts": {
+          "computations": 1000,
+          "commits": 1,
+          "dom_ops": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 36955,
+          "serialize_us": 1000,
+          "kernel_us": 2000
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 14.5,
+            "input_to_frame_ms": 111.80000000074506,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36950,
+              "serialize_us": 900,
+              "kernel_us": 2000
+            }
+          },
+          {
+            "sync_commit_ms": 15,
+            "input_to_frame_ms": 109.5,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36955,
+              "serialize_us": 1000,
+              "kernel_us": 2000
+            }
+          },
+          {
+            "sync_commit_ms": 16.199999999254942,
+            "input_to_frame_ms": 124.19999999925494,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36808,
+              "serialize_us": 900,
+              "kernel_us": 2800
+            }
+          }
+        ]
+      },
+      "select_10k": {
+        "sync_commit_ms": 0.3999999985098839,
+        "input_to_frame_ms": 20.299999997019768,
+        "counts": {
+          "computations": 2,
+          "commits": 1,
+          "dom_ops": 1,
+          "op_8": 1,
+          "serialized_bytes": 30,
+          "serialize_us": 100,
+          "kernel_us": 0
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 0.3999999985098839,
+            "input_to_frame_ms": 20.299999997019768,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          },
+          {
+            "sync_commit_ms": 0.3999999985098839,
+            "input_to_frame_ms": 29,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 100,
+              "kernel_us": 0
+            }
+          },
+          {
+            "sync_commit_ms": 0.5,
+            "input_to_frame_ms": 16.600000001490116,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 100,
+              "kernel_us": 100
+            }
+          }
+        ]
+      },
+      "swap_10k": {
+        "sync_commit_ms": 53.69999999925494,
+        "input_to_frame_ms": 214.69999999925494,
+        "counts": {
+          "computations": 1,
+          "list_scanned": 10000,
+          "commits": 1,
+          "dom_ops": 2,
+          "op_18": 2,
+          "serialized_bytes": 63,
+          "serialize_us": 0,
+          "kernel_us": 300
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 51.600000001490116,
+            "input_to_frame_ms": 196.40000000223517,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 10000,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 100,
+              "kernel_us": 300
+            }
+          },
+          {
+            "sync_commit_ms": 53.69999999925494,
+            "input_to_frame_ms": 214.69999999925494,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 10000,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 0,
+              "kernel_us": 300
+            }
+          },
+          {
+            "sync_commit_ms": 57.69999999925494,
+            "input_to_frame_ms": 216.09999999776483,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 10000,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          }
+        ]
+      },
+      "remove_10k": {
+        "sync_commit_ms": 56.70000000298023,
+        "input_to_frame_ms": 255.10000000149012,
+        "counts": {
+          "computations": 1,
+          "list_scanned": 9999,
+          "commits": 1,
+          "dom_ops": 2,
+          "op_19": 1,
+          "op_13": 1,
+          "serialized_bytes": 109,
+          "serialize_us": 100,
+          "kernel_us": 100
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 56.100000001490116,
+            "input_to_frame_ms": 253.30000000074506,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 9999,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 0,
+              "kernel_us": 100
+            }
+          },
+          {
+            "sync_commit_ms": 56.70000000298023,
+            "input_to_frame_ms": 255.10000000149012,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 9999,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 100,
+              "kernel_us": 100
+            }
+          },
+          {
+            "sync_commit_ms": 59.899999998509884,
+            "input_to_frame_ms": 291.80000000074506,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 9999,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          }
+        ]
+      },
+      "append_to_10k": {
+        "sync_commit_ms": 173.5,
+        "input_to_frame_ms": 358.30000000074506,
+        "counts": {
+          "computations": 2001,
+          "list_scanned": 11000,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 7000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 154927,
+          "serialize_us": 4900,
+          "kernel_us": 11800
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 171.69999999925494,
+            "input_to_frame_ms": 358.19999999925494,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 11000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154979,
+              "serialize_us": 4800,
+              "kernel_us": 12600
+            }
+          },
+          {
+            "sync_commit_ms": 173.5,
+            "input_to_frame_ms": 358.30000000074506,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 11000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154927,
+              "serialize_us": 4900,
+              "kernel_us": 11800
+            }
+          },
+          {
+            "sync_commit_ms": 189.10000000149012,
+            "input_to_frame_ms": 383.6000000014901,
+            "counts": {
+              "computations": 2001,
+              "list_scanned": 11000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154953,
+              "serialize_us": 5300,
+              "kernel_us": 13200
+            }
+          }
+        ]
+      },
+      "clear_10k": {
+        "sync_commit_ms": 470.3999999985099,
+        "input_to_frame_ms": 478.19999999925494,
+        "counts": {
+          "computations": 1,
+          "list_scanned": 0,
+          "commits": 1,
+          "dom_ops": 20000,
+          "op_19": 10000,
+          "op_13": 10000,
+          "serialized_bytes": 1080001,
+          "serialize_us": 25200,
+          "kernel_us": 115800
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 443.6000000014901,
+            "input_to_frame_ms": 445.9000000022352,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 24000,
+              "kernel_us": 107900
+            }
+          },
+          {
+            "sync_commit_ms": 470.3999999985099,
+            "input_to_frame_ms": 478.19999999925494,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 25200,
+              "kernel_us": 115800
+            }
+          },
+          {
+            "sync_commit_ms": 560.2000000029802,
+            "input_to_frame_ms": 572.9000000022352,
+            "counts": {
+              "computations": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 28500,
+              "kernel_us": 128200
+            }
+          }
+        ]
+      }
+    },
+    "registry": {
+      "nodes": 12,
+      "listeners": 6,
+      "roots": 2,
+      "types": 1,
+      "templates": 2
+    }
+  },
+  "browser_store": {
+    "mode": "store",
+    "pyodide": "314.0.6",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "warmups": 1,
+    "samples": 3,
+    "scenarios": {
+      "create_1k": {
+        "sync_commit_ms": 174.70000000298023,
+        "input_to_frame_ms": 248,
+        "counts": {
+          "computations": 2001,
+          "list_edits": 1,
+          "list_scanned": 1000,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 7000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 138944,
+          "serialize_us": 4600,
+          "kernel_us": 13400
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 168.19999999925494,
+            "input_to_frame_ms": 237.30000000074506,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138912,
+              "serialize_us": 4400,
+              "kernel_us": 14800
+            }
+          },
+          {
+            "sync_commit_ms": 174.70000000298023,
+            "input_to_frame_ms": 248,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138944,
+              "serialize_us": 4600,
+              "kernel_us": 13400
+            }
+          },
+          {
+            "sync_commit_ms": 211.30000000074506,
+            "input_to_frame_ms": 281.5,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 138969,
+              "serialize_us": 4600,
+              "kernel_us": 10800
+            }
+          }
+        ]
+      },
+      "replace_1k": {
+        "sync_commit_ms": 185.39999999850988,
+        "input_to_frame_ms": 251.19999999925494,
+        "counts": {
+          "computations": 2001,
+          "list_edits": 1,
+          "list_scanned": 1000,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 9000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "op_19": 1000,
+          "op_13": 1000,
+          "serialized_bytes": 242858,
+          "serialize_us": 6700,
+          "kernel_us": 20600
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 182.90000000223517,
+            "input_to_frame_ms": 247.69999999925494,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 222977,
+              "serialize_us": 6700,
+              "kernel_us": 22600
+            }
+          },
+          {
+            "sync_commit_ms": 185.39999999850988,
+            "input_to_frame_ms": 251.19999999925494,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 242858,
+              "serialize_us": 6700,
+              "kernel_us": 20600
+            }
+          },
+          {
+            "sync_commit_ms": 259.8999999985099,
+            "input_to_frame_ms": 338.29999999701977,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "list_scanned": 1000,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 9000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "op_19": 1000,
+              "op_13": 1000,
+              "serialized_bytes": 223010,
+              "serialize_us": 5900,
+              "kernel_us": 22100
+            }
+          }
+        ]
+      },
+      "create_10k": {
+        "sync_commit_ms": 1927.3999999985099,
+        "input_to_frame_ms": 2641.5,
+        "counts": {
+          "computations": 20001,
+          "list_edits": 1,
+          "list_scanned": 10000,
+          "rows_created": 10000,
+          "commits": 1,
+          "dom_ops": 70000,
+          "op_4": 10000,
+          "op_8": 10000,
+          "op_7": 10000,
+          "op_11": 20000,
+          "op_5": 10000,
+          "op_21": 10000,
+          "serialized_bytes": 1469736,
+          "serialize_us": 50300,
+          "kernel_us": 150900
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 1727.5999999977648,
+            "input_to_frame_ms": 2444.199999999255,
+            "counts": {
+              "computations": 20001,
+              "list_edits": 1,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469982,
+              "serialize_us": 44300,
+              "kernel_us": 146800
+            }
+          },
+          {
+            "sync_commit_ms": 1927.3999999985099,
+            "input_to_frame_ms": 2720.5,
+            "counts": {
+              "computations": 20001,
+              "list_edits": 1,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469736,
+              "serialize_us": 50300,
+              "kernel_us": 150900
+            }
+          },
+          {
+            "sync_commit_ms": 2002.199999999255,
+            "input_to_frame_ms": 2641.5,
+            "counts": {
+              "computations": 20001,
+              "list_edits": 1,
+              "list_scanned": 10000,
+              "rows_created": 10000,
+              "commits": 1,
+              "dom_ops": 70000,
+              "op_4": 10000,
+              "op_8": 10000,
+              "op_7": 10000,
+              "op_11": 20000,
+              "op_5": 10000,
+              "op_21": 10000,
+              "serialized_bytes": 1469603,
+              "serialize_us": 45000,
+              "kernel_us": 113800
+            }
+          }
+        ]
+      },
+      "update_10th_10k": {
+        "sync_commit_ms": 42,
+        "input_to_frame_ms": 151.69999999925494,
+        "counts": {
+          "computations": 1000,
+          "commits": 1,
+          "dom_ops": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 36955,
+          "serialize_us": 700,
+          "kernel_us": 7000
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 41.80000000074506,
+            "input_to_frame_ms": 150.69999999925494,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36950,
+              "serialize_us": 900,
+              "kernel_us": 2200
+            }
+          },
+          {
+            "sync_commit_ms": 42,
+            "input_to_frame_ms": 151.69999999925494,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36955,
+              "serialize_us": 700,
+              "kernel_us": 7000
+            }
+          },
+          {
+            "sync_commit_ms": 43,
+            "input_to_frame_ms": 157.39999999850988,
+            "counts": {
+              "computations": 1000,
+              "commits": 1,
+              "dom_ops": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 36808,
+              "serialize_us": 800,
+              "kernel_us": 2700
+            }
+          }
+        ]
+      },
+      "select_10k": {
+        "sync_commit_ms": 0.5,
+        "input_to_frame_ms": 20.100000001490116,
+        "counts": {
+          "computations": 2,
+          "commits": 1,
+          "dom_ops": 1,
+          "op_8": 1,
+          "serialized_bytes": 30,
+          "serialize_us": 0,
+          "kernel_us": 100
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 0.29999999701976776,
+            "input_to_frame_ms": 21.5,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 100,
+              "kernel_us": 0
+            }
+          },
+          {
+            "sync_commit_ms": 0.5,
+            "input_to_frame_ms": 18.100000001490116,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 0,
+              "kernel_us": 100
+            }
+          },
+          {
+            "sync_commit_ms": 1.5,
+            "input_to_frame_ms": 20.100000001490116,
+            "counts": {
+              "computations": 2,
+              "commits": 1,
+              "dom_ops": 1,
+              "op_8": 1,
+              "serialized_bytes": 30,
+              "serialize_us": 100,
+              "kernel_us": 900
+            }
+          }
+        ]
+      },
+      "swap_10k": {
+        "sync_commit_ms": 0.8000000007450581,
+        "input_to_frame_ms": 146.30000000074506,
+        "counts": {
+          "computations": 1,
+          "list_edits": 2,
+          "commits": 1,
+          "dom_ops": 2,
+          "op_18": 2,
+          "serialized_bytes": 63,
+          "serialize_us": 0,
+          "kernel_us": 200
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 0.8000000007450581,
+            "input_to_frame_ms": 146.30000000074506,
+            "counts": {
+              "computations": 1,
+              "list_edits": 2,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 100,
+              "kernel_us": 300
+            }
+          },
+          {
+            "sync_commit_ms": 0.8000000007450581,
+            "input_to_frame_ms": 138.40000000223517,
+            "counts": {
+              "computations": 1,
+              "list_edits": 2,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          },
+          {
+            "sync_commit_ms": 0.8000000007450581,
+            "input_to_frame_ms": 149.90000000223517,
+            "counts": {
+              "computations": 1,
+              "list_edits": 2,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_18": 2,
+              "serialized_bytes": 63,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          }
+        ]
+      },
+      "remove_10k": {
+        "sync_commit_ms": 42.400000002235174,
+        "input_to_frame_ms": 229.30000000074506,
+        "counts": {
+          "computations": 1,
+          "list_edits": 1,
+          "commits": 1,
+          "dom_ops": 2,
+          "op_19": 1,
+          "op_13": 1,
+          "serialized_bytes": 109,
+          "serialize_us": 0,
+          "kernel_us": 100
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 40.70000000298023,
+            "input_to_frame_ms": 224.70000000298023,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 0,
+              "kernel_us": 100
+            }
+          },
+          {
+            "sync_commit_ms": 42.400000002235174,
+            "input_to_frame_ms": 247.60000000149012,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 0,
+              "kernel_us": 100
+            }
+          },
+          {
+            "sync_commit_ms": 46.100000001490116,
+            "input_to_frame_ms": 229.30000000074506,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "commits": 1,
+              "dom_ops": 2,
+              "op_19": 1,
+              "op_13": 1,
+              "serialized_bytes": 109,
+              "serialize_us": 0,
+              "kernel_us": 200
+            }
+          }
+        ]
+      },
+      "append_to_10k": {
+        "sync_commit_ms": 156.89999999850988,
+        "input_to_frame_ms": 329.4000000022352,
+        "counts": {
+          "computations": 2001,
+          "list_edits": 1,
+          "rows_created": 1000,
+          "commits": 1,
+          "dom_ops": 7000,
+          "op_4": 1000,
+          "op_8": 1000,
+          "op_7": 1000,
+          "op_11": 2000,
+          "op_5": 1000,
+          "op_21": 1000,
+          "serialized_bytes": 154953,
+          "serialize_us": 4900,
+          "kernel_us": 11600
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 156.60000000149012,
+            "input_to_frame_ms": 329.4000000022352,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154927,
+              "serialize_us": 4900,
+              "kernel_us": 11100
+            }
+          },
+          {
+            "sync_commit_ms": 156.89999999850988,
+            "input_to_frame_ms": 323.80000000074506,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154953,
+              "serialize_us": 4900,
+              "kernel_us": 11600
+            }
+          },
+          {
+            "sync_commit_ms": 165.30000000074506,
+            "input_to_frame_ms": 330.0999999977648,
+            "counts": {
+              "computations": 2001,
+              "list_edits": 1,
+              "rows_created": 1000,
+              "commits": 1,
+              "dom_ops": 7000,
+              "op_4": 1000,
+              "op_8": 1000,
+              "op_7": 1000,
+              "op_11": 2000,
+              "op_5": 1000,
+              "op_21": 1000,
+              "serialized_bytes": 154979,
+              "serialize_us": 5000,
+              "kernel_us": 13500
+            }
+          }
+        ]
+      },
+      "clear_10k": {
+        "sync_commit_ms": 555.5,
+        "input_to_frame_ms": 561.7000000029802,
+        "counts": {
+          "computations": 1,
+          "list_edits": 1,
+          "list_scanned": 0,
+          "commits": 1,
+          "dom_ops": 20000,
+          "op_19": 10000,
+          "op_13": 10000,
+          "serialized_bytes": 1080001,
+          "serialize_us": 32700,
+          "kernel_us": 123800
+        },
+        "samples": [
+          {
+            "sync_commit_ms": 543.8999999985099,
+            "input_to_frame_ms": 550,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 33800,
+              "kernel_us": 110800
+            }
+          },
+          {
+            "sync_commit_ms": 555.5,
+            "input_to_frame_ms": 561.7000000029802,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 32700,
+              "kernel_us": 123800
+            }
+          },
+          {
+            "sync_commit_ms": 566.3000000007451,
+            "input_to_frame_ms": 572.5,
+            "counts": {
+              "computations": 1,
+              "list_edits": 1,
+              "list_scanned": 0,
+              "commits": 1,
+              "dom_ops": 20000,
+              "op_19": 10000,
+              "op_13": 10000,
+              "serialized_bytes": 1080001,
+              "serialize_us": 33500,
+              "kernel_us": 123000
+            }
+          }
+        ]
+      }
+    },
+    "registry": {
+      "nodes": 12,
+      "listeners": 6,
+      "roots": 2,
+      "types": 1,
+      "templates": 2
+    }
+  }
+}

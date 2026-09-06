@@ -1,107 +1,50 @@
 # Deployment
 
-Wybthon apps run entirely in the browser, so deployment is just *static hosting*. There's no Python server, no Node build step, and nothing to keep online beyond the HTML, JavaScript, and Python files you serve.
-
-## Checklist
-
-Before you ship:
-
-- Serve the HTML entry point (typically `index.html`) plus the Pyodide runtime and your application files.
-- Configure your host to serve `.py` files with the `text/x-python` content type. Most static hosts do this automatically, but a few default to `text/plain`.
-- Set [`Cross-Origin-Opener-Policy`](https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy) and [`Cross-Origin-Embedder-Policy`](https://developer.mozilla.org/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy) headers if you plan to use APIs that require cross-origin isolation (`SharedArrayBuffer`, threaded WebAssembly, etc.).
-- Decide whether to load Pyodide from the official CDN (default, easiest) or to vendor it alongside your app (better caching control, supports offline-first installs).
-- Enable long-cache headers for the Pyodide assets and add a content hash to your own assets so users always pick up your latest build.
-
-## GitHub Pages
-
-GitHub Pages serves any directory you push to the `gh-pages` branch (or to `/docs` on `main`). The simplest deployment is to copy your built site into one of those locations and push.
-
-A minimal GitHub Actions workflow that publishes the repository root (where `index.html` lives in apps like the [demo-template](https://github.com/wybthon/demo-template)) looks like this:
-
-```yaml
-name: Deploy Wybthon app
-
-on:
-  push:
-    branches: [main]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-Use `actions/upload-pages-artifact` with the directory that contains your `index.html` (or `app/` directory) and Pages will serve it on `https://<user>.github.io/<repo>/`.
-
-## Netlify
-
-Netlify treats your repository as a static site by default. Create `netlify.toml` at the repo root:
+`wyb build` creates a static application bundle from a project containing `wybthon.toml`. `wyb preview` serves the result with client-route fallback and the configured base path.
 
 ```toml
-[build]
-  command = ""           # nothing to build
-  publish = "."
+entry = "app.main:main"
+app-dir = "app"
+base = "/"
+pyodide-version = "314.0.6"
+packages = []
+wheels = []
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cache-Control = "public, max-age=300"
-
-[[headers]]
-  for = "/*.py"
-  [headers.values]
-    Content-Type = "text/x-python"
-    Cache-Control = "public, max-age=300"
-
-# Single-page app fallback so the router can handle deep links.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[chunks]
+charts = ["app/charts/**"]
 ```
 
-Push to your default branch and Netlify will auto-deploy.
+The entry function mounts the application and can be async. `index.html` must contain exactly one `<!-- wyb:bootstrap -->` marker. Files in `public/` are copied beside the output HTML; `public/assets/` is reserved for generated content.
 
-## Vercel
-
-Vercel works similarly. Add a `vercel.json` at the repo root that points at your output directory:
-
-```json
-{
-  "outputDirectory": ".",
-  "headers": [
-    {
-      "source": "/(.*).py",
-      "headers": [{ "key": "Content-Type", "value": "text/x-python" }]
-    }
-  ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+```bash
+wyb build --base /dashboard/
+wyb preview --dir dist --port 8000
 ```
 
-The `rewrites` rule serves `index.html` for unknown paths, which lets the [router](../concepts/router.md) handle client-side navigation.
+Deploy the contents of `dist/`, configure missing extensionless routes to serve `index.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate `index.html` and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
 
-## Production tuning
+Builds sort files and normalize archive timestamps, so identical inputs produce identical assets. A complete build is prepared before the destination is replaced. Existing nonempty output must contain the `.wyb-build` marker; source directories can't be used as output. Build validation failure leaves the previous output available.
 
-- **Pre-compress assets.** Pre-build `.gz` and `.br` versions of `index.html` and your application files; most CDNs serve them automatically.
-- **Pin Pyodide's version.** Wybthon doesn't ship Pyodide; reference the version you tested against from a CDN or self-host so users get the same runtime.
-- **Use `set_dev_mode(False)`** (from `wybthon._warnings`) at startup in production builds to silence development warnings and skip optional bookkeeping.
+## Runtime and dependencies
 
-## Next steps
+The bootstrap loads Pyodide and the runtime/application archives concurrently, then unpacks and imports Python. It doesn't fetch every Python module separately. `packages` names packages in the pinned Pyodide distribution. `wheels` accepts exact `name==version` requirements or explicit wheel URLs compatible with the selected runtime. Set `pyodide-url` to host that runtime yourself.
 
-- Read the [Pyodide guide](pyodide.md) for runtime considerations.
-- Browse the [Performance guide](performance.md) for micro-optimizations.
+Pin dependencies and keep the runtime version deliberate. Browser Python code is public, including bundled configuration. Keep application secrets on a server.
+
+## Explicit lazy chunks
+
+```python
+from wybthon import lazy
+
+Chart = lazy(lambda: ("app.charts.main", "Chart"), chunk="charts")
+```
+
+The matching files are excluded from the main archive. Rendering `Chart` inside `Loading` fetches its archive once before importing the module. Hover preloading through a router `Link` can warm a lazy route. `load_chunk("charts")` is available for explicit preloading.
+
+Chunk groups mustn't overlap, and the entry module must stay in the main bundle. This is explicit packaging, not automatic dependency analysis: keep shared imports in the main application, and don't eagerly import a chunk module. Concurrent chunk requests share one fetch; a failed fetch is evicted so a later attempt can retry. Call `Chart.retry()` to restart a failed lazy load and let its error boundary recover.
+
+## Startup measurements
+
+`window.__WYB` exposes startup status, errors, the runtime, and timings for runtime loading, archive loading, unpacking, application startup, readiness, and the next frame opportunity. Concurrent phases overlap; don't add them as if they were sequential. These values include network/cache conditions and differ from warmed update benchmarks.
+
+The production browser test builds a starter, boots a deep link beneath a base path, clicks a real counter, and verifies that its lazy chunk isn't fetched until requested.

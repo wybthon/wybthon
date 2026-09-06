@@ -4,32 +4,51 @@
 
 #### What's in this module
 
-`router_core` contains the *browser-agnostic* path matching engine used
-by [`wybthon.router`][wybthon.router]. It exposes:
+`router_core` is the browser-agnostic matcher behind
+[`wybthon.router`](router.md). It compiles route patterns to regular
+expressions, matches them against a pathname, and picks the most
+specific match. It has no browser dependency, so it runs in unit tests,
+tooling, and on a server.
 
-- [`RouteSpec`][wybthon.router_core.RouteSpec]: a normalized route
-  description used internally by `Route`.
-- [`resolve`][wybthon.router_core.resolve]: match a path against a list
-  of route specs and return the matched chain plus extracted params.
-
-You don't usually call this module directly. Write [`Route`][wybthon.Route]
-declarations and let [`Router`][wybthon.Router] resolve them. Use
-`router_core` if you need to test routing logic outside a browser
-environment or build custom navigation tooling.
+| Name | Description |
+| --- | --- |
+| [`resolve`][wybthon.router_core.resolve] | `resolve(routes, pathname, base_path="")` returns `(route, {"params": {...}})` or `None`. |
+| [`RouteSpec`][wybthon.router_core.RouteSpec] | Minimal `path` plus `children` dataclass for pure-Python tests; any object with those attributes works, including [`Route`][wybthon.Route]. |
 
 #### Path patterns
 
-| Pattern | Matches | Notes |
+| Pattern | Matches | Params |
 | --- | --- | --- |
-| `/users` | `/users` | Static segment. |
-| `/users/:id` | `/users/42` | `:id` becomes a string param. |
-| `/files/*splat` | `/files/a/b/c` | Splat captures the remainder as a single string. |
-| `/(public|private)` | `/public` or `/private` | Alternation works in the underlying regex. |
+| `/users` | `/users` | `{}` |
+| `/users/:id` | `/users/42` | `{"id": "42"}` |
+| `/docs/*` | `/docs`, `/docs/intro`, `/docs/a/b` | `{"wildcard": None}` or `{"wildcard": "intro"}` |
+| `/files/*/raw` | `/files/a/b/raw` | `{"wildcard": "a/b"}` |
 
-Param values are URL-decoded before being passed to components.
+Nested `children` join their paths with the parent's (a child path
+starting with `/` is absolute). When several routes match, the longest
+full pattern wins. `base_path` is stripped before matching; a pathname
+outside the base returns `None`.
+
+```python
+from wybthon.router_core import RouteSpec, resolve
+
+routes = [
+    RouteSpec("/"),
+    RouteSpec("/users", children=[RouteSpec(":id")]),
+    RouteSpec("/docs/*"),
+]
+
+resolve(routes, "/users/42")            # (RouteSpec(path=':id', ...), {"params": {"id": "42"}})
+resolve(routes, "/docs/intro/setup")    # (..., {"params": {"wildcard": "intro/setup"}})
+resolve(routes, "/app/users/7", base_path="/app")
+resolve(routes, "/missing")             # None
+```
+
+Param values are the raw matched segments; the browser router decodes
+query strings separately.
 
 #### See also
 
-- [`router`][wybthon.router]: the browser-side router and components.
+- [Router](router.md): `Route`, `Router`, `Link`, and navigation
 - [Concepts: Router](../concepts/router.md)
 - [Examples: Router](../examples/router.md)

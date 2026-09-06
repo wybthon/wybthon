@@ -1,4 +1,4 @@
-"""E2E: components (reactive props without remount, forward_ref, lifecycle)."""
+"""E2E: components (reactive props without remount, ref pass-through, lifecycle)."""
 
 import pytest
 from playwright.sync_api import expect
@@ -17,7 +17,7 @@ def test_reactive_prop_no_remount(goto_feature):
     expect(page.get_by_test_id("comp-display-mounts")).to_have_text("1")
 
 
-def test_forward_ref(goto_feature):
+def test_ref_passthrough(goto_feature):
     page = goto_feature("components")
     expect(page.get_by_test_id("comp-ref-attached")).to_have_text("yes")
     expect(page.get_by_test_id("comp-ref-input")).to_have_count(1)
