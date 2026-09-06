@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.34.0 (2026-09-06)
+
+### Features
+
+- **dev**: Add --version flag and missing help text to the wyb CLI
+  ([#26](https://github.com/wybthon/wybthon/pull/26),
+  [`dd89745`](https://github.com/wybthon/wybthon/commit/dd89745f5606977745dd496980217b909a7148a2))
+
+Refs: #10
+
+
 ## v0.33.1 (2026-09-06)
 
 ### Documentation
