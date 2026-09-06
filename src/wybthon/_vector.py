@@ -8,6 +8,7 @@ explicit splice records so observers and renderers can process only the edit.
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Sequence
+from itertools import chain, islice
 from typing import Any, overload
 
 _BITS = 5
@@ -37,11 +38,20 @@ class Vector[T](Sequence[T]):
     __slots__ = ("_tree", "_shift", "_size")
 
     def __init__(self, values: Iterable[T] = ()) -> None:
-        self._tree: tuple[Any, ...] = ()
+        # Build full leaves once, then group them into branches. Repeated
+        # persistent appends would copy the path to every input element.
+        iterator = iter(values)
+        level: list[tuple[Any, ...]] = []
+        size = 0
+        while leaf := tuple(islice(iterator, _WIDTH)):
+            level.append(leaf)
+            size += len(leaf)
         self._shift = 0
-        self._size = 0
-        for value in values:
-            self._append_initial(value)
+        while len(level) > 1:
+            level = [tuple(level[i : i + _WIDTH]) for i in range(0, len(level), _WIDTH)]
+            self._shift += _BITS
+        self._tree: tuple[Any, ...] = level[0] if level else ()
+        self._size = size
 
     @classmethod
     def _from(cls, tree: tuple[Any, ...], shift: int, size: int) -> Vector[Any]:
@@ -84,11 +94,18 @@ class Vector[T](Sequence[T]):
                 result = result.append(value)
             return result
         if start + delete == self._size and not added:
-            result = self
-            for _ in range(delete):
-                result = result.pop()
-            return result
-        return Vector((*self[:start], *added, *self[start + delete :]))
+            if not delete:
+                return self
+            tree = _trim(self._tree, self._shift, start)
+            shift = self._shift
+            while shift and len(tree) == 1:
+                tree, shift = tree[0], shift - _BITS
+            return self._from(tree, shift if tree else 0, start)
+        # Iterate each retained range instead of traversing the tree from its
+        # root for every index and materializing several intermediate lists.
+        prefix = slice(None, start).indices(self._size)[1]
+        suffix = slice(start + delete, None).indices(self._size)[0]
+        return Vector(chain(islice(self, prefix), added, islice(self, suffix, None)))
 
     def _index(self, index: int) -> int:
         if index < 0:

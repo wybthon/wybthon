@@ -250,21 +250,31 @@ class _ListRegion:
                 if row not in reused:
                     self.dispose_row(row)
             return True
-        if len(changes) == 1 and changes[0].kind == "splice":
+        if len(changes) == 1 and changes[0].kind in ("splice", "clear"):
             change = changes[0]
-            self.splice(change.index, len(change.removed), [_wrap(item) for item in change.added])
+            self.splice(
+                change.index,
+                len(change.removed),
+                [_wrap(item) for item in change.added],
+                reverse_disposal=change.kind == "clear",
+            )
             return True
         # Multiple tail edits can be replayed without walking existing rows.
         n = len(self.rows)
         for change in changes:
-            if change.kind != "splice" or change.index + len(change.removed) != n:
+            if change.kind not in ("splice", "clear") or change.index + len(change.removed) != n:
                 return False
             n += len(change.added) - len(change.removed)
         for change in changes:
-            self.splice(change.index, len(change.removed), [_wrap(item) for item in change.added])
+            self.splice(
+                change.index,
+                len(change.removed),
+                [_wrap(item) for item in change.added],
+                reverse_disposal=change.kind == "clear",
+            )
         return True
 
-    def splice(self, start: int, delete: int, items: Any) -> None:
+    def splice(self, start: int, delete: int, items: Any, *, reverse_disposal: bool = False) -> None:
         if self.keyed is False and not self.repeat and start + delete < len(self.rows):
             # Positional rows represent slots, not entities. The final values
             # are supplied by replace's positional pass.
@@ -276,8 +286,9 @@ class _ListRegion:
 
         removed = self.rows[start : start + delete]
         available: dict[Any, deque[_Row]] = defaultdict(deque)
-        for row in removed:
-            available[row.key].append(row)
+        if len(items):
+            for row in removed:
+                available[row.key].append(row)
         added = []
         reused = set()
         for i, item in enumerate(items, start):
@@ -298,7 +309,9 @@ class _ListRegion:
                 mount(row.vnode, self.parent, anchor, self.vnode.ns)
             else:
                 _move_range(row.vnode, self.parent, anchor)
-        for row in removed:
+        # MutableSequence.clear() previously popped from the end. A single
+        # clear edit must preserve that observable row cleanup order.
+        for row in reversed(removed) if reverse_disposal else removed:
             if row not in reused:
                 self.dispose_row(row)
         self.rows[start : start + delete] = added

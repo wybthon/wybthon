@@ -23,7 +23,7 @@ _SCALAR = (str, int, float, bool, bytes, type(None), tuple, frozenset)
 class _Row:
     __slots__ = ("owner", "item", "index", "result", "key")
 
-    def __init__(self, owner: Owner, item: Signal[Any], index: Signal[int], result: Any, key: Any) -> None:
+    def __init__(self, owner: Owner, item: Signal[Any] | None, index: Signal[int], result: Any, key: Any) -> None:
         self.owner = owner
         self.item = item
         self.index = index
@@ -88,30 +88,54 @@ def map_array[T, U](
                 pass
         return (1, id(item))
 
+    key_for = keyed if callable(keyed) else identity
+
     def compute() -> list[U]:
         nonlocal rows
         values = source()
-        items = list(values) if values is not None else []
-        entries: list[tuple[int, Any]] = list(enumerate(items)) if items else ([(0, empty_key)] if fallback else [])
+        items: list[Any] = list(values) if values is not None else []
+        if not items and fallback:
+            items = [empty_key]
+
+        # Append and truncate retain their prefix without allocating a deque
+        # and matching-table entry for every existing row. Consume duplicate
+        # keys from the front, as in the general occurrence-matching path.
+        prefix = 0
+        common = min(len(rows), len(items))
+        next_key: Any = None
+        while prefix < common:
+            row, item = rows[prefix], items[prefix]
+            next_key = empty_key if item is empty_key else prefix if keyed is False else key_for(item)
+            if row.key != next_key:
+                break
+            if row.item is not None:
+                row.item._set(item)
+            if row.index._value != prefix or row.index._staged:
+                row.index._set(prefix)
+            prefix += 1
         available: dict[Any, deque[_Row]] = defaultdict(deque)
-        for row in rows:
+        for row in rows[prefix:]:
             available[row.key].append(row)
-        prepared = []
-        for index, item in entries:
+        prepared = rows[:prefix]
+        for index in range(prefix, len(items)):
+            item = items[index]
             key = (
-                empty_key
-                if item is empty_key
-                else (index if keyed is False else keyed(item) if callable(keyed) else identity(item))
+                next_key
+                if index == prefix and prefix < common
+                else empty_key if item is empty_key else index if keyed is False else key_for(item)
             )
-            bucket = available[key]
+            bucket = available.get(key)
             if bucket:
                 row = bucket.popleft()
-                row.item._set(item)
-                row.index._set(index)
+                if row.item is not None:
+                    row.item._set(item)
+                if row.index._value != index or row.index._staged:
+                    row.index._set(index)
             else:
                 owner = Owner()
                 scope._add_child(owner)
-                item_signal, index_signal = Signal(item), Signal(index)
+                item_signal = None if keyed is True else Signal(item)
+                index_signal = Signal(index)
                 try:
                     if item is empty_key:
                         result = _run_row(owner, fallback)
