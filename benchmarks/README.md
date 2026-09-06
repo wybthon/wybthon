@@ -46,6 +46,8 @@ These comparisons invoke the Python operation directly and measure through its s
 
 For very short selection updates, `--scenarios select_toggle_10k --iterations 31` mounts each table once and then toggles between two rows, with a frame opportunity between samples. This measures repeated interaction separately from the first selection after constructing a fresh 10,000-row table. It isn't included in the default nine scenarios.
 
+`--mode store --scenarios clear_draft_10k` measures `set_store(lambda draft: draft.clear())`. It complements the default clear scenario, which replaces the entire list with `set_store([])`. Draft clearing is an additional scenario and isn't included in the default nine.
+
 ## Native benchmark
 
 ```bash
@@ -58,10 +60,29 @@ Use `--warmup`, `--iterations`, and `--bench` to focus a run. `--cpu --save repo
 
 `uv run python benchmarks/store_memory.py --repo /path/to/checkout` measures native Python allocations retained by a 10,000-entity store before any fields are observed. Inputs and imports are excluded. Compare fresh processes using the same interpreter; this is a tracemalloc measurement, not browser memory or process RSS.
 
+`core_bench.py` adds persistent-vector construction and edits, store creation, draft clearing, observed field updates, and `map_array` creation, append, unchanged-input, and reverse workloads:
+
+```bash
+uv run python benchmarks/core_bench.py --repo /tmp/wybthon-before > core-before.json
+uv run python benchmarks/core_bench.py > core-after.json
+```
+
+Each workload verifies its result and reports median process CPU time and individual samples. Setup, disposal, explicit garbage collection, and verification are outside the timed region. The report also measures unobserved store allocations and the compressed production runtime archive. Run comparisons serially in fresh processes with the same interpreter; reverse the checkout order when investigating small differences.
+
 ## Startup
 
 Generated production bundles expose `window.__WYB.timings`, including runtime loading, source archives, unpacking, application initialization, readiness, and a subsequent frame opportunity. Concurrent phases overlap. Startup is a separate measurement from these warmed collection scenarios. The production browser tests verify deep-link boot, lazy fetch timing, and development rebuild/reload.
 
+To compare the generated starter application's startup:
+
+```bash
+uv run python benchmarks/compare_startup.py --baseline /tmp/wybthon-before > startup-comparison.json
+```
+
+This builds both applications in temporary directories and alternates fresh page boots in the same browser context. A warmup for each checkout populates the shared HTTP cache. Every navigation creates a new Pyodide runtime; these are startup measurements with warmed transfers, not cold-network download measurements. Each sample also verifies that the counter responds to an event. The report includes every phase, individual samples, and both build manifests.
+
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [collection and memory evaluation](results/collection-performance.md) records the compact store, persistent-vector, reactive mapping, and cleanup improvements against v0.33.0, including browser startup and bundle-size measurements.

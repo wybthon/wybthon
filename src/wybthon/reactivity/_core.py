@@ -270,13 +270,14 @@ def _changed(equals: Any, old: Any, new: Any) -> bool:
     - callable: changed when `equals(old, new)` is falsy.
     - default: identity fast path, then `==`.
     """
-    if equals is False:
-        return True
-    if callable(equals):
-        try:
-            return not bool(equals(old, new))
-        except Exception:
+    if equals is not _DEFAULT_EQUALS:
+        if equals is False:
             return True
+        if callable(equals):
+            try:
+                return not bool(equals(old, new))
+            except Exception:
+                return True
     if new is old:
         return False
     try:
@@ -937,8 +938,10 @@ class Owner:
             for task in tuple(self._tasks):
                 task.cancel()
             self._tasks.clear()
-        self._dispose_children()
-        self._run_cleanups()
+        if self._children:
+            self._dispose_children()
+        if self._cleanups:
+            self._run_cleanups()
         parent = self._parent
         if parent is not None:
             if parent._children is not None:
@@ -2051,11 +2054,12 @@ class Computation(Owner):
         """Permanently dispose a computation and its committed resources."""
         if self._disposed:
             return
-        self._cancel_async()
         if self._async is not None:
+            self._cancel_async()
             global _async_live
             _async_live -= 1
-        self._run_apply_cleanup()
+        if self._apply_cleanup is not None:
+            self._run_apply_cleanup()
         if self._apply_owner is not None:
             self._apply_owner.dispose()
             self._apply_owner = None

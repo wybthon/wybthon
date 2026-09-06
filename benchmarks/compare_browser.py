@@ -32,6 +32,7 @@ SCENARIOS = {
     "remove_10k": ("clear(); run_lots()", 'delete(data()[0]["id"])', 9999),
     "append_to_10k": ("clear(); run_lots()", "add()", 11000),
     "clear_10k": ("clear(); run_lots()", "clear()", 0),
+    "clear_draft_10k": ("clear(); run_lots()", "set_data(lambda rows: rows.clear()); flush()", 0),
     "select_toggle_10k": (
         "clear(); run_lots()",
         'select(data()[0]["id"] if selected() != data()[0]["id"] else data()[1]["id"])',
@@ -214,12 +215,17 @@ def main():
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument(
-        "--scenarios", nargs="+", choices=SCENARIOS, default=[name for name in SCENARIOS if name != "select_toggle_10k"]
+        "--scenarios",
+        nargs="+",
+        choices=SCENARIOS,
+        default=[name for name in SCENARIOS if name not in {"select_toggle_10k", "clear_draft_10k"}],
     )
     parser.add_argument("--profile", action="store_true", help="Record untimed cProfile reports afterward")
     args = parser.parse_args()
     if args.iterations < 1 or args.warmup < 0:
         parser.error("iterations must be positive and warmup nonnegative")
+    if args.mode != "store" and "clear_draft_10k" in args.scenarios:
+        parser.error("clear_draft_10k requires --mode store")
     print(
         json.dumps(
             compare(args.baseline.resolve(), args.mode, args.iterations, args.warmup, args.scenarios, args.profile),

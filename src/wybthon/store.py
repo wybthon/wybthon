@@ -15,7 +15,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, MutableSequence, Sequence
 from dataclasses import dataclass
 from typing import Any, overload
-from weakref import WeakKeyDictionary
+from weakref import ReferenceType, WeakKeyDictionary, ref
 
 from . import _warnings
 from ._vector import Vector
@@ -112,6 +112,8 @@ class _Node:
         "_keys",
         "_version",
         "parents",
+        "_parent",
+        "_parent_count",
         "root",
         "proxy",
         "history",
@@ -123,9 +125,13 @@ class _Node:
             raise TypeError("A store root must be a mapping or sequence; use create_signal for scalar state")
         self.root = root or _Root()
         self.properties: dict[Any, Signal[Any]] = {}
-        self.indices: list[int] = []
-        self.membership: dict[Any, Signal[bool]] = {}
-        self.parents: WeakKeyDictionary[_Node, int] = WeakKeyDictionary()
+        self.indices: list[int] | None = None
+        self.membership: dict[Any, Signal[bool]] | None = None
+        # Ordinary trees share a callback-free weak reference to their parent.
+        # Allocate a weak dictionary only for entities shared by several parents.
+        self._parent: ReferenceType[_Node] | None = None
+        self._parent_count = 0
+        self.parents: WeakKeyDictionary[_Node, int] | None = None
         self.proxy: Any = None
         self.history: deque[tuple[int, tuple[ListChange, ...]]] | None = None
         seen = {} if seen is None else seen
@@ -208,11 +214,29 @@ class _Node:
 
     def _link(self, value: Any, amount: int) -> None:
         if isinstance(value, _Node):
-            count = value.parents.get(self, 0) + amount
+            parents = value.parents
+            if parents is None:
+                parent = value._parent() if value._parent is not None else None
+                if parent is None:
+                    if amount > 0:
+                        value._parent = ref(self)
+                        value._parent_count = amount
+                    return
+                if parent is self:
+                    value._parent_count += amount
+                    if not value._parent_count:
+                        value._parent = None
+                    return
+                if amount < 0:
+                    return
+                parents = value.parents = WeakKeyDictionary({parent: value._parent_count})
+                value._parent = None
+                value._parent_count = 0
+            count = parents.get(self, 0) + amount
             if count:
-                value.parents[self] = count
+                parents[self] = count
             else:
-                value.parents.pop(self, None)
+                parents.pop(self, None)
 
     def visible(self) -> Any:
         if _core._authoritative_depth and self.root.authoritative is not None:
@@ -226,7 +250,10 @@ class _Node:
             if sig is None:
                 sig = self.properties[key] = Signal(_lookup(self.state._value.data, key))
                 if isinstance(self.state._value.data, Vector):
-                    insort(self.indices, key)
+                    if self.indices is None:
+                        self.indices = [key]
+                    else:
+                        insort(self.indices, key)
                 if self.state._staged:
                     sig._set(_lookup(self.state._latest().data, key))
                 held = _core._held.get(self.state)
@@ -250,17 +277,22 @@ class _Node:
             raise IndexError("list index out of range")
         return _wrap(value)
 
-    def publish(self, data: Any, changes: list[ListChange], touched: set[Any]) -> None:
+    def publish(self, data: Any, changes: Sequence[ListChange], touched: Iterable[Any]) -> None:
         old = self.state._latest()
         old_data = old.data
         if isinstance(data, dict):
-            changed = {k for k in touched if not _same(_lookup(old_data, k), _lookup(data, k))}
+            changed = set()
+            structural = False
+            for k in touched:
+                before, after = _lookup(old_data, k), _lookup(data, k)
+                if not _same(before, after):
+                    changed.add(k)
+                    if (before is _ABSENT) != (after is _ABSENT):
+                        structural = True
+                    self._link(before, -1)
+                    self._link(after, 1)
             if not changed:
                 return
-            structural = any((k in old_data) != (k in data) for k in changed)
-            for k in changed:
-                self._link(_lookup(old_data, k), -1)
-                self._link(_lookup(data, k), 1)
         else:
             if not changes:
                 return
@@ -277,7 +309,7 @@ class _Node:
                     self._link(value, 1)
                 if change.kind == "set":
                     changed.add(change.index)
-                else:
+                elif self.indices:
                     end = change.index + max(len(change.removed), len(change.added))
                     shifted = len(change.removed) != len(change.added)
                     start_slot = bisect_left(self.indices, change.index)
@@ -304,9 +336,10 @@ class _Node:
             sig = self.properties.get(key)
             if sig is not None:
                 sig._set(_lookup(data, key))
-            member = self.membership.get(key)
-            if member is not None:
-                member._set(key in data)
+            if self.membership is not None:
+                member = self.membership.get(key)
+                if member is not None:
+                    member._set(key in data)
 
     def bump(self, seen: set[_Node]) -> None:
         if self in seen:
@@ -314,8 +347,13 @@ class _Node:
         seen.add(self)
         if self._version is not None:
             self._version._set(self._version._latest() + 1)
-        for parent in tuple(self.parents):
-            parent.bump(seen)
+        if self.parents is not None:
+            for parent in tuple(self.parents):
+                parent.bump(seen)
+        elif self._parent is not None:
+            parent = self._parent()
+            if parent is not None:
+                parent.bump(seen)
 
 
 def _encode(value: Any, root: _Root, seen: dict[int, Any] | None = None) -> Any:
@@ -400,14 +438,14 @@ class _Session:
         self.states[node] = data
         self.touched.setdefault(node, set()).add(key)
 
-    def splice(self, node: _Node, start: int, delete: int, values: Iterable[Any]) -> None:
+    def splice(self, node: _Node, start: int, delete: int, values: Iterable[Any], *, kind: str = "splice") -> None:
         data = self.data(node)
         added = tuple(_encode(v, node.root) for v in values)
         removed = tuple(data[i] for i in range(start, start + delete))
         if not removed and not added:
             return
         self.states[node] = data.splice(start, delete, added)
-        self.changes.setdefault(node, []).append(ListChange("splice", start, removed, added))
+        self.changes.setdefault(node, []).append(ListChange(kind, start, removed, added))
 
     def replace_list(self, node: _Node, values: Iterable[Any]) -> None:
         self.check()
@@ -418,7 +456,7 @@ class _Session:
         bumped: set[_Node] = set()
         for node, data in self.states.items():
             before = node.state._latest()
-            node.publish(data, self.changes.get(node, []), self.touched.get(node, set()))
+            node.publish(data, self.changes.get(node, ()), self.touched.get(node, ()))
             if node.root.tracks_subtrees and before is not node.state._latest():
                 node.bump(bumped)
         self.close()
@@ -505,6 +543,8 @@ class Store[S](_Proxy, Mapping[str, Any]):
             return key in self._data()
         node = self._node
         node.root.ready()
+        if node.membership is None:
+            node.membership = {}
         sig = node.membership.get(key)
         if sig is None:
             sig = node.membership[key] = Signal(key in node.state._value.data)
@@ -638,6 +678,12 @@ class DraftList[T](StoreList[T], MutableSequence[T]):
         session = self._session
         assert session is not None
         session.splice(self._node, len(self), 0, tuple(values))
+
+    def clear(self) -> None:
+        """Remove all items in one transactional edit."""
+        session = self._session
+        assert session is not None
+        session.splice(self._node, 0, len(self), (), kind="clear")
 
     def sort(self, *, key: Callable[[T], Any] | None = None, reverse: bool = False) -> None:
         """Sort entities without changing their identities."""
