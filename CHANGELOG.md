@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.33.1 (2026-09-06)
+
+### Documentation
+
+- **repo**: Remove application workflow section from README
+  ([`9fe61f6`](https://github.com/wybthon/wybthon/commit/9fe61f657db6ce228c64e4372655096cda2bc6da))
+
+### Performance Improvements
+
+- **store,reactivity**: Reduce collection overhead and memory use
+  ([#35](https://github.com/wybthon/wybthon/pull/35),
+  [`2c3aa8d`](https://github.com/wybthon/wybthon/commit/2c3aa8d5c722772ed67649f6202f6247938c83ec))
+
+
 ## v0.33.0 (2026-09-05)
 
 ### Features
