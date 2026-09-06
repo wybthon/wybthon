@@ -291,7 +291,24 @@ def reload_wybthon_modules(doc=None):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
-    for name in ("component", "context", "reactivity", "props", "vnode", "flow", "template", "loading"):
+    for name in (
+        "component",
+        "context",
+        "reactivity",
+        "props",
+        "vnode",
+        "flow",
+        "template",
+        "loading",
+        "error_boundary",
+        "store",
+        "portal",
+        "lazy",
+        "router",
+        "forms",
+        "html",
+        "svg",
+    ):
         mods[name] = importlib.import_module(f"wybthon.{name}")
     if doc is not None:
         kernel = mods["kernel"]
@@ -299,9 +316,10 @@ def reload_wybthon_modules(doc=None):
     # Reloading ``kernel`` rebinds its module-level ``commit``; point the
     # reactivity scheduler's cached reference at the fresh one and drop
     # any effect queues left over from a previous test.
-    reactivity = mods["reactivity"]
-    reactivity._kernel_commit = mods["kernel"].commit
-    reactivity._reset_scheduler_for_tests()
+    core = importlib.import_module("wybthon.reactivity._core")
+    core._reset_scheduler_for_tests()
+    core._kernel_commit = mods["kernel"].commit
+    mods["core"] = core
     return mods
 
 

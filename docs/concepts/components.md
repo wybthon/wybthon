@@ -1,349 +1,354 @@
-### Components
+# Components
 
 Wybthon uses function components exclusively, following the SolidJS model.
 
 !!! tip "Mental model"
-    A component body **runs once** during mount. Every prop is a
-    **reactive accessor** (a zero-arg callable). Embed an accessor in
-    the returned VNode tree to create a *reactive hole*, so only that
-    node updates when the prop changes. See
-    [Primitives](primitives.md#reactive-holes) for the full story.
+    A component body **runs once** when it mounts. Every parameter is a
+    [`Prop`][wybthon.Prop] accessor. Embed an accessor in the returned
+    tree to create a *reactive hole*, so only that node updates when the
+    value changes. See [Primitives](primitives.md#reactive-holes) for
+    the full story.
 
-#### Function components with `@component`
+## Declaring a component with `@component`
 
-The `@component` decorator turns a function into a Wybthon component.
-Declare props as regular Python keyword arguments; defaults and
-annotations work as you would expect:
+The [`component`][wybthon.component] decorator turns a function into a
+[`Component`][wybthon.Component]. Declare props as ordinary parameters,
+annotate them as `Prop[T]`, and give defaults with [`prop`][wybthon.prop]:
 
 ```python
-from wybthon import component, p
+from wybthon import Prop, component, prop
+from wybthon.html import p
+
 
 @component
-def Hello(name="world"):
-    # ``name`` is a zero-arg getter.  Passing it directly into the tree
-    # creates a reactive hole, so only the text node updates if the
-    # parent passes a new ``name``.
+def Hello(name: Prop[str] = prop("world")):
     return p("Hello, ", name, "!")
 ```
 
-Each parameter is bound to a **reactive accessor**:
+Each parameter is bound to a `Prop`:
 
-* Pass it into the tree (`p("Hello, ", name)`) for an automatic
-  reactive hole.
-* Call it (`name()`) to read the current value (tracked when called
-  inside an effect).
-* Wrap it with [`untrack`](primitives.md#untrack-and-peek) to read once
-  without subscribing, which is useful for seeding local state from a prop.
+- Place it in the tree (`p("Hello, ", name)`) for an automatic reactive hole.
+- Call it (`name()`) inside a hole, memo, or effect to read the current value with tracking.
+- Call `name.peek()` to read once without subscribing, for example to seed local state.
 
-The body of an `@component` runs **once** per mount.  There's no
-re-render: the only things that update later are the holes embedded
-in the tree.
+`prop(default)` exists so the parameter's type is `Prop[T]` rather than `T`.
+A plain default (`name="world"`) works too when you don't care about the
+type; the reconciler unwraps either into the same accessor.
+
+## Bodies run once
+
+There's no re-render. The only things that update later are the holes
+embedded in the returned tree and the effects created in the body.
 
 ```python
-from wybthon import button, component, create_signal, div, p, span, untrack
+from wybthon import Prop, component, create_signal, prop
+from wybthon.html import button, div, p, span
+
 
 @component
-def Counter(initial=0):
-    # ``initial`` is a getter; ``untrack`` reads the seed value
-    # without subscribing.  ``count`` is the new local signal getter.
-    count, set_count = create_signal(untrack(initial))
+def Counter(initial: Prop[int] = prop(0)):
+    count, set_count = create_signal(initial.peek())
 
     return div(
-        p("Count: ", span(count)),                       # ← reactive hole
-        button("+1", on_click=lambda e: set_count(count() + 1)),
+        p("Count: ", span(count)),
+        button("+1", on_click=lambda e: set_count(lambda n: n + 1)),
     )
 ```
 
-`count` is a zero-arg accessor.  When you place it in the VNode
-tree, the reconciler wraps it in its own effect so only that text
-node updates; the surrounding component body doesn't re-run.
+`count` is an accessor placed as a child, so the reconciler wraps it in
+its own render effect; only that text node updates. The surrounding body
+never runs again.
 
-##### Static or getter, same call site
+### Static or accessor, same call site
 
-A child component never has to care whether the parent passed a
-constant or a signal; both are unwrapped uniformly:
+A child never has to care whether the parent passed a constant or a
+signal; both are unwrapped uniformly:
 
 ```python
+from wybthon import Prop, component, create_signal
+from wybthon.html import span
+
+
 @component
-def Badge(count=0):
-    # Works whether the parent passes count=7 or count=my_signal.
+def Badge(count: Prop[int]):
     return span("count: ", count)
 
-h(Badge, {"count": 7})         # static value
-h(Badge, {"count": my_signal}) # signal accessor
+
+n, set_n = create_signal(7)
+
+Badge(count=7)              # static value
+Badge(count=n)              # signal accessor: updates when n changes
+Badge(count=lambda: n() * 2)  # any zero-arg expression
 ```
 
-Because props are always callable, you can also pass `lambda: a() + b()`
-as a prop and the child will re-evaluate it whenever ``a`` or ``b``
-changes.
+### Top-level reads warn
 
-##### Children
-
-`children` is a normal prop, also a reactive accessor.  Most layouts
-read children once at setup, so wrap with `untrack`:
-
-```python
-from wybthon import component, h3, section, untrack, dynamic
-
-@component
-def Card(title="", children=None):
-    kids = untrack(children) if callable(children) else children
-    if kids is None:
-        kids = []
-    if not isinstance(kids, list):
-        kids = [kids]
-    return section(h3(dynamic(lambda: title())), *kids, class_="card")
-```
-
-##### Direct calls (no `h`)
-
-`@component` also enables a sugar form for tree authoring; calling the
-component directly with kwargs returns a `VNode`:
-
-```python
-Counter(initial=5)                          # → h(Counter, {"initial": 5})
-Card("child1", "child2", title="My Card")   # positional args become children
-```
-
-The component still works with `h()` as usual:
-
-```python
-from wybthon import h
-h(Counter, {"initial": 5})
-```
-
-##### Proxy mode (single positional parameter)
-
-`@component` chooses one of two binding modes by inspecting the
-decorated function's signature:
-
-| Signature shape                                          | Mode             | What the parameter receives           |
-|----------------------------------------------------------|------------------|---------------------------------------|
-| zero args, or any kw-args / defaults / `**kwargs`         | named-accessor   | one reactive accessor per declared name |
-| **exactly one** positional-only or positional-or-keyword parameter, **no default**, no `*args`/`**kwargs` | **proxy mode**   | the entire `ReactiveProps` proxy      |
-
-In other words: if your component looks like `def Foo(props):` (one
-bare positional parameter), you get the proxy.  Anything else, such as
-`def Foo(name="world")`, `def Foo(name, age=0)`, `def Foo(**props)`, or
-`def Foo()`, uses the named-accessor mode.
-
-Proxy mode is the right choice for **generic wrappers** that don't
-know their props' names ahead of time:
-
-```python
-from wybthon import component, dynamic, p
-
-@component
-def DumpProps(props):
-    # ``props`` is the ReactiveProps proxy.
-    # ``props.x`` → reactive accessor; ``props.x()`` → current value.
-    return p(dynamic(lambda: ", ".join(f"{k}={props.value(k)!r}" for k in props)))
-```
-
-For ordinary components, prefer named accessors; they're easier to
-read, type, and refactor:
+Reading a prop or signal at the top level of the body isn't tracked, so
+later updates never reach it. In dev mode Wybthon warns once per
+component and value:
 
 ```python
 @component
-def Hello(name="world"):    # ← named accessor: ``name`` is a getter
-    return p("Hello, ", name)
+def Bad(name: Prop[str]):
+    greeting = f"Hello, {name()}"   # warns: frozen at mount
+    return p(greeting)
+
 
 @component
-def Hello(props):           # ← proxy mode: ``props.name`` is the getter
-    return p("Hello, ", props.name)
-```
+def Good(name: Prop[str]):
+    return p(lambda: f"Hello, {name()}")   # hole: tracked
 
-If you're in named-accessor mode and still need the proxy (for
-example, to iterate keys or forward unknown props), call
-[`get_props`][wybthon.get_props] from inside the body.
-
-#### Component ownership and lifecycle
-
-Each component instance gets a `_ComponentContext` (a subclass of
-`Owner`) that participates in the reactive **ownership tree**.  This
-context is the parent owner for everything created during the
-component's setup phase, including the per-hole effects.
-
-```
-_ComponentContext (Counter)       ← created when Counter mounts (body runs once)
-├── setup effect                  ← child of the component context (survives the body)
-├── on_cleanup callback           ← registered on the component context
-└── reactive holes                ← each hole has its own effect, also a child
-    ├── span(count)               ← effect that updates one text node
-    └── ...
-```
-
-**Setup effects** (created in the component body, before `return`) and
-**reactive hole effects** are both owned by the `_ComponentContext`.
-They're disposed when the component unmounts.
-
-When a hole returns a sub-tree containing further effects (for
-example a hole returning a VNode that contains its own holes), the
-inner effects are owned by the hole's effect.  When the hole re-runs,
-those inner effects are disposed first (so their `on_cleanup`
-callbacks fire), then re-created on the next evaluation.
-
-This distinction is automatic; no special API is needed.  The ownership
-tree tracks which owner is active at the time `create_effect` or
-`create_memo` is called.
-
-```python
-from wybthon import component, create_effect, create_signal, dynamic, li, ul, untrack
 
 @component
-def SearchResults(initial=""):
-    # ``initial`` is a getter; ``untrack`` snapshots the seed value
-    # without subscribing (and silences the destructured-prop warning).
-    query, set_query = create_signal(untrack(initial))
-    results, set_results = create_signal([])
-
-    create_effect(lambda: print("query changed:", query()))
-
-    return ul(
-        dynamic(lambda: [li(r) for r in results()]),
-    )
+def AlsoFine(name: Prop[str]):
+    initial = name.peek()   # explicit one-time read, no warning
+    return p(initial)
 ```
 
-When a component unmounts, the reconciler calls `dispose()` on its
-`_ComponentContext`, which walks the tree depth-first: hole effects,
-setup effects, and cleanup callbacks are all torn down automatically.
+## Calling a component
 
-#### Dev-mode warnings
-
-When running outside the browser (or with `WYBTHON_DEV=1`), the
-component decorator catches the most common reactive footguns:
-
-* **Destructured prop access during setup.** Calling a prop accessor
-  inside the component body without wrapping in `untrack` warns once
-  per component. You almost always want to either pass the accessor
-  directly into the tree (creating a hole) or `untrack(prop)` for a
-  one-shot snapshot.
-* **`each=plain_list`** in `For` warns that the list will
-  not update reactively.  Pass a signal accessor instead.
-
-Warnings are silenced when the offending read happens inside an
-`untrack(...)` call, so you can opt out explicitly when the static
-behaviour is intentional.
-
-#### Fragment
-
-Use `Fragment` to group children without adding a visible wrapper element. The reconciler mounts children directly in the parent and uses **empty comment nodes** as start/end markers (not a `display: contents` wrapper), so fragments don't pollute the DOM or break CSS selectors that expect a certain element structure.
+Calling a `Component` returns a [`VNode`][wybthon.VNode]. Keyword
+arguments become props; positional arguments become the `children`
+prop:
 
 ```python
-from wybthon import Fragment, h1, p
+Counter(initial=5)
+Card("child1", "child2", title="My card")   # children=["child1", "child2"]
+```
+
+The low-level [`h`][wybthon.h] form still works (`h(Counter, {"initial": 5})`).
+
+### Passing callbacks
+
+A callback that takes arguments is passed through unchanged, and the
+child calls the prop to get it:
+
+```python
+@component
+def Picker(on_pick: Prop):
+    return button("Pick", on_click=lambda e: on_pick()("apple"))
+
+
+Picker(on_pick=lambda fruit: print(fruit))
+```
+
+Zero-argument callables are treated as reactive expressions and
+unwrapped when the prop is read. To pass a zero-arg function *as a
+value*, read it with `props.raw()` (below) instead.
+
+## `**rest` and forwarding
+
+Undeclared props arrive as `Prop`s in `**rest`. Spread them onto an
+element, or combine them with [`merge`][wybthon.merge] and
+[`omit`][wybthon.omit]:
+
+```python
+from typing import Any
+
+from wybthon import Prop, component, merge, prop
+from wybthon.html import button
+
+
+@component
+def Button(variant: Prop[str] = prop("solid"), **rest: Prop[Any]):
+    attrs = merge({"type": "button"}, rest)
+    return button(**attrs, class_=lambda: f"btn btn-{variant()}")
+```
+
+Because each forwarded value is an accessor, the element binds it
+reactively: if the parent passes `disabled=is_busy`, the attribute
+follows the signal.
+
+## The `Props` mapping
+
+A function with a single unannotated parameter named `props`, or a
+parameter annotated [`Props`][wybthon.Props], receives the whole
+mapping instead of individual accessors:
+
+```python
+from wybthon import Props, component
+from wybthon.html import p
+
+
+@component
+def Dump(props: Props):
+    return p(lambda: ", ".join(f"{k}={props[k]()!r}" for k in props))
+```
+
+- `props.name` and `props["name"]` both return the `Prop` for that key (created on first use).
+- `props.raw("name")` returns the value exactly as the parent passed it, untracked and not unwrapped. Use it for callbacks, VNodes, and accessors you intend to hand on rather than read.
+- Iteration and `len()` cover the keys the parent passed; `in` also reports declared defaults.
+- `props.snapshot()` returns the current unwrapped values as a plain dict.
+
+Any other single-parameter signature, such as `def Card(title: Prop[str])`,
+is an ordinary prop. Prefer named parameters for application code;
+reach for `Props` in generic wrappers.
+
+## Children
+
+`children` is a normal prop. Most layouts pass it straight through as a
+child, which makes it a hole that re-renders when the parent supplies
+new children:
+
+```python
+from typing import Any
+
+from wybthon import Prop, component, prop
+from wybthon.html import h3, section
+
+
+@component
+def Card(title: Prop[str], children: Prop[Any] = prop(None)):
+    return section(h3(title), children, class_="card")
+```
+
+When you need to inspect or iterate children, resolve them with
+[`children`][wybthon.children], which returns a memo yielding a flat
+list with nested lists expanded and `None` dropped:
+
+```python
+from wybthon import children as resolve_children
+from wybthon.html import li, ul
+
+
+@component
+def List(children: Prop[Any] = prop(None)):
+    kids = resolve_children(children)
+    return ul(lambda: [li(k) for k in kids()])
+```
+
+## What a component may return
+
+The body may return a `VNode`, a string, a list (mounted as a
+fragment), `None` (renders nothing), or a reactive expression (mounted
+as a single hole):
+
+```python
+@component
+def Label(text: Prop[str]):
+    return create_memo(lambda: text().upper())   # a hole that tracks text
+```
+
+## Keys force a remount
+
+The reconciler patches a component in place when a hole re-renders it
+with the same tag and key: new props flow into the existing accessors
+and the body doesn't run again. Give it a different `key` to force a
+fresh instance with fresh local state:
+
+```python
+@component
+def Editor(user_id: Prop[int]):
+    draft, set_draft = create_signal("")   # reset when the key changes
+    return textarea(value=draft, on_input=lambda e: set_draft(e.target.value))
+
+
+div(lambda: Editor(user_id=current_id(), key=current_id()))
+```
+
+## Refs through components
+
+There's no `forward_ref`. Accept `ref` like any prop and pass it on;
+the `ref` prop takes a [`Ref`][wybthon.Ref], a callback, or a list of
+either, so a component can forward the parent's ref and keep its own:
+
+```python
+from wybthon import Prop, Ref, component, on_settled, prop
+from wybthon.html import input_
+
+
+@component
+def FancyInput(ref: Prop[Ref | None] = prop(None)):
+    local = Ref()
+    on_settled(lambda: local.current.element.focus())
+    return input_(type="text", class_="fancy", ref=[local, ref.peek()])
+```
+
+## Fragment
+
+Use [`Fragment`][wybthon.Fragment] to group children without a wrapper
+element. The reconciler mounts the children directly in the parent
+between two empty comment markers, so fragments never disturb CSS
+selectors or layout.
+
+```python
+from wybthon import Fragment, component
+from wybthon.html import h1, p
+
 
 @component
 def PageContent():
-    return Fragment(
-        h1("Title"),
-        p("Body text here."),
-    )
+    return Fragment(h1("Title"), p("Body text here."))
 ```
 
-#### `forward_ref`
+## Portal
 
-Use `forward_ref` to create a component that can receive a `ref` prop
-and forward it to a child element:
-
-```python
-from wybthon import forward_ref, h
-
-def _render(props, ref):
-    return h("input", {"type": "text", "ref": ref, "class": "fancy-input"})
-
-FancyInput = forward_ref(_render)
-
-# Usage: h(FancyInput, {"ref": my_ref})
-```
-
-The wrapped function receives `(props, ref)` instead of `(props,)`,
-and `ref` is **stripped** from props (matching React's `forwardRef`
-semantics).  When no `ref` is provided, `ref` is `None`.
-
-#### `Portal`
-
-Use `Portal` to render children into a DOM node outside the parent
-component's hierarchy. Ideal for modals, tooltips, and overlays:
+[`Portal`][wybthon.Portal] mounts children into another DOM container
+(an [`Element`][wybthon.Element], a CSS selector, or a kernel node id;
+the default is `"body"`) while keeping them in the current ownership
+tree, so context, signals, and cleanup work as usual:
 
 ```python
-from wybthon import Portal, component, h
+from wybthon import Portal, Show, component
+from wybthon.html import div, p
+
 
 @component
-def Modal():
-    return h("div", {},
-        h("p", {}, "Page content"),
-        Portal(
-            h("div", {"class": "modal"}, "I appear in #modal-root!"),
-            mount="#modal-root",
-        ),
-    )
+def Modal(open: Prop[bool]):
+    return Show(open, lambda: Portal(div(p("Modal content"), class_="modal"), mount="#modal-root"))
 ```
 
-The `mount` argument is an `Element`, a CSS selector string, or a
-kernel node id; it defaults to `"body"`.
+## Flow control
 
-#### Flow control
-
-Wybthon provides SolidJS-style **reactive** flow control components.
-Each creates its own reactive scope, so only the relevant subtree
-re-renders when the tracked condition or list changes.
-
-Pass **getters** (signal accessors or lambdas) for conditions, lists,
-children, and fallbacks so reads happen inside the flow control's own
-scope rather than the parent's:
+Wybthon provides reactive flow-control components. Each creates its own
+scope, so only the relevant subtree updates when a condition or list
+changes. Conditions and sources are accessors; `children` and
+`fallback` slots are VNodes or callables evaluated inside the
+primitive's scope.
 
 ```python
-from wybthon import Show, For, Repeat, Switch, Match
+from wybthon import Dynamic, For, Match, Repeat, Show, Switch
+from wybthon.html import li, p, span
 
-# Conditional rendering: keyed scope disposes on transition
-Show(when=is_logged_in,
-     children=lambda: p("Welcome!"),
-     fallback=lambda: p("Please log in"))
+# Conditional: only truthiness is tracked; the callback receives an accessor.
+Show(user, lambda u: p("Welcome, ", lambda: u()["name"]), fallback=p("Please log in"))
 
-# List rendering: per-item reactive scopes.
-# The mapping runs once per unique item; the subtree is cached and
-# moved (not rebuilt) on reorders.
-For(each=items,
-    children=lambda item, idx: li(item()))
+# Lists: rows match by identity (default), by position, or by key.
+For(todos, lambda todo, i: li(todo["title"]))
+For(names, lambda name, i: li(name), keyed=False)          # name is an accessor
+For(todos, lambda todo, i: li(lambda: todo()["title"]), keyed=lambda t: t["id"])
 
-# Keyed rows: a fresh object with the same key updates the existing
-# row in place through the ``item`` getter.
-For(each=todos,
-    key=lambda t: t["id"],
-    children=lambda item, idx: li(lambda: item()["title"]))
+# Count-driven rendering with no diffing.
+Repeat(rating, lambda i: span("*"))
 
-# Per-position slots: the row at each index renders once, and the
-# ``item`` getter updates when the value at that position changes.
-For(each=items,
-    key="index",
-    children=lambda item, idx: li(item))
-
-# Count-driven rendering: no list diffing at all.
-Repeat(times=rating,
-       children=lambda i: span("*"))
-
-# Multi-branch matching (reactive)
+# Multi-branch matching.
 Switch(
-    Match(when=lambda: status() == "loading",
-          children=lambda: p("Loading...")),
-    Match(when=lambda: status() == "error",
-          children=lambda: p("Error!")),
-    Match(when=lambda: status() == "ready",
-          children=lambda: p("Ready")),
+    Match(lambda: status() == "loading", lambda: p("Loading...")),
+    Match(lambda: status() == "ready", lambda: p("Ready")),
     fallback=lambda: p("Unknown"),
 )
+
+# A component or tag chosen at runtime.
+Dynamic(lambda: views[mode()], title="Hello")
 ```
 
-`each=` requires a signal accessor (or other reactive getter) to track
-list updates; passing a plain Python `list` triggers a dev warning.
+`For` needs an accessor for `each`; a plain list renders once and
+triggers a dev warning. The full callback shapes are on the
+[`For`][wybthon.For] API page and in [Primitives](primitives.md#map_array).
 
-See the guide for recommended patterns around props, state, children, cleanup, and context:
+## Dev-mode diagnostics
 
-- Guide: [Authoring Patterns](../guides/authoring-patterns.md)
-- Example: [Authoring Patterns Example](../examples/authoring-patterns.md)
+With [`DEV_MODE`][wybthon.DEV_MODE] on (the default), Wybthon reports the
+common footguns:
+
+- **Top-level reactive read** in a component body (warned once per component and value).
+- **Write in a tracking scope**: writing a signal or store from a memo, a single-function effect, or a hole raises [`WriteInScopeError`][wybthon.WriteInScopeError].
+- **Plain list in `For`**: the list renders once.
+
+Call [`set_dev_mode(False)`][wybthon.set_dev_mode] in production builds.
 
 ## Next steps
 
-- Read [Mental model](mental-model.md) and [Lifecycle and Ownership](lifecycle.md).
-- Browse the [`component`][wybthon.component] API reference.
-- Explore [Flow control][wybthon.Show] for `Show`, `For`, `Switch`, and friends.
+- Read [Mental model](mental-model.md) and [Lifecycle and ownership](lifecycle.md).
+- Browse the [`component`][wybthon.component] and [`props`](../api/props.md) API references.
+- See [Authoring patterns](../guides/authoring-patterns.md) for recipes.

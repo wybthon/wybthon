@@ -1,6 +1,87 @@
 # CHANGELOG
 
 
+## v0.33.1 (2026-09-06)
+
+### Documentation
+
+- **repo**: Remove application workflow section from README
+  ([`9fe61f6`](https://github.com/wybthon/wybthon/commit/9fe61f657db6ce228c64e4372655096cda2bc6da))
+
+### Performance Improvements
+
+- **store,reactivity**: Reduce collection overhead and memory use
+  ([#35](https://github.com/wybthon/wybthon/pull/35),
+  [`2c3aa8d`](https://github.com/wybthon/wybthon/commit/2c3aa8d5c722772ed67649f6202f6247938c83ec))
+
+
+## v0.33.0 (2026-09-05)
+
+### Features
+
+- Rebuild reactive contracts and incremental VDOM rendering
+  ([#34](https://github.com/wybthon/wybthon/pull/34),
+  [`8136737`](https://github.com/wybthon/wybthon/commit/813673785b53d17f6a2c652e0cdb23e52bd93306))
+
+
+## v0.32.0 (2026-09-04)
+
+### Features
+
+- **reactivity**: Adopt SolidJS 2.0 transitions and actions
+  ([#33](https://github.com/wybthon/wybthon/pull/33),
+  [`77a416f`](https://github.com/wybthon/wybthon/commit/77a416ff64c17e78d23067ebe7df83bb9fd411b4))
+
+
+## v0.31.0 (2026-09-03)
+
+### Build System
+
+- **pyproject,workflows**: Migrate development tooling from pip to uv
+  ([#29](https://github.com/wybthon/wybthon/pull/29),
+  [`847fce6`](https://github.com/wybthon/wybthon/commit/847fce6c420e61e75747c838a0d016e6ca725ad5))
+
+Refs: #16
+
+### Chores
+
+- **repo**: Add GitHub issue templates and PR template
+  ([#28](https://github.com/wybthon/wybthon/pull/28),
+  [`8485cac`](https://github.com/wybthon/wybthon/commit/8485cac2c90bf4ecfc8f661579a9c0e6208153a9))
+
+Refs: #19
+
+### Documentation
+
+- **repo**: Document issue claiming before opening PRs
+  ([`b4ae8ec`](https://github.com/wybthon/wybthon/commit/b4ae8ecae005b80b43b68afe0f842c1b7814ec7a))
+
+### Features
+
+- **package,reactivity**: Adopt SolidJS 2.0 API and semantics
+  ([#32](https://github.com/wybthon/wybthon/pull/32),
+  [`064c671`](https://github.com/wybthon/wybthon/commit/064c671c01780b6393b70d96c906d5499606369c))
+
+### Testing
+
+- **forms**: Add unit tests for uncovered helpers
+  ([#27](https://github.com/wybthon/wybthon/pull/27),
+  [`e04ac6b`](https://github.com/wybthon/wybthon/commit/e04ac6b37b0eeacaf5609682f2f8b800ec658183))
+
+Refs: #12
+
+
+## v0.30.0 (2026-09-01)
+
+### Features
+
+- **package,pyproject**: Ship py.typed marker per PEP 561
+  ([#24](https://github.com/wybthon/wybthon/pull/24),
+  [`892d941`](https://github.com/wybthon/wybthon/commit/892d94153f4e607a4b0e515fe3ff6311eb797dc1))
+
+Refs: #18
+
+
 ## v0.29.0 (2026-08-31)
 
 ### Features

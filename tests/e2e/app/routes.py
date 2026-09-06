@@ -7,6 +7,7 @@ params, query strings, wildcards, nested children, and the not-found path.
 
 from app.features import components as components_feat
 from app.features import context as context_feat
+from app.features import contracts as contracts_feat
 from app.features import errors as errors_feat
 from app.features import events as events_feat
 from app.features import flow as flow_feat
@@ -18,40 +19,42 @@ from app.features import props as props_feat
 from app.features import reactivity as reactivity_feat
 from app.features import router as router_feat
 from app.features import stores as stores_feat
+from app.features import transitions as transitions_feat
 from app.testkit import tid
 
-from wybthon import ErrorBoundary, Route, component, div, h, lazy
+from wybthon import Errored, Route, component, div, lazy
 
 LazyPanel = lazy(lambda: ("app.features.lazy_target", "LoadedPanel"))
 _LazyMissingInner = lazy(lambda: ("app.features.does_not_exist", "Missing"))
 
 
 @component
-def LazyMissing(query=None, params=None):
+def LazyMissing(**rest):
     def fallback(err, reset):
         return div(f"Failed to load: {err}", class_="lazy-error")
 
-    return h(ErrorBoundary, {"fallback": fallback}, h(_LazyMissingInner, {}))
+    return Errored(lambda: _LazyMissingInner(), fallback=fallback)
 
 
 @component
-def Home():
+def Home(**rest):
     return div("home", **tid("page-home"))
 
 
 @component
-def Blank():
+def Blank(**rest):
     return div("blank", **tid("page-blank"))
 
 
 @component
-def NotFound(query=None, params=None):
+def NotFound(**rest):
     return div("not found", **tid("page-not-found"))
 
 
 def create_routes():
     return [
         Route(path="/", component=Home),
+        Route(path="/contracts", component=contracts_feat.Page),
         Route(path="/blank", component=Blank),
         Route(path="/reactivity", component=reactivity_feat.Page),
         Route(path="/holes", component=holes_feat.Page),
@@ -62,6 +65,7 @@ def create_routes():
         Route(path="/forms", component=forms_feat.Page),
         Route(path="/stores", component=stores_feat.Page),
         Route(path="/loading", component=loading_feat.Page),
+        Route(path="/transitions", component=transitions_feat.Page),
         Route(path="/errors", component=errors_feat.Page),
         Route(path="/components", component=components_feat.Page),
         Route(path="/lazy", component=LazyPanel),

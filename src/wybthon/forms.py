@@ -4,8 +4,8 @@ This module gives you a small but complete toolkit for building
 controlled form components on top of Wybthon's reactive primitives:
 
 - [`form_state`][wybthon.form_state] creates a map of
-  [`FieldState`][wybthon.FieldState] entries (each backed by signals
-  for value, error, and touched flags).
+  [`Field`][wybthon.Field] entries (each backed by signals for value,
+  error, and touched flags).
 - [`bind_text`][wybthon.bind_text],
   [`bind_checkbox`][wybthon.bind_checkbox], and
   [`bind_select`][wybthon.bind_select] return prop dictionaries you can
@@ -21,7 +21,23 @@ controlled form components on top of Wybthon's reactive primitives:
   [`validate_form`][wybthon.validate_form].
 - [`a11y_control_attrs`][wybthon.a11y_control_attrs] and
   [`error_message_attrs`][wybthon.error_message_attrs] generate ARIA
-  attributes so error messages are announced correctly.
+  attributes (reactively) so error messages are announced correctly.
+
+Example:
+    ```python
+    form = form_state({"name": "", "email": ""})
+    rules = {"name": [required()], "email": [required(), email()]}
+
+    def save(fields):
+        print({k: f.value() for k, f in fields.items()})
+
+    form(
+        input_(**bind_text(form["name"], validators=rules["name"])),
+        span(form["name"].error, **error_message_attrs(id="name-error")),
+        button("Save", type="submit"),
+        on_submit=on_submit_validated(rules, save, form),
+    )
+    ```
 
 See Also:
     - [Forms guide](../concepts/forms.md)
@@ -29,14 +45,24 @@ See Also:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import asyncio
+import copy
+import inspect
+import re
+from collections.abc import Awaitable, Callable, Mapping
+from typing import Any
 
-from .reactivity import Signal
+from .reactivity import _core
+from .reactivity._core import Accessor, Signal
+from .reactivity._primitives import Setter, create_memo, create_signal
 
 __all__ = [
     "Validator",
-    "FieldState",
+    "Field",
+    "FormState",
+    "AsyncValidator",
+    "bind_number",
+    "bind_multiselect",
     "form_state",
     "bind_text",
     "bind_checkbox",
@@ -57,22 +83,19 @@ __all__ = [
 
 # ----------------- Validation primitives -----------------
 
-Validator = Callable[[Any], Optional[str]]
+type Validator = Callable[[Any], str | None]
+type AsyncValidator = Callable[[Any], str | None | Awaitable[str | None]]
+"""A validator takes a value and returns an error message, or `None` when valid."""
 
 
 def required(message: str = "This field is required") -> Validator:
     """Validate that a value is present and non-empty.
 
-    Args:
-        message: Error message used when the value is missing or
-            blank.
-
-    Returns:
-        A validator that returns `message` for `None` or empty strings
-        (after `strip()`), otherwise `None`.
+    Returns a validator that returns `message` for `None` or blank
+    strings (after `strip()`), otherwise `None`.
     """
 
-    def _v(value: Any) -> Optional[str]:
+    def _v(value: Any) -> str | None:
         if value is None:
             return message
         if isinstance(value, str) and value.strip() == "":
@@ -82,88 +105,47 @@ def required(message: str = "This field is required") -> Validator:
     return _v
 
 
-def min_length(n: int, message: Optional[str] = None) -> Validator:
-    """Validate that the stringified value length is at least `n`.
-
-    Args:
-        n: Minimum allowed length.
-        message: Optional override for the default error message.
-
-    Returns:
-        A validator that returns the message when `len(str(value)) <
-        n` or when `value` is `None`, otherwise `None`.
-    """
+def min_length(n: int, message: str | None = None) -> Validator:
+    """Validate that the stringified value length is at least `n`."""
     msg = message or f"Minimum length is {n}"
 
-    def _v(value: Any) -> Optional[str]:
-        try:
-            return None if (value is not None and len(str(value)) >= n) else msg
-        except Exception:
-            return msg
+    def _v(value: Any) -> str | None:
+        return None if (value is not None and len(str(value)) >= n) else msg
 
     return _v
 
 
-def max_length(n: int, message: Optional[str] = None) -> Validator:
-    """Validate that the stringified value length is at most `n`.
-
-    Args:
-        n: Maximum allowed length.
-        message: Optional override for the default error message.
-
-    Returns:
-        A validator that returns the message when `len(str(value)) >
-        n` or when `value` is `None`, otherwise `None`.
-    """
+def max_length(n: int, message: str | None = None) -> Validator:
+    """Validate that the stringified value length is at most `n`."""
     msg = message or f"Maximum length is {n}"
 
-    def _v(value: Any) -> Optional[str]:
-        try:
-            return None if (value is not None and len(str(value)) <= n) else msg
-        except Exception:
-            return msg
+    def _v(value: Any) -> str | None:
+        return None if (value is not None and len(str(value)) <= n) else msg
 
     return _v
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def email(message: str = "Invalid email address") -> Validator:
     """Validate a basic email address format with a lightweight regex.
 
-    The validator accepts `None` and empty strings as valid so it can
-    be combined with [`required`][wybthon.required] (which handles the
-    "missing" case explicitly).
-
-    Args:
-        message: Error message used when the value doesn't match.
-
-    Returns:
-        A validator returning `message` on bad input, otherwise
-        `None`.
+    Accepts `None` and empty strings as valid so it can be combined
+    with [`required`][wybthon.required], which handles the missing
+    case explicitly.
     """
-    import re
 
-    pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-    def _v(value: Any) -> Optional[str]:
+    def _v(value: Any) -> str | None:
         if value is None or str(value).strip() == "":
             return None
-        return None if pattern.match(str(value)) else message
+        return None if _EMAIL_RE.match(str(value)) else message
 
     return _v
 
 
-def validate(value: Any, validators: List[Validator]) -> Optional[str]:
-    """Return the first validation error, or `None` when all validators pass.
-
-    Args:
-        value: Value to validate.
-        validators: Ordered list of validators applied with
-            short-circuit semantics.
-
-    Returns:
-        The error message from the first failing validator, or `None`
-        if every validator returns `None`.
-    """
+def validate(value: Any, validators: list[Validator]) -> str | None:
+    """Return the first validation error, or `None` when all validators pass."""
     for v in validators:
         msg = v(value)
         if msg:
@@ -174,143 +156,277 @@ def validate(value: Any, validators: List[Validator]) -> Optional[str]:
 # ----------------- Form state -----------------
 
 
-@dataclass
-class FieldState:
-    """Signals representing a field's value, error message, and touched state.
+class Field[T]:
+    """Reactive state for one form field: value, error, and touched.
 
     Attributes:
-        value: Signal holding the current input value.
-        error: Signal holding the latest validation error message, or
-            `None` when valid.
-        touched: Signal that becomes `True` once the user has
-            interacted with the field. Useful for delaying error
-            display until the user has had a chance to respond.
+        value: Accessor for the current input value.
+        set_value: Setter for the value.
+        error: Accessor for the latest validation error, or `None`.
+        set_error: Setter for the error.
+        touched: Accessor that's `True` once the user has interacted
+            with the field, so error display can wait until they have.
+        set_touched: Setter for the touched flag.
     """
 
-    value: Signal[Any]
-    error: Signal[Optional[str]]
-    touched: Signal[bool]
+    __slots__ = (
+        "value",
+        "error",
+        "set_error",
+        "touched",
+        "set_touched",
+        "dirty",
+        "validating",
+        "_initial",
+        "_revision",
+        "_validation",
+        "_input_error",
+    )
+
+    def __init__(self, initial: T) -> None:
+        self.value: Signal[T] = Signal(copy.deepcopy(initial))
+        self._initial: Signal[T] = Signal(copy.deepcopy(initial))
+        self._revision = 0
+        self._validation: asyncio.Task[Any] | None = None
+        self.validating: Signal[bool] = Signal(False)
+        self._input_error: Signal[str | None] = Signal(None)
+        self.dirty: Accessor[bool] = create_memo(
+            lambda: self._input_error() is not None or self.value() != self._initial()
+        )
+        if _core._current_owner is not None:
+            _core._current_owner._add_cleanup(self._cancel_validation)
+        self.error: Accessor[str | None]
+        self.set_error: Setter[str | None]
+        self.error, self.set_error = create_signal(None)
+        self.touched: Accessor[bool]
+        self.set_touched: Setter[bool]
+        self.touched, self.set_touched = create_signal(False)
+
+    def validate(self, validators: list[Validator]) -> str | None:
+        """Validate the current value, mark the field touched, and store the error."""
+        self._cancel_validation()
+        err = self._input_error._latest() or (validate(self.value._latest(), validators) if validators else None)
+        self.set_touched(True)
+        self.set_error(err)
+        return err
+
+    def _cancel_validation(self) -> None:
+        self._revision += 1
+        if self._validation is not None and not self._validation.done():
+            self._validation.cancel()
+        self._validation = None
+        self.validating._set(False, _core._O_REVEAL)
+
+    def set_value(self, value: T | Callable[[T], T]) -> T:
+        """Stage a value and invalidate any validation for an earlier edit."""
+        self._cancel_validation()
+        self._input_error._set(None)
+        return self.value.set(value)
+
+    def reset(self, value: Any = _core._MISSING) -> None:
+        """Reset value, errors, and interaction state; optionally set a new baseline."""
+        self._cancel_validation()
+        if value is not _core._MISSING:
+            self._initial._set(copy.deepcopy(value))
+        self.value._set(copy.deepcopy(self._initial._latest()))
+        self._input_error._set(None)
+        self.set_error(None)
+        self.set_touched(False)
+
+    async def validate_async(self, validators: list[AsyncValidator]) -> str | None:
+        """Validate the latest edit; stale responses never overwrite newer state."""
+        self._cancel_validation()
+        revision = self._revision
+        value = copy.deepcopy(self.value._latest())
+        self.set_touched(True)
+        self.validating._set(True, _core._O_REVEAL)
+
+        async def run() -> str | None:
+            if self._input_error._latest() is not None:
+                return self._input_error._latest()
+            for validator in validators:
+                result = validator(value)
+                message = await result if inspect.isawaitable(result) else result
+                if message:
+                    return message
+            return None
+
+        task = self._validation = asyncio.create_task(run())
+        try:
+            error = await task
+            if revision == self._revision:
+                self.set_error(error)
+                return error
+            return None
+        except asyncio.CancelledError:
+            if revision == self._revision:
+                raise
+            return None
+        finally:
+            if revision == self._revision:
+                self._validation = None
+                self.validating._set(False, _core._O_REVEAL)
+
+    def __repr__(self) -> str:
+        return f"Field(value={self.value.peek()!r}, error={self.error.peek()!r}, touched={self.touched.peek()!r})"
 
 
-def form_state(initial: Dict[str, Any]) -> Dict[str, FieldState]:
-    """Create a form state map from a dict of initial values.
+class FormState(dict[str, Field[Any]]):
+    """Fields plus aggregate dirty, validating, and submission state."""
 
-    Args:
-        initial: Mapping of field name to initial value.
+    def __init__(self, initial: Mapping[str, Any]) -> None:
+        super().__init__((name, Field(value)) for name, value in initial.items())
+        self.dirty = create_memo(lambda: any(field.dirty() for field in self.values()))
+        self.validating = create_memo(lambda: any(field.validating() for field in self.values()))
+        self.submitting = Signal(False)
+        self.submit_error: Signal[Exception | None] = Signal(None)
 
-    Returns:
-        A dict mapping each field name to a freshly-created
-        [`FieldState`][wybthon.FieldState].
-    """
-    state: Dict[str, FieldState] = {}
-    for name, val in initial.items():
-        state[name] = FieldState(value=Signal(val), error=Signal(None), touched=Signal(False))
-    return state
+    def data(self) -> dict[str, Any]:
+        """Read the current values as a detached mapping."""
+        return {name: copy.deepcopy(field.value()) for name, field in self.items()}
+
+    def reset(self, values: Mapping[str, Any] | None = None) -> None:
+        """Reset all fields, optionally replacing their initial values."""
+        if values is not None and set(values) != set(self):
+            raise ValueError("Reset values must contain exactly the form's field names")
+        for name, field in self.items():
+            field.reset(values[name] if values is not None else _core._MISSING)
+        self.submit_error._set(None, _core._O_REVEAL)
+
+    async def submit(
+        self, handler: Callable[[dict[str, Any]], Any], *, rules: Mapping[str, list[AsyncValidator]] | None = None
+    ) -> Any:
+        """Validate and submit a value snapshot, exposing pending and failure state."""
+        if self.submitting._latest():
+            raise RuntimeError("This form already has a submission in flight")
+        self.submitting._set(True, _core._O_REVEAL)
+        self.submit_error._set(None, _core._O_REVEAL)
+        revisions = {name: field._revision for name, field in self.items()}
+        try:
+            errors = await asyncio.gather(
+                *(field.validate_async((rules or {}).get(name, [])) for name, field in self.items())
+            )
+            # validate_async increments once when it starts. Any further edit
+            # invalidates this submission instead of sending mixed revisions.
+            if any(errors) or any(field._revision != revisions[name] + 1 for name, field in self.items()):
+                return None
+            data = {name: copy.deepcopy(field.value._latest()) for name, field in self.items()}
+            result = handler(data)
+            return await result if inspect.isawaitable(result) else result
+        except Exception as exc:
+            self.submit_error._set(exc, _core._O_REVEAL)
+            raise
+        finally:
+            self.submitting._set(False, _core._O_REVEAL)
+
+
+def form_state(initial: Mapping[str, Any]) -> FormState:
+    """Create fields and aggregate form state from initial values."""
+    return FormState(initial)
 
 
 # ----------------- Binding helpers -----------------
 
 
-def bind_text(field: FieldState, *, validators: Optional[List[Validator]] = None) -> Dict[str, Any]:
+def bind_text(
+    field: Field[Any],
+    *,
+    validators: list[Validator] | None = None,
+    parse: Callable[[str], Any] | None = None,
+    format: Callable[[Any], str] | None = None,
+) -> dict[str, Any]:
     """Bind a text input to a field with validation on every `input` event.
 
-    Args:
-        field: Target [`FieldState`][wybthon.FieldState].
-        validators: Optional list of validators. When provided, the
-            field's `error` signal is updated on every keystroke.
-
     Returns:
-        Props dict suitable for spreading onto a text input
-        (`value` + `on_input`). The `value` entry is the signal's
-        getter, so the input stays bound to the field reactively: a
-        programmatic `field.value.set(...)` updates the DOM too.
+        Props to spread onto a text input (`value` + `on_input`). The
+        `value` entry is the field's accessor, so programmatic writes
+        (`field.set_value(...)`) update the DOM too.
     """
-    validators = validators or []
+    rules = validators or []
 
-    def on_input(evt) -> None:  # DomEvent
+    def on_input(evt: Any) -> None:
+        if getattr(evt, "is_composing", False):
+            return
         val = evt.target.value if evt.target is not None else ""
         if val is None:
             val = ""
-        field.value.set(val)
-        field.touched.set(True)
-        field.error.set(validate(val, validators))
-
-    return {
-        "value": field.value.get,
-        "on_input": on_input,
-    }
-
-
-def bind_checkbox(field: FieldState) -> Dict[str, Any]:
-    """Bind a checkbox input to a boolean field.
-
-    Args:
-        field: Target [`FieldState`][wybthon.FieldState] (treated as
-            holding a `bool`).
-
-    Returns:
-        Props dict suitable for spreading onto a checkbox
-        (`checked` + `on_change`). The `checked` entry is a reactive
-        getter, so programmatic writes to the field update the DOM.
-    """
-
-    def on_change(evt) -> None:  # DomEvent
-        checked = bool(evt.target.checked) if evt.target is not None else False
-        field.value.set(checked)
-        field.touched.set(True)
-        field.error.set(None)
-
-    return {
-        "checked": lambda: bool(field.value.get()),
-        "on_change": on_change,
-    }
-
-
-def bind_select(field: FieldState) -> Dict[str, Any]:
-    """Bind a `<select>` element to a field, updating value on `change`.
-
-    Args:
-        field: Target [`FieldState`][wybthon.FieldState].
-
-    Returns:
-        Props dict suitable for spreading onto a `<select>` element
-        (`value` + `on_change`). The `value` entry is the signal's
-        getter, so programmatic writes to the field update the DOM.
-    """
-
-    def on_change(evt) -> None:  # DomEvent
-        val = evt.target.value if evt.target is not None else ""
-        if val is None:
-            val = ""
-        field.value.set(val)
-        field.touched.set(True)
-        field.error.set(None)
-
-    return {
-        "value": field.value.get,
-        "on_change": on_change,
-    }
-
-
-def on_submit(handler: Callable[[Dict[str, FieldState]], Any], form: Dict[str, FieldState]) -> Callable[[Any], Any]:
-    """Create a submit handler that prevents default and forwards to `handler`.
-
-    Args:
-        handler: Callback invoked with the form state when submit
-            fires.
-        form: Form state map produced by
-            [`form_state`][wybthon.form_state].
-
-    Returns:
-        An event handler suitable for `on_submit=` on a `<form>`.
-    """
-
-    def _onsubmit(evt) -> None:
         try:
-            evt.prevent_default()
-        except Exception:
-            pass
-        handler(form)
+            val = parse(val) if parse is not None else val
+        except (ValueError, TypeError) as exc:
+            field._cancel_validation()
+            message = str(exc) or "Enter a valid value"
+            field._input_error._set(message)
+            field.set_error(message)
+            field.set_touched(True)
+            return
+        field.set_value(val)
+        field.set_touched(True)
+        field.set_error(validate(val, rules))
+
+    return {
+        "value": (lambda: format(field.value())) if format else field.value,
+        "on_input": on_input,
+        "on_compositionend": on_input,
+    }
+
+
+def bind_checkbox(field: Field[bool]) -> dict[str, Any]:
+    """Bind a checkbox input to a boolean field (`checked` + `on_change`)."""
+
+    def on_change(evt: Any) -> None:
+        checked = bool(evt.target.checked) if evt.target is not None else False
+        field.set_value(checked)
+        field.set_touched(True)
+        field.set_error(None)
+
+    return {"checked": lambda: bool(field.value()), "on_change": on_change}
+
+
+def bind_select(field: Field[Any]) -> dict[str, Any]:
+    """Bind a `<select>` element to a field (`value` + `on_change`)."""
+
+    def on_change(evt: Any) -> None:
+        val = evt.target.value if evt.target is not None else ""
+        if val is None:
+            val = ""
+        field.set_value(val)
+        field.set_touched(True)
+        field.set_error(None)
+
+    return {"value": field.value, "on_change": on_change}
+
+
+def bind_number(field: Field[float | None], *, validators: list[Validator] | None = None) -> dict[str, Any]:
+    """Bind a numeric input, preserving an empty value as None."""
+    return {
+        "type": "number",
+        "step": "any",
+        **bind_text(
+            field,
+            validators=validators,
+            parse=lambda text: float(text) if text.strip() else None,
+            format=lambda value: "" if value is None else str(value),
+        ),
+    }
+
+
+def bind_multiselect(field: Field[list[str]]) -> dict[str, Any]:
+    """Bind all selected option values without per-option bridge reads."""
+
+    def changed(evt: Any) -> None:
+        field.set_value(list(evt.target.selected_values))
+        field.set_touched(True)
+        field.set_error(None)
+
+    return {"multiple": True, "selected_values": field.value, "on_change": changed}
+
+
+def on_submit(handler: Callable[[dict[str, Field[Any]]], Any], form: dict[str, Field[Any]]) -> Callable[[Any], Any]:
+    """Create a submit handler that prevents default and forwards to `handler`."""
+
+    def _onsubmit(evt: Any) -> Any:
+        evt.prevent_default()
+        return handler(form)
 
     return _onsubmit
 
@@ -318,59 +434,29 @@ def on_submit(handler: Callable[[Dict[str, FieldState]], Any], form: Dict[str, F
 # ----------------- Aggregated validation and a11y helpers -----------------
 
 
-def validate_field(field: FieldState, validators: Optional[List[Validator]] = None) -> Optional[str]:
-    """Validate a single field and update its `error` and `touched` signals.
-
-    Args:
-        field: Target [`FieldState`][wybthon.FieldState].
-        validators: Validators to apply. When omitted or empty, the
-            field is treated as valid.
-
-    Returns:
-        The first error message produced by the validators, or `None`
-        when the field is valid.
-    """
-    rules: List[Validator] = validators or []
-    try:
-        value = field.value.get()
-    except Exception:
-        value = None
-    error_msg = validate(value, rules) if rules else None
-    try:
-        field.touched.set(True)
-        field.error.set(error_msg)
-    except Exception:
-        pass
-    return error_msg
+def validate_field(field: Field[Any], validators: list[Validator] | None = None) -> str | None:
+    """Validate a single field and update its `error` and `touched` signals."""
+    return field.validate(validators or [])
 
 
-def validate_form(
-    form: Dict[str, FieldState], rules: Dict[str, List[Validator]]
-) -> Tuple[bool, Dict[str, Optional[str]]]:
+def validate_form(form: dict[str, Field[Any]], rules: dict[str, list[Validator]]) -> tuple[bool, dict[str, str | None]]:
     """Validate every field in a form against a rules map.
 
-    Mutates each field's `touched` and `error` signals as a side
+    Marks each listed field touched and stores its error as a side
     effect.
 
-    Args:
-        form: Form state map (typically produced by
-            [`form_state`][wybthon.form_state]).
-        rules: Mapping from field name to a list of validators.
-            Unknown field names are ignored.
-
     Returns:
-        A `(is_valid, errors)` tuple where `is_valid` is `True` only
-        when every validator passes and `errors` maps each field name
-        to its current error message (or `None`).
+        A `(is_valid, errors)` tuple where `errors` maps each field
+        name to its current error message (or `None`).
     """
-    errors: Dict[str, Optional[str]] = {}
+    errors: dict[str, str | None] = {}
     all_valid = True
     for name, validators in rules.items():
         field = form.get(name)
         if field is None:
             errors[name] = None
             continue
-        err = validate_field(field, validators or [])
+        err = field.validate(validators or [])
         errors[name] = err
         if err is not None:
             all_valid = False
@@ -378,58 +464,29 @@ def validate_form(
 
 
 def on_submit_validated(
-    rules: Dict[str, List[Validator]],
-    handler: Callable[[Dict[str, FieldState]], Any],
-    form: Dict[str, FieldState],
+    rules: dict[str, list[Validator]],
+    handler: Callable[[dict[str, Field[Any]]], Any],
+    form: dict[str, Field[Any]],
 ) -> Callable[[Any], Any]:
-    """Submit handler that validates the whole form before calling `handler`.
+    """Submit handler that validates the whole form before calling `handler`."""
 
-    Prevents the default submit action, validates via
-    [`validate_form`][wybthon.validate_form], and invokes `handler`
-    only when validation passes.
-
-    Args:
-        rules: Mapping from field name to a list of validators.
-        handler: Callback invoked with the form state on success.
-        form: Form state map produced by
-            [`form_state`][wybthon.form_state].
-
-    Returns:
-        An event handler suitable for `on_submit=` on a `<form>`.
-    """
-
-    def _onsubmit(evt) -> None:
-        try:
-            evt.prevent_default()
-        except Exception:
-            pass
+    def _onsubmit(evt: Any) -> Any:
+        evt.prevent_default()
         is_valid, _ = validate_form(form, rules)
-        if is_valid:
-            handler(form)
+        return handler(form) if is_valid else None
 
     return _onsubmit
 
 
-def rules_from_schema(schema: Dict[str, Dict[str, Any]]) -> Dict[str, List[Validator]]:
+def rules_from_schema(schema: dict[str, dict[str, Any]]) -> dict[str, list[Validator]]:
     """Build a validators map from a small declarative schema.
 
     Supported per-field keys:
 
-    - `required`: `bool` or `str` (if a string, it's used as the
-      custom message).
-    - `min_length`: `int`. Optional custom message via
-      `min_length_message`.
-    - `max_length`: `int`. Optional custom message via
-      `max_length_message`.
-    - `email`: `bool` or `str` (if a string, it's used as the
-      custom message).
-
-    Args:
-        schema: Mapping from field name to its rule spec dict.
-
-    Returns:
-        A validators map suitable for
-        [`validate_form`][wybthon.validate_form].
+    - `required`: `bool` or `str` (a string is used as the message).
+    - `min_length`: `int`, with optional `min_length_message`.
+    - `max_length`: `int`, with optional `max_length_message`.
+    - `email`: `bool` or `str` (a string is used as the message).
 
     Example:
         ```python
@@ -439,77 +496,39 @@ def rules_from_schema(schema: Dict[str, Dict[str, Any]]) -> Dict[str, List[Valid
         })
         ```
     """
-    rules: Dict[str, List[Validator]] = {}
+    rules: dict[str, list[Validator]] = {}
     for field_name, spec in schema.items():
-        vlist: List[Validator] = []
-
+        vlist: list[Validator] = []
         req = spec.get("required")
         if req:
-            msg = req if isinstance(req, str) else "This field is required"
-            vlist.append(required(msg))
-
-        if "min_length" in spec and spec.get("min_length") is not None:
-            try:
-                n = int(spec.get("min_length"))
-            except Exception:
-                n = 0
-            vlist.append(min_length(n, spec.get("min_length_message")))
-
-        if "max_length" in spec and spec.get("max_length") is not None:
-            try:
-                n2 = int(spec.get("max_length"))
-            except Exception:
-                n2 = 0
-            vlist.append(max_length(n2, spec.get("max_length_message")))
-
+            vlist.append(required(req if isinstance(req, str) else "This field is required"))
+        if spec.get("min_length") is not None:
+            vlist.append(min_length(int(spec["min_length"]), spec.get("min_length_message")))
+        if spec.get("max_length") is not None:
+            vlist.append(max_length(int(spec["max_length"]), spec.get("max_length_message")))
         em = spec.get("email")
         if em:
-            msg2 = em if isinstance(em, str) else "Invalid email address"
-            vlist.append(email(msg2))
-
+            vlist.append(email(em if isinstance(em, str) else "Invalid email address"))
         rules[field_name] = vlist
-
     return rules
 
 
-def a11y_control_attrs(field: FieldState, *, described_by_id: Optional[str] = None) -> Dict[str, Any]:
-    """Return ARIA attributes for an input or select control bound to a field.
+def a11y_control_attrs(field: Field[Any], *, described_by_id: str | None = None) -> dict[str, Any]:
+    """Reactive ARIA attributes for a control bound to a field.
 
-    - `aria-invalid` is set to `"true"` when the field currently has
-      an error, otherwise `"false"`.
-    - `aria-describedby` references `described_by_id` when an error
-      is present, allowing screen readers to announce the message.
-
-    Args:
-        field: Bound [`FieldState`][wybthon.FieldState].
-        described_by_id: Optional id of the element rendered by
-            [`error_message_attrs`][wybthon.error_message_attrs].
+    - `aria-invalid` is `"true"` while the field has an error.
+    - `aria-describedby` references `described_by_id` while an error
+      is present, so screen readers announce the message.
 
     Returns:
-        Props dict to spread onto the control.
+        Props to spread onto the control (reactive values).
     """
-    try:
-        has_error = field.error.get() is not None
-    except Exception:
-        has_error = False
-    attrs: Dict[str, Any] = {"aria-invalid": "true" if has_error else "false"}
-    if described_by_id and has_error:
-        attrs["aria-describedby"] = described_by_id
+    attrs: dict[str, Any] = {"aria_invalid": lambda: "true" if field.error() is not None else "false"}
+    if described_by_id:
+        attrs["aria_describedby"] = lambda: described_by_id if field.error() is not None else None
     return attrs
 
 
-def error_message_attrs(*, id: str) -> Dict[str, Any]:
-    """Return attributes for an accessible error-message container.
-
-    The container becomes a polite live region so that updates are
-    announced to assistive technology without interrupting the user.
-
-    Args:
-        id: DOM id to assign to the error container. Pair with
-            [`a11y_control_attrs`][wybthon.a11y_control_attrs] so the
-            input references this element via `aria-describedby`.
-
-    Returns:
-        Props dict to spread onto the error container element.
-    """
-    return {"id": id, "role": "alert", "aria-live": "polite"}
+def error_message_attrs(*, id: str) -> dict[str, Any]:
+    """Attributes for an accessible error-message container (a polite live region)."""
+    return {"id": id, "role": "alert", "aria_live": "polite"}

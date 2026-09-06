@@ -10,11 +10,11 @@ import asyncio
 
 from app.testkit import tid
 
-from wybthon import Loading, button, component, create_memo, create_signal, div, dynamic, h2, span
+from wybthon import Loading, button, component, create_memo, create_signal, div, h2, span
 
 
 @component
-def Page():
+def Page(**rest):
     gate = asyncio.Event()
     attempts = [0]
     version, set_version = create_signal(0)
@@ -32,13 +32,13 @@ def Page():
 
     def reload(_e):
         gate.clear()
-        set_version(version() + 1)
+        set_version(lambda v: v + 1)
 
     return div(
         h2("Loading"),
         Loading(
+            lambda: span(lambda: res() or "", **tid("load-content")),
             fallback=lambda: span("loading", **tid("load-fallback")),
-            children=lambda: span(dynamic(lambda: res() or ""), **tid("load-content")),
         ),
         button("resolve", on_click=resolve, **tid("load-resolve")),
         button("reload", on_click=reload, **tid("load-reload")),

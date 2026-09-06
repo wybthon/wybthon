@@ -1,78 +1,148 @@
-### Router
+# Router
 
-Basic routing with `Router` and `Link`.
+Client-side routing with [`Router`][wybthon.Router], [`Route`][wybthon.Route], and [`Link`][wybthon.Link], including path parameters, query strings, nested routes, and lazy-loaded pages.
 
 ```python
-from wybthon.router import Router, Route, Link
-from wybthon import h
+from wybthon import (
+    Errored,
+    Link,
+    Loading,
+    Prop,
+    Route,
+    Router,
+    component,
+    current_path,
+    div,
+    h1,
+    lazy,
+    li,
+    main_,
+    nav,
+    navigate,
+    p,
+    render,
+    ul,
+    use_query,
+)
 
-def Home(props):
-    return h("div", {}, "Home", h("div", {}, h(Link, {"to": "/about", "children": ["About"]})))
 
-def About(props):
-    return h("div", {}, "About")
+@component
+def Home():
+    return div(h1("Home"), p("Welcome."))
+
+
+@component
+def About():
+    return div(h1("About"), p("A small routed app."))
+
+
+@component
+def User(params: Prop[dict], query: Prop[dict]):
+    # ``params`` and ``query`` are Prop accessors. Navigating from /users/1
+    # to /users/2 updates them in place; the component isn't remounted.
+    return div(
+        h1("User ", lambda: params()["user_id"]),
+        p("Tab: ", lambda: query().get("tab", "info")),
+    )
+
+
+@component
+def NotFound():
+    return div(h1("Not found"), p(lambda: f"No page at {current_path()}"))
+
+
+# Loaded on first visit; the import runs inside an async memo.
+Team = lazy(lambda: ("app.about.team", "Page"))
 
 routes = [
-    Route(path="/", component=Home),
-    Route(path="/about", component=About),
+    Route("/", Home),
+    Route("/about", About, children=[Route("team", Team)]),
+    Route("/users/:user_id", User),
 ]
 
-app = h(Router, {"routes": routes})
+
+@component
+def App():
+    return div(
+        nav(
+            ul(
+                li(Link("Home", href="/", end=True)),
+                li(Link("About", href="/about")),
+                li(Link("Team", href="/about/team", on_mouseenter=lambda e: Team.preload())),
+                li(Link("User 1", href="/users/1?tab=posts")),
+            ),
+        ),
+        main_(
+            Errored(
+                lambda: Loading(
+                    lambda: Router(routes, not_found=NotFound),
+                    fallback=p("Loading page..."),
+                ),
+                fallback=lambda err, reset: p("Page failed to load: ", str(err)),
+                reset_on=current_path,
+            ),
+        ),
+    )
+
+
+render(App(), "#app")
 ```
 
-Active links and replace navigation:
+## How it works
+
+- [`Router`][wybthon.Router] reads [`current_path`][wybthon.current_path] and renders the component of the first matching [`Route`][wybthon.Route]. Only a change in *which* route matches re-mounts the outlet; param and query changes flow into the mounted component as prop updates.
+- The matched component receives `params` and `query` as props. Both are dicts, so read them with `params()["user_id"]` inside a hole or memo. Outside the route component, [`use_params`][wybthon.use_params] and [`use_query`][wybthon.use_query] return the same accessors.
+- [`Link`][wybthon.Link] renders an `<a>` that navigates with the History API. It adds `active_class` (default `"active"`) while its path matches; `end=True` requires an exact match, which keeps "Home" from being active everywhere. Modifier-key clicks and middle clicks pass through to the browser.
+- Nested `Route.children` paths are joined with the parent path, so `Route("team", Team)` under `/about` matches `/about/team`.
+- Wrapping the router in [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] with `reset_on=current_path` gives every page a loading state and an error state that clears on navigation.
+
+## Programmatic navigation
 
 ```python
-# Adds class="active" when matched
-h(Link, {"to": "/about", "children": ["About"]})
+from wybthon import navigate
 
-# Custom active class and replace behavior
-h(Link, {"to": "/about", "class_active": "is-active", "replace": True, "children": ["About"]})
-
-# Imperative navigation with replace
-from wybthon.router import navigate
-navigate("/about", replace=True)
+navigate("/about")
+navigate("/users/2?tab=info", replace=True)
 ```
 
-#### Lazy routes
+Outside a browser (for example in unit tests), `navigate` only updates the `current_path` signal; call [`flush`][wybthon.flush] afterward to apply it.
+
+## Lazy routes
+
+[`lazy`][wybthon.lazy] takes a loader that returns a component, a module, a module path string, or a `(module_path, attr)` tuple. The loader may be `async def`, so it can `await micropip.install(...)` first. Call `.preload()` on user intent (hover, focus) to warm the import before the click:
 
 ```python
 from wybthon import lazy
-from wybthon.router import Router, Route
 
-Docs = lazy(lambda: ("app.docs.page", "Page"))
 
-def TeamLazy():
-    return ("app.about.team.page", "Page")
+async def load_docs():
+    import micropip
 
-Team = lazy(TeamLazy)
+    await micropip.install("my-docs-package")
+    from my_docs import DocsPage
 
-routes = [
-    Route(path="/docs/*", component=Docs),
-    Route(path="/about/team", component=Team),
-]
+    return DocsPage
 
-# Preload on some user intent (e.g., hover)
-def on_hover_team(_evt):
-    Team.preload()
+
+Docs = lazy(load_docs)
 ```
 
-Dynamic params and queries:
+## Base paths
+
+Serve the app under a prefix by passing `base_path`; `Link` prepends it and the router strips it before matching:
 
 ```python
-Route(path="/users/:userId", component=User)
-# /users/123?tab=info → props["params"]["userId"] == "123", props["query"]["tab"] == "info"
+Router(routes, base_path="/app")
 ```
 
-Nested and wildcard routes:
+Inside the tree, [`use_base_path`][wybthon.use_base_path] returns the active base path.
+
+## Wildcards
+
+A trailing `/*` matches any remainder:
 
 ```python
-routes = [
-    Route(path="/about", component=About, children=[Route(path="team", component=Team)]),
-    Route(path="/docs/*", component=Docs),
-]
-
-app = h(Router, {"routes": routes, "not_found": NotFound})
+Route("/docs/*", Docs)
 ```
 
 ## Next steps

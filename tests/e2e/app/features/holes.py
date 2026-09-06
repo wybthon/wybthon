@@ -2,11 +2,11 @@
 
 from app.testkit import tid
 
-from wybthon import button, component, create_signal, div, dynamic, em, h2, input_, p, span, strong, untrack
+from wybthon import button, component, create_effect, create_signal, div, em, h2, input_, p, span, strong
 
 
 @component
-def Page():
+def Page(**rest):
     count, set_count = create_signal(0)
 
     first, set_first = create_signal("Ada")
@@ -27,27 +27,35 @@ def Page():
 
     x, set_x = create_signal(0)
     y, set_y = create_signal(0)
+    x_log: list[int] = []
+    y_log: list[int] = []
     x_runs, set_x_runs = create_signal(0)
     y_runs, set_y_runs = create_signal(0)
 
+    # Holes may not write signals; they record into plain lists and the
+    # counts are published from effects, which run after the holes in the
+    # same flush.
     def x_view():
-        set_x_runs(untrack(x_runs) + 1)
+        x_log.append(1)
         return str(x())
 
     def y_view():
-        set_y_runs(untrack(y_runs) + 1)
+        y_log.append(1)
         return str(y())
+
+    create_effect(x, lambda _v: set_x_runs(len(x_log)))
+    create_effect(y, lambda _v: set_y_runs(len(y_log)))
 
     return div(
         h2("Holes"),
         div(
             p("text: ", span(count, **tid("hole-text"))),
-            button("+1", on_click=lambda e: set_count(count() + 1), **tid("hole-text-inc")),
+            button("+1", on_click=lambda e: set_count(lambda n: n + 1), **tid("hole-text-inc")),
         ),
         div(
             input_(value=first, on_input=lambda e: set_first(e.target.value), **tid("hole-first")),
             input_(value=last, on_input=lambda e: set_last(e.target.value), **tid("hole-last")),
-            span(dynamic(lambda: f"Hello, {first()} {last()}!"), **tid("hole-greeting")),
+            span(lambda: f"Hello, {first()} {last()}!", **tid("hole-greeting")),
         ),
         div(
             p("node: ", span(node_hole, **tid("hole-node"))),
@@ -56,8 +64,8 @@ def Page():
         div(
             p("x: ", span(x_view, **tid("hole-x")), " runs: ", span(x_runs, **tid("hole-x-runs"))),
             p("y: ", span(y_view, **tid("hole-y")), " runs: ", span(y_runs, **tid("hole-y-runs"))),
-            button("inc x", on_click=lambda e: set_x(x() + 1), **tid("hole-x-inc")),
-            button("inc y", on_click=lambda e: set_y(y() + 1), **tid("hole-y-inc")),
+            button("inc x", on_click=lambda e: set_x(lambda n: n + 1), **tid("hole-x-inc")),
+            button("inc y", on_click=lambda e: set_y(lambda n: n + 1), **tid("hole-y-inc")),
         ),
         **tid("page-holes"),
     )

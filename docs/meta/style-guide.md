@@ -19,14 +19,16 @@ Pyodide REPL.
 
 We follow the *Chicago Manual of Style* (17th edition) for prose. Highlights:
 
-- **No em dashes (`—`).** Use commas, parentheses, semicolons, colons, or
-  full sentences instead. The exact replacement depends on context: use a
-  pair of commas for a brief aside, parentheses for a longer one, a colon
+- **No em dashes** (U+2014). Use commas, parentheses, semicolons, colons,
+  or full sentences instead. The exact replacement depends on context: use
+  a pair of commas for a brief aside, parentheses for a longer one, a colon
   before a list or amplification, and a semicolon between two related
   independent clauses.
-- **Use straight ASCII quotes and apostrophes** (`"` and `'`), not curly
-  quotes (`"`, `"`, `'`, or `'`). This keeps prose copy-pasteable into
-  source code, terminals, and search.
+- **Use straight ASCII quotes and apostrophes** (`"` and `'`), not the
+  typographic curly forms (U+2018, U+2019, U+201C, U+201D). This keeps
+  prose copy-pasteable into source code, terminals, and search.
+- **Use contractions** where they read naturally (`it's`, `don't`,
+  `you'll`); the docs are conversational, not legal text.
 - Use the **serial (Oxford) comma** in lists of three or more.
 - Spell out **e.g.** and **i.e.** with periods and follow them with a
   comma: `e.g., a counter component`.
@@ -45,32 +47,26 @@ the standard sections as tables.
 ### Function or method
 
 ```python
-def map_array(source, map_fn):
-    """Map a reactive list with stable per-item scopes.
+def create_selector(source, equals=None):
+    """Return `is_selected(key)`: a tracked boolean that only updates the affected keys.
 
-    Items are matched by **reference identity**. The mapping callback
-    runs **once** per unique item; when an item leaves the source list,
-    its reactive scope is disposed automatically.
+    A naive `lambda: item.id == selected()` in every row re-runs every
+    row when the selection changes. `create_selector` subscribes each
+    key once and only notifies the row that was selected and the one
+    that was deselected.
 
     Args:
-        source: A zero-arg getter that returns the current list. Tracking
-            is established when the returned getter is read inside a
-            reactive computation.
-        map_fn: Called as ``map_fn(item_getter, index_getter)`` for each
-            unique item. ``item_getter()`` returns the item; ``index_getter()``
-            returns its current position.
+        source: Accessor for the current selection.
+        equals: Optional `(selection, key) -> bool` comparison.
 
     Returns:
-        A zero-arg getter that, when read, returns the mapped list.
-
-    Raises:
-        TypeError: If ``source`` is not callable.
+        A function `key -> bool` to call inside a hole, memo, or effect.
 
     Example:
         ```python
-        items, set_items = create_signal(["A", "B", "C"])
-        labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
-        # labels() == ["0: A", "1: B", "2: C"]
+        selected, set_selected = create_signal(1)
+        is_selected = create_selector(selected)
+        For(items, lambda item, i: li(item["title"], class_={"active": lambda: is_selected(item["id"])}))
         ```
     """
 ```
@@ -89,23 +85,24 @@ Notes:
 ### Class
 
 ```python
-class FieldState:
-    """Signals representing a field's value, error message, and touched state.
+class Field[T]:
+    """Reactive state for one form field: value, error, and touched.
 
     Attributes:
-        value: Signal holding the current input value.
-        error: Signal holding the latest validation error message, or
-            ``None`` when valid.
-        touched: Signal that becomes ``True`` once the user has
-            interacted with the field. Useful for delaying error
-            display until the user has had a chance to respond.
+        value: Accessor for the current input value.
+        set_value: Setter for the value.
+        error: Accessor for the latest validation error, or `None`.
+        set_error: Setter for the error.
+        touched: Accessor that's `True` once the user has interacted
+            with the field, so error display can wait until they have.
+        set_touched: Setter for the touched flag.
 
     Example:
         ```python
         fields = form_state({"name": ""})
         name = fields["name"]
-        h("input", {**bind_text(name)})
-        h("span", {}, dynamic(lambda: name.error.get() or ""))
+        input_(**bind_text(name))
+        span(lambda: name.error() or "")
         ```
     """
 ```
@@ -120,17 +117,17 @@ Every module should open with a one-line summary, an extended description,
 and (when illustrative) a small example:
 
 ```python
-"""Reactive list helpers built on top of signals.
+"""Reactive list mapping and selection helpers.
 
-This module provides keyed (``map_array``) and indexed (``index_array``)
-list mappings, plus an ``O(1)`` selection signal (``create_selector``).
-Each helper integrates with the reactive ownership tree so per-item
-scopes are disposed automatically when items leave the source list.
+[`map_array`][wybthon.map_array] is the engine behind
+[`For`][wybthon.For] and [`Repeat`][wybthon.Repeat]: it turns a
+reactive list into a memoized list of mapped rows, reusing each row's
+owner scope across updates so per-row state survives reorders.
 
 Example:
     ```python
     items, set_items = create_signal(["A", "B"])
-    labels = map_array(items, lambda item, idx: f"{idx()}: {item()}")
+    labels = map_array(items, lambda item, idx: f"{idx()}: {item}")
     ```
 """
 ```
