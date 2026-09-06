@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import http.server
+import importlib.metadata
 import os
 import socketserver
 import threading
@@ -399,12 +400,19 @@ def main(argv: list[str] | None = None) -> int:
         Process exit code: `0` on success, non-zero on usage errors.
     """
     parser = argparse.ArgumentParser(prog="wyb", description="Wybthon development and production tools")
+    parser.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {importlib.metadata.version('wybthon')}",
+        help="Show version and exit",
+    )
     sub = parser.add_subparsers(dest="cmd")
     pdev = sub.add_parser("dev", help="Start dev server with auto-reload")
     pdev.add_argument("--dir", default=".", help="Project or static root to serve")
-    pdev.add_argument("--host", default="127.0.0.1")
-    pdev.add_argument("--port", type=int, default=8000)
-    pdev.add_argument("--watch", nargs="*", default=["src"])
+    pdev.add_argument("--host", default="127.0.0.1", help="Bind address")
+    pdev.add_argument("--port", type=int, default=8000, help="Port to bind")
+    pdev.add_argument("--watch", nargs="*", default=["src"], help="Directories to watch for live reload (default: src)")
     pdev.add_argument(
         "--mount",
         action="append",
