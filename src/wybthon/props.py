@@ -44,7 +44,7 @@ _CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 # Sentinel for "no previous value" in reactive bindings / initial apply.
 _UNSET = object()
 # Sentinel a binding's compute stage returns to keep the current DOM value.
-_KEEP = object()
+_KEEP = _core._SKIP_APPLY
 
 # Props the element applier never writes to the DOM.
 _SKIP = frozenset({"key", "ref", "children"})
@@ -419,11 +419,7 @@ def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Computation:
         except NotReadyError:
             return _KEEP
         except Exception as exc:
-            from .reconciler import _dispatch_to_error_boundary
-
-            if not _dispatch_to_error_boundary(exc):
-                log_error(f"Reactive prop '{name}' raised: {exc}", exc)
-            return _KEEP
+            return _core._Failure(exc)
 
     last: list[Any] = [_UNSET]
 

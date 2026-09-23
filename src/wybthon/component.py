@@ -40,8 +40,9 @@ from __future__ import annotations
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any
+from typing import Any, get_origin
 
+from .reactivity._core import Prop
 from .reactivity._props import Props, default_value
 from .vnode import VNode, h
 
@@ -71,14 +72,26 @@ class _ParamPlan:
                 continue
             if param.kind is inspect.Parameter.VAR_POSITIONAL:
                 continue
+            ann = param.annotation
+            label = ann.strip("'\"") if isinstance(ann, str) else ""
+            is_props = ann is Props or label.split(".")[-1] == "Props"
+            is_prop = ann is Prop or get_origin(ann) is Prop or label.split("[", 1)[0].split(".")[-1] == "Prop"
+            if ann not in (inspect.Parameter.empty, Any) and label != "Any" and not (is_props or is_prop):
+                raise TypeError(
+                    f"Component {fn.__qualname__} parameter {name!r} must be annotated Prop[T], "
+                    "or use one Props parameter. Component inputs are reactive accessors; "
+                    "use .peek() for an intentional one-time read."
+                )
+            if param.kind is inspect.Parameter.POSITIONAL_ONLY:
+                raise TypeError("Component props must be named parameters, not positional-only parameters")
+            self.takes_props |= is_props
             names.append(name)
             if param.default is not inspect.Parameter.empty:
                 self.defaults[name] = default_value(param.default)
             elif param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
                 positional_required += 1
-                ann = param.annotation
-                if ann is Props or (isinstance(ann, str) and ann.split(".")[-1] == "Props"):
-                    self.takes_props = True
+        if self.takes_props and (len(names) != 1 or self.var_keyword):
+            raise TypeError("A Props mapping must be the component's only parameter")
         self.names = tuple(names)
         # `def Card(props): ...` receives the whole mapping; a single
         # annotated parameter such as `def Card(title: Prop[str])` is a prop.
@@ -121,7 +134,7 @@ class Component[F: Callable[..., Any]]:
         """Invoke the body once with `Prop` accessors bound to its parameters."""
         plan = self._plan
         if plan.takes_props:
-            return self.fn(props)
+            return self.fn(**{plan.names[0]: props}) if plan.names else self.fn(props)
         kwargs: dict[str, Any] = {name: props[name] for name in plan.names}
         if plan.var_keyword:
             declared = plan.names

@@ -13,11 +13,11 @@ The plugin runs only in mypy. Browser applications don't load it. Other type che
 ## Component props
 
 ```python
-from wybthon import Prop, VNode, component, create_signal, p
+from wybthon import Prop, VNode, component, create_signal, p, prop
 
 @component
-def Greeting(name: Prop[str], copies: int = 1) -> VNode:
-    return p(lambda: name() * copies)
+def Greeting(name: Prop[str], copies: Prop[int] = prop(1)) -> VNode:
+    return p(lambda: name() * copies())
 
 name, set_name = create_signal("Ada")
 Greeting(name="Ada")
@@ -25,7 +25,7 @@ Greeting(name=name, copies=2)
 Greeting(name=lambda: "Grace")
 ```
 
-A `Prop[T]` accepts a plain `T`, an `Accessor[T]`, or a zero-argument expression returning `T`. Inside the component, call the prop to read it. Ordinary annotated arguments stay ordinary values. Mypy checks required props, unknown names, and incompatible types. `key` is a framework identity argument. A `Props` parameter or `**rest` deliberately permits an open prop set.
+A `Prop[T]` accepts a plain `T`, an `Accessor[T]`, or a zero-argument expression returning `T`. Inside the component, call the prop to read it. Every named component input is an accessor. Plain value annotations are rejected; use `.peek()` for a deliberate one-time read. Mypy checks required props, unknown names, and incompatible types. `key` is a framework identity argument. A `Props` parameter or `**rest` deliberately permits an open prop set.
 
 Use `literal(value)` to pass a callable as data rather than as an expression. It also disambiguates a callable value from a signal setter's updater function.
 
@@ -52,4 +52,4 @@ TypedDict fields and nested lists retain their read types. Unknown literal keys 
 
 An `@action` keeps its parameters and result type. An async action returns an `asyncio.Future[T]`, including cancellation and `.pending()` on the action object.
 
-The repository's `tests/typing` fixtures check valid calls and expected errors under strict mypy. They are part of the unit test gate.
+The repository's `tests/typing` fixtures check valid calls and expected errors under strict mypy. They are part of the unit test gate, and the typed component fixture is also executed in the renderer.

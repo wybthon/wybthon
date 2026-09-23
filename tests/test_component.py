@@ -364,3 +364,40 @@ def test_nested_components_and_keyed_remount(wyb, root_element):
     flush()
     assert texts(root_element.element) == ["b"]
     assert mounted == ["a", "-a", "b"]
+
+
+def test_plain_annotations_are_rejected_at_declaration(wyb):
+    import pytest
+
+    with pytest.raises(TypeError, match=r"must be annotated Prop\[T\]"):
+
+        @component
+        def Invalid(count: int = 1):
+            return p(str(count))
+
+
+def test_typed_default_and_bound_method_accessors_render(wyb, root_element):
+    name, set_name = create_signal("Ada")
+
+    class Model:
+        def name(self):
+            return name()
+
+    @component
+    def Greeting(name: Prop[str], copies: Prop[int] = prop(2)):
+        return p(lambda: name() * copies())
+
+    wyb["reconciler"].render(Greeting(name=Model().name), root_element)
+    assert texts(root_element.element) == ["AdaAda"]
+    set_name("Grace")
+    flush()
+    assert texts(root_element.element) == ["GraceGrace"]
+
+
+def test_keyword_only_forward_annotated_props_mapping(wyb, root_element):
+    @component
+    def Card(*, values: "Props"):
+        return p(values.title)
+
+    wyb["reconciler"].render(Card(title="bound"), root_element)
+    assert texts(root_element.element) == ["bound"]

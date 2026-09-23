@@ -64,11 +64,32 @@ def inspect_graph(owner: Any) -> dict[str, Any]:
         entry = {"id": id(node), "type": type(node).__name__, "disposed": getattr(node, "_disposed", False)}
         if hasattr(node, "_label"):
             entry["name"] = node._label()
+        held = _core._node_tx.get(node)
+        if held is not None:
+            entry["transition"] = held.root().id
         if isinstance(node, _core.Computation):
+            entry["prepared_owner"] = id(node._prepared_owner) if node._prepared_owner is not None else None
+            entry["committed_owner"] = id(node._committed_owner) if node._committed_owner is not None else None
+            entry["blocked_by"] = sorted(
+                {
+                    _core._node_tx[source].root().id
+                    for source, mode in (node._sources or {}).items()
+                    if mode & _core._R_NORMAL and source in _core._node_tx
+                }
+            )
             entry["state"] = ("clean", "check", "dirty")[node._state]
             entry["pending"] = bool(node._async and node._async.pending)
-            for source in node._sources or ():
-                edges.append({"from": id(source), "to": id(node), "kind": "dependency"})
+            for source, mode in (node._sources or {}).items():
+                edges.append(
+                    {
+                        "from": id(source),
+                        "to": id(node),
+                        "kind": "dependency",
+                        "read": "+".join(
+                            label for bit, label in ((1, "ordinary"), (2, "latest"), (4, "pending")) if mode & bit
+                        ),
+                    }
+                )
                 queue.append(source)
             if node._apply_owner is not None:
                 edges.append({"from": id(node), "to": id(node._apply_owner), "kind": "owns"})
@@ -79,7 +100,29 @@ def inspect_graph(owner: Any) -> dict[str, Any]:
                 edges.append({"from": id(node), "to": id(child), "kind": "owns"})
                 queue.append(child)
         nodes.append(entry)
-    return {"nodes": nodes, "edges": edges, "transition": repr(_core._tx) if _core._tx else None}
+    return {"nodes": nodes, "edges": edges, "transitions": inspect_transitions()}
+
+
+def inspect_transitions() -> list[dict[str, Any]]:
+    """Explain pending publication without reading values or mutating the graph.
+
+    IDs match ``inspect_graph``. A group is ready once its action count and
+    pending computations are empty. Held applies identify consumers whose
+    prepared results haven't reached the DOM or an effect yet.
+    """
+    from .reactivity import _core
+
+    return [
+        {
+            "id": tx.id,
+            "actions": tx.holds,
+            "pending": [id(comp) for comp in tx.pending],
+            "held": [id(node) for node in tx.snapshot],
+            "applies": [id(comp) for comp in tx.held_applies],
+            "affected": [id(node) for node in tx.affected],
+        }
+        for tx in _core._transitions
+    ]
 
 
 def runtime_stats() -> dict[str, Any]:
@@ -89,6 +132,9 @@ def runtime_stats() -> dict[str, Any]:
 
     return {
         "tasks": len(_core._tasks),
+        "transitions": len(_core._transitions),
+        "held_nodes": len(_core._held),
+        "held_applies": sum(len(tx.held_applies) for tx in _core._transitions),
         "staged": len(_core._staged),
         "render_queue": len(_core._render_queue),
         "effect_queue": len(_core._effect_queue),

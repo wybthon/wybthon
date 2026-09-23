@@ -2,7 +2,7 @@
 
 from typing import TypedDict
 
-from wybthon import Prop, VNode, action, component, create_store, p
+from wybthon import Prop, Props, VNode, action, component, create_store, p
 
 
 @component
@@ -34,3 +34,13 @@ save("wrong")
 
 people, edit_people = create_store(list[Person]())
 edit_people(lambda draft: draft.append({"age": "wrong"}))
+
+
+@component
+def InvalidComponent(count: int = 1) -> VNode:
+    return p(str(count))
+
+
+@component
+def MixedProps(props: Props, count: Prop[int]) -> VNode:
+    return p(count)

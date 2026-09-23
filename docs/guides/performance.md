@@ -56,3 +56,9 @@ Run comparisons serially on the same browser, runtime, hardware, and cache condi
 `benchmarks/compare_browser.py --baseline /path/to/baseline` alternates identical operations between isolated checkouts, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use `--mode store` for store comparisons and `--profile` for additional, untimed CPU profiles.
 
 A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.
+
+## Diagnose pending publication
+
+Use `diagnostics.inspect_transitions()` to see which computations and actions hold each dependency group. `diagnostics.inspect_graph(owner)` includes read modes, group IDs, and provisional owners. An ordinary consumer of two pending results joins their groups; a separate `latest()` or `is_pending()` binding can publish during the hold. See [Runtime contracts](../concepts/runtime-contracts.md) for the read and ownership rules.
+
+A transition that remains open retains the values and resources still used by the visible UI. Dispose unused scopes and ensure application actions can finish or be canceled. The native async benchmark reports independent publication at increasing widths; its times exclude browser and network costs.

@@ -530,8 +530,9 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
     """Create the render effect that evaluates a hole and patches its region.
 
     The expression runs tracked in the compute stage (owned by the
-    effect, so anything it creates is disposed before the next run). The
-    resulting tree is mounted in the apply stage under the hole's stable
+    effect's provisional owner). Superseded preparations are disposed;
+    the published preparation survives until a replacement applies. The tree
+    is mounted in the apply stage under the hole's stable
     `scope`, so components kept across re-evaluations survive and
     context lookups from inside them resolve through the tree.
     """
@@ -547,9 +548,7 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
             # subscribed this hole to the resolution.
             return _KEEP
         except Exception as exc:
-            if not _dispatch_to_error_boundary(exc, _core._current_observer):
-                log_error(f"Reactive hole raised: {exc}", exc)
-            return _KEEP
+            return _core._Failure(exc)
 
     def apply(result: Any) -> None:
         if result is _KEEP:
@@ -601,7 +600,7 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
     return comp
 
 
-_KEEP = object()
+_KEEP = _core._SKIP_APPLY
 
 
 def _mount_hole(

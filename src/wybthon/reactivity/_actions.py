@@ -18,12 +18,12 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable as AbcAwaitable
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from typing import Any, cast, overload
 
 from . import _core
-from ._core import _MISSING, Accessor, Computation, Memo, NotReadyError, Owner, Signal, Transition, untrack
-from ._primitives import Setter
+from ._core import Accessor, Computation, Memo, Owner, Signal, Transition, untrack
+from ._primitives import Setter, _Settle
 
 __all__ = ["Action", "action", "create_optimistic", "affects", "until"]
 
@@ -31,12 +31,12 @@ __all__ = ["Action", "action", "create_optimistic", "affects", "until"]
 def _register_optimistic_revert(fn: Callable[[], None]) -> None:
     """Run `fn` when the current transaction settles.
 
-    Inside an action that's the action's transaction; otherwise the open
-    transition, if any, or the next one to open.
+    Inside an action that's the action's dependency group; otherwise the
+    next transition to open adopts the callback.
     """
-    tx = _core._in_action or _core._tx
+    tx = _core._in_action
     if tx is not None:
-        tx.reverts.append(fn)
+        tx.root().reverts.append(fn)
     else:
         _core._ambient_reverts.append(fn)
 
@@ -68,14 +68,14 @@ class Action[**P, R]:
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         owner = _core._current_owner
-        tx = _core._ensure_tx()
+        tx = _core._in_action.root() if _core._in_action is not None else _core._new_transition()
         tx.holds += 1
         prev_action = _core._in_action
         _core._in_action = tx
         try:
             result = _core.run_with_owner(owner, lambda: untrack(lambda: self._fn(*args, **kwargs)))
         except BaseException:
-            tx.holds -= 1
+            tx.root().holds -= 1
             _core._schedule_flush()
             raise
         finally:
@@ -83,7 +83,7 @@ class Action[**P, R]:
         if not isinstance(result, AbcAwaitable):
             # A synchronous action: its writes were staged as held and
             # reveal in the flush that commits them.
-            tx.holds -= 1
+            tx.root().holds -= 1
             _core._schedule_flush()
             return result
 
@@ -99,7 +99,7 @@ class Action[**P, R]:
                 return
             settled = True
             count._set(count._latest() - 1, _core._O_REVEAL)
-            tx.holds -= 1
+            tx.root().holds -= 1
             _core._schedule_flush()
 
         def on_done(value: Any) -> None:
@@ -180,7 +180,8 @@ def action(fn: Callable[..., Any]) -> Action:
       [`until`][wybthon.until] waits for a condition on the
       authoritative view.
 
-    Concurrent actions share one transaction and settle together.
+    Independent actions settle separately. Nested actions and actions that
+    write shared reactive state join and publish together.
 
     Errors route to the nearest [`Errored`][wybthon.Errored] boundary
     captured at call time and re-raise to the awaiter, so
@@ -208,46 +209,51 @@ def action(fn: Callable[..., Any]) -> Action:
 
 
 class _Optimistic[T](Accessor[T]):
-    """Accessor returned by `create_optimistic`: an override that shadows a source."""
+    """Ordered optimistic operations, each owned by the submitting action."""
 
-    __slots__ = ("_source", "_override")
+    __slots__ = ("_source", "_edits")
 
     def __init__(self, source: Callable[[], T]) -> None:
         self._source = source
-        self._override: Signal[Any] = Signal(_MISSING)
+        self._edits: Signal[tuple[Any, ...]] = Signal(())
+
+    def _value(self, edits: tuple[Any, ...]) -> T:
+        # Overrides publish immediately, even if their authoritative base is
+        # held. Register escape edges so that it can rebase while held.
+        if edits:
+            _core._latest_depth += 1
+        try:
+            value = self._source()
+        finally:
+            if edits:
+                _core._latest_depth -= 1
+        for _, modifier in edits:
+            value = modifier(value) if callable(modifier) else modifier
+        return value
 
     def __call__(self) -> T:
         if _core._authoritative_depth:
             return self._source()
-        ov = self._override()
-        if ov is not _MISSING:
-            if _core._probe_depth:
-                _core._probe_mark()
-            return ov
-        return self._source()
+        edits = self._edits()
+        if edits and _core._probe_depth:
+            _core._probe_mark()
+        return self._value(edits)
 
     def peek(self) -> T:
-        ov = self._override.peek()
-        if ov is not _MISSING:
-            return ov
-        return untrack(self._source)
-
-    def _revert(self) -> None:
-        self._override._set(_MISSING, _core._O_REVEAL)
+        return untrack(self)
 
     def set(self, value: T | Callable[[T], T]) -> T:
-        if callable(value):
-            current = self._override._latest()
-            if current is _MISSING:
-                current = untrack(self._source)
-            value = value(current)
-        _core._optimistic_depth += 1
-        try:
-            self._override._set(value)
-        finally:
-            _core._optimistic_depth -= 1
-        _register_optimistic_revert(self._revert)
-        return value
+        token = object()
+        edits = (*self._edits._latest(), (token, value))
+        result = untrack(lambda: self._value(edits))
+        self._edits._set(edits, _core._O_REVEAL)
+
+        def revert() -> None:
+            remaining = tuple(edit for edit in self._edits._latest() if edit[0] is not token)
+            self._edits._set(remaining, _core._O_REVEAL)
+
+        _register_optimistic_revert(revert)
+        return result
 
     def _label(self) -> str:
         return "an optimistic value"
@@ -337,7 +343,7 @@ def affects(*targets: Any) -> None:
 
     Args:
         *targets: Signals, memos, or stores (a store proxy marks the
-            whole store).
+            selected subtree).
 
     Raises:
         RuntimeError: If called outside an action's synchronous segment.
@@ -356,75 +362,19 @@ def affects(*targets: Any) -> None:
     if tx is None:
         raise RuntimeError("affects() must be called inside an action")
     for target in targets:
-        tx.affected.add(_affect_node(target))
+        node = _affect_node(target)
+        tx.root().affected.add(node)
+        if isinstance(node, (Signal, Computation)):
+            for observer in node._observers or ():
+                if (observer._sources or {}).get(node, 0) & _core._R_PROBE:
+                    observer._stale(_core._DIRTY)
+        else:
+            node._notify()
     _core._update_slow_reads()
 
 
-class _Until:
-    """Awaitable that resolves when a predicate settles truthy on the authoritative view."""
-
-    __slots__ = ("_pred", "_timeout")
-
-    def __init__(self, pred: Callable[[], Any], timeout: float | None) -> None:
-        self._pred = pred
-        self._timeout = timeout
-
-    def __await__(self) -> Generator[Any, None, None]:
-        loop = asyncio.get_running_loop()
-        future: asyncio.Future[None] = loop.create_future()
-        pred = self._pred
-        handle: asyncio.TimerHandle | None = None
-
-        def finish() -> None:
-            if handle is not None:
-                handle.cancel()
-            _core._call_soon(comp.dispose)
-
-        def probe() -> None:
-            if future.done():
-                return
-            _core._authoritative_depth += 1
-            try:
-                try:
-                    ok = bool(pred())
-                except NotReadyError:
-                    return
-                except Exception as exc:
-                    future.set_exception(exc)
-                    finish()
-                    return
-            finally:
-                _core._authoritative_depth -= 1
-            if ok:
-                future.set_result(None)
-                finish()
-
-        comp = Computation(probe, kind=_core._K_EFFECT, pass_prev=False)
-        comp._update_if_necessary()
-        if not future.done():
-            if self._timeout is not None:
-
-                def on_timeout() -> None:
-                    if not future.done():
-                        future.set_exception(TimeoutError("until() timed out"))
-                        _core._call_soon(comp.dispose)
-
-                handle = loop.call_later(self._timeout, on_timeout)
-            _core._schedule_flush()
-
-        async def wait() -> None:
-            try:
-                await future
-            finally:
-                if handle is not None:
-                    handle.cancel()
-                comp.dispose()
-
-        return wait().__await__()
-
-
-def until(pred: Callable[[], Any], *, timeout: float | None = None) -> _Until:
-    """Return an awaitable that resolves once `pred()` is truthy.
+def until[T](pred: Callable[[], T], *, timeout: float | None = None) -> _Settle[T]:
+    """Return an awaitable for the settled, truthy value of `pred()`.
 
     `pred` is evaluated reactively against the **authoritative** view:
     optimistic overrides are invisible, so the condition observes real
@@ -447,4 +397,4 @@ def until(pred: Callable[[], Any], *, timeout: float | None = None) -> _Until:
             navigate(f"/orders/{order_id}")
         ```
     """
-    return _Until(pred, timeout)
+    return _Settle(pred, truthy=True, authoritative=True, timeout=timeout)

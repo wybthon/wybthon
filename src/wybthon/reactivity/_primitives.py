@@ -448,6 +448,9 @@ def on_settled(fn: Callable[[], Any]) -> None:
     if owner is None:
         raise RuntimeError("on_settled() must be called inside a component or reactive scope")
 
+    if isinstance(owner, Computation) and owner._apply is not None and _core._current_observer is owner:
+        owner = owner._preparation()
+
     def run() -> None:
         if owner._disposed:
             return
@@ -455,7 +458,11 @@ def on_settled(fn: Callable[[], Any]) -> None:
         if callable(result):
             owner._add_cleanup(result)
 
-    _core._settled_queue.append(run)
+    preparation = _core._pending_preparation(owner)
+    if preparation is not None:
+        preparation.callbacks.append(run)
+    else:
+        _core._settled_queue.append(run)
     _schedule_flush()
 
 
@@ -573,45 +580,66 @@ class _Settle[T]:
     nothing and works without an event loop.
     """
 
-    __slots__ = ("_fn",)
+    __slots__ = ("_fn", "_truthy", "_authoritative", "_timeout")
 
-    def __init__(self, fn: Callable[[], T]) -> None:
+    def __init__(
+        self, fn: Callable[[], T], *, truthy: bool = False, authoritative: bool = False, timeout: float | None = None
+    ) -> None:
         self._fn = fn
+        self._truthy = truthy
+        self._authoritative = authoritative
+        self._timeout = timeout
 
     def __await__(self) -> Generator[Any, None, T]:
         loop = asyncio.get_running_loop()
         future: asyncio.Future[T] = loop.create_future()
         fn = self._fn
+        action_tx = _core._in_action
+        handle: asyncio.TimerHandle | None = None
 
         def probe() -> None:
             if future.done():
                 return
+            previous_action = _core._in_action
+            _core._in_action = action_tx
+            _core._authoritative_depth += self._authoritative
+            _core._readiness_depth += 1
             try:
                 value = fn()
+                if self._truthy and not value:
+                    return
             except NotReadyError:
                 return
             except Exception as exc:
                 future.set_exception(exc)
                 _core._call_soon(comp.dispose)
                 return
-            # A quiet refresh serves the previous value while its run is in
-            # flight; wait for the run to settle before resolving. The
-            # read above subscribed us, and landings always notify.
-            target = fn if isinstance(fn, Computation) else getattr(fn, "__self__", None)
-            if isinstance(target, Computation) and target._async is not None and target._async.inflight:
-                return
+            finally:
+                _core._in_action = previous_action
+                _core._authoritative_depth -= self._authoritative
+                _core._readiness_depth -= 1
             future.set_result(value)
             _core._call_soon(comp.dispose)
 
         comp = Computation(probe, kind=_K_EFFECT, pass_prev=False)
         comp._update_if_necessary()
         if not future.done():
+            if self._timeout is not None:
+
+                def expire() -> None:
+                    if not future.done():
+                        future.set_exception(TimeoutError("Reactive expression timed out"))
+                        comp.dispose()
+
+                handle = loop.call_later(self._timeout, expire)
             _schedule_flush()
 
         async def wait() -> T:
             try:
                 return await future
             finally:
+                if handle is not None:
+                    handle.cancel()
                 comp.dispose()
 
         return wait().__await__()
@@ -620,9 +648,10 @@ class _Settle[T]:
 def resolve[T](fn: Callable[[], T]) -> Awaitable[T]:
     """Return an awaitable for the next settled value of `fn()`.
 
-    Tracks `fn` until it evaluates without raising
-    [`NotReadyError`][wybthon.NotReadyError], then resolves with the
-    value (or rejects with the exception `fn` raised).
+    Tracks every dependency of `fn`, including cached memos, and waits
+    for pending or quiet async recomputations. Streams become ready at
+    their first fresh yield. Rejects when the expression raises; cancellation
+    removes the temporary subscriptions.
 
     ```python
     user = create_memo(fetch_user)

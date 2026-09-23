@@ -252,7 +252,7 @@ def create_selector[T](
             sig = Signal(bool(equals(working, key) if equals else working == key), unobserved=release)
             if current in _core._held:
                 shown = _core._held[current]
-                _core._hold(sig, bool(equals(shown, key) if equals else shown == key))
+                _core._hold(sig, bool(equals(shown, key) if equals else shown == key), _core._node_tx[current])
             subs[key] = sig
         return sig()
 

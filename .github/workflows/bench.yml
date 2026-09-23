@@ -30,12 +30,17 @@ jobs:
       - name: Run benchmark (JSON)
         run: uv run python benchmarks/bench_runner.py --memory --json > bench_results.json
 
+      - name: Check async publication and record scaling
+        run: uv run python benchmarks/async_bench.py > async_results.json
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: bench_results.json
+          path: |
+            bench_results.json
+            async_results.json
 
   browser-benchmark:
     name: Browser Benchmark (Pyodide)

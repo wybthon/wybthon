@@ -58,8 +58,10 @@ def test_props_defaults_and_missing(wyb):
     assert props.b() == 2
     assert props.c() is None
     assert "a" in props and "b" in props and "c" not in props
-    assert list(props) == ["a"]
-    assert len(props) == 1
+    assert list(props) == ["a", "b"]
+    assert len(props) == 2
+    assert props.get("missing", "fallback") == "fallback"
+    assert props.get("b")() == 2
     assert props.snapshot() == {"a": 1, "b": 2}
 
 

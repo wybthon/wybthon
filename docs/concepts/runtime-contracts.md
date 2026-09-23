@@ -1,45 +1,81 @@
 # Runtime contracts
 
-Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM is the rendering implementation; it doesn't change which reactive reads subscribe to which computations.
+Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM collects mutations for the Python-to-JavaScript bridge. It doesn't choose reactive dependencies or require components to rerun.
 
-## Reads and writes
+The async API reference for this design is [Solid 2.0 RC.9's async data contract](https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.9/documentation/solid-2.0/05-async-data.md). This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary `async def` actions, and real asyncio tasks.
 
-Signal writes and successful store drafts stage a working version. Ordinary reads outside a computation keep seeing the last revealed version until the scheduler commits. This applies to properties you haven't read before, list length, membership, iteration, and snapshots. Observation history never chooses the version.
+## Read views
 
-Tracked computation reads see the working graph. During an async transition, computations can prepare new values while the visible DOM and ordinary reads keep their previous version. `latest(accessor)` deliberately reads the working value. An action reads its own staged writes. `is_pending(accessor)` observes readiness without turning an ordinary read of the same source into a pending-only read.
+| Scope | Values and readiness | Publication |
+| --- | --- | --- |
+| Ordinary event or top-level read | Last published value | Matches visible UI |
+| Tracked computation | Committed working values | Prepares a result; ordinary dependencies can hold its application |
+| `latest(expression)` | Working values, or `None` before the first async result | Subscribes through an escape edge, so its own UI can publish during a hold |
+| `is_pending(expression)` | Reports pending, held, affected, or optimistic state | Subscribes without holding its indicator |
+| Action | Includes staged writes; functional setters compose on the newest value | Writes belong to that action's dependency group |
+| `resolve(expression)` | Waits for fresh async dependencies, including quiet refreshes and cached memos | Returns a settled working result |
+| `until(predicate)` | Same readiness rules, with optimistic edits hidden | Returns the settled truthy value |
 
-A microtask flush batches writes. An ordinary bubbling event sends its whole matching route to Python and flushes once after the handlers finish. `flush()` is useful in native tests and for explicit synchronous boundaries.
+A normal read wins when the same computation also reads a source through `latest` or `is_pending`. A computation that combines ordinary held data with a latest value still waits for its ordinary dependencies. An expression isn't an independent UI region merely because part of it calls `latest`.
 
-## Ownership and resources
+Signal writes and successful store drafts stage values. Outside an action, `latest` doesn't expose writes that haven't been flushed. A microtask flush commits writes to the working graph. An ordinary bubbling event sends its matching route to Python and flushes after the handlers finish. `flush()` supplies an explicit synchronous boundary.
 
-Components own their computations, nested roots, list rows, and event tasks. `create_root(fn)` joins the current owner. Use `detached=True` only when you intend to manage a separate lifetime, and retain its disposer.
+Store properties, length, membership, iteration, and snapshots select the same view, including properties first observed during a hold. New render consumers read the published version on their initial mount and subscribe to its eventual replacement.
 
-A split `create_effect(compute, apply)` tracks `compute` and runs `apply` untracked after the DOM commit. Cleanup returned by `apply`, or registered during `apply`, belongs to that committed application. It runs before the next visible apply or when the effect is disposed. Preparing a held replacement doesn't tear down a resource that still belongs to the visible UI.
+## Independent transitions
 
-`create_tracked_effect(fn)` explicitly combines tracking and side effects. Its `on_cleanup` callbacks run before recomputation. Use split effects for subscriptions, listeners, and other resources that must follow visible state.
+An async recomputation holds publication only when an ordinary dependency path reaches a live publishing consumer. An unused memo or a pending-only indicator doesn't freeze the inputs. Initial loads use readiness and Loading fallbacks; quiet refreshes serve the previous value.
 
-`create_memo` evaluates initially unless `lazy=True`. A lazy memo suspends when its last observer leaves: its work, dependencies, and tasks are released. A later read starts it again. Explicit disposal is permanent.
+Each independent request starts its own transition. Its changed inputs and derived values stay on their published version until the requested data is ready. Unrelated writes can publish even when they occurred in the same microtask. Two separate detail panels can therefore finish in either order, while typing in a third panel continues normally.
 
-`For` owns mounted rows. Entity moves preserve row state, refs, and fragment ranges. Removed rows are disposed when their removal becomes visible. `Repeat` grows and shrinks integer slots directly. A changed keyed `Show` value creates a new branch scope, including same-type child components.
+Shared ordinary consumers join dependency groups. For example, an effect computing `(left(), right())` makes the two values publish consistently. Writes to the same signal or store entity, and action reads of another group's state, also join groups. Nested actions share their enclosing group. Once joined, a group remains joined until it publishes. These are publication groups, not database transactions with isolated reads or automatic rollback.
+
+A newer request for the same reactive input supersedes the older task. The visible version stays unchanged until the replacement resolves. Removing the last publishing consumer releases its hold. An explicit `Loading(on=...)` boundary can choose fallback publication instead of retaining the old content.
+
+## Ownership and rendering
+
+Components own computations, nested roots, rows, and event tasks. `create_root(fn)` joins the current owner. Use `detached=True` only for a lifetime you'll dispose explicitly.
+
+A split `create_effect(compute, apply)` tracks preparation and applies untracked after the DOM commit. Resources created during preparation belong to a provisional owner, allocated only when needed. A held replacement keeps the previous published owner's resources alive. Superseding a preparation disposes its provisional resources; publication replaces the old owner. Disposal releases both. Nested effects and `on_settled` callbacks also wait for preparation publication, and abandoned callbacks never run.
+
+Cleanup returned by `apply`, or registered during it, belongs to that committed application. It runs before the next visible apply or on disposal. Render errors are also held with their dependencies, so a superseded speculative failure doesn't replace a valid visible error boundary.
+
+`create_tracked_effect(fn)` combines tracking and side effects. Its cleanup runs before recomputation. Use split effects for resources that must follow visible state. Memo bodies still own their children for one computation run.
+
+`For` owns mounted rows. Moves preserve row state, refs, and fragment ranges; removals dispose rows when their removal publishes. `Repeat` grows and shrinks integer slots directly. A changed keyed `Show` value creates a fresh branch scope. The scheduler prepares these changes, publishes ready render applications, commits buffered VDOM operations, and then runs user applications. Explicit DOM reads and refs can force a bridge commit.
 
 ## Async work
 
-Async computations and event handlers run in real `asyncio.Task` instances. Dependencies read after an `await` remain tracked in computations. Ordinary `asyncio.timeout` and `TaskGroup` work inside them. Child tasks created explicitly with `asyncio.create_task` have their own ordinary asyncio lifetime; use `TaskGroup` when the parent should cancel them.
+Async computations and event handlers run in real `asyncio.Task` instances. Reads after `await` remain tracked in computations. `asyncio.timeout` and `TaskGroup` work normally. Explicit child tasks don't inherit reactive tracking; use `TaskGroup` when the parent should cancel them.
 
-A changed computation input cancels the superseded task. Disposal and action Future cancellation cancel suspended work and allow asynchronous `finally` cleanup. Cancellation is cooperative: a coroutine that blocks Python or suppresses cancellation can't be forcibly stopped. `resolve` and `until` release their temporary subscriptions when their caller is canceled.
+Supersession, disposal, and cancellation of an action Future cancel suspended work and allow asynchronous `finally` cleanup. Cancellation remains cooperative. Version checks prevent an obsolete task's return value from publishing even if it suppresses cancellation.
 
-Derived stores use the same readiness, errors, Loading boundaries, and `refresh` behavior as memos. Their seed determines shape; an unresolved async projection still reports pending. Async generators publish each yielded projection and close when their owner is disposed.
+`resolve` and `until` inspect readiness through arbitrary expressions and cached memo dependencies. Quiet refreshes are silent to `is_pending` but still block these awaiters. An async generator becomes ready at its first fresh yield; awaiting its value doesn't require the stream to end. Canceling an awaiter removes its temporary subscriptions and timeout.
 
-## Actions and optimistic stores
+Derived stores share memo readiness and errors. Their seed determines shape; an unresolved async projection is pending. Structural and field subscriptions preserve fine-grained updates after readiness has settled.
 
-Overlapping actions join the scheduler's current transition. Their ordinary writes reveal together when its work settles. This is one shared transaction, not independent per-action isolation.
+## Optimistic edits
 
-Optimistic stores replay draft edits in submission order over the latest authoritative source. All overlays in the transition are removed when it settles, including failure or cancellation. Authoritative updates must therefore arrive before the corresponding action completes. Overlay callbacks must be deterministic and free of external side effects because rebasing can run them again.
+Each optimistic edit belongs to the action that submitted it. Independent actions settle independently. Finishing, failing, or canceling one removes its edits and preserves other outstanding edits. Actions joined through shared dependencies remove their edits when the joined group publishes.
 
-`until(predicate)` reads authoritative state, so an optimistic edit can't acknowledge itself. Ordinary UI reads see the optimistic overlay. `refresh` requests a quiet recomputation and returns an awaitable for completion; quiet refresh doesn't show a pending indicator.
+Scalar updater functions and store draft callbacks replay in submission order over the newest authoritative source. Replacement scalar writes replace the preceding value at their position in that order. For conflicting store edits, ordinary draft mutation order determines the result. This supports additive updates and disjoint edits without introducing a second conflict language.
 
-## Collection and memory limits
+Callbacks must be deterministic and free of external side effects because rebasing can run them again. Authoritative updates should arrive before the corresponding action completes. Failed optimistic edits disappear, but ordinary authoritative writes already made by an action aren't rolled back. Multiple draft edits from one action share a single removal and rebase.
 
-Store lists use structurally shared sequence versions. Append and indexed updates avoid copying the entire sequence; a general splice can rebuild it. Mounted `For` regions consume recent edit records to handle local changes without mapping every existing row. Arbitrary replacement arrays use keyed matching and the generic VDOM diff. Removal still updates subsequent index accessors when indices change.
+`affects(signal_or_memo)` marks that value pending without starting a new fetch. `affects(store.child)` marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.
 
-Template prototypes use a bounded cache of 256 entries. Varying instance attributes don't create a template per instance. Node handles, listeners, and refs are released on unmount; selector-based root adoption is canonical. The diagnostic APIs expose registry and operation counts for regression tests.
+An optimistic edit made outside an action remains until the next transition adopts it. Prefer actions when an edit needs a clear lifetime.
+
+## Python authoring
+
+Every named `@component` input is a `Prop[T]` accessor. Use `prop(default)` for typed defaults and `.peek()` for an intentional one-time read. Plain value annotations such as `count: int` are rejected at declaration and by mypy. An unannotated input still receives a Prop; a single `Props` parameter receives the mapping.
+
+Children, bindings, and props use one accessor rule: an Accessor, or a function or bound method callable without required arguments. Use `literal` to pass a callable as data. `Props.get` returns the supplied default when a key is absent. Mapping iteration, length, and membership include declared defaults. Direct optional prop access still produces an accessor whose missing value is `None`.
+
+## Diagnostics and limits
+
+`diagnostics.inspect_transitions()` reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. `inspect_graph(owner)` includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. `runtime_stats()` includes transition and held-node counts.
+
+The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; template cloning, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
+
+The native concurrency benchmark, `python benchmarks/async_bench.py`, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.

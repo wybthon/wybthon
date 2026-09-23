@@ -1,0 +1,60 @@
+{
+  "python": "3.12.13",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "scenarios": [
+    {
+      "width": 10,
+      "start": {
+        "elapsed_ms": 0.7964890683069825,
+        "computations": 20,
+        "transitions_created": 10
+      },
+      "first_publish": {
+        "elapsed_ms": 0.3621879732236266,
+        "transitions_published": 1,
+        "computations": 1
+      },
+      "remaining_publish": {
+        "elapsed_ms": 0.46751892659813166,
+        "transitions_published": 9,
+        "computations": 9
+      }
+    },
+    {
+      "width": 100,
+      "start": {
+        "elapsed_ms": 5.843424005433917,
+        "computations": 200,
+        "transitions_created": 100
+      },
+      "first_publish": {
+        "elapsed_ms": 1.5142099000513554,
+        "transitions_published": 1,
+        "computations": 1
+      },
+      "remaining_publish": {
+        "elapsed_ms": 2.466753008775413,
+        "transitions_published": 99,
+        "computations": 99
+      }
+    },
+    {
+      "width": 1000,
+      "start": {
+        "elapsed_ms": 55.215968983247876,
+        "computations": 2000,
+        "transitions_created": 1000
+      },
+      "first_publish": {
+        "elapsed_ms": 12.389731011353433,
+        "transitions_published": 1,
+        "computations": 1
+      },
+      "remaining_publish": {
+        "elapsed_ms": 23.004850023426116,
+        "transitions_published": 999,
+        "computations": 999
+      }
+    }
+  ]
+}

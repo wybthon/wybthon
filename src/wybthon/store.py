@@ -63,10 +63,18 @@ class _State:
 
 
 class _Root:
-    __slots__ = ("optimistic", "derivation", "authoritative", "authoritative_version", "tracks_subtrees")
+    __slots__ = (
+        "optimistic",
+        "optimistic_signal",
+        "derivation",
+        "authoritative",
+        "authoritative_version",
+        "tracks_subtrees",
+    )
 
     def __init__(self) -> None:
         self.optimistic = False
+        self.optimistic_signal: Signal[bool] | None = None
         self.tracks_subtrees = False
         self.authoritative: dict[_Node, Any] | None = None
         self.authoritative_version: Signal[int] = Signal(0)
@@ -78,17 +86,15 @@ class _Root:
         comp = self.derivation
         if comp is not None:
             comp._update_if_necessary()
+            comp._track_readiness()
             # Ready reads depend on their properties. Pending/error reads also
             # subscribe to the producer so that an eventual landing retries them.
             if comp._error is not None or (comp._async is not None and comp._async.inflight):
                 comp._read()
             else:
                 untrack(comp._read)
-        if _core._probe_depth:
-            tx = _core._tx
-            if self.optimistic or (tx is not None and self in tx.affected):
-                _core._probe_mark()
-                _core._probe_register()
+        if _core._probe_depth and self.optimistic_signal is not None and self.optimistic_signal():
+            _core._probe_mark()
 
 
 def _lookup(data: Any, key: Any) -> Any:
@@ -111,6 +117,7 @@ class _Node:
         "_length",
         "_keys",
         "_version",
+        "_pending_signal",
         "parents",
         "_parent",
         "_parent_count",
@@ -152,6 +159,7 @@ class _Node:
         self._length: Signal[int] | None = None
         self._keys: Signal[int] | None = None
         self._version: Signal[int] | None = None
+        self._pending_signal: Signal[int] | None = None
         for value in encoded.values() if isinstance(encoded, dict) else encoded:
             self._link(value, 1)
 
@@ -159,17 +167,19 @@ class _Node:
     def length(self) -> Signal[int]:
         if self._length is None:
             self._length = Signal(len(self.state._value.data))
+            self._length._version_source = self.state
             if self.state._staged:
                 self._length._set(len(self.state._latest().data))
             held = _core._held.get(self.state)
             if held is not None and len(held.data) != self._length._value:
-                _core._hold(self._length, len(held.data))
+                _core._hold(self._length, len(held.data), _core._node_tx[self.state])
         return self._length
 
     @property
     def keys(self) -> Signal[int]:
         if self._keys is None:
             self._keys = Signal(0)
+            self._keys._version_source = self.state
             if self.state._staged:
                 before, after = self.state._value.data, self.state._latest().data
                 changed = before.keys() != after.keys() if isinstance(before, dict) else len(before) != len(after)
@@ -182,13 +192,14 @@ class _Node:
                     held.data.keys() != current.keys() if isinstance(current, dict) else len(held.data) != len(current)
                 )
                 if changed:
-                    _core._hold(self._keys, -1)
+                    _core._hold(self._keys, -1, _core._node_tx[self.state])
         return self._keys
 
     @property
     def version(self) -> Signal[int]:
         if self._version is None:
             self._version = Signal(0)
+            self._version._version_source = self.state
             self.root.tracks_subtrees = True
             # A first deep subscriber can appear after the setter but before
             # flush. It reads committed data and must see those staged edits
@@ -196,8 +207,45 @@ class _Node:
             if _core._staged and self._has_unrevealed(set(), held=False):
                 self._version._set(1)
             if _core._held and self._has_unrevealed(set(), held=True):
-                _core._hold(self._version, -1)
+                tx = self._held_transition(set())
+                if tx is not None:
+                    _core._hold(self._version, -1, tx)
         return self._version
+
+    def _held_transition(self, seen: set[_Node]) -> _core.Transition | None:
+        if self in seen:
+            return None
+        seen.add(self)
+        tx = _core._node_tx.get(self.state)
+        data = self.state._value.data
+        for child in data.values() if isinstance(data, dict) else data:
+            if isinstance(child, _Node):
+                tx = _core._join(tx, child._held_transition(seen))
+        return tx
+
+    def _probe_pending(self) -> None:
+        queue = [self]
+        seen = set()
+        while queue:
+            node = queue.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            if node._pending_signal is None:
+                node._pending_signal = Signal(0)
+            node._pending_signal()
+            if _core._probe_touch(node):
+                _core._probe_mark()
+            if node.parents is not None:
+                queue.extend(node.parents)
+            elif node._parent is not None:
+                parent = node._parent()
+                if parent is not None:
+                    queue.append(parent)
+
+    def _notify(self) -> None:
+        if self._pending_signal is not None:
+            self._pending_signal._notify()
 
     def _has_unrevealed(self, seen: set[_Node], held: bool) -> bool:
         pending = self.state in _core._held if held else self.state._staged
@@ -245,10 +293,13 @@ class _Node:
 
     def read(self, key: Any) -> Any:
         self.root.ready()
+        if _core._probe_depth:
+            self._probe_pending()
         if _core._current_observer is not None or _core._probe_depth:
             sig = self.properties.get(key)
             if sig is None:
                 sig = self.properties[key] = Signal(_lookup(self.state._value.data, key))
+                sig._version_source = self.state
                 if isinstance(self.state._value.data, Vector):
                     if self.indices is None:
                         self.indices = [key]
@@ -260,7 +311,7 @@ class _Node:
                 if held is not None:
                     shown = _lookup(held.data, key)
                     if not _same(shown, sig._value):
-                        _core._hold(sig, shown)
+                        _core._hold(sig, shown, _core._node_tx[self.state])
             value = sig()
             if not _core._slow_reads and not _core._authoritative_depth:
                 if value is _ABSENT:
@@ -480,6 +531,8 @@ class _Proxy:
         if self._session is not None:
             return self._session.data(self._node)
         self._node.root.ready()
+        if _core._probe_depth:
+            self._node._probe_pending()
         return self._node.visible()
 
     def _read(self, key: Any) -> Any:
@@ -488,7 +541,7 @@ class _Proxy:
         return self._node.read(key)
 
     def _wyb_affect_node(self) -> Any:
-        return self._node.root
+        return self._node
 
     def _wyb_refresh(self) -> Any:
         comp = self._node.root.derivation
@@ -504,6 +557,8 @@ class _Proxy:
         if self._session is not None:
             return len(self._data())
         self._node.root.ready()
+        if _core._probe_depth:
+            self._node._probe_pending()
         self._node.length()
         return len(self._node.visible())
 
@@ -543,11 +598,14 @@ class Store[S](_Proxy, Mapping[str, Any]):
             return key in self._data()
         node = self._node
         node.root.ready()
+        if _core._probe_depth:
+            node._probe_pending()
         if node.membership is None:
             node.membership = {}
         sig = node.membership.get(key)
         if sig is None:
             sig = node.membership[key] = Signal(key in node.state._value.data)
+            sig._version_source = node.state
             if node.state._staged:
                 sig._set(key in node.state._latest().data)
         sig()
@@ -588,6 +646,8 @@ class StoreList[T](_Proxy, Sequence[T]):
 
     def _wyb_list_state(self) -> _State:
         self._node.root.ready()
+        if _core._probe_depth:
+            self._node._probe_pending()
         return self._node.state()
 
     def _wyb_changes_since(self, revision: int) -> tuple[ListChange, ...] | None:
@@ -897,14 +957,16 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
     """Layer optimistic draft edits over a reactive authoritative source.
 
     Active edits replay in submission order when the source changes. They are
-    removed together when their enclosing transition settles. Draft callbacks
+    removed when their submitting action settles; other actions keep their edits. Draft callbacks
     must be deterministic: replay mustn't perform network or other side effects.
     """
     derived = callable(source)
     state = ({} if initial is None else initial) if derived else source
     node = _Node(state)
     base = [snapshot(state)]
+    node.root.optimistic_signal = Signal(False)
     overlays: list[Any] = []
+    groups: dict[Any, object] = {}
 
     def capture_base(session: _Session) -> None:
         captured: dict[_Node, Any] = {}
@@ -927,7 +989,7 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
         try:
             _merge(session, node, base[0], "id")
             capture_base(session)
-            for modifier in overlays:
+            for _, modifier in overlays:
                 _modify(session, node, modifier)
             session.commit()
         finally:
@@ -967,14 +1029,23 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
                 finally:
                     session.close()
             StoreSetter(node)(modifier)
-            overlays.append(modifier)
+            group = _core._in_action
+            first = group not in groups
+            token = groups.setdefault(group, object())
+            overlays.append((token, modifier))
             node.root.optimistic = True
+            node.root.optimistic_signal._set(True, _core._O_REVEAL)
         finally:
             _core._optimistic_depth -= 1
 
+        if not first:
+            return
+
         def revert() -> None:
-            overlays.clear()
-            node.root.optimistic = False
+            groups.pop(group, None)
+            overlays[:] = [edit for edit in overlays if edit[0] is not token]
+            node.root.optimistic = bool(overlays)
+            node.root.optimistic_signal._set(bool(overlays), _core._O_REVEAL)
             _core._optimistic_depth += 1
             try:
                 untrack(rebuild)
@@ -1013,6 +1084,8 @@ def _snapshot(value: Any, track: bool, memo: dict[int, Any]) -> Any:
             data = value._session.data(node)
         else:
             node.root.ready()
+            if _core._probe_depth:
+                node._probe_pending()
             if track:
                 node.version()
             data = node.visible()

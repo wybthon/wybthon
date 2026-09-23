@@ -108,8 +108,8 @@ def _install_popstate() -> None:
             _path._set(_current_url())
 
             def restore() -> None:
-                if _core._tx is not None:
-                    _core._tx.reverts.append(lambda: _core._settled_queue.append(_restore_scroll))
+                if (tx := _core._node_tx.get(_path)) is not None:
+                    tx.root().reverts.append(lambda: _core._settled_queue.append(_restore_scroll))
                 else:
                     _restore_scroll()
 
@@ -188,8 +188,8 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
                 except (ImportError, AttributeError):
                     pass
 
-            if _core._tx is not None:
-                _core._tx.reverts.append(lambda: _core._settled_queue.append(position))
+            if (tx := _core._node_tx.get(_path)) is not None:
+                tx.root().reverts.append(lambda: _core._settled_queue.append(position))
             else:
                 position()
 
