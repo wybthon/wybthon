@@ -2919,7 +2919,7 @@
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># In an async handler: await refresh(user)</span>
 </span></code></pre></div>
 <p>Errors surface when the projection is read, so <code>Errored</code> handles them. Refresh is quiet and awaitable. Disposing the owner cancels the producer.</p>
-<p><code>create_optimistic_store(source, seed)</code> returns a store and an optimistic draft setter. Active edits replay over new authoritative data, then disappear when the shared action transition settles. Keep draft callbacks deterministic. See <a href="../runtime-contracts/">Runtime contracts</a> for concurrent action, acknowledgment, and cancellation semantics.</p>
+<p><code>create_optimistic_store(source, seed)</code> returns a store and an optimistic draft setter. Active edits replay over new authoritative data, and each action's edits disappear when its dependency group settles. Keep draft callbacks deterministic. See <a href="../runtime-contracts/">Runtime contracts</a> for concurrent action, acknowledgment, and cancellation semantics.</p>
 
 
 

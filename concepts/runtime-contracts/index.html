@@ -790,10 +790,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#reads-and-writes" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reads and writes
+        Read views
       
     </span>
   </a>
@@ -801,10 +801,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ownership-and-resources" class="md-nav__link">
+  <a href="#independent-transitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ownership and resources
+        Independent transitions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ownership-and-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and rendering
       
     </span>
   </a>
@@ -823,10 +834,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#actions-and-optimistic-stores" class="md-nav__link">
+  <a href="#optimistic-edits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Actions and optimistic stores
+        Optimistic edits
       
     </span>
   </a>
@@ -834,10 +845,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#collection-and-memory-limits" class="md-nav__link">
+  <a href="#python-authoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Collection and memory limits
+        Python authoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics and limits
       
     </span>
   </a>
@@ -2801,10 +2823,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#reads-and-writes" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reads and writes
+        Read views
       
     </span>
   </a>
@@ -2812,10 +2834,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ownership-and-resources" class="md-nav__link">
+  <a href="#independent-transitions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ownership and resources
+        Independent transitions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ownership-and-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and rendering
       
     </span>
   </a>
@@ -2834,10 +2867,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#actions-and-optimistic-stores" class="md-nav__link">
+  <a href="#optimistic-edits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Actions and optimistic stores
+        Optimistic edits
       
     </span>
   </a>
@@ -2845,10 +2878,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#collection-and-memory-limits" class="md-nav__link">
+  <a href="#python-authoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Collection and memory limits
+        Python authoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics and limits
       
     </span>
   </a>
@@ -2889,28 +2933,87 @@
 
 
 <h1 id="runtime-contracts">Runtime contracts<a class="headerlink" href="#runtime-contracts" title="Permanent link">&para;</a></h1>
-<p>Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM is the rendering implementation; it doesn't change which reactive reads subscribe to which computations.</p>
-<h2 id="reads-and-writes">Reads and writes<a class="headerlink" href="#reads-and-writes" title="Permanent link">&para;</a></h2>
-<p>Signal writes and successful store drafts stage a working version. Ordinary reads outside a computation keep seeing the last revealed version until the scheduler commits. This applies to properties you haven't read before, list length, membership, iteration, and snapshots. Observation history never chooses the version.</p>
-<p>Tracked computation reads see the working graph. During an async transition, computations can prepare new values while the visible DOM and ordinary reads keep their previous version. <code>latest(accessor)</code> deliberately reads the working value. An action reads its own staged writes. <code>is_pending(accessor)</code> observes readiness without turning an ordinary read of the same source into a pending-only read.</p>
-<p>A microtask flush batches writes. An ordinary bubbling event sends its whole matching route to Python and flushes once after the handlers finish. <code>flush()</code> is useful in native tests and for explicit synchronous boundaries.</p>
-<h2 id="ownership-and-resources">Ownership and resources<a class="headerlink" href="#ownership-and-resources" title="Permanent link">&para;</a></h2>
-<p>Components own their computations, nested roots, list rows, and event tasks. <code>create_root(fn)</code> joins the current owner. Use <code>detached=True</code> only when you intend to manage a separate lifetime, and retain its disposer.</p>
-<p>A split <code>create_effect(compute, apply)</code> tracks <code>compute</code> and runs <code>apply</code> untracked after the DOM commit. Cleanup returned by <code>apply</code>, or registered during <code>apply</code>, belongs to that committed application. It runs before the next visible apply or when the effect is disposed. Preparing a held replacement doesn't tear down a resource that still belongs to the visible UI.</p>
-<p><code>create_tracked_effect(fn)</code> explicitly combines tracking and side effects. Its <code>on_cleanup</code> callbacks run before recomputation. Use split effects for subscriptions, listeners, and other resources that must follow visible state.</p>
-<p><code>create_memo</code> evaluates initially unless <code>lazy=True</code>. A lazy memo suspends when its last observer leaves: its work, dependencies, and tasks are released. A later read starts it again. Explicit disposal is permanent.</p>
-<p><code>For</code> owns mounted rows. Entity moves preserve row state, refs, and fragment ranges. Removed rows are disposed when their removal becomes visible. <code>Repeat</code> grows and shrinks integer slots directly. A changed keyed <code>Show</code> value creates a new branch scope, including same-type child components.</p>
+<p>Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM collects mutations for the Python-to-JavaScript bridge. It doesn't choose reactive dependencies or require components to rerun.</p>
+<p>The async API reference for this design is <a href="https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.9/documentation/solid-2.0/05-async-data.md">Solid 2.0 RC.9's async data contract</a>. This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary <code>async def</code> actions, and real asyncio tasks.</p>
+<h2 id="read-views">Read views<a class="headerlink" href="#read-views" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Values and readiness</th>
+<th>Publication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ordinary event or top-level read</td>
+<td>Last published value</td>
+<td>Matches visible UI</td>
+</tr>
+<tr>
+<td>Tracked computation</td>
+<td>Committed working values</td>
+<td>Prepares a result; ordinary dependencies can hold its application</td>
+</tr>
+<tr>
+<td><code>latest(expression)</code></td>
+<td>Working values, or <code>None</code> before the first async result</td>
+<td>Subscribes through an escape edge, so its own UI can publish during a hold</td>
+</tr>
+<tr>
+<td><code>is_pending(expression)</code></td>
+<td>Reports pending, held, affected, or optimistic state</td>
+<td>Subscribes without holding its indicator</td>
+</tr>
+<tr>
+<td>Action</td>
+<td>Includes staged writes; functional setters compose on the newest value</td>
+<td>Writes belong to that action's dependency group</td>
+</tr>
+<tr>
+<td><code>resolve(expression)</code></td>
+<td>Waits for fresh async dependencies, including quiet refreshes and cached memos</td>
+<td>Returns a settled working result</td>
+</tr>
+<tr>
+<td><code>until(predicate)</code></td>
+<td>Same readiness rules, with optimistic edits hidden</td>
+<td>Returns the settled truthy value</td>
+</tr>
+</tbody>
+</table>
+<p>A normal read wins when the same computation also reads a source through <code>latest</code> or <code>is_pending</code>. A computation that combines ordinary held data with a latest value still waits for its ordinary dependencies. An expression isn't an independent UI region merely because part of it calls <code>latest</code>.</p>
+<p>Signal writes and successful store drafts stage values. Outside an action, <code>latest</code> doesn't expose writes that haven't been flushed. A microtask flush commits writes to the working graph. An ordinary bubbling event sends its matching route to Python and flushes after the handlers finish. <code>flush()</code> supplies an explicit synchronous boundary.</p>
+<p>Store properties, length, membership, iteration, and snapshots select the same view, including properties first observed during a hold. New render consumers read the published version on their initial mount and subscribe to its eventual replacement.</p>
+<h2 id="independent-transitions">Independent transitions<a class="headerlink" href="#independent-transitions" title="Permanent link">&para;</a></h2>
+<p>An async recomputation holds publication only when an ordinary dependency path reaches a live publishing consumer. An unused memo or a pending-only indicator doesn't freeze the inputs. Initial loads use readiness and Loading fallbacks; quiet refreshes serve the previous value.</p>
+<p>Each independent request starts its own transition. Its changed inputs and derived values stay on their published version until the requested data is ready. Unrelated writes can publish even when they occurred in the same microtask. Two separate detail panels can therefore finish in either order, while typing in a third panel continues normally.</p>
+<p>Shared ordinary consumers join dependency groups. For example, an effect computing <code>(left(), right())</code> makes the two values publish consistently. Writes to the same signal or store entity, and action reads of another group's state, also join groups. Nested actions share their enclosing group. Once joined, a group remains joined until it publishes. These are publication groups, not database transactions with isolated reads or automatic rollback.</p>
+<p>A newer request for the same reactive input supersedes the older task. The visible version stays unchanged until the replacement resolves. Removing the last publishing consumer releases its hold. An explicit <code>Loading(on=...)</code> boundary can choose fallback publication instead of retaining the old content.</p>
+<h2 id="ownership-and-rendering">Ownership and rendering<a class="headerlink" href="#ownership-and-rendering" title="Permanent link">&para;</a></h2>
+<p>Components own computations, nested roots, rows, and event tasks. <code>create_root(fn)</code> joins the current owner. Use <code>detached=True</code> only for a lifetime you'll dispose explicitly.</p>
+<p>A split <code>create_effect(compute, apply)</code> tracks preparation and applies untracked after the DOM commit. Resources created during preparation belong to a provisional owner, allocated only when needed. A held replacement keeps the previous published owner's resources alive. Superseding a preparation disposes its provisional resources; publication replaces the old owner. Disposal releases both. Nested effects and <code>on_settled</code> callbacks also wait for preparation publication, and abandoned callbacks never run.</p>
+<p>Cleanup returned by <code>apply</code>, or registered during it, belongs to that committed application. It runs before the next visible apply or on disposal. Render errors are also held with their dependencies, so a superseded speculative failure doesn't replace a valid visible error boundary.</p>
+<p><code>create_tracked_effect(fn)</code> combines tracking and side effects. Its cleanup runs before recomputation. Use split effects for resources that must follow visible state. Memo bodies still own their children for one computation run.</p>
+<p><code>For</code> owns mounted rows. Moves preserve row state, refs, and fragment ranges; removals dispose rows when their removal publishes. <code>Repeat</code> grows and shrinks integer slots directly. A changed keyed <code>Show</code> value creates a fresh branch scope. The scheduler prepares these changes, publishes ready render applications, commits buffered VDOM operations, and then runs user applications. Explicit DOM reads and refs can force a bridge commit.</p>
 <h2 id="async-work">Async work<a class="headerlink" href="#async-work" title="Permanent link">&para;</a></h2>
-<p>Async computations and event handlers run in real <code>asyncio.Task</code> instances. Dependencies read after an <code>await</code> remain tracked in computations. Ordinary <code>asyncio.timeout</code> and <code>TaskGroup</code> work inside them. Child tasks created explicitly with <code>asyncio.create_task</code> have their own ordinary asyncio lifetime; use <code>TaskGroup</code> when the parent should cancel them.</p>
-<p>A changed computation input cancels the superseded task. Disposal and action Future cancellation cancel suspended work and allow asynchronous <code>finally</code> cleanup. Cancellation is cooperative: a coroutine that blocks Python or suppresses cancellation can't be forcibly stopped. <code>resolve</code> and <code>until</code> release their temporary subscriptions when their caller is canceled.</p>
-<p>Derived stores use the same readiness, errors, Loading boundaries, and <code>refresh</code> behavior as memos. Their seed determines shape; an unresolved async projection still reports pending. Async generators publish each yielded projection and close when their owner is disposed.</p>
-<h2 id="actions-and-optimistic-stores">Actions and optimistic stores<a class="headerlink" href="#actions-and-optimistic-stores" title="Permanent link">&para;</a></h2>
-<p>Overlapping actions join the scheduler's current transition. Their ordinary writes reveal together when its work settles. This is one shared transaction, not independent per-action isolation.</p>
-<p>Optimistic stores replay draft edits in submission order over the latest authoritative source. All overlays in the transition are removed when it settles, including failure or cancellation. Authoritative updates must therefore arrive before the corresponding action completes. Overlay callbacks must be deterministic and free of external side effects because rebasing can run them again.</p>
-<p><code>until(predicate)</code> reads authoritative state, so an optimistic edit can't acknowledge itself. Ordinary UI reads see the optimistic overlay. <code>refresh</code> requests a quiet recomputation and returns an awaitable for completion; quiet refresh doesn't show a pending indicator.</p>
-<h2 id="collection-and-memory-limits">Collection and memory limits<a class="headerlink" href="#collection-and-memory-limits" title="Permanent link">&para;</a></h2>
-<p>Store lists use structurally shared sequence versions. Append and indexed updates avoid copying the entire sequence; a general splice can rebuild it. Mounted <code>For</code> regions consume recent edit records to handle local changes without mapping every existing row. Arbitrary replacement arrays use keyed matching and the generic VDOM diff. Removal still updates subsequent index accessors when indices change.</p>
-<p>Template prototypes use a bounded cache of 256 entries. Varying instance attributes don't create a template per instance. Node handles, listeners, and refs are released on unmount; selector-based root adoption is canonical. The diagnostic APIs expose registry and operation counts for regression tests.</p>
+<p>Async computations and event handlers run in real <code>asyncio.Task</code> instances. Reads after <code>await</code> remain tracked in computations. <code>asyncio.timeout</code> and <code>TaskGroup</code> work normally. Explicit child tasks don't inherit reactive tracking; use <code>TaskGroup</code> when the parent should cancel them.</p>
+<p>Supersession, disposal, and cancellation of an action Future cancel suspended work and allow asynchronous <code>finally</code> cleanup. Cancellation remains cooperative. Version checks prevent an obsolete task's return value from publishing even if it suppresses cancellation.</p>
+<p><code>resolve</code> and <code>until</code> inspect readiness through arbitrary expressions and cached memo dependencies. Quiet refreshes are silent to <code>is_pending</code> but still block these awaiters. An async generator becomes ready at its first fresh yield; awaiting its value doesn't require the stream to end. Canceling an awaiter removes its temporary subscriptions and timeout.</p>
+<p>Derived stores share memo readiness and errors. Their seed determines shape; an unresolved async projection is pending. Structural and field subscriptions preserve fine-grained updates after readiness has settled.</p>
+<h2 id="optimistic-edits">Optimistic edits<a class="headerlink" href="#optimistic-edits" title="Permanent link">&para;</a></h2>
+<p>Each optimistic edit belongs to the action that submitted it. Independent actions settle independently. Finishing, failing, or canceling one removes its edits and preserves other outstanding edits. Actions joined through shared dependencies remove their edits when the joined group publishes.</p>
+<p>Scalar updater functions and store draft callbacks replay in submission order over the newest authoritative source. Replacement scalar writes replace the preceding value at their position in that order. For conflicting store edits, ordinary draft mutation order determines the result. This supports additive updates and disjoint edits without introducing a second conflict language.</p>
+<p>Callbacks must be deterministic and free of external side effects because rebasing can run them again. Authoritative updates should arrive before the corresponding action completes. Failed optimistic edits disappear, but ordinary authoritative writes already made by an action aren't rolled back. Multiple draft edits from one action share a single removal and rebase.</p>
+<p><code>affects(signal_or_memo)</code> marks that value pending without starting a new fetch. <code>affects(store.child)</code> marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.</p>
+<p>An optimistic edit made outside an action remains until the next transition adopts it. Prefer actions when an edit needs a clear lifetime.</p>
+<h2 id="python-authoring">Python authoring<a class="headerlink" href="#python-authoring" title="Permanent link">&para;</a></h2>
+<p>Every named <code>@component</code> input is a <code>Prop[T]</code> accessor. Use <code>prop(default)</code> for typed defaults and <code>.peek()</code> for an intentional one-time read. Plain value annotations such as <code>count: int</code> are rejected at declaration and by mypy. An unannotated input still receives a Prop; a single <code>Props</code> parameter receives the mapping.</p>
+<p>Children, bindings, and props use one accessor rule: an Accessor, or a function or bound method callable without required arguments. Use <code>literal</code> to pass a callable as data. <code>Props.get</code> returns the supplied default when a key is absent. Mapping iteration, length, and membership include declared defaults. Direct optional prop access still produces an accessor whose missing value is <code>None</code>.</p>
+<h2 id="diagnostics-and-limits">Diagnostics and limits<a class="headerlink" href="#diagnostics-and-limits" title="Permanent link">&para;</a></h2>
+<p><code>diagnostics.inspect_transitions()</code> reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. <code>inspect_graph(owner)</code> includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. <code>runtime_stats()</code> includes transition and held-node counts.</p>
+<p>The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; template cloning, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.</p>
+<p>The native concurrency benchmark, <code>python benchmarks/async_bench.py</code>, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.</p>
 
 
 

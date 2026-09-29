@@ -3479,7 +3479,7 @@ mutation in a transaction:</p>
 <li><strong>Plain writes stage into the transaction.</strong> Signals and stores the action writes, before or after an <code>await</code>, commit to the graph but reveal together when the action settles, as does the landing of anything it <code>refresh</code>es. Reads inside the action see the staged values.</li>
 <li><strong>Optimistic writes reveal now.</strong> Values written through <code>create_optimistic</code> or <code>create_optimistic_store</code> show immediately and revert when the action settles.</li>
 <li><code>like.pending()</code> is a tracked accessor that's <code>True</code> from the call until it settles; it reveals immediately, so bind disabled buttons and spinners to it.</li>
-<li>Concurrent actions share one transaction and settle together.</li>
+<li>Independent actions settle separately. Nested actions and actions with shared reactive dependencies join and publish together.</li>
 <li>Errors route to the nearest <code>Errored</code> boundary captured at call time <em>and</em> re-raise to the awaiter, so <code>await like()</code> behaves like a normal call.</li>
 <li>A sync function may also be wrapped; its writes reveal in the flush that commits them, and it's never pending.</li>
 </ul>

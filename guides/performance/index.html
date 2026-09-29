@@ -1353,6 +1353,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#diagnose-pending-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnose pending publication
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2811,6 +2822,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#diagnose-pending-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnose pending publication
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2884,6 +2906,9 @@
 <p>Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.</p>
 <p><code>benchmarks/compare_browser.py --baseline /path/to/baseline</code> alternates identical operations between isolated checkouts, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use <code>--mode store</code> for store comparisons and <code>--profile</code> for additional, untimed CPU profiles.</p>
 <p>A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.</p>
+<h2 id="diagnose-pending-publication">Diagnose pending publication<a class="headerlink" href="#diagnose-pending-publication" title="Permanent link">&para;</a></h2>
+<p>Use <code>diagnostics.inspect_transitions()</code> to see which computations and actions hold each dependency group. <code>diagnostics.inspect_graph(owner)</code> includes read modes, group IDs, and provisional owners. An ordinary consumer of two pending results joins their groups; a separate <code>latest()</code> or <code>is_pending()</code> binding can publish during the hold. See <a href="../../concepts/runtime-contracts/">Runtime contracts</a> for the read and ownership rules.</p>
+<p>A transition that remains open retains the values and resources still used by the visible UI. Dispose unused scopes and ensure application actions can finish or be canceled. The native async benchmark reports independent publication at increasing widths; its times exclude browser and network costs.</p>
 
 
 
