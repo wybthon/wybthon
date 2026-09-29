@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v0.35.0 (2026-09-29)
+
+### Documentation
+
+- **warnings**: Add API reference page for the warnings module
+  ([#31](https://github.com/wybthon/wybthon/pull/31),
+  [`0c9752b`](https://github.com/wybthon/wybthon/commit/0c9752b29fca52b82617a199c65329f9c173ea75))
+
+Refs: #22
+
+Co-authored-by: Owen Carey <37121709+owenthcarey@users.noreply.github.com>
+
+### Features
+
+- **reactivity**: Add independent async transitions
+  ([#37](https://github.com/wybthon/wybthon/pull/37),
+  [`d88727b`](https://github.com/wybthon/wybthon/commit/d88727bdd2d761c9a84bdb59086e45eaed9a6bdc))
+
+### Testing
+
+- **kernel**: Add unit tests for op buffer and PythonBackend
+  ([#23](https://github.com/wybthon/wybthon/pull/23),
+  [`f90182e`](https://github.com/wybthon/wybthon/commit/f90182ed35a5a1ef7f2854fba781adc9d398f854))
+
+Refs: #20
+
+
 ## v0.34.0 (2026-09-06)
 
 ### Features
