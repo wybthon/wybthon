@@ -86,3 +86,11 @@ The [runtime overhaul evaluation](results/runtime-overhaul.md) records local bas
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
 
 The [collection and memory evaluation](results/collection-performance.md) records the compact store, persistent-vector, reactive mapping, and cleanup improvements against v0.33.0, including browser startup and bundle-size measurements.
+
+## Async publication
+
+Run `python benchmarks/async_bench.py --widths 10 100 1000` to exercise independent gated requests. It verifies that one completed request publishes while the others remain held, checks cleanup, and reports computation and transition counts separately for starting work, publishing one result, and publishing the rest. CI runs these assertions and uploads the JSON report.
+
+This benchmark uses native Python and split effects, without a DOM or network. Use the browser benchmark for bridge and rendering costs. Changing async semantics should preserve the synchronous collection work contracts as well as the concurrency assertions.
+
+The [concurrent runtime validation report](results/concurrent-runtime.md) records behavioral coverage, synchronous overhead, and async scaling for the transition overhaul.

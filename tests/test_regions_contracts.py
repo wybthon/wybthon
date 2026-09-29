@@ -216,6 +216,9 @@ def test_list_cleanup_waits_for_visible_transition(wyb, root_element):
         gate = asyncio.Event()
 
         async def load():
+            # The list and request share a dependency. Independent writes in
+            # the same batch no longer wait for each other.
+            len(rows)
             value = count()
             if value:
                 await gate.wait()

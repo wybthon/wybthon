@@ -75,4 +75,4 @@ busy = lambda: is_pending(lambda: user.name)
 
 Errors surface when the projection is read, so `Errored` handles them. Refresh is quiet and awaitable. Disposing the owner cancels the producer.
 
-`create_optimistic_store(source, seed)` returns a store and an optimistic draft setter. Active edits replay over new authoritative data, then disappear when the shared action transition settles. Keep draft callbacks deterministic. See [Runtime contracts](runtime-contracts.md) for concurrent action, acknowledgment, and cancellation semantics.
+`create_optimistic_store(source, seed)` returns a store and an optimistic draft setter. Active edits replay over new authoritative data, and each action's edits disappear when its dependency group settles. Keep draft callbacks deterministic. See [Runtime contracts](runtime-contracts.md) for concurrent action, acknowledgment, and cancellation semantics.

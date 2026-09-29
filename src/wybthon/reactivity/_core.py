@@ -23,8 +23,9 @@ Semantics (matching SolidJS 2.0):
   dependencies just like the code before it.
 - **Transitions keep the UI consistent.** When a batch of writes
   causes an async computation that already has a value to recompute,
-  the batch becomes a *transition*: the graph computes the new state
-  immediately, but nothing that depends on the changed inputs is
+  its changed dependencies form a *transition*. Independent requests
+  publish separately; shared consumers join their groups. The graph
+  computes the new state immediately, but dependent changes aren't
   revealed to the DOM (or to effects, or to reads outside tracking
   scopes) until the async work lands. The old, self-consistent state
   stays on screen; [`is_pending`][wybthon.is_pending] reports the
@@ -78,6 +79,13 @@ __all__ = [
 
 _DEFAULT_EQUALS: Final = object()
 _MISSING: Final = object()
+_SKIP_APPLY: Final = object()
+
+
+@dataclass(slots=True)
+class _Failure:
+    error: BaseException
+
 
 # Node states (graph coloring for the push-mark / pull-recompute scheduler).
 _CLEAN: Final = 0
@@ -88,6 +96,12 @@ _DIRTY: Final = 2
 _K_MEMO: Final = 0
 _K_RENDER: Final = 1
 _K_EFFECT: Final = 2
+
+# Dependency edge read modes. Multiple reads preserve all modes; an ordinary
+# edge participates in publication even when it was also probed or escaped.
+_R_NORMAL: Final = 1
+_R_LATEST: Final = 2
+_R_PROBE: Final = 4
 
 # Exact built-in results cannot implement an async protocol. Most render
 # bindings return one of these, so they needn't invoke the Awaitable ABC.
@@ -166,16 +180,22 @@ _probe_hit: bool = False
 # the predicate observes the authoritative view.
 _authoritative_depth: int = 0
 
-# Number of live async computations. When zero and no transition is
-# open, the flush skips all transition bookkeeping.
+# Number of live async computations. With no async work or actions, the
+# flush skips transition bookkeeping entirely.
 _async_live: int = 0
 
-# The open transition (if any) and an alias of its snapshot, kept as a
-# module global so the read path can test membership without an
-# attribute chain. ``_NO_HELD`` is never mutated.
-_NO_HELD: Final[dict[Any, Any]] = {}
-_tx: Transition | None = None
-_held: dict[Any, Any] = _NO_HELD
+# Revealed versions are indexed directly on the hot read path. Transitions
+# own disjoint dependency groups; joining groups never copies reactive values.
+_transitions: dict[Transition, None] = {}
+_node_tx: dict[Any, Transition] = {}
+_held: dict[Any, Any] = {}
+_transition_serial = 0
+
+# Per-round causal edges for derived signals (store fields, row indices, etc.).
+_causes: dict[Any, tuple[Any, ...]] = {}
+# Readiness scopes reject stale async values, including through cached memos.
+_readiness_depth = 0
+_published_depth = 0
 
 # The transition of the action currently executing a synchronous
 # segment; writes made now are held until that action settles.
@@ -185,9 +205,6 @@ _in_action: Transition | None = None
 # revert when the enclosing transaction settles.
 _optimistic_depth: int = 0
 
-# True while an eager apply stage runs whose compute read held data, so
-# the signals it writes are held too (projections, selectors).
-_apply_held: bool = False
 _applying: Computation | None = None
 
 # True when the read path needs the slow branch: a probe is active or a
@@ -349,147 +366,204 @@ def _positional_count(fn: Any) -> int:
 
 
 class Transition:
-    """Bookkeeping for the state a flush computed but hasn't revealed.
+    """A dependency group waiting to publish a consistent reactive version.
 
-    At most one transition is open at a time; concurrent actions and
-    overlapping async recomputes share it, so everything in flight lands
-    together. The framework creates and settles transitions itself; the
-    class is public so the type can appear in signatures and diagnostics.
-
-    Attributes:
-        snapshot: Held nodes mapped to the value the UI still shows.
-        pending: Async computations whose landing the transition waits for.
-        holds: Number of actions keeping the transition open.
+    Independent actions and async reads have independent groups. A shared
+    write or ordinary consumer joins groups. Redirects preserve references
+    captured by suspended actions when their groups join.
     """
 
-    __slots__ = ("snapshot", "pending", "holds", "held_applies", "reverts", "affected", "probers")
+    __slots__ = ("id", "parent", "snapshot", "pending", "holds", "held_applies", "reverts", "affected", "probers")
 
     def __init__(self) -> None:
+        global _transition_serial
+        _transition_serial += 1
+        self.id = _transition_serial
+        self.parent: Transition | None = None
         self.snapshot: dict[Any, Any] = {}
         self.pending: set[Computation] = set()
-        self.holds: int = 0
-        # Effects whose apply stage is postponed to the reveal, with the
-        # latest value they computed (a re-run replaces the entry).
+        self.holds = 0
         self.held_applies: dict[Computation, tuple[Any, Any]] = {}
         self.reverts: list[Callable[[], None]] = []
-        # Nodes an action declared with ``affects``: pending until it settles.
         self.affected: set[Any] = set()
-        # Computations whose ``is_pending`` probes touched held nodes; they
-        # re-run at the reveal so their answer flips back to False.
         self.probers: set[Computation] = set()
 
+    def root(self) -> Transition:
+        tx = self
+        while tx.parent is not None:
+            tx = tx.parent
+        if self.parent is not None:
+            self.parent = tx
+        return tx
+
     def __repr__(self) -> str:
-        return f"Transition(held={len(self.snapshot)}, pending={len(self.pending)}, holds={self.holds})"
+        tx = self.root()
+        return f"Transition(id={tx.id}, held={len(tx.snapshot)}, pending={len(tx.pending)}, holds={tx.holds})"
 
 
 def _update_slow_reads() -> None:
     global _slow_reads
-    _slow_reads = bool(_held) or _probe_depth > 0 or (_tx is not None and bool(_tx.affected))
+    _slow_reads = bool(_held) or _probe_depth > 0
 
 
-def _ensure_tx() -> Transition:
-    """Return the open transition, creating one if needed."""
-    global _tx, _held
-    tx = _tx
-    if tx is None:
-        tx = _tx = Transition()
-        _held = tx.snapshot
-        if _ambient_reverts:
-            tx.reverts.extend(_ambient_reverts)
-            _ambient_reverts.clear()
+def _new_transition() -> Transition:
+    tx = Transition()
+    _transitions[tx] = None
+    if _ambient_reverts:
+        tx.reverts.extend(_ambient_reverts)
+        _ambient_reverts.clear()
+    diagnostics._count("transitions_created")
+    return tx
+
+
+def _join(left: Transition | None, right: Transition | None) -> Transition | None:
+    """Join causally related versions; unrelated versions never meet here."""
+    if left is None:
+        return right.root() if right is not None else None
+    if right is None:
+        return left.root()
+    left, right = left.root(), right.root()
+    if left is right:
+        return left
+    if left.id > right.id:
+        left, right = right, left
+    right.parent = left
+    _transitions.pop(right, None)
+    left.snapshot.update(right.snapshot)
+    for node in right.snapshot:
+        _node_tx[node] = left
+    left.pending.update(right.pending)
+    left.holds += right.holds
+    left.held_applies.update(right.held_applies)
+    left.reverts.extend(right.reverts)
+    left.affected.update(right.affected)
+    left.probers.update(right.probers)
+    right.snapshot.clear()
+    right.pending.clear()
+    right.held_applies.clear()
+    right.reverts.clear()
+    right.affected.clear()
+    right.probers.clear()
+    diagnostics._count("transitions_joined")
+    return left
+
+
+def _source_transition(sources: Any) -> Transition | None:
+    tx = None
+    if sources:
+        for src in sources:
+            # Edges carry escape-read metadata. A normal read wins when the
+            # same computation also probes or reads latest from this source.
+            if isinstance(sources, dict) and not sources[src] & _R_NORMAL:
+                continue
+            tx = _join(tx, _node_tx.get(src))
+    return tx
+
+
+def _write_transition() -> Transition | None:
+    if _optimistic_depth:
+        return None
+    tx = _in_action.root() if _in_action is not None else None
+    obs = _current_observer or _applying
+    if obs is not None:
+        tx = _join(tx, _node_tx.get(obs))
+        tx = _join(tx, _source_transition(obs._sources))
     return tx
 
 
 def _write_origin() -> int:
     if _optimistic_depth:
         return _O_REVEAL
-    if _in_action is not None or _apply_held:
+    if _in_action is not None or (_held and _write_transition() is not None):
         return _O_HELD
-    if _held:
-        # A framework write made while a computation runs (a projection
-        # mutating its draft) is derived from what that computation read.
-        obs = _current_observer
-        if obs is not None and obs._is_held():
-            return _O_HELD
     return _O_NORMAL
 
 
-def _hold(node: Any, old: Any) -> None:
-    """Put `node` in the open transition's snapshot with its revealed value."""
-    snap = _ensure_tx().snapshot
-    if node not in snap:
-        snap[node] = old
-        if not _slow_reads:
-            _update_slow_reads()
+def _hold(node: Any, old: Any, tx: Transition) -> None:
+    tx = _join(tx, _node_tx.get(node))
+    assert tx is not None
+    if node not in _held:
+        _held[node] = old
+        tx.snapshot[node] = old
+    _node_tx[node] = tx
+    _update_slow_reads()
 
 
-def _record(node: Any, old: Any, origin: int) -> None:
-    """Classify a committed change for the current round."""
-    if node in _held:
+def _record(node: Any, old: Any, origin: int, tx: Transition | None = None) -> None:
+    if origin == _O_REVEAL:
         return
-    if origin == _O_HELD:
-        _hold(node, old)
-    elif origin == _O_NORMAL and _flushing and node not in _tentative:
+    tx = _join(tx, _node_tx.get(node))
+    if tx is not None:
+        _hold(node, old, tx)
+    elif _flushing and node not in _tentative:
         _tentative[node] = old
+        if isinstance(node, Signal) and node._version_source is not None:
+            _causes[node] = (node._version_source,)
 
 
 def _record_derived(node: Any, old: Any, sources: Any) -> None:
-    """Classify a derived change (a memo, a row signal) by what it was computed from."""
-    if node in _held:
-        return
-    if _apply_held:
-        _hold(node, old)
-        return
-    tentative = False
-    if sources:
-        held = _held
-        tent = _tentative
-        for src in sources:
-            if src in held:
-                _hold(node, old)
-                return
-            if src in tent:
-                tentative = True
-    if tentative and _flushing and node not in _tentative:
-        _tentative[node] = old
+    tx = _source_transition(sources)
+    if tx is not None:
+        _hold(node, old, tx)
+    elif _flushing:
+        parents = tuple(src for src in sources or () if not isinstance(sources, dict) or sources[src] & _R_NORMAL)
+        if parents:
+            _tentative.setdefault(node, old)
+            _causes[node] = parents
 
 
 def _probe_mark() -> None:
-    """Record that the active ``is_pending`` probe touched in-flight state."""
     global _probe_hit
     _probe_hit = True
 
 
 def _probe_touch(node: Any) -> bool:
-    """Probe-mode read of `node`: report whether it's held, tentative, or affected."""
-    if node in _held:
-        obs = _current_observer
-        if obs is not None and _tx is not None:
-            _tx.probers.add(obs)
-        return True
-    if node in _tentative:
-        obs = _current_observer
-        if obs is not None:
-            _probed_tentative.append(obs)
-        return True
-    tx = _tx
-    if tx is not None and node in tx.affected:
-        _probe_register()
-        return True
+    tx = _node_tx.get(node)
+    hit = tx is not None
+    if tx is not None:
+        _probe_register(tx)
+    for active in _transitions:
+        if node in active.affected:
+            _probe_register(active)
+            hit = True
+    if node in _tentative and _current_observer is not None:
+        _probed_tentative.append(_current_observer)
+    return hit or node in _tentative
+
+
+def _probe_register(tx: Transition) -> None:
+    obs = _current_observer
+    if obs is not None:
+        tx.root().probers.add(obs)
+
+
+def _has_demand(node: Computation) -> bool:
+    """Does ordinary dependency traversal reach a live publishing consumer?"""
+    queue: list[Any] = [node]
+    seen = set()
+    while queue:
+        source = queue.pop()
+        if source in seen:
+            continue
+        seen.add(source)
+        if isinstance(source, Computation) and source._readiness_signal is not None:
+            queue.append(source._readiness_signal)
+        for observer in source._observers or ():
+            if observer._disposed or not (observer._sources or {}).get(source, 0) & _R_NORMAL:
+                continue
+            if observer._apply is not None and not observer._eager:
+                return True
+            queue.append(observer)
     return False
 
 
-def _probe_register() -> None:
-    """Re-run the active observer when the open transition settles.
-
-    Used by probes that hit in-flight state with no reactive source of
-    their own (``affects`` marks, optimistic store overlays) so their
-    ``is_pending`` answer flips back to False.
-    """
-    obs = _current_observer
-    tx = _tx
-    if obs is not None and tx is not None:
-        tx.probers.add(obs)
+def _is_unsettled(node: Any, seen: set[Any]) -> bool:
+    if not isinstance(node, Computation) or node in seen:
+        return False
+    seen.add(node)
+    if node._async is not None and (node._async.awaiting or node._async.pending):
+        return True
+    return any(_is_unsettled(src, seen) for src in node._sources or ())
 
 
 def _track_source(node: Any) -> None:
@@ -629,88 +703,122 @@ def _gc_resume() -> None:
 
 
 def _decide_round() -> None:
-    """Close a compute round: decide whether its tentative changes reveal or hold.
-
-    A round holds when an async computation that already had a value
-    went pending during it (unless the nearest `Loading` boundary asked
-    to show its fallback instead). Everything tentative then joins the
-    transition's snapshot; otherwise it reveals, and any effect whose
-    `is_pending` probe optimistically answered True re-runs.
-    """
-    global _tentative, _newly_pending, _probed_tentative
-    hold = False
-    if _newly_pending:
-        newly = _newly_pending
-        _newly_pending = []
-        for comp in newly:
-            a = comp._async
-            if comp._disposed or a is None or not a.pending:
+    """Hold only changes causally upstream of demanded async recomputations."""
+    for comp in _newly_pending:
+        a = comp._async
+        if comp._disposed or a is None or not a.pending or not _has_demand(comp):
+            continue
+        collector = comp._lookup_context(LOADING_CONTEXT_KEY, None)
+        if collector is not None and collector.wants_fallback(comp):
+            continue
+        ancestors: set[Any] = set()
+        queue: list[Any] = [comp]
+        tx = _node_tx.get(comp)
+        while queue:
+            node = queue.pop()
+            if node in ancestors:
                 continue
-            collector = comp._lookup_context(LOADING_CONTEXT_KEY, None)
-            if collector is not None and collector.wants_fallback(comp):
-                continue
-            _ensure_tx().pending.add(comp)
-            hold = True
-    if _tentative:
-        if hold:
-            snap = _ensure_tx().snapshot
-            for node, old in _tentative.items():
-                if node not in snap:
-                    snap[node] = old
-            _update_slow_reads()
-        _tentative = {}
-    if _probed_tentative:
-        probers = _probed_tentative
-        _probed_tentative = []
-        if hold:
-            _ensure_tx().probers.update(probers)
-        else:
-            for comp in probers:
-                comp._stale(_DIRTY)
+            ancestors.add(node)
+            tx = _join(tx, _node_tx.get(node))
+            sources = node._sources if isinstance(node, Computation) else None
+            queue.extend(src for src in sources or () if sources[src] & _R_NORMAL)
+            queue.extend(_causes.get(node, ()))
+        tx = tx or _new_transition()
+        tx.pending.add(comp)
+        # Holding the async value itself prevents consumers publishing its
+        # previous result alongside new inputs while the replacement runs.
+        _hold(comp, comp._value, tx)
+        for node in ancestors:
+            if node in _tentative:
+                _hold(node, _tentative[node], tx)
+    _newly_pending.clear()
+    # Derived signals aren't graph observers; their captured causal edges
+    # propagate the hold after the async decision, including store fields.
+    changed = True
+    while changed:
+        changed = False
+        for node, old in _tentative.items():
+            parents: Any = _causes.get(node)
+            if parents is None and isinstance(node, Computation):
+                parents = node._sources
+            tx = _source_transition(parents)
+            if tx is not None:
+                changed |= node not in _held
+                _hold(node, old, tx)
+    _tentative.clear()
+    _causes.clear()
+    for comp in _probed_tentative:
+        joined = False
+        for source in comp._sources or ():
+            tx = _node_tx.get(source)
+            if tx is not None:
+                tx.root().probers.add(comp)
+                joined = True
+        if not joined:
+            comp._stale(_DIRTY)
+    _probed_tentative.clear()
 
 
 def _partition_applies() -> None:
-    """Run the apply stages deferred this round, holding the ones that read held data."""
     global _deferred
-    items = _deferred
-    _deferred = []
-    held = _held
+    items, _deferred = _deferred, []
     for comp, value, prev in items:
         if comp._disposed:
             continue
-        if held and comp._is_held():
-            _ensure_tx().held_applies[comp] = (value, prev)
+        tx = _source_transition(comp._sources) if _held else None
+        # A re-run may switch dependencies away from an older held result.
+        previous = comp._publication_tx
+        if previous is not None:
+            previous.root().held_applies.pop(comp, None)
+        comp._publication_tx = tx
+        if tx is not None:
+            tx.held_applies[comp] = (value, prev)
         else:
             comp._run_apply(value, prev)
 
 
 def _reveal(tx: Transition) -> None:
-    """Settle `tx`: drop the snapshot, revert optimistic overrides, run held applies."""
-    global _tx, _held
-    _tx = None
-    _held = _NO_HELD
+    """Publish one ready group, leaving independent versions untouched."""
+    _transitions.pop(tx, None)
+    for node in tx.snapshot:
+        _held.pop(node, None)
+        _node_tx.pop(node, None)
     tx.snapshot.clear()
     _update_slow_reads()
     for comp in tx.probers:
         if not comp._disposed:
             comp._stale(_DIRTY)
     tx.probers.clear()
-    reverts = tx.reverts
-    tx.reverts = []
+    tx.affected.clear()
+    reverts, tx.reverts = tx.reverts, []
     for fn in reverts:
         try:
             fn()
         except Exception as exc:
             log_error(f"Optimistic revert raised: {exc}", exc)
-    applies = tx.held_applies
-    tx.held_applies = {}
+    applies, tx.held_applies = tx.held_applies, {}
     for comp, (value, prev) in applies.items():
+        comp._publication_tx = None
         if comp._disposed:
+            continue
+        if comp._state != _CLEAN:
+            comp._stale(_DIRTY)
             continue
         if comp._kind == _K_RENDER:
             comp._run_apply(value, prev)
         else:
             _reveal_effects.append((comp, value, prev))
+    diagnostics._count("transitions_published")
+
+
+def _publish_ready() -> bool:
+    for tx in _transitions:
+        tx.pending.difference_update(comp for comp in tuple(tx.pending) if not _has_demand(comp))
+    ready = [tx for tx in _transitions if tx.holds == 0 and not tx.pending]
+    for tx in ready:
+        if tx in _transitions and tx.holds == 0 and not tx.pending:
+            _reveal(tx)
+    return bool(ready)
 
 
 def _flush() -> None:
@@ -731,7 +839,7 @@ def _flush() -> None:
                         "(an effect is probably writing its own dependency)."
                     )
                 _round += 1
-                _track = _tx is not None or _async_live > 0
+                _track = bool(_transitions) or _async_live > 0
                 if _staged:
                     _commit_staged()
                 if _render_queue:
@@ -742,12 +850,20 @@ def _flush() -> None:
                     _partition_applies()
                 if _render_queue or _staged:
                     continue
+                # Remove acknowledged optimistic edits and settle their
+                # rebases before exposing the DOM or invoking user effects.
+                if _transitions and _publish_ready():
+                    continue
                 _commit_dom()
                 if _reveal_effects:
                     effects = _reveal_effects
                     _reveal_effects = []
                     for comp, value, prev in effects:
-                        if not comp._disposed:
+                        if comp._disposed:
+                            continue
+                        if comp._state != _CLEAN:
+                            comp._stale(_DIRTY)
+                        else:
                             comp._run_apply(value, prev)
                 if _effect_queue:
                     _drain(_effect_queue)
@@ -768,9 +884,7 @@ def _flush() -> None:
                         log_error(f"on_settled callback raised: {exc}", exc)
                 if _staged or _render_queue or _effect_queue or _settled_queue:
                     continue
-            tx = _tx
-            if tx is not None and tx.holds == 0 and not tx.pending:
-                _reveal(tx)
+            if _publish_ready():
                 continue
             break
         if _unobserved_check:
@@ -785,6 +899,7 @@ def _flush() -> None:
         _deferred.clear()
         _newly_pending.clear()
         _tentative.clear()
+        _causes.clear()
         _probed_tentative.clear()
         _flushing = False
         _gc_resume()
@@ -793,8 +908,9 @@ def _flush() -> None:
 def _reset_scheduler_for_tests() -> None:
     """Test-only: drop staged writes, effect queues, transitions, and scheduler flags."""
     global _flush_scheduled, _flushing, _kernel_commit, _setup_depth, _setup_component
-    global _tx, _held, _in_action, _optimistic_depth, _apply_held, _slow_reads, _track, _applying
+    global _in_action, _optimistic_depth, _slow_reads, _track, _applying
     global _layer_working, _latest_depth, _probe_depth, _probe_hit, _authoritative_depth, _async_live
+    global _readiness_depth, _published_depth, _transition_serial
     for task in tuple(_tasks):
         if not task.done() and not task.get_loop().is_closed():
             task.cancel()
@@ -815,11 +931,12 @@ def _reset_scheduler_for_tests() -> None:
     _kernel_commit = None
     _setup_depth = 0
     _setup_component = None
-    _tx = None
-    _held = _NO_HELD
+    _transitions.clear()
+    _node_tx.clear()
+    _held.clear()
+    _causes.clear()
     _in_action = None
     _optimistic_depth = 0
-    _apply_held = False
     _applying = None
     _slow_reads = False
     _track = False
@@ -829,6 +946,9 @@ def _reset_scheduler_for_tests() -> None:
     _probe_hit = False
     _authoritative_depth = 0
     _async_live = 0
+    _readiness_depth = 0
+    _published_depth = 0
+    _transition_serial = 0
 
 
 # ---------------------------------------------------------------------------
@@ -849,11 +969,23 @@ class Owner:
     handler installed by [`Errored`][wybthon.Errored].
     """
 
-    __slots__ = ("_parent", "_children", "_cleanups", "_disposed", "_context_map", "_error_handler", "_tasks")
+    __slots__ = (
+        "_parent",
+        "_provisional",
+        "_children",
+        "_cleanups",
+        "_disposed",
+        "_context_map",
+        "_error_handler",
+        "_tasks",
+    )
 
     def __init__(self) -> None:
         self._tasks: set[asyncio.Task[Any]] | None = None
         self._parent: Owner | None = None
+        # The nearest preparation ancestor, cached when attaching a child.
+        # Ordinary render bindings avoid traversing the ownership tree.
+        self._provisional: _Preparation | None = None
         # Keyed by ``id(child)`` so an individually disposed child detaches
         # in O(1); a row leaving a 10k-row list would otherwise pay a
         # linear ``list.remove`` against its parent.
@@ -868,6 +1000,7 @@ class Owner:
             child.dispose()
             return
         child._parent = self
+        child._provisional = self._provisional
         if self._children is None:
             self._children = {id(child): child}
         else:
@@ -947,6 +1080,52 @@ class Owner:
             if parent._children is not None:
                 parent._children.pop(id(self), None)
             self._parent = None
+        self._provisional = None
+
+
+class _Preparation(Owner):
+    """Resources and deferred lifecycle work belonging to one prepared result."""
+
+    __slots__ = ("published", "callbacks", "applies")
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.published = False
+        self.callbacks: list[Callable[[], Any]] = []
+        self.applies: dict[Computation, tuple[Any, Any]] = {}
+
+    def _add_child(self, child: Owner) -> None:
+        super()._add_child(child)
+        if not child._disposed and not self.published:
+            child._provisional = self
+
+    def publish(self) -> None:
+        self.published = True
+        callbacks, self.callbacks = self.callbacks, []
+        _settled_queue.extend(callbacks)
+        applies, self.applies = self.applies, {}
+        for comp, (value, previous) in applies.items():
+            if comp._disposed:
+                continue
+            if comp._kind == _K_RENDER:
+                comp._run_apply(value, previous)
+            else:
+                _reveal_effects.append((comp, value, previous))
+
+    def dispose(self) -> None:
+        self.callbacks.clear()
+        self.applies.clear()
+        super().dispose()
+
+
+def _pending_preparation(owner: Owner | None) -> _Preparation | None:
+    pending = None
+    frame = owner if isinstance(owner, _Preparation) else owner._provisional if owner is not None else None
+    while frame is not None:
+        if not frame.published:
+            pending = frame
+        frame = frame._provisional
+    return pending
 
 
 class _ComponentContext(Owner):
@@ -1047,7 +1226,18 @@ class Signal[T](Accessor[T]):
         name: Optional label used in dev-mode diagnostics.
     """
 
-    __slots__ = ("_value", "_pending", "_staged", "_origin", "_observers", "_equals", "_unobserved", "_name")
+    __slots__ = (
+        "_value",
+        "_pending",
+        "_staged",
+        "_origin",
+        "_write_tx",
+        "_version_source",
+        "_observers",
+        "_equals",
+        "_unobserved",
+        "_name",
+    )
 
     def __init__(
         self,
@@ -1061,6 +1251,8 @@ class Signal[T](Accessor[T]):
         self._pending: Any = None
         self._staged: bool = False
         self._origin: int = _O_NORMAL
+        self._write_tx: Transition | None = None
+        self._version_source: Signal | None = None
         self._observers: dict[Computation, None] | None = None
         self._equals = equals
         self._unobserved = unobserved
@@ -1110,8 +1302,13 @@ class Signal[T](Accessor[T]):
             obs._add_source(self)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
-        if _in_action is not None and self._staged:
-            return self._pending
+        if _in_action is not None:
+            if not (_latest_depth or _probe_depth):
+                _join(_in_action, _node_tx.get(self))
+            if self._staged:
+                if not (_latest_depth or _probe_depth):
+                    _join(_in_action, self._write_tx)
+                return self._pending
         if _slow_reads:
             return self._slow_read()
         return self._value
@@ -1120,15 +1317,22 @@ class Signal[T](Accessor[T]):
         """The read path while a probe is active or a transition holds nodes."""
         if _probe_depth and _probe_touch(self):
             _probe_mark()
-        if not _layer_working and not _latest_depth and self in _held:
+        if (not _layer_working or _published_depth) and not _latest_depth and self in _held:
+            if _published_depth:
+                _probe_register(_node_tx[self])
             return _held[self]
         return self._value
 
     def peek(self) -> T:
         """Return the committed value without subscribing."""
-        if _in_action is not None and self._staged:
-            return self._pending
-        if _slow_reads and not _layer_working and not _latest_depth and self in _held:
+        if _in_action is not None:
+            if not (_latest_depth or _probe_depth):
+                _join(_in_action, _node_tx.get(self))
+            if self._staged:
+                if not (_latest_depth or _probe_depth):
+                    _join(_in_action, self._write_tx)
+                return self._pending
+        if _slow_reads and (not _layer_working or _published_depth) and not _latest_depth and self in _held:
             return _held[self]
         return self._value
 
@@ -1190,7 +1394,9 @@ class Signal[T](Accessor[T]):
                 if obs is not None and obs._eager:
                     self._commit_now(value)
                     return
+        tx = _write_transition() if origin == _O_HELD else None
         if self._staged:
+            self._write_tx = _join(self._write_tx, tx)
             self._pending = value
             if origin > self._origin:
                 self._origin = origin
@@ -1198,6 +1404,7 @@ class Signal[T](Accessor[T]):
         if not _changed(self._equals, self._value, value):
             return
         self._pending = value
+        self._write_tx = tx
         self._staged = True
         self._origin = origin
         _staged.append(self)
@@ -1210,13 +1417,14 @@ class Signal[T](Accessor[T]):
         new = self._pending
         self._pending = None
         origin = self._origin
+        tx, self._write_tx = self._write_tx, None
         self._origin = _O_NORMAL
         old = self._value
         if not _changed(self._equals, old, new):
             return
         self._value = new
         if _track:
-            _record(self, old, origin)
+            _record(self, old, origin, tx)
         obs = self._observers
         if obs:
             for o in list(obs):
@@ -1231,9 +1439,11 @@ class Signal[T](Accessor[T]):
         changes are classified by the running computation's sources, so
         row state derived from held data is held with it.
         """
+        staged_tx = self._write_tx
         if self._staged:
             self._staged = False
             self._pending = None
+            self._write_tx = None
             self._origin = _O_NORMAL
             try:
                 _staged.remove(self)
@@ -1244,8 +1454,8 @@ class Signal[T](Accessor[T]):
             return
         self._value = value
         if _track and origin != _O_REVEAL:
-            if origin == _O_HELD:
-                _record(self, old, origin)
+            if origin == _O_HELD or staged_tx is not None:
+                _record(self, old, origin, _join(staged_tx, _write_transition()))
             else:
                 obs = _current_observer or _applying
                 _record_derived(self, old, obs._sources if obs is not None else None)
@@ -1279,27 +1489,24 @@ def is_accessor(value: Any) -> bool:
     if t is FunctionType:
         code = value.__code__
         defaults = value.__defaults__
-        return code.co_argcount - (len(defaults) if defaults else 0) <= 0
+        return code.co_argcount - (len(defaults) if defaults else 0) <= 0 and (
+            not code.co_kwonlyargcount or code.co_kwonlyargcount == len(value.__kwdefaults__ or {})
+        )
     if t is MethodType:
         fn = value.__func__
         code = getattr(fn, "__code__", None)
         if code is None:
             return False
         defaults = fn.__defaults__
-        return code.co_argcount - 1 - (len(defaults) if defaults else 0) <= 0
+        return code.co_argcount - 1 - (len(defaults) if defaults else 0) <= 0 and (
+            not code.co_kwonlyargcount or code.co_kwonlyargcount == len(fn.__kwdefaults__ or {})
+        )
     return False
 
 
 def _unwrap(value: Any) -> Any:
-    """Call `value` if it's a reactive expression (tracked), else return it."""
-    if isinstance(value, Accessor):
-        return value()
-    if type(value) is FunctionType:
-        code = value.__code__
-        defaults = value.__defaults__
-        if code.co_argcount - (len(defaults) if defaults else 0) <= 0:
-            return value()
-    return value
+    """Use the same accessor rule for children, bindings, and props."""
+    return value() if is_accessor(value) else value
 
 
 # ---------------------------------------------------------------------------
@@ -1340,31 +1547,20 @@ class Prop[T](Accessor[T]):
             obs._add_source(sig)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
-        value = sig._slow_read() if _slow_reads else sig._value
+        if _in_action is not None:
+            value = sig.peek()
+        else:
+            value = sig._slow_read() if _slow_reads else sig._value
         if isinstance(value, LiteralValue):
             return value.value
-        if isinstance(value, Accessor):
-            return value()
-        if type(value) is FunctionType:
-            code = value.__code__
-            defaults = value.__defaults__
-            if code.co_argcount - (len(defaults) if defaults else 0) <= 0:
-                return value()
-        return value
+        return _unwrap(value)
 
     def peek(self) -> T:
         """Return the current (unwrapped) value without subscribing."""
         value = self._sig.peek()
         if isinstance(value, LiteralValue):
             return value.value
-        if isinstance(value, Accessor):
-            return value.peek()
-        if type(value) is FunctionType:
-            code = value.__code__
-            defaults = value.__defaults__
-            if code.co_argcount - (len(defaults) if defaults else 0) <= 0:
-                return untrack(value)
-        return value
+        return untrack(value) if is_accessor(value) else value
 
     def __repr__(self) -> str:
         return f"Prop({self._key!r})"
@@ -1378,7 +1574,7 @@ class Prop[T](Accessor[T]):
 class _AsyncState:
     """Per-computation async state, allocated on first use."""
 
-    __slots__ = ("pending", "has_value", "version", "quiet", "inflight", "task")
+    __slots__ = ("pending", "has_value", "version", "quiet", "inflight", "awaiting", "task")
 
     def __init__(self) -> None:
         self.pending: bool = False
@@ -1389,6 +1585,7 @@ class _AsyncState:
         # True while a launched run is outstanding, quiet or not, so
         # ``resolve``/``refresh`` awaiters can wait for it to settle.
         self.inflight: bool = False
+        self.awaiting: bool = False
         self.task: asyncio.Task[Any] | None = None
 
 
@@ -1423,7 +1620,6 @@ class Computation(Owner):
         "_fn",
         "_pass_prev",
         "_sources",
-        "_probe_srcs",
         "_state",
         "_kind",
         "_is_data",
@@ -1446,6 +1642,10 @@ class Computation(Owner):
         "_lazy",
         "_unobserved",
         "_name",
+        "_prepared_owner",
+        "_committed_owner",
+        "_readiness_signal",
+        "_publication_tx",
     )
 
     def __init__(
@@ -1469,11 +1669,7 @@ class Computation(Owner):
         super().__init__()
         self._fn = fn
         self._pass_prev = _accepts_positional(fn) if pass_prev is None else pass_prev
-        self._sources: dict[Any, bool] | None = None
-        # Sources read inside an ``is_pending`` probe. They subscribe like
-        # any other but don't make the effect's apply wait for a reveal:
-        # a pending indicator has to show *during* the hold.
-        self._probe_srcs: set[Any] | None = None
+        self._sources: dict[Any, int] | None = None
         self._state: int = _DIRTY
         self._kind = kind
         self._is_data = data or kind == _K_MEMO
@@ -1489,7 +1685,7 @@ class Computation(Owner):
         self._eager = eager
         # Set by ``refresh`` inside an action: the run's landing is truth
         # that belongs to the open transaction and reveals with it.
-        self._land_held = False
+        self._land_held: Transition | None = None
         self._apply_cleanup: Callable[[], Any] | None = None
         self._apply_owner: Owner | None = None
         self._uses_apply_scope = apply_scope
@@ -1498,6 +1694,52 @@ class Computation(Owner):
         self._lazy = lazy
         self._unobserved = unobserved
         self._name = name
+        self._prepared_owner: _Preparation | None = None
+        self._committed_owner: _Preparation | None = None
+        self._readiness_signal: Signal[int] | None = None
+        self._publication_tx: Transition | None = None
+
+    def _track_readiness(self) -> None:
+        if self._readiness_signal is None:
+            self._readiness_signal = Signal(0)
+        self._readiness_signal()
+
+    def _notify_readiness(self) -> None:
+        signal = self._readiness_signal
+        if signal is not None:
+            signal._notify()
+
+    def _preparation(self) -> _Preparation:
+        owner = self._prepared_owner
+        if owner is None:
+            owner = self._prepared_owner = _Preparation()
+            super()._add_child(owner)
+        return owner
+
+    def _add_child(self, child: Owner) -> None:
+        if self._apply is not None and _current_observer is self:
+            self._preparation()._add_child(child)
+        else:
+            super()._add_child(child)
+
+    def _add_cleanup(self, fn: Callable[[], Any]) -> None:
+        if self._apply is not None and _current_observer is self:
+            self._preparation()._add_cleanup(fn)
+        else:
+            super()._add_cleanup(fn)
+
+    def _discard_preparation(self) -> None:
+        owner, self._prepared_owner = self._prepared_owner, None
+        if owner is not None:
+            owner.dispose()
+
+    def _publish_preparation(self) -> None:
+        previous = self._committed_owner
+        self._committed_owner, self._prepared_owner = self._prepared_owner, None
+        if previous is not None:
+            previous.dispose()
+        if self._committed_owner is not None:
+            self._committed_owner.publish()
 
     def _label(self) -> str:
         if self._name:
@@ -1517,6 +1759,8 @@ class Computation(Owner):
         obs = self._observers
         if obs is not None:
             obs.pop(comp, None)
+            if _transitions:
+                _schedule_flush()
             if not obs and (self._unobserved is not None or self._lazy):
                 _unobserved_check.add(self)
                 _schedule_flush()
@@ -1537,11 +1781,14 @@ class Computation(Owner):
         if a is None:
             return
         a.version += 1
+        a.inflight = False
+        a.awaiting = False
         task, a.task = a.task, None
         if task is not None and not task.done():
             task.cancel()
-        if _tx is not None:
-            _tx.pending.discard(self)
+        tx = _node_tx.get(self)
+        if tx is not None:
+            tx.root().pending.discard(self)
 
     def _suspend(self) -> None:
         """Release demand-driven work while preserving this accessor's identity."""
@@ -1568,23 +1815,16 @@ class Computation(Owner):
     # -- observer side ---------------------------------------------------------
 
     def _add_source(self, source: Any) -> None:
+        mode = _R_PROBE if _probe_depth else _R_LATEST if _latest_depth else _R_NORMAL
         srcs = self._sources
         if srcs is None:
-            self._sources = {source: bool(_probe_depth)}
+            self._sources = {source: mode}
             source._add_observer(self)
         elif source not in srcs:
-            srcs[source] = bool(_probe_depth)
+            srcs[source] = mode
             source._add_observer(self)
-        elif not _probe_depth:
-            srcs[source] = False
-            if self._probe_srcs is not None:
-                self._probe_srcs.discard(source)
-        if _probe_depth and self._sources[source]:
-            ps = self._probe_srcs
-            if ps is None:
-                self._probe_srcs = {source}
-            else:
-                ps.add(source)
+        else:
+            srcs[source] |= mode
 
     def _clear_sources(self) -> None:
         srcs = self._sources
@@ -1592,24 +1832,6 @@ class Computation(Owner):
             for src in srcs:
                 src._remove_observer(self)
             srcs.clear()
-        self._probe_srcs = None
-
-    def _is_held(self) -> bool:
-        """True when a non-probe source of the last run is held by the transition."""
-        srcs = self._sources
-        if not srcs:
-            return False
-        held = _held
-        ps = self._probe_srcs
-        if ps is None:
-            for src in srcs:
-                if src in held:
-                    return True
-            return False
-        for src in srcs:
-            if src in held and src not in ps:
-                return True
-        return False
 
     # -- scheduling -------------------------------------------------------------
 
@@ -1685,10 +1907,16 @@ class Computation(Owner):
             return
         if diagnostics._active is not None:
             diagnostics._active.counts["computations"] += 1
-        if self._children:
-            self._dispose_children()
-        if self._cleanups:
-            self._run_cleanups()
+        if self._apply is None:
+            if self._children:
+                self._dispose_children()
+            if self._cleanups:
+                self._run_cleanups()
+        else:
+            # Preparation can be superseded without touching resources still
+            # used by the published DOM. Allocate an owner only if needed.
+            if self._prepared_owner is not None:
+                self._discard_preparation()
         fn = self._fn
         if (
             type(fn) is Signal
@@ -1702,11 +1930,10 @@ class Computation(Owner):
             # user code. Keep that edge instead of unsubscribing/re-subscribing
             # it, and avoid entering a tracking scope just to read the value.
             if not self._sources:
-                self._sources = {fn: False}
+                self._sources = {fn: _R_NORMAL}
                 fn._add_observer(self)
             else:
-                self._sources[fn] = False
-            self._probe_srcs = None
+                self._sources[fn] = _R_NORMAL
             self._error = None
             self._settle(fn._value)
             return
@@ -1715,7 +1942,12 @@ class Computation(Owner):
         a = self._async
         if a is not None:
             self._cancel_async()
-        global _current_owner, _current_observer, _layer_working
+        global _current_owner, _current_observer, _layer_working, _published_depth
+        initial_publication = False
+        if _held and self._first and self._apply is not None and not self._eager:
+            initial_publication = True
+        if initial_publication:
+            _published_depth += 1
         prev_owner = _current_owner
         prev_obs = _current_observer
         _current_owner = self
@@ -1730,6 +1962,8 @@ class Computation(Owner):
             self._fail(exc)
             return
         finally:
+            if initial_publication:
+                _published_depth -= 1
             _layer_working -= 1
             _current_owner = prev_owner
             _current_observer = prev_obs
@@ -1750,6 +1984,11 @@ class Computation(Owner):
 
     def _settle(self, value: Any) -> None:
         """Accept a new value: notify memo observers or schedule an effect's apply stage."""
+        landing, self._land_held = self._land_held, None
+        if landing is not None:
+            landing = landing.root()
+            if landing not in _transitions:
+                landing = None
         if self._kind == _K_MEMO:
             if self._first or _changed(self._equals, self._value, value):
                 first = self._first
@@ -1757,9 +1996,8 @@ class Computation(Owner):
                 old = self._value
                 self._value = value
                 if _track and not first:
-                    if self._land_held:
-                        self._land_held = False
-                        _record(self, old, _O_HELD)
+                    if landing is not None:
+                        _record(self, old, _O_HELD, landing)
                     else:
                         _record_derived(self, old, self._sources)
                 obs = self._observers
@@ -1771,7 +2009,10 @@ class Computation(Owner):
         self._value = value
         if self._is_data:
             if _track and not self._first:
-                _record_derived(self, prev, self._sources)
+                if landing is not None:
+                    _record(self, prev, _O_HELD, landing)
+                else:
+                    _record_derived(self, prev, self._sources)
             self._notify(skip=_current_observer)
         if self._apply is None:
             self._first = False
@@ -1779,6 +2020,7 @@ class Computation(Owner):
         first = self._first
         self._first = False
         if first and self._defer:
+            self._discard_preparation()
             return
         # The first run of a fresh effect and eager effects apply at once.
         # Re-runs inside a flush are collected and applied when the round
@@ -1789,12 +2031,28 @@ class Computation(Owner):
             _deferred.append((self, value, prev))
 
     def _run_apply(self, value: Any, prev: Any) -> None:
-        """Run the apply stage untracked, with `(value, prev)` or `(value,)`."""
+        """Publish prepared resources and run the untracked apply stage."""
         if self._disposed:
             return
         apply = self._apply
         if apply is None:
             return
+        preparation = (
+            _pending_preparation(self._provisional) if self._provisional is not None and not self._eager else None
+        )
+        if preparation is not None:
+            preparation.applies[self] = (value, prev)
+            return
+        if value is _SKIP_APPLY:
+            self._discard_preparation()
+            return
+        if type(value) is _Failure:
+            self._discard_preparation()
+            if not self._handle_error(value.error):
+                log_error(f"Reactive apply failed: {value.error}", value.error)
+            return
+        if self._prepared_owner is not None or self._committed_owner is not None:
+            self._publish_preparation()
         if self._apply_cleanup is not None:
             self._run_apply_cleanup()
         apply_owner = self._apply_owner
@@ -1803,17 +2061,16 @@ class Computation(Owner):
         if self._uses_apply_scope:
             apply_owner = self._apply_owner = Owner()
             apply_owner._parent = self
+            apply_owner._provisional = self._provisional
         else:
             apply_owner = self
-        global _current_owner, _current_observer, _apply_held, _applying
+        global _current_owner, _current_observer, _applying
         prev_owner = _current_owner
         prev_obs = _current_observer
-        prev_held = _apply_held
         prev_applying = _applying
         _current_observer = None
         _current_owner = apply_owner
         _applying = self
-        _apply_held = bool(_held) and self._eager and self._is_held()
         try:
             previous = self._applied_value
             self._applied_value = value
@@ -1825,7 +2082,6 @@ class Computation(Owner):
         finally:
             _current_observer = prev_obs
             _current_owner = prev_owner
-            _apply_held = prev_held
             _applying = prev_applying
         if callable(result):
             self._apply_cleanup = result
@@ -1843,6 +2099,8 @@ class Computation(Owner):
         """Record or route an exception raised by the body."""
         if self._is_data:
             self._error = exc
+            if _track and not self._first:
+                _record_derived(self, self._value, self._sources)
             if self._async is not None:
                 self._set_pending(False)
             obs = self._observers
@@ -1852,7 +2110,9 @@ class Computation(Owner):
             return
         if self._async is not None:
             self._set_pending(False)
-        if not self._handle_error(exc):
+        if self._apply is not None and not self._eager:
+            self._settle(_Failure(exc))
+        elif not self._handle_error(exc):
             raise exc
 
     # -- async ------------------------------------------------------------------
@@ -1870,16 +2130,19 @@ class Computation(Owner):
         """Flip the pending flag; observers are notified because pending state is observable."""
         a = self._ensure_async()
         if a.pending == value:
+            if value and a.has_value and _flushing and self._is_data:
+                _newly_pending.append(self)
             return
         a.pending = value
+        self._notify_readiness()
         if value:
             # Only data (memos) holds a transition; an async effect is a sink.
             if a.has_value and _flushing and self._is_data:
                 _newly_pending.append(self)
         else:
-            tx = _tx
+            tx = _node_tx.get(self)
             if tx is not None:
-                tx.pending.discard(self)
+                tx.root().pending.discard(self)
         # The observer currently pulling us sees the new state on its own;
         # everyone else re-runs so ``is_pending`` indicators update.
         self._notify(skip=_current_observer)
@@ -1902,6 +2165,7 @@ class Computation(Owner):
         if not quiet:
             self._set_pending(True)
         a.inflight = True
+        a.awaiting = True
         _schedule_flush()
 
         if asyncio.iscoroutine(awaitable):
@@ -1931,6 +2195,7 @@ class Computation(Owner):
         if not quiet:
             self._set_pending(True)
         a.inflight = True
+        a.awaiting = True
         _schedule_flush()
 
         async def consume() -> None:
@@ -1947,6 +2212,7 @@ class Computation(Owner):
                 self._resolve(version, None)
             else:
                 a.inflight = False
+                a.awaiting = False
                 self._set_pending(False)
                 self._notify()
                 _schedule_flush()
@@ -1978,6 +2244,7 @@ class Computation(Owner):
             return
         self._error = None
         a.has_value = True
+        a.awaiting = False
         if final:
             a.inflight = False
         self._set_pending(False)
@@ -1985,6 +2252,7 @@ class Computation(Owner):
         # Awaiters of ``resolve``/``refresh`` watch ``inflight`` too, so an
         # unchanged value must still wake them.
         self._notify()
+        self._notify_readiness()
         _schedule_flush()
 
     def _reject(self, version: int, exc: BaseException) -> None:
@@ -1992,8 +2260,12 @@ class Computation(Owner):
         if self._disposed or a is None or a.version != version:
             return
         a.inflight = False
+        a.awaiting = False
+        self._notify_readiness()
         if self._is_data:
             self._error = exc
+            if _track and not self._first:
+                _record_derived(self, self._value, self._sources)
             self._set_pending(False)
             self._notify()
         else:
@@ -2016,7 +2288,7 @@ class Computation(Owner):
             return
         self._ensure_async().quiet = True
         if _in_action is not None:
-            self._land_held = True
+            self._land_held = _join(self._land_held, _in_action)
         self._state = _DIRTY
         self._update_if_necessary()
 
@@ -2040,9 +2312,17 @@ class Computation(Owner):
                     self._register_with_loading()
                     raise NotReadyError(f"Async computation has no value yet: {self._label()}")
                 return self._value
+        if _in_action is not None and not (_latest_depth or _probe_depth):
+            _join(_in_action, _node_tx.get(self))
+        if (not _layer_working or _published_depth) and not _latest_depth and self in _held:
+            if _published_depth:
+                _probe_register(_node_tx[self])
+            return _held[self]
         err = self._error
         if err is not None:
             raise err
+        if _readiness_depth and _is_unsettled(self, set()):
+            raise NotReadyError(f"Expression is still settling: {self._label()}")
         if _slow_reads:
             if _probe_depth and _probe_touch(self):
                 _probe_mark()
@@ -2054,6 +2334,8 @@ class Computation(Owner):
         """Permanently dispose a computation and its committed resources."""
         if self._disposed:
             return
+        if _transitions:
+            _schedule_flush()
         if self._async is not None:
             self._cancel_async()
             global _async_live
@@ -2254,7 +2536,7 @@ class Memo[T](Computation, Accessor[T]):
             self._update_if_necessary()
         finally:
             _current_observer = prev
-        if _slow_reads and not _layer_working and not _latest_depth and self in _held:
+        if _slow_reads and (not _layer_working or _published_depth) and not _latest_depth and self in _held:
             return _held[self]
         return self._value
 

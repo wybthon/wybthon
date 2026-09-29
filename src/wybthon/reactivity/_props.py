@@ -84,8 +84,9 @@ class Props(Mapping[str, Prop[Any]]):
     value. Names absent from the parent's props resolve to the
     component's declared default, or `None`.
 
-    Iteration and `len()` cover the keys the parent passed; `in` also
-    reports declared defaults.
+    Iteration, `len()`, and membership include declared defaults. `get()`
+    follows Python mapping semantics and returns its default for absent keys.
+    Direct item or attribute access can still create an optional accessor.
 
     Example:
         ```python
@@ -127,17 +128,17 @@ class Props(Mapping[str, Prop[Any]]):
         return self[name]
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self._raw)
+        return iter(dict.fromkeys((*self._raw, *self._defaults))) if self._defaults else iter(self._raw)
 
     def __len__(self) -> int:
-        return len(self._raw)
+        return len(self._raw.keys() | self._defaults.keys()) if self._defaults else len(self._raw)
 
     def __contains__(self, key: object) -> bool:
         return key in self._raw or key in self._defaults
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Return the accessor for `key` (always present; see `__getitem__`)."""
-        return self[key]
+        """Return an existing prop accessor, or `default` when the key is absent."""
+        return self[key] if key in self else default
 
     def raw(self, key: str) -> Any:
         """Return the value for `key` exactly as the parent passed it, untracked.

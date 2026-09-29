@@ -271,7 +271,7 @@ Inside an action:
 - **Plain writes stage into the transaction.** Signals and stores the action writes, before or after an `await`, commit to the graph but reveal together when the action settles, as does the landing of anything it `refresh`es. Reads inside the action see the staged values.
 - **Optimistic writes reveal now.** Values written through `create_optimistic` or `create_optimistic_store` show immediately and revert when the action settles.
 - `like.pending()` is a tracked accessor that's `True` from the call until it settles; it reveals immediately, so bind disabled buttons and spinners to it.
-- Concurrent actions share one transaction and settle together.
+- Independent actions settle separately. Nested actions and actions with shared reactive dependencies join and publish together.
 - Errors route to the nearest `Errored` boundary captured at call time *and* re-raise to the awaiter, so `await like()` behaves like a normal call.
 - A sync function may also be wrapped; its writes reveal in the flush that commits them, and it's never pending.
 

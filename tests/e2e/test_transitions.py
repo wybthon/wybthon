@@ -52,3 +52,34 @@ def test_reveal_is_sequential(goto_feature):
     page.get_by_test_id("tx-resolve-a").click()
     expect(page.get_by_test_id("tx-a")).to_have_text("A")
     expect(page.get_by_test_id("tx-b")).to_have_text("B")
+
+
+def test_independent_requests_latest_and_typing(goto_feature):
+    page = goto_feature("transitions")
+    expect(page.get_by_test_id("ind-left-data")).to_have_text("data0")
+    expect(page.get_by_test_id("ind-right-data")).to_have_text("data0")
+    page.get_by_test_id("ind-start").click()
+    expect(page.get_by_test_id("ind-left-id")).to_have_text("0")
+    expect(page.get_by_test_id("ind-left-latest")).to_have_text("1")
+    page.get_by_test_id("ind-input").fill("responsive")
+    expect(page.get_by_test_id("ind-echo")).to_have_text("responsive")
+    page.get_by_test_id("ind-finish-right").click()
+    expect(page.get_by_test_id("ind-right-id")).to_have_text("1")
+    expect(page.get_by_test_id("ind-right-data")).to_have_text("data1")
+    expect(page.get_by_test_id("ind-left-id")).to_have_text("0")
+    expect(page.get_by_test_id("ind-left-data")).to_have_text("data0")
+    page.get_by_test_id("ind-finish-left").click()
+    expect(page.get_by_test_id("ind-left-id")).to_have_text("1")
+    expect(page.get_by_test_id("ind-left-data")).to_have_text("data1")
+    expect(page.get_by_test_id("ind-input")).to_have_value("responsive")
+
+
+def test_overlapping_optimistic_store_actions(goto_feature):
+    page = goto_feature("transitions")
+    page.get_by_test_id("ind-add-one").click()
+    page.get_by_test_id("ind-add-ten").click()
+    expect(page.get_by_test_id("ind-optimistic")).to_have_text("11")
+    page.get_by_test_id("ind-finish-ten").click()
+    expect(page.get_by_test_id("ind-optimistic")).to_have_text("1")
+    page.get_by_test_id("ind-finish-one").click()
+    expect(page.get_by_test_id("ind-optimistic")).to_have_text("0")

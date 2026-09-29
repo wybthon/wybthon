@@ -91,6 +91,27 @@ def _component_signature(ctx: MethodSigContext) -> CallableType:
     return ctx.default_signature.copy_modified(arg_types=types, arg_names=names, arg_kinds=kinds)
 
 
+def _component_created(ctx: FunctionContext) -> Type:
+    if ctx.arg_types and ctx.arg_types[0]:
+        function = get_proper_type(ctx.arg_types[0][0])
+        if isinstance(function, CallableType):
+            for name, value, kind in zip(function.arg_names, function.arg_types, function.arg_kinds, strict=True):
+                if kind in (ARG_STAR, ARG_STAR2):
+                    continue
+                proper = get_proper_type(value)
+                if isinstance(proper, AnyType):
+                    continue
+                if isinstance(proper, Instance) and proper.type.fullname in {
+                    "wybthon.reactivity._core.Prop",
+                    "wybthon.reactivity._props.Props",
+                }:
+                    if proper.type.fullname.endswith(".Props") and len(function.arg_types) != 1:
+                        ctx.api.fail("A Props mapping must be the component's only parameter", ctx.context)
+                    continue
+                ctx.api.fail(f"Component parameter {name!r} must be annotated Prop[T]", ctx.context)
+    return ctx.default_return_type
+
+
 def _store_created(ctx: FunctionContext) -> Type:
     result = get_proper_type(ctx.default_return_type)
     if not isinstance(result, TupleType) or not ctx.arg_types or not ctx.arg_types[0]:
@@ -168,6 +189,8 @@ class WybthonPlugin(Plugin):
 
     def get_function_hook(self, fullname: str) -> Callable[[FunctionContext], Type] | None:
         """Preserve TypedDict and list element shapes at store creation."""
+        if fullname == "wybthon.component.component":
+            return _component_created
         return _store_created if fullname == "wybthon.store.create_store" else None
 
     def get_method_hook(self, fullname: str) -> Callable[[MethodContext], Type] | None:
