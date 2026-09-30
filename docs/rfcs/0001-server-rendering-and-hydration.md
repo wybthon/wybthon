@@ -1,9 +1,9 @@
 # RFC 0001: Server rendering, hydration, and the boot pipeline
 
-- **Status:** Accepted
+- **Status:** Implemented
 - **Author:** Owen Carey
 - **Created:** 2026-09-29
-- **Tracking:** `feat/ssr-hydration`
+- **Tracking:** [#38](https://github.com/wybthon/wybthon/pull/38)
 
 ## Summary
 
@@ -174,4 +174,4 @@ Accepted on 2026-09-29, with implementation requested in the same change.
 
 ## Implementation
 
-Implemented on the `feat/ssr-hydration` branch. Set the status to `Implemented` when it ships in a release.
+Implemented in [#38](https://github.com/wybthon/wybthon/pull/38).

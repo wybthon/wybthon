@@ -277,7 +277,7 @@ Co-authored-by: Name <email>
 
 ## Large changes and RFCs
 
-Write an RFC before starting a change that alters public API, a runtime contract, the kernel wire protocol, or the build output, or that adds a subsystem. Copy [`docs/rfcs/0000-template.md`](docs/rfcs/0000-template.md), open a pull request with the draft, and follow the process in [`docs/rfcs/index.md`](docs/rfcs/index.md).
+Write an RFC before starting a change that alters public API, a runtime contract, the kernel wire protocol, or the build output, or that adds a subsystem. Copy [`docs/rfcs/0000-template.md`](docs/rfcs/0000-template.md), open a pull request with the draft, and follow the process in [`docs/rfcs/index.md`](docs/rfcs/index.md). The pull request that completes an RFC's implementation also sets its status to `Implemented`.
 
 ## Adding features (quick recipe)
 

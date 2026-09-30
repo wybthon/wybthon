@@ -18,7 +18,7 @@ Bug fixes, documentation improvements, performance work that preserves behavior,
 1. **Draft.** Copy [`0000-template.md`](0000-template.md) to `NNNN-short-title.md`, using the next free number, and fill it in. Open a pull request that adds the file with the status `Draft`. Discussion happens on that pull request.
 2. **Decide.** A maintainer sets the status to `Accepted` or `Rejected`, recording the decision and its reasoning in the RFC's "Decision" section. Rejected RFCs stay in the repository; the reasoning is useful later.
 3. **Implement.** The implementation may land in the same pull request as the RFC or in later ones. Link each implementing pull request from the RFC's "Implementation" section.
-4. **Close out.** When the work ships, set the status to `Implemented` and note the release. If later work replaces the design, set the status to `Superseded` and link the new RFC.
+4. **Close out.** The pull request that completes the implementation also sets the status to `Implemented`, so the status is correct the moment it merges. Every merge to `main` is released automatically, and the changelog records which release it's in. If later work replaces the design, set the status to `Superseded` and link the new RFC.
 
 An RFC's author may set the status to `Withdrawn` at any point before it's accepted.
 
@@ -30,7 +30,7 @@ While Wybthon is pre-1.0, an RFC may choose breaking changes without a compatibi
 | --- | --- |
 | Draft | Open for discussion; nothing is decided. |
 | Accepted | Approved; implementation may be in progress. |
-| Implemented | Shipped in a release. |
+| Implemented | Fully implemented and merged to `main`. |
 | Rejected | Declined; the RFC records why. |
 | Withdrawn | Abandoned by its author before a decision. |
 | Superseded | Replaced by a later RFC. |
@@ -39,4 +39,4 @@ While Wybthon is pre-1.0, an RFC may choose breaking changes without a compatibi
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [0001](0001-server-rendering-and-hydration.md) | Server rendering, hydration, and the boot pipeline | Accepted |
+| [0001](0001-server-rendering-and-hydration.md) | Server rendering, hydration, and the boot pipeline | Implemented |
