@@ -108,6 +108,18 @@ def _Errored(props: Props) -> Any:
     # scope raised, so it bypasses the dev-mode write guard, and it
     # reveals immediately even while a transition holds data.
     error: Signal[BaseException | None] = Signal(None)
+    session = _core._session
+    if session is not None and session.keying:
+        # A boundary that failed on the server starts on its fallback while
+        # hydrating, so the browser claims the fallback the server sent.
+        key = _core._next_key()
+        if session.mode == "server":
+            session.error_boundaries.append((key, error))
+        elif key in session.failed:
+            from .reactivity._session import ServerError
+
+            type_name, message = session.failed[key]
+            error._value = ServerError(message, type_name)
     children = props.raw("children")
     fallback = props.raw("fallback")
     on_error = props.raw("on_error")

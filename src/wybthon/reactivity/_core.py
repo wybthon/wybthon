@@ -228,6 +228,22 @@ _ambient_reverts: list[Callable[[], None]] = []
 # available, otherwise ``(queueMicrotask, create_once_callable)``.
 _js_microtask: Any = None
 
+# Depth of setter calls exempt from the dev-mode owned-scope write check
+# (``create_signal(..., owned_write=True)``).
+_owned_write_depth: int = 0
+
+# Depth of server renders in progress (see ``wybthon.server``). While
+# positive, user effects and ``on_settled`` callbacks don't run.
+_server_depth: int = 0
+
+# The active hydration session (a server render pass or a hydrating
+# client), or None. See ``wybthon.reactivity._session``.
+_session: Any = None
+
+# The tree position whose counter numbers the keys created right now
+# (only maintained while a session is active).
+_position: str = "r"
+
 # The DOM command buffer's commit function (a no-op when the buffer is
 # empty, e.g. pure CPython usage). Bound lazily so the reactive core has
 # no import-time dependency on the kernel.
@@ -308,13 +324,46 @@ def _warn_top_level_read(source: Any) -> None:
     from .._warnings import component_name
 
     label = source._label() if hasattr(source, "_label") else repr(source)
+    if isinstance(component, _CallbackScope):
+        where = f"A {component.name} callback"
+    else:
+        where = f"Component {component_name(component)}"
     warn_once(
         "top_level_read",
         (id(component), label),
-        f"Component {component_name(component)} read reactive value {label} at the top level of its body. "
+        f"{where} read reactive value {label} at the top level of its body. "
         "That read isn't tracked, so later updates won't reach it. Read it inside the returned tree, a "
         "create_memo/create_effect, or make the one-time read explicit with .peek() or untrack().",
     )
+
+
+class _CallbackScope:
+    """Identifies a control-flow callback (a `For` row, a `Show` branch) for read warnings."""
+
+    __slots__ = ("name",)
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def _run_callback_body[T](owner: Owner | None, scope: _CallbackScope, fn: Callable[[], T]) -> T:
+    """Run a control-flow callback owned by `owner`, untracked, warning on top-level reads.
+
+    Like a component body, a `For`, `Repeat`, `Show`, or `Match`
+    callback is an owner but not a tracking scope, so a read at its
+    top level is frozen.
+    """
+    global _current_owner, _current_observer, _setup_depth, _setup_component
+    saved = (_current_owner, _current_observer, _setup_component)
+    _current_owner = owner
+    _current_observer = None
+    _setup_depth += 1
+    _setup_component = scope
+    try:
+        return fn()
+    finally:
+        _current_owner, _current_observer, _setup_component = saved
+        _setup_depth -= 1
 
 
 def _accepts_positional(fn: Any) -> bool:
@@ -618,7 +667,7 @@ def _run_scheduled_flush() -> None:
     _flush()
 
 
-def flush() -> None:
+def flush[T](fn: Callable[[], T] | None = None) -> T | None:
     """Apply staged writes, run every dirty effect, and commit the DOM now.
 
     Writes become visible to reads only when the graph flushes. In the
@@ -634,6 +683,9 @@ def flush() -> None:
     Safe to call at any time; a no-op when nothing is pending, and a
     no-op inside an effect (the running flush finishes the work).
 
+    With `fn`, runs it first and then flushes, returning its result:
+    `flush(lambda: set_count(1))` applies the write synchronously.
+
     Example:
         ```python
         count, set_count = create_signal(0)
@@ -644,8 +696,10 @@ def flush() -> None:
         ```
     """
     global _flush_scheduled
+    result = fn() if fn is not None else None
     _flush_scheduled = False
     _flush()
+    return result
 
 
 def _commit_staged() -> None:
@@ -910,7 +964,12 @@ def _reset_scheduler_for_tests() -> None:
     global _flush_scheduled, _flushing, _kernel_commit, _setup_depth, _setup_component
     global _in_action, _optimistic_depth, _slow_reads, _track, _applying
     global _layer_working, _latest_depth, _probe_depth, _probe_hit, _authoritative_depth, _async_live
-    global _readiness_depth, _published_depth, _transition_serial
+    global _readiness_depth, _published_depth, _transition_serial, _server_depth, _session, _owned_write_depth
+    global _position
+    _position = "r"
+    _server_depth = 0
+    _owned_write_depth = 0
+    _session = None
     for task in tuple(_tasks):
         if not task.done() and not task.get_loop().is_closed():
             task.cancel()
@@ -1360,7 +1419,7 @@ class Signal[T](Accessor[T]):
         Returns:
             The value that was staged.
         """
-        if _current_observer is not None and _warnings.DEV_MODE:
+        if _current_observer is not None and _warnings.DEV_MODE and not _owned_write_depth:
             raise WriteInScopeError(
                 f"Cannot write {self._label()} inside a tracking scope (memo, effect compute stage, or "
                 "reactive hole). Derive the value with create_memo, or write it from the apply stage "
@@ -2155,8 +2214,43 @@ class Computation(Owner):
         if not quiet:
             self._set_pending(True)
 
+    def _intercept_launch(self, awaitable: Any) -> bool:
+        """Serve a hydration seed or hold server-side work; True when handled.
+
+        While hydrating, a memo whose value arrived from the server
+        settles with it: its function already ran (tracking the reads
+        made before returning the awaitable), and the awaitable it
+        returned is discarded unstarted, so nothing is fetched twice. On
+        the server, async work stays pending when the render doesn't
+        resolve async data or the memo is client-only.
+        """
+        seed = getattr(self, "_seed", _MISSING)
+        if seed is not _MISSING:
+            assert isinstance(self, Memo)
+            self._seed = _MISSING
+            _discard_awaitable(awaitable)
+            a = self._ensure_async()
+            a.version += 1
+            a.has_value = True
+            self._error = None
+            self._settle(seed)
+            return True
+        session = _session
+        if session is not None and session.mode == "server":
+            if (
+                not session.resolve_async
+                or getattr(self, "_ssr", "server") == "client"
+                or getattr(self, "_hk", None) in session.inflight
+            ):
+                _discard_awaitable(awaitable)
+                self._mark_pending()
+                return True
+        return False
+
     def _launch(self, awaitable: Any) -> None:
         """Drive `awaitable` with tracking active on every resume."""
+        if (_session is not None or self._async is None) and self._intercept_launch(awaitable):
+            return
         a = self._ensure_async()
         a.version += 1
         version = a.version
@@ -2187,6 +2281,8 @@ class Computation(Owner):
 
     def _launch_gen(self, agen: Any) -> None:
         """Consume a stream in one cancellable task and close it on every exit."""
+        if (_session is not None or self._async is None) and self._intercept_launch(agen):
+            return
         a = self._ensure_async()
         a.version += 1
         version = a.version
@@ -2354,6 +2450,12 @@ class Computation(Owner):
         super().dispose()
 
 
+def _discard_awaitable(awaitable: Any) -> None:
+    """Drop an awaitable that will never be awaited, without warnings or side effects."""
+    if inspect.iscoroutine(awaitable):
+        awaitable.close()
+
+
 def _event_loop() -> asyncio.AbstractEventLoop:
     """Return the running loop, or a current/new loop when none is running."""
     try:
@@ -2499,7 +2601,7 @@ class Memo[T](Computation, Accessor[T]):
     async computation; see [`create_memo`][wybthon.create_memo].
     """
 
-    __slots__ = ()
+    __slots__ = ("_hk", "_ssr", "_seed")
 
     def __init__(
         self,
@@ -2510,8 +2612,15 @@ class Memo[T](Computation, Accessor[T]):
         unobserved: Callable[[], Any] | None = None,
         name: str | None = None,
         loading_value: Any = _MISSING,
+        ssr_source: str = "server",
     ) -> None:
         super().__init__(fn, kind=_K_MEMO, equals=equals, lazy=lazy, unobserved=unobserved, name=name)
+        self._hk: str | None = None
+        self._ssr = ssr_source
+        self._seed: Any = _MISSING
+        session = _session
+        if session is not None and session.keying:
+            loading_value = self._join_session(session, loading_value)
         if loading_value is not _MISSING:
             # Born with a value: the first async run serves it instead of
             # raising NotReadyError, and stays quiet so it never opens a
@@ -2523,6 +2632,47 @@ class Memo[T](Computation, Accessor[T]):
             a.quiet = True
         if _current_owner is not None:
             _current_owner._add_child(self)
+
+    def _join_session(self, session: Any, loading_value: Any) -> Any:
+        """Take a hydration key and apply any value the server resolved for it.
+
+        Returns the `loading_value` the memo should start with.
+        """
+        key = session.next_key(_position)
+        self._hk = key
+        server = session.mode == "server"
+        if server:
+            session.memos.append((key, self))
+        elif self._ssr in ("client", "local"):
+            return loading_value
+        seeded = session.values.get(key)
+        if seeded is not None and seeded[1] == _function_name(self._fn):
+            value = seeded[0]
+            if server:
+                # The server never re-runs a resolved memo: its value is final
+                # for this render and nothing observes later changes.
+                self._settle_seed(value)
+                return _MISSING
+            if self._ssr == "hybrid" or _is_async_function(self._fn):
+                # Dependencies of an ``async def`` body are only discoverable
+                # by running it, so it re-runs quietly behind the server value.
+                return value
+            self._seed = value
+        elif key in session.errors:
+            type_name, message = session.errors[key]
+            self._settle_seed(_MISSING, _server_error(message, type_name))
+            return _MISSING
+        return loading_value
+
+    def _settle_seed(self, value: Any, error: BaseException | None = None) -> None:
+        a = self._ensure_async()
+        a.has_value = True
+        self._first = False
+        self._state = _CLEAN
+        if error is not None:
+            self._error = error
+        else:
+            self._value = value
 
     def __call__(self) -> T:
         return self._read()
@@ -2542,6 +2692,40 @@ class Memo[T](Computation, Accessor[T]):
 
     def __repr__(self) -> str:
         return f"Memo({self._label()})"
+
+
+def _function_name(fn: Any) -> str:
+    """The name a serialized value is checked against before seeding a memo."""
+    return str(getattr(fn, "__qualname__", None) or type(fn).__qualname__)
+
+
+def _enter_position(position: str) -> str:
+    """Make `position` current for keying (restarting its count); returns the previous one."""
+    global _position
+    previous = _position
+    _position = position
+    _session.enter(position)
+    return previous
+
+
+def _restore_position(previous: str) -> None:
+    global _position
+    _position = previous
+
+
+def _next_key() -> str:
+    """Return the next hydration key at the current position (a session must be keying)."""
+    return str(_session.next_key(_position))
+
+
+def _is_async_function(fn: Any) -> bool:
+    return inspect.iscoroutinefunction(fn) or inspect.isasyncgenfunction(fn)
+
+
+def _server_error(message: str, type_name: str) -> BaseException:
+    from ._session import ServerError
+
+    return ServerError(message, type_name)
 
 
 # ---------------------------------------------------------------------------

@@ -44,7 +44,7 @@ from typing import Any, Literal
 
 from .reactivity import _core
 from .reactivity._core import LOADING_CONTEXT_KEY, Computation, NotReadyError, Signal
-from .reactivity._primitives import create_effect, on_cleanup
+from .reactivity._primitives import _create_effect, on_cleanup
 from .reactivity._props import Props
 from .vnode import Fragment, VNode, h, hole, to_text_vnode
 
@@ -59,9 +59,11 @@ _NOT_READY = object()
 class _LoadingCollector:
     """Tracks not-ready async computations read under one Loading boundary."""
 
-    __slots__ = ("_version", "_pending", "_forced", "_on_round")
+    __slots__ = ("_version", "_pending", "_forced", "_on_round", "key")
 
     def __init__(self) -> None:
+        # Hydration key (server rendering and hydration only).
+        self.key: str | None = None
         self._version: Signal[int] = Signal(0)
         self._pending: set[Computation] = set()
         # Computations that already had a value when they went pending
@@ -190,6 +192,9 @@ def _Loading(props: Props) -> Any:
 
     collector = _LoadingCollector()
     owner = _core._current_owner
+    session = _core._session
+    if session is not None and session.keying:
+        collector.key = _core._next_key()
     reveal: _RevealState | None = None
     reveal_index = -1
     if owner is not None:
@@ -262,11 +267,19 @@ def _Loading(props: Props) -> Any:
         # Framework UI state: reveals even while a transition holds data.
         shown._set(current, _core._O_REVEAL)
 
-    # A user effect: its first run happens after the initial mount has
-    # committed, when the content's DOM nodes exist to be parked.
-    create_effect(mode, apply)
+    # An effect: its first run happens after the initial mount has
+    # committed, when the content's DOM nodes exist to be parked. It's
+    # framework state, so it also runs during a server render.
+    _create_effect(mode, apply)
 
-    return Fragment(content, fallback_hole)
+    boundary = Fragment(content, fallback_hole)
+    if collector.key is not None:
+        # Keyed markers let a server stream swap this boundary's content in
+        # and let hydration resynchronize at its end.
+        boundary.props["marker"] = f"wyb:b{collector.key}"
+        if session is not None and session.mode == "server":
+            session.boundaries.append((collector.key, boundary, shown))
+    return boundary
 
 
 _Loading.__name__ = "Loading"

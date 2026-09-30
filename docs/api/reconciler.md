@@ -15,12 +15,13 @@ path.
 | Name | Description |
 | --- | --- |
 | [`render`][wybthon.render] | Mount a tree into a container (`Element`, CSS selector, or node id) and return a `Root`. Rendering into the same container again patches in place. |
-| [`Root`][wybthon.Root] | Handle returned by `render`; `.container`, `.vnode`, `.node_id`, and `.dispose()`. |
+| [`hydrate`][wybthon.hydrate] | Adopt server-rendered HTML under a container instead of creating it; see [Server rendering](../concepts/server-rendering.md). |
+| [`Root`][wybthon.Root] | Handle returned by `render` and `hydrate`; `.container`, `.vnode`, `.node_id`, and `.dispose()`. |
 | [`mount`][wybthon.reconciler.mount] | Lower level: emit ops mounting a VNode under a parent id, optionally before an anchor. |
 | [`patch`][wybthon.reconciler.patch] | Lower level: diff an old VNode against a new one and emit minimal ops. |
 | [`unmount`][wybthon.reconciler.unmount] | Lower level: dispose a VNode's scopes and effects, then remove its DOM. |
 
-`render` and `Root` are re-exported from `wybthon`; `mount`, `patch`,
+`render`, `hydrate`, and `Root` are re-exported from `wybthon`; `mount`, `patch`,
 and `unmount` are for control-flow primitives and tests.
 
 ```python

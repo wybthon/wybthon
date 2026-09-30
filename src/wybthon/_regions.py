@@ -11,13 +11,17 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
 
-from . import diagnostics
+from . import diagnostics, kernel
+from .kernel import OP_RELEASE, OP_REMOVE_RANGE
 from .reactivity import _core
-from .reactivity._core import Computation, Owner, Signal
+from .reactivity._core import Computation, Owner, Signal, _CallbackScope, _run_callback_body
 from .store import StoreList, _wrap
 from .vnode import VNode
 
 _SCALARS = (str, int, float, bool, bytes, type(None), tuple, frozenset)
+_FOR_SCOPE = _CallbackScope("For")
+_REPEAT_SCOPE = _CallbackScope("Repeat")
+_BRANCH_SCOPE = _CallbackScope("Show or Match")
 
 
 def _identity(value: Any) -> Any:
@@ -113,8 +117,19 @@ class _ListRegion:
                 args = (item, index_signal)
             else:
                 args = (item_signal, index_signal)
-            result = _core._run_owned_untracked(owner, lambda: self.callback(*args))
-            node = _coerce_result(result)
+            scope = _REPEAT_SCOPE if self.repeat else _FOR_SCOPE
+            session = _core._session
+            if session is not None and session.keying:
+                position = f"{getattr(self.vnode, 'pk', None) or _core._position}.{index}"
+                previous = _core._enter_position(position)
+                try:
+                    result = _run_callback_body(owner, scope, lambda: self.callback(*args))
+                finally:
+                    _core._restore_position(previous)
+                node = _coerce_result(result)
+                node.pk = position
+            else:
+                node = _coerce_result(_run_callback_body(owner, scope, lambda: self.callback(*args)))
             node.owner_scope = owner
             return _Row(owner, item, item_signal, index_signal, node, key)
         except BaseException:
@@ -284,6 +299,9 @@ class _ListRegion:
             return
         from .reconciler import _first_dom_id, _move_range, mount
 
+        if start == 0 and delete == len(self.rows) and delete and not len(items):
+            self.clear(reverse_disposal)
+            return
         removed = self.rows[start : start + delete]
         available: dict[Any, deque[_Row]] = defaultdict(deque)
         if len(items):
@@ -321,6 +339,25 @@ class _ListRegion:
                 _update_index(self.rows[i].index, i)
         if added:
             self.unique = len({row.key for row in added}) == len(added) if len(self.rows) == len(added) else False
+
+    def clear(self, reverse_disposal: bool = False) -> None:
+        """Remove every row with one range removal and one release."""
+        from .reconciler import _dispose_tree, _range_bounds
+
+        rows = self.rows
+        first, _ = _range_bounds(rows[0].vnode)
+        _, last = _range_bounds(rows[-1].vnode)
+        if first is not None and last is not None:
+            kernel.emit((OP_REMOVE_RANGE, first, last))
+        released: list[int] = []
+        for row in reversed(rows) if reverse_disposal else rows:
+            _dispose_tree(row.vnode, released)
+            row.owner.dispose()
+        if released:
+            kernel.emit((OP_RELEASE, released))
+        self.rows = []
+        self.vnode.children = []
+        self.unique = True
 
     def replace(self, items: Any) -> None:
         if diagnostics._active is not None:
@@ -401,9 +438,9 @@ class _ListRegion:
 
 def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
     """Mount a list region and its phased input subscription."""
-    from .reconciler import _mount_fragment
+    from .reconciler import _close_fragment, _open_fragment
 
-    _mount_fragment(vnode, parent, anchor, vnode.ns)
+    claim_end = _open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()
     if _core._current_owner is not None:
         _core._current_owner._add_child(scope)
@@ -413,14 +450,16 @@ def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
     scope._add_child(comp)
     vnode.render_effect = comp
     comp._update_if_necessary()
+    if claim_end:
+        _close_fragment(vnode, parent)
 
 
 def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
     """Mount a selected branch, retaining its committed scope until replacement."""
     from .flow import _render_slot
-    from .reconciler import _coerce_result, _mount_fragment, _unmount, mount
+    from .reconciler import _close_fragment, _coerce_result, _open_fragment, _unmount, mount
 
-    _mount_fragment(vnode, parent, anchor, vnode.ns)
+    claim_end = _open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()
     if _core._current_owner is not None:
         _core._current_owner._add_child(scope)
@@ -438,7 +477,17 @@ def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
         owner = branch_owner[0] = Owner()
         scope._add_child(owner)
         try:
-            node = _core._run_owned_untracked(owner, lambda: _coerce_result(_render_slot(slot, *args)))
+            session = _core._session
+            if session is not None and session.keying:
+                position = f"{getattr(vnode, 'pk', None) or _core._position}.{token[0]}"
+                outer_position = _core._enter_position(position)
+                try:
+                    node = _run_callback_body(owner, _BRANCH_SCOPE, lambda: _coerce_result(_render_slot(slot, *args)))
+                finally:
+                    _core._restore_position(outer_position)
+                node.pk = position
+            else:
+                node = _run_callback_body(owner, _BRANCH_SCOPE, lambda: _coerce_result(_render_slot(slot, *args)))
             node.owner_scope = owner
             mount(node, parent, vnode._frag_end, vnode.ns)
             vnode.children[:] = [node]
@@ -451,3 +500,5 @@ def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
     scope._add_child(comp)
     vnode.render_effect = comp
     comp._update_if_necessary()
+    if claim_end:
+        _close_fragment(vnode, parent)

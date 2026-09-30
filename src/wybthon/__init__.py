@@ -33,6 +33,10 @@ Highlights of the reactive model:
   what the action changes and wait for it to land.
 - **Draft-first stores.** [`create_store`][wybthon.create_store]
   setters take a function that mutates a draft with plain Python.
+- **Server rendering.** [`wybthon.server`][wybthon.server] renders
+  the same components to HTML in CPython, including async data and
+  out-of-order streaming; [`hydrate`][wybthon.hydrate] adopts that HTML
+  in the browser instead of rebuilding it.
 - **Dev diagnostics.** Writes inside a tracking scope raise
   [`WriteInScopeError`][wybthon.WriteInScopeError]; reading a signal
   at the top level of a component body warns.
@@ -69,7 +73,7 @@ from .context import Context, ContextNotFoundError, create_context, use_context
 from .dom import Element, Ref
 from .error_boundary import Errored
 from .events import DomEvent, EventHandler, event
-from .flow import Dynamic, DynamicComponent, For, Match, Repeat, Show, Switch, dynamic
+from .flow import For, Match, Repeat, Show, Switch, client_only, dynamic
 from .forms import (
     AsyncValidator,
     Field,
@@ -174,6 +178,7 @@ from .reactivity import (
     Owner,
     Prop,
     Props,
+    ServerError,
     Setter,
     Signal,
     Transition,
@@ -184,6 +189,7 @@ from .reactivity import (
     create_effect,
     create_memo,
     create_optimistic,
+    create_owner,
     create_render_effect,
     create_root,
     create_selector,
@@ -194,7 +200,9 @@ from .reactivity import (
     get_observer,
     get_owner,
     is_accessor,
+    is_disposed,
     is_pending,
+    is_server,
     latest,
     literal,
     map_array,
@@ -209,7 +217,7 @@ from .reactivity import (
     until,
     untrack,
 )
-from .reconciler import Root, render
+from .reconciler import Root, hydrate, render
 from .router import (
     Link,
     Outlet,
@@ -282,6 +290,8 @@ __all__ = [
     "create_tracked_effect",
     "create_render_effect",
     "create_root",
+    "create_owner",
+    "is_disposed",
     "create_unique_id",
     "flush",
     "on_settled",
@@ -315,9 +325,8 @@ __all__ = [
     "Repeat",
     "Switch",
     "Match",
-    "Dynamic",
-    "DynamicComponent",
     "dynamic",
+    "client_only",
     # Boundaries
     "Loading",
     "Reveal",
@@ -364,7 +373,11 @@ __all__ = [
     "Element",
     "Ref",
     "render",
+    "hydrate",
     "Root",
+    # Server rendering
+    "is_server",
+    "ServerError",
     "DomEvent",
     "EventHandler",
     "event",

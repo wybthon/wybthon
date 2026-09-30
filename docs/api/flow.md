@@ -17,8 +17,8 @@ arguments are positional except the keyword-only options noted below.
 | [`For`][wybthon.For] | `For(each, children, fallback=None, *, keyed=True)`: one cached row per item; rows move, never re-diff. |
 | [`Repeat`][wybthon.Repeat] | `Repeat(count, children, fallback=None, *, start=0)`: `children(i)` for `i` in `range(start, start + count)`. |
 | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] | `Switch(Match(when, children, keyed=False), ..., fallback=None)`: first truthy branch wins. |
-| [`Dynamic`][wybthon.Dynamic] | `Dynamic(component, *children, **props)`: render a tag or component chosen at runtime. |
-| [`dynamic`][wybthon.dynamic] | `dynamic(source)`: a reusable component whose implementation is chosen by a reactive `source`; returns a [`DynamicComponent`][wybthon.DynamicComponent]. |
+| [`dynamic`][wybthon.dynamic] | `dynamic(source)`: a component whose implementation (a component or tag) is chosen by a reactive `source`. Call the result with children and props. |
+| [`client_only`][wybthon.client_only] | `client_only(children, *, fallback=None)`: render `children` only in the browser, after hydration; `fallback` renders on the server. |
 
 #### `For` keying shapes
 
@@ -63,9 +63,12 @@ view = ul(
 - `Repeat` is driven purely by the count: growing mounts tail slots,
   shrinking disposes them, and nothing else is touched. `count` and
   `start` may be accessors or ints.
-- `Dynamic` accepts a tag name, a component, `None`, or an accessor
-  returning one of those; the subtree remounts when the resolved
+- `dynamic` accepts a tag name, a component, `None`, or an accessor
+  returning one of those; each instance remounts when the resolved
   component changes.
+- `client_only` renders its fallback during a server render and while
+  hydrating, then its children; see
+  [Server rendering](../concepts/server-rendering.md).
 
 #### See also
 

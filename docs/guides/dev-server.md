@@ -1,6 +1,6 @@
 # Dev server
 
-For a generated application, run `wyb dev --open` from the directory containing `wybthon.toml`. It builds the application, serves its configured base path with client-route fallback, and rebuilds before reloading on source changes. Invalid edits report a build error while the previous output remains available. New and deleted source files also trigger a rebuild.
+For a generated application, run `wyb dev --open` from the directory containing `wybthon.toml`. It builds the application (including any routes listed in `prerender`, so you develop against the same server-rendered pages you'll deploy), serves its configured base path with client-route fallback to `200.html`, and rebuilds before reloading on source changes. Invalid edits report a build error while the previous output remains available. New and deleted source files also trigger a rebuild.
 
 For this repository's demos, fixtures, and benchmarks, `wyb dev --dir .` retains the static server, source manifests, mounts, and SSE endpoints described below.
 

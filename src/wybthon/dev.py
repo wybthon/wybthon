@@ -135,8 +135,10 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
                 return str(self.root / "__missing__")
             relative = requested[len(base) :]
             target = translate_request_path(relative, self.root, [])
+            if target.is_dir():
+                target = target / "index.html"
             if not target.exists() and "." not in target.name:
-                target = self.root / "index.html"
+                target = self.root / "200.html"
             return str(target)
         return str(translate_request_path(path, self.root, self.mounts))
 
@@ -279,11 +281,11 @@ def serve(
         def rebuild() -> None:
             manifest = build_app(project)
             SSEHandler.app_base = manifest["base"]
-            index = project / "dist" / "index.html"
             reload_script = (
                 "<script>new EventSource('/__sse').addEventListener('reload', () => location.reload());</script>"
             )
-            index.write_text(index.read_text().replace("</body>", reload_script + "</body>"))
+            for page in (project / "dist").rglob("*.html"):
+                page.write_text(page.read_text().replace("</body>", reload_script + "</body>"))
 
         rebuild()
         SSEHandler.root = project / "dist"

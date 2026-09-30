@@ -1,4 +1,4 @@
-"""Control flow: Show, For, Repeat, Switch/Match, Dynamic."""
+"""Control flow: Show, For, Repeat, Switch/Match, dynamic, client_only."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from conftest import StubNode, collect_texts
 
 from wybthon import _warnings
 from wybthon.component import component
-from wybthon.flow import Dynamic, For, Match, Repeat, Show, Switch, dynamic
+from wybthon.flow import For, Match, Repeat, Show, Switch, dynamic
 from wybthon.html import div, h1, h2, li, p, span, ul
 from wybthon.reactivity import Prop, create_signal, flush, on_cleanup
 
@@ -361,13 +361,13 @@ def test_switch_keyed_match_recreates_on_value_change(wyb, root_element):
 
 
 # ---------------------------------------------------------------------------
-# Dynamic
+# dynamic
 # ---------------------------------------------------------------------------
 
 
 def test_dynamic_switches_tag(wyb, root_element):
     tag, set_tag = create_signal("h1")
-    wyb["reconciler"].render(div(Dynamic(tag, children="T", class_="x")), root_element)
+    wyb["reconciler"].render(div(dynamic(tag)(children="T", class_="x")), root_element)
     outer = elements(root_element.element)[0]
     assert elements(outer)[0].tag == "h1"
     assert elements(outer)[0].attributes["class"] == "x"
@@ -388,7 +388,7 @@ def test_dynamic_switches_component_and_passes_props(wyb, root_element):
 
     which, set_which = create_signal(A)
     label, set_label = create_signal("x")
-    wyb["reconciler"].render(div(Dynamic(which, label=label)), root_element)
+    wyb["reconciler"].render(div(dynamic(which)(label=label)), root_element)
     assert texts(root_element.element) == ["A:", "x"]
     set_label("y")
     flush()
@@ -403,12 +403,12 @@ def test_dynamic_with_static_component(wyb, root_element):
     def A():
         return span("a")
 
-    wyb["reconciler"].render(div(Dynamic(A)), root_element)
+    wyb["reconciler"].render(div(dynamic(A)()), root_element)
     assert texts(root_element.element) == ["a"]
 
 
 def test_dynamic_accepts_positional_children(wyb, root_element):
-    wyb["reconciler"].render(div(Dynamic("h2", "Heading", span("!"))), root_element)
+    wyb["reconciler"].render(div(dynamic("h2")("Heading", span("!"))), root_element)
     outer = elements(root_element.element)[0]
     assert elements(outer)[0].tag == "h2"
     assert texts(root_element.element) == ["Heading", "!"]

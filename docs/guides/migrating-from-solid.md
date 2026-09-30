@@ -44,8 +44,7 @@ The differences are mostly surface: Python instead of JavaScript, HTML helper fu
 | `<Index each>` | `For(each, children, keyed=False)` |
 | `<Repeat count>` | [`Repeat(count, children)`][wybthon.Repeat] |
 | `<Switch>` / `<Match when>` | [`Switch`][wybthon.Switch] / [`Match(when, children)`][wybthon.Match] |
-| `<Dynamic component>` | [`Dynamic(component, *children, **props)`][wybthon.Dynamic] |
-| `dynamic(source)` | [`dynamic(source)`][wybthon.dynamic] |
+| `dynamic(source)` (and the deprecated `<Dynamic component>`) | [`dynamic(source)`][wybthon.dynamic], called like a component |
 | `<Portal mount>` | [`Portal(children, mount=...)`][wybthon.Portal] |
 | `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
 | `createContext(default)` | [`create_context(default)`][wybthon.create_context] |
@@ -58,6 +57,16 @@ The differences are mostly surface: Python instead of JavaScript, HTML helper fu
 | `indexArray(source, fn)` | `map_array(source, fn, keyed=False)` |
 | `createSelector(source)` | [`create_selector(source)`][wybthon.create_selector] |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
+| `flush()` / `flush(fn)` | [`flush()`][wybthon.flush] / `flush(fn)` |
+| `createSignal(v, { ownedWrite: true })` | `create_signal(v, owned_write=True)` |
+| `createOwner()` / `isDisposed(owner)` | [`create_owner()`][wybthon.create_owner] / [`is_disposed(owner)`][wybthon.is_disposed] |
+| `renderToString(fn)` | [`render_to_string(view)`][wybthon.server.render_to_string] |
+| `renderToStream(fn)` | [`render_to_stream(view)`][wybthon.server.render_to_stream] (async iterator) |
+| `renderToStringAsync(fn)` | [`await render_to_string_async(view)`][wybthon.server.render_to_string_async] |
+| `hydrate(fn, el)` | [`hydrate(view, container)`][wybthon.hydrate] |
+| `isServer` | [`is_server()`][wybthon.is_server] |
+| `clientOnly(() => import(...))` | [`client_only(children, fallback=...)`][wybthon.client_only] |
+| `createMemo(fn, { ssrSource })` | `create_memo(fn, ssr_source="server" \| "hybrid" \| "client")` |
 | `NotReadyError` | [`NotReadyError`][wybthon.NotReadyError] |
 | `props.x` (getter) | `x: Prop[T]` parameter; place `x` in the tree or call `x()` in a scope |
 | `ref={el => ...}` | `ref=Ref()`; read `ref.current.element` after `on_settled` |

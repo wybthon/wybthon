@@ -80,6 +80,7 @@ nav:
     - DOM Interop: concepts/dom.md
     - Error Boundaries: concepts/error-boundaries.md
     - Async and Loading: concepts/async-loading.md
+    - Server Rendering: concepts/server-rendering.md
   - Guides:
     - Dev Server: guides/dev-server.md
     - Demo Apps: guides/demo-app.md
@@ -122,9 +123,14 @@ nav:
     - Error Boundary: api/error_boundary.md
     - Loading: api/loading.md
     - Portal: api/portal.md
+    - Server rendering: api/server.md
     - Dev server (CLI): api/dev.md
     - Warnings: api/warnings.md
     - Application Tools: api/app-tools.md
+  - RFCs:
+    - Overview: rfcs/index.md
+    - Template: rfcs/0000-template.md
+    - "0001: Server rendering": rfcs/0001-server-rendering-and-hydration.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

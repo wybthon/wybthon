@@ -1,4 +1,4 @@
-"""Deterministic static app bundles and a production preview server."""
+"""Deterministic static app bundles, prerendered pages, and a production preview server."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ import io
 import json
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import tomllib
 import zipfile
@@ -19,18 +21,24 @@ from urllib.parse import unquote, urlsplit
 
 PYODIDE_VERSION = "314.0.6"
 _MARKER = "<!-- wyb:bootstrap -->"
+# Prerendered pages replace everything between these markers (inclusive)
+# with the server-rendered markup; client-only pages keep what's there.
+_APP_START = "<!-- wyb:app -->"
+_APP_END = "<!-- /wyb:app -->"
 _INDEX = """<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wybthon app</title></head>
-<body><p id="wyb-loading" role="status">Loading...</p><div id="app"></div>
+<body><div id="app"><!-- wyb:app --><p id="wyb-loading" role="status">Loading...</p><!-- /wyb:app --></div>
 <!-- wyb:bootstrap -->
 </body></html>
 """
+# Build-time files that never ship to the browser.
+_SERVER_ONLY = {"build.py", "dev.py", "mypy_plugin.py", "server.py", "_server_dom.py", "_prerender.py"}
 _STARTER = '''"""A run-once component with a reactive counter."""
 
-from wybthon import button, component, create_signal, div, h1, render
+from wybthon import button, component, create_signal, div, h1
 
 
 @component
@@ -42,8 +50,9 @@ def App():
     )
 
 
-def main():
-    return render(App(), "#app")
+def app():
+    """Return the root view; the bootstrap renders (or hydrates) it into the mount element."""
+    return App()
 '''
 
 
@@ -57,8 +66,10 @@ def init_app(directory: Path) -> None:
     (directory / "app" / "main.py").write_text(_STARTER, encoding="utf-8")
     (directory / "index.html").write_text(_INDEX, encoding="utf-8")
     (directory / "wybthon.toml").write_text(
-        f'entry = "app.main:main"\napp-dir = "app"\nbase = "/"\n'
+        f'entry = "app.main:app"\nmount = "#app"\napp-dir = "app"\nbase = "/"\n'
         f'pyodide-version = "{PYODIDE_VERSION}"\npackages = []\nwheels = []\n'
+        "# Routes rendered to static HTML at build time; the browser hydrates them.\n"
+        'prerender = ["/"]\ncrawl = true\n'
         '\n[chunks]\n# charts = ["app/charts/**"]\n',
         encoding="utf-8",
     )
@@ -116,9 +127,16 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
         raise ValueError("The build output must be separate from the project and application sources")
     if destination.exists() and any(destination.iterdir()) and not (destination / ".wyb-build").is_file():
         raise ValueError("Refusing to replace an output directory without a .wyb-build marker")
-    entry = config.get("entry", "app.main:main")
+    entry = config.get("entry", "app.main:app")
     if not re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*", entry):
         raise ValueError("entry must have the form package.module:function")
+    mount = config.get("mount", "#app")
+    if not isinstance(mount, str) or not mount.strip():
+        raise ValueError("mount must be a CSS selector")
+    routes = config.get("prerender", [])
+    if not isinstance(routes, list) or any(not isinstance(r, str) or not r.startswith("/") for r in routes):
+        raise ValueError("prerender must be a list of paths starting with /")
+    crawl = bool(config.get("crawl", False))
     base_path = base if base is not None else config.get("base", "/")
     if (
         not base_path.startswith("/")
@@ -164,12 +182,23 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
     runtime = {
         "wybthon/" + path.relative_to(package).as_posix(): path.read_bytes()
         for path in package.rglob("*.py")
-        if path.name not in {"build.py", "dev.py", "mypy_plugin.py"}
+        if path.name not in _SERVER_ONLY or path.parent != package
     }
+    target_python = _pyodide_python(config.get("pyodide-version", PYODIDE_VERSION))
+    bytecode = config.get("bytecode", True) and target_python == sys.version_info[:2]
+    if bytecode:
+        runtime.update(_bytecode(runtime, "/wybthon-app"))
+        for name, files in list(groups.items()):
+            groups[name] = {**files, **_bytecode(files, "/wybthon-app")}
     template_path = directory / "index.html"
     template = template_path.read_text(encoding="utf-8") if template_path.exists() else _INDEX
     if template.count(_MARKER) != 1:
         raise ValueError(f"index.html must contain exactly one {_MARKER} marker")
+    pages: dict[str, str] = {}
+    if routes:
+        if template.count(_APP_START) != 1 or template.count(_APP_END) != 1:
+            raise ValueError(f"Prerendering needs exactly one {_APP_START} ... {_APP_END} region in index.html")
+        pages = _prerender(directory, entry, base_path, routes, crawl=crawl)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="wyb-build-", dir=destination.parent) as temporary:
         staging = Path(temporary)
@@ -189,7 +218,10 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
         manifest = {
             "format": 1,
             "entry": entry,
+            "mount": mount,
             "base": base_path,
+            "bytecode": bool(bytecode),
+            "prerendered": sorted(pages),
             "pyodide_url": config.get(
                 "pyodide-url",
                 f"https://cdn.jsdelivr.net/pyodide/v{config.get('pyodide-version', PYODIDE_VERSION)}/full/",
@@ -203,12 +235,20 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
         }
         bootstrap = _asset(staging, "bootstrap", (package / "_bootstrap.js").read_bytes(), "js")
         (staging / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-        (staging / "index.html").write_text(
-            template.replace(
-                _MARKER, f'<script type="module" src="{html.escape(base_path + bootstrap, quote=True)}"></script>'
-            ),
-            encoding="utf-8",
+        page = template.replace(
+            _MARKER, f'<script type="module" src="{html.escape(base_path + bootstrap, quote=True)}"></script>'
         )
+        # The client-only shell: the fallback for routes that weren't prerendered.
+        (staging / "200.html").write_text(page, encoding="utf-8")
+        (staging / "index.html").write_text(page, encoding="utf-8")
+        if pages:
+            start, end = page.index(_APP_START), page.index(_APP_END) + len(_APP_END)
+            for route, markup in pages.items():
+                target = staging / route.strip("/") / "index.html"
+                if not target.resolve().is_relative_to(staging.resolve()):
+                    raise ValueError(f"Prerender route escapes the output: {route}")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(page[:start] + markup + page[end:], encoding="utf-8")
         (staging / ".wyb-build").write_text("1\n", encoding="utf-8")
         with tempfile.TemporaryDirectory(prefix="wyb-previous-", dir=destination.parent) as backup_dir:
             backup = Path(backup_dir) / "previous"
@@ -221,6 +261,56 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
                     backup.rename(destination)
                 raise
     return manifest
+
+
+def _pyodide_python(version: str) -> tuple[int, int] | None:
+    """The Python version a Pyodide release runs, when it's known."""
+    major = version.split(".", 1)[0]
+    if major.isdigit() and int(major) >= 300:
+        return (3, int(major) - 300)
+    return {"0.26": (3, 12), "0.27": (3, 12), "0.28": (3, 13), "0.29": (3, 13)}.get(".".join(version.split(".")[:2]))
+
+
+def _bytecode(files: dict[str, bytes], root: str) -> dict[str, bytes]:
+    """Unchecked-hash bytecode (PEP 552) for each module, so the browser skips compiling it.
+
+    The interpreter imports ``__pycache__/<module>.<tag>.pyc`` without
+    comparing it to the source, so the archive's timestamps don't
+    matter. Only valid when this interpreter's version matches the
+    browser runtime's; the caller checks.
+    """
+    from importlib._bootstrap_external import _code_to_hash_pyc  # type: ignore[attr-defined]
+    from importlib.util import source_hash
+
+    tag = sys.implementation.cache_tag
+    compiled: dict[str, bytes] = {}
+    for name, data in files.items():
+        if not name.endswith(".py"):
+            continue
+        code = compile(data, f"{root}/{name}", "exec", dont_inherit=True)
+        folder, _, filename = name.rpartition("/")
+        target = (
+            f"{folder}/__pycache__/{filename[:-3]}.{tag}.pyc" if folder else f"__pycache__/{filename[:-3]}.{tag}.pyc"
+        )
+        compiled[target] = bytes(_code_to_hash_pyc(code, source_hash(data), checked=False))
+    return compiled
+
+
+def _prerender(directory: Path, entry: str, base: str, routes: list[str], *, crawl: bool) -> dict[str, str]:
+    """Render `routes` in a fresh interpreter; returns route -> container markup."""
+    request = json.dumps({"project": str(directory), "entry": entry, "base": base, "routes": routes, "crawl": crawl})
+    result = subprocess.run(
+        [sys.executable, "-m", "wybthon._prerender"],
+        input=request,
+        capture_output=True,
+        text=True,
+        cwd=directory,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError(f"Prerendering failed:\n{result.stderr.strip()}")
+    pages: dict[str, str] = json.loads(result.stdout)["pages"]
+    return pages
 
 
 def preview(directory: Path, *, host: str = "127.0.0.1", port: int = 8000) -> None:
@@ -241,7 +331,7 @@ def preview(directory: Path, *, host: str = "127.0.0.1", port: int = 8000) -> No
             if target.is_dir():
                 target /= "index.html"
             if not target.exists() and "." not in Path(relative).name:
-                target = directory / "index.html"
+                target = directory / "200.html"
             return str(target)
 
         def end_headers(self) -> None:

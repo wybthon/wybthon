@@ -47,8 +47,9 @@ from collections.abc import Callable
 from typing import Any
 
 from .component import Component
+from .reactivity import _core
 from .reactivity._core import Memo, run_with_owner
-from .reactivity._primitives import create_memo, latest
+from .reactivity._primitives import latest
 from .reactivity._props import Props
 from .vnode import VNode, h
 
@@ -117,13 +118,34 @@ class LazyComponent(Component):
         return _coerce_component(result)
 
     def _ensure_memo(self) -> Memo[Any]:
+        session = _core._session
+        if _core._server_depth:
+            # A server render loads per mount: a cached memo would outlive the
+            # render (and its event loop) and couldn't take part in its passes.
+            return self._create_memo(owned=True)
         memo = self._memo
         if memo is None:
             # Detached from the mounting component's ownership so the
             # loaded component stays cached across unmounts.
-            memo = run_with_owner(None, lambda: create_memo(lambda: self._load()))
-            self._memo = memo
+            memo = self._memo = self._create_memo(owned=False)
+        elif session is not None and session.keying:
+            # The server created a memo at this position; keep the keys of
+            # everything after it aligned.
+            _core._next_key()
         return memo
+
+    def _create_memo(self, *, owned: bool) -> Memo[Any]:
+        def load() -> Any:
+            return self._load()
+
+        def make() -> Memo[Any]:
+            # "local": resolved on the server, never serialized (a component
+            # isn't data); the browser loads the code itself.
+            memo = Memo(load, ssr_source="local")
+            memo._update_if_necessary()
+            return memo
+
+        return make() if owned else run_with_owner(None, make)
 
     def _render_lazy(self, props: Props) -> Any:
         memo = self._ensure_memo()
@@ -183,12 +205,19 @@ def lazy(loader: Callable[[], Any], *, chunk: str | None = None) -> LazyComponen
     """
     if chunk is not None:
 
-        async def load() -> Any:
-            from .assets import load_chunk
+        def load() -> Any:
+            if _core._server_depth:
+                # Every chunk is importable on the server.
+                return loader()
 
-            await load_chunk(chunk)
-            value = loader()
-            return await value if isinstance(value, AbcAwaitable) else value
+            async def fetch() -> Any:
+                from .assets import load_chunk
+
+                await load_chunk(chunk)
+                value = loader()
+                return await value if isinstance(value, AbcAwaitable) else value
+
+            return fetch()
 
         return LazyComponent(load)
     return LazyComponent(loader)

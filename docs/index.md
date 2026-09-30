@@ -14,8 +14,9 @@ The framework ships with everything you need to build a real app:
 - Async-first data: an `async def` passed to `create_memo` is the fetching primitive; [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] boundaries handle the pending and failure states.
 - [`action`][wybthon.action] with [`create_optimistic`][wybthon.create_optimistic] and [`create_optimistic_store`][wybthon.create_optimistic_store] for mutations.
 - Draft-first stores ([`create_store`][wybthon.create_store], [`reconcile`][wybthon.reconcile], [`create_projection`][wybthon.create_projection]).
-- Flow control ([`Show`][wybthon.Show], [`For`][wybthon.For], [`Repeat`][wybthon.Repeat], [`Switch`][wybthon.Switch], [`Dynamic`][wybthon.Dynamic]), callable [`Context`][wybthon.Context] objects, [`Portal`][wybthon.Portal], and [`lazy`][wybthon.lazy].
+- Flow control ([`Show`][wybthon.Show], [`For`][wybthon.For], [`Repeat`][wybthon.Repeat], [`Switch`][wybthon.Switch], [`dynamic`][wybthon.dynamic]), callable [`Context`][wybthon.Context] objects, [`Portal`][wybthon.Portal], and [`lazy`][wybthon.lazy].
 - A client-side router with [`Router`][wybthon.Router], [`Route`][wybthon.Route], and [`Link`][wybthon.Link].
+- [Server rendering](concepts/server-rendering.md): prerender routes at build time or render per request in CPython, stream `Loading` boundaries, and [`hydrate`][wybthon.hydrate] the result in the browser.
 - Form state, validators, and accessibility helpers.
 - A dev server (`wyb dev`) with hot reload via Server-Sent Events.
 

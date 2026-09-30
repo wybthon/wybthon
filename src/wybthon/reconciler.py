@@ -20,8 +20,14 @@ Mental model:
   subtree to the SVG or MathML namespace (`foreignObject` switches back
   to HTML), so SVG works with the same helpers as HTML.
 
-Public surface: [`render`][wybthon.render], plus the lower-level
-`mount`, `unmount`, and `patch` used by control-flow primitives.
+- **Hydration claims instead of creating.** [`hydrate`][wybthon.hydrate]
+  runs the same mount code, but each node claims the matching node a
+  server render already put in the document (see
+  [`wybthon.server`][wybthon.server]).
+
+Public surface: [`render`][wybthon.render] and
+[`hydrate`][wybthon.hydrate], plus the lower-level `mount`, `unmount`,
+and `patch` used by control-flow primitives.
 """
 
 from __future__ import annotations
@@ -35,12 +41,17 @@ from .component import Component
 from .dom import Element
 from .events import _handlers, remove_handlers_for, set_handler
 from .kernel import (
+    OP_CLAIM_COMMENT,
+    OP_CLAIM_ELEMENT,
+    OP_CLAIM_TEXT,
     OP_CLONE_TPL,
     OP_CREATE_COMMENT,
     OP_CREATE_ELEMENT,
     OP_CREATE_ELEMENT_NS,
     OP_CREATE_TEXT,
     OP_HOLE_TEXT,
+    OP_HYDRATE,
+    OP_HYDRATE_END,
     OP_INSERT,
     OP_MOVE_RANGE,
     OP_RELEASE,
@@ -86,7 +97,7 @@ from .template import (
 )
 from .vnode import NS_MATHML, NS_SVG, Fragment, VNode, hole, normalize_children, to_text_vnode
 
-__all__ = ["render", "Root", "mount", "unmount", "patch"]
+__all__ = ["render", "hydrate", "Root", "mount", "unmount", "patch"]
 
 _emit = kernel.emit
 _alloc_id = kernel.alloc_id
@@ -190,12 +201,7 @@ def render(vnode: Any, container: Element | str | int) -> Root:
         root = render(h1("Hello, world!"), "#app")
         ```
     """
-    if isinstance(container, str):
-        container_el = Element(container, existing=True)
-    elif isinstance(container, int):
-        container_el = Element(node_id=container)
-    else:
-        container_el = container
+    container_el = _container(container)
     container_id = container_el.node_id
     node = _coerce_result(vnode)
 
@@ -210,15 +216,123 @@ def render(vnode: Any, container: Element | str | int) -> Root:
             flush()
             return existing
 
-        owner = Owner()
-        root = Root(container_el, node, owner)
-        root._release_container = isinstance(container, str)
-        _roots[container_id] = root
-        _emit((OP_ROOT, container_id))
-        _core.run_with_owner(owner, lambda: mount(node, container_id))
+        root = _new_root(container_el, node, release=isinstance(container, str))
+        _core.run_with_owner(root._owner, lambda: mount(node, container_id))
         flush()
         return root
     finally:
+        _core._gc_resume()
+
+
+def hydrate(vnode: Any, container: Element | str | int) -> Root:
+    """Adopt server-rendered HTML under `container` and make it interactive.
+
+    The counterpart of [`render`][wybthon.render] for pages rendered by
+    [`wybthon.server`][wybthon.server]. The tree mounts exactly as
+    `render` would mount it, except that each node claims the matching
+    node the server already put in the document instead of creating a
+    new one. Async values the server resolved come from the page's
+    `data-wyb-state` script, so they're neither fetched again nor shown
+    as loading. Input recorded by the production bootstrap before
+    hydration is replayed afterward.
+
+    Mismatches never break the page: a node that doesn't match is
+    created in place, server nodes nobody claimed are removed, and dev
+    mode logs a warning.
+
+    Args:
+        vnode: The same root view the server rendered.
+        container: The element holding the server-rendered markup: an
+            [`Element`][wybthon.Element], a CSS selector, or a kernel
+            node id.
+
+    Returns:
+        A [`Root`][wybthon.Root], as from `render`.
+
+    Example:
+        ```python
+        from wybthon import hydrate
+
+        hydrate(App(), "#app")
+        ```
+    """
+    from .reactivity._session import Session, decode_state
+
+    container_el = _container(container)
+    container_id = container_el.node_id
+    values, errors, failed = decode_state(kernel.take_state(container_id))
+    node = _coerce_result(vnode)
+    session = Session("hydrate", values=values, errors=errors, failed=failed)
+
+    _core._gc_pause()
+    try:
+        root = _new_root(container_el, node, release=isinstance(container, str))
+        _emit((OP_HYDRATE, container_id))
+        previous = _core._session
+        _core._session = session
+        session.keying = True
+        kernel.claiming = True
+        node.pk = "r"
+        try:
+            _core.run_with_owner(root._owner, lambda: mount(node, container_id))
+        finally:
+            kernel.claiming = False
+            session.keying = False
+            _core._session = previous
+            _emit((OP_HYDRATE_END,))
+        flush()
+    finally:
+        _core._gc_resume()
+    kernel.replay_events()
+    if session.after_hydration:
+        for callback in session.after_hydration:
+            try:
+                callback()
+            except Exception as exc:
+                log_error(f"Post-hydration callback raised: {exc}", exc)
+        flush()
+    return root
+
+
+def _container(container: Element | str | int) -> Element:
+    if isinstance(container, str):
+        return Element(container, existing=True)
+    if isinstance(container, int):
+        return Element(node_id=container)
+    return container
+
+
+def _new_root(container_el: Element, node: VNode, *, release: bool) -> Root:
+    container_id = container_el.node_id
+    root = Root(container_el, node, Owner())
+    root._release_container = release
+    _roots[container_id] = root
+    _emit((OP_ROOT, container_id))
+    return root
+
+
+def _server_render(vnode: Any, container_id: int, session: Any) -> Root:
+    """Mount `vnode` into a server container for one server render pass.
+
+    The session keys memos for the whole pass (mount and flush) and
+    carries the request URL. See `wybthon.server`.
+    """
+    node = _coerce_result(vnode)
+    _core._gc_pause()
+    previous = _core._session
+    _core._session = session
+    session.keying = True
+    try:
+        root = Root(Element(node_id=container_id), node, Owner())
+        root._release_container = True
+        _roots[container_id] = root
+        node.pk = "r"
+        _core.run_with_owner(root._owner, lambda: mount(node, container_id))
+        flush()
+        return root
+    finally:
+        session.keying = False
+        _core._session = previous
         _core._gc_resume()
 
 
@@ -372,6 +486,9 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
     if tag == "_text":
         nid = _alloc_id()
         vnode.el = nid
+        if kernel.claiming:
+            _emit((OP_CLAIM_TEXT, nid, parent_id, vnode.props.get("nodeValue", "")))
+            return
         _emit((OP_CREATE_TEXT, nid, vnode.props.get("nodeValue", "")))
         _emit((OP_INSERT, parent_id, nid, anchor_id))
         return
@@ -394,7 +511,7 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
         _mount_component(vnode, parent_id, anchor_id, ns)
         return
 
-    if ns is None and _mount_template(vnode, parent_id, anchor_id):
+    if ns is None and not kernel.claiming and _mount_template(vnode, parent_id, anchor_id):
         return
 
     _mount_element(vnode, parent_id, anchor_id, ns)
@@ -407,7 +524,10 @@ def _mount_element(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str 
     nid = _alloc_id()
     vnode.el = nid
     el_ns = _element_ns(tag, ns)
-    if el_ns is None:
+    claiming = kernel.claiming
+    if claiming:
+        _emit((OP_CLAIM_ELEMENT, nid, parent_id, tag, el_ns))
+    elif el_ns is None:
         _emit((OP_CREATE_ELEMENT, nid, tag))
     else:
         _emit((OP_CREATE_ELEMENT_NS, nid, el_ns, tag))
@@ -415,9 +535,12 @@ def _mount_element(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str 
     norm_children = normalize_children(vnode.children)
     vnode.children = norm_children
     child_ns = _child_ns(tag, ns)
+    if _core._session is not None:
+        _assign_positions(vnode, norm_children)
     for child in norm_children:
         mount(child, nid, None, child_ns)
-    _emit((OP_INSERT, parent_id, nid, anchor_id))
+    if not claiming:
+        _emit((OP_INSERT, parent_id, nid, anchor_id))
     attach_ref(vnode.props, nid)
 
 
@@ -492,20 +615,57 @@ def _template_ns(parent: VNode) -> str | None:
 
 def _mount_fragment(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None) -> None:
     """Mount a fragment: comment markers with the children directly in the parent."""
-    start_id = _alloc_id()
-    vnode.el = start_id
-    _emit((OP_CREATE_COMMENT, start_id))
-    _emit((OP_INSERT, parent_id, start_id, anchor_id))
-
-    end_id = _alloc_id()
-    vnode._frag_end = end_id
-    _emit((OP_CREATE_COMMENT, end_id))
-    _emit((OP_INSERT, parent_id, end_id, anchor_id))
-
+    claim_end = _open_fragment(vnode, parent_id, anchor_id)
     norm_children = normalize_children(vnode.children)
     vnode.children = norm_children
+    end_id = vnode._frag_end
+    if _core._session is not None:
+        _assign_positions(vnode, norm_children)
     for child in norm_children:
         mount(child, parent_id, end_id, ns)
+    if claim_end:
+        _close_fragment(vnode, parent_id)
+
+
+def _assign_positions(parent: VNode, children: list[VNode]) -> None:
+    """Give each child a position key derived from its parent's (hydration keys)."""
+    base = getattr(parent, "pk", None) or _core._position
+    for i, child in enumerate(children):
+        child.pk = f"{base}.{i}"
+
+
+def _open_fragment(vnode: VNode, parent_id: int, anchor_id: int | None) -> bool:
+    """Create (or claim) a fragment's start marker and allocate its end marker.
+
+    Returns True when the end marker must be claimed with
+    `_close_fragment` once the content has been claimed: in hydration
+    the end marker follows the content in the server's DOM. A `marker`
+    prop becomes the markers' comment data (`Loading` boundaries use it
+    for streaming and to resynchronize hydration).
+    """
+    marker = vnode.props.get("marker")
+    start_id = _alloc_id()
+    vnode.el = start_id
+    end_id = _alloc_id()
+    vnode._frag_end = end_id
+    if kernel.claiming:
+        _emit((OP_CLAIM_COMMENT, start_id, parent_id, marker or ""))
+        return True
+    if marker:
+        _emit((OP_CREATE_COMMENT, start_id, marker))
+        _emit((OP_INSERT, parent_id, start_id, anchor_id))
+        _emit((OP_CREATE_COMMENT, end_id, "/" + marker))
+    else:
+        _emit((OP_CREATE_COMMENT, start_id))
+        _emit((OP_INSERT, parent_id, start_id, anchor_id))
+        _emit((OP_CREATE_COMMENT, end_id))
+    _emit((OP_INSERT, parent_id, end_id, anchor_id))
+    return False
+
+
+def _close_fragment(vnode: VNode, parent_id: int) -> None:
+    marker = vnode.props.get("marker")
+    _emit((OP_CLAIM_COMMENT, vnode._frag_end, parent_id, "/" + marker if marker else ""))
 
 
 # ---------------------------------------------------------------------------
@@ -526,7 +686,9 @@ def _coerce_result(value: Any) -> VNode:
     return to_text_vnode(value)
 
 
-def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Computation:
+def _hole_updater(
+    vnode: VNode, parent_id: int, end_id: int, getter: Any, claim: list[bool] | None = None
+) -> Computation:
     """Create the render effect that evaluates a hole and patches its region.
 
     The expression runs tracked in the compute stage (owned by the
@@ -555,6 +717,34 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
             return
         prev = vnode.subtree
         rtype = type(result)
+        if claim is not None and claim[0] and kernel.claiming:
+            # Hydrating: a text result claims the server's text node as the
+            # anchor itself; other results claim their content first and the
+            # anchor comment after it, in document order.
+            claim[0] = False
+            if rtype is str or rtype is int or rtype is float:
+                text = result if rtype is str else str(result)
+                _emit((OP_CLAIM_TEXT, end_id, parent_id, text))
+                vnode._hole_text = text
+                return
+            if vnode.scope is None:
+                vnode.scope = Owner()
+                if scope_parent is not None:
+                    scope_parent._add_child(vnode.scope)
+            new_node = _coerce_result(result)
+            new_node.pk = f"{getattr(vnode, 'pk', None) or _core._position}.h"
+            vnode.subtree = new_node
+
+            def claim_content() -> None:
+                try:
+                    mount(new_node, parent_id, end_id, ns)
+                except Exception as exc:
+                    if not _dispatch_to_error_boundary(exc):
+                        log_error(f"Reactive hole update failed: {exc}", exc)
+
+            _core._run_owned_untracked(vnode.scope, claim_content)
+            _emit((OP_CLAIM_COMMENT, end_id, parent_id, ""))
+            return
         if rtype is str or rtype is int or rtype is float:
             text = result if rtype is str else str(result)
             if prev is not None:
@@ -573,6 +763,8 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
             if scope_parent is not None:
                 scope_parent._add_child(vnode.scope)
         new_node = _coerce_result(result)
+        if _core._session is not None:
+            new_node.pk = f"{getattr(vnode, 'pk', None) or _core._position}.h"
         vnode.subtree = new_node
 
         def commit() -> None:
@@ -587,13 +779,25 @@ def _hole_updater(vnode: VNode, parent_id: int, end_id: int, getter: Any) -> Com
 
         _core._run_owned_untracked(vnode.scope, commit)
 
-    comp = Computation(
-        getter if type(getter) is _core.Signal else compute,
-        kind=_K_RENDER,
-        apply_scope=False,
-        apply=apply,
-        pass_prev=False,
-    )
+    fn: Any = getter if type(getter) is _core.Signal else compute
+    if _core._session is not None:
+        # Server rendering and hydration: memos created by the expression
+        # are keyed by the hole's position (checked per run, since the
+        # session ends after the mount).
+        position = f"{getattr(vnode, 'pk', None) or _core._position}h"
+        plain = fn
+
+        def fn() -> Any:
+            session = _core._session
+            if session is None or not session.keying:
+                return plain()
+            previous = _core._enter_position(position)
+            try:
+                return plain()
+            finally:
+                _core._restore_position(previous)
+
+    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
     if scope_parent is not None:
         scope_parent._add_child(comp)
     comp._update_if_necessary()
@@ -615,19 +819,27 @@ def _mount_hole(
     When `end_id` is provided (template fast path), the existing
     placeholder comment is adopted as the end anchor.
     """
+    claim: list[bool] | None = None
     if end_id is None:
         end_id = _alloc_id()
-        _emit((OP_CREATE_COMMENT, end_id))
-        _emit((OP_INSERT, parent_id, end_id, anchor_id))
+        if kernel.claiming:
+            claim = [True]
+        else:
+            _emit((OP_CREATE_COMMENT, end_id))
+            _emit((OP_INSERT, parent_id, end_id, anchor_id))
     else:
         vnode.ns = ns
     vnode.el = end_id
     vnode._frag_end = end_id
 
     getter = vnode.props.get("getter")
-    if not callable(getter):
-        return
-    vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter)
+    if callable(getter):
+        vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+    if claim is not None and claim[0]:
+        # Nothing claimed the anchor (the expression isn't ready, or its
+        # first result applies later): it's the server's empty-hole comment.
+        claim[0] = False
+        _emit((OP_CLAIM_COMMENT, end_id, parent_id, ""))
 
 
 def _patch_hole(old: VNode, new: VNode, parent_id: int) -> None:
@@ -684,6 +896,11 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     if parent_owner is not None:
         parent_owner._add_child(ctx)
 
+    session = _core._session
+    keyed = session is not None and session.keying
+    if keyed:
+        position = f"{getattr(vnode, 'pk', None) or _core._position}:{component_name(comp)}"
+        previous_position = _core._enter_position(position)
     saved = _enter_component_setup(ctx)
     try:
         try:
@@ -696,9 +913,13 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
                 raise
     finally:
         _exit_component_setup(saved)
+        if keyed:
+            _core._restore_position(previous_position)
 
     sub_tree = _coerce_result(result)
     vnode.subtree = sub_tree
+    if keyed:
+        sub_tree.pk = position + "/"
 
     # Mount owned by the component and untracked (inlined
     # `_run_owned_untracked`: this runs once per component instance).
