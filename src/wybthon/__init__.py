@@ -250,7 +250,7 @@ from .store import (
 from .virtual import VirtualFor, Virtualizer, create_virtualizer
 from .vnode import Fragment, VNode, h, hole
 
-__version__ = "0.35.0"
+__version__ = "0.36.0"
 
 __all__ = [
     "VirtualFor",

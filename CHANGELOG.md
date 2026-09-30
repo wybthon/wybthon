@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.36.0 (2026-09-30)
+
+### Features
+
+- **reconciler,kernel**: Add server rendering and hydration
+  ([#38](https://github.com/wybthon/wybthon/pull/38),
+  [`61e8684`](https://github.com/wybthon/wybthon/commit/61e868458cc66baf942adc189cd1ddb03a837e7b))
+
+
 ## v0.35.0 (2026-09-29)
 
 ### Documentation
