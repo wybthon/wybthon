@@ -3,7 +3,6 @@
 - **Status:** Draft
 - **Author:** Your name
 - **Created:** YYYY-MM-DD
-- **Tracking:** link to the issue or pull request
 
 ## Summary
 
@@ -45,7 +44,3 @@ What's still open? What's deliberately left for later RFCs?
 ## Decision
 
 Filled in by a maintainer when the RFC is accepted or rejected.
-
-## Implementation
-
-Links to the pull requests that implement this RFC. The pull request that completes the implementation also sets the status to `Implemented`.

@@ -3,7 +3,6 @@
 - **Status:** Implemented
 - **Author:** Owen Carey
 - **Created:** 2026-09-29
-- **Tracking:** [#38](https://github.com/wybthon/wybthon/pull/38)
 
 ## Summary
 
@@ -171,7 +170,3 @@ Replacing a list with an empty one (or clearing a store list) now disposes every
 ## Decision
 
 Accepted on 2026-09-29, with implementation requested in the same change.
-
-## Implementation
-
-Implemented in [#38](https://github.com/wybthon/wybthon/pull/38).
