@@ -11,14 +11,15 @@ pages linked in the left column carry the details.
 | --- | --- |
 | [Components](component.md) | `component`, `Component`, `Prop`, `Props`, `prop`, `merge`, `omit`, `children` |
 | [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `element`, `is_accessor` |
-| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Computation`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_root`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `create_selector`, `WriteInScopeError` |
+| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Computation`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_root`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `create_owner`, `is_disposed`, `map_array`, `create_selector`, `WriteInScopeError` |
 | [Async](reactivity.md) | `NotReadyError`, `Transition`, `is_pending`, `latest`, `refresh`, `resolve`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Context](context.md) | `Context`, `ContextNotFoundError`, `create_context`, `use_context` |
-| [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `Dynamic` |
+| [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only` |
 | Boundaries | [`Loading`, `Reveal`](loading.md), [`Errored`](error_boundary.md), [`Portal`](portal.md), [`lazy`](lazy.md) |
 | [Stores](store.md) | `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
 | [Forms](forms.md) | `Field`, `Validator`, `form_state`, `bind_text`, `bind_checkbox`, `bind_select`, `validate`, `validate_field`, `validate_form`, `required`, `min_length`, `max_length`, `email`, `on_submit`, `on_submit_validated`, `rules_from_schema`, `a11y_control_attrs`, `error_message_attrs` |
-| DOM and rendering | [`Element`, `Ref`](dom.md), [`render`, `Root`](reconciler.md), [`DomEvent`](events.md) |
+| DOM and rendering | [`Element`, `Ref`](dom.md), [`render`, `hydrate`, `Root`](reconciler.md), [`DomEvent`](events.md) |
+| [Server rendering](server.md) | `is_server`, `ServerError`; `render_to_string`, `render_to_string_async`, and `render_to_stream` live in `wybthon.server` |
 | [Router](router.md) | `Router`, `Route`, `Link`, `navigate`, `current_path`, `use_params`, `use_query`, `use_base_path` |
 | Dev mode | `DEV_MODE`, `set_dev_mode`, `is_dev_mode` |
 | [HTML helpers](html.md) | `div`, `span`, `p`, `a`, `h1` to `h6`, `ul`, `ol`, `li`, `button`, `form`, `input_`, `label`, `select`, `option`, `optgroup`, `textarea`, `table`, `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`, `caption`, `colgroup`, `col`, `progress`, `meter`, `img`, `br`, `hr`, `mark`, `time`, `section`, `article`, `nav`, `header`, `footer`, `main_`, `strong`, `em`, `small`, `code`, `pre`, `blockquote`, `fieldset`, `legend`, `video`, `audio`, `source`, `canvas`, `picture`, `track`, `details`, `summary`, `dialog`, `figure`, `figcaption`, `aside` |

@@ -32,12 +32,15 @@ from ._primitives import (
     children,
     create_effect,
     create_memo,
+    create_owner,
     create_render_effect,
     create_root,
     create_signal,
     create_tracked_effect,
     create_unique_id,
+    is_disposed,
     is_pending,
+    is_server,
     latest,
     on_cleanup,
     on_settled,
@@ -45,6 +48,7 @@ from ._primitives import (
     resolve,
 )
 from ._props import Props, merge, omit, prop
+from ._session import ServerError
 
 __all__ = [
     # Types
@@ -63,6 +67,7 @@ __all__ = [
     # Errors
     "NotReadyError",
     "WriteInScopeError",
+    "ServerError",
     # Primitives
     "create_signal",
     "create_memo",
@@ -72,6 +77,9 @@ __all__ = [
     "on_settled",
     "on_cleanup",
     "create_root",
+    "create_owner",
+    "is_disposed",
+    "is_server",
     "flush",
     "untrack",
     "get_owner",

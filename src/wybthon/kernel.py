@@ -22,6 +22,10 @@ Core concepts:
   interpreter that applies the same ops to any DOM-like stub document;
   it backs the unit tests and the stubbed benchmark so both exercise
   the exact protocol the browser sees.
+- **Hydration.** `CLAIM_*` ops adopt server-rendered nodes in document
+  order instead of creating them. Claims are tolerant: a node that
+  doesn't match is created in place, and `HYDRATE_END` removes server
+  nodes nobody claimed.
 - **Events.** Event delegation lives in the kernel: one native listener
   per event type walks the ancestor chain natively and calls into
   Python once for the matching bubbling route with a JSON payload. See
@@ -57,7 +61,7 @@ __all__ = [
 
 OP_CREATE_ELEMENT = 1  # [op, id, tag]
 OP_CREATE_TEXT = 2  # [op, id, text]
-OP_CREATE_COMMENT = 3  # [op, id]
+OP_CREATE_COMMENT = 3  # [op, id, data?]
 OP_CLONE_TPL = 4  # [op, first_id, count, tpl_id]  (dense pre-order id block)
 OP_INSERT = 5  # [op, parent_id, id, anchor_id_or_None]
 OP_REMOVE = 6  # [op, id]
@@ -76,6 +80,11 @@ OP_MOVE_RANGE = 18  # [op, parent, first, last, anchor]
 OP_REMOVE_RANGE = 19  # [op, first, last]
 OP_RELEASE_TPL = 20  # [op, tpl_id]
 OP_HOLE_TEXT = 21  # [op, anchor_id, text]  (reuse the anchor as visible text)
+OP_HYDRATE = 22  # [op, root_id]  (start claiming server-rendered nodes under root)
+OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None]
+OP_CLAIM_TEXT = 24  # [op, id, parent_id, text]
+OP_CLAIM_COMMENT = 25  # [op, id, parent_id, data]
+OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -96,6 +105,12 @@ _TEMPLATE_LIMIT = 256
 _next_tpl_id: int = 1
 
 _backend: Optional[Any] = None
+
+# True while the reconciler mounts in hydration mode: mounts emit
+# ``CLAIM_*`` ops that adopt server-rendered nodes instead of creating
+# and inserting new ones. Only the synchronous initial mount of
+# ``hydrate`` sets it; see ``wybthon.reconciler.hydrate``.
+claiming: bool = False
 
 # Dispatcher installed by ``wybthon.events`` (kernel can't import events;
 # that would be circular). Signature: ``(node_id, event_type, payload_json)
@@ -171,10 +186,10 @@ def commit() -> None:
 
 
 def stats() -> dict[str, int]:
-    """Return node, template, listener, and root registry sizes."""
+    """Return node, template, listener, root, and hydration-mismatch counts."""
     backend = _backend
     if backend is None:
-        return {"nodes": 0, "templates": 0, "listeners": 0, "roots": 0}
+        return {"nodes": 0, "templates": 0, "listeners": 0, "roots": 0, "hydration_mismatches": 0}
     if isinstance(backend, BrowserBackend):
         return json.loads(str(backend._kernel.stats()))
     return {
@@ -182,7 +197,31 @@ def stats() -> dict[str, int]:
         "templates": len(backend._tpl_protos),
         "listeners": len(backend._listen),
         "roots": len(backend._roots),
+        "hydration_mismatches": backend.hydration_mismatches,
     }
+
+
+def take_state(node_id: int) -> Optional[str]:
+    """Remove and return the serialized server state inside `node_id`, if any.
+
+    Server renders end with a `<script type="application/json"
+    data-wyb-state>` element. Commits pending ops first so the node
+    exists.
+    """
+    commit()
+    backend = _backend if _backend is not None else _ensure_backend()
+    result = backend.take_state(node_id)
+    return None if result is None else str(result)
+
+
+def replay_events() -> int:
+    """Replay input recorded before hydration through the delegated handlers.
+
+    Returns the number of events replayed.
+    """
+    commit()
+    backend = _backend if _backend is not None else _ensure_backend()
+    return int(backend.replay() or 0)
 
 
 def get_node(node_id: int) -> Any:
@@ -301,6 +340,9 @@ _KERNEL_JS = r"""
   const tplProtos = new Map();      // tpl_id -> parsed root node (cloned per mount)
   let dispatcher = null;            // Python callback (id, type, payloadJson) -> flags
   let currentEvent = null;
+  // Claim state while adopting server-rendered DOM (null otherwise).
+  let hydrating = null;
+  let hydrationMismatches = 0;
 
   const doc = document;
 
@@ -370,6 +412,137 @@ _KERNEL_JS = r"""
   function cloneTpl(firstId, count, tplId) {
     const root = tplProtos.get(tplId).cloneNode(true);
     walkAssign(root, firstId, count);
+  }
+
+  // -- hydration --------------------------------------------------------
+  // Each parent keeps a cursor: the next server node a claim may adopt.
+  // Claims are tolerant: a node that doesn't match is created in place,
+  // and HYDRATE_END removes server nodes nobody claimed.
+  function isBlank(n) { return n.nodeType === 3 && !/\S/.test(n.nodeValue); }
+  function cursorOf(parent) {
+    hydrating.touched.add(parent);
+    const c = hydrating.cursors.get(parent);
+    return c === undefined ? parent.firstChild : c;
+  }
+  function mismatch(detail) {
+    hydrationMismatches++;
+    if (hydrating.mismatches++ < 5) console.warn(`Wybthon hydration mismatch: ${detail}`);
+  }
+  function describe(n) {
+    if (!n) return "nothing";
+    if (n.nodeType === 1) return `<${n.localName}>`;
+    if (n.nodeType === 3) return `text ${JSON.stringify(n.nodeValue.slice(0, 40))}`;
+    return "a comment";
+  }
+  function claimElement(id, parentId, tag, ns) {
+    const parent = nodes.get(parentId);
+    let c = cursorOf(parent);
+    while (c && isBlank(c)) c = c.nextSibling;
+    if (c && c.nodeType === 1 && c.localName.toLowerCase() === tag.toLowerCase()) {
+      hydrating.cursors.set(parent, c.nextSibling);
+      reg(id, c);
+      return;
+    }
+    mismatch(`expected <${tag}>, found ${describe(c)}`);
+    const node = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag);
+    parent.insertBefore(node, c || null);
+    hydrating.cursors.set(parent, c || null);
+    reg(id, node);
+  }
+  function claimText(id, parentId, text) {
+    const parent = nodes.get(parentId);
+    const c = cursorOf(parent);
+    if (text !== "" && c && c.nodeType === 3) {
+      const data = c.nodeValue;
+      if (data === text) {
+        hydrating.cursors.set(parent, c.nextSibling);
+      } else if (data.startsWith(text)) {
+        // The HTML parser merged adjacent text nodes; split ours off.
+        hydrating.cursors.set(parent, c.splitText(text.length));
+      } else {
+        mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
+        c.nodeValue = text;
+        hydrating.cursors.set(parent, c.nextSibling);
+      }
+      reg(id, c);
+      return;
+    }
+    // Empty text never survives HTML parsing, so it's always created.
+    if (text !== "") mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
+    const node = doc.createTextNode(text);
+    parent.insertBefore(node, c || null);
+    hydrating.cursors.set(parent, c || null);
+    reg(id, node);
+  }
+  function claimComment(id, parentId, data) {
+    const parent = nodes.get(parentId);
+    let c = cursorOf(parent);
+    while (c && isBlank(c)) c = c.nextSibling;
+    if (c && c.nodeType === 8 && c.nodeValue === data) {
+      hydrating.cursors.set(parent, c.nextSibling);
+      reg(id, c);
+      return;
+    }
+    if (data.startsWith("/")) {
+      // A keyed end marker resynchronizes: server nodes before it were
+      // never claimed (a boundary rendered differently on the server).
+      for (let n = c; n; n = n.nextSibling) {
+        if (n.nodeType === 8 && n.nodeValue === data) {
+          mismatch(`unclaimed server content before ${data}`);
+          while (c !== n) { const next = c.nextSibling; parent.removeChild(c); c = next; }
+          hydrating.cursors.set(parent, n.nextSibling);
+          reg(id, n);
+          return;
+        }
+      }
+    }
+    mismatch(`expected a comment, found ${describe(c)}`);
+    const node = doc.createComment(data);
+    parent.insertBefore(node, c || null);
+    hydrating.cursors.set(parent, c || null);
+    reg(id, node);
+  }
+  function endHydration() {
+    const { root, cursors, touched, fresh } = hydrating;
+    for (const parent of touched) {
+      if (parent !== root && !root.contains(parent)) continue;
+      let n = cursors.has(parent) ? cursors.get(parent) : parent.firstChild;
+      while (n) {
+        const next = n.nextSibling;
+        if (!fresh.has(n) && n.__wybId === undefined) parent.removeChild(n);
+        n = next;
+      }
+    }
+    hydrating = null;
+  }
+  function takeState(id) {
+    const root = nodes.get(id);
+    if (!root) return null;
+    for (let n = root.lastChild; n; n = n.previousSibling) {
+      if (n.nodeType === 1 && n.localName === "script" && n.hasAttribute("data-wyb-state")) {
+        const text = n.textContent;
+        n.remove();
+        return text;
+      }
+    }
+    return null;
+  }
+  // Replays input recorded by the bootstrap before hydration finished.
+  function replay() {
+    const queue = globalThis.__wybQueue;
+    globalThis.__wybQueue = null;
+    if (!queue) return 0;
+    let count = 0;
+    for (const entry of queue) {
+      const ev = entry.event;
+      const target = ev.target;
+      if (!target || !target.isConnected) continue;
+      if (entry.value !== undefined && "value" in target) target.value = entry.value;
+      if (entry.checked !== undefined && "checked" in target) target.checked = entry.checked;
+      const fn = rootListeners.get(ev.type);
+      if (fn) { fn(ev); count++; }
+    }
+    return count;
   }
 
   function listen(id, key, options = {}) {
@@ -524,7 +697,7 @@ _KERNEL_JS = r"""
           break;
         }
         case 3: { // CREATE_COMMENT
-          reg(op[1], doc.createComment(""));
+          reg(op[1], doc.createComment(op[2] || ""));
           break;
         }
         case 4: { // CLONE_TPL
@@ -536,10 +709,12 @@ _KERNEL_JS = r"""
           // off-document by a Loading boundary keeps receiving updates
           // addressed to its original parent.
           const anchor = op[3] === null ? undefined : nodes.get(op[3]);
+          const inserted = nodes.get(op[2]);
+          if (hydrating !== null) hydrating.fresh.add(inserted);
           if (anchor !== undefined && anchor.parentNode !== null) {
-            anchor.parentNode.insertBefore(nodes.get(op[2]), anchor);
+            anchor.parentNode.insertBefore(inserted, anchor);
           } else {
-            nodes.get(op[1]).appendChild(nodes.get(op[2]));
+            nodes.get(op[1]).appendChild(inserted);
           }
           break;
         }
@@ -615,6 +790,28 @@ _KERNEL_JS = r"""
           }
           break;
         }
+        case 22: { // HYDRATE
+          hydrating = {
+            root: nodes.get(op[1]), cursors: new Map(), touched: new Set(), fresh: new Set(), mismatches: 0,
+          };
+          break;
+        }
+        case 23: { // CLAIM_ELEMENT
+          claimElement(op[1], op[2], op[3], op[4]);
+          break;
+        }
+        case 24: { // CLAIM_TEXT
+          claimText(op[1], op[2], op[3]);
+          break;
+        }
+        case 25: { // CLAIM_COMMENT
+          claimComment(op[1], op[2], op[3]);
+          break;
+        }
+        case 26: { // HYDRATE_END
+          if (hydrating !== null) endHydration();
+          break;
+        }
         case 20: { // RELEASE_TPL
           tplProtos.delete(op[1]);
           break;
@@ -638,6 +835,15 @@ _KERNEL_JS = r"""
         case 19: { // REMOVE_RANGE
           const first = nodes.get(op[1]), last = nodes.get(op[2]);
           if (!first || !last) break;
+          if (first !== last && first.parentNode !== null && first.parentNode === last.parentNode) {
+            // One native range deletion instead of a removal per node
+            // (clearing a 10,000-row list emits a single range).
+            const range = doc.createRange();
+            range.setStartBefore(first);
+            range.setEndAfter(last);
+            range.deleteContents();
+            break;
+          }
           const after = last.nextSibling;
           let current = first;
           while (current && current !== after) {
@@ -679,16 +885,56 @@ _KERNEL_JS = r"""
     },
     setDispatcher: (fn) => { dispatcher = fn; },
     getCurrentEvent: () => currentEvent,
+    takeState,
+    replay,
     stats: () => JSON.stringify({
       nodes: nodes.size,
       listeners: listenTypes.size + directListeners.size,
       roots: roots.size,
       types: typeCounts.size,
       templates: tplProtos.size,
+      hydration_mismatches: hydrationMismatches,
     }),
   };
 })()
 """
+
+
+class _ClaimState:
+    """Per-hydration claim cursors for the reference backend."""
+
+    __slots__ = ("root", "cursors", "touched", "fresh", "mismatches")
+
+    def __init__(self, root: Any) -> None:
+        self.root = root
+        self.cursors: dict[int, Any] = {}
+        self.touched: dict[int, Any] = {}
+        self.fresh: set[int] = set()
+        self.mismatches = 0
+
+
+def _is_comment(node: Any) -> bool:
+    return bool(getattr(node, "_is_comment", False))
+
+
+def _is_text(node: Any) -> bool:
+    return bool(getattr(node, "_is_text", False)) and not _is_comment(node)
+
+
+def _is_element(node: Any) -> bool:
+    return getattr(node, "tag", None) is not None and not _is_comment(node) and not _is_text(node)
+
+
+def _is_blank(node: Any) -> bool:
+    return _is_text(node) and not str(node.nodeValue or "").strip()
+
+
+def _contains(root: Any, node: Any) -> bool:
+    while node is not None:
+        if node is root:
+            return True
+        node = getattr(node, "parentNode", None)
+    return False
 
 
 class BrowserBackend:
@@ -764,6 +1010,14 @@ class BrowserBackend:
         """Return the native event currently being dispatched, or `None`."""
         return self._kernel.getCurrentEvent()
 
+    def take_state(self, node_id: int) -> Any:
+        """Remove and return the text of the server state script under `node_id`."""
+        return self._kernel.takeState(node_id)
+
+    def replay(self) -> int:
+        """Replay input the bootstrap recorded before hydration."""
+        return int(self._kernel.replay())
+
 
 class PythonBackend:
     """Reference op interpreter over a DOM-like stub document.
@@ -789,6 +1043,10 @@ class PythonBackend:
         self._current_event: Any = None
         self._tpl = self._probe_template(document)
         self._tpl_protos: Dict[int, Any] = {}
+        self._hydrating: Optional[_ClaimState] = None
+        self.hydration_mismatches = 0
+        # Events recorded "before hydration" by tests: (event_type, target, payload).
+        self.queued_events: list[tuple[str, Any, Optional[dict]]] = []
 
     @staticmethod
     def _probe_template(document: Any) -> Any:
@@ -816,12 +1074,14 @@ class PythonBackend:
             elif code == OP_CREATE_TEXT:
                 self._reg(op[1], doc.createTextNode(op[2]))
             elif code == OP_CREATE_COMMENT:
-                self._reg(op[1], doc.createComment(""))
+                self._reg(op[1], doc.createComment(op[2] if len(op) > 2 else ""))
             elif code == OP_CLONE_TPL:
                 self._clone_tpl(op[1], op[2], op[3])
             elif code == OP_INSERT:
                 anchor = None if op[3] is None else nodes.get(op[3])
                 anchor_parent = None if anchor is None else getattr(anchor, "parentNode", None)
+                if self._hydrating is not None:
+                    self._hydrating.fresh.add(id(nodes[op[2]]))
                 if anchor_parent is not None:
                     anchor_parent.insertBefore(nodes[op[2]], anchor)
                 else:
@@ -908,6 +1168,17 @@ class PythonBackend:
                 except Exception:
                     pass
                 self._reg(op[1], node)
+            elif code == OP_HYDRATE:
+                self._hydrating = _ClaimState(nodes[op[1]])
+            elif code == OP_CLAIM_ELEMENT:
+                self._claim_element(op[1], op[2], op[3], op[4])
+            elif code == OP_CLAIM_TEXT:
+                self._claim_text(op[1], op[2], op[3])
+            elif code == OP_CLAIM_COMMENT:
+                self._claim_comment(op[1], op[2], op[3])
+            elif code == OP_HYDRATE_END:
+                if self._hydrating is not None:
+                    self._end_hydration()
             elif code == OP_ROOT:
                 self._add_root(nodes.get(op[1]))
             elif code == OP_UNROOT:
@@ -956,6 +1227,126 @@ class PythonBackend:
     def current_event(self) -> Any:
         """Return the raw event passed to the in-flight `dispatch`, or `None`."""
         return self._current_event
+
+    def take_state(self, node_id: int) -> Optional[str]:
+        """Remove and return the text of the server state script under `node_id`."""
+        root = self._nodes.get(node_id)
+        if root is None:
+            return None
+        for child in reversed(list(root.childNodes)):
+            if _is_element(child) and child.tag == "script" and child.getAttribute("data-wyb-state") is not None:
+                text = "".join(str(n.nodeValue or "") for n in child.childNodes)
+                root.removeChild(child)
+                return text
+        return None
+
+    def replay(self) -> int:
+        """Replay `queued_events` (recorded "before hydration") through delegation."""
+        queued, self.queued_events = self.queued_events, []
+        for event_type, target, payload in queued:
+            self.dispatch(event_type, target, payload=payload)
+        return len(queued)
+
+    # -- hydration ----------------------------------------------------------
+
+    def _mismatch(self) -> None:
+        self.hydration_mismatches += 1
+        assert self._hydrating is not None
+        self._hydrating.mismatches += 1
+
+    def _cursor(self, parent: Any) -> Any:
+        state = self._hydrating
+        assert state is not None
+        state.touched[id(parent)] = parent
+        key = id(parent)
+        return state.cursors[key] if key in state.cursors else parent.firstChild
+
+    def _set_cursor(self, parent: Any, node: Any) -> None:
+        assert self._hydrating is not None
+        self._hydrating.cursors[id(parent)] = node
+
+    def _claim_element(self, node_id: int, parent_id: int, tag: str, ns: Optional[str]) -> None:
+        parent = self._nodes[parent_id]
+        c = self._cursor(parent)
+        while c is not None and _is_blank(c):
+            c = c.nextSibling
+        if c is not None and _is_element(c) and str(c.tag).lower() == tag.lower():
+            self._set_cursor(parent, c.nextSibling)
+            self._reg(node_id, c)
+            return
+        self._mismatch()
+        create_ns = getattr(self._doc, "createElementNS", None)
+        node = create_ns(ns, tag) if ns and create_ns is not None else self._doc.createElement(tag)
+        parent.insertBefore(node, c)
+        self._set_cursor(parent, c)
+        self._reg(node_id, node)
+
+    def _claim_text(self, node_id: int, parent_id: int, text: str) -> None:
+        parent = self._nodes[parent_id]
+        c = self._cursor(parent)
+        if text and c is not None and _is_text(c):
+            data = str(c.nodeValue or "")
+            if data == text:
+                self._set_cursor(parent, c.nextSibling)
+            elif data.startswith(text):
+                rest = self._doc.createTextNode(data[len(text) :])
+                parent.insertBefore(rest, c.nextSibling)
+                c.nodeValue = text
+                self._set_cursor(parent, rest)
+            else:
+                self._mismatch()
+                c.nodeValue = text
+                self._set_cursor(parent, c.nextSibling)
+            self._reg(node_id, c)
+            return
+        if text:
+            self._mismatch()
+        node = self._doc.createTextNode(text)
+        parent.insertBefore(node, c)
+        self._set_cursor(parent, c)
+        self._reg(node_id, node)
+
+    def _claim_comment(self, node_id: int, parent_id: int, data: str) -> None:
+        parent = self._nodes[parent_id]
+        c = self._cursor(parent)
+        while c is not None and _is_blank(c):
+            c = c.nextSibling
+        if c is not None and _is_comment(c) and str(c.nodeValue or "") == data:
+            self._set_cursor(parent, c.nextSibling)
+            self._reg(node_id, c)
+            return
+        if data.startswith("/"):
+            n = c
+            while n is not None:
+                if _is_comment(n) and str(n.nodeValue or "") == data:
+                    self._mismatch()
+                    while c is not n:
+                        following = c.nextSibling
+                        parent.removeChild(c)
+                        c = following
+                    self._set_cursor(parent, n.nextSibling)
+                    self._reg(node_id, n)
+                    return
+                n = n.nextSibling
+        self._mismatch()
+        node = self._doc.createComment(data)
+        parent.insertBefore(node, c)
+        self._set_cursor(parent, c)
+        self._reg(node_id, node)
+
+    def _end_hydration(self) -> None:
+        state = self._hydrating
+        assert state is not None
+        self._hydrating = None
+        for key, parent in state.touched.items():
+            if parent is not state.root and not _contains(state.root, parent):
+                continue
+            n = state.cursors[key] if key in state.cursors else parent.firstChild
+            while n is not None:
+                following = n.nextSibling
+                if id(n) not in state.fresh and getattr(n, "_wyb_id", None) is None:
+                    parent.removeChild(n)
+                n = following
 
     # -- internals ----------------------------------------------------------
 

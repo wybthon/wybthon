@@ -1,9 +1,8 @@
-"""Flow control: Show, For (keyed and positional modes), Repeat, Switch/Match, and Dynamic."""
+"""Flow control: Show, For (keyed and positional modes), Repeat, Switch/Match, and dynamic."""
 
 from app.testkit import tid
 
 from wybthon import (
-    Dynamic,
     For,
     Match,
     Repeat,
@@ -13,6 +12,7 @@ from wybthon import (
     component,
     create_signal,
     div,
+    dynamic,
     h2,
     li,
     span,
@@ -90,7 +90,7 @@ def Page(**rest):
         ),
         div(
             button("cycle tag", on_click=lambda e: set_tag(_NEXT_TAG[tag()]), **tid("flow-dyn-cycle")),
-            Dynamic(tag, children="dyn", **tid("flow-dyn-out")),
+            dynamic(tag)(children="dyn", **tid("flow-dyn-out")),
         ),
         **tid("page-flow"),
     )

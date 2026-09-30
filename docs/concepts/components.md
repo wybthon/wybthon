@@ -307,7 +307,7 @@ changes. Conditions and sources are accessors; `children` and
 primitive's scope.
 
 ```python
-from wybthon import Dynamic, For, Match, Repeat, Show, Switch
+from wybthon import For, Match, Repeat, Show, Switch, dynamic
 from wybthon.html import li, p, span
 
 # Conditional: only truthiness is tracked; the callback receives an accessor.
@@ -329,7 +329,7 @@ Switch(
 )
 
 # A component or tag chosen at runtime.
-Dynamic(lambda: views[mode()], title="Hello")
+dynamic(lambda: views[mode()])(title="Hello")
 ```
 
 `For` needs an accessor for `each`; a plain list renders once and

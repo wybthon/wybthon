@@ -4,6 +4,29 @@ const state = globalThis.__WYB = { status: "loading", error: null, timings: {}, 
 const started = performance.now();
 const chunks = new Map();
 
+// Record input on server-rendered content until Python has hydrated it;
+// the kernel replays the queue through delegated handlers afterwards.
+const captured = globalThis.__wybQueue = [];
+const captureTypes = ["click", "input", "change", "submit", "keydown"];
+function capture(event) {
+  if (globalThis.__wybQueue !== captured) return;
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  captured.push({
+    event,
+    value: "value" in target ? target.value : undefined,
+    checked: "checked" in target ? target.checked : undefined,
+  });
+  // A form submitted before hydration would navigate away from the app.
+  const root = document.querySelector("[data-wyb-root]");
+  if (event.type === "submit" && (root === null || root.contains(target))) event.preventDefault();
+}
+for (const type of captureTypes) document.addEventListener(type, capture, true);
+function stopCapturing() {
+  for (const type of captureTypes) document.removeEventListener(type, capture, true);
+  if (globalThis.__wybQueue === captured) globalThis.__wybQueue = null;
+}
+
 async function fetchBytes(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
@@ -15,6 +38,11 @@ state.ready = (async () => {
     const response = await fetch(manifestURL, { cache: "no-cache" });
     if (!response.ok) throw new Error(`Manifest request failed: ${response.status}`);
     const config = await response.json();
+    const mount = document.querySelector(config.mount || "#app");
+    if (mount === null) throw new Error(`Mount element not found: ${config.mount}`);
+    mount.setAttribute("data-wyb-root", "");
+    const hydrating = !!mount.querySelector(":scope > script[data-wyb-state]");
+    state.hydrated = hydrating;
     const runtimeURL = new URL(config.pyodide_url, manifestURL).href;
     const runtimeStart = performance.now();
     const runtime = import(runtimeURL + "pyodide.mjs").then(({ loadPyodide }) =>
@@ -52,16 +80,22 @@ state.ready = (async () => {
       await pyodide.runPythonAsync("import micropip, json; await micropip.install(json.loads(_wyb_requirements)); del _wyb_requirements");
     }
     pyodide.globals.set("_wyb_entry", config.entry);
+    pyodide.globals.set("_wyb_mount", config.mount || "#app");
+    pyodide.globals.set("_wyb_hydrate", hydrating);
     await pyodide.runPythonAsync(`
 import importlib, inspect
 _wyb_module, _wyb_export = _wyb_entry.split(':', 1)
-_wyb_result = getattr(importlib.import_module(_wyb_module), _wyb_export)()
-if inspect.isawaitable(_wyb_result):
-    await _wyb_result
-from wybthon import flush
+_wyb_view = getattr(importlib.import_module(_wyb_module), _wyb_export)()
+if inspect.isawaitable(_wyb_view):
+    _wyb_view = await _wyb_view
+if _wyb_view is None:
+    raise TypeError(f"{_wyb_entry} must return the root view (for example App()), not render it")
+from wybthon import flush, hydrate, render
+(hydrate if _wyb_hydrate else render)(_wyb_view, _wyb_mount)
 flush()
-del _wyb_entry, _wyb_module, _wyb_export, _wyb_result
+del _wyb_entry, _wyb_mount, _wyb_hydrate, _wyb_module, _wyb_export, _wyb_view
 `);
+    stopCapturing();
     state.timings.application_ms = performance.now() - appStart;
     document.getElementById("wyb-loading")?.remove();
     state.status = "ready";
@@ -71,6 +105,7 @@ del _wyb_entry, _wyb_module, _wyb_export, _wyb_result
     globalThis.dispatchEvent(new CustomEvent("wybthon:ready", { detail: state.timings }));
     return state;
   } catch (error) {
+    stopCapturing();
     state.status = "error";
     state.error = String(error?.stack || error);
     const message = document.getElementById("wyb-loading");

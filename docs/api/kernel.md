@@ -31,13 +31,13 @@ hot path; `None` anchors mean "append".
 | `CREATE_ELEMENT` | `id, tag` | `document.createElement` |
 | `CREATE_ELEMENT_NS` | `id, namespace, tag` | `document.createElementNS` (SVG, MathML) |
 | `CREATE_TEXT` | `id, text` | `document.createTextNode` |
-| `CREATE_COMMENT` | `id` | Empty comment marker (fragment and hole anchors) |
+| `CREATE_COMMENT` | `id[, data]` | Comment marker (fragment and hole anchors); `Loading` boundaries carry a key in `data` during server rendering and hydration |
 | `REGISTER_TPL` | `tpl_id, html` | Parse a skeleton once via `<template>` |
 | `CLONE_TPL` | `first_id, count, tpl_id` | Clone the proto; assign a dense id block in pre-order |
 | `INSERT` | `parent_id, id, anchor_id` | `insertBefore` (`None` anchor appends) |
 | `REMOVE` | `id` | Detach from the parent |
 | `MOVE_RANGE` | `parent_id, first_id, last_id, anchor_id` | Move a contiguous mounted range |
-| `REMOVE_RANGE` | `first_id, last_id` | Detach a contiguous mounted range |
+| `REMOVE_RANGE` | `first_id, last_id` | Detach a contiguous mounted range (one native range deletion) |
 | `HOLE_TEXT` | `id, text` | Reuse a hole anchor as a visible text node |
 | `RELEASE_TPL` | `tpl_id` | Evict a native template prototype |
 | `SET_TEXT` | `id, text` | `nodeValue` assignment |
@@ -47,6 +47,13 @@ hot path; `None` anchors mean "append".
 | `LISTEN` / `UNLISTEN` | `id, event_type[, options]` | Delegated bookkeeping or direct native options; unlisten omits options |
 | `RELEASE` | `[ids]` | Drop registry entries and listener sets for a retired subtree |
 | `ROOT` / `UNROOT` | `id` | Start or stop delegating events from this container instead of `document` |
+| `HYDRATE` | `root_id` | Start claiming server-rendered nodes under `root_id` |
+| `CLAIM_ELEMENT` | `id, parent_id, tag, namespace` | Adopt the parent's next element, or create one in place on a mismatch |
+| `CLAIM_TEXT` | `id, parent_id, text` | Adopt the next text node, splitting text the HTML parser merged; empty text is created |
+| `CLAIM_COMMENT` | `id, parent_id, data` | Adopt the next comment; a keyed end marker (`/...`) resynchronizes by searching forward |
+| `HYDRATE_END` | none | Remove server nodes nobody claimed and stop claiming |
+
+[`hydrate`][wybthon.hydrate] emits the claim ops; see [Server rendering](../concepts/server-rendering.md). [`stats`][wybthon.kernel.stats] reports `hydration_mismatches`, and [`take_state`][wybthon.kernel.take_state] and [`replay_events`][wybthon.kernel.replay_events] read the server state and replay input recorded before hydration.
 
 Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,

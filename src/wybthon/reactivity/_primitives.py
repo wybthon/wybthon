@@ -29,9 +29,13 @@ from ._core import (
     _schedule_flush,
     untrack,
 )
+from ._session import SsrSource
 
 __all__ = [
     "Setter",
+    "create_owner",
+    "is_disposed",
+    "is_server",
     "create_signal",
     "create_memo",
     "create_effect",
@@ -76,7 +80,7 @@ class _WritableMemo[T](Memo[T]):
         self._origin: int = _core._O_NORMAL
 
     def set(self, value: T | Callable[[T], T] | LiteralValue[T]) -> T:
-        if _core._current_observer is not None and _core._warnings.DEV_MODE:
+        if _core._current_observer is not None and _core._warnings.DEV_MODE and not _core._owned_write_depth:
             raise _core.WriteInScopeError(
                 "Cannot write a derived signal inside a tracking scope. Write it from an event "
                 "handler, an action, or the apply stage of a split create_effect."
@@ -125,6 +129,7 @@ def create_signal[T](
     *,
     equals: Any = _DEFAULT_EQUALS,
     name: str | None = None,
+    owned_write: bool = False,
 ) -> tuple[Accessor[T], Setter[T]]:
     """Create a reactive signal and return its `(getter, setter)` pair.
 
@@ -156,6 +161,11 @@ def create_signal[T](
               returns `True`. Pass `lambda a, b: a is b` for
               identity-only semantics.
         name: Optional label used in dev-mode diagnostics.
+        owned_write: Allow writes from inside an owned scope (a memo,
+            an effect's compute stage, or a reactive hole) without
+            raising [`WriteInScopeError`][wybthon.WriteInScopeError].
+            Reserve it for state that's genuinely local to that scope,
+            such as a measurement a memo caches for itself.
 
     Returns:
         A `(getter, setter)` tuple. The getter is an
@@ -175,14 +185,31 @@ def create_signal[T](
         doubled, _ = create_signal(lambda: count() * 2)   # derived form
         ```
     """
+    getter: Accessor[T]
+    setter: Callable[..., Any]
     if isinstance(value, LiteralValue):
         signal = Signal(value.value, equals=equals, name=name)
-        return signal, signal.set
-    if callable(value) and _positional_count(value) == 0:
+        getter, setter = signal, signal.set
+    elif callable(value) and _positional_count(value) == 0:
         derived: _WritableMemo[T] = _WritableMemo(value, equals=equals)
-        return derived, derived.set
-    sig: Signal[T] = Signal(value, equals=equals, name=name)  # type: ignore[arg-type]
-    return sig, sig.set
+        getter, setter = derived, derived.set
+    else:
+        sig: Signal[T] = Signal(value, equals=equals, name=name)  # type: ignore[arg-type]
+        getter, setter = sig, sig.set
+    return getter, (_allow_owned_write(setter) if owned_write else setter)
+
+
+def _allow_owned_write(setter: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap `setter` so it's exempt from the dev-mode owned-scope write check."""
+
+    def write(value: Any) -> Any:
+        _core._owned_write_depth += 1
+        try:
+            return setter(value)
+        finally:
+            _core._owned_write_depth -= 1
+
+    return write
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +226,7 @@ def create_memo[T](
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
     loading_value: T = ...,
+    ssr_source: SsrSource = ...,
 ) -> Memo[T]: ...
 
 
@@ -211,6 +239,7 @@ def create_memo[T](
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
     loading_value: T = ...,
+    ssr_source: SsrSource = ...,
 ) -> Memo[T]: ...
 
 
@@ -223,6 +252,7 @@ def create_memo[T](
     unobserved: Callable[[], Any] | None = ...,
     name: str | None = ...,
     loading_value: T = ...,
+    ssr_source: SsrSource = ...,
 ) -> Memo[T]: ...
 
 
@@ -234,6 +264,7 @@ def create_memo(
     unobserved: Callable[[], Any] | None = None,
     name: str | None = None,
     loading_value: Any = _core._MISSING,
+    ssr_source: SsrSource = "server",
 ) -> Memo[Any]:
     """Create a derived value that recomputes when its sources change.
 
@@ -276,6 +307,13 @@ def create_memo(
             `Loading`, doesn't report pending for its first run, and
             never holds a transition on mount. Use it for
             nice-to-have data (a recommendation panel, a badge count).
+        ssr_source: Where an async memo resolves when the page is
+            server-rendered. `"server"` (the default) resolves it on
+            the server and hydrates the browser with that value;
+            `"hybrid"` does the same, then always re-runs it quietly in
+            the browser; `"client"` never runs it on the server, so it
+            loads after hydration. See
+            [Server rendering](../concepts/server-rendering.md).
 
     Returns:
         A [`Memo`][wybthon.Memo] accessor.
@@ -292,7 +330,17 @@ def create_memo(
         suggestions = create_memo(load_suggestions, loading_value=[])
         ```
     """
-    memo = Memo(fn, equals=equals, lazy=lazy, unobserved=unobserved, name=name, loading_value=loading_value)
+    if ssr_source not in ("server", "hybrid", "client"):
+        raise ValueError('ssr_source must be "server", "hybrid", or "client"')
+    memo = Memo(
+        fn,
+        equals=equals,
+        lazy=lazy,
+        unobserved=unobserved,
+        name=name,
+        loading_value=loading_value,
+        ssr_source=ssr_source,
+    )
     if not lazy:
         memo._update_if_necessary()
     return memo
@@ -357,7 +405,31 @@ def create_effect(
             defer=True,
         )
         ```
+
+    Note:
+        Effects don't run during a server render; see
+        [`is_server`][wybthon.is_server].
     """
+    if _core._server_depth:
+        return _inert(compute)
+    return _create_effect(compute, apply, defer=defer, error=error)
+
+
+def _inert(fn: Callable[..., Any]) -> Computation:
+    """A disposed computation standing in for an effect that never runs (server rendering)."""
+    comp = Computation(fn, kind=_K_EFFECT, pass_prev=False)
+    comp._disposed = True
+    return comp
+
+
+def _create_effect(
+    compute: Callable[..., Any],
+    apply: Callable[..., Any],
+    *,
+    defer: bool = False,
+    error: Callable[[BaseException], Any] | None = None,
+) -> Computation:
+    """Create a split effect unconditionally (framework-internal effects also run on the server)."""
     comp = Computation(compute, kind=_K_EFFECT, apply=apply, defer=defer, error=error)
     owner = _core._current_owner
     if owner is not None:
@@ -376,7 +448,10 @@ def create_tracked_effect(
 
     Prefer split effects for external resources: a tracked callback can run
     while async work is pending. Reads subscribe; put writes in a split effect's apply stage.
+    Doesn't run during a server render.
     """
+    if _core._server_depth:
+        return _inert(fn)
     comp = Computation(fn, kind=_K_EFFECT, error=error)
     owner = _core._current_owner
     if owner is not None:
@@ -424,6 +499,8 @@ def on_settled(fn: Callable[[], Any]) -> None:
     are assigned and the DOM is live. `fn` may return a cleanup callable,
     which runs when the owning scope is disposed (on unmount).
 
+    Doesn't run during a server render.
+
     Args:
         fn: Zero-arg callback. May return a cleanup callable.
 
@@ -447,6 +524,8 @@ def on_settled(fn: Callable[[], Any]) -> None:
     owner = _core._current_owner
     if owner is None:
         raise RuntimeError("on_settled() must be called inside a component or reactive scope")
+    if _core._server_depth:
+        return
 
     if isinstance(owner, Computation) and owner._apply is not None and _core._current_observer is owner:
         owner = owner._preparation()
@@ -504,6 +583,41 @@ def create_root[T](fn: Callable[[Callable[[], None]], T], *, detached: bool = Fa
         root.dispose()
 
     return _core.run_with_owner(root, lambda: fn(dispose))
+
+
+def create_owner() -> Owner:
+    """Create an ownership scope owned by the current one.
+
+    The scope is disposed with its parent. Run code under it with
+    [`run_with_owner`][wybthon.run_with_owner], and dispose it early
+    with `owner.dispose()`. Pass it to `run_with_owner(None, ...)` first
+    for a scope with an independent lifetime.
+    """
+    owner = Owner()
+    if _core._current_owner is not None:
+        _core._current_owner._add_child(owner)
+    return owner
+
+
+def is_disposed(owner: Owner) -> bool:
+    """Return whether `owner` has been disposed."""
+    return owner._disposed
+
+
+def is_server() -> bool:
+    """Return True while a server render is in progress.
+
+    Use it to choose a data source, or to skip browser-only work, in
+    code that also runs in the browser:
+
+    ```python
+    async def load_user():
+        if is_server():
+            return database.users.get(user_id())
+        return await fetch_json(f"/api/users/{user_id()}")
+    ```
+    """
+    return _core._server_depth > 0
 
 
 # ---------------------------------------------------------------------------
@@ -709,7 +823,15 @@ _unique_id_counter: int = 0
 
 
 def create_unique_id() -> str:
-    """Return a process-unique id string (for `for`/`id` attribute pairs)."""
+    """Return a unique id string (for `for`/`id` attribute pairs).
+
+    Ids created while a server render or a hydration mounts are derived
+    from the component's position in the tree (`wyb-h` followed by a
+    short hash), so the server and the hydrating browser agree on them.
+    """
+    session = _core._session
+    if session is not None and session.keying:
+        return f"wyb-h{_core._next_key()}"
     global _unique_id_counter
     _unique_id_counter += 1
     return f"wyb-{_unique_id_counter}"

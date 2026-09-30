@@ -2,6 +2,10 @@
 
 Wybthon keeps fine-grained dependency tracking and a Virtual DOM that batches native mutations. Python execution, serialization, bridge calls, native DOM work, and browser rendering have different costs. Measure the operation you intend to improve.
 
+## Start with startup
+
+Loading and initializing Pyodide takes over a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page. [Prerender](../concepts/server-rendering.md) the pages users land on so their content shows immediately, and build with the same Python version as the Pyodide runtime so the archives ship precompiled bytecode (see [Deployment](deployment.md#bytecode)).
+
 ## Use the incremental paths
 
 - Pass a store list directly through a `For` accessor. Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.

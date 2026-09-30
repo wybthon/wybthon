@@ -36,8 +36,9 @@ Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser
 - **Async-first data.** An `async def` passed to `create_memo` is the data-fetching primitive. `Loading` shows a fallback until it resolves; later refetches run as **transitions** that hold the dependent UI on the old state until the new value lands, so the screen never tears. `is_pending`, `latest`, `resolve`, and `refresh` observe or drive it, and `action` makes a mutation a transaction with optimistic state that reverts on its own.
 - **Actions and optimistic state.** `action` tracks in-flight mutations; `create_optimistic` and `create_optimistic_store` hold temporary values that revert when the actions settle.
 - **Draft-first stores.** `create_store` setters take a function that mutates a draft with plain Python; reads are tracked per path. `reconcile`, `snapshot`, `deep`, derived stores, and projections are included.
-- **Flow control.** `Show`, `For`, `Repeat`, `Switch`/`Match`, and `Dynamic` create isolated reactive scopes so only the affected subtree updates.
+- **Flow control.** `Show`, `For`, `Repeat`, `Switch`/`Match`, and `dynamic` create isolated reactive scopes so only the affected subtree updates.
 - **Boundaries.** `Loading`, `Reveal`, and `Errored` keep content mounted while pending and swap in fallbacks without tearing down sibling trees.
+- **Server rendering and hydration.** Render the same components to HTML in CPython at build time or per request, resolve async data on the server, stream `Loading` boundaries as they resolve, and `hydrate` the result in the browser. Pages show content immediately instead of waiting for Pyodide to boot.
 - **Virtual DOM behind the scenes.** Every DOM mutation is batched through a small JS kernel in a single Python-to-JS crossing, and static subtrees mount from cloned templates.
 - **Router, forms, context, portals, lazy components.** `Router`, `Route`, `Link`, `form_state` with validators and ARIA helpers, callable `Context` objects, `Portal`, and `lazy`.
 - **Dev mode diagnostics.** Writes inside a tracking scope raise `WriteInScopeError`; untracked reads at the top of a component body warn.
@@ -124,9 +125,11 @@ def App():
 render(App(), "#app")
 ```
 
+To prerender pages at build time, return the view from your entry point and list routes in `wybthon.toml`; the browser then hydrates the HTML instead of building it. See [Server rendering](https://wybthon.com/concepts/server-rendering/).
+
 ## Documentation
 
-Visit [wybthon.com](https://wybthon.com/) for the full documentation, including getting started guides, core concepts, API reference, working examples, and migration guides from React, Solid, and earlier Wybthon releases.
+Visit [wybthon.com](https://wybthon.com/) for the full documentation, including getting started guides, core concepts, API reference, working examples, and migration guides from React, Solid, and earlier Wybthon releases. Large changes are designed in [RFCs](docs/rfcs/index.md).
 
 ## Contributing
 

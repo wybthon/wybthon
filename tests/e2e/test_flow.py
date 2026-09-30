@@ -1,4 +1,4 @@
-"""E2E: flow control (Show, For, Repeat, Switch/Match, Dynamic)."""
+"""E2E: flow control (Show, For, Repeat, Switch/Match, dynamic)."""
 
 import pytest
 from playwright.sync_api import expect

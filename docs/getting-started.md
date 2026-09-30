@@ -18,7 +18,7 @@ The generated project has `app/main.py`, `index.html`, and `wybthon.toml`. The d
 ## Write a component
 
 ```python
-from wybthon import button, component, create_signal, div, h1, render
+from wybthon import button, component, create_signal, div, h1
 
 @component
 def App():
@@ -31,11 +31,13 @@ def App():
         ),
     )
 
-def main():
-    return render(App(), "#app")
+def app():
+    return App()
 ```
 
-`count` is an accessor. `lambda: f"Count: {count()}"` is a tracked expression; reading `count()` directly during setup would capture a one-time value. Event writes batch automatically. Keep the returned root when you need to dispose the application yourself.
+`count` is an accessor. `lambda: f"Count: {count()}"` is a tracked expression; reading `count()` directly during setup would capture a one-time value. Event writes batch automatically.
+
+`app` is the entry point named in `wybthon.toml`. It returns the root view, and the bootstrap mounts it into `#app`. The generated project prerenders `/` at build time, so the page shows the counter before Pyodide has loaded and then [hydrates](concepts/server-rendering.md) it. Outside the production bootstrap, mount a view yourself with [`render`][wybthon.render].
 
 ## Build and preview
 
@@ -44,6 +46,6 @@ wyb build
 wyb preview
 ```
 
-The output in `dist/` contains hashed source archives, a browser bootstrap, and an asset manifest. Deploy those files to a static host. See [Deployment](guides/deployment.md) for base paths, pinned dependencies, lazy chunks, and route fallback configuration.
+The output in `dist/` contains prerendered pages, hashed source archives, a browser bootstrap, and an asset manifest. Deploy those files to a static host. See [Deployment](guides/deployment.md) for base paths, pinned dependencies, lazy chunks, and route fallback configuration.
 
 Continue with the [mental model](concepts/mental-model.md), [stores](concepts/stores.md), and [runtime contracts](concepts/runtime-contracts.md).

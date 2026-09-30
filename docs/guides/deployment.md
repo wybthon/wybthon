@@ -3,27 +3,40 @@
 `wyb build` creates a static application bundle from a project containing `wybthon.toml`. `wyb preview` serves the result with client-route fallback and the configured base path.
 
 ```toml
-entry = "app.main:main"
+entry = "app.main:app"
+mount = "#app"
 app-dir = "app"
 base = "/"
 pyodide-version = "314.0.6"
 packages = []
 wheels = []
+prerender = ["/"]
+crawl = true
 
 [chunks]
 charts = ["app/charts/**"]
 ```
 
-The entry function mounts the application and can be async. `index.html` must contain exactly one `<!-- wyb:bootstrap -->` marker. Files in `public/` are copied beside the output HTML; `public/assets/` is reserved for generated content.
+The entry function returns the root view (it can be async); the bootstrap renders it into `mount`, or hydrates it when the page was prerendered. `index.html` must contain exactly one `<!-- wyb:bootstrap -->` marker. Files in `public/` are copied beside the output HTML; `public/assets/` is reserved for generated content.
 
 ```bash
 wyb build --base /dashboard/
 wyb preview --dir dist --port 8000
 ```
 
-Deploy the contents of `dist/`, configure missing extensionless routes to serve `index.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate `index.html` and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
+Deploy the contents of `dist/`, configure missing extensionless routes to serve `200.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
 
 Builds sort files and normalize archive timestamps, so identical inputs produce identical assets. A complete build is prepared before the destination is replaced. Existing nonempty output must contain the `.wyb-build` marker; source directories can't be used as output. Build validation failure leaves the previous output available.
+
+## Prerendering
+
+`prerender` lists routes to render to HTML at build time, and `crawl = true` adds every in-app link those pages contain. Each route is written to `<route>/index.html` with the markup placed between the `<!-- wyb:app -->` and `<!-- /wyb:app -->` markers in `index.html`. The browser shows the page immediately and [hydrates](../concepts/server-rendering.md) it once Pyodide is ready. Prerendering imports the application in a separate CPython process, so browser-only imports must be guarded; the build reports the failing import otherwise. `wyb dev` prerenders the same routes on every rebuild.
+
+The client-only shell is also written to `200.html`. Serve it for routes that weren't prerendered.
+
+## Bytecode
+
+When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. The manifest's `bytecode` field records whether it was included. Set `bytecode = false` to ship source only.
 
 ## Runtime and dependencies
 

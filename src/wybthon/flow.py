@@ -1,4 +1,4 @@
-"""Control flow: `Show`, `For`, `Repeat`, `Switch`/`Match`, and `Dynamic`.
+"""Control flow: `Show`, `For`, `Repeat`, `Switch`/`Match`, `dynamic`, and `client_only`.
 
 These primitives create **isolated reactive scopes** so only the
 relevant subtree updates when a condition or list changes. Each is a
@@ -15,8 +15,10 @@ Callback shapes follow SolidJS 2.0:
   shapes depend on `keyed` (see [`For`][wybthon.For]).
 - `Repeat(count, children)`: `children(index: int)`.
 - `Switch(Match(when, children), ..., fallback=...)`.
-- `Dynamic(component, *children, **props)`, or `dynamic(source)` for a
-  reusable component whose implementation is chosen reactively.
+- `dynamic(source)`: a component whose implementation is chosen
+  reactively.
+- `client_only(children, fallback=...)`: content that only renders in
+  the browser, after hydration.
 
 Example:
     ```python
@@ -39,7 +41,7 @@ from .reactivity._primitives import create_memo
 from .reactivity._props import Props
 from .vnode import VNode, h
 
-__all__ = ["Show", "For", "Repeat", "Switch", "Match", "Dynamic", "DynamicComponent", "dynamic"]
+__all__ = ["Show", "For", "Repeat", "Switch", "Match", "dynamic", "client_only"]
 
 
 def _render_slot(slot: Any, *args: Any) -> Any:
@@ -314,26 +316,7 @@ _Switch.__name__ = "Switch"
 # ---------------------------------------------------------------------------
 
 
-def Dynamic(component: Any, *children: Any, **props: Any) -> VNode:
-    """Render a component or tag chosen at runtime.
-
-    `component` may be a tag name, a component, `None` (renders
-    nothing), or an accessor returning any of those; the subtree
-    re-mounts when the resolved component changes. Remaining children
-    and keyword props are forwarded. To choose the component once and
-    render it in several places, or to pass it around like a regular
-    component, use [`dynamic`][wybthon.dynamic].
-
-    Example:
-        ```python
-        Dynamic(lambda: components[kind()], title="Hello")
-        Dynamic("h2", "Heading text")
-        ```
-    """
-    return h(_Dynamic, {"component": component, **props}, *children)
-
-
-class DynamicComponent:
+class _DynamicComponent:
     """A component whose implementation is chosen reactively; see [`dynamic`][wybthon.dynamic]."""
 
     __slots__ = ("_source", "__name__")
@@ -350,7 +333,7 @@ class DynamicComponent:
         return "dynamic(...)"
 
 
-def dynamic(source: Any) -> DynamicComponent:
+def dynamic(source: Any) -> Callable[..., VNode]:
     """Turn an accessor for a component (or tag) into a component you can call.
 
     The returned callable behaves like any component: call it with
@@ -360,9 +343,8 @@ def dynamic(source: Any) -> DynamicComponent:
     content and the nearest [`Loading`][wybthon.Loading] shows its
     fallback. Passing `None` renders nothing.
 
-    This is the counterpart of SolidJS 2.0's `dynamic()`; the
-    [`Dynamic`][wybthon.Dynamic] control-flow form is the inline
-    shorthand.
+    This is the counterpart of SolidJS 2.0's `dynamic()`. For a one-off
+    use, call the result inline: `dynamic(lambda: views[kind()])(title="Hi")`.
 
     Args:
         source: An accessor returning a component, a tag name, or
@@ -376,7 +358,7 @@ def dynamic(source: Any) -> DynamicComponent:
             return div(Editor(value=draft, on_change=set_draft))
         ```
     """
-    return DynamicComponent(source)
+    return _DynamicComponent(source)
 
 
 def _Dynamic(props: Props) -> Any:
@@ -399,3 +381,52 @@ def _Dynamic(props: Props) -> Any:
 
 
 _Dynamic.__name__ = "Dynamic"
+
+
+# ---------------------------------------------------------------------------
+# client_only
+# ---------------------------------------------------------------------------
+
+
+def client_only(children: Any, *, fallback: Any = None) -> VNode:
+    """Render `children` only in the browser, after hydration.
+
+    During a server render, and while the browser hydrates that render,
+    `fallback` shows instead; the children replace it as soon as
+    hydration has committed. In a page that wasn't server-rendered,
+    the children render immediately. Use it for widgets that need
+    browser APIs or whose output depends on the browser (a map, a chart
+    measured from the viewport, the user's local time).
+
+    Args:
+        children: A VNode or a zero-arg callable returning the content.
+        fallback: What the server renders, and what shows until
+            hydration finishes.
+
+    Example:
+        ```python
+        client_only(lambda: Chart(data=data), fallback=p("Loading chart..."))
+        ```
+    """
+    return h(_ClientOnly, {"children": children, "fallback": fallback})
+
+
+def _ClientOnly(props: Props) -> Any:
+    from .reactivity import _core
+    from .reactivity._core import Signal
+
+    children = _callback(props.raw("children"))
+    fallback = props.raw("fallback")
+    session = _core._session
+    hydrating = session is not None and session.mode == "hydrate"
+    ready: Signal[bool] = Signal(not (_core._server_depth or hydrating))
+    if hydrating:
+        session.after_hydration.append(lambda: ready._set(True, _core._O_REVEAL))
+
+    def choose() -> Any:
+        return ((True,), children, ()) if ready() else ((False,), fallback, ())
+
+    return VNode("_branch", {"choose": choose})
+
+
+_ClientOnly.__name__ = "client_only"

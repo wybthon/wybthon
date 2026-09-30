@@ -374,6 +374,7 @@ Link("Settings", href="/settings", on_mouseover=lambda e: Settings.preload())
 - **Prefer `refresh` after writes.** A quiet refresh keeps the current value on screen and doesn't flicker `is_pending`.
 - **Keep fallbacks cheap and stable.** Avoid heavy components inside them.
 - **Combine `Loading` with `Errored`.** Async work can fail. Wrap user-facing async regions with both.
+- **Prefer `lambda: fetch(x())` for server-rendered pages.** A memo that returns a coroutine can hydrate from the server's value without fetching it again; an `async def` body re-runs quietly after hydration. See [Server rendering](server-rendering.md#async-data).
 - **Testing.** Drive async code with `asyncio.run(...)` and alternate `flush()` with `await asyncio.sleep(0)` so runs can start and settle. See the [Testing guide](../guides/testing.md).
 
 ## Next steps
@@ -381,3 +382,4 @@ Link("Settings", href="/settings", on_mouseover=lambda e: Settings.preload())
 - Read the [Async fetch example](../examples/fetch.md) for an end-to-end demo.
 - See the [`loading`](../api/loading.md) API for `Loading` and `Reveal`, and [`reactivity`](../api/reactivity.md) for actions, `affects`, and `until`.
 - Read [Error boundaries](error-boundaries.md) for `Errored` and healing.
+- Read [Server rendering](server-rendering.md) to resolve async data on the server and stream `Loading` boundaries.

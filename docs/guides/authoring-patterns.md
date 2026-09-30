@@ -159,12 +159,12 @@ Without the key, `DocumentView` receives the new `doc_id` through its live `Prop
 
 The same idea applies to `Show(when, children, keyed=True)` and `Match(when, children, keyed=True)`, which re-create the branch on every value change and hand the callback the raw value instead of an accessor.
 
-## `Dynamic`
+## `dynamic`
 
-[`Dynamic`][wybthon.Dynamic] renders a component or tag chosen at runtime. The subtree re-mounts when the resolved component changes; other props are forwarded.
+[`dynamic`][wybthon.dynamic] turns an accessor for a component (or a tag name) into a component you call like any other. Each instance re-mounts when the resolved component changes; props and children are forwarded.
 
 ```python
-from wybthon import Dynamic, component, create_signal, div
+from wybthon import component, create_signal, div, dynamic
 
 VIEWS = {"list": ListView, "grid": GridView}
 
@@ -172,11 +172,12 @@ VIEWS = {"list": ListView, "grid": GridView}
 @component
 def Gallery():
     mode, set_mode = create_signal("list")
-    return div(Dynamic(lambda: VIEWS[mode()], items=items))
+    View = dynamic(lambda: VIEWS[mode()])
+    return div(View(items=items))
 
 
-Dynamic("h2", "Heading text")            # a tag name
-Dynamic(lambda: "h1" if big() else "h3", children="Title")
+dynamic("h2")("Heading text")                           # a tag name
+dynamic(lambda: "h1" if big() else "h3")(children="Title")
 ```
 
 ## Refs

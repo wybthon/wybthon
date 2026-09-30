@@ -84,12 +84,35 @@ def _current_url() -> str:
 
 _path: Signal[str] = Signal(_current_url(), name="current_path")
 
-current_path: Accessor[str] = _path
+
+class _CurrentPath(Accessor[str]):
+    """The browser's URL, or the request URL during a server render."""
+
+    __slots__ = ()
+
+    def __call__(self) -> str:
+        session = _core._session
+        if session is not None and session.url is not None:
+            return str(session.url)
+        return _path()
+
+    def peek(self) -> str:
+        session = _core._session
+        if session is not None and session.url is not None:
+            return str(session.url)
+        return _path.peek()
+
+    def _label(self) -> str:
+        return "current_path"
+
+
+current_path: Accessor[str] = _CurrentPath()
 """Accessor for the current pathname plus query string.
 
 Updated by [`navigate`][wybthon.navigate] and by the global `popstate`
 listener (back/forward navigation). Read it inside reactive scopes to
-re-render when the URL changes.
+re-render when the URL changes. During a server render it returns the
+URL passed to the render function.
 """
 
 _popstate_proxy: Any = None
@@ -143,8 +166,10 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
 
     External URLs use normal browser navigation. Back/forward restores recorded
     scroll positions; ordinary navigation scrolls to a hash target or the top
-    once the destination's transition commits.
+    once the destination's transition commits. A no-op during a server render.
     """
+    if _core._server_depth:
+        return
     target = urlsplit(path)
     external = bool(target.scheme or target.netloc)
     try:

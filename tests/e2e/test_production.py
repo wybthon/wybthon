@@ -27,8 +27,7 @@ def test_generated_app_builds_boots_and_loads_chunk(browser, tmp_path, mode):
         .replace('# charts = ["app/charts/**"]', 'chart = ["app/chart.py"]')
     )
     main = project / "app" / "main.py"
-    main.write_text(
-        """from wybthon import Errored, Loading, Show, button, component, create_signal, div, lazy, p, render
+    main.write_text("""from wybthon import Errored, Loading, Show, button, component, create_signal, div, lazy, p
 Panel = lazy(lambda: ("app.chart", "Chart"), chunk="chart")
 @component
 def App():
@@ -41,10 +40,9 @@ def App():
         Errored(lambda: Loading(lambda: Show(show, lambda: Panel()), fallback="Loading chart"),
                 fallback=lambda error: p("Load failed", id="load-failed")),
     )
-def main():
-    return render(App(), "#app")
-"""
-    )
+def app():
+    return App()
+""")
     manifest = build_app(project, base="/demo/")
     with contextlib.closing(socket.socket()) as sock:
         sock.bind(("127.0.0.1", 0))

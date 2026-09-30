@@ -34,7 +34,7 @@ from .reactivity._core import is_accessor
 if TYPE_CHECKING:
     from .reactivity import Computation
 
-__all__ = ["VNode", "h", "Fragment", "hole"]
+__all__ = ["VNode", "h", "Fragment", "hole", "copy_vnode"]
 
 PropsDict = dict[str, Any]
 
@@ -78,7 +78,10 @@ class VNode:
         "ns",
         "_frag_end",
         "_hole_text",
+        "pk",
     )
+
+    pk: str | None
 
     def __init__(
         self,
@@ -103,6 +106,9 @@ class VNode:
         self.ns: str | None = None
         self._frag_end: int | None = None
         self._hole_text: str | None = None
+        # ``pk`` (position key: the node's place in the rendered tree) is
+        # left unset except during server rendering and hydration; read it
+        # with ``getattr(vnode, "pk", None)``. See ``wybthon.reactivity._session``.
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         tag = self.tag
@@ -251,3 +257,19 @@ def Fragment(*args: Any) -> VNode:
         ```
     """
     return VNode(tag="_fragment", props={}, children=flatten_children(args))
+
+
+def copy_vnode(value: Any) -> Any:
+    """Return a structural copy of an unmounted VNode tree (other values unchanged).
+
+    Mounting records DOM ids and normalized children on the VNodes it
+    mounts, so a tree mounts once. Server rendering copies the root
+    view for each render pass.
+    """
+    if not isinstance(value, VNode):
+        return value
+    props = dict(value.props)
+    nested = props.get("children")
+    if isinstance(nested, list):
+        props["children"] = [copy_vnode(child) for child in nested]
+    return VNode(value.tag, props, [copy_vnode(child) for child in value.children], value.key)
