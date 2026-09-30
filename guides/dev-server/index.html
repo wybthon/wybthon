@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/guides/dev-server/">
       
       
-        <link rel="prev" href="../../concepts/async-loading/">
+        <link rel="prev" href="../../concepts/server-rendering/">
       
       
         <link rel="next" href="../demo-app/">
@@ -375,6 +375,28 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../rfcs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  RFCs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../meta/style-guide/" class="md-tabs__link">
           
   
@@ -502,6 +524,8 @@
   
     
     
+      
+        
       
         
       
@@ -987,6 +1011,34 @@
     
   
     Async and Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/server-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Rendering
   
 
     
@@ -1901,6 +1953,8 @@
       
         
       
+        
+      
     
     
     
@@ -2571,6 +2625,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2665,9 +2747,7 @@
     
       
         
-      
-        
-      
+          
         
       
         
@@ -2692,7 +2772,145 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <div class="md-nav__link md-nav__container">
+            <a href="../../rfcs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0000-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0001-server-rendering-and-hydration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -2710,8 +2928,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3077,7 +3295,7 @@
 
 
 <h1 id="dev-server">Dev server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h1>
-<p>For a generated application, run <code>wyb dev --open</code> from the directory containing <code>wybthon.toml</code>. It builds the application, serves its configured base path with client-route fallback, and rebuilds before reloading on source changes. Invalid edits report a build error while the previous output remains available. New and deleted source files also trigger a rebuild.</p>
+<p>For a generated application, run <code>wyb dev --open</code> from the directory containing <code>wybthon.toml</code>. It builds the application (including any routes listed in <code>prerender</code>, so you develop against the same server-rendered pages you'll deploy), serves its configured base path with client-route fallback to <code>200.html</code>, and rebuilds before reloading on source changes. Invalid edits report a build error while the previous output remains available. New and deleted source files also trigger a rebuild.</p>
 <p>For this repository's demos, fixtures, and benchmarks, <code>wyb dev --dir .</code> retains the static server, source manifests, mounts, and SSE endpoints described below.</p>
 <p><code>wyb dev</code> runs a static file server with auto-reload over Server-Sent Events (SSE).</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon

@@ -18,7 +18,7 @@
         <link rel="prev" href="../error-boundaries/">
       
       
-        <link rel="next" href="../../guides/dev-server/">
+        <link rel="next" href="../server-rendering/">
       
       
         
@@ -375,6 +375,28 @@
     
     
       <li class="md-tabs__item">
+        <a href="../../rfcs/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  RFCs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../../meta/style-guide/" class="md-tabs__link">
           
   
@@ -504,6 +526,8 @@
   
     
     
+      
+        
       
         
       
@@ -1267,6 +1291,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1918,6 +1970,8 @@
   
     
     
+      
+        
       
         
       
@@ -2639,6 +2693,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2733,9 +2815,7 @@
     
       
         
-      
-        
-      
+          
         
       
         
@@ -2760,7 +2840,145 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <div class="md-nav__link md-nav__container">
+            <a href="../../rfcs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0000-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0001-server-rendering-and-hydration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -2778,8 +2996,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3573,6 +3791,7 @@ canonical way to code-split:</p>
 <li><strong>Prefer <code>refresh</code> after writes.</strong> A quiet refresh keeps the current value on screen and doesn't flicker <code>is_pending</code>.</li>
 <li><strong>Keep fallbacks cheap and stable.</strong> Avoid heavy components inside them.</li>
 <li><strong>Combine <code>Loading</code> with <code>Errored</code>.</strong> Async work can fail. Wrap user-facing async regions with both.</li>
+<li><strong>Prefer <code>lambda: fetch(x())</code> for server-rendered pages.</strong> A memo that returns a coroutine can hydrate from the server's value without fetching it again; an <code>async def</code> body re-runs quietly after hydration. See <a href="../server-rendering/#async-data">Server rendering</a>.</li>
 <li><strong>Testing.</strong> Drive async code with <code>asyncio.run(...)</code> and alternate <code>flush()</code> with <code>await asyncio.sleep(0)</code> so runs can start and settle. See the <a href="../../guides/testing/">Testing guide</a>.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
@@ -3580,6 +3799,7 @@ canonical way to code-split:</p>
 <li>Read the <a href="../../examples/fetch/">Async fetch example</a> for an end-to-end demo.</li>
 <li>See the <a href="../../api/loading/"><code>loading</code></a> API for <code>Loading</code> and <code>Reveal</code>, and <a href="../../api/reactivity/"><code>reactivity</code></a> for actions, <code>affects</code>, and <code>until</code>.</li>
 <li>Read <a href="../error-boundaries/">Error boundaries</a> for <code>Errored</code> and healing.</li>
+<li>Read <a href="../server-rendering/">Server rendering</a> to resolve async data on the server and stream <code>Loading</code> boundaries.</li>
 </ul>
 
 
