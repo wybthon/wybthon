@@ -45,7 +45,7 @@ from typing import Any, Literal
 from .reactivity import _core
 from .reactivity._core import LOADING_CONTEXT_KEY, Computation, NotReadyError, Signal
 from .reactivity._primitives import _create_effect, on_cleanup
-from .reactivity._props import Props
+from .reactivity._props import RawProps
 from .vnode import Fragment, VNode, h, hole, to_text_vnode
 
 __all__ = ["Loading", "Reveal"]
@@ -187,7 +187,7 @@ def _render_fallback(fb: Any) -> VNode:
     return to_text_vnode("" if fb is None else str(fb))
 
 
-def _Loading(props: Props) -> Any:
+def _Loading(props: RawProps) -> Any:
     from . import reconciler
 
     collector = _LoadingCollector()
@@ -415,7 +415,7 @@ def Reveal(
     return h(_Reveal, {"children": children, "order": order, "collapsed": collapsed})
 
 
-def _Reveal(props: Props) -> Any:
+def _Reveal(props: RawProps) -> Any:
     owner = _core._current_owner
     parent = owner._lookup_context(REVEAL_CONTEXT_KEY, None) if owner is not None else None
     state = _RevealState(props.raw("order"), props.raw("collapsed"), parent)

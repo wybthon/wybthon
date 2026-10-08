@@ -6,7 +6,7 @@ from wybthon import button, component, create_signal, div, h2, input_, p, span
 
 
 @component
-def Page(**rest):
+def Page():
     outer, set_outer = create_signal(0)
     inner, set_inner = create_signal(0)
     text, set_text = create_signal("")

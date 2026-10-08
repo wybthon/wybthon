@@ -1,4 +1,4 @@
-from wybthon import email, max_length, min_length, required, validate
+from wybthon.forms import email, max_length, min_length, required, validate
 
 
 def test_required():

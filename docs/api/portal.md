@@ -17,11 +17,12 @@ tooltips, popovers, and toasts that must escape their parent's layout.
 ```python
 from wybthon import Portal, Show, button, component, create_signal, div, p
 
+
 @component
 def Modal():
     is_open, set_open = create_signal(False)
 
-    def toggle(e):
+    def toggle():
         set_open(lambda v: not v)
 
     return div(

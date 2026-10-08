@@ -3,24 +3,24 @@
 This module gives you a small but complete toolkit for building
 controlled form components on top of Wybthon's reactive primitives:
 
-- [`form_state`][wybthon.form_state] creates a map of
-  [`Field`][wybthon.Field] entries (each backed by signals for value,
+- [`form_state`][wybthon.forms.form_state] creates a map of
+  [`Field`][wybthon.forms.Field] entries (each backed by signals for value,
   error, and touched flags).
-- [`bind_text`][wybthon.bind_text],
-  [`bind_checkbox`][wybthon.bind_checkbox], and
-  [`bind_select`][wybthon.bind_select] return prop dictionaries you can
+- [`bind_text`][wybthon.forms.bind_text],
+  [`bind_checkbox`][wybthon.forms.bind_checkbox], and
+  [`bind_select`][wybthon.forms.bind_select] return prop dictionaries you can
   spread onto inputs.
-- [`on_submit`][wybthon.on_submit] and
-  [`on_submit_validated`][wybthon.on_submit_validated] wrap submit
+- [`on_submit`][wybthon.forms.on_submit] and
+  [`on_submit_validated`][wybthon.forms.on_submit_validated] wrap submit
   handlers with the right `preventDefault` / validation glue.
-- Validator helpers ([`required`][wybthon.required],
-  [`min_length`][wybthon.min_length],
-  [`max_length`][wybthon.max_length], [`email`][wybthon.email]) compose
-  with [`validate`][wybthon.validate],
-  [`validate_field`][wybthon.validate_field], and
-  [`validate_form`][wybthon.validate_form].
-- [`a11y_control_attrs`][wybthon.a11y_control_attrs] and
-  [`error_message_attrs`][wybthon.error_message_attrs] generate ARIA
+- Validator helpers ([`required`][wybthon.forms.required],
+  [`min_length`][wybthon.forms.min_length],
+  [`max_length`][wybthon.forms.max_length], [`email`][wybthon.forms.email]) compose
+  with [`validate`][wybthon.forms.validate],
+  [`validate_field`][wybthon.forms.validate_field], and
+  [`validate_form`][wybthon.forms.validate_form].
+- [`a11y_control_attrs`][wybthon.forms.a11y_control_attrs] and
+  [`error_message_attrs`][wybthon.forms.error_message_attrs] generate ARIA
   attributes (reactively) so error messages are announced correctly.
 
 Example:
@@ -132,7 +132,7 @@ def email(message: str = "Invalid email address") -> Validator:
     """Validate a basic email address format with a lightweight regex.
 
     Accepts `None` and empty strings as valid so it can be combined
-    with [`required`][wybthon.required], which handles the missing
+    with [`required`][wybthon.forms.required], which handles the missing
     case explicitly.
     """
 

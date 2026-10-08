@@ -40,3 +40,4 @@ While Wybthon is pre-1.0, an RFC may choose breaking changes without a compatibi
 | RFC | Title | Status |
 | --- | --- | --- |
 | [0001](0001-server-rendering-and-hydration.md) | Server rendering, hydration, and the boot pipeline | Implemented |
+| [0002](0002-engine-v2.md) | Engine v2: compiled mounting, typed props, and Solid 2.0 RC.14 alignment | Implemented |

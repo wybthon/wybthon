@@ -1,0 +1,5 @@
+# The browser end-to-end fixture: an ordinary Wybthon project served by `wyb dev`.
+entry = "app.main:app"
+mount = "#app"
+app-dir = "app"
+base = "/"

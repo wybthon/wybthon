@@ -71,7 +71,7 @@ def compare(baseline, iterations, warmup):
         pages = {side: context.new_page() for side in urls}
         samples = {side: [] for side in urls}
         for iteration in range(warmup + iterations):
-            for side in (("before", "after") if iteration % 2 == 0 else ("after", "before")):
+            for side in ("before", "after") if iteration % 2 == 0 else ("after", "before"):
                 page = pages[side]
                 page.bring_to_front()
                 page.goto(urls[side])

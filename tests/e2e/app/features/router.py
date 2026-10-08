@@ -4,11 +4,13 @@ The ``Index`` page links to sub-routes resolved by the app-level ``Router``
 (see :func:`app.routes.create_routes`). Each sub-page renders a marker plus
 the value the router extracted from the URL. ``Link`` joins ``href`` with
 the router's base path automatically because these pages render inside it.
+Routed pages that read the URL take ``RouteProps``; the rest take nothing.
 """
 
 from app.testkit import tid
 
-from wybthon import Link, Outlet, Prop, component, div, h2, span
+from wybthon import component, div, h2, span
+from wybthon.router import Link, Outlet, RouteProps
 
 
 def _link(to, label, slug):
@@ -16,7 +18,7 @@ def _link(to, label, slug):
 
 
 @component
-def Index(**rest):
+def Index():
     return div(
         h2("Router"),
         _link("/router/user/42", "user 42", "user"),
@@ -30,35 +32,35 @@ def Index(**rest):
 
 
 @component
-def User(params: Prop[dict], **rest):
+def User(props: RouteProps):
     return div(
         span("user", **tid("router-user-marker")),
-        span(lambda: (params() or {}).get("id", ""), **tid("router-user-id")),
+        span(lambda: props.params().get("id", ""), **tid("router-user-id")),
         **tid("page-router-user"),
     )
 
 
 @component
-def Search(query: Prop[dict], **rest):
+def Search(props: RouteProps):
     return div(
-        span(lambda: (query() or {}).get("q", ""), **tid("router-search-q")),
+        span(lambda: props.query().get("q", ""), **tid("router-search-q")),
         **tid("page-router-search"),
     )
 
 
 @component
-def Docs(params: Prop[dict], **rest):
+def Docs(props: RouteProps):
     return div(
-        span(lambda: (params() or {}).get("wildcard", ""), **tid("router-docs-rest")),
+        span(lambda: props.params().get("wildcard", ""), **tid("router-docs-rest")),
         **tid("page-router-docs"),
     )
 
 
 @component
-def Parent(**rest):
+def Parent():
     return div(span("parent", **tid("router-parent-marker")), Outlet(), **tid("page-router-parent"))
 
 
 @component
-def Child(**rest):
+def Child():
     return div(span("child", **tid("router-child-marker")), **tid("page-router-child"))

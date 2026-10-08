@@ -1,98 +1,287 @@
-"""Component props: the `Props` container, `prop()` defaults, `merge`, and `omit`.
+"""Component props: typed `Props` classes, `Prop[T]` fields, `prop()` defaults, `merge`, and `omit`.
 
-A component receives its props as a [`Props`][wybthon.Props] mapping of
-name to [`Prop`][wybthon.Prop] accessor. `@component` unpacks that
-mapping into the function's parameters; a plain function component
-receives the mapping itself. Either way there is one access pattern:
-call the accessor.
+A component declares its inputs on a subclass of [`Props`][wybthon.Props]
+and takes one parameter annotated with that class:
+
+```python
+class GreetingProps(Props):
+    name: Prop[str]
+    excited: Prop[bool] = prop(default=False)
+    on_wave: Callable[[], None] | None = None
+
+
+@component
+def Greeting(props: GreetingProps):
+    return p("Hello, ", props.name, lambda: "!" if props.excited() else ".")
+```
+
+- A `Prop[T]` field is reactive. The parent may pass a value, an
+  accessor, or a zero-argument function; reading `props.name` returns an
+  [`Accessor`][wybthon.Accessor] that unwraps whichever it was.
+- Any other field is plain data, returned as the parent passed it. A
+  callback declared as a plain field is never called by the read.
+- `Props` is a PEP 681 `dataclass_transform` base, so pyright and mypy
+  check component calls without a plugin.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
-from typing import Any
+import re
+from collections.abc import Callable, Iterator, Mapping
+from typing import Any, ClassVar, Self, dataclass_transform, overload
 
-from ._core import Accessor, Prop, Signal, _unwrap, untrack
+from ._core import Accessor, Signal, _PropAccessor, _unwrap, untrack
 
-__all__ = ["Props", "prop", "merge", "omit"]
+__all__ = ["Props", "ParentProps", "Prop", "prop", "merge", "omit"]
 
-_MISSING = object()
+_MISSING: Any = object()
 _NO_DEFAULTS: Mapping[str, Any] = {}
 
 
-class _DefaultProp[T](Prop[T]):
-    """A `Prop` standing in for a component parameter's default value.
+class _Default:
+    """The marker `prop()` returns; replaced by the field's descriptor at class creation."""
 
-    Created by [`prop`][wybthon.prop]. When the component is mounted the
-    reconciler replaces it with a live `Prop` bound to the parent's
-    value (falling back to this default); when the component function is
-    called directly, it behaves as a constant accessor.
-    """
+    __slots__ = ("default", "factory")
 
-    __slots__ = ("default",)
-
-    def __init__(self, default: T) -> None:
-        super().__init__(Signal(default), "<default>")
+    def __init__(self, default: Any, factory: Callable[[], Any] | None) -> None:
         self.default = default
-
-    def __call__(self) -> T:
-        return self.default
-
-    def peek(self) -> T:
-        return self.default
-
-    def __repr__(self) -> str:
-        return f"prop({self.default!r})"
+        self.factory = factory
 
 
-def prop[T](default: T) -> Prop[T]:
-    """Declare a component parameter default with a `Prop[T]` type.
+@overload
+def prop[T](*, default: T) -> Prop[T]: ...
+@overload
+def prop[T](*, default_factory: Callable[[], T]) -> Prop[T]: ...
+def prop(*, default: Any = _MISSING, default_factory: Callable[[], Any] | None = None) -> Any:
+    """Declare a `Prop[T]` field's default.
 
-    Component parameters are accessors, so a plain default (`count=0`)
-    is a type mismatch against `count: Prop[int]`. `prop(0)` gives the
-    parameter the right type while recording the default the reconciler
-    should use when the parent omits the prop.
+    Type checkers only recognize a field specifier's default when it's
+    passed by keyword, so write `prop(default=0)`. Use
+    `default_factory` for mutable defaults.
 
     ```python
-    @component
-    def Greeting(name: Prop[str] = prop("world"), excited: Prop[bool] = prop(False)):
-        return p("Hello, ", name, lambda: "!" if excited() else ".")
+    class CounterProps(Props):
+        step: Prop[int] = prop(default=1)
+        tags: Prop[list[str]] = prop(default_factory=list)
     ```
-
-    Args:
-        default: The value used when the parent doesn't pass the prop.
-
-    Returns:
-        A `Prop` marker carrying the default.
     """
-    return _DefaultProp(default)
+    if (default is _MISSING) == (default_factory is None):
+        raise TypeError("prop() takes exactly one of default= or default_factory=")
+    return _Default(default, default_factory)
 
 
-def default_value(value: Any) -> Any:
-    """Return the raw default behind a `prop()` marker, or `value` itself."""
-    if isinstance(value, _DefaultProp):
-        return value.default
-    return value
+class _Field:
+    """Runtime metadata for one declared field."""
+
+    __slots__ = ("name", "reactive", "default", "factory")
+
+    def __init__(self, name: str, reactive: bool, default: Any, factory: Callable[[], Any] | None) -> None:
+        self.name = name
+        self.reactive = reactive
+        self.default = default
+        self.factory = factory
+
+    @property
+    def required(self) -> bool:
+        return self.default is _MISSING and self.factory is None
+
+    def initial(self) -> Any:
+        if self.factory is not None:
+            return self.factory()
+        return None if self.default is _MISSING else self.default
 
 
-class Props(Mapping[str, Prop[Any]]):
-    """Read-only mapping of prop name to [`Prop`][wybthon.Prop] accessor.
+class Prop[T]:
+    """A reactive component input, declared on a [`Props`][wybthon.Props] class.
 
-    Built by the reconciler for each mounted component. Both attribute
-    and item access return the accessor for that name (creating it on
-    first use), so `props.name()` and `props["name"]()` read the current
-    value. Names absent from the parent's props resolve to the
-    component's declared default, or `None`.
+    The parent may pass a `T`, an accessor of `T`, or a zero-argument
+    function returning `T`. Reading the field on the component's props
+    returns an [`Accessor`][wybthon.Accessor]: place it in the tree to
+    create a reactive hole, call it inside a tracking scope, or use
+    `.peek()` for an intentional one-time read.
+    """
 
-    Iteration, `len()`, and membership include declared defaults. `get()`
-    follows Python mapping semantics and returns its default for absent keys.
-    Direct item or attribute access can still create an optional accessor.
+    __slots__ = ("_field",)
 
-    Example:
-        ```python
-        def Greeting(props: Props):
-            return p("Hello, ", props.name)
-        ```
+    def __init__(self, field: _Field) -> None:
+        self._field = field
+
+    @overload
+    def __get__(self, obj: None, owner: Any) -> Self: ...
+    @overload
+    def __get__(self, obj: object, owner: Any) -> Accessor[T]: ...
+    def __get__(self, obj: Any, owner: Any) -> Any:
+        if obj is None:
+            return self
+        return obj._wyb_accessor(self._field)
+
+    def __set__(self, obj: object, value: T | Accessor[T] | Callable[[], T]) -> None:
+        raise AttributeError("Component props are read-only")
+
+    def __repr__(self) -> str:
+        return f"Prop({self._field.name!r})"
+
+
+class _Plain:
+    """Descriptor for a plain (non-reactive) field: returns the parent's value as passed."""
+
+    __slots__ = ("_field",)
+
+    def __init__(self, field: _Field) -> None:
+        self._field = field
+
+    def __get__(self, obj: Any, owner: Any) -> Any:
+        if obj is None:
+            return self
+        field = self._field
+        value = obj._raw.get(field.name, _MISSING)
+        return field.initial() if value is _MISSING else value
+
+    def __set__(self, obj: object, value: Any) -> None:
+        raise AttributeError("Component props are read-only")
+
+
+_REACTIVE_ANNOTATION = re.compile(r"^(?:[\w.]+\.)?Prop(?:\[|$)")
+_CLASSVAR_ANNOTATION = re.compile(r"^(?:[\w.]+\.)?ClassVar(?:\[|$)")
+
+
+def _string_annotations(cls: type) -> dict[str, str]:
+    import annotationlib
+
+    return annotationlib.get_annotations(cls, format=annotationlib.Format.STRING)
+
+
+@dataclass_transform(kw_only_default=True, frozen_default=True, field_specifiers=(prop,))
+class _PropsBase:
+    """Gives `Props` subclasses their checked keyword constructor (PEP 681)."""
+
+    __slots__ = ()
+
+
+class Props(_PropsBase):
+    """Base class for a component's declared inputs.
+
+    Subclass it, annotate fields, and take one parameter of that type in
+    the component. Every component also accepts `key`, which gives the
+    instance a stable identity for keyed reconciliation.
+
+    At run time the reconciler builds one instance per mounted
+    component. Reading a `Prop[T]` field returns an accessor that tracks
+    the parent's current value, so a parent that later passes a new value
+    (or an accessor) updates the child without re-running it.
+    """
+
+    __slots__ = ("_raw", "_signals", "_accessors")
+
+    key: str | int | None = None
+
+    _wyb_fields: ClassVar[dict[str, _Field]] = {}
+    _wyb_required: ClassVar[frozenset[str]] = frozenset()
+    _wyb_names: ClassVar[frozenset[str]] = frozenset({"key"})
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        fields = dict(getattr(cls, "_wyb_fields", {}))
+        for name, annotation in _string_annotations(cls).items():
+            if name.startswith("_") or _CLASSVAR_ANNOTATION.match(annotation):
+                continue
+            value = cls.__dict__.get(name, _MISSING)
+            if isinstance(value, _Default):
+                default, factory = value.default, value.factory
+            elif isinstance(value, (Prop, _Plain)):
+                continue
+            else:
+                default, factory = value, None
+            reactive = bool(_REACTIVE_ANNOTATION.match(annotation))
+            if not reactive and isinstance(value, _Default):
+                raise TypeError(f"{cls.__qualname__}.{name}: prop() is for Prop[T] fields; use a plain default")
+            field = _Field(name, reactive, default, factory)
+            fields[name] = field
+            setattr(cls, name, Prop(field) if reactive else _Plain(field))
+        cls._wyb_fields = fields
+        cls._wyb_required = frozenset(name for name, field in fields.items() if field.required)
+        cls._wyb_names = frozenset(fields) | {"key"}
+
+    def __init__(self, **values: Any) -> None:
+        self._raw: dict[str, Any] = values
+        self._signals: dict[str, Signal[Any]] | None = None
+        self._accessors: dict[str, Accessor[Any]] | None = None
+
+    @classmethod
+    def _wyb_check(cls, values: Mapping[str, Any], component: str) -> None:
+        """Dev-mode validation of the keywords a component was called with."""
+        unknown = values.keys() - cls._wyb_names
+        if unknown:
+            raise TypeError(f"{component}() got unexpected prop(s): {', '.join(sorted(unknown))}")
+        missing = cls._wyb_required - values.keys()
+        if missing:
+            raise TypeError(f"{component}() is missing required prop(s): {', '.join(sorted(missing))}")
+
+    def _wyb_signal(self, field: _Field) -> Signal[Any]:
+        signals = self._signals
+        if signals is None:
+            signals = self._signals = {}
+        sig = signals.get(field.name)
+        if sig is None:
+            value = self._raw.get(field.name, _MISSING)
+            sig = signals[field.name] = Signal(field.initial() if value is _MISSING else value, name=field.name)
+        return sig
+
+    def _wyb_accessor(self, field: _Field) -> Accessor[Any]:
+        accessors = self._accessors
+        if accessors is None:
+            accessors = self._accessors = {}
+        accessor = accessors.get(field.name)
+        if accessor is None:
+            accessor = accessors[field.name] = _PropAccessor(self._wyb_signal(field), field.name)
+        return accessor
+
+    def _wyb_update(self, values: dict[str, Any]) -> None:
+        """Push new parent props into the live accessors (reconciler patch path)."""
+        self._raw = values
+        signals = self._signals
+        if signals:
+            fields = type(self)._wyb_fields
+            for name, sig in signals.items():
+                value = values.get(name, _MISSING)
+                sig._set(fields[name].initial() if value is _MISSING else value)
+
+    def _wyb_items(self) -> Iterator[tuple[str, Any]]:
+        """Yield `(name, accessor or value)` for every declared field and passed key."""
+        fields = type(self)._wyb_fields
+        for name, field in fields.items():
+            yield name, (self._wyb_accessor(field) if field.reactive else getattr(self, name))
+        for name, value in self._raw.items():
+            if name not in fields and name != "key":
+                yield name, value
+
+    def __getitem__(self, children: Any) -> Self:
+        """Children sugar for type checkers: `Card(title="Hi")[h2("Body"), p("More")]`.
+
+        At run time a component call returns a node, whose item syntax sets
+        its `children` prop.
+        """
+        raise TypeError("Props instances don't take children; call the component instead")
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self._raw!r})"
+
+
+class ParentProps(Props):
+    """Props for a component that renders `children`."""
+
+    children: Prop[Any] = prop(default=None)
+
+
+class RawProps(Mapping[str, Accessor[Any]]):
+    """The props of a framework-internal function component.
+
+    Internal components (`Show`, `For`, `Loading`, `Router`, and the like)
+    are plain functions used as node tags. They receive this mapping:
+    attribute and item access return a reactive accessor for that name
+    (unwrapping accessors the parent passed), and `raw` returns a value
+    exactly as passed. Application components use typed
+    [`Props`][wybthon.Props] classes instead.
     """
 
     __slots__ = ("_raw", "_defaults", "_signals", "_props")
@@ -103,7 +292,7 @@ class Props(Mapping[str, Prop[Any]]):
         # by every instance rather than copied per mount.
         self._defaults: Mapping[str, Any] = defaults if defaults else _NO_DEFAULTS
         self._signals: dict[str, Signal[Any]] = {}
-        self._props: dict[str, Prop[Any]] = {}
+        self._props: dict[str, Accessor[Any]] = {}
 
     def _signal(self, key: str) -> Signal[Any]:
         sig = self._signals.get(key)
@@ -115,14 +304,14 @@ class Props(Mapping[str, Prop[Any]]):
             self._signals[key] = sig
         return sig
 
-    def __getitem__(self, key: str) -> Prop[Any]:
+    def __getitem__(self, key: str) -> Accessor[Any]:
         accessor = self._props.get(key)
         if accessor is None:
-            accessor = Prop(self._signal(key), key)
+            accessor = _PropAccessor(self._signal(key), key)
             self._props[key] = accessor
         return accessor
 
-    def __getattr__(self, name: str) -> Prop[Any]:
+    def __getattr__(self, name: str) -> Accessor[Any]:
         if name.startswith("_"):
             raise AttributeError(name)
         return self[name]
@@ -152,15 +341,7 @@ class Props(Mapping[str, Prop[Any]]):
             value = self._defaults.get(key)
         return value
 
-    def snapshot(self) -> dict[str, Any]:
-        """Return the current unwrapped values as a plain dict (untracked)."""
-        keys = list(self._raw)
-        for key in self._defaults:
-            if key not in self._raw:
-                keys.append(key)
-        return {k: self[k].peek() for k in keys}
-
-    def _update(self, new_raw: Mapping[str, Any]) -> None:
+    def _wyb_update(self, new_raw: Mapping[str, Any]) -> None:
         """Push new parent props into the live signals (reconciler patch path)."""
         self._raw = dict(new_raw)
         for key, sig in self._signals.items():
@@ -173,7 +354,7 @@ class Props(Mapping[str, Prop[Any]]):
         return f"Props({self._raw!r})"
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, Props):
+        if isinstance(other, RawProps):
             return self._raw == other._raw
         return NotImplemented
 
@@ -186,15 +367,31 @@ class Props(Mapping[str, Prop[Any]]):
 # ---------------------------------------------------------------------------
 
 
-def _lookup(source: Any, key: str) -> Any:
-    """Return `(found, value)` for `key` in a prop source (tracked read)."""
+def _resolve_source(source: Any) -> Any:
     if isinstance(source, Accessor):
-        source = source()
-    elif callable(source) and not isinstance(source, Mapping):
-        source = source()
+        return source()
+    if callable(source) and not isinstance(source, (Mapping, Props)):
+        return source()
+    return source
+
+
+def _lookup(source: Any, key: str, defaults: bool = True) -> tuple[bool, Any]:
+    """Return `(found, value)` for `key` in a prop source (tracked read)."""
+    source = _resolve_source(source)
     if source is None:
         return False, None
     if isinstance(source, Props):
+        if key == "key":
+            return False, None
+        field = type(source)._wyb_fields.get(key)
+        if key not in source._raw and (not defaults or field is None):
+            return False, None
+        if field is not None:
+            if field.reactive:
+                return True, source._wyb_accessor(field)()
+            return True, getattr(source, key)
+        return True, _unwrap(source._raw[key])
+    if isinstance(source, RawProps):
         if key in source:
             return True, source[key]()
         return False, None
@@ -206,21 +403,19 @@ def _lookup(source: Any, key: str) -> Any:
 
 
 def _keys(source: Any) -> list[str]:
-    if isinstance(source, Accessor):
-        source = source()
-    elif callable(source) and not isinstance(source, Mapping):
-        source = source()
+    source = _resolve_source(source)
     if source is None:
         return []
     if isinstance(source, Props):
-        keys = list(source)
-        for key in source._defaults:
-            if key not in source._raw:
-                keys.append(key)
-        return keys
+        return [name for name, _ in source._wyb_items()]
     if isinstance(source, Mapping):
         return list(source)
     return []
+
+
+def _passes_through(key: str) -> bool:
+    """Whether an element prop takes its value as is: an event handler or a ref."""
+    return key == "ref" or key.startswith("on_") or (len(key) > 2 and key.startswith("on") and key[2].isupper())
 
 
 class _KeyAccessor(Accessor[Any]):
@@ -242,7 +437,7 @@ class _KeyAccessor(Accessor[Any]):
         return f"prop {self._key!r}"
 
 
-class _PropsView(Mapping[str, Accessor[Any]]):
+class _PropsView(Mapping[str, Any]):
     """Base for the read-only reactive mappings returned by `merge` and `omit`."""
 
     __slots__ = ("_accessors",)
@@ -256,14 +451,18 @@ class _PropsView(Mapping[str, Accessor[Any]]):
     def _all_keys(self) -> list[str]:
         raise NotImplementedError
 
-    def __getitem__(self, key: str) -> Accessor[Any]:
+    def __getitem__(self, key: str) -> Any:
+        if _passes_through(key):
+            # Event handlers and refs are values, never reactive bindings:
+            # spreading the view must hand the element the callable itself.
+            return untrack(lambda: self._resolve(key))
         acc = self._accessors.get(key)
         if acc is None:
             acc = _KeyAccessor(self, key)
             self._accessors[key] = acc
         return acc
 
-    def __getattr__(self, name: str) -> Accessor[Any]:
+    def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             raise AttributeError(name)
         return self[name]
@@ -277,16 +476,8 @@ class _PropsView(Mapping[str, Accessor[Any]]):
     def __contains__(self, key: object) -> bool:
         return key in self._all_keys()
 
-    def snapshot(self) -> dict[str, Any]:
-        """Return the current values as a plain dict (untracked)."""
-
-        def resolve_all() -> dict[str, Any]:
-            return {k: self._resolve(k) for k in self._all_keys()}
-
-        return untrack(resolve_all)
-
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.snapshot()!r})"
+        return f"{type(self).__name__}({untrack(lambda: {k: self._resolve(k) for k in self._all_keys()})!r})"
 
 
 class _Merged(_PropsView):
@@ -297,10 +488,14 @@ class _Merged(_PropsView):
         self._sources = sources
 
     def _resolve(self, key: str) -> Any:
-        for source in reversed(self._sources):
-            found, value = _lookup(source, key)
-            if found:
-                return value
+        # Keys the parent passed win first, so defaults merged in earlier
+        # sources apply (Solid's `merge(defaults, props)` pattern); declared
+        # defaults are the fallback.
+        for defaults in (False, True):
+            for source in reversed(self._sources):
+                found, value = _lookup(source, key, defaults)
+                if found:
+                    return value
         return None
 
     def _all_keys(self) -> list[str]:
@@ -314,57 +509,58 @@ class _Merged(_PropsView):
 class _Omitted(_PropsView):
     __slots__ = ("_source", "_omit")
 
-    def __init__(self, source: Any, omit_keys: frozenset[str]) -> None:
+    def __init__(self, source: Any, omit: Callable[[str], bool]) -> None:
         super().__init__()
         self._source = source
-        self._omit = omit_keys
+        self._omit = omit
 
     def _resolve(self, key: str) -> Any:
-        if key in self._omit:
+        if self._omit(key):
             return None
         _, value = _lookup(self._source, key)
         return value
 
     def _all_keys(self) -> list[str]:
-        return [k for k in _keys(self._source) if k not in self._omit]
-
-    def __contains__(self, key: object) -> bool:
-        return key not in self._omit and key in _keys(self._source)
+        return [k for k in _keys(self._source) if not self._omit(k)]
 
 
 def merge(*sources: Any) -> Mapping[str, Accessor[Any]]:
     """Merge prop sources into one reactive mapping; later sources win.
 
-    Each source may be a [`Props`][wybthon.Props] mapping, a plain dict
-    (values may be accessors or static), a zero-arg function returning
-    a dict, or another merged/omitted view. Reads resolve right-to-left
-    at access time, so tracking flows through to whichever source
-    supplied the key. A key present with the value `None` overrides
-    earlier sources (`None` is a real value, not "skip").
+    Each source may be a component's props, a plain dict (values may be
+    accessors or static), a zero-arg function returning a dict, or
+    another merged or omitted view. Reads resolve right to left at
+    access time, so tracking flows through to whichever source supplied
+    the key. A key present with the value `None` overrides earlier
+    sources, as an explicit `undefined` does in Solid 2.0.
 
     The result is a mapping of accessors: spread it onto an element
-    (`button(**merge(defaults, rest))`) or pass it to a component.
+    (`button(**merge(defaults, extra))`).
 
     Example:
         ```python
-        @component
-        def Button(variant: Prop[str] = prop("solid"), **rest: Prop[Any]):
-            attrs = merge({"type": "button"}, rest)
-            return button(**attrs, class_=lambda: f"btn btn-{variant()}")
+        attrs = merge({"type": "button"}, {"disabled": props.busy})
+        button("Save", **attrs)
         ```
     """
     return _Merged(sources)
 
 
-def omit(source: Any, *keys: str) -> Mapping[str, Accessor[Any]]:
-    """Return a reactive view of `source` without the given keys.
+def omit(source: Any, *keys: str | Callable[[str], bool]) -> Mapping[str, Accessor[Any]]:
+    """Return a reactive view of `source` without some keys.
 
-    The replacement for `split_props`: keep the keys you handle locally
-    as named parameters and forward the rest.
+    Pass key names, or a single predicate that returns `True` for each
+    key to drop. The replacement for Solid 1.x's `splitProps`: handle
+    some props locally and forward the rest.
 
     ```python
-    rest = omit(props, "class", "style")
-    div(**rest)
+    rest = omit(props, "label", "children")
+    rest = omit(props, lambda key: key.startswith("on_"))
     ```
     """
-    return _Omitted(source, frozenset(keys))
+    if len(keys) == 1 and callable(keys[0]):
+        predicate = keys[0]
+    else:
+        names = frozenset(k for k in keys if isinstance(k, str))
+        predicate = names.__contains__
+    return _Omitted(source, predicate)

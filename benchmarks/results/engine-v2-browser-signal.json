@@ -1,0 +1,1537 @@
+{
+  "metadata": {
+    "baseline": "ecaf7bd043c10c307dece68e9e104afd4d14f62f",
+    "current_base": "ecaf7bd043c10c307dece68e9e104afd4d14f62f",
+    "source_sha256": {
+      "before": "cf919d706428aee6f84524c62f214218226754a0d0281308ac498556219eb9d9",
+      "after": "87886449391c43ebd3a1cc6a486f38b6f869ab9496692d7ac119b12e516df2f2"
+    },
+    "current_dirty": true,
+    "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+    "browser": "151.0.7922.34",
+    "runtime": [
+      "3.14.2 (main, Aug 25 2026, 05:50:55) [Clang 23.0.0git (https:/github.com/llvm/llvm-project e5927fecf8a6ce89e1a4eac5b8",
+      "314.0.6"
+    ],
+    "mode": "signal",
+    "iterations": 7,
+    "warmup": 1,
+    "method": "alternating direct Python operations",
+    "baseline_policy": {
+      "create_1k": "before each sample",
+      "replace_1k": "before each sample",
+      "create_10k": "before each sample",
+      "update_10th_10k": "before each sample",
+      "select_10k": "before each sample",
+      "swap_10k": "before each sample",
+      "remove_10k": "before each sample",
+      "append_to_10k": "before each sample",
+      "clear_10k": "before each sample"
+    }
+  },
+  "scenarios": {
+    "create_1k": {
+      "before": {
+        "serialize_ms": 7.30000000000075,
+        "kernel_ms": 16.00000000000179,
+        "dom_ops": 7000,
+        "serialized_bytes": 138969,
+        "sync_commit_ms": 155.9999999999988,
+        "python_ms": 129.999999999999,
+        "commits": 1,
+        "input_to_frame_ms": 200.9000000357628,
+        "samples": [
+          {
+            "serialize_ms": 7.400000000000517,
+            "kernel_ms": 16.00000000000179,
+            "dom_ops": 7000,
+            "serialized_bytes": 138969,
+            "sync_commit_ms": 160.00000000000014,
+            "python_ms": 136.59999999999783,
+            "commits": 1,
+            "input_to_frame_ms": 187.5999999642372
+          },
+          {
+            "serialize_ms": 6.900000000001683,
+            "kernel_ms": 15.699999999998937,
+            "dom_ops": 7000,
+            "serialized_bytes": 138912,
+            "sync_commit_ms": 151.69999999999817,
+            "python_ms": 129.09999999999755,
+            "commits": 1,
+            "input_to_frame_ms": 187.19999998807907
+          },
+          {
+            "serialize_ms": 7.30000000000075,
+            "kernel_ms": 18.69999999999905,
+            "dom_ops": 7000,
+            "serialized_bytes": 138944,
+            "sync_commit_ms": 155.9999999999988,
+            "python_ms": 129.999999999999,
+            "commits": 1,
+            "input_to_frame_ms": 200
+          },
+          {
+            "serialize_ms": 7.1000000000012164,
+            "kernel_ms": 18.000000000000682,
+            "dom_ops": 7000,
+            "serialized_bytes": 139024,
+            "sync_commit_ms": 153.49999999999753,
+            "python_ms": 128.39999999999563,
+            "commits": 1,
+            "input_to_frame_ms": 200.9000000357628
+          },
+          {
+            "serialize_ms": 13.700000000000045,
+            "kernel_ms": 24.399999999999977,
+            "dom_ops": 7000,
+            "serialized_bytes": 138912,
+            "sync_commit_ms": 230.29999999999973,
+            "python_ms": 192.1999999999997,
+            "commits": 1,
+            "input_to_frame_ms": 421.5
+          },
+          {
+            "serialize_ms": 49.30000000000234,
+            "kernel_ms": 14.699999999997715,
+            "dom_ops": 7000,
+            "serialized_bytes": 139007,
+            "sync_commit_ms": 405.20000000000067,
+            "python_ms": 341.2000000000006,
+            "commits": 1,
+            "input_to_frame_ms": 471.80000001192093
+          },
+          {
+            "serialize_ms": 7.299999999997198,
+            "kernel_ms": 15.100000000000335,
+            "dom_ops": 7000,
+            "serialized_bytes": 138977,
+            "sync_commit_ms": 150.09999999999835,
+            "python_ms": 127.70000000000081,
+            "commits": 1,
+            "input_to_frame_ms": 208.69999998807907
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 2.200000000000202,
+        "kernel_ms": 11.80000000000092,
+        "dom_ops": 1000,
+        "serialized_bytes": 45969,
+        "sync_commit_ms": 121.90000000000012,
+        "python_ms": 108.70000000000068,
+        "commits": 1,
+        "input_to_frame_ms": 147,
+        "samples": [
+          {
+            "serialize_ms": 2.100000000000435,
+            "kernel_ms": 11.099999999999,
+            "dom_ops": 1000,
+            "serialized_bytes": 45969,
+            "sync_commit_ms": 121.90000000000012,
+            "python_ms": 108.70000000000068,
+            "commits": 1,
+            "input_to_frame_ms": 141.89999997615814
+          },
+          {
+            "serialize_ms": 2.200000000000202,
+            "kernel_ms": 18.39999999999975,
+            "dom_ops": 1000,
+            "serialized_bytes": 45912,
+            "sync_commit_ms": 149.19999999999868,
+            "python_ms": 128.59999999999872,
+            "commits": 1,
+            "input_to_frame_ms": 344.60000002384186
+          },
+          {
+            "serialize_ms": 2.200000000000202,
+            "kernel_ms": 11.80000000000092,
+            "dom_ops": 1000,
+            "serialized_bytes": 45944,
+            "sync_commit_ms": 195.10000000000005,
+            "python_ms": 181.09999999999894,
+            "commits": 1,
+            "input_to_frame_ms": 222.80000001192093
+          },
+          {
+            "serialize_ms": 1.9999999999988916,
+            "kernel_ms": 12.9999999999999,
+            "dom_ops": 1000,
+            "serialized_bytes": 46024,
+            "sync_commit_ms": 121.10000000000021,
+            "python_ms": 106.10000000000142,
+            "commits": 1,
+            "input_to_frame_ms": 143.69999998807907
+          },
+          {
+            "serialize_ms": 2.200000000000202,
+            "kernel_ms": 11.200000000000543,
+            "dom_ops": 1000,
+            "serialized_bytes": 45912,
+            "sync_commit_ms": 120.99999999999866,
+            "python_ms": 107.59999999999792,
+            "commits": 1,
+            "input_to_frame_ms": 147
+          },
+          {
+            "serialize_ms": 98.39999999999982,
+            "kernel_ms": 42.79999999999973,
+            "dom_ops": 1000,
+            "serialized_bytes": 46007,
+            "sync_commit_ms": 330.89999999999975,
+            "python_ms": 189.70000000000022,
+            "commits": 1,
+            "input_to_frame_ms": 380
+          },
+          {
+            "serialize_ms": 2.100000000000435,
+            "kernel_ms": 11.400000000000077,
+            "dom_ops": 1000,
+            "serialized_bytes": 45977,
+            "sync_commit_ms": 118.6000000000007,
+            "python_ms": 105.1000000000002,
+            "commits": 1,
+            "input_to_frame_ms": 145
+          }
+        ]
+      },
+      "change_percent": -21.858974358973683
+    },
+    "replace_1k": {
+      "before": {
+        "serialize_ms": 15.200000000000102,
+        "kernel_ms": 65.89999999999918,
+        "dom_ops": 9000,
+        "serialized_bytes": 242946,
+        "sync_commit_ms": 417.7999999999997,
+        "python_ms": 328.60000000000156,
+        "commits": 1,
+        "input_to_frame_ms": 429.80000001192093,
+        "samples": [
+          {
+            "serialize_ms": 10.899999999999466,
+            "kernel_ms": 30.999999999998806,
+            "dom_ops": 9000,
+            "serialized_bytes": 242858,
+            "sync_commit_ms": 204.00000000000063,
+            "python_ms": 162.10000000000235,
+            "commits": 1,
+            "input_to_frame_ms": 239.0999999642372
+          },
+          {
+            "serialize_ms": 30.89999999999904,
+            "kernel_ms": 65.89999999999918,
+            "dom_ops": 9000,
+            "serialized_bytes": 242867,
+            "sync_commit_ms": 323.39999999999947,
+            "python_ms": 226.60000000000127,
+            "commits": 1,
+            "input_to_frame_ms": 324.69999998807907
+          },
+          {
+            "serialize_ms": 52.599999999998204,
+            "kernel_ms": 36.599999999999966,
+            "dom_ops": 9000,
+            "serialized_bytes": 242946,
+            "sync_commit_ms": 417.7999999999997,
+            "python_ms": 328.60000000000156,
+            "commits": 1,
+            "input_to_frame_ms": 429.80000001192093
+          },
+          {
+            "serialize_ms": 21.30000000000365,
+            "kernel_ms": 67.00000000000017,
+            "dom_ops": 9000,
+            "serialized_bytes": 243063,
+            "sync_commit_ms": 607.5000000000017,
+            "python_ms": 519.1999999999978,
+            "commits": 1,
+            "input_to_frame_ms": 608.9000000357628
+          },
+          {
+            "serialize_ms": 11.400000000001853,
+            "kernel_ms": 165.9000000000006,
+            "dom_ops": 9000,
+            "serialized_bytes": 243026,
+            "sync_commit_ms": 402.9000000000025,
+            "python_ms": 225.60000000000002,
+            "commits": 1,
+            "input_to_frame_ms": 404.30000001192093
+          },
+          {
+            "serialize_ms": 12.600000000006162,
+            "kernel_ms": 37.599999999997635,
+            "dom_ops": 9000,
+            "serialized_bytes": 243004,
+            "sync_commit_ms": 595.4999999999941,
+            "python_ms": 545.2999999999903,
+            "commits": 1,
+            "input_to_frame_ms": 601.8999999761581
+          },
+          {
+            "serialize_ms": 15.200000000000102,
+            "kernel_ms": 316.20000000000203,
+            "dom_ops": 9000,
+            "serialized_bytes": 242840,
+            "sync_commit_ms": 723.7999999999971,
+            "python_ms": 392.3999999999949,
+            "commits": 1,
+            "input_to_frame_ms": 725.0999999642372
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 2.2999999999981924,
+        "kernel_ms": 42.00000000000159,
+        "dom_ops": 1001,
+        "serialized_bytes": 47965,
+        "sync_commit_ms": 314.8000000000018,
+        "python_ms": 257.1000000000048,
+        "commits": 1,
+        "input_to_frame_ms": 316.9000000357628,
+        "samples": [
+          {
+            "serialize_ms": 15.399999999999636,
+            "kernel_ms": 62.59999999999977,
+            "dom_ops": 1001,
+            "serialized_bytes": 47877,
+            "sync_commit_ms": 486.70000000000255,
+            "python_ms": 408.7000000000031,
+            "commits": 1,
+            "input_to_frame_ms": 488.19999998807907
+          },
+          {
+            "serialize_ms": 2.0999999999986585,
+            "kernel_ms": 27.000000000001023,
+            "dom_ops": 1001,
+            "serialized_bytes": 47886,
+            "sync_commit_ms": 174.4000000000021,
+            "python_ms": 145.30000000000243,
+            "commits": 1,
+            "input_to_frame_ms": 175.60000002384186
+          },
+          {
+            "serialize_ms": 2.1999999999984254,
+            "kernel_ms": 27.899999999998926,
+            "dom_ops": 1001,
+            "serialized_bytes": 47965,
+            "sync_commit_ms": 152.49999999999986,
+            "python_ms": 122.4000000000025,
+            "commits": 1,
+            "input_to_frame_ms": 153.70000004768372
+          },
+          {
+            "serialize_ms": 2.100000000002211,
+            "kernel_ms": 26.99999999999747,
+            "dom_ops": 1001,
+            "serialized_bytes": 48082,
+            "sync_commit_ms": 171.89999999999728,
+            "python_ms": 142.7999999999976,
+            "commits": 1,
+            "input_to_frame_ms": 173.10000002384186
+          },
+          {
+            "serialize_ms": 2.2999999999981924,
+            "kernel_ms": 55.39999999999878,
+            "dom_ops": 1001,
+            "serialized_bytes": 48045,
+            "sync_commit_ms": 314.8000000000018,
+            "python_ms": 257.1000000000048,
+            "commits": 1,
+            "input_to_frame_ms": 316.9000000357628
+          },
+          {
+            "serialize_ms": 2.5999999999939405,
+            "kernel_ms": 42.00000000000159,
+            "dom_ops": 1001,
+            "serialized_bytes": 48023,
+            "sync_commit_ms": 690.100000000001,
+            "python_ms": 645.5000000000055,
+            "commits": 1,
+            "input_to_frame_ms": 722.1000000238419
+          },
+          {
+            "serialize_ms": 2.7000000000043656,
+            "kernel_ms": 50.69999999999908,
+            "dom_ops": 1001,
+            "serialized_bytes": 47859,
+            "sync_commit_ms": 471.00000000000364,
+            "python_ms": 417.6000000000002,
+            "commits": 1,
+            "input_to_frame_ms": 472.19999998807907
+          }
+        ]
+      },
+      "change_percent": -24.652943992340358
+    },
+    "create_10k": {
+      "before": {
+        "serialize_ms": 72.19999999999516,
+        "kernel_ms": 198.99999999999807,
+        "dom_ops": 70000,
+        "serialized_bytes": 1469634,
+        "sync_commit_ms": 1593.999999999994,
+        "python_ms": 1323.7999999999774,
+        "commits": 1,
+        "input_to_frame_ms": 2496,
+        "samples": [
+          {
+            "serialize_ms": 72.19999999999516,
+            "kernel_ms": 198.99999999999807,
+            "dom_ops": 70000,
+            "serialized_bytes": 1469930,
+            "sync_commit_ms": 1558.400000000006,
+            "python_ms": 1287.2000000000126,
+            "commits": 1,
+            "input_to_frame_ms": 1951.0999999642372
+          },
+          {
+            "serialize_ms": 72.50000000000512,
+            "kernel_ms": 198.99999999999807,
+            "dom_ops": 70000,
+            "serialized_bytes": 1469540,
+            "sync_commit_ms": 1593.999999999994,
+            "python_ms": 1322.499999999991,
+            "commits": 1,
+            "input_to_frame_ms": 2655.800000011921
+          },
+          {
+            "serialize_ms": 325.800000000001,
+            "kernel_ms": 623.1999999999971,
+            "dom_ops": 70000,
+            "serialized_bytes": 1469456,
+            "sync_commit_ms": 6333.100000000002,
+            "python_ms": 5384.100000000004,
+            "commits": 1,
+            "input_to_frame_ms": 8093.699999988079
+          },
+          {
+            "serialize_ms": 69.00000000000261,
+            "kernel_ms": 160.80000000000894,
+            "dom_ops": 70000,
+            "serialized_bytes": 1470164,
+            "sync_commit_ms": 1553.5999999999888,
+            "python_ms": 1323.7999999999774,
+            "commits": 1,
+            "input_to_frame_ms": 2223.399999976158
+          },
+          {
+            "serialize_ms": 68.20000000000448,
+            "kernel_ms": 214.29999999999438,
+            "dom_ops": 70000,
+            "serialized_bytes": 1469180,
+            "sync_commit_ms": 2056.600000000003,
+            "python_ms": 1774.1000000000045,
+            "commits": 1,
+            "input_to_frame_ms": 2543.699999988079
+          },
+          {
+            "serialize_ms": 69.40000000000168,
+            "kernel_ms": 170.29999999999745,
+            "dom_ops": 70000,
+            "serialized_bytes": 1469634,
+            "sync_commit_ms": 1448.8000000000056,
+            "python_ms": 1209.1000000000065,
+            "commits": 1,
+            "input_to_frame_ms": 1941.5999999642372
+          },
+          {
+            "serialize_ms": 96.9000000000051,
+            "kernel_ms": 214.4999999999868,
+            "dom_ops": 70000,
+            "serialized_bytes": 1501748,
+            "sync_commit_ms": 1868.2000000000016,
+            "python_ms": 1556.8000000000097,
+            "commits": 1,
+            "input_to_frame_ms": 2496
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 21.399999999999864,
+        "kernel_ms": 126.50000000000716,
+        "dom_ops": 10000,
+        "serialized_bytes": 479634,
+        "sync_commit_ms": 1821.6000000000035,
+        "python_ms": 1680.900000000008,
+        "commits": 1,
+        "input_to_frame_ms": 2167.5,
+        "samples": [
+          {
+            "serialize_ms": 21.399999999999864,
+            "kernel_ms": 125.5999999999986,
+            "dom_ops": 10000,
+            "serialized_bytes": 479930,
+            "sync_commit_ms": 1961.0999999999947,
+            "python_ms": 1814.0999999999963,
+            "commits": 1,
+            "input_to_frame_ms": 2247.100000023842
+          },
+          {
+            "serialize_ms": 27.000000000001023,
+            "kernel_ms": 212.99999999999386,
+            "dom_ops": 10000,
+            "serialized_bytes": 479540,
+            "sync_commit_ms": 2472.7999999999925,
+            "python_ms": 2232.7999999999975,
+            "commits": 1,
+            "input_to_frame_ms": 2796.699999988079
+          },
+          {
+            "serialize_ms": 21.90000000000225,
+            "kernel_ms": 192.89999999999452,
+            "dom_ops": 10000,
+            "serialized_bytes": 479456,
+            "sync_commit_ms": 1990.6999999999898,
+            "python_ms": 1775.8999999999928,
+            "commits": 1,
+            "input_to_frame_ms": 2484.399999976158
+          },
+          {
+            "serialize_ms": 20.799999999994156,
+            "kernel_ms": 119.90000000000123,
+            "dom_ops": 10000,
+            "serialized_bytes": 480164,
+            "sync_commit_ms": 1821.6000000000035,
+            "python_ms": 1680.900000000008,
+            "commits": 1,
+            "input_to_frame_ms": 2167.5
+          },
+          {
+            "serialize_ms": 20.699999999990837,
+            "kernel_ms": 150.40000000000475,
+            "dom_ops": 10000,
+            "serialized_bytes": 479180,
+            "sync_commit_ms": 1217.5999999999904,
+            "python_ms": 1046.499999999995,
+            "commits": 1,
+            "input_to_frame_ms": 1604.4000000357628
+          },
+          {
+            "serialize_ms": 20.699999999990837,
+            "kernel_ms": 126.50000000000716,
+            "dom_ops": 10000,
+            "serialized_bytes": 479634,
+            "sync_commit_ms": 1166.3000000000068,
+            "python_ms": 1019.1000000000087,
+            "commits": 1,
+            "input_to_frame_ms": 1556
+          },
+          {
+            "serialize_ms": 21.500000000003183,
+            "kernel_ms": 121.60000000000082,
+            "dom_ops": 10000,
+            "serialized_bytes": 487743,
+            "sync_commit_ms": 1445.9000000000087,
+            "python_ms": 1302.8000000000047,
+            "commits": 1,
+            "input_to_frame_ms": 1785.3999999761581
+          }
+        ]
+      },
+      "change_percent": 14.278544542033277
+    },
+    "update_10th_10k": {
+      "before": {
+        "serialize_ms": 1.4999999999929514,
+        "kernel_ms": 2.600000000001046,
+        "dom_ops": 1000,
+        "serialized_bytes": 37974,
+        "sync_commit_ms": 24.900000000002365,
+        "python_ms": 14.70000000000482,
+        "commits": 1,
+        "input_to_frame_ms": 29.600000023841858,
+        "samples": [
+          {
+            "serialize_ms": 1.3000000000147338,
+            "kernel_ms": 2.4999999999977263,
+            "dom_ops": 1000,
+            "serialized_bytes": 38148,
+            "sync_commit_ms": 16.30000000000109,
+            "python_ms": 12.499999999988631,
+            "commits": 1,
+            "input_to_frame_ms": 17.80000001192093
+          },
+          {
+            "serialize_ms": 2.299999999991087,
+            "kernel_ms": 4.199999999997317,
+            "dom_ops": 1000,
+            "serialized_bytes": 37872,
+            "sync_commit_ms": 28.299999999973124,
+            "python_ms": 21.79999999998472,
+            "commits": 1,
+            "input_to_frame_ms": 31.400000035762787
+          },
+          {
+            "serialize_ms": 1.1999999999829924,
+            "kernel_ms": 2.3999999999944066,
+            "dom_ops": 1000,
+            "serialized_bytes": 38034,
+            "sync_commit_ms": 13.800000000003365,
+            "python_ms": 10.200000000025966,
+            "commits": 1,
+            "input_to_frame_ms": 16.200000047683716
+          },
+          {
+            "serialize_ms": 4.599999999982174,
+            "kernel_ms": 8.100000000013097,
+            "dom_ops": 1000,
+            "serialized_bytes": 37926,
+            "sync_commit_ms": 27.40000000000009,
+            "python_ms": 14.70000000000482,
+            "commits": 1,
+            "input_to_frame_ms": 43.60000002384186
+          },
+          {
+            "serialize_ms": 1.3999999999896318,
+            "kernel_ms": 2.3999999999944066,
+            "dom_ops": 1000,
+            "serialized_bytes": 37946,
+            "sync_commit_ms": 14.6000000000015,
+            "python_ms": 10.800000000017462,
+            "commits": 1,
+            "input_to_frame_ms": 22.5
+          },
+          {
+            "serialize_ms": 6.499999999988404,
+            "kernel_ms": 4.300000000000637,
+            "dom_ops": 1000,
+            "serialized_bytes": 38002,
+            "sync_commit_ms": 43.59999999999786,
+            "python_ms": 32.80000000000882,
+            "commits": 1,
+            "input_to_frame_ms": 46.69999998807907
+          },
+          {
+            "serialize_ms": 1.4999999999929514,
+            "kernel_ms": 2.600000000001046,
+            "dom_ops": 1000,
+            "serialized_bytes": 37974,
+            "sync_commit_ms": 24.900000000002365,
+            "python_ms": 20.800000000008367,
+            "commits": 1,
+            "input_to_frame_ms": 29.600000023841858
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 1.3999999999896318,
+        "kernel_ms": 2.7000000000043656,
+        "dom_ops": 1000,
+        "serialized_bytes": 37974,
+        "sync_commit_ms": 20.49999999999841,
+        "python_ms": 10.699999999985721,
+        "commits": 1,
+        "input_to_frame_ms": 21.600000023841858,
+        "samples": [
+          {
+            "serialize_ms": 1.299999999986312,
+            "kernel_ms": 11.300000000005639,
+            "dom_ops": 1000,
+            "serialized_bytes": 38148,
+            "sync_commit_ms": 23.299999999977672,
+            "python_ms": 10.699999999985721,
+            "commits": 1,
+            "input_to_frame_ms": 38.299999952316284
+          },
+          {
+            "serialize_ms": 4.199999999997317,
+            "kernel_ms": 4.000000000019099,
+            "dom_ops": 1000,
+            "serialized_bytes": 37872,
+            "sync_commit_ms": 28.600000000011505,
+            "python_ms": 20.39999999999509,
+            "commits": 1,
+            "input_to_frame_ms": 43.200000047683716
+          },
+          {
+            "serialize_ms": 1.3999999999896318,
+            "kernel_ms": 2.3999999999944066,
+            "dom_ops": 1000,
+            "serialized_bytes": 38034,
+            "sync_commit_ms": 13.700000000000045,
+            "python_ms": 9.900000000016007,
+            "commits": 1,
+            "input_to_frame_ms": 14.800000011920929
+          },
+          {
+            "serialize_ms": 1.4000000000180535,
+            "kernel_ms": 2.4999999999977263,
+            "dom_ops": 1000,
+            "serialized_bytes": 37926,
+            "sync_commit_ms": 14.100000000013324,
+            "python_ms": 10.199999999997544,
+            "commits": 1,
+            "input_to_frame_ms": 15.300000011920929
+          },
+          {
+            "serialize_ms": 1.3000000000147338,
+            "kernel_ms": 8.699999999976171,
+            "dom_ops": 1000,
+            "serialized_bytes": 37946,
+            "sync_commit_ms": 20.49999999999841,
+            "python_ms": 10.500000000007503,
+            "commits": 1,
+            "input_to_frame_ms": 21.600000023841858
+          },
+          {
+            "serialize_ms": 1.8000000000029104,
+            "kernel_ms": 2.7000000000043656,
+            "dom_ops": 1000,
+            "serialized_bytes": 38002,
+            "sync_commit_ms": 23.89999999999759,
+            "python_ms": 19.399999999990314,
+            "commits": 1,
+            "input_to_frame_ms": 108.5
+          },
+          {
+            "serialize_ms": 1.3999999999896318,
+            "kernel_ms": 2.3999999999944066,
+            "dom_ops": 1000,
+            "serialized_bytes": 37974,
+            "sync_commit_ms": 15.299999999996317,
+            "python_ms": 11.500000000012278,
+            "commits": 1,
+            "input_to_frame_ms": 16.5
+          }
+        ]
+      },
+      "change_percent": -17.670682730937905
+    },
+    "select_10k": {
+      "before": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.10000000003174137,
+        "dom_ops": 1,
+        "serialized_bytes": 30,
+        "sync_commit_ms": 0.50000000004502,
+        "python_ms": 0.29999999998153726,
+        "commits": 1,
+        "input_to_frame_ms": 7.599999964237213,
+        "samples": [
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 1.1000000000080945,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 1.3000000000147338,
+            "python_ms": 0.2000000000066393,
+            "commits": 1,
+            "input_to_frame_ms": 6.199999988079071
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.50000000004502,
+            "python_ms": 0.4000000000132786,
+            "commits": 1,
+            "input_to_frame_ms": 9.199999988079071
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 1.0000000000331966,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 1.4999999999645297,
+            "python_ms": 0.49999999993133315,
+            "commits": 1,
+            "input_to_frame_ms": 7.599999964237213
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.3999999999564352,
+            "python_ms": 0.29999999992469384,
+            "commits": 1,
+            "input_to_frame_ms": 6.699999988079071
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 1.1000000000080945,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 1.3999999999896318,
+            "python_ms": 0.2000000000066393,
+            "commits": 1,
+            "input_to_frame_ms": 7.699999988079071
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0.09999999997489795,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.49999999998817657,
+            "python_ms": 0.29999999998153726,
+            "commits": 1,
+            "input_to_frame_ms": 8
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.09999999997489795,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.49999999998817657,
+            "python_ms": 0.3000000000383807,
+            "commits": 1,
+            "input_to_frame_ms": 6.399999976158142
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.10000000003174137,
+        "dom_ops": 1,
+        "serialized_bytes": 30,
+        "sync_commit_ms": 0.6999999999948159,
+        "python_ms": 0.4000000000132786,
+        "commits": 1,
+        "input_to_frame_ms": 6.5,
+        "samples": [
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.50000000004502,
+            "python_ms": 0.4000000000132786,
+            "commits": 1,
+            "input_to_frame_ms": 10.100000023841858
+          },
+          {
+            "serialize_ms": 0.2000000000066393,
+            "kernel_ms": 0,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.9000000000014552,
+            "python_ms": 0.6999999999948159,
+            "commits": 1,
+            "input_to_frame_ms": 2.299999952316284
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.50000000004502,
+            "python_ms": 0.3000000000383807,
+            "commits": 1,
+            "input_to_frame_ms": 10.899999976158142
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 1.1000000000080945,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 1.599999999996271,
+            "python_ms": 0.49999999998817657,
+            "commits": 1,
+            "input_to_frame_ms": 2.700000047683716
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.50000000004502,
+            "python_ms": 0.3000000000383807,
+            "commits": 1,
+            "input_to_frame_ms": 6.5
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0.9999999999763531,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 1.3999999999896318,
+            "python_ms": 0.29999999998153726,
+            "commits": 1,
+            "input_to_frame_ms": 12.699999988079071
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 1,
+            "serialized_bytes": 30,
+            "sync_commit_ms": 0.6999999999948159,
+            "python_ms": 0.5999999999630745,
+            "commits": 1,
+            "input_to_frame_ms": 2.5
+          }
+        ]
+      },
+      "change_percent": 39.99999998635757
+    },
+    "swap_10k": {
+      "before": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.29999999998153726,
+        "dom_ops": 2,
+        "serialized_bytes": 63,
+        "sync_commit_ms": 30.200000000036198,
+        "python_ms": 29.80000000002292,
+        "commits": 1,
+        "input_to_frame_ms": 37.59999996423721,
+        "samples": [
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.50000000004502,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 31.799999999975626,
+            "python_ms": 31.199999999955708,
+            "commits": 1,
+            "input_to_frame_ms": 35.700000047683716
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.4000000000132786,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 26.2000000000171,
+            "python_ms": 25.700000000028922,
+            "commits": 1,
+            "input_to_frame_ms": 37.19999998807907
+          },
+          {
+            "serialize_ms": 0.2000000000066393,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 27.19999999999345,
+            "python_ms": 26.799999999980173,
+            "commits": 1,
+            "input_to_frame_ms": 28.30000001192093
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.3000000000383807,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 30.200000000036198,
+            "python_ms": 29.80000000002292,
+            "commits": 1,
+            "input_to_frame_ms": 37.59999996423721
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 93.39999999997417,
+            "python_ms": 93.09999999999263,
+            "commits": 1,
+            "input_to_frame_ms": 94.70000004768372
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 40.99999999999682,
+            "python_ms": 40.70000000001528,
+            "commits": 1,
+            "input_to_frame_ms": 68
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 2,
+            "serialized_bytes": 63,
+            "sync_commit_ms": 26.900000000011914,
+            "python_ms": 26.700000000005275,
+            "commits": 1,
+            "input_to_frame_ms": 44.10000002384186
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.3000000000383807,
+        "dom_ops": 2,
+        "serialized_bytes": 65,
+        "sync_commit_ms": 42.70000000002483,
+        "python_ms": 36.500000000046384,
+        "commits": 1,
+        "input_to_frame_ms": 45,
+        "samples": [
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 28.099999999994907,
+            "python_ms": 27.699999999981628,
+            "commits": 1,
+            "input_to_frame_ms": 34.30000001192093
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 30.00000000002956,
+            "python_ms": 29.600000000073123,
+            "commits": 1,
+            "input_to_frame_ms": 45
+          },
+          {
+            "serialize_ms": 0.29999999998153726,
+            "kernel_ms": 0.6000000000199179,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 112.7999999999929,
+            "python_ms": 111.89999999999145,
+            "commits": 1,
+            "input_to_frame_ms": 116.69999998807907
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 91.7999999999779,
+            "python_ms": 91.49999999999636,
+            "commits": 1,
+            "input_to_frame_ms": 93.10000002384186
+          },
+          {
+            "serialize_ms": 0.49999999998817657,
+            "kernel_ms": 0.6999999999948159,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 176.00000000004457,
+            "python_ms": 174.80000000006157,
+            "commits": 1,
+            "input_to_frame_ms": 179.10000002384186
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.3000000000383807,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 29.100000000028103,
+            "python_ms": 28.799999999989723,
+            "commits": 1,
+            "input_to_frame_ms": 40.5
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 6.100000000003547,
+            "dom_ops": 2,
+            "serialized_bytes": 65,
+            "sync_commit_ms": 42.70000000002483,
+            "python_ms": 36.500000000046384,
+            "commits": 1,
+            "input_to_frame_ms": 43.700000047683716
+          }
+        ]
+      },
+      "change_percent": 41.390728476733926
+    },
+    "remove_10k": {
+      "before": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.29999999998153726,
+        "dom_ops": 2,
+        "serialized_bytes": 109,
+        "sync_commit_ms": 27.100000000018554,
+        "python_ms": 26.800000000037016,
+        "commits": 1,
+        "input_to_frame_ms": 30.099999964237213,
+        "samples": [
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.3000000000383807,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 25.39999999999054,
+            "python_ms": 25.09999999995216,
+            "commits": 1,
+            "input_to_frame_ms": 26.5
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 27.999999999963165,
+            "python_ms": 27.699999999981628,
+            "commits": 1,
+            "input_to_frame_ms": 30.099999964237213
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 25.199999999983902,
+            "python_ms": 24.900000000002365,
+            "commits": 1,
+            "input_to_frame_ms": 26.100000023841858
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 27.100000000018554,
+            "python_ms": 26.800000000037016,
+            "commits": 1,
+            "input_to_frame_ms": 38.80000001192093
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 62.5,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 116.29999999996699,
+            "python_ms": 53.699999999935244,
+            "commits": 1,
+            "input_to_frame_ms": 150.69999998807907
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.10000000003174137,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 27.100000000018554,
+            "python_ms": 26.900000000011914,
+            "commits": 1,
+            "input_to_frame_ms": 38.19999998807907
+          },
+          {
+            "serialize_ms": 0.2000000000066393,
+            "kernel_ms": 0.1999999999497959,
+            "dom_ops": 2,
+            "serialized_bytes": 109,
+            "sync_commit_ms": 26.299999999991996,
+            "python_ms": 25.90000000003556,
+            "commits": 1,
+            "input_to_frame_ms": 27.400000035762787
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 0.2000000000066393,
+        "dom_ops": 1,
+        "serialized_bytes": 22,
+        "sync_commit_ms": 27.300000000025193,
+        "python_ms": 26.999999999986812,
+        "commits": 1,
+        "input_to_frame_ms": 44.19999998807907,
+        "samples": [
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.4000000000132786,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 32.39999999999554,
+            "python_ms": 31.999999999982265,
+            "commits": 1,
+            "input_to_frame_ms": 35.10000002384186
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0.1999999999497959,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 26.999999999986812,
+            "python_ms": 26.700000000005275,
+            "commits": 1,
+            "input_to_frame_ms": 28.200000047683716
+          },
+          {
+            "serialize_ms": 0.2000000000066393,
+            "kernel_ms": 0.09999999997489795,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 26.799999999980173,
+            "python_ms": 26.499999999998636,
+            "commits": 1,
+            "input_to_frame_ms": 44.19999998807907
+          },
+          {
+            "serialize_ms": 0.10000000003174137,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 27.300000000025193,
+            "python_ms": 26.999999999986812,
+            "commits": 1,
+            "input_to_frame_ms": 45.30000001192093
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.4000000000132786,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 147.60000000001128,
+            "python_ms": 147.199999999998,
+            "commits": 1,
+            "input_to_frame_ms": 148.89999997615814
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 0.29999999998153726,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 26.69999999994843,
+            "python_ms": 26.399999999966894,
+            "commits": 1,
+            "input_to_frame_ms": 35.10000002384186
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 0.2000000000066393,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 27.899999999988268,
+            "python_ms": 27.60000000000673,
+            "commits": 1,
+            "input_to_frame_ms": 45.10000002384186
+          }
+        ]
+      },
+      "change_percent": 0.7380073800977938
+    },
+    "append_to_10k": {
+      "before": {
+        "serialize_ms": 7.60000000002492,
+        "kernel_ms": 16.699999999957527,
+        "dom_ops": 7000,
+        "serialized_bytes": 154971,
+        "sync_commit_ms": 171.99999999996862,
+        "python_ms": 148.0999999999426,
+        "commits": 1,
+        "input_to_frame_ms": 276.7999999523163,
+        "samples": [
+          {
+            "serialize_ms": 7.60000000002492,
+            "kernel_ms": 16.699999999957527,
+            "dom_ops": 7000,
+            "serialized_bytes": 154996,
+            "sync_commit_ms": 171.99999999996862,
+            "python_ms": 147.69999999998618,
+            "commits": 1,
+            "input_to_frame_ms": 276.7999999523163
+          },
+          {
+            "serialize_ms": 7.300000000043383,
+            "kernel_ms": 16.099999999994452,
+            "dom_ops": 7000,
+            "serialized_bytes": 154958,
+            "sync_commit_ms": 171.49999999998045,
+            "python_ms": 148.0999999999426,
+            "commits": 1,
+            "input_to_frame_ms": 275.5999999642372
+          },
+          {
+            "serialize_ms": 6.899999999973261,
+            "kernel_ms": 15.20000000004984,
+            "dom_ops": 7000,
+            "serialized_bytes": 154971,
+            "sync_commit_ms": 167.80000000005657,
+            "python_ms": 145.70000000003347,
+            "commits": 1,
+            "input_to_frame_ms": 265.80000001192093
+          },
+          {
+            "serialize_ms": 7.500000000050022,
+            "kernel_ms": 14.999999999986358,
+            "dom_ops": 7000,
+            "serialized_bytes": 155031,
+            "sync_commit_ms": 163.4999999999991,
+            "python_ms": 140.9999999999627,
+            "commits": 1,
+            "input_to_frame_ms": 262.7999999523163
+          },
+          {
+            "serialize_ms": 132.9999999999245,
+            "kernel_ms": 28.900000000021464,
+            "dom_ops": 7000,
+            "serialized_bytes": 154990,
+            "sync_commit_ms": 529.9999999999727,
+            "python_ms": 368.10000000002674,
+            "commits": 1,
+            "input_to_frame_ms": 934.8000000119209
+          },
+          {
+            "serialize_ms": 8.199999999987995,
+            "kernel_ms": 16.899999999964166,
+            "dom_ops": 7000,
+            "serialized_bytes": 154964,
+            "sync_commit_ms": 502.2999999999911,
+            "python_ms": 477.2000000000389,
+            "commits": 1,
+            "input_to_frame_ms": 657.7000000476837
+          },
+          {
+            "serialize_ms": 8.000000000038199,
+            "kernel_ms": 17.89999999994052,
+            "dom_ops": 7000,
+            "serialized_bytes": 154914,
+            "sync_commit_ms": 290.90000000007876,
+            "python_ms": 265.00000000010004,
+            "commits": 1,
+            "input_to_frame_ms": 477.60000002384186
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 2.100000000041291,
+        "kernel_ms": 13.900000000035106,
+        "dom_ops": 1000,
+        "serialized_bytes": 49971,
+        "sync_commit_ms": 143.0000000000291,
+        "python_ms": 126.89999999997781,
+        "commits": 1,
+        "input_to_frame_ms": 263,
+        "samples": [
+          {
+            "serialize_ms": 2.6000000000294676,
+            "kernel_ms": 77.09999999997308,
+            "dom_ops": 1000,
+            "serialized_bytes": 49996,
+            "sync_commit_ms": 534.6000000000117,
+            "python_ms": 454.9000000000092,
+            "commits": 1,
+            "input_to_frame_ms": 910.5
+          },
+          {
+            "serialize_ms": 2.0999999999844476,
+            "kernel_ms": 11.700000000018917,
+            "dom_ops": 1000,
+            "serialized_bytes": 49958,
+            "sync_commit_ms": 127.59999999997262,
+            "python_ms": 113.79999999996926,
+            "commits": 1,
+            "input_to_frame_ms": 243.80000001192093
+          },
+          {
+            "serialize_ms": 2.100000000041291,
+            "kernel_ms": 12.000000000000455,
+            "dom_ops": 1000,
+            "serialized_bytes": 49971,
+            "sync_commit_ms": 127.30000000004793,
+            "python_ms": 113.20000000000618,
+            "commits": 1,
+            "input_to_frame_ms": 246.60000002384186
+          },
+          {
+            "serialize_ms": 2.100000000041291,
+            "kernel_ms": 12.39999999995689,
+            "dom_ops": 1000,
+            "serialized_bytes": 50031,
+            "sync_commit_ms": 129.2999999999438,
+            "python_ms": 114.79999999994561,
+            "commits": 1,
+            "input_to_frame_ms": 258.5
+          },
+          {
+            "serialize_ms": 2.100000000041291,
+            "kernel_ms": 37.39999999993415,
+            "dom_ops": 1000,
+            "serialized_bytes": 49990,
+            "sync_commit_ms": 193.4999999999718,
+            "python_ms": 153.99999999999636,
+            "commits": 1,
+            "input_to_frame_ms": 316
+          },
+          {
+            "serialize_ms": 2.200000000016189,
+            "kernel_ms": 13.900000000035106,
+            "dom_ops": 1000,
+            "serialized_bytes": 49964,
+            "sync_commit_ms": 143.0000000000291,
+            "python_ms": 126.89999999997781,
+            "commits": 1,
+            "input_to_frame_ms": 263
+          },
+          {
+            "serialize_ms": 2.4000000000796717,
+            "kernel_ms": 57.09999999999127,
+            "dom_ops": 1000,
+            "serialized_bytes": 49914,
+            "sync_commit_ms": 352.9000000000906,
+            "python_ms": 293.40000000001965,
+            "commits": 1,
+            "input_to_frame_ms": 570.3999999761581
+          }
+        ]
+      },
+      "change_percent": -16.86046511624698
+    },
+    "clear_10k": {
+      "before": {
+        "serialize_ms": 18.59999999999218,
+        "kernel_ms": 146.29999999999654,
+        "dom_ops": 2,
+        "serialized_bytes": 800029,
+        "sync_commit_ms": 567.4999999999955,
+        "python_ms": 401.1000000000422,
+        "commits": 1,
+        "input_to_frame_ms": 568.6999999880791,
+        "samples": [
+          {
+            "serialize_ms": 36.90000000005966,
+            "kernel_ms": 361.59999999995307,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 1204.7000000000025,
+            "python_ms": 806.1999999999898,
+            "commits": 1,
+            "input_to_frame_ms": 1206.0999999642372
+          },
+          {
+            "serialize_ms": 18.59999999999218,
+            "kernel_ms": 147.79999999996107,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 567.4999999999955,
+            "python_ms": 401.1000000000422,
+            "commits": 1,
+            "input_to_frame_ms": 568.6999999880791
+          },
+          {
+            "serialize_ms": 18.80000000005566,
+            "kernel_ms": 143.3999999999287,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 555.5000000000518,
+            "python_ms": 393.3000000000675,
+            "commits": 1,
+            "input_to_frame_ms": 557.6999999880791
+          },
+          {
+            "serialize_ms": 35.89999999996962,
+            "kernel_ms": 194.29999999999836,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 774.9999999999773,
+            "python_ms": 544.8000000000093,
+            "commits": 1,
+            "input_to_frame_ms": 776.3000000119209
+          },
+          {
+            "serialize_ms": 17.900000000054206,
+            "kernel_ms": 140.8999999999878,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 543.6999999999443,
+            "python_ms": 384.8999999999023,
+            "commits": 1,
+            "input_to_frame_ms": 544.8999999761581
+          },
+          {
+            "serialize_ms": 17.59999999990214,
+            "kernel_ms": 146.29999999999654,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 543.7999999999192,
+            "python_ms": 379.90000000002055,
+            "commits": 1,
+            "input_to_frame_ms": 545.1000000238419
+          },
+          {
+            "serialize_ms": 18.100000000004002,
+            "kernel_ms": 138.59999999999673,
+            "dom_ops": 2,
+            "serialized_bytes": 800029,
+            "sync_commit_ms": 591.6999999999462,
+            "python_ms": 434.99999999994543,
+            "commits": 1,
+            "input_to_frame_ms": 595.8999999761581
+          }
+        ]
+      },
+      "after": {
+        "serialize_ms": 0.09999999997489795,
+        "kernel_ms": 292.5999999999931,
+        "dom_ops": 1,
+        "serialized_bytes": 22,
+        "sync_commit_ms": 510.70000000004256,
+        "python_ms": 237.10000000005493,
+        "commits": 1,
+        "input_to_frame_ms": 511.9000000357628,
+        "samples": [
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 292.5999999999931,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 510.70000000004256,
+            "python_ms": 218.00000000007458,
+            "commits": 1,
+            "input_to_frame_ms": 511.9000000357628
+          },
+          {
+            "serialize_ms": 0.10000000008858478,
+            "kernel_ms": 468.99999999993724,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 706.2000000000808,
+            "python_ms": 237.10000000005493,
+            "commits": 1,
+            "input_to_frame_ms": 707.5999999642372
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 185.2000000000089,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 491.5999999999485,
+            "python_ms": 306.2999999999647,
+            "commits": 1,
+            "input_to_frame_ms": 493.39999997615814
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 160.30000000000655,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 368.20000000000164,
+            "python_ms": 207.8000000000202,
+            "commits": 1,
+            "input_to_frame_ms": 369.5
+          },
+          {
+            "serialize_ms": 0.09999999997489795,
+            "kernel_ms": 383.90000000003965,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 1081.6999999999553,
+            "python_ms": 697.6999999999407,
+            "commits": 1,
+            "input_to_frame_ms": 1083
+          },
+          {
+            "serialize_ms": 0,
+            "kernel_ms": 436.10000000001037,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 810.7000000001108,
+            "python_ms": 374.6000000001004,
+            "commits": 1,
+            "input_to_frame_ms": 813.6999999880791
+          },
+          {
+            "serialize_ms": 0.1999999999497959,
+            "kernel_ms": 184.70000000002074,
+            "dom_ops": 1,
+            "serialized_bytes": 22,
+            "sync_commit_ms": 391.2000000000262,
+            "python_ms": 206.30000000005566,
+            "commits": 1,
+            "input_to_frame_ms": 392.5
+          }
+        ]
+      },
+      "change_percent": -10.008810572679005
+    }
+  }
+}

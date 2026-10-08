@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "browser": "151.0.7922.34",
+    "method": "alternating fresh production boots with warmed shared HTTP cache",
+    "iterations": 5,
+    "warmup": 1,
+    "manifests": {
+      "before": {
+        "format": 1,
+        "entry": "app.main:app",
+        "mount": "#app",
+        "base": "/",
+        "bytecode": true,
+        "prerendered": [
+          "/"
+        ],
+        "pyodide_url": "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/",
+        "packages": [],
+        "wheels": [],
+        "runtime": "assets/runtime.b1cc2675a962e9d9.zip",
+        "application": "assets/application.96f039861fd01832.zip",
+        "chunks": {}
+      },
+      "after": {
+        "format": 1,
+        "entry": "app.main:app",
+        "mount": "#app",
+        "dev": false,
+        "base": "/",
+        "bytecode": true,
+        "prerendered": [
+          "/"
+        ],
+        "pyodide_url": "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/",
+        "packages": [],
+        "wheels": [],
+        "runtime": "assets/runtime.3e01251ed904edcc.zip",
+        "application": "assets/application.fd075706ddf68f72.zip",
+        "chunks": {}
+      }
+    }
+  },
+  "medians": {
+    "before": {
+      "archives_ms": 48.60000002384186,
+      "pyodide_ms": 3733,
+      "unpack_ms": 96.69999998807907,
+      "application_ms": 402.5,
+      "ready_ms": 4052.399999976158,
+      "ready_frame_ms": 4067.5
+    },
+    "after": {
+      "archives_ms": 54.799999952316284,
+      "pyodide_ms": 5837.800000011921,
+      "unpack_ms": 102.70000004768372,
+      "application_ms": 160.0999999642372,
+      "ready_ms": 6251.899999976158,
+      "ready_frame_ms": 6268.399999976158
+    }
+  },
+  "samples": {
+    "before": [
+      {
+        "archives_ms": 84.89999997615814,
+        "pyodide_ms": 5935.199999988079,
+        "unpack_ms": 159.30000001192093,
+        "application_ms": 653.1999999880791,
+        "ready_ms": 6752.199999988079,
+        "ready_frame_ms": 6766.899999976158
+      },
+      {
+        "archives_ms": 78.60000002384186,
+        "pyodide_ms": 11732.399999976158,
+        "unpack_ms": 195.9000000357628,
+        "application_ms": 901.3000000119209,
+        "ready_ms": 12834.899999976158,
+        "ready_frame_ms": 12855.099999964237
+      },
+      {
+        "archives_ms": 35.10000002384186,
+        "pyodide_ms": 3201.899999976158,
+        "unpack_ms": 55.10000002384186,
+        "application_ms": 274.2999999523163,
+        "ready_ms": 3539.699999988079,
+        "ready_frame_ms": 3551.300000011921
+      },
+      {
+        "archives_ms": 27.899999976158142,
+        "pyodide_ms": 3200.7000000476837,
+        "unpack_ms": 96.69999998807907,
+        "application_ms": 402.5,
+        "ready_ms": 3708.600000023842,
+        "ready_frame_ms": 3718.199999988079
+      },
+      {
+        "archives_ms": 48.60000002384186,
+        "pyodide_ms": 3733,
+        "unpack_ms": 55,
+        "application_ms": 259.5,
+        "ready_ms": 4052.399999976158,
+        "ready_frame_ms": 4067.5
+      }
+    ],
+    "after": [
+      {
+        "archives_ms": 86.5,
+        "pyodide_ms": 5837.800000011921,
+        "unpack_ms": 107.30000001192093,
+        "application_ms": 301.39999997615814,
+        "ready_ms": 6251.899999976158,
+        "ready_frame_ms": 6268.399999976158
+      },
+      {
+        "archives_ms": 57.90000003576279,
+        "pyodide_ms": 10966.800000011921,
+        "unpack_ms": 114.90000003576279,
+        "application_ms": 294.39999997615814,
+        "ready_ms": 11381.400000035763,
+        "ready_frame_ms": 11389
+      },
+      {
+        "archives_ms": 54.799999952316284,
+        "pyodide_ms": 6017.5,
+        "unpack_ms": 102.70000004768372,
+        "application_ms": 160.0999999642372,
+        "ready_ms": 6285.5,
+        "ready_frame_ms": 6303.100000023842
+      },
+      {
+        "archives_ms": 51.69999998807907,
+        "pyodide_ms": 4081.399999976158,
+        "unpack_ms": 50.60000002384186,
+        "application_ms": 153.5,
+        "ready_ms": 4291.400000035763,
+        "ready_frame_ms": 4301.100000023842
+      },
+      {
+        "archives_ms": 29.099999964237213,
+        "pyodide_ms": 2867.100000023842,
+        "unpack_ms": 50.09999996423721,
+        "application_ms": 156.80000001192093,
+        "ready_ms": 3080.699999988079,
+        "ready_frame_ms": 3086.199999988079
+      }
+    ]
+  }
+}

@@ -17,7 +17,7 @@ from wybthon import (
 
 
 @component
-def Page(**rest):
+def Page():
     count, set_count = create_signal(0)
     doubled = create_memo(lambda: count() * 2)
 

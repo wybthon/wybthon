@@ -24,7 +24,7 @@ _NEXT_TAG = {"h3": "h2", "h2": "p", "p": "h3"}
 
 
 @component
-def Page(**rest):
+def Page():
     visible, set_visible = create_signal(True)
 
     items, set_items = create_signal(["alpha", "beta", "gamma"])

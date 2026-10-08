@@ -1,9 +1,10 @@
-"""Simple threaded dev server with live-reload via Server-Sent Events.
+"""The `wyb` command: develop, build, and preview Wybthon projects.
 
-`wyb dev` serves a directory over HTTP, broadcasts a `reload` event
-on file change through `/__sse`, and exposes a small `/__manifest`
-endpoint that bootstrap scripts can use to discover application
-modules without maintaining a hardcoded file list.
+A project is a directory with a `wybthon.toml` (create one with
+`wyb init`). `wyb dev` builds it in development mode, serves the build,
+rebuilds when a source changes, and reloads connected pages over
+Server-Sent Events. `wyb build` writes a production build and
+`wyb preview` serves one.
 
 Use the [`main`][wybthon.dev.main] function for CLI entry, or call
 [`serve`][wybthon.dev.serve] directly to embed the server.
@@ -19,27 +20,28 @@ import socketserver
 import threading
 import time
 import webbrowser
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-from urllib.parse import unquote, urlsplit
+from urllib.parse import urlsplit
+
+__all__ = ["serve", "main"]
+
+_RELOAD_SCRIPT = "<script>new EventSource('/__sse').addEventListener('reload', () => location.reload());</script>"
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP handler that serves files and a `/__sse` endpoint for reload events.
+    """Serves a development build and a `/__sse` endpoint for reload events.
 
     Class attributes:
-        watchers: List of `wfile` objects for connected SSE clients;
-            updated as clients connect and disconnect.
-        root: Filesystem root used as the fallback when no mount
-            matches the request path.
-        mounts: List of `(prefix, path)` mounts consulted by
-            [`translate_request_path`][wybthon.dev.translate_request_path].
+        watchers: `wfile` objects of connected SSE clients.
+        root: The build output directory.
+        app_base: The application's base path; other paths return 404,
+            and unknown paths under it serve the client shell.
     """
 
-    watchers = []  # type: ignore[var-annotated]
+    watchers: list = []  # noqa: RUF012
     root: Path = Path.cwd()
-    mounts: list[tuple[str, Path]] = []
-    app_base: str | None = None
+    app_base: str = "/"
 
     def end_headers(self) -> None:
         """Append no-cache headers to every response to avoid stale assets."""
@@ -48,8 +50,8 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Expires", "0")
         super().end_headers()
 
-    def do_GET(self):  # noqa: N802
-        """Dispatch requests to the SSE endpoint, manifest endpoint, or static handler."""
+    def do_GET(self) -> None:  # noqa: N802
+        """Serve the SSE stream or a file from the build."""
         if self.path == "/__sse":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -68,96 +70,36 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
                 except Exception:
                     pass
             return
-
-        parsed = urlsplit(self.path)
-        if parsed.path == "/__manifest":
-            self._handle_manifest(parsed.query)
-            return
-
-        return super().do_GET()
-
-    def _handle_manifest(self, query: str) -> None:
-        """Respond with a JSON array of `.py` files under a requested directory.
-
-        Usage:
-            `GET /__manifest?dir=tests/e2e/app`
-
-        The response is a sorted list of paths relative to the
-        requested directory (e.g., `["app/__init__.py",
-        "app/main.py"]`). Bootstrap scripts can fetch this list to
-        discover modules without maintaining a hardcoded manifest.
-
-        Args:
-            query: Raw query string from the request.
-        """
-        import json
-
-        params: dict[str, str] = {}
-        for part in query.split("&"):
-            if "=" in part:
-                k, v = part.split("=", 1)
-                params[k] = unquote(v)
-
-        rel_dir = params.get("dir", "")
-        if not rel_dir:
-            self.send_error(400, "Missing ?dir= parameter")
-            return
-
-        segments = _sanitize_segments(rel_dir)
-        target = self.root
-        for seg in segments:
-            target = target / seg
-        if not target.is_dir():
-            self.send_error(404, f"Directory not found: {rel_dir}")
-            return
-
-        py_files: list[str] = []
-        for dirpath, _dirnames, filenames in os.walk(target):
-            for fname in filenames:
-                if fname.endswith(".py"):
-                    full = Path(dirpath) / fname
-                    py_files.append(str(full.relative_to(target)))
-        py_files.sort()
-
-        body = json.dumps(py_files).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        super().do_GET()
 
     def translate_path(self, path: str) -> str:
-        """Translate a URL path to a filesystem path honoring configured mounts."""
-        if self.app_base is not None:
-            requested = urlsplit(path).path
-            base = self.app_base.rstrip("/")
-            if base and requested != base and not requested.startswith(base + "/"):
-                return str(self.root / "__missing__")
-            relative = requested[len(base) :]
-            target = translate_request_path(relative, self.root, [])
-            if target.is_dir():
-                target = target / "index.html"
-            if not target.exists() and "." not in target.name:
-                target = self.root / "200.html"
-            return str(target)
-        return str(translate_request_path(path, self.root, self.mounts))
+        """Map a request under the app base to the build, falling back to the client shell."""
+        requested = urlsplit(path).path
+        base = self.app_base.rstrip("/")
+        if base and requested != base and not requested.startswith(base + "/"):
+            return str(self.root / "__missing__")
+        target = self.root
+        for segment in requested[len(base) :].split("/"):
+            if segment not in ("", ".", ".."):
+                target = target / segment
+        if target.is_dir():
+            target = target / "index.html"
+        if not target.exists() and "." not in target.name:
+            target = self.root / "200.html"
+        return str(target)
 
     @classmethod
     def notify_reload(cls) -> None:
         """Send a `reload` SSE event to every connected client."""
-        dead: list = []
         for w in list(cls.watchers):
             try:
-                w.write(b"event: reload\n")
-                w.write(b"data: {}\n\n")
+                w.write(b"event: reload\ndata: {}\n\n")
                 w.flush()
             except Exception:
-                dead.append(w)
-        for d in dead:
-            try:
-                cls.watchers.remove(d)
-            except Exception:
-                pass
+                try:
+                    cls.watchers.remove(w)
+                except ValueError:
+                    pass
 
 
 def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
@@ -171,131 +113,46 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
             yield p
 
 
-def _sanitize_segments(path: str) -> list[str]:
-    """Split `path` into safe segments, dropping empty and `..` parts."""
-    p = urlsplit(path).path
-    parts = [seg for seg in p.split("/") if seg not in ("", ".", "..")]
-    return parts
-
-
-def translate_request_path(path: str, root: Path, mounts: list[tuple[str, Path]]) -> Path:
-    """Translate a URL path to a filesystem path using mounts and a root fallback.
-
-    Args:
-        path: Incoming URL path.
-        root: Filesystem root used when no mount matches.
-        mounts: List of `(prefix, base)` pairs. Longest prefix wins.
-
-    Returns:
-        Concrete filesystem path. Directory traversal segments are
-        stripped before the path is constructed.
-    """
-    # Sort mounts by longest prefix to ensure the most specific mount wins
-    sorted_mounts = sorted(mounts or [], key=lambda m: len(m[0]), reverse=True)
-    request_path = urlsplit(path).path
-    for prefix, base in sorted_mounts:
-        if prefix == "/":
-            continue  # handled as fallback below
-        if request_path == prefix or request_path.startswith(prefix + "/"):
-            rel = request_path[len(prefix) :]
-            segments = _sanitize_segments(rel)
-            fp = base
-            for seg in segments:
-                fp = fp / seg
-            return fp
-    # Fallback to root
-    segments = _sanitize_segments(request_path)
-    fp = root
-    for seg in segments:
-        fp = fp / seg
-    return fp
-
-
-def parse_mounts(mount_args: Iterable[str], base_dir: Path) -> list[tuple[str, Path]]:
-    """Parse `--mount` CLI arguments of the form `/prefix=path`.
-
-    - Prefix must start with `/`; one is added when missing.
-    - Paths are resolved relative to `base_dir` when not absolute.
-    - Duplicate prefixes are allowed; resolution order is determined
-      by [`translate_request_path`][wybthon.dev.translate_request_path].
-
-    Args:
-        mount_args: Raw CLI strings.
-        base_dir: Directory used to resolve relative paths.
-
-    Returns:
-        A list of `(prefix, path)` tuples ready to assign to
-        [`SSEHandler.mounts`][wybthon.dev.SSEHandler].
-    """
-    mounts: list[tuple[str, Path]] = []
-    for raw in mount_args:
-        if "=" not in raw:
-            prefix, raw_path = "/", raw
-        else:
-            prefix, raw_path = raw.split("=", 1)
-        prefix = prefix.strip() or "/"
-        if not prefix.startswith("/"):
-            prefix = "/" + prefix
-        path = Path(raw_path.strip())
-        if not path.is_absolute():
-            path = (base_dir / path).resolve()
-        mounts.append((prefix, path))
-    return mounts
-
-
 def serve(
-    directory: str,
+    directory: str | Path = ".",
     host: str = "127.0.0.1",
     port: int = 8000,
-    watch: Iterable[str] = ("src",),
-    mounts: Iterable[str] | None = None,
     open_browser: bool = False,
     open_path: str | None = None,
 ) -> None:
-    """Run a static dev server with auto-reload for `directory`.
+    """Build a project in development mode, serve it, and rebuild on change.
 
     Args:
-        directory: Filesystem root to serve.
+        directory: The project directory (containing `wybthon.toml`).
         host: Bind host.
         port: Preferred port. If busy, the server tries the next 20
             ports before failing.
-        watch: Directories to recursively watch for change events.
-        mounts: Optional list of `--mount` strings like
-            `/static=path/to/static`.
-        open_browser: When `True`, open a browser tab to the served
-            URL after binding.
-        open_path: Path to open when `open_browser` is `True`. When
-            omitted, defaults to `/`.
+        open_browser: When `True`, open a browser tab to the app after
+            binding.
+        open_path: Path to open instead of the app's base path.
+
+    Raises:
+        ValueError: `directory` isn't a Wybthon project.
     """
+    import tomllib
+
+    from .build import build_app
+
     project = Path(directory).resolve()
-    os.chdir(project)
-    rebuild = None
-    SSEHandler.app_base = None
-    if (project / "wybthon.toml").exists():
-        import tomllib
+    config_path = project / "wybthon.toml"
+    if not config_path.exists():
+        raise ValueError(f"{project} has no wybthon.toml; create a project with `wyb init`")
+    config = tomllib.loads(config_path.read_text(encoding="utf-8"))
 
-        from .build import build_app
+    def rebuild() -> None:
+        manifest = build_app(project, dev=True)
+        SSEHandler.app_base = manifest["base"]
+        for page in (project / "dist").rglob("*.html"):
+            page.write_text(page.read_text(encoding="utf-8").replace("</body>", _RELOAD_SCRIPT + "</body>"))
 
-        config = tomllib.loads((project / "wybthon.toml").read_text())
-
-        def rebuild() -> None:
-            manifest = build_app(project)
-            SSEHandler.app_base = manifest["base"]
-            reload_script = (
-                "<script>new EventSource('/__sse').addEventListener('reload', () => location.reload());</script>"
-            )
-            for page in (project / "dist").rglob("*.html"):
-                page.write_text(page.read_text().replace("</body>", reload_script + "</body>"))
-
-        rebuild()
-        SSEHandler.root = project / "dist"
-        watch = (config.get("app-dir", "app"), "public", "index.html", "wybthon.toml")
-        open_path = open_path or SSEHandler.app_base
-    else:
-        SSEHandler.root = project
-    handler_cls = SSEHandler
-    # Configure static mounts
-    handler_cls.mounts = parse_mounts(mounts or [], Path(directory))
+    rebuild()
+    SSEHandler.root = project / "dist"
+    watch = [project / name for name in (config.get("app-dir", "app"), "public", "index.html", "wybthon.toml")]
 
     class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """Threaded TCP server so long-lived SSE clients don't block requests."""
@@ -304,11 +161,9 @@ def serve(
         allow_reuse_address = True
 
     def watcher() -> None:
-        roots = [Path(w) for w in watch]
-
         def scan() -> dict[Path, int]:
             result = {}
-            for path in _walk_files(roots):
+            for path in _walk_files(watch):
                 if "__pycache__" not in path.parts:
                     try:
                         result[path] = path.stat().st_mtime_ns
@@ -323,62 +178,39 @@ def serve(
             if current != mtimes:
                 mtimes = current
                 try:
-                    if rebuild is not None:
-                        rebuild()
+                    rebuild()
                 except Exception as exc:
                     print(f"Build failed: {exc}", flush=True)
                     continue
-                handler_cls.notify_reload()
+                SSEHandler.notify_reload()
 
-    t = threading.Thread(target=watcher, daemon=True)
-    t.start()
+    threading.Thread(target=watcher, daemon=True).start()
 
-    # Try to bind desired port; if busy, fall back to next available up to +20
     candidates = [port] if port and port > 0 else [0]
     if port and port > 0:
         candidates += list(range(port + 1, port + 21))
-
     httpd = None
-    bound_port = None
-    last_err = None
-    for p in candidates:
+    last_err: OSError | None = None
+    for candidate in candidates:
         try:
-            httpd = ThreadingReuseTCPServer((host, p), handler_cls)
-            bound_port = httpd.server_address[1]
+            httpd = ThreadingReuseTCPServer((host, candidate), SSEHandler)
             break
-        except OSError as e:
-            last_err = e
-            continue
+        except OSError as exc:
+            last_err = exc
     if httpd is None:
         raise last_err if last_err is not None else OSError("Failed to bind server")
-
+    bound_port = httpd.server_address[1]
     url = f"http://{host}:{bound_port}"
     print("\nWybthon Dev Server")
     print("===================")
-    print(f"Directory: {Path(directory).resolve()}")
-    print(f"Host:      {host}")
-    print(f"Port:      {bound_port}")
+    print(f"Project:  {project}")
     if port and bound_port != port:
         print(f"(requested port {port} was busy; using {bound_port})")
-    # Show mounts and watch list for quick visibility
-    if handler_cls.mounts:
-        print("Mounts:")
-        for prefix, pth in handler_cls.mounts:
-            print(f"  {prefix} -> {pth}")
-    else:
-        print(f"Mounts:\n  / -> {Path(directory).resolve()}")
-    if watch:
-        try:
-            watch_list = ", ".join(str(Path(w)) for w in watch)
-        except Exception:
-            watch_list = ", ".join(map(str, watch))
-        print(f"Watching: {watch_list}")
-    print(f"\nServing at: {url}")
-
-    # Optionally open a browser tab
+    print(f"Watching: {', '.join(str(path.relative_to(project)) for path in watch)}")
+    print(f"\nServing at: {url}{SSEHandler.app_base}")
     if open_browser:
         try:
-            webbrowser.open(url + (open_path or "/"))
+            webbrowser.open(url + (open_path or SSEHandler.app_base))
         except Exception:
             pass
     try:
@@ -386,14 +218,11 @@ def serve(
     except KeyboardInterrupt:
         pass
     finally:
-        try:
-            httpd.server_close()
-        except Exception:
-            pass
+        httpd.server_close()
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entry point for the `wyb` development server.
+    """CLI entry point for `wyb`.
 
     Args:
         argv: Optional argument list (defaults to `sys.argv[1:]`).
@@ -410,60 +239,44 @@ def main(argv: list[str] | None = None) -> int:
         help="Show version and exit",
     )
     sub = parser.add_subparsers(dest="cmd")
-    pdev = sub.add_parser("dev", help="Start dev server with auto-reload")
-    pdev.add_argument("--dir", default=".", help="Project or static root to serve")
+    pdev = sub.add_parser("dev", help="Build in development mode, serve, and reload on change")
+    pdev.add_argument("--dir", default=".", help="Project directory (containing wybthon.toml)")
     pdev.add_argument("--host", default="127.0.0.1", help="Bind address")
     pdev.add_argument("--port", type=int, default=8000, help="Port to bind")
-    pdev.add_argument("--watch", nargs="*", default=["src"], help="Directories to watch for live reload (default: src)")
-    pdev.add_argument(
-        "--mount",
-        action="append",
-        default=[],
-        help="Mount additional static paths as /prefix=path. Can be repeated.",
-    )
-    pdev.add_argument("--open", action="store_true", help="Open a browser to the server URL")
-    pdev.add_argument("--open-path", default=None, help="Path to open (e.g., /app/)")
+    pdev.add_argument("--open", action="store_true", help="Open a browser to the app")
+    pdev.add_argument("--open-path", default=None, help="Path to open instead of the app's base path")
 
-    pinit = sub.add_parser("init", help="Create a starter application")
+    pinit = sub.add_parser("init", help="Create a starter project")
     pinit.add_argument("directory", nargs="?", default=".")
-    pbuild = sub.add_parser("build", help="Build deterministic static assets")
-    pbuild.add_argument("--dir", default=".")
-    pbuild.add_argument("--out", default=None)
-    pbuild.add_argument("--base", default=None)
+    pbuild = sub.add_parser("build", help="Write a production build")
+    pbuild.add_argument("--dir", default=".", help="Project directory")
+    pbuild.add_argument("--out", default=None, help="Output directory (default: <dir>/dist)")
+    pbuild.add_argument("--base", default=None, help="Base URL path the app is served from")
     ppreview = sub.add_parser("preview", help="Serve a production build")
-    ppreview.add_argument("--dir", default="dist")
-    ppreview.add_argument("--host", default="127.0.0.1")
-    ppreview.add_argument("--port", type=int, default=8000)
+    ppreview.add_argument("--dir", default="dist", help="Build directory")
+    ppreview.add_argument("--host", default="127.0.0.1", help="Bind address")
+    ppreview.add_argument("--port", type=int, default=8000, help="Port to bind")
 
     args = parser.parse_args(argv)
-    if args.cmd in {"init", "build", "preview"}:
-        from .build import build_app, init_app, preview
+    if args.cmd is None:
+        parser.print_help()
+        return 1
+    from .build import build_app, init_app, preview
 
-        try:
-            if args.cmd == "init":
-                init_app(Path(args.directory))
-                print(f"Created {Path(args.directory).resolve()}")
-            elif args.cmd == "build":
-                build_app(Path(args.dir), output=Path(args.out) if args.out else None, base=args.base)
-                print(f"Built {Path(args.out or Path(args.dir) / 'dist').resolve()}")
-            else:
-                preview(Path(args.dir), host=args.host, port=args.port)
-        except (ValueError, OSError) as exc:
-            parser.error(str(exc))
-        return 0
-    if args.cmd == "dev":
-        serve(
-            args.dir,
-            host=args.host,
-            port=args.port,
-            watch=args.watch,
-            mounts=args.mount,
-            open_browser=args.open,
-            open_path=args.open_path,
-        )
-        return 0
-    parser.print_help()
-    return 1
+    try:
+        if args.cmd == "init":
+            init_app(Path(args.directory))
+            print(f"Created {Path(args.directory).resolve()}")
+        elif args.cmd == "build":
+            build_app(Path(args.dir), output=Path(args.out) if args.out else None, base=args.base)
+            print(f"Built {Path(args.out or Path(args.dir) / 'dist').resolve()}")
+        elif args.cmd == "preview":
+            preview(Path(args.dir), host=args.host, port=args.port)
+        else:
+            serve(args.dir, host=args.host, port=args.port, open_browser=args.open, open_path=args.open_path)
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
+    return 0
 
 
 if __name__ == "__main__":

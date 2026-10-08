@@ -27,7 +27,7 @@ from wybthon import (
     ul,
 )
 from wybthon.build import build_app, init_app
-from wybthon.kernel import OP_REMOVE_RANGE
+from wybthon.kernel import OP_DISPOSE_RANGE
 
 # ---------------------------------------------------------------------------
 # Reactive API
@@ -114,7 +114,7 @@ def test_clearing_a_list_emits_one_range_removal(wyb, root_element):
         set_items([])
         flush()
     counts = measured.as_dict()
-    assert counts.get(f"op_{OP_REMOVE_RANGE}") == 1
+    assert counts.get(f"op_{OP_DISPOSE_RANGE}") == 1
     assert sorted(cleanups) == list(range(50))
     assert [t for t in collect_texts(root_element.element) if t] == []
     set_items([7])
@@ -149,7 +149,8 @@ def _write_app(project, body: str) -> None:
 
 
 ROUTED_APP = """
-from wybthon import Link, Route, Router, component, div, p
+from wybthon import component, create_memo, div, p
+from wybthon.router import Link, Route, RouteProps, Router
 
 
 @component
@@ -163,8 +164,9 @@ def About():
 
 
 @component
-def Docs(params):
-    return p(lambda: "docs " + params()["page"])
+def Docs(props: RouteProps):
+    page = create_memo(lambda: props.params()["page"])
+    return p(t"docs {page}")
 
 
 def app():

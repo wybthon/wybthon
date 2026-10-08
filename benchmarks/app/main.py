@@ -1,12 +1,12 @@
-"""Wybthon benchmark app — js-framework-benchmark keyed implementation.
+"""Wybthon benchmark app: the js-framework-benchmark keyed implementation.
 
-This module implements the standard benchmark table the idiomatic
-Wybthon way: the table mounts once, and every operation is a signal
-write. Rows are cached per item via ``For``, row labels are per-row
-signals, and selection flows through ``create_selector`` so each
-operation touches only the DOM it must.
+The app is written the idiomatic Wybthon way: the table and its controls
+mount once, every operation is a signal (or store) write, rows are cached
+per item by `For`, row labels are per-row signals, and selection is a
+projection that notifies only the two rows whose state changes.
 
-It is loaded by index.html inside Pyodide.
+It's loaded by `index.html` inside Pyodide, straight from the checkout's
+sources (see `benchmarks/_serve.py`).
 
 Reference: https://github.com/krausest/js-framework-benchmark
 """
@@ -14,16 +14,28 @@ Reference: https://github.com/krausest/js-framework-benchmark
 import random
 from typing import Any
 
-from js import document, window
+from js import window
 
-from wybthon import kernel
-from wybthon.dom import Element
-from wybthon.events import set_handler
-from wybthon.flow import For
-from wybthon.reactivity import Accessor, Setter, create_selector, create_signal, flush
-from wybthon.reconciler import render
-from wybthon.store import create_store
-from wybthon.vnode import h
+from wybthon import (
+    Accessor,
+    For,
+    Setter,
+    a,
+    button,
+    component,
+    create_projection,
+    create_signal,
+    create_store,
+    div,
+    flush,
+    h1,
+    render,
+    span,
+    table,
+    tbody,
+    td,
+    tr,
+)
 
 # ---------------------------------------------------------------------------
 # Standard benchmark data (matching js-framework-benchmark exactly)
@@ -86,7 +98,7 @@ NOUNS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Application state — plain signals, mounted once
+# Application state: plain signals (or a store), mounted once
 # ---------------------------------------------------------------------------
 
 _next_id = 1
@@ -109,9 +121,8 @@ else:
 selected: Accessor[int | None]
 set_selected: Setter[int | None]
 selected, set_selected = create_signal(None)
-_is_selected = create_selector(selected)
-
-container = Element(node=document.getElementById("table-container"))
+# The selected row id maps to True; changing the selection updates two keys.
+is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
 
 
 def _random(max_val):
@@ -122,11 +133,7 @@ def build_data(count):
     global _next_id
     result = []
     for _ in range(count):
-        label = (
-            f"{ADJECTIVES[_random(len(ADJECTIVES))]} "
-            f"{COLOURS[_random(len(COLOURS))]} "
-            f"{NOUNS[_random(len(NOUNS))]}"
-        )
+        label = f"{ADJECTIVES[_random(len(ADJECTIVES))]} {COLOURS[_random(len(COLOURS))]} {NOUNS[_random(len(NOUNS))]}"
         if STORE_MODE:
             result.append({"id": _next_id, "label": label})
         else:
@@ -137,72 +144,28 @@ def build_data(count):
 
 
 # ---------------------------------------------------------------------------
-# Row template — built once per item, updated through signals
-# ---------------------------------------------------------------------------
-
-
-def _row(d, idx):
-    iid = d["id"]
-    return h(
-        "tr",
-        {"class": lambda: "danger" if _is_selected(iid) else ""},
-        h("td", {"class": "col-md-1"}, str(iid)),
-        h(
-            "td",
-            {"class": "col-md-4"},
-            h("a", {"on_click": lambda e: set_selected(iid)}, (lambda: d["label"]) if STORE_MODE else d["label"]),
-        ),
-        h(
-            "td",
-            {"class": "col-md-1"},
-            h(
-                "a",
-                {"on_click": lambda e: delete(iid)},
-                h(
-                    "span",
-                    {
-                        "class": "glyphicon glyphicon-remove",
-                        "aria-hidden": "true",
-                    },
-                ),
-            ),
-        ),
-        h("td", {"class": "col-md-6"}),
-    )
-
-
-app = h(
-    "table",
-    {"class": "table table-hover table-striped test-data"},
-    h("tbody", {"id": "tbody"}, For(data, _row)),
-)
-render(app, container)
-
-
-# ---------------------------------------------------------------------------
-# Benchmark operations — every one is a batch of signal writes.
+# Operations: every one is a batch of writes
 #
-# Writes batch automatically; the explicit ``flush()`` settles effects
-# and commits the DOM synchronously so the benchmark measures the full
-# update inside the delegated click handler. The checkout comparison
-# also invokes these operations directly to isolate runtime work from
-# event dispatch.
+# Writes batch automatically; the explicit `flush()` settles effects and
+# commits the DOM synchronously, so the benchmark measures the full update
+# inside the delegated click handler. The checkout comparison also calls
+# these operations directly to isolate runtime work from event dispatch.
 # ---------------------------------------------------------------------------
 
 
-def run(e=None):
+def run():
     set_data(build_data(1000))
     set_selected(None)
     flush()
 
 
-def run_lots(e=None):
+def run_lots():
     set_data(build_data(10000))
     set_selected(None)
     flush()
 
 
-def add(e=None):
+def add():
     if STORE_MODE:
         set_data(lambda rows: rows.extend(build_data(1000)))
     else:
@@ -210,7 +173,7 @@ def add(e=None):
     flush()
 
 
-def update(e=None):
+def update():
     if STORE_MODE:
 
         def edit(rows):
@@ -225,13 +188,13 @@ def update(e=None):
     flush()
 
 
-def clear(e=None):
+def clear():
     set_data([])
     set_selected(None)
     flush()
 
 
-def swap_rows(e=None):
+def swap_rows():
     def swap(rows):
         if len(rows) > 998:
             rows[1], rows[998] = rows[998], rows[1]
@@ -264,17 +227,56 @@ def delete(item_id):
 
 
 # ---------------------------------------------------------------------------
-# Wire up button handlers
+# View
 # ---------------------------------------------------------------------------
 
-for button_id, handler in (
-    ("run", run),
-    ("runlots", run_lots),
-    ("add", add),
-    ("update", update),
-    ("clear", clear),
-    ("swaprows", swap_rows),
-):
-    set_handler(kernel.adopt(document.getElementById(button_id)), "on_click", handler)
-kernel.emit((kernel.OP_ROOT, kernel.adopt(document.getElementById("main"))))
-kernel.commit()
+
+def _row(d, _index):
+    iid = d["id"]
+    label = (lambda: d["label"]) if STORE_MODE else d["label"]
+    return tr(
+        td(str(iid), class_="col-md-1"),
+        td(a(label, on_click=lambda: select(iid)), class_="col-md-4"),
+        td(
+            a(span(class_="glyphicon glyphicon-remove", aria_hidden="true"), on_click=lambda: delete(iid)),
+            class_="col-md-1",
+        ),
+        td(class_="col-md-6"),
+        class_=lambda: "danger" if is_selected.get(iid) else "",
+    )
+
+
+def _control(label, element_id, handler):
+    return div(
+        button(label, type="button", class_="btn btn-primary btn-block", id=element_id, on_click=handler),
+        class_="col-sm-6 smallpad",
+    )
+
+
+@component
+def App():
+    return div(
+        div(
+            div(
+                div(h1("Wybthon (keyed)"), class_="col-md-6"),
+                div(
+                    div(
+                        _control("Create 1,000 rows", "run", run),
+                        _control("Create 10,000 rows", "runlots", run_lots),
+                        _control("Append 1,000 rows", "add", add),
+                        _control("Update every 10th row", "update", update),
+                        _control("Clear", "clear", clear),
+                        _control("Swap Rows", "swaprows", swap_rows),
+                        class_="row",
+                    ),
+                    class_="col-md-6",
+                ),
+                class_="row",
+            ),
+            class_="jumbotron",
+        ),
+        table(tbody(For(data, _row), id="tbody"), class_="table table-hover table-striped test-data"),
+    )
+
+
+render(App(), "#app-root")

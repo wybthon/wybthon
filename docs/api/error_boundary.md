@@ -15,24 +15,29 @@ taking down the page.
 | [`Errored`][wybthon.Errored] | `Errored(children, *, fallback=None, on_error=None, reset_on=None)`. |
 
 - `children`: a VNode, a zero-arg callable, or a list of either.
-- `fallback`: a VNode, a string, or a callable `(error, reset) -> VNode`
-  (a one-argument `(error)` or zero-argument form also works).
-  `reset()` clears the error and re-renders the children. Without a
-  fallback the boundary renders "Something went wrong."
+- `fallback`: a VNode, a string, or a callable `(err, reset) -> VNode`
+  (a one-argument `(err)` or zero-argument form also works). `err` is an
+  [`Accessor`][wybthon.Accessor] for the caught exception, as in
+  Solid 2.0, so call `err()` to read it. `reset()` clears the error and
+  re-renders the children. Without a fallback the boundary renders
+  "Something went wrong."
 - `on_error`: called with the exception (send it to your monitoring).
 - `reset_on`: an accessor whose change clears the current error
-  automatically, for example [`current_path`][wybthon.current_path].
+  automatically, for example
+  [`current_path`][wybthon.router.current_path].
 
 ```python
-from wybthon import Errored, button, component, current_path, div, p
+from wybthon import Errored, button, component, div, p
+from wybthon.router import current_path
+
 
 @component
 def Page():
     return Errored(
         lambda: Dashboard(),
         fallback=lambda err, reset: div(
-            p("Something went wrong: ", str(err)),
-            button("Try again", on_click=lambda e: reset()),
+            p(t"Something went wrong: {err}"),
+            button("Try again", on_click=reset),
         ),
         on_error=lambda err: report(err),
         reset_on=current_path,

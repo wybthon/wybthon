@@ -12,13 +12,16 @@ changes it re-renders its children. A fixed `user_id`, a re-fetched
 memo, or a corrected form field clears the error without an explicit
 `reset()`; `reset` and `reset_on` remain for manual retries.
 
+The fallback receives the error as an accessor, as in Solid 2.0: call
+`err()` to read it.
+
 Example:
     ```python
     Errored(
         lambda: Dashboard(),
         fallback=lambda err, reset: div(
-            p("Something went wrong: ", str(err)),
-            button("Retry", on_click=lambda e: reset()),
+            p("Something went wrong: ", lambda: str(err())),
+            button("Retry", on_click=reset),
         ),
     )
     ```
@@ -33,8 +36,8 @@ from collections.abc import Callable
 from typing import Any
 
 from .reactivity import _core
-from .reactivity._core import Computation, Signal, _positional_count
-from .reactivity._props import Props
+from .reactivity._core import Accessor, Computation, Signal, _positional_count
+from .reactivity._props import RawProps
 from .vnode import Fragment, VNode, h, to_text_vnode
 
 __all__ = ["Errored"]
@@ -53,8 +56,9 @@ def Errored(
         children: Content rendered while no error is active: a VNode, a
             zero-arg callable, or a list of either.
         fallback: A VNode, a string, or a callable
-            `(error, reset) -> VNode` (or `(error) -> VNode`). `reset()`
-            clears the error and re-renders the children.
+            `(err, reset) -> VNode` (or `(err) -> VNode`). `err` is an
+            accessor for the caught exception; `reset()` clears the
+            error and re-renders the children.
         on_error: Optional callback invoked with the caught exception.
         reset_on: An accessor (or plain value) whose change clears the
             current error automatically, for example the current route.
@@ -79,7 +83,31 @@ def _render_content(value: Any) -> VNode:
     return to_text_vnode(value)
 
 
-def _render_fallback(fb: Any, err: BaseException, reset: Callable[[], None]) -> VNode:
+class _ErrorAccessor(Accessor[BaseException]):
+    """Read-only accessor for the error a boundary caught."""
+
+    __slots__ = ("_signal",)
+
+    def __init__(self, signal: Signal[BaseException | None]) -> None:
+        self._signal = signal
+
+    def __call__(self) -> BaseException:
+        return self._signal()
+
+    def peek(self) -> BaseException:
+        return self._signal.peek()
+
+    def _label(self) -> str:
+        return "the caught error"
+
+    def __str__(self) -> str:
+        return str(self._signal.peek())
+
+    def __repr__(self) -> str:
+        return f"ErrorAccessor({self._signal.peek()!r})"
+
+
+def _render_fallback(fb: Any, err: Accessor[BaseException], reset: Callable[[], None]) -> VNode:
     vnode: Any
     if callable(fb) and not isinstance(fb, VNode):
         try:
@@ -103,7 +131,7 @@ def _render_fallback(fb: Any, err: BaseException, reset: Callable[[], None]) -> 
     return vnode
 
 
-def _Errored(props: Props) -> Any:
+def _Errored(props: RawProps) -> Any:
     # Framework-internal signal: the handler runs inside whatever tracking
     # scope raised, so it bypasses the dev-mode write guard, and it
     # reveals immediately even while a transition holds data.
@@ -145,6 +173,7 @@ def _Errored(props: Props) -> Any:
     owner = _core._current_owner
     if owner is not None:
         owner._error_handler = handle
+    error_accessor = _ErrorAccessor(error)
 
     def render() -> VNode:
         err = error()
@@ -159,7 +188,7 @@ def _Errored(props: Props) -> Any:
         if err is not None:
             if heal_sources:
                 _arm_healing(list(heal_sources), reset)
-            return _render_fallback(fallback, err, reset)
+            return _render_fallback(fallback, error_accessor, reset)
         return _render_content(children)
 
     return render

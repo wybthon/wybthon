@@ -27,7 +27,7 @@ cancelled = 0
 
 
 @component
-def Page(**rest):
+def Page():
     rows, edit = create_store([{"id": 1, "name": "Ada"}, {"id": 2, "name": "Grace"}])
     query, set_query = create_signal("")
     mode, set_mode = create_signal("ok")
@@ -81,7 +81,7 @@ def Page(**rest):
         p(lambda: str(save.pending()), **tid("contract-saving")),
         Errored(
             lambda: Loading(lambda: For(visible, row), fallback="Waiting"),
-            fallback=lambda error: p(str(error), **tid("contract-failure")),
+            fallback=lambda err: p(lambda: str(err()), **tid("contract-failure")),
         ),
         **tid("page-contracts"),
     )

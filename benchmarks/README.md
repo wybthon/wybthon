@@ -10,7 +10,7 @@ uv run python benchmarks/browser_bench.py --mode store --json > store.json
 uv run python benchmarks/check_work.py store.json
 ```
 
-To use the interactive app, run `wyb dev --dir .` and open `/benchmarks/app/index.html?mode=store`. Its source manifest requires the Wybthon server.
+To use the interactive app, run `python benchmarks/_serve.py --root .` and open `/benchmarks/app/index.html?mode=store`. The page loads the framework straight from `src/wybthon` through the server's `/__manifest` endpoint, so any checkout can be served and compared without building it.
 
 Each browser scenario restores its baseline, performs one warmup, then records three samples. It reports median synchronous commit time separately from input-to-frame time. Frame time is a requestAnimationFrame opportunity, not a precise paint completion measurement. DOM snapshots verify that each sample changes the UI.
 
@@ -50,6 +50,17 @@ For very short selection updates, `--scenarios select_toggle_10k --iterations 31
 
 ## Native benchmark
 
+`row_bench.py` times the js-framework-benchmark table operations in plain CPython against any checkout's sources. The backend JSON-encodes every command batch but applies nothing, so each time is Python's share of the browser work: building rows, reconciling, wiring bindings, and serializing. It also reports the commands each operation sends and the Python memory a mounted row retains.
+
+```bash
+git worktree add --detach /tmp/wybthon-before <baseline-commit>
+uv run python benchmarks/row_bench.py /tmp/wybthon-before/src --reps 5 > rows-before.json
+uv run python benchmarks/row_bench.py src --reps 5 > rows-after.json
+```
+
+Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare the rendering engines alone. Alternate the two checkouts across several fresh processes and compare minimums when the machine is busy.
+
+
 ```bash
 uv run python benchmarks/bench_runner.py --memory --json
 ```
@@ -84,6 +95,8 @@ This builds both applications in temporary directories and alternates fresh page
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v2 evaluation](results/engine-v2.md) records compiled mounting, native disposal, and released row nodes against v0.36.0.
 
 The [collection and memory evaluation](results/collection-performance.md) records the compact store, persistent-vector, reactive mapping, and cleanup improvements against v0.33.0, including browser startup and bundle-size measurements.
 

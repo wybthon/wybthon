@@ -12,13 +12,30 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import diagnostics, kernel
-from .kernel import OP_RELEASE, OP_REMOVE_RANGE
+from .kernel import OP_DISPOSE_RANGE
 from .reactivity import _core
 from .reactivity._core import Computation, Owner, Signal, _CallbackScope, _run_callback_body
-from .store import StoreList, _wrap
 from .vnode import VNode
 
 _SCALARS = (str, int, float, bool, bytes, type(None), tuple, frozenset)
+
+# Store list support, registered by ``wybthon.store`` when it's imported. A
+# page that never imports stores can't produce a store list, so list regions
+# don't import the store module themselves (it's a sizable part of startup).
+StoreList: Any = type("_NoStoreList", (), {})
+
+
+def _wrap(value: Any) -> Any:
+    return value
+
+
+def register_store(store_list: type, wrap: Any) -> None:
+    """Called by ``wybthon.store`` on import: enables incremental store list updates."""
+    global StoreList, _wrap
+    StoreList = store_list
+    _wrap = wrap
+
+
 _FOR_SCOPE = _CallbackScope("For")
 _REPEAT_SCOPE = _CallbackScope("Repeat")
 _BRANCH_SCOPE = _CallbackScope("Show or Match")
@@ -150,10 +167,7 @@ class _ListRegion:
             _update_index(row.index, index)
 
     def dispose_row(self, row: _Row) -> None:
-        from .reconciler import _unmount
-
-        _unmount(row.vnode)
-        row.owner.dispose()
+        self._dispose_rows([row])
 
     def drop_fallback(self) -> None:
         if self.fallback is not None:
@@ -341,23 +355,31 @@ class _ListRegion:
             self.unique = len({row.key for row in added}) == len(added) if len(self.rows) == len(added) else False
 
     def clear(self, reverse_disposal: bool = False) -> None:
-        """Remove every row with one range removal and one release."""
-        from .reconciler import _dispose_tree, _range_bounds
-
+        """Remove every row with one native range disposal."""
         rows = self.rows
-        first, _ = _range_bounds(rows[0].vnode)
-        _, last = _range_bounds(rows[-1].vnode)
-        if first is not None and last is not None:
-            kernel.emit((OP_REMOVE_RANGE, first, last))
-        released: list[int] = []
-        for row in reversed(rows) if reverse_disposal else rows:
-            _dispose_tree(row.vnode, released)
-            row.owner.dispose()
-        if released:
-            kernel.emit((OP_RELEASE, released))
+        self._dispose_rows(rows, reverse_disposal)
         self.rows = []
         self.vnode.children = []
         self.unique = True
+
+    def _dispose_rows(self, rows: list[_Row], reverse: bool = False) -> None:
+        """Dispose a contiguous run of mounted rows with one range command."""
+        from . import _template as template
+        from .reconciler import _dispose_tree, _range_bounds
+
+        first, _ = _range_bounds(rows[0].vnode)
+        _, last = _range_bounds(rows[-1].vnode)
+        if first is not None and last is not None:
+            kernel.emit((OP_DISPOSE_RANGE, first, last))
+        dispose_template = template.dispose
+        for row in reversed(rows) if reverse else rows:
+            vnode = row.vnode
+            if vnode.tpl is not None:
+                # The row's owner disposes its computations and scopes.
+                dispose_template(vnode, _dispose_tree, True)
+            else:
+                _dispose_tree(vnode)
+            row.owner.dispose()
 
     def replace(self, items: Any) -> None:
         if diagnostics._active is not None:
@@ -422,6 +444,20 @@ class _ListRegion:
         children = [row.vnode for row in next_rows]
         from .reconciler import _first_dom_id
 
+        if not reused and not prefix and not suffix:
+            # Nothing was kept: mount the new rows as one run, then dispose
+            # the old ones with a single range instead of matching pairs.
+            from .reconciler import mount
+
+            old_rows = self.rows
+            end = self.vnode._frag_end
+            parent, ns = self.parent, self.vnode.ns
+            for row in next_rows:
+                mount(row.vnode, parent, end, ns)
+            self._dispose_rows(old_rows)
+            self.rows = next_rows
+            self.vnode.children = children
+            return
         _reconcile_children(
             self.vnode.children[prefix:old_end],
             children[prefix:new_end],

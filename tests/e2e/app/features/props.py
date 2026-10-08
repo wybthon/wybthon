@@ -9,7 +9,7 @@ _STATES = {"idle": "busy", "busy": "done", "done": "idle"}
 
 
 @component
-def Page(**rest):
+def Page():
     danger, set_danger = create_signal(False)
     color, set_color = create_signal("teal")
     state, set_state = create_signal("idle")

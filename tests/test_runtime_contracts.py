@@ -287,14 +287,13 @@ def test_map_array_duplicate_keys_dispose_and_held_lifetimes(wyb):
     asyncio.run(main())
 
 
-def test_literal_callables_are_data_and_lazy_memo_reactivates(wyb):
-    from wybthon import literal
-
+def test_callables_are_stored_through_updaters_and_lazy_memo_reactivates(wyb):
     def handler():
         return "value"
 
     state, write = create_signal(None)
-    write(literal(handler))
+    # A callable write is an updater, so storing a function returns it from one.
+    write(lambda _: handler)
     flush()
     assert state() is handler
     source, update = create_signal(1)

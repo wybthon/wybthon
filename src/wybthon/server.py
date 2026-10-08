@@ -6,21 +6,20 @@ the page, and the browser shows content immediately instead of waiting
 for Pyodide to boot. Once it has, [`hydrate`][wybthon.hydrate] adopts
 the server's DOM and makes it interactive.
 
-Three entry points cover the common deployment shapes:
+Two entry points cover the common deployment shapes, as in Solid 2.0:
 
 - [`render_to_string`][wybthon.server.render_to_string] renders
   synchronously. Async data isn't loaded; its
   [`Loading`][wybthon.Loading] boundaries render their fallbacks and
   the browser loads it after hydration.
-- [`render_to_string_async`][wybthon.server.render_to_string_async]
-  waits for every async memo the page reads (including memos that only
-  appear once other data arrives) and embeds the results, so the
-  browser neither fetches them again nor shows a loading state.
 - [`render_to_stream`][wybthon.server.render_to_stream] sends the page
   with fallbacks immediately, then streams each boundary's content as
-  its data arrives.
+  its data arrives. Awaiting it instead waits for every async memo the
+  page reads (including memos that only appear once other data arrives)
+  and returns the complete HTML with the results embedded, so the
+  browser neither fetches them again nor shows a loading state.
 
-All three return (or yield) the *contents* of the mount container;
+Both return (or yield) the *contents* of the mount container;
 the caller writes the surrounding document. Output always ends with a
 `<script type="application/json" data-wyb-state>` element, which
 `hydrate` reads and removes.
@@ -29,12 +28,23 @@ Example:
     With any ASGI framework:
 
     ```python
-    from wybthon.server import render_to_string_async
+    from wybthon import RequestEvent
+    from wybthon.server import render_to_stream
 
     async def page(request):
-        body = await render_to_string_async(App(), url=str(request.url.path))
-        return HTMLResponse(TEMPLATE.replace("<!-- app -->", body))
+        event = RequestEvent(url=str(request.url.path), request=request)
+        body = await render_to_stream(App(), event=event)
+        return HTMLResponse(
+            TEMPLATE.replace("<!-- app -->", body),
+            status_code=event.response.status,
+            headers=dict(event.response.header_items()),
+        )
     ```
+
+Components declare the response status and headers with
+[`http_status`][wybthon.http_status] and
+[`http_header`][wybthon.http_header], and read the request with
+[`get_request_event`][wybthon.get_request_event].
 
 Rendering runs the ordinary renderer against an in-memory DOM, so
 server output always matches what the browser's hydration expects.
@@ -50,7 +60,7 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Generator
 from typing import Any
 
 from . import kernel
@@ -62,9 +72,10 @@ from .reactivity._core import Memo, _function_name
 from .reactivity._primitives import resolve
 from .reactivity._session import ServerError, Session, encode_state
 from .reconciler import Root, _server_render
+from .request import RequestEvent
 from .vnode import VNode, copy_vnode
 
-__all__ = ["render_to_string", "render_to_string_async", "render_to_stream"]
+__all__ = ["render_to_string", "render_to_stream", "RenderStream"]
 
 # Upper bound on render passes for one request (each pass discovers one
 # level of data that only renders once earlier data has arrived).
@@ -102,10 +113,15 @@ class _Pass:
 
     __slots__ = ("session", "root", "container")
 
-    def __init__(self, view: Any, url: str, data: _Data, *, resolve_async: bool) -> None:
+    def __init__(self, view: Any, event: RequestEvent, data: _Data, *, resolve_async: bool) -> None:
         backend = _backend()
         self.session = Session(
-            "server", url=url, resolve_async=resolve_async, values=dict(data.values), errors=dict(data.errors)
+            "server",
+            url=event.url,
+            resolve_async=resolve_async,
+            values=dict(data.values),
+            errors=dict(data.errors),
+            event=event,
         )
         self.session.inflight = data.inflight
         with _thread_lock:
@@ -209,7 +225,7 @@ class _Data:
                 value, name = self.values[key]
                 try:
                     json.dumps(value)
-                except (TypeError, ValueError):
+                except TypeError, ValueError:
                     warn_once(
                         "ssr_state",
                         name,
@@ -253,64 +269,61 @@ async def _settle(memos: list[Memo[Any]], timeout: float, *, first: bool) -> boo
     return bool(done)
 
 
-def render_to_string(view: Any, *, url: str = "/") -> str:
+def _event(url: str | None, event: RequestEvent | None) -> RequestEvent:
+    if event is None:
+        return RequestEvent(url=url or "/")
+    if url is not None:
+        event.url = url
+    return event
+
+
+def render_to_string(view: Any, *, url: str | None = None, event: RequestEvent | None = None) -> str:
     """Render `view` to HTML synchronously.
 
     Async memos don't start: the [`Loading`][wybthon.Loading]
     boundaries that read them render their fallbacks, and the browser
-    loads the data after [`hydrate`][wybthon.hydrate]. Use
-    [`render_to_string_async`][wybthon.server.render_to_string_async]
-    to include async data.
+    loads the data after [`hydrate`][wybthon.hydrate]. Await
+    [`render_to_stream`][wybthon.server.render_to_stream] to include
+    async data.
 
     Args:
         view: The root view: a VNode (such as `App()`) or a zero-arg
             callable returning one.
-        url: The request path and query, read by the router.
+        url: The request path and query, read by the router. Defaults
+            to the event's URL, or `"/"`.
+        event: The [`RequestEvent`][wybthon.RequestEvent] being
+            rendered; read its `response` afterward for the status and
+            headers the page declared.
 
     Returns:
         The HTML for the mount container's contents, ending with the
         serialized state script.
     """
+    event = _event(url, event)
     _core._server_depth += 1
     try:
         data = _Data()
-        final = _Pass(view, url, data, resolve_async=False)
+        final = _Pass(view, event, data, resolve_async=False)
         try:
             data.collect(final.session.memos)
-            return final.html() + data.state(final)
+            html = final.html() + data.state(final)
+            event.response.committed = True
+            return html
         finally:
             final.dispose()
     finally:
         _core._server_depth -= 1
 
 
-async def render_to_string_async(view: Any, *, url: str = "/", timeout: float = 30.0) -> str:
-    """Render `view` to HTML once every async memo it reads has resolved.
-
-    The tree renders in passes: each pass renders with the values
-    resolved so far, then waits for the async memos it started. A
-    later pass can start memos that only render once earlier data has
-    arrived. The final pass renders synchronously from start to
-    finish, exactly as the browser will while hydrating, and its
-    values are serialized for [`hydrate`][wybthon.hydrate].
-
-    Args:
-        view: The root view: a VNode (such as `App()`) or a zero-arg
-            callable returning one.
-        url: The request path and query, read by the router.
-        timeout: Seconds to wait for data in total. Whatever hasn't
-            resolved by then renders its `Loading` fallback and loads
-            in the browser.
-
-    Returns:
-        The HTML for the mount container's contents, ending with the
-        serialized state script.
-    """
+async def _render_complete(view: Any, event: RequestEvent, timeout: float) -> str:
+    """Render once every async memo the page reads has resolved (the awaited stream)."""
     _core._server_depth += 1
     try:
-        final, data = await _resolve(view, url, timeout)
+        final, data = await _resolve(view, event, timeout)
         try:
-            return final.html() + data.state(final)
+            html = final.html() + data.state(final)
+            event.response.committed = True
+            return html
         finally:
             final.dispose()
     finally:
@@ -318,7 +331,7 @@ async def render_to_string_async(view: Any, *, url: str = "/", timeout: float = 
 
 
 async def _resolve(
-    view: Any, url: str, timeout: float, on_pass: Any = None, *, stream: bool = False
+    view: Any, event: RequestEvent, timeout: float, on_pass: Any = None, *, stream: bool = False
 ) -> tuple[_Pass, _Data]:
     """Render passes until no async work is pending; returns the final pass.
 
@@ -331,7 +344,7 @@ async def _resolve(
     data = _Data()
     try:
         for _ in range(MAX_PASSES):
-            current = _Pass(view, url, data, resolve_async=True)
+            current = _Pass(view, event, data, resolve_async=True)
             if on_pass is not None:
                 on_pass(current)
             data.collect(current.session.memos)
@@ -347,7 +360,7 @@ async def _resolve(
             if not settled or not progressed:
                 break
         data.release()
-        final = _Pass(view, url, data, resolve_async=False)
+        final = _Pass(view, event, data, resolve_async=False)
         if on_pass is not None:
             on_pass(final)
         data.collect(final.session.memos)
@@ -356,55 +369,105 @@ async def _resolve(
         data.release()
 
 
-async def render_to_stream(view: Any, *, url: str = "/", timeout: float = 30.0) -> AsyncIterator[str]:
-    """Stream `view` as HTML: the page first, then each `Loading` boundary as it resolves.
+class RenderStream:
+    """The result of [`render_to_stream`][wybthon.server.render_to_stream].
 
-    The first chunk is the page with a fallback in every boundary whose
-    data isn't ready. Each later chunk carries the content of the
-    boundaries that became ready, as `<template>` elements plus a small
-    inline script that swaps them into place (out-of-order streaming).
-    The last chunk is the serialized state for
+    Iterate it (`async for chunk in stream`) to send the page as it
+    renders, or await it (`html = await stream`) for the complete HTML
+    once every async memo has resolved. Use one or the other, once.
+    """
+
+    __slots__ = ("_view", "_event", "_timeout", "_used")
+
+    def __init__(self, view: Any, event: RequestEvent, timeout: float) -> None:
+        self._view = view
+        self._event = event
+        self._timeout = timeout
+        self._used = False
+
+    def _claim(self) -> None:
+        if self._used:
+            raise RuntimeError("A render stream can be consumed only once: iterate it or await it")
+        self._used = True
+
+    def __aiter__(self) -> AsyncIterator[str]:
+        self._claim()
+        return self._chunks()
+
+    def __await__(self) -> Generator[Any, None, str]:
+        self._claim()
+        return _render_complete(self._view, self._event, self._timeout).__await__()
+
+    async def _chunks(self) -> AsyncIterator[str]:
+        event = self._event
+        _core._server_depth += 1
+        try:
+            stream = _Stream()
+            queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+            def on_pass(current: _Pass) -> None:
+                chunk = stream.advance(current)
+                if chunk:
+                    # The shell carries the response head with it: commit it
+                    # before this pass is disposed, which would retract the
+                    # declarations it made.
+                    event.response.committed = True
+                    queue.put_nowait(chunk)
+
+            task = asyncio.ensure_future(_resolve(self._view, event, self._timeout, on_pass, stream=True))
+            task.add_done_callback(lambda _task: queue.put_nowait(None))
+            try:
+                while (chunk := await queue.get()) is not None:
+                    yield chunk
+                final, data = task.result()
+                try:
+                    yield data.state(final)
+                finally:
+                    final.dispose()
+            finally:
+                if not task.done():
+                    task.cancel()
+        finally:
+            _core._server_depth -= 1
+
+
+def render_to_stream(
+    view: Any, *, url: str | None = None, event: RequestEvent | None = None, timeout: float = 30.0
+) -> RenderStream:
+    """Render `view` as a stream of HTML, or await it for the complete page.
+
+    Iterating the result yields the page first, with a fallback in every
+    boundary whose data isn't ready. Each later chunk carries the content
+    of the boundaries that became ready, as `<template>` elements plus a
+    small inline script that swaps them into place (out-of-order
+    streaming). The last chunk is the serialized state for
     [`hydrate`][wybthon.hydrate]. Write every chunk inside the mount
-    container, in order.
+    container, in order. [`Reveal`][wybthon.Reveal] ordering is
+    respected: a boundary is sent once it would show its content in the
+    browser. The response head is committed with the first chunk.
 
-    [`Reveal`][wybthon.Reveal] ordering is respected: a boundary is
-    sent once it would show its content in the browser.
+    Awaiting the result renders in passes instead: each pass renders with
+    the values resolved so far, then waits for the async memos it
+    started, and a later pass can start memos that only render once
+    earlier data has arrived. The final pass renders synchronously, as
+    the browser will while hydrating, and returns the complete HTML with
+    its values serialized.
 
     Args:
         view: The root view: a VNode (such as `App()`) or a zero-arg
             callable returning one.
-        url: The request path and query, read by the router.
+        url: The request path and query, read by the router. Defaults
+            to the event's URL, or `"/"`.
+        event: The [`RequestEvent`][wybthon.RequestEvent] being
+            rendered; read its `response` for the declared status and
+            headers.
         timeout: Seconds to wait for data in total. Boundaries still
             pending then keep their fallbacks and load in the browser.
 
-    Yields:
-        HTML chunks for the mount container.
+    Returns:
+        A [`RenderStream`][wybthon.server.RenderStream].
     """
-    _core._server_depth += 1
-    try:
-        stream = _Stream()
-        queue: asyncio.Queue[str | None] = asyncio.Queue()
-
-        def on_pass(current: _Pass) -> None:
-            chunk = stream.advance(current)
-            if chunk:
-                queue.put_nowait(chunk)
-
-        task = asyncio.ensure_future(_resolve(view, url, timeout, on_pass, stream=True))
-        task.add_done_callback(lambda _task: queue.put_nowait(None))
-        try:
-            while (chunk := await queue.get()) is not None:
-                yield chunk
-            final, data = task.result()
-            try:
-                yield data.state(final)
-            finally:
-                final.dispose()
-        finally:
-            if not task.done():
-                task.cancel()
-    finally:
-        _core._server_depth -= 1
+    return RenderStream(view, _event(url, event), timeout)
 
 
 class _Stream:

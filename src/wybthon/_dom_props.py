@@ -18,6 +18,10 @@ Translates VNode props into batched DOM ops (see `wybthon.kernel`):
   value (or as a `class`/`style` dict value) is wrapped in its own render
   effect so updates re-apply only that prop.
 
+- **Template strings**: a t-string value (`class_=t"btn btn-{kind}"`)
+  is static text when none of its interpolations are reactive, and a
+  reactive binding otherwise.
+
 Nothing here touches the DOM directly; every applier emits ops against
 an integer node id and the kernel applies the batch in one bridge
 crossing at commit time. Application code never imports this module.
@@ -26,6 +30,7 @@ crossing at commit time. Application code never imports this module.
 from __future__ import annotations
 
 import re
+from string.templatelib import Template
 from typing import Any
 
 from . import kernel
@@ -33,7 +38,8 @@ from ._warnings import log_error
 from .events import set_handler
 from .kernel import OP_SET_ATTR, OP_SET_PROP, OP_SET_STYLE
 from .reactivity import _core
-from .reactivity._core import _K_RENDER, Computation, NotReadyError, _unwrap, is_accessor
+from .reactivity._core import _K_RENDER, Computation, _unwrap, is_accessor
+from .vnode import render_template, template_getter
 
 __all__: list[str] = []
 
@@ -43,6 +49,10 @@ _CAMEL_TO_KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 
 # Sentinel for "no previous value" in reactive bindings / initial apply.
 _UNSET = object()
+# Like `_UNSET`, for a node that was just created or cloned: it has no
+# attribute or property state yet, so writes that would remove or clear a
+# value are skipped.
+_FRESH = object()
 # Sentinel a binding's compute stage returns to keep the current DOM value.
 _KEEP = _core._SKIP_APPLY
 
@@ -215,13 +225,21 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         return
 
     if is_event_prop(name):
-        if old_val is not _UNSET and old_val is new_val:
+        if old_val is not _UNSET and old_val is not _FRESH and old_val is new_val:
             return
         set_handler(node_id, name, new_val if callable(new_val) else None)
         return
 
+    fresh = old_val is _FRESH
+    if fresh:
+        old_val = _UNSET
+    if type(new_val) is Template:
+        new_val = render_template(new_val)
+
     if name == "class" or name == "class_":
-        kernel.emit((OP_SET_ATTR, node_id, "class", _class_string(new_val) or None))
+        text = _class_string(new_val)
+        if text or not fresh:
+            kernel.emit((OP_SET_ATTR, node_id, "class", text or None))
         return
 
     if name == "style":
@@ -233,7 +251,8 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         return
 
     if name == "value":
-        kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
+        if new_val is not None or not fresh:
+            kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
         return
 
     if name == "selected_values":
@@ -241,16 +260,19 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
         return
 
     if name == "checked":
-        kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
+        if new_val or not fresh:
+            kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
         return
 
     if name == "inner_html" or name == "innerHTML":
-        kernel.emit((OP_SET_PROP, node_id, "innerHTML", "" if new_val is None else str(new_val)))
+        if new_val is not None or not fresh:
+            kernel.emit((OP_SET_PROP, node_id, "innerHTML", "" if new_val is None else str(new_val)))
         return
 
     attr = attr_name(name)
     if new_val is None or new_val is False:
-        kernel.emit((OP_SET_ATTR, node_id, attr, None))
+        if not fresh:
+            kernel.emit((OP_SET_ATTR, node_id, attr, None))
         return
     if new_val is True:
         kernel.emit((OP_SET_ATTR, node_id, attr, "" if attr in _BOOLEAN_ATTRS else "true"))
@@ -312,6 +334,8 @@ def binding_value(name: str, value: Any) -> Any:
         return None
     if is_accessor(value):
         return value
+    if type(value) is Template:
+        return template_getter(value)
     if (name == "class" or name == "class_" or name == "style") and _reactive_dict(value):
         return _dict_getter(value)
     return None
@@ -337,9 +361,9 @@ def apply_initial_props(node_id: int, new_props: PropsDict) -> None:
             continue
         getter = binding_value(name, value)
         if getter is not None:
-            _bind_reactive_prop(node_id, name, getter)
+            _bind_reactive_prop(node_id, name, getter, _FRESH)
         else:
-            _apply_single_prop(node_id, name, _UNSET, value)
+            _apply_single_prop(node_id, name, _FRESH, value)
 
 
 def apply_props(node_id: int, old_props: PropsDict, new_props: PropsDict) -> None:
@@ -405,46 +429,41 @@ def remove_bindings_for(node_id: int) -> None:
             comp.dispose()
 
 
-def _bind_reactive_prop(node_id: int, name: str, getter: Any) -> Computation:
+def _bind_reactive_prop(
+    node_id: int, name: str, getter: Any, initial: Any = _UNSET, register: bool = True
+) -> Computation:
     """Wrap `getter` in a render effect that re-applies prop `name` on change.
 
     Render-phase scheduling means every dirty binding in a flush emits
-    its op before the single DOM commit. Errors route to the nearest
+    its op before the single DOM commit. A getter that isn't ready keeps
+    the current DOM value. Errors route to the nearest
     [`Errored`][wybthon.Errored] boundary, or are logged.
+
+    `initial` is the value the node currently holds (`_FRESH` for a node
+    created in this mount). Template mounts pass `register=False`: their
+    bindings are recorded on the template root and registered by node
+    only if the subtree is ever patched.
     """
-
-    def compute() -> Any:
-        try:
-            return getter()
-        except NotReadyError:
-            return _KEEP
-        except Exception as exc:
-            return _core._Failure(exc)
-
-    last: list[Any] = [_UNSET]
+    last = initial
 
     def apply(new_val: Any) -> None:
+        nonlocal last
         if new_val is _KEEP:
             return
-        old_val = last[0]
-        last[0] = new_val
+        old_val = last
+        last = new_val
         _apply_single_prop(node_id, name, old_val, new_val)
 
-    comp = Computation(
-        getter if type(getter) is _core.Signal else compute,
-        kind=_K_RENDER,
-        apply_scope=False,
-        apply=apply,
-        pass_prev=False,
-    )
+    comp = Computation(getter, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False, keep=True)
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)
-    table = _bindings.get(node_id)
-    if table is None:
-        _bindings[node_id] = {name: comp}
-    else:
-        table[name] = comp
+    if register:
+        table = _bindings.get(node_id)
+        if table is None:
+            _bindings[node_id] = {name: comp}
+        else:
+            table[name] = comp
     comp._update_if_necessary()
     return comp
 

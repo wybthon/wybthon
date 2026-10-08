@@ -28,19 +28,21 @@ from wybthon import Accessor, Context, button, component, create_context, create
 
 Theme: Context[Accessor[str]] = create_context(name="Theme")
 
+
 @component
 def ThemedButton():
-    theme = use_context(Theme)                     # the accessor the provider passed
-    return button("Hi", class_=lambda: f"btn-{theme()}")
+    theme = use_context(Theme)  # the accessor the provider passed
+    return button("Hi", class_=t"btn-{theme}")
+
 
 @component
 def App():
     theme, set_theme = create_signal("light")
-    return Theme(                                  # value first, then children
+    return Theme(  # value first, then children
         theme,
         div(
             ThemedButton(),
-            button("Toggle", on_click=lambda e: set_theme("dark" if theme.peek() == "light" else "light")),
+            button("Toggle", on_click=lambda: set_theme("dark" if theme.peek() == "light" else "light")),
         ),
     )
 ```
@@ -53,4 +55,4 @@ component, `use_context` still works inside any reactive scope
 
 - [Concepts: Context](../concepts/context.md)
 - [`Owner`][wybthon.Owner]: where context values are stored
-- [Router](router.md): `use_params`, `use_query`, and `use_base_path` are context readers
+- [Router](router.md): `use_params`, `use_query`, and `use_base_path` are context readers in `wybthon.router`

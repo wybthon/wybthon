@@ -3,7 +3,7 @@
 import pytest
 from conftest import StubNode, collect_texts
 
-from wybthon.html import button, div, em, h1, input_, li, p, span, ul
+from wybthon.html import a, button, div, em, h1, input_, li, p, span, strong, ul
 from wybthon.reactivity import create_signal
 from wybthon.svg import circle, foreignObject, svg
 from wybthon.vnode import NS_SVG, Fragment, hole
@@ -513,7 +513,7 @@ def test_static_subtree_mounts_via_template_clone(wyb, root_element, monkeypatch
 
     codes = [op[0] for op in ops]
     assert kernel.OP_REGISTER_TPL in codes
-    assert kernel.OP_CLONE_TPL in codes
+    assert kernel.OP_CLONE in codes
     assert kernel.OP_CREATE_ELEMENT not in codes
 
     d = root_element.element.childNodes[0]
@@ -532,7 +532,7 @@ def test_same_shape_shares_one_template(wyb, root_element, monkeypatch):
     render(div(h1("One"), p("first")), root_element)
     render(div(h1("Two"), p("second")), other)
     assert len([op for op in ops if op[0] == kernel.OP_REGISTER_TPL]) == 1
-    assert len([op for op in ops if op[0] == kernel.OP_CLONE_TPL]) == 2
+    assert len([op for op in ops if op[0] == kernel.OP_CLONE]) == 2
     assert _texts(root_element.element) == ["One", "first"]
     assert _texts(other.element) == ["Two", "second"]
 
@@ -563,9 +563,9 @@ def test_ineligible_tree_falls_back_to_per_node_mount(wyb, root_element, monkeyp
     ops = _record_ops(monkeypatch, kernel._backend)
     # A <div> inside a <p> is rewritten by the HTML parser, so this can't be a template.
     wyb["reconciler"].render(p("intro", div("block")), root_element)
-    codes = [op[0] for op in ops]
-    assert kernel.OP_CLONE_TPL not in codes
-    assert kernel.OP_CREATE_ELEMENT in codes
+    # The <p> is created per node; its <div> child is still its own template.
+    assert (kernel.OP_CREATE_ELEMENT, "p") in [(op[0], op[2]) for op in ops if op[0] == kernel.OP_CREATE_ELEMENT]
+    assert [op for op in ops if op[0] == kernel.OP_REGISTER_TPL][0][2] == "<div> </div>"
     para = root_element.element.childNodes[0]
     assert _elements(para)[0].tag == "div"
     assert _texts(para) == ["intro", "block"]
@@ -701,6 +701,204 @@ def test_dispose_disables_handlers(wyb, root_element):
     root.dispose()
     backend.dispatch("click", btn)
     assert seen == []
+
+
+def test_zero_arg_handlers_are_called_without_the_event(wyb, root_element):
+    backend = wyb["kernel"]._backend
+    count, set_count = create_signal(0)
+    calls = []
+
+    class Model:
+        def ping(self):
+            calls.append("method")
+
+    tree = div(
+        button("+", on_click=lambda: set_count(lambda n: n + 1)),
+        button("m", on_click=Model().ping),
+        button("e", on_click=lambda e: calls.append(e.type)),
+        button("d", on_click=lambda e=None: calls.append(e is not None)),
+        p(count),
+    )
+    wyb["reconciler"].render(tree, root_element)
+    plus, method, with_event, defaulted = _elements(root_element.element.childNodes[0])[:4]
+    backend.dispatch("click", plus)
+    backend.dispatch("click", plus)
+    backend.dispatch("click", method)
+    backend.dispatch("click", with_event)
+    backend.dispatch("click", defaulted)
+    assert count() == 2
+    assert _texts(root_element.element.childNodes[0])[-1] == "2"
+    assert calls == ["method", "click", True]
+
+
+def test_zero_arg_handler_swap_and_bubbling(wyb, root_element):
+    backend = wyb["kernel"]._backend
+    render = wyb["reconciler"].render
+    order = []
+    render(
+        div(button("go", on_click=lambda: order.append("child")), on_click=lambda: order.append("parent")), root_element
+    )
+    btn = _elements(root_element.element.childNodes[0])[0]
+    backend.dispatch("click", btn)
+    render(div(button("go", on_click=lambda: order.append("child2"))), root_element)
+    backend.dispatch("click", btn)
+    assert order == ["child", "parent", "child2"]
+
+
+# ---------------------------------------------------------------------------
+# Template strings (PEP 750)
+# ---------------------------------------------------------------------------
+
+
+def test_static_t_string_child_is_one_text_node(wyb, root_element, monkeypatch):
+    name = "Ada"
+    n = 3
+    wyb["reconciler"].render(p(t"Hello {name}, you have {n} items"), root_element)
+    para = root_element.element.childNodes[0]
+    assert [c.nodeValue for c in para.childNodes] == ["Hello Ada, you have 3 items"]
+
+
+def test_reactive_t_string_child_updates_as_one_binding(wyb, root_element):
+    flush = wyb["reactivity"].flush
+    count, set_count = create_signal(1)
+    label = "Count"
+    renders = []
+
+    def doubled():
+        renders.append(1)
+        return count() * 2
+
+    wyb["reconciler"].render(p(t"{label}: {count} (doubled: {doubled})"), root_element)
+    para = root_element.element.childNodes[0]
+    text_nodes = [c for c in para.childNodes if c._is_text]
+    assert [c.nodeValue for c in text_nodes] == ["Count: 1 (doubled: 2)"]
+    set_count(5)
+    flush()
+    assert [c.nodeValue for c in para.childNodes if c._is_text] == ["Count: 5 (doubled: 10)"]
+    assert para.childNodes[0] is text_nodes[0]
+    assert len(renders) == 2
+
+
+def test_t_string_format_specs_and_conversions(wyb, root_element):
+    flush = wyb["reactivity"].flush
+    price, set_price = create_signal(3.14159)
+    word = "hi"
+    nothing = None
+    wyb["reconciler"].render(div(p(t"${price:.2f}"), p(t"{word!r} {word:>4}|{nothing}|"), p(t"{12:04d}")), root_element)
+    paras = _elements(root_element.element.childNodes[0])
+    assert [_texts(x) for x in paras] == [["$3.14"], ["'hi'   hi||"], ["0012"]]
+    set_price(2)
+    flush()
+    assert _texts(paras[0]) == ["$2.00"]
+
+
+def test_t_string_interpolating_vnodes_expands_into_children(wyb, root_element):
+    flush = wyb["reactivity"].flush
+    name, set_name = create_signal("Ada")
+    wyb["reconciler"].render(p(t"Hi {strong('there')}, {name}! {[em('a'), em('b')]}"), root_element)
+    para = root_element.element.childNodes[0]
+    assert [n.tag for n in _elements(para)] == ["strong", "em", "em"]
+    assert _texts(para) == ["Hi ", "there", ", ", "Ada", "! ", "a", "b"]
+    set_name("Grace")
+    flush()
+    assert _texts(para) == ["Hi ", "there", ", ", "Grace", "! ", "a", "b"]
+
+
+def test_t_string_attributes_static_and_reactive(wyb, root_element):
+    flush = wyb["reactivity"].flush
+    variant, set_variant = create_signal("primary")
+    user_id = 42
+    width = 0.5
+    wyb["reconciler"].render(
+        div(
+            a("Profile", href=t"/users/{user_id}"),
+            div(class_=t"card card-{variant}", style=t"width: {width:.0%}"),
+        ),
+        root_element,
+    )
+    link, card = _elements(root_element.element.childNodes[0])
+    assert link.attributes["href"] == "/users/42"
+    assert card.attributes["class"] == "card card-primary"
+    assert card.attributes["style"] == "width: 50%"
+    set_variant("danger")
+    flush()
+    assert card.attributes["class"] == "card card-danger"
+    assert link.attributes["href"] == "/users/42"
+
+
+def test_t_string_attribute_renders_through_per_node_mount(wyb, root_element):
+    flush = wyb["reactivity"].flush
+    wyb["kernel"].html_templates = False
+    page, set_page = create_signal(1)
+    wyb["reconciler"].render(a(t"Page {page}", href=t"/p/{page}", title=t"static {'x'}"), root_element)
+    link = root_element.element.childNodes[0]
+    assert link.attributes == {"href": "/p/1", "title": "static x"}
+    assert _texts(link) == ["Page 1"]
+    set_page(2)
+    flush()
+    assert link.attributes["href"] == "/p/2"
+    assert _texts(link) == ["Page 2"]
+
+
+# ---------------------------------------------------------------------------
+# Kernel protocol: template-declared listeners and native teardown
+# ---------------------------------------------------------------------------
+
+
+def test_template_handlers_send_no_listen_ops(wyb, root_element, monkeypatch):
+    kernel = wyb["kernel"]
+    backend = kernel._backend
+    ops = _record_ops(monkeypatch, backend)
+    clicks = []
+    tree = div(button("a", on_click=lambda: clicks.append("a")), button("b", on_input=lambda e: clicks.append("b")))
+    wyb["reconciler"].render(tree, root_element)
+    codes = [op[0] for op in ops]
+    assert kernel.OP_CLONE in codes
+    assert kernel.OP_LISTEN not in codes
+    register = [op for op in ops if op[0] == kernel.OP_REGISTER_TPL][0]
+    assert sorted(event for _offset, event in register[5]) == ["click", "input"]
+    first = _elements(root_element.element.childNodes[0])[0]
+    backend.dispatch("click", first)
+    assert clicks == ["a"]
+
+
+def test_fused_clone_carries_texts_and_anchor(wyb, root_element, monkeypatch):
+    kernel = wyb["kernel"]
+    ops = _record_ops(monkeypatch, kernel._backend)
+    wyb["reconciler"].render(div(h1("Title"), p("Body")), root_element)
+    clones = [op for op in ops if op[0] == kernel.OP_CLONE]
+    assert len(clones) == 1
+    _code, _first_id, _tpl_id, parent_id, anchor_id, *texts = clones[0]
+    assert parent_id == root_element.node_id
+    assert texts == ["Title", "Body"]
+    assert kernel.OP_INSERT not in [op[0] for op in ops]
+    assert kernel.OP_SET_TEXT not in [op[0] for op in ops]
+
+
+def test_unmount_disposes_natively_without_release_lists(wyb, root_element, monkeypatch):
+    kernel = wyb["kernel"]
+    flush = wyb["reactivity"].flush
+    show, set_show = create_signal(True)
+    wyb["reconciler"].render(
+        div(lambda: div(h1("A"), p("B"), button("x", on_click=lambda: None)) if show() else None), root_element
+    )
+    ops = _record_ops(monkeypatch, kernel._backend)
+    set_show(False)
+    flush()
+    codes = [op[0] for op in ops]
+    assert kernel.OP_RELEASE not in codes
+    assert kernel.OP_UNLISTEN not in codes
+    assert kernel.OP_DISPOSE in codes or kernel.OP_DISPOSE_RANGE in codes
+    assert [t for t in _texts(root_element.element) if t.strip()] == []
+
+
+def test_template_mount_assigns_el_only_to_root(wyb, root_element):
+    tree = div(h1("Title"), p("Body"))
+    wyb["reconciler"].render(tree, root_element)
+    assert tree.el is not None
+    assert tree.el == root_element.element.childNodes[0]._wyb_id
+    # Static descendants of a template mount get ids only when patched.
+    assert all(child.el is None for child in tree.children)
 
 
 # ---------------------------------------------------------------------------

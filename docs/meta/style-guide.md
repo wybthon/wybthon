@@ -47,26 +47,27 @@ the standard sections as tables.
 ### Function or method
 
 ```python
-def create_selector(source, equals=None):
-    """Return `is_selected(key)`: a tracked boolean that only updates the affected keys.
+def repeat(count, fn, *, start=0, fallback=None):
+    """Map an integer range to rows, each with its own owner scope.
 
-    A naive `lambda: item.id == selected()` in every row re-runs every
-    row when the selection changes. `create_selector` subscribes each
-    key once and only notifies the row that was selected and the one
-    that was deselected.
+    The counterpart of Solid 2.0's `repeat`: `fn(i)` runs once per slot
+    for `i` in `range(start, start + count)`. Growing the count maps only
+    the new slots; shrinking it disposes the removed ones.
 
     Args:
-        source: Accessor for the current selection.
-        equals: Optional `(selection, key) -> bool` comparison.
+        count: The number of slots, or an accessor for it.
+        fn: Maps one slot number to a row.
+        start: The first slot number, or an accessor for it.
+        fallback: Optional zero-arg callable whose result is the single
+            row when the count is zero.
 
     Returns:
-        A function `key -> bool` to call inside a hole, memo, or effect.
+        A memo yielding the list of mapped rows.
 
     Example:
         ```python
-        selected, set_selected = create_signal(1)
-        is_selected = create_selector(selected)
-        For(items, lambda item, i: li(item["title"], class_={"active": lambda: is_selected(item["id"])}))
+        count, set_count = create_signal(3)
+        rows = repeat(count, lambda i: li(f"Row {i}"))
         ```
     """
 ```
@@ -117,7 +118,7 @@ Every module should open with a one-line summary, an extended description,
 and (when illustrative) a small example:
 
 ```python
-"""Reactive list mapping and selection helpers.
+"""Reactive list mapping helpers.
 
 [`map_array`][wybthon.map_array] is the engine behind
 [`For`][wybthon.For] and [`Repeat`][wybthon.Repeat]: it turns a

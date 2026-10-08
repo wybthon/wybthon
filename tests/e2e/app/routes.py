@@ -8,6 +8,7 @@ params, query strings, wildcards, nested children, and the not-found path.
 from app.features import components as components_feat
 from app.features import context as context_feat
 from app.features import contracts as contracts_feat
+from app.features import engine as engine_feat
 from app.features import errors as errors_feat
 from app.features import events as events_feat
 from app.features import flow as flow_feat
@@ -22,32 +23,33 @@ from app.features import stores as stores_feat
 from app.features import transitions as transitions_feat
 from app.testkit import tid
 
-from wybthon import Errored, Route, component, div, lazy
+from wybthon import Errored, component, div, lazy
+from wybthon.router import Route
 
 LazyPanel = lazy(lambda: ("app.features.lazy_target", "LoadedPanel"))
 _LazyMissingInner = lazy(lambda: ("app.features.does_not_exist", "Missing"))
 
 
 @component
-def LazyMissing(**rest):
+def LazyMissing():
     def fallback(err, reset):
-        return div(f"Failed to load: {err}", class_="lazy-error")
+        return div(f"Failed to load: {err()}", class_="lazy-error")
 
     return Errored(lambda: _LazyMissingInner(), fallback=fallback)
 
 
 @component
-def Home(**rest):
+def Home():
     return div("home", **tid("page-home"))
 
 
 @component
-def Blank(**rest):
+def Blank():
     return div("blank", **tid("page-blank"))
 
 
 @component
-def NotFound(**rest):
+def NotFound():
     return div("not found", **tid("page-not-found"))
 
 
@@ -68,6 +70,7 @@ def create_routes():
         Route(path="/transitions", component=transitions_feat.Page),
         Route(path="/errors", component=errors_feat.Page),
         Route(path="/components", component=components_feat.Page),
+        Route(path="/engine", component=engine_feat.Page),
         Route(path="/lazy", component=LazyPanel),
         Route(path="/lazy-error", component=LazyMissing),
         Route(path="/portal", component=portal_feat.Page),

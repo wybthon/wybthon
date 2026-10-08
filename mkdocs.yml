@@ -107,8 +107,6 @@ nav:
     - VNode: api/vnode.md
     - Reconciler: api/reconciler.md
     - Kernel: api/kernel.md
-    - Template: api/template.md
-    - Props: api/props.md
     - DOM: api/dom.md
     - HTML helpers: api/html.md
     - SVG helpers: api/svg.md
@@ -117,13 +115,14 @@ nav:
     - Context: api/context.md
     - Stores: api/store.md
     - Router: api/router.md
-    - Router core: api/router_core.md
     - Flow control: api/flow.md
     - Lazy loading: api/lazy.md
     - Error Boundary: api/error_boundary.md
     - Loading: api/loading.md
     - Portal: api/portal.md
     - Server rendering: api/server.md
+    - Request: api/request.md
+    - Testing: api/testing.md
     - Dev server (CLI): api/dev.md
     - Warnings: api/warnings.md
     - Application Tools: api/app-tools.md
@@ -131,6 +130,7 @@ nav:
     - Overview: rfcs/index.md
     - Template: rfcs/0000-template.md
     - "0001: Server rendering": rfcs/0001-server-rendering-and-hydration.md
+    - "0002: Engine v2": rfcs/0002-engine-v2.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

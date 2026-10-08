@@ -6,7 +6,7 @@ from wybthon import Errored, button, component, create_signal, div, h2, span
 
 
 @component
-def Page(**rest):
+def Page():
     should_throw, set_should_throw = create_signal(True)
     reset_key, set_reset_key = create_signal(0)
 
@@ -19,11 +19,11 @@ def Page(**rest):
 
     def fallback(err, reset):
         return div(
-            span(f"caught: {err}", **tid("err-fallback")),
-            button("retry", on_click=lambda e: reset(), **tid("err-retry")),
+            span(lambda: f"caught: {err()}", **tid("err-fallback")),
+            button("retry", on_click=reset, **tid("err-retry")),
         )
 
-    def fix_and_reset(_e):
+    def fix_and_reset():
         set_should_throw(False)
         set_reset_key(lambda n: n + 1)
 

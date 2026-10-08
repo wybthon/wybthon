@@ -166,3 +166,5 @@ benchmarks/images/*.png
 
 # macOS
 .DS_Store
+tests/e2e/dist/
+benchmarks/app/dist/

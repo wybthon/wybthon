@@ -1,29 +1,35 @@
 """Client-side router components and navigation helpers for Pyodide apps.
 
-This module exposes the browser-facing router built on top of
-[`router_core`][wybthon.router_core]:
+Import it from `wybthon.router`:
 
-- [`Route`][wybthon.Route]: declarative mapping of a path pattern to
+- [`Route`][wybthon.router.Route]: declarative mapping of a path pattern to
   a component, optionally with nested children.
-- [`Router`][wybthon.Router]: component that renders the matched
+- [`Router`][wybthon.router.Router]: component that renders the matched
   route's component and provides the route context.
-- [`Link`][wybthon.Link]: anchor element that navigates via the
+- [`Link`][wybthon.router.Link]: anchor element that navigates via the
   History API and toggles an active class.
-- [`navigate`][wybthon.navigate]: programmatic navigation helper.
-- [`current_path`][wybthon.current_path]: accessor for the current
+- [`navigate`][wybthon.router.navigate]: programmatic navigation helper.
+- [`current_path`][wybthon.router.current_path]: accessor for the current
   pathname plus query string.
-- [`use_params`][wybthon.use_params] / [`use_query`][wybthon.use_query]:
+- [`use_params`][wybthon.router.use_params] / [`use_query`][wybthon.router.use_query]:
   accessors for the matched route's params and the parsed query string.
 
-The matched component receives `params` and `query` as reactive props,
+The matched component receives `params` and `query` as reactive props
+(declare them by subclassing [`RouteProps`][wybthon.router.RouteProps]),
 so navigating between `/users/1` and `/users/2` updates the mounted
-component's props instead of remounting it.
+component's props instead of remounting it. Path matching
+([`resolve`][wybthon.router.resolve]) has no browser dependency, so it
+also runs in tests, tools, and on the server.
 
 Example:
     ```python
+    from wybthon.router import Link, Route, RouteProps, Router
+
+
     @component
-    def User(params: Prop[dict]):
-        return h1("User ", lambda: params()["id"])
+    def User(props: RouteProps):
+        return h1("User ", lambda: props.params()["id"])
+
 
     Router(
         [Route("/", Home), Route("/users/:id", User)],
@@ -41,23 +47,25 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any
-from urllib.parse import parse_qsl, urljoin, urlsplit
+from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
-from .component import component
 from .context import Context, create_context, use_context
 from .html import a
 from .reactivity import _core
-from .reactivity._core import Accessor, Prop, Signal, is_accessor
+from .reactivity._core import Accessor, Signal, is_accessor
 from .reactivity._primitives import create_memo
-from .reactivity._props import Props, prop
-from .router_core import resolve as _resolve_core
+from .reactivity._props import Prop, Props, RawProps, prop
 from .vnode import VNode, h
 
 __all__ = [
     "Route",
+    "RouteProps",
+    "RouteSpec",
+    "resolve",
     "Router",
     "Link",
     "navigate",
@@ -70,6 +78,175 @@ __all__ = [
     "QueryParams",
     "preload",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Path matching (browser-independent)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class RouteSpec:
+    """Minimal route spec for resolving paths without components (tests and tools).
+
+    Attributes:
+        path: Route pattern (e.g., `"/users/:id"`).
+        children: Optional nested routes whose paths are joined with
+            this route's `path`.
+    """
+
+    path: str
+    children: list[RouteSpec] | None = None
+
+
+def _escape_re(s: str) -> str:
+    """Escape path literal fragments for safe regex construction."""
+    import re as _re
+
+    return _re.escape(s)
+
+
+@lru_cache(maxsize=512)
+def _compile_pattern(path: str) -> tuple[str, list[str]]:
+    """Compile a route path to a regex and the list of captured param names.
+
+    Patterns may include named params (`:id`), positional wildcards
+    (`*`), and a trailing wildcard that also matches the parent path
+    without trailing slash (e.g., `"/docs/*"` matches both `"/docs"`
+    and `"/docs/intro"`).
+
+    Args:
+        path: Route pattern (e.g., `"/users/:id"`, `"/docs/*"`).
+
+    Returns:
+        A tuple `(regex, names)` where `regex` is the compiled
+        regular expression source and `names` lists capture-group
+        names in order.
+    """
+    parts = path.strip("/").split("/") if path != "/" else [""]
+    names: list[str] = []
+    regex_parts: list[str] = []
+
+    if parts and parts[-1] == "*":
+        head_parts = parts[:-1]
+        for p in head_parts:
+            if p.startswith(":") and len(p) > 1:
+                names.append(p[1:])
+                regex_parts.append(r"([^/]+)")
+            elif p == "*":
+                names.append("wildcard")
+                regex_parts.append(r"(.*)")
+            else:
+                regex_parts.append(_escape_re(p))
+        regex = r"^/" + "/".join(x for x in regex_parts if x)
+        regex += r"(?:/(.*))?$"
+        names.append("wildcard")
+        return regex, names
+
+    for p in parts:
+        if p.startswith(":") and len(p) > 1:
+            names.append(p[1:])
+            regex_parts.append(r"([^/]+)")
+        elif p == "*":
+            names.append("wildcard")
+            regex_parts.append(r"(.*)")
+        else:
+            regex_parts.append(_escape_re(p))
+    regex = r"^/" + "/".join(x for x in regex_parts if x)
+    regex += r"$"
+    return regex, names
+
+
+def _match_path(pathname: str, pattern: str) -> dict[str, str] | None:
+    """Match `pathname` against `pattern`, returning extracted params.
+
+    Args:
+        pathname: Concrete URL path (e.g., `"/users/42"`).
+        pattern: Route pattern (e.g., `"/users/:id"`).
+
+    Returns:
+        A dict of captured params on a successful match, or `None`.
+    """
+    import re
+
+    regex, names = _compile_pattern(pattern)
+    m = re.match(regex, pathname)
+    if not m:
+        return None
+    params: dict[str, str] = {}
+    for i, name in enumerate(names, start=1):
+        params[name] = unquote(m.group(i) or "")
+    return params
+
+
+def _join(parent: str, child: str) -> str:
+    """Join a parent and child path, handling root and slash normalization."""
+    if child.startswith("/"):
+        return child
+    if parent == "/":
+        return "/" + child.strip("/")
+    return parent.rstrip("/") + "/" + child.strip("/")
+
+
+def resolve(routes: list[Any], pathname: str, base_path: str = "") -> tuple[Any, dict[str, Any]] | None:
+    """Resolve a pathname to the best matching route and params.
+
+    The router prefers the most specific segment match and honors a
+    `base_path` prefix when provided.
+
+    Args:
+        routes: Flat or nested route specs (any object exposing
+            `path` and optional `children`).
+        pathname: The current URL pathname.
+        base_path: Optional base path stripped from `pathname` before
+            matching. When `pathname` doesn't start with `base_path`,
+            the function returns `None`.
+
+    Returns:
+        A tuple `(route, payload)` where `payload` contains a
+        `"params"` dict, or `None` when no route matches.
+    """
+    pathname = urlsplit(pathname).path or "/"
+    if pathname != "/":
+        pathname = pathname.rstrip("/")
+    if base_path:
+        base = base_path.rstrip("/") or "/"
+        if base != "/":
+            if pathname != base and not pathname.startswith(base + "/"):
+                return None
+            pathname = "/" + pathname[len(base) :].lstrip("/")
+
+    candidates: list[tuple[str, Any, list[Any]]] = []
+
+    def walk(items: Iterable[Any], parent: str, chain: list[Any]) -> None:
+        for route in items:
+            full = _join(parent, getattr(route, "path", ""))
+            lineage = [*chain, route]
+            candidates.append((full, route, lineage))
+            walk(getattr(route, "children", None) or [], full, lineage)
+
+    walk(routes, "/", [])
+    best: Any = None
+    for full, route, chain in candidates:
+        params = _match_path(pathname, full)
+        if params is None:
+            continue
+        # Segment order matters: static literals beat parameters, which beat
+        # wildcards. An exact endpoint beats its optional wildcard extension.
+        segments = full.strip("/").split("/") if full != "/" else []
+        score = tuple(0 if part == "*" else 1 if part.startswith(":") else 2 for part in segments)
+        rank = (*score, 3)
+        if best is None or rank > best[0] or (rank == best[0] and len(chain) > len(best[3])):
+            best = rank, route, params, chain
+    if best is None:
+        return None
+    _, route, params, chain = best
+    return route, {"params": params, "matches": chain}
+
+
+# ---------------------------------------------------------------------------
+# Browser location
+# ---------------------------------------------------------------------------
 
 
 def _current_url() -> str:
@@ -109,7 +286,7 @@ class _CurrentPath(Accessor[str]):
 current_path: Accessor[str] = _CurrentPath()
 """Accessor for the current pathname plus query string.
 
-Updated by [`navigate`][wybthon.navigate] and by the global `popstate`
+Updated by [`navigate`][wybthon.router.navigate] and by the global `popstate`
 listener (back/forward navigation). Read it inside reactive scopes to
 re-render when the URL changes. During a server render it returns the
 URL passed to the render function.
@@ -157,7 +334,7 @@ def _restore_scroll() -> None:
 
         position = _scroll_positions.get(_path.peek(), (0, 0))
         window.scrollTo(*position)
-    except (ImportError, AttributeError):
+    except ImportError, AttributeError:
         pass
 
 
@@ -192,7 +369,7 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
             window.history.replaceState(None, "", canonical)
         else:
             window.history.pushState(None, "", canonical)
-    except (ImportError, AttributeError):
+    except ImportError, AttributeError:
         if external:
             return
         canonical = urljoin(_path.peek(), path)
@@ -210,7 +387,7 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
                         element.scrollIntoView()
                     else:
                         window.scrollTo(0, 0)
-                except (ImportError, AttributeError):
+                except ImportError, AttributeError:
                     pass
 
             if (tx := _core._node_tx.get(_path)) is not None:
@@ -251,6 +428,17 @@ def _decode(s: str) -> str:
 def _split_path(path: str) -> tuple[str, str]:
     parsed = urlsplit(path)
     return parsed.path or "/", "?" + parsed.query if parsed.query else ""
+
+
+class RouteProps(Props):
+    """Props for a routed component: the matched path params and the query string.
+
+    Subclass it to add your own fields. Both update in place when the URL
+    changes but the same route still matches.
+    """
+
+    params: Prop[dict[str, str]] = prop(default_factory=dict)
+    query: Prop[QueryParams] = prop(default_factory=lambda: QueryParams())
 
 
 @dataclass
@@ -303,22 +491,22 @@ def use_query() -> Accessor[QueryParams]:
 
 
 def use_base_path() -> str:
-    """The base path of the surrounding [`Router`][wybthon.Router] (`""` outside one)."""
+    """The base path of the surrounding [`Router`][wybthon.router.Router] (`""` outside one)."""
     state = use_context(RouteContext)
     return state.base_path if state is not None else ""
 
 
 def Router(routes: Any, *, base_path: Any = "", not_found: Any = None) -> VNode:
-    """Render the component of the route matching [`current_path`][wybthon.current_path].
+    """Render the component of the route matching [`current_path`][wybthon.router.current_path].
 
     Only a change in *which* route matches re-mounts the outlet; param
     and query changes flow into the mounted component as prop updates.
 
     Args:
-        routes: A list of [`Route`][wybthon.Route]s (or an accessor
+        routes: A list of [`Route`][wybthon.router.Route]s (or an accessor
             returning one).
         base_path: Base path stripped before matching, and prepended
-            by [`Link`][wybthon.Link]s underneath.
+            by [`Link`][wybthon.router.Link]s underneath.
         not_found: Optional component rendered when no route matches.
             Falls back to a literal `"Not Found"` `<div>`.
 
@@ -328,8 +516,9 @@ def Router(routes: Any, *, base_path: Any = "", not_found: Any = None) -> VNode:
     return h(_Router, {"routes": routes, "base_path": base_path, "not_found": not_found})
 
 
-@component
-def _Router(routes: Prop[list[Route]], base_path: Prop[str] = prop(""), not_found: Prop[Any] = prop(None)) -> Any:
+def _Router(props: RawProps) -> Any:
+    routes, base_path, not_found = props.routes, props.base_path, props.not_found
+
     def location() -> tuple[str, str]:
         return _split_path(current_path())
 
@@ -337,7 +526,7 @@ def _Router(routes: Prop[list[Route]], base_path: Prop[str] = prop(""), not_foun
     query = create_memo(lambda: _parse_query(location()[1]))
 
     def resolved() -> Any:
-        result = _resolve_core(routes() or [], pathname(), base_path() or "")
+        result = resolve(routes() or [], pathname(), base_path() or "")
         return result[1] if result is not None else {"params": {}, "matches": []}
 
     match = create_memo(resolved)
@@ -347,7 +536,7 @@ def _Router(routes: Prop[list[Route]], base_path: Prop[str] = prop(""), not_foun
     warmed: dict[tuple[int, str], Any] = {}
 
     def preload_path(path: str) -> Any:
-        result = _resolve_core(routes(), path, base_path() or "")
+        result = resolve(routes(), path, base_path() or "")
         if result is None:
             return None
         _, info = result
@@ -434,7 +623,7 @@ def _Router(routes: Prop[list[Route]], base_path: Prop[str] = prop(""), not_foun
     return RouteContext(state, lambda: level(0))
 
 
-def _RouteEntry(props: Props) -> Any:
+def _RouteEntry(props: RawProps) -> Any:
     route = props.raw("route")
     parent = props.raw("router_state")
     # A departing route keeps its last inputs until unmount. Preparing the
@@ -457,7 +646,7 @@ def Outlet() -> VNode:
     return h(_Outlet)
 
 
-def _Outlet(props: Props) -> Any:
+def _Outlet(props: RawProps) -> Any:
     child = use_context(OutletContext)
     return child if child is not None else None
 
@@ -556,7 +745,7 @@ def Link(
     )
 
 
-def _Link(props: Props) -> Any:
+def _Link(props: RawProps) -> Any:
     from .events import DomEvent
 
     base_path = use_base_path()
@@ -590,7 +779,9 @@ def _Link(props: Props) -> Any:
     def handle_click(evt: DomEvent) -> None:
         user_click = props.raw("on_click")
         if callable(user_click):
-            result = user_click(evt)
+            from .events import _takes_event
+
+            result = user_click(evt) if _takes_event(user_click) else user_click()
             if inspect.isawaitable(result):
                 from .events import _handle_async_error
 

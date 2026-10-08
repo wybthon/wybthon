@@ -39,6 +39,7 @@ __all__ = [
 ]
 
 _ABSENT = object()
+_RAISE = object()
 _ATOMIC_TYPES = frozenset({str, int, float, bool, bytes, complex, type(None)})
 
 
@@ -91,7 +92,9 @@ class _Root:
             # subscribe to the producer so that an eventual landing retries them.
             if comp._error is not None or (comp._async is not None and comp._async.inflight):
                 comp._read()
-            else:
+            elif comp._async is not None or _core._in_action is not None or _core._slow_reads:
+                # A settled synchronous derivation has nothing to surface;
+                # otherwise the read joins actions and held versions.
                 untrack(comp._read)
         if _core._probe_depth and self.optimistic_signal is not None and self.optimistic_signal():
             _core._probe_mark()
@@ -100,12 +103,47 @@ class _Root:
 def _lookup(data: Any, key: Any) -> Any:
     try:
         return data[key]
-    except (KeyError, IndexError):
+    except KeyError, IndexError:
         return _ABSENT
 
 
 def _same(a: Any, b: Any) -> bool:
     return not _core._changed(_core._DEFAULT_EQUALS, a, b)
+
+
+class _PropertySignal(Signal[Any]):
+    """A store field subscription, released when its last observer leaves.
+
+    Stores keyed by unbounded identifiers (a projection of selected row
+    ids, say) would otherwise retain one subscription per key ever read.
+    A released field is recreated from the container's state on the next
+    tracked read, including staged and held values.
+    """
+
+    __slots__ = ("_node", "_key")
+
+    def __init__(self, node: _Node, key: Any, value: Any) -> None:
+        super().__init__(value, unobserved=_release_property)
+        self._node = node
+        self._key = key
+
+    def _check_unobserved(self) -> None:
+        if self._observers or self._staged or self in _core._held:
+            return
+        node = self._node
+        key = self._key
+        if node.properties.get(key) is not self:
+            return
+        del node.properties[key]
+        indices = node.indices
+        if indices is not None:
+            slot = bisect_left(indices, key)
+            if slot < len(indices) and indices[slot] == key:
+                del indices[slot]
+
+
+def _release_property() -> None:
+    """Marker callback; `_PropertySignal._check_unobserved` does the release."""
 
 
 class _Node:
@@ -291,14 +329,14 @@ class _Node:
             return self.root.authoritative.get(self, self.state.peek().data)
         return self.state.peek().data
 
-    def read(self, key: Any) -> Any:
+    def read(self, key: Any, default: Any = _RAISE) -> Any:
         self.root.ready()
         if _core._probe_depth:
             self._probe_pending()
         if _core._current_observer is not None or _core._probe_depth:
             sig = self.properties.get(key)
             if sig is None:
-                sig = self.properties[key] = Signal(_lookup(self.state._value.data, key))
+                sig = self.properties[key] = _PropertySignal(self, key, _lookup(self.state._value.data, key))
                 sig._version_source = self.state
                 if isinstance(self.state._value.data, Vector):
                     if self.indices is None:
@@ -315,6 +353,8 @@ class _Node:
             value = sig()
             if not _core._slow_reads and not _core._authoritative_depth:
                 if value is _ABSENT:
+                    if default is not _RAISE:
+                        return default
                     if isinstance(self.state._value.data, dict):
                         raise KeyError(key)
                     raise IndexError("list index out of range")
@@ -323,6 +363,8 @@ class _Node:
         # observed before a transition began. Read history can't change visibility.
         value = _lookup(self.visible(), key)
         if value is _ABSENT:
+            if default is not _RAISE:
+                return default
             if isinstance(self.state._value.data, dict):
                 raise KeyError(key)
             raise IndexError("list index out of range")
@@ -535,10 +577,13 @@ class _Proxy:
             self._node._probe_pending()
         return self._node.visible()
 
-    def _read(self, key: Any) -> Any:
+    def _read(self, key: Any, default: Any = _RAISE) -> Any:
         if self._session is not None:
-            return _wrap(self._data()[key], self._session)
-        return self._node.read(key)
+            data = self._data()
+            if default is not _RAISE and _lookup(data, key) is _ABSENT:
+                return default
+            return _wrap(data[key], self._session)
+        return self._node.read(key, default)
 
     def _wyb_affect_node(self) -> Any:
         return self._node
@@ -579,6 +624,14 @@ class Store[S](_Proxy, Mapping[str, Any]):
 
     def __getitem__(self, key: str) -> Any:
         return self._read(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Return the value for `key`, or `default` when absent (tracked either way).
+
+        A tracked read of an absent key subscribes to it, so a computation
+        reading `store.get(row_id)` re-runs when that key appears.
+        """
+        return self._read(key, default)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -769,7 +822,13 @@ class DraftList[T](StoreList[T], MutableSequence[T]):
         self[target:target] = items
 
 
-def _merge(session: _Session, node: _Node, data: Any, key: str | None) -> None:
+def _identity(session: _Session, item: _Node, key: str | Callable[[Any], Any]) -> Any:
+    if callable(key):
+        return key(_wrap(item, session))
+    return _lookup(session.data(item), key)
+
+
+def _merge(session: _Session, node: _Node, data: Any, key: str | Callable[[Any], Any] | None) -> None:
     if isinstance(data, _Proxy):
         data = snapshot(data)
     current = session.data(node)
@@ -788,12 +847,15 @@ def _merge(session: _Session, node: _Node, data: Any, key: str | None) -> None:
         if key is not None:
             for item in current:
                 if isinstance(item, _Node) and isinstance(item.state._value.data, dict):
-                    ident = _lookup(session.data(item), key)
+                    ident = _identity(session, item, key)
                     if ident is not _ABSENT:
                         by_key.setdefault(ident, deque()).append(item)
         result = []
         for item in data:
-            bucket = by_key.get(item.get(key, _ABSENT)) if key is not None and isinstance(item, Mapping) else None
+            if key is not None and isinstance(item, Mapping):
+                bucket = by_key.get(key(item) if callable(key) else item.get(key, _ABSENT))
+            else:
+                bucket = None
             if bucket:
                 old = bucket.popleft()
                 _merge(session, old, item, key)
@@ -1060,14 +1122,17 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
 @dataclass(frozen=True, slots=True)
 class _Reconcile:
     data: Any
-    key: str | None
+    key: str | Callable[[Any], Any] | None
 
 
-def reconcile(data: Any, key: str | None = "id") -> Any:
+def reconcile(data: Any, key: str | Callable[[Any], Any] | None = "id") -> Any:
     """Prepare replacement data, preserving matched list entity identities.
 
-    ``key=None`` replaces list entities positionally. Duplicate keys are matched
-    in occurrence order, without assigning the same entity to multiple rows.
+    `key` names the field that identifies list entities (`"id"` by
+    default), or is a function computing the identity from an entity.
+    `key=None` replaces list entities positionally. Duplicate keys are
+    matched in occurrence order, without assigning the same entity to
+    multiple rows.
     """
     return _Reconcile(snapshot(data), key)
 
@@ -1107,3 +1172,12 @@ def snapshot(value: Any) -> Any:
 def deep(value: Any) -> Any:
     """Return a detached snapshot, tracking changes only within this subtree."""
     return _snapshot(value, True, {})
+
+
+def _register() -> None:
+    from . import _regions
+
+    _regions.register_store(StoreList, _wrap)
+
+
+_register()

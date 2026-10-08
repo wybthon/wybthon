@@ -767,6 +767,73 @@ def test_projection_from_store_source(wyb):
     assert proj.open == 2
 
 
+def test_projection_selector_notifies_only_changed_keys(wyb):
+    # The `create_selector` replacement: a projection keyed by the selection.
+    sel, set_sel = create_signal(None)
+    is_selected = create_projection(lambda: {} if sel() is None else {sel(): True})
+    rows = {row_id: _counting_memo(lambda row_id=row_id: is_selected.get(row_id) is True) for row_id in (1, 2, 3)}
+    flush()
+    assert [memo() for memo, _ in rows.values()] == [False, False, False]
+
+    set_sel(2)
+    flush()
+    assert [memo() for memo, _ in rows.values()] == [False, True, False]
+    assert [len(runs) for _, runs in rows.values()] == [1, 2, 1]
+
+    set_sel(3)
+    flush()
+    assert [memo() for memo, _ in rows.values()] == [False, False, True]
+    assert [len(runs) for _, runs in rows.values()] == [1, 3, 2]
+
+    set_sel(None)
+    flush()
+    assert [memo() for memo, _ in rows.values()] == [False, False, False]
+    assert [len(runs) for _, runs in rows.values()] == [1, 3, 3]
+
+
+def test_store_get_is_tracked_for_absent_keys(wyb):
+    store, set_store = create_store({})
+    memo, runs = _counting_memo(lambda: store.get("extra", "none"))
+    assert memo() == "none"
+    set_store(lambda s: setattr(s, "extra", "yes"))
+    flush()
+    assert memo() == "yes"
+    assert len(runs) == 2
+    set_store(lambda s: s.__delitem__("extra"))
+    flush()
+    assert memo() == "none"
+    assert len(runs) == 3
+
+
+def test_unobserved_store_field_subscriptions_are_released(wyb):
+    sel, set_sel = create_signal(None)
+    is_selected = create_projection(lambda: {} if sel() is None else {sel(): True})
+    log = []
+
+    def setup(dispose):
+        for row_id in range(50):
+            create_effect(lambda row_id=row_id: is_selected.get(row_id), lambda v: log.append(v))
+        return dispose
+
+    dispose = create_root(setup)
+    flush()
+    assert len(is_selected._node.properties) == 50
+    dispose()
+    flush()
+    # No observer remains, so no per-key subscription is retained.
+    assert is_selected._node.properties == {}
+
+    # A released field is recreated from current state on the next tracked read.
+    set_sel(7)
+    flush()
+    memo, runs = _counting_memo(lambda: is_selected.get(7))
+    assert memo() is True
+    set_sel(8)
+    flush()
+    assert memo() is None
+    assert len(runs) == 2
+
+
 # ---------------------------------------------------------------------------
 # Optimistic stores
 # ---------------------------------------------------------------------------

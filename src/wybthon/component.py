@@ -1,38 +1,36 @@
 """The `@component` decorator and the `Component` type it produces.
 
 Wybthon components **run once**: the body executes a single time when
-the component mounts and returns a VNode tree. Every parameter is bound
-to a [`Prop`][wybthon.Prop] accessor; call it to read the current value
-(tracked), or embed it in the returned tree to create a reactive hole.
-Parents update a mounted component by passing new props, which flow
-into the same accessors; the body never re-runs.
+the component mounts and returns a tree. Inputs are declared on a
+[`Props`][wybthon.Props] class and arrive as one typed parameter, the
+counterpart of Solid's `props` object:
 
-Authoring:
+```python
+class CounterProps(Props):
+    label: Prop[str] = prop(default="Count")
+    initial: Prop[int] = prop(default=0)
 
-- **Named parameters** (the common case). Each parameter becomes a
-  `Prop`. Declare defaults with [`prop`][wybthon.prop] so the type is
-  `Prop[T]`; a plain default also works when you don't need the type.
-- **`**rest`**. Undeclared props arrive as `Prop`s in `rest`; forward
-  them with `div(**rest)` or [`merge`][wybthon.merge].
-- **Single `props` parameter** (a lone positional parameter, or one
-  annotated `Props`). The function receives the whole
-  [`Props`][wybthon.Props] mapping.
 
-Calling a component with keyword arguments returns a `VNode`
-(`Counter(initial=5)`), so trees compose like any other element.
+@component
+def Counter(props: CounterProps):
+    count, set_count = create_signal(props.initial.peek())
+    return div(
+        p(props.label, ": ", count),
+        button("+", on_click=lambda: set_count(lambda n: n + 1)),
+    )
 
-Example:
-    ```python
-    @component
-    def Counter(initial: Prop[int] = prop(0), label: Prop[str] = prop("Count")):
-        count, set_count = create_signal(initial.peek())
-        return div(
-            p(label, ": ", count),
-            button("+", on_click=lambda e: set_count(lambda n: n + 1)),
-        )
 
-    render(Counter(initial=10), "#app")
-    ```
+render(Counter(initial=10), "#app")
+```
+
+Calling a component with keyword props returns a node. Type checkers
+see the call as constructing the props class, so missing, mistyped, and
+unknown props are errors without a plugin. A component with no inputs
+takes no parameters.
+
+Children are the `children` prop. Pass them as a keyword, or use item
+syntax on the call: `Card(title="Hi")[h2("Body"), p("More")]`. Declare
+them with [`ParentProps`][wybthon.ParentProps].
 """
 
 from __future__ import annotations
@@ -40,134 +38,115 @@ from __future__ import annotations
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any, get_origin
+from typing import Any, overload
 
-from .reactivity._core import Prop
-from .reactivity._props import Props, default_value
-from .vnode import VNode, h
+from . import _warnings
+from .reactivity._props import Props
+from .vnode import VNode, flatten_children
 
 __all__ = ["component", "Component"]
 
 
-class _ParamPlan:
-    """How to bind a `Props` mapping to a component function's parameters."""
-
-    __slots__ = ("names", "defaults", "var_keyword", "takes_props")
-
-    def __init__(self, fn: Callable[..., Any]) -> None:
-        self.names: tuple[str, ...] = ()
-        self.defaults: dict[str, Any] = {}
-        self.var_keyword: bool = False
-        self.takes_props: bool = False
-        try:
-            sig = inspect.signature(fn)
-        except (TypeError, ValueError):
-            self.takes_props = True
-            return
-        names: list[str] = []
-        positional_required = 0
-        for name, param in sig.parameters.items():
-            if param.kind is inspect.Parameter.VAR_KEYWORD:
-                self.var_keyword = True
-                continue
-            if param.kind is inspect.Parameter.VAR_POSITIONAL:
-                continue
-            ann = param.annotation
-            label = ann.strip("'\"") if isinstance(ann, str) else ""
-            is_props = ann is Props or label.split(".")[-1] == "Props"
-            is_prop = ann is Prop or get_origin(ann) is Prop or label.split("[", 1)[0].split(".")[-1] == "Prop"
-            if ann not in (inspect.Parameter.empty, Any) and label != "Any" and not (is_props or is_prop):
-                raise TypeError(
-                    f"Component {fn.__qualname__} parameter {name!r} must be annotated Prop[T], "
-                    "or use one Props parameter. Component inputs are reactive accessors; "
-                    "use .peek() for an intentional one-time read."
-                )
-            if param.kind is inspect.Parameter.POSITIONAL_ONLY:
-                raise TypeError("Component props must be named parameters, not positional-only parameters")
-            self.takes_props |= is_props
-            names.append(name)
-            if param.default is not inspect.Parameter.empty:
-                self.defaults[name] = default_value(param.default)
-            elif param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
-                positional_required += 1
-        if self.takes_props and (len(names) != 1 or self.var_keyword):
-            raise TypeError("A Props mapping must be the component's only parameter")
-        self.names = tuple(names)
-        # `def Card(props): ...` receives the whole mapping; a single
-        # annotated parameter such as `def Card(title: Prop[str])` is a prop.
-        if len(names) == 1 and positional_required == 1 and not self.var_keyword:
-            only = sig.parameters[names[0]]
-            if only.annotation is inspect.Parameter.empty and names[0] == "props":
-                self.takes_props = True
-
-
-class Component[F: Callable[..., Any]]:
+class Component:
     """A run-once component produced by [`component`][wybthon.component].
 
-    Instances are callable: `MyComponent(child, other, key=value)` returns
-    a [`VNode`][wybthon.VNode] with the positional arguments as
-    `children`. The reconciler invokes the wrapped function once per
-    mount through `_render`.
+    Calling it returns a [`VNode`][wybthon.VNode]; the reconciler runs the
+    wrapped function once per mount.
     """
+
+    __slots__ = ("fn", "_props_class", "_resolved", "__dict__")
 
     __name__: str
     __qualname__: str
 
-    def __init__(self, fn: F) -> None:
+    def __init__(self, fn: Callable[..., Any]) -> None:
         self.fn = fn
-        self._plan = _ParamPlan(fn)
+        self._props_class: type[Props] | None = None
+        self._resolved = False
         functools.update_wrapper(self, fn, updated=())
 
+    def _resolve(self) -> type[Props] | None:
+        """Find the props class from the function's single parameter annotation (lazily)."""
+        if self._resolved:
+            return self._props_class
+        try:
+            params = list(inspect.signature(self.fn, eval_str=True).parameters.values())
+        except NameError as exc:
+            raise TypeError(f"Component {self.fn.__qualname__}: can't resolve its props annotation ({exc})") from exc
+        if not params:
+            cls = None
+        elif len(params) == 1 and params[0].kind in (params[0].POSITIONAL_ONLY, params[0].POSITIONAL_OR_KEYWORD):
+            cls = params[0].annotation
+            if not (isinstance(cls, type) and issubclass(cls, Props)):
+                raise TypeError(
+                    f"Component {self.fn.__qualname__} must take no parameters or one parameter annotated with a "
+                    "Props subclass (class CardProps(Props): ...; def Card(props: CardProps))."
+                )
+        else:
+            raise TypeError(
+                f"Component {self.fn.__qualname__} must take no parameters or one parameter annotated with a "
+                "Props subclass."
+            )
+        self._props_class = cls
+        self._resolved = True
+        return cls
+
     def __call__(self, *children: Any, **props: Any) -> VNode:
-        """Return a `VNode` for this component with `children` as the `children` prop."""
-        all_props: dict[str, Any] = dict(props)
+        """Return a node for this component; positional arguments become `children`."""
         if children:
-            all_props["children"] = list(children)
-        return h(self, all_props)
+            props["children"] = flatten_children(children)
+        if _warnings.DEV_MODE:
+            cls = self._resolve()
+            if cls is None:
+                if props.keys() - {"key"}:
+                    raise TypeError(f"{self.__qualname__}() takes no props")
+            else:
+                cls._wyb_check(props, self.__qualname__)
+        return VNode(self, props, [], props.get("key"))
 
-    @property
-    def defaults(self) -> dict[str, Any]:
-        """Declared parameter defaults (with `prop()` markers unwrapped)."""
-        return self._plan.defaults
-
-    def _render(self, props: Props) -> Any:
-        """Invoke the body once with `Prop` accessors bound to its parameters."""
-        plan = self._plan
-        if plan.takes_props:
-            return self.fn(**{plan.names[0]: props}) if plan.names else self.fn(props)
-        kwargs: dict[str, Any] = {name: props[name] for name in plan.names}
-        if plan.var_keyword:
-            declared = plan.names
-            for key in props:
-                if key not in declared and key != "key":
-                    kwargs[key] = props[key]
-        return self.fn(**kwargs)
+    def _render(self, props: dict[str, Any]) -> tuple[Any, Props | None]:
+        """Run the body once; returns its result and the live props instance."""
+        cls = self._resolve()
+        if cls is None:
+            return self.fn(), None
+        instance = cls.__new__(cls)
+        instance._raw = props
+        instance._signals = None
+        instance._accessors = None
+        return self.fn(instance), instance
 
     def __repr__(self) -> str:
         return f"<component {self.__qualname__}>"
 
 
-def component[F: Callable[..., Any]](fn: F) -> Component[F]:
+@overload
+def component[P: Props](fn: Callable[[P], Any]) -> type[P]: ...
+@overload
+def component(fn: Callable[[], Any]) -> Callable[[], VNode]: ...
+def component(fn: Callable[..., Any]) -> Any:
     """Declare a function as a run-once Wybthon component.
 
-    Each parameter of `fn` becomes a [`Prop`][wybthon.Prop] accessor.
-    The decorated object is a [`Component`][wybthon.Component]: calling
-    it with children and keyword props returns a `VNode`.
+    The function takes no parameters, or one parameter annotated with a
+    [`Props`][wybthon.Props] subclass. Calling the result returns a node
+    for the tree.
 
-    Args:
-        fn: The component body. Runs once per mount and returns a
-            `VNode`, a string, a list, or a reactive expression.
-
-    Returns:
-        A `Component`.
+    Static typing: the decorated object is typed as the props class (or
+    as a no-argument callable), so a type checker validates each call's
+    keywords against the declared fields. At run time it's a
+    [`Component`][wybthon.Component] that returns a `VNode`.
 
     Example:
         ```python
-        @component
-        def Greeting(name: Prop[str] = prop("world")):
-            return p("Hello, ", name, "!")
+        class GreetingProps(Props):
+            name: Prop[str] = prop(default="world")
 
-        Greeting(name="Ada")           # -> VNode
+
+        @component
+        def Greeting(props: GreetingProps):
+            return p("Hello, ", props.name, "!")
+
+
+        Greeting(name="Ada")          # a node
         Greeting(name=lambda: user())  # reactive: updates when user() changes
         ```
     """

@@ -542,7 +542,8 @@ def test_errored_heals_when_failed_memo_recovers(wyb, root_element):
             return p(data)
 
         wyb["reconciler"].render(
-            Errored(lambda: Loading(lambda: Card(), fallback=p("wait")), fallback=lambda e: p(str(e))), root_element
+            Errored(lambda: Loading(lambda: Card(), fallback=p("wait")), fallback=lambda err: p(str(err()))),
+            root_element,
         )
         await _tick()
         assert texts(root_element.element) == ["fetch failed"]

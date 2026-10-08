@@ -30,7 +30,7 @@ from wybthon import (
 
 
 @component
-def Page(**rest):
+def Page():
     uid, set_uid = create_signal(1)
     gates = {1: asyncio.Event(), 2: asyncio.Event()}
     gates[1].set()

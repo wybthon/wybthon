@@ -39,7 +39,7 @@ user_id, set_user_id = create_signal(1)
 
 
 async def load_user():
-    uid = user_id()                       # tracked before the await
+    uid = user_id()  # tracked before the await
     return await fetch_json(f"/api/users/{uid}")
 
 
@@ -100,7 +100,7 @@ shows the fetched user:
 
 ```python
 div(
-    h1(lambda: f"User #{user_id()}"),
+    h1(t"User #{user_id}"),
     p(lambda: user()["name"]),
 )
 ```
@@ -137,8 +137,8 @@ Three helpers work with in-flight state without making you catch
 from wybthon import is_pending, latest
 from wybthon.html import h1, span
 
-h1(lambda: f"User #{latest(user_id)}")                    # moves ahead
-span(lambda: "Loading..." if is_pending(user) else "")    # shows during the hold
+h1(lambda: f"User #{latest(user_id)}")  # moves ahead
+span(lambda: "Loading..." if is_pending(user) else "")  # shows during the hold
 ```
 
 A quiet **`await refresh(memo)`** recomputes without opening a
@@ -153,17 +153,20 @@ any registered computation has no value yet it shows `fallback`; once
 everything has a first value it reveals the content.
 
 ```python
-from wybthon import Loading, component, create_memo
+from wybthon import Loading, Prop, Props, component, create_memo
 from wybthon.html import div, p, span
 
 
-async def fetch_user():
-    return await fetch_json("/api/user")
+class ProfileProps(Props):
+    user_id: Prop[int]
 
 
 @component
-def Profile():
-    user = create_memo(fetch_user)
+def Profile(props: ProfileProps):
+    async def load_user():
+        return await fetch_json(f"/api/users/{props.user_id()}")  # tracked: refetches on change
+
+    user = create_memo(load_user)
 
     return Loading(
         lambda: div(
@@ -175,6 +178,7 @@ def Profile():
 ```
 
 - `children` may be a VNode, a zero-arg callable, or a list of either. `fallback` may be a VNode, a string, or a callable.
+- Reading a `Prop[T]` field such as `props.user_id()` inside the memo tracks it like any signal, so the parent passing a new id refetches without remounting `Profile`.
 - Any read that raises `NotReadyError` under the boundary registers its computation automatically; there's no manual wiring.
 - **Content stays mounted.** The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.
 - **Refreshes don't re-trigger the boundary.** Once the content has shown, a recompute is a transition (the old content stays put), not a return to the fallback.
@@ -239,7 +243,7 @@ from wybthon.html import p
 
 Errored(
     lambda: Loading(lambda: p(lambda: user()["name"]), fallback=p("Loading...")),
-    fallback=lambda err, reset: p("Something went wrong: ", str(err)),
+    fallback=lambda err, reset: p(t"Something went wrong: {err}"),
 )
 ```
 
@@ -255,15 +259,15 @@ mutation in a transaction:
 ```python
 from wybthon import action, create_memo, create_optimistic, refresh
 
-likes = create_memo(fetch_like_count)          # async source
-shown, set_shown = create_optimistic(likes)     # shadows it
+likes = create_memo(fetch_like_count)  # async source
+shown, set_shown = create_optimistic(likes)  # shadows it
 
 
 @action
 async def like():
-    set_shown(lambda n: (n or 0) + 1)   # instant UI
+    set_shown(lambda n: (n or 0) + 1)  # instant UI
     await api_like()
-    await refresh(likes)                # real data lands; the override reverts
+    await refresh(likes)  # real data lands; the override reverts
 ```
 
 Inside an action:
@@ -311,6 +315,7 @@ Two helpers refine what an action reports while it's in flight:
 
 ```python
 from wybthon import action, affects, refresh, until
+from wybthon.router import navigate
 
 
 @action
@@ -321,6 +326,10 @@ async def checkout(cart_id):
     await until(lambda: any(o["id"] == order_id for o in orders()))
     navigate(f"/orders/{order_id}")
 ```
+
+Pass `timeout=` (in seconds) to give up: `await until(pred, timeout=5)`
+raises the built-in `TimeoutError` if `pred()` hasn't become truthy by
+then.
 
 ## Lazy components
 
@@ -349,11 +358,12 @@ def Dashboard():
 
 ### Lazy routes
 
-[`Route`][wybthon.Route] accepts lazy components directly, which is the
-canonical way to code-split:
+[`Route`][wybthon.router.Route] accepts lazy components directly, which
+is the canonical way to code-split:
 
 ```python
-from wybthon import Link, Route, Router, lazy
+from wybthon import lazy
+from wybthon.router import Link, Route
 
 Settings = lazy(lambda: ("app.settings", "Page"))
 
@@ -362,7 +372,7 @@ routes = [
     Route("/settings", Settings),
 ]
 
-Link("Settings", href="/settings", on_mouseover=lambda e: Settings.preload())
+Link("Settings", href="/settings", on_mouseover=lambda: Settings.preload())
 ```
 
 ## Patterns and pitfalls

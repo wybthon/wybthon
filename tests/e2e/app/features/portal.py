@@ -6,7 +6,7 @@ from wybthon import Portal, Show, button, component, create_signal, div, h2, spa
 
 
 @component
-def Page(**rest):
+def Page():
     show, set_show = create_signal(False)
     count, set_count = create_signal(0)
 

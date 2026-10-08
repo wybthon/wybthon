@@ -12,14 +12,20 @@ still go to `stderr`.
 
 Three things live here:
 
-- **Dev-mode toggling**: [`DEV_MODE`][wybthon._warnings.DEV_MODE]
-  defaults to `True`. Call
-  [`set_dev_mode(False)`][wybthon._warnings.set_dev_mode] at startup
-  to silence warnings and traceback printing for production builds.
-  This also disables [`WriteInScopeError`][wybthon.WriteInScopeError]
-  for signal and store writes inside tracking scopes.
-  [`is_dev_mode()`][wybthon._warnings.is_dev_mode] reports the current
-  state. Both are re-exported from the top-level `wybthon` package.
+- **Dev-mode toggling**: dev mode is on by default, and `wyb dev`
+  keeps it on. Production builds (`wyb build`) record the mode in the
+  bundle manifest, and the bootstrap calls
+  [`set_dev_mode(False)`][wybthon._warnings.set_dev_mode] before the
+  application imports, so production apps skip the dev-only checks and
+  warnings. Call it yourself when you mount outside the production
+  bootstrap. Turning dev mode off also disables
+  [`WriteInScopeError`][wybthon.WriteInScopeError] for signal and store
+  writes inside tracking scopes, and the run-time `TypeError` for
+  unknown or missing component props.
+  [`is_dev_mode()`][wybthon._warnings.is_dev_mode] reports the live
+  state. Both functions are re-exported from the top-level `wybthon`
+  package; the module-level `DEV_MODE` flag is internal, and
+  `wybthon.DEV_MODE` no longer exists.
 - **Warnings**: [`warn`][wybthon._warnings.warn] prints a
   message to `stderr` every time it's called (a no-op when dev mode is
   off), while [`warn_once`][wybthon._warnings.warn_once] deduplicates
@@ -29,7 +35,7 @@ Three things live here:
   component body. [`warn_each_plain_list`][wybthon._warnings.warn_each_plain_list]
   also uses it when `For` receives a static list or tuple.
 - **Error logging**: [`log_error`][wybthon._warnings.log_error] always
-  prints, regardless of `DEV_MODE`; in dev mode it also prints the full
+  prints, regardless of dev mode; in dev mode it also prints the full
   traceback of an attached exception.
 
 `component_name` is a small formatting helper shared by the warning

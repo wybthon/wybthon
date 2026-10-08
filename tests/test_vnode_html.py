@@ -5,9 +5,9 @@ Nothing here renders, so no browser stubs are needed.
 
 from wybthon import html as html_mod
 from wybthon import svg as svg_mod
+from wybthon._dom_props import attr_name, to_kebab
 from wybthon.html import a, div, element, input_, label, li, main_, span
-from wybthon.props import attr_name, to_kebab
-from wybthon.reactivity import create_memo, create_signal
+from wybthon.reactivity import create_memo, create_signal, flush
 from wybthon.svg import circle, filter_, linearGradient, path, svg
 from wybthon.vnode import (
     NS_SVG,
@@ -188,10 +188,12 @@ def test_html_helper_children_positional_props_keyword():
     assert v.props == {"id": "root", "tabindex": 0}
 
 
-def test_class_and_html_for_are_remapped_by_helpers():
-    assert div(class_="card").props == {"class": "card"}
-    assert label(html_for="name", class_="lbl").props == {"for": "name", "class": "lbl"}
-    assert "class_" not in div(class_="x", id="i").props
+def test_reserved_word_props_are_mapped_when_applied():
+    # Helpers keep the Python spelling; the prop applier maps it to the attribute.
+    assert div(class_="card").props == {"class_": "card"}
+    assert label(html_for="name", class_="lbl").props == {"html_for": "name", "class_": "lbl"}
+    assert attr_name("class_") == "class"
+    assert attr_name("html_for") == "for"
 
 
 def test_hyphenated_attribute_names_are_resolved_by_attr_name():
@@ -226,7 +228,7 @@ def test_element_factory_for_custom_tags():
     v = x_foo("hi", size="large", class_="c")
     assert v.tag == "x-foo"
     assert v.children == ["hi"]
-    assert v.props == {"size": "large", "class": "c"}
+    assert v.props == {"size": "large", "class_": "c"}
     assert x_foo.__name__ == "x_foo"
 
 
@@ -252,6 +254,135 @@ def test_every_html_export_is_a_helper():
     assert html_mod.div.__name__ == "div"
     assert html_mod.h1("t").tag == "h1"
     assert html_mod.br().tag == "br"
+
+
+NEW_TAGS = {
+    "b": "b",
+    "i": "i",
+    "u": "u",
+    "s": "s",
+    "sub": "sub",
+    "sup": "sup",
+    "kbd": "kbd",
+    "samp": "samp",
+    "var": "var",
+    "abbr": "abbr",
+    "cite": "cite",
+    "q": "q",
+    "dfn": "dfn",
+    "dl": "dl",
+    "dt": "dt",
+    "dd": "dd",
+    "iframe": "iframe",
+    "template": "template",
+    "slot": "slot",
+    "output": "output",
+    "data": "data",
+    "del_": "del",
+    "ins": "ins",
+    "wbr": "wbr",
+    "address": "address",
+    "hgroup": "hgroup",
+    "search": "search",
+    "menu": "menu",
+    "bdi": "bdi",
+    "bdo": "bdo",
+    "ruby": "ruby",
+    "rt": "rt",
+    "rp": "rp",
+    "datalist": "datalist",
+    "embed": "embed",
+    "object_": "object",
+    "map_": "map",
+    "area": "area",
+}
+
+
+def test_new_html_tags_are_exported_helpers():
+    import wybthon
+
+    for name, tag in NEW_TAGS.items():
+        helper = getattr(html_mod, name)
+        assert name in html_mod.__all__, name
+        assert getattr(wybthon, name) is helper, name
+        v = helper("x", title="t")
+        assert v.tag == tag, name
+        assert v.children == ["x"]
+        assert v.props == {"title": "t"}
+        assert helper.__name__ == tag
+
+
+def test_new_tags_compose_with_item_syntax():
+    from wybthon.html import abbr, dd, dl, dt
+
+    v = dl(class_="terms")[dt("API"), dd(abbr("App Programming Interface", title="API"))]
+    assert v.tag == "dl"
+    assert [c.tag for c in v.children] == ["dt", "dd"]
+    assert v.children[1].children[0].props == {"title": "API"}
+
+
+# ---------------------------------------------------------------------------
+# Item syntax and t-strings
+# ---------------------------------------------------------------------------
+
+
+def test_element_item_syntax_sets_children_and_returns_the_node():
+    v = div(id="x")
+    same = v[span("a"), "b", None, [span("c")]]
+    assert same is v
+    assert [c if isinstance(c, str) else c.tag for c in v.children] == ["span", "b", "span"]
+    assert v.props == {"id": "x"}
+    assert div()["only"].children == ["only"]
+
+
+def test_component_item_syntax_sets_children_prop():
+    def Comp(props):
+        return None
+
+    v = h(Comp, {"title": "T"})["a", span("b")]
+    assert v.children == []
+    assert v.props["children"][0] == "a"
+    assert v.props["children"][1].tag == "span"
+
+
+def test_static_t_string_child_is_plain_text():
+    name = "Ada"
+    v = div(t"Hello {name}!")
+    assert v.children == ["Hello Ada!"]
+    out = normalize_children(v.children)
+    assert [(n.tag, n.props["nodeValue"]) for n in out] == [("_text", "Hello Ada!")]
+
+
+def test_reactive_t_string_child_becomes_one_hole():
+    count, set_count = create_signal(2)
+    v = div(t"n={count} ({count:03d})")
+    assert len(v.children) == 1
+    hole_vnode = v.children[0]
+    assert hole_vnode.tag == "_hole"
+    assert hole_vnode.props["getter"]() == "n=2 (002)"
+    set_count(7)
+    flush()
+    assert hole_vnode.props["getter"]() == "n=7 (007)"
+
+
+def test_t_string_with_vnodes_expands_into_separate_children():
+    count, _ = create_signal(1)
+    v = div(t"a {span('b')} c {count} {[span('d'), span('e')]}!")
+    kinds = [c if isinstance(c, str) else c.tag for c in v.children]
+    assert kinds == ["a ", "span", " c ", "_hole", " ", "span", "span", "!"]
+    assert v.children[3].props["getter"]() == "1"
+
+
+def test_t_string_render_helpers():
+    from wybthon.vnode import render_template, template_getter
+
+    x, _ = create_signal(3)
+    static = 1.5
+    assert render_template(t"{static:.2f} {static!r}") == "1.50 1.5"
+    assert template_getter(t"static {static}") is None
+    getter = template_getter(t"x={x}")
+    assert getter is not None and getter() == "x=3"
+    assert render_template(t"x={x}", call=False).startswith("x=")
 
 
 # ---------------------------------------------------------------------------

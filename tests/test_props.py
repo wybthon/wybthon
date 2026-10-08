@@ -1,8 +1,7 @@
-"""Tests for the props module (prop-name utilities).
+"""Tests for the private DOM prop module (prop-name utilities).
 
-The DOM-dependent parts of props.py are tested via the VDOM integration tests.
-These tests exercise the pure string-utility functions that were re-exported
-via vdom.py's ``is_event_prop`` alias.
+The DOM-dependent parts of `wybthon._dom_props` are tested via the VDOM
+integration tests. These tests exercise its pure string utilities.
 """
 
 import importlib
@@ -17,7 +16,7 @@ def _load_props():
     importlib.reload(events)
     warnings_mod = importlib.import_module("wybthon._warnings")
     importlib.reload(warnings_mod)
-    props = importlib.import_module("wybthon.props")
+    props = importlib.import_module("wybthon._dom_props")
     importlib.reload(props)
     return props
 
@@ -66,3 +65,20 @@ def test_to_kebab(browser_stubs):
     assert props.to_kebab("fontSize") == "font-size"
     assert props.to_kebab("color") == "color"
     assert props.to_kebab("borderTopWidth") == "border-top-width"
+
+
+def test_attr_name_maps_pythonic_names(browser_stubs):
+    props = _load_props()
+    assert props.attr_name("class_") == "class"
+    assert props.attr_name("html_for") == "for"
+    assert props.attr_name("for_") == "for"
+    assert props.attr_name("aria_label") == "aria-label"
+    assert props.attr_name("data_testid") == "data-testid"
+    assert props.attr_name("title") == "title"
+
+
+def test_html_helpers_keep_pythonic_names_in_vnode_props(browser_stubs):
+    from wybthon.html import div, label
+
+    assert div(class_="x").props == {"class_": "x"}
+    assert label(html_for="name").props == {"html_for": "name"}

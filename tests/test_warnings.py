@@ -101,3 +101,68 @@ def test_component_name_instance():
 def test_component_name_fallback():
     result = component_name(42)
     assert "int" in result or "42" in result
+
+
+def test_warn_once_dedupes_per_category_and_key(capsys):
+    from wybthon._warnings import _reset_warning_dedupe, warn_once
+
+    _reset_warning_dedupe()
+    try:
+        warn_once("cat", 1, "first")
+        warn_once("cat", 1, "first again")
+        warn_once("cat", 2, "second")
+        warn_once("other", 1, "third")
+        err = capsys.readouterr().err
+        assert err.count("[wybthon] Warning:") == 3
+        assert "first again" not in err
+    finally:
+        _reset_warning_dedupe()
+
+
+def test_dev_mode_constant_is_not_exported_at_top_level():
+    import wybthon
+
+    assert not hasattr(wybthon, "DEV_MODE")
+    assert wybthon.is_dev_mode is is_dev_mode
+    assert wybthon.set_dev_mode is set_dev_mode
+
+
+def test_component_name_of_decorated_component():
+    from wybthon import component
+
+    @component
+    def Greeting():
+        return None
+
+    assert component_name(Greeting) == "Greeting"
+
+
+def test_prop_checks_follow_dev_mode():
+    import pytest
+
+    from wybthon import Prop, Props, component
+
+    class CardProps(Props):
+        title: Prop[str]
+
+    @component
+    def Card(props: CardProps):
+        return None
+
+    @component
+    def Bare():
+        return None
+
+    with pytest.raises(TypeError):
+        Card(bogus=1)
+    with pytest.raises(TypeError):
+        Card()
+    with pytest.raises(TypeError):
+        Bare(title="x")
+    original = is_dev_mode()
+    try:
+        set_dev_mode(False)
+        assert Card(bogus=1).props == {"bogus": 1}
+        Bare(title="x")
+    finally:
+        set_dev_mode(original)

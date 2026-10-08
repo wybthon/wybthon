@@ -1,28 +1,34 @@
-"""Deliberately invalid calls; the regression test checks diagnostics."""
+"""Deliberately invalid code: each line marked `# error: <kind>` must be reported by mypy and pyright."""
 
 from typing import TypedDict
 
 from wybthon import Prop, Props, VNode, action, component, create_store, p
 
 
+class StrictProps(Props):
+    name: Prop[str]
+
+
 @component
-def Greeting(name: Prop[str]) -> VNode:
-    return p(name)
+def Greeting(props: StrictProps) -> VNode:
+    props.name = "x"  # error: assign-prop
+    return p(props.name)
 
 
-Greeting(name=42)
-Greeting()
-Greeting(name="Ada", typo=True)
+@component
+def Bare() -> VNode:
+    return p("bare")
+
+
+Greeting()  # error: missing-prop
+Greeting(name=42)  # error: wrong-type
+Greeting(name="Ada", typo=True)  # error: unknown-prop
+Bare(title="x")  # error: no-props
+wrong: str = Greeting(name="Ada").name  # error: accessor-is-not-value
 
 
 class Person(TypedDict):
     age: int
-
-
-initial: Person = {"age": 36}
-store, _ = create_store(initial)
-wrong: str = store.age
-missing = store["typo"]
 
 
 @action
@@ -30,17 +36,7 @@ def save(age: int) -> int:
     return age
 
 
-save("wrong")
+save("wrong")  # error: action-arg
 
 people, edit_people = create_store(list[Person]())
-edit_people(lambda draft: draft.append({"age": "wrong"}))
-
-
-@component
-def InvalidComponent(count: int = 1) -> VNode:
-    return p(str(count))
-
-
-@component
-def MixedProps(props: Props, count: Prop[int]) -> VNode:
-    return p(count)
+edit_people(lambda draft: draft.append({"age": "wrong"}))  # error: store-append

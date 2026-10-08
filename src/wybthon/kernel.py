@@ -32,7 +32,7 @@ Core concepts:
   `wybthon.events` for the Python half.
 
 Application code never imports this module directly; it's plumbing for
-the reconciler, `wybthon.props`, and `wybthon.events`.
+the reconciler, `wybthon._dom_props`, and `wybthon.events`.
 """
 
 from __future__ import annotations
@@ -62,22 +62,22 @@ __all__ = [
 OP_CREATE_ELEMENT = 1  # [op, id, tag]
 OP_CREATE_TEXT = 2  # [op, id, text]
 OP_CREATE_COMMENT = 3  # [op, id, data?]
-OP_CLONE_TPL = 4  # [op, first_id, count, tpl_id]  (dense pre-order id block)
+OP_CLONE = 4  # [op, first_id, tpl_id, parent_id, anchor_id_or_None, *texts]
 OP_INSERT = 5  # [op, parent_id, id, anchor_id_or_None]
-OP_REMOVE = 6  # [op, id]
+OP_REMOVE = 6  # [op, id]  (detach only; the node stays registered)
 OP_SET_TEXT = 7  # [op, id, text]
 OP_SET_ATTR = 8  # [op, id, name, value_or_None]  (None removes)
 OP_SET_PROP = 9  # [op, id, name, value]  (DOM property assignment)
 OP_SET_STYLE = 10  # [op, id, {prop: value_or_None}]  (kebab-case, None removes)
-OP_LISTEN = 11  # [op, id, event_type]
-OP_UNLISTEN = 12  # [op, id, event_type]
-OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listener sets)
-OP_REGISTER_TPL = 14  # [op, tpl_id, html]  (parse once; cloned by OP_CLONE_TPL)
+OP_LISTEN = 11  # [op, id, event_key, options?]
+OP_UNLISTEN = 12  # [op, id, event_key]
+OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listeners of detached nodes)
+OP_REGISTER_TPL = 14  # [op, tpl_id, html, count, [text offsets], [[offset, event_type], ...]]
 OP_CREATE_ELEMENT_NS = 15  # [op, id, namespace, tag]  (SVG / MathML)
 OP_ROOT = 16  # [op, id]  (delegate events from this node instead of document)
 OP_UNROOT = 17  # [op, id]
 OP_MOVE_RANGE = 18  # [op, parent, first, last, anchor]
-OP_REMOVE_RANGE = 19  # [op, first, last]
+OP_DISPOSE_RANGE = 19  # [op, first, last]  (remove siblings and release everything registered inside)
 OP_RELEASE_TPL = 20  # [op, tpl_id]
 OP_HOLE_TEXT = 21  # [op, anchor_id, text]  (reuse the anchor as visible text)
 OP_HYDRATE = 22  # [op, root_id]  (start claiming server-rendered nodes under root)
@@ -85,6 +85,8 @@ OP_CLAIM_ELEMENT = 23  # [op, id, parent_id, tag, namespace_or_None]
 OP_CLAIM_TEXT = 24  # [op, id, parent_id, text]
 OP_CLAIM_COMMENT = 25  # [op, id, parent_id, data]
 OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
+OP_DISPOSE = 27  # [op, id]  (remove one node and release everything registered inside it)
+OP_CLAIM_STATIC = 28  # [op, parent_id, end_marker]  (keep server nodes before the marker as static DOM)
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -97,14 +99,25 @@ _ops: List[Any] = []
 
 _next_id: int = 1
 
-# Registered template skeletons: html -> tpl_id. The backend parses each
-# skeleton once (OP_REGISTER_TPL) and clones it per mount (OP_CLONE_TPL).
-# Bounded by the number of distinct static skeletons in the app.
-_tpl_ids: OrderedDict[str, int] = OrderedDict()
+# Incremented by every commit. A command still being built in Python (a
+# template clone whose text slots its holes fill) is valid only while the
+# generation it was emitted in is current.
+generation: int = 0
+
+# Registered templates, oldest first. Each entry is a shape object with
+# ``html``, ``count``, ``texts``, ``listens``, and ``tpl`` attributes; the
+# kernel assigns ``tpl`` on registration and clears it on retirement, so a
+# mount reads ``shape.tpl`` and registers only when it's zero. Bounded by
+# the number of distinct static skeletons in the app.
+_templates: OrderedDict[int, Any] = OrderedDict()
 _TEMPLATE_LIMIT = 256
 _next_tpl_id: int = 1
 
 _backend: Optional[Any] = None
+
+# Whether the backend parses template HTML (``None`` until a backend exists).
+# The reconciler reads this on every element mount.
+html_templates: Optional[bool] = None
 
 # True while the reconciler mounts in hydration mode: mounts emit
 # ``CLAIM_*`` ops that adopt server-rendered nodes instead of creating
@@ -138,25 +151,31 @@ def alloc_ids(count: int) -> int:
     return first
 
 
-def template_id(html: str) -> int:
-    """Return the template id for `html`, registering it on first use.
+def register_template(shape: Any) -> int:
+    """Register `shape`'s skeleton with the backend and return its template id.
 
     The registration op travels in the same batch as the clone that
-    needs it, so no extra bridge crossing occurs.
+    needs it, so no extra bridge crossing occurs. The oldest template is
+    retired once more than `_TEMPLATE_LIMIT` are live; its shape
+    registers again on its next mount.
     """
-    tid = _tpl_ids.get(html)
-    if tid is None:
-        global _next_tpl_id
-        tid = _next_tpl_id
-        _next_tpl_id = tid + 1
-        _tpl_ids[html] = tid
-        _ops.append((OP_REGISTER_TPL, tid, html))
-        if len(_tpl_ids) > _TEMPLATE_LIMIT:
-            _, retired = _tpl_ids.popitem(last=False)
-            _ops.append((OP_RELEASE_TPL, retired))
-    else:
-        _tpl_ids.move_to_end(html)
+    global _next_tpl_id
+    tid = _next_tpl_id
+    _next_tpl_id = tid + 1
+    shape.tpl = tid
+    _templates[tid] = shape
+    _ops.append((OP_REGISTER_TPL, tid, shape.html, shape.count, shape.texts, shape.listens))
+    if len(_templates) > _TEMPLATE_LIMIT:
+        retired_id, retired = _templates.popitem(last=False)
+        retired.tpl = 0
+        _ops.append((OP_RELEASE_TPL, retired_id))
     return tid
+
+
+def _forget_templates() -> None:
+    for shape in _templates.values():
+        shape.tpl = 0
+    _templates.clear()
 
 
 def emit(op: Any) -> None:
@@ -173,6 +192,8 @@ def commit() -> None:
     """
     if not _ops:
         return
+    global generation
+    generation += 1
     backend = _backend if _backend is not None else _ensure_backend()
     ops = list(_ops)
     _ops.clear()
@@ -282,20 +303,22 @@ def set_backend(backend: Any) -> None:
     Clears the template registry: a fresh backend has no registered
     skeletons, so they must be re-sent on next use.
     """
-    global _backend
+    global _backend, html_templates
     _backend = backend
-    _tpl_ids.clear()
+    html_templates = bool(backend.supports_html())
+    _forget_templates()
     if _event_dispatcher is not None:
         backend.set_dispatcher(_event_dispatcher)
 
 
 def reset(backend: Optional[Any] = None) -> None:
     """Test helper: clear the op buffer, id counters, and template registry."""
-    global _next_id, _next_tpl_id, _backend
+    global _next_id, _next_tpl_id, _backend, html_templates
+    html_templates = None
     _ops.clear()
     _next_id = 1
     _next_tpl_id = 1
-    _tpl_ids.clear()
+    _forget_templates()
     _backend = None
     if backend is not None:
         set_backend(backend)
@@ -319,585 +342,18 @@ def _ensure_backend() -> Any:
 # ---------------------------------------------------------------------------
 # JavaScript kernel
 #
-# A single IIFE evaluated once in the page. It owns the id -> Node registry,
-# the registered-template protos for OP_CLONE_TPL, and native event
+# ``_kernel.js`` is a single expression evaluated once in the page. It owns
+# the id -> Node registry, the registered templates, and native event
 # delegation. The Python side talks to it through ``apply(json)`` plus a
 # handful of synchronous helpers.
 # ---------------------------------------------------------------------------
 
-_KERNEL_JS = r"""
-(() => {
-  const nodes = new Map();          // id -> Node
-  const directListeners = new Map(); // id -> Map<eventKey, {type, fn, options}>
-  const nonBubbling = new Set([
-    "focus", "blur", "mouseenter", "mouseleave", "pointerenter", "pointerleave",
-    "scroll", "load", "error", "invalid", "toggle"
-  ]);
-  const listenTypes = new Map();    // id -> Set<eventType>
-  const typeCounts = new Map();     // eventType -> number of listening nodes
-  const rootListeners = new Map();  // eventType -> native listener
-  const roots = new Map();          // delegation root -> refcount (document when empty)
-  const tplProtos = new Map();      // tpl_id -> parsed root node (cloned per mount)
-  let dispatcher = null;            // Python callback (id, type, payloadJson) -> flags
-  let currentEvent = null;
-  // Claim state while adopting server-rendered DOM (null otherwise).
-  let hydrating = null;
-  let hydrationMismatches = 0;
 
-  const doc = document;
+def kernel_source() -> str:
+    """Return the JavaScript kernel's source."""
+    from importlib.resources import files
 
-  function reg(id, node) {
-    nodes.set(id, node);
-    node.__wybId = id;
-  }
-
-  function delegationTargets() {
-    return roots.size ? Array.from(roots.keys()) : [doc];
-  }
-
-  // Roots are refcounted: a render root and a Portal target may be the
-  // same node, and each owner roots and unroots it independently.
-  function addRoot(node) {
-    const count = roots.get(node);
-    if (count !== undefined) { roots.set(node, count + 1); return; }
-    const wasEmpty = roots.size === 0;
-    roots.set(node, 1);
-    for (const [type, fn] of rootListeners) {
-      if (wasEmpty) doc.removeEventListener(type, fn);
-      node.addEventListener(type, fn);
-    }
-  }
-
-  function removeRoot(node) {
-    const count = roots.get(node);
-    if (count === undefined) return;
-    if (count > 1) { roots.set(node, count - 1); return; }
-    roots.delete(node);
-    for (const [type, fn] of rootListeners) {
-      node.removeEventListener(type, fn);
-      if (roots.size === 0) doc.addEventListener(type, fn);
-    }
-  }
-
-  // Pre-order walk registering a dense id block; must match the order the
-  // Python serializer counts nodes in (element, then children left to right).
-  function walkAssign(root, firstId, count) {
-    let id = firstId;
-    let n = root;
-    while (n) {
-      reg(id, n);
-      id++;
-      if (n.firstChild) n = n.firstChild;
-      else {
-        while (n !== root && !n.nextSibling) n = n.parentNode;
-        if (n === root) break;
-        n = n.nextSibling;
-      }
-    }
-    if (id - firstId !== count) {
-      throw new Error(
-        `wybthon kernel: template node count mismatch (expected ${count}, got ${id - firstId})`
-      );
-    }
-  }
-
-  function registerTpl(tplId, html) {
-    const tpl = doc.createElement("template");
-    tpl.innerHTML = html;
-    const proto = tpl.content.firstChild;
-    proto.remove();
-    tplProtos.set(tplId, proto);
-  }
-
-  function cloneTpl(firstId, count, tplId) {
-    const root = tplProtos.get(tplId).cloneNode(true);
-    walkAssign(root, firstId, count);
-  }
-
-  // -- hydration --------------------------------------------------------
-  // Each parent keeps a cursor: the next server node a claim may adopt.
-  // Claims are tolerant: a node that doesn't match is created in place,
-  // and HYDRATE_END removes server nodes nobody claimed.
-  function isBlank(n) { return n.nodeType === 3 && !/\S/.test(n.nodeValue); }
-  function cursorOf(parent) {
-    hydrating.touched.add(parent);
-    const c = hydrating.cursors.get(parent);
-    return c === undefined ? parent.firstChild : c;
-  }
-  function mismatch(detail) {
-    hydrationMismatches++;
-    if (hydrating.mismatches++ < 5) console.warn(`Wybthon hydration mismatch: ${detail}`);
-  }
-  function describe(n) {
-    if (!n) return "nothing";
-    if (n.nodeType === 1) return `<${n.localName}>`;
-    if (n.nodeType === 3) return `text ${JSON.stringify(n.nodeValue.slice(0, 40))}`;
-    return "a comment";
-  }
-  function claimElement(id, parentId, tag, ns) {
-    const parent = nodes.get(parentId);
-    let c = cursorOf(parent);
-    while (c && isBlank(c)) c = c.nextSibling;
-    if (c && c.nodeType === 1 && c.localName.toLowerCase() === tag.toLowerCase()) {
-      hydrating.cursors.set(parent, c.nextSibling);
-      reg(id, c);
-      return;
-    }
-    mismatch(`expected <${tag}>, found ${describe(c)}`);
-    const node = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag);
-    parent.insertBefore(node, c || null);
-    hydrating.cursors.set(parent, c || null);
-    reg(id, node);
-  }
-  function claimText(id, parentId, text) {
-    const parent = nodes.get(parentId);
-    const c = cursorOf(parent);
-    if (text !== "" && c && c.nodeType === 3) {
-      const data = c.nodeValue;
-      if (data === text) {
-        hydrating.cursors.set(parent, c.nextSibling);
-      } else if (data.startsWith(text)) {
-        // The HTML parser merged adjacent text nodes; split ours off.
-        hydrating.cursors.set(parent, c.splitText(text.length));
-      } else {
-        mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
-        c.nodeValue = text;
-        hydrating.cursors.set(parent, c.nextSibling);
-      }
-      reg(id, c);
-      return;
-    }
-    // Empty text never survives HTML parsing, so it's always created.
-    if (text !== "") mismatch(`expected text ${JSON.stringify(text.slice(0, 40))}, found ${describe(c)}`);
-    const node = doc.createTextNode(text);
-    parent.insertBefore(node, c || null);
-    hydrating.cursors.set(parent, c || null);
-    reg(id, node);
-  }
-  function claimComment(id, parentId, data) {
-    const parent = nodes.get(parentId);
-    let c = cursorOf(parent);
-    while (c && isBlank(c)) c = c.nextSibling;
-    if (c && c.nodeType === 8 && c.nodeValue === data) {
-      hydrating.cursors.set(parent, c.nextSibling);
-      reg(id, c);
-      return;
-    }
-    if (data.startsWith("/")) {
-      // A keyed end marker resynchronizes: server nodes before it were
-      // never claimed (a boundary rendered differently on the server).
-      for (let n = c; n; n = n.nextSibling) {
-        if (n.nodeType === 8 && n.nodeValue === data) {
-          mismatch(`unclaimed server content before ${data}`);
-          while (c !== n) { const next = c.nextSibling; parent.removeChild(c); c = next; }
-          hydrating.cursors.set(parent, n.nextSibling);
-          reg(id, n);
-          return;
-        }
-      }
-    }
-    mismatch(`expected a comment, found ${describe(c)}`);
-    const node = doc.createComment(data);
-    parent.insertBefore(node, c || null);
-    hydrating.cursors.set(parent, c || null);
-    reg(id, node);
-  }
-  function endHydration() {
-    const { root, cursors, touched, fresh } = hydrating;
-    for (const parent of touched) {
-      if (parent !== root && !root.contains(parent)) continue;
-      let n = cursors.has(parent) ? cursors.get(parent) : parent.firstChild;
-      while (n) {
-        const next = n.nextSibling;
-        if (!fresh.has(n) && n.__wybId === undefined) parent.removeChild(n);
-        n = next;
-      }
-    }
-    hydrating = null;
-  }
-  function takeState(id) {
-    const root = nodes.get(id);
-    if (!root) return null;
-    for (let n = root.lastChild; n; n = n.previousSibling) {
-      if (n.nodeType === 1 && n.localName === "script" && n.hasAttribute("data-wyb-state")) {
-        const text = n.textContent;
-        n.remove();
-        return text;
-      }
-    }
-    return null;
-  }
-  // Replays input recorded by the bootstrap before hydration finished.
-  function replay() {
-    const queue = globalThis.__wybQueue;
-    globalThis.__wybQueue = null;
-    if (!queue) return 0;
-    let count = 0;
-    for (const entry of queue) {
-      const ev = entry.event;
-      const target = ev.target;
-      if (!target || !target.isConnected) continue;
-      if (entry.value !== undefined && "value" in target) target.value = entry.value;
-      if (entry.checked !== undefined && "checked" in target) target.checked = entry.checked;
-      const fn = rootListeners.get(ev.type);
-      if (fn) { fn(ev); count++; }
-    }
-    return count;
-  }
-
-  function listen(id, key, options = {}) {
-    const type = key.endsWith(":capture") ? key.slice(0, -8) : key;
-    if (options.capture || options.passive || nonBubbling.has(type)) {
-      let entries = directListeners.get(id);
-      if (!entries) { entries = new Map(); directListeners.set(id, entries); }
-      if (entries.has(key)) return;
-      const fn = (ev) => {
-        if (dispatcher === null) return;
-        const saved = currentEvent;
-        currentEvent = ev;
-        try {
-          const flags = dispatcher(id, key, buildPayload(ev));
-          if (flags & 2) ev.preventDefault();
-          if (flags & 1) ev.stopPropagation();
-        } finally { currentEvent = saved; }
-      };
-      entries.set(key, {type, fn, options});
-      nodes.get(id).addEventListener(type, fn, options);
-      return;
-    }
-    let set = listenTypes.get(id);
-    if (set === undefined) {
-      set = new Set();
-      listenTypes.set(id, set);
-    }
-    if (set.has(type)) return;
-    set.add(type);
-    const n = (typeCounts.get(type) || 0) + 1;
-    typeCounts.set(type, n);
-    if (n === 1) installRoot(type);
-  }
-
-  function unlisten(id, key) {
-    const entries = directListeners.get(id);
-    const entry = entries && entries.get(key);
-    if (entry) {
-      const node = nodes.get(id);
-      if (node) node.removeEventListener(entry.type, entry.fn, entry.options);
-      entries.delete(key);
-      if (!entries.size) directListeners.delete(id);
-      return;
-    }
-    const type = key;
-    const set = listenTypes.get(id);
-    if (set === undefined || !set.has(type)) return;
-    set.delete(type);
-    if (set.size === 0) listenTypes.delete(id);
-    dropTypeCount(type);
-  }
-
-  function dropTypeCount(type) {
-    const n = (typeCounts.get(type) || 0) - 1;
-    if (n <= 0) {
-      typeCounts.delete(type);
-      const l = rootListeners.get(type);
-      if (l !== undefined) {
-        for (const target of delegationTargets()) target.removeEventListener(type, l);
-        rootListeners.delete(type);
-      }
-    } else {
-      typeCounts.set(type, n);
-    }
-  }
-
-  const controlledSelects = new Map();
-  function release(ids) {
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      controlledSelects.delete(id);
-      const entries = directListeners.get(id);
-      if (entries) for (const key of Array.from(entries.keys())) unlisten(id, key);
-      const node = nodes.get(id);
-      if (node && node.__wybId === id) delete node.__wybId;
-      nodes.delete(id);
-      const set = listenTypes.get(id);
-      if (set !== undefined) {
-        listenTypes.delete(id);
-        for (const type of set) dropTypeCount(type);
-      }
-    }
-  }
-
-  function buildPayload(ev, route = undefined) {
-    const path = ev.composedPath ? ev.composedPath() : [];
-    const t = path.length ? path[0] : ev.target;
-    let detail = ev.detail;
-    try { detail = detail === undefined ? null : JSON.parse(JSON.stringify(detail)); }
-    catch (_) { detail = null; }
-    return JSON.stringify({
-      route, detail,
-      defaultPrevented: !!ev.defaultPrevented,
-      isComposing: !!ev.isComposing,
-      scrollTop: t && t.scrollTop !== undefined ? t.scrollTop : 0,
-      selectedValues: t && t.selectedOptions ? Array.from(t.selectedOptions, option => option.value) : [],
-      type: ev.type,
-      value: t && t.value !== undefined ? t.value : null,
-      checked: t && t.checked !== undefined ? !!t.checked : false,
-      key: ev.key !== undefined ? ev.key : null,
-      code: ev.code !== undefined ? ev.code : null,
-      altKey: !!ev.altKey,
-      ctrlKey: !!ev.ctrlKey,
-      metaKey: !!ev.metaKey,
-      shiftKey: !!ev.shiftKey,
-      button: ev.button !== undefined ? ev.button : 0,
-      clientX: ev.clientX !== undefined ? ev.clientX : 0,
-      clientY: ev.clientY !== undefined ? ev.clientY : 0,
-      targetId: t && t.__wybId !== undefined ? t.__wybId : null,
-    });
-  }
-
-  function installRoot(type) {
-    const fn = (ev) => {
-      if (dispatcher === null) return;
-      // Nested roots (a portal inside the app root) see the same event
-      // as it bubbles; only the innermost root dispatches it.
-      if (ev.__wybHandled) return;
-      ev.__wybHandled = true;
-      const route = [];
-      const path = ev.composedPath ? ev.composedPath() : [];
-      if (!path.length) for (let node = ev.target; node; node = node.parentNode) path.push(node);
-      for (const node of path) {
-        const id = node.__wybId;
-        const set = id === undefined ? undefined : listenTypes.get(id);
-        if (set && set.has(type)) route.push([id, type]);
-      }
-      if (!route.length) return;
-      const saved = currentEvent;
-      currentEvent = ev;
-      try {
-        const flags = dispatcher(0, type, buildPayload(ev, route));
-        if (flags & 2) ev.preventDefault();
-        if (flags & 1) ev.stopPropagation();
-      } finally { currentEvent = saved; }
-    };
-    for (const target of delegationTargets()) target.addEventListener(type, fn);
-    rootListeners.set(type, fn);
-  }
-
-  function apply(opsJson) {
-    const ops = JSON.parse(opsJson);
-    for (let i = 0; i < ops.length; i++) {
-      const op = ops[i];
-      switch (op[0]) {
-        case 1: { // CREATE_ELEMENT
-          reg(op[1], doc.createElement(op[2]));
-          break;
-        }
-        case 2: { // CREATE_TEXT
-          reg(op[1], doc.createTextNode(op[2]));
-          break;
-        }
-        case 3: { // CREATE_COMMENT
-          reg(op[1], doc.createComment(op[2] || ""));
-          break;
-        }
-        case 4: { // CLONE_TPL
-          cloneTpl(op[1], op[2], op[3]);
-          break;
-        }
-        case 5: { // INSERT
-          // The anchor's live parent wins over op[1]: a subtree parked
-          // off-document by a Loading boundary keeps receiving updates
-          // addressed to its original parent.
-          const anchor = op[3] === null ? undefined : nodes.get(op[3]);
-          const inserted = nodes.get(op[2]);
-          if (hydrating !== null) hydrating.fresh.add(inserted);
-          if (anchor !== undefined && anchor.parentNode !== null) {
-            anchor.parentNode.insertBefore(inserted, anchor);
-          } else {
-            nodes.get(op[1]).appendChild(inserted);
-          }
-          break;
-        }
-        case 6: { // REMOVE
-          const n = nodes.get(op[1]);
-          if (n !== undefined && n.parentNode !== null) n.parentNode.removeChild(n);
-          break;
-        }
-        case 7: { // SET_TEXT
-          nodes.get(op[1]).nodeValue = op[2];
-          break;
-        }
-        case 8: { // SET_ATTR
-          const n = nodes.get(op[1]);
-          if (op[3] === null) n.removeAttribute(op[2]);
-          else n.setAttribute(op[2], op[3]);
-          break;
-        }
-        case 9: { // SET_PROP
-          const node = nodes.get(op[1]);
-          if (node.localName === "select" && (op[2] === "value" || op[2] === "selectedValues")) {
-            controlledSelects.set(op[1], [op[2], op[3]]);
-          } else if (node[op[2]] !== op[3]) node[op[2]] = op[3];
-          break;
-        }
-        case 10: { // SET_STYLE
-          const style = nodes.get(op[1]).style;
-          const decls = op[2];
-          for (const k in decls) {
-            const v = decls[k];
-            if (v === null) style.removeProperty(k);
-            else style.setProperty(k, v);
-          }
-          break;
-        }
-        case 11: { // LISTEN
-          listen(op[1], op[2], op[3]);
-          break;
-        }
-        case 12: { // UNLISTEN
-          unlisten(op[1], op[2]);
-          break;
-        }
-        case 13: { // RELEASE
-          release(op[1]);
-          break;
-        }
-        case 14: { // REGISTER_TPL
-          registerTpl(op[1], op[2]);
-          break;
-        }
-        case 15: { // CREATE_ELEMENT_NS
-          reg(op[1], doc.createElementNS(op[2], op[3]));
-          break;
-        }
-        case 16: { // ROOT
-          const n = nodes.get(op[1]);
-          if (n !== undefined) addRoot(n);
-          break;
-        }
-        case 17: { // UNROOT
-          const n = nodes.get(op[1]);
-          if (n !== undefined) removeRoot(n);
-          break;
-        }
-        case 21: { // HOLE_TEXT
-          const node = nodes.get(op[1]);
-          if (node.nodeType === 3) node.nodeValue = op[2];
-          else {
-            const text = doc.createTextNode(op[2]);
-            if (node.parentNode) node.parentNode.replaceChild(text, node);
-            reg(op[1], text);
-          }
-          break;
-        }
-        case 22: { // HYDRATE
-          hydrating = {
-            root: nodes.get(op[1]), cursors: new Map(), touched: new Set(), fresh: new Set(), mismatches: 0,
-          };
-          break;
-        }
-        case 23: { // CLAIM_ELEMENT
-          claimElement(op[1], op[2], op[3], op[4]);
-          break;
-        }
-        case 24: { // CLAIM_TEXT
-          claimText(op[1], op[2], op[3]);
-          break;
-        }
-        case 25: { // CLAIM_COMMENT
-          claimComment(op[1], op[2], op[3]);
-          break;
-        }
-        case 26: { // HYDRATE_END
-          if (hydrating !== null) endHydration();
-          break;
-        }
-        case 20: { // RELEASE_TPL
-          tplProtos.delete(op[1]);
-          break;
-        }
-        case 18: { // MOVE_RANGE
-          const first = nodes.get(op[2]), last = nodes.get(op[3]);
-          const anchor = op[4] === null ? null : nodes.get(op[4]);
-          const parent = anchor && anchor.parentNode ? anchor.parentNode : nodes.get(op[1]);
-          if (!first || !last || anchor === first || (last.parentNode === parent && last.nextSibling === anchor)) break;
-          const fragment = doc.createDocumentFragment();
-          const after = last.nextSibling;
-          let current = first;
-          while (current && current !== after) {
-            const next = current.nextSibling;
-            fragment.appendChild(current);
-            current = next;
-          }
-          parent.insertBefore(fragment, anchor);
-          break;
-        }
-        case 19: { // REMOVE_RANGE
-          const first = nodes.get(op[1]), last = nodes.get(op[2]);
-          if (!first || !last) break;
-          if (first !== last && first.parentNode !== null && first.parentNode === last.parentNode) {
-            // One native range deletion instead of a removal per node
-            // (clearing a 10,000-row list emits a single range).
-            const range = doc.createRange();
-            range.setStartBefore(first);
-            range.setEndAfter(last);
-            range.deleteContents();
-            break;
-          }
-          const after = last.nextSibling;
-          let current = first;
-          while (current && current !== after) {
-            const next = current.nextSibling;
-            if (current.parentNode) current.parentNode.removeChild(current);
-            current = next;
-          }
-          break;
-        }
-        default:
-          throw new Error(`wybthon kernel: unknown op ${op[0]}`);
-      }
-    }
-    // Options may be inserted after the select's property op, or in a later
-    // commit. Reapply controlled selection once all structural ops finish.
-    for (const [id, [prop, value]] of controlledSelects) {
-      const node = nodes.get(id);
-      if (prop === "selectedValues") {
-        const selected = new Set(value || []);
-        for (const option of node.options) option.selected = selected.has(option.value);
-      } else if (node.value !== value) node.value = value;
-    }
-
-  }
-
-  return {
-    apply,
-    getNode: (id) => nodes.get(id),
-    adopt: (id, node) => {
-      if (node.__wybId !== undefined && nodes.get(node.__wybId) === node) return node.__wybId;
-      reg(id, node); return id;
-    },
-    adoptQuery: (id, selector) => {
-      const n = doc.querySelector(selector);
-      if (n === null) return 0;
-      if (n.__wybId !== undefined && nodes.get(n.__wybId) === n) return n.__wybId;
-      reg(id, n);
-      return id;
-    },
-    setDispatcher: (fn) => { dispatcher = fn; },
-    getCurrentEvent: () => currentEvent,
-    takeState,
-    replay,
-    stats: () => JSON.stringify({
-      nodes: nodes.size,
-      listeners: listenTypes.size + directListeners.size,
-      roots: roots.size,
-      types: typeCounts.size,
-      templates: tplProtos.size,
-      hydration_mismatches: hydrationMismatches,
-    }),
-  };
-})()
-"""
+    return files(__package__).joinpath("_kernel.js").read_text(encoding="utf-8")
 
 
 class _ClaimState:
@@ -954,11 +410,11 @@ class BrowserBackend:
         try:
             from pyodide.code import run_js
 
-            return run_js(_KERNEL_JS)
+            return run_js(kernel_source())
         except ImportError:
             import js
 
-            return js.eval(_KERNEL_JS)
+            return js.eval(kernel_source())
 
     def apply(self, ops: List[Any]) -> None:
         """Serialize `ops` to JSON and apply them in one kernel call."""
@@ -1075,17 +531,10 @@ class PythonBackend:
                 self._reg(op[1], doc.createTextNode(op[2]))
             elif code == OP_CREATE_COMMENT:
                 self._reg(op[1], doc.createComment(op[2] if len(op) > 2 else ""))
-            elif code == OP_CLONE_TPL:
-                self._clone_tpl(op[1], op[2], op[3])
+            elif code == OP_CLONE:
+                self._clone(op)
             elif code == OP_INSERT:
-                anchor = None if op[3] is None else nodes.get(op[3])
-                anchor_parent = None if anchor is None else getattr(anchor, "parentNode", None)
-                if self._hydrating is not None:
-                    self._hydrating.fresh.add(id(nodes[op[2]]))
-                if anchor_parent is not None:
-                    anchor_parent.insertBefore(nodes[op[2]], anchor)
-                else:
-                    nodes[op[1]].appendChild(nodes[op[2]])
+                self._insert(op[1], nodes[op[2]], op[3])
             elif code == OP_REMOVE:
                 node = nodes.get(op[1])
                 if node is not None and getattr(node, "parentNode", None) is not None:
@@ -1108,7 +557,7 @@ class PythonBackend:
                     current = current.nextSibling
                 for node in moving:
                     parent.insertBefore(node, anchor)
-            elif code == OP_REMOVE_RANGE:
+            elif code == OP_DISPOSE_RANGE:
                 first, last = nodes.get(op[1]), nodes.get(op[2])
                 if first is None or last is None:
                     continue
@@ -1116,9 +565,19 @@ class PythonBackend:
                 current = first
                 while current is not None and current is not after:
                     following = current.nextSibling
+                    self._release_tree(current)
                     if current.parentNode is not None:
                         current.parentNode.removeChild(current)
                     current = following
+            elif code == OP_DISPOSE:
+                node = nodes.get(op[1])
+                if node is not None:
+                    self._release_tree(node)
+                    if getattr(node, "parentNode", None) is not None:
+                        node.parentNode.removeChild(node)
+            elif code == OP_CLAIM_STATIC:
+                if self._hydrating is not None:
+                    self._claim_static(op[1], op[2])
             elif code == OP_HOLE_TEXT:
                 node = nodes[op[1]]
                 if getattr(node, "_is_text", False) and not getattr(node, "_is_comment", False):
@@ -1159,7 +618,7 @@ class PythonBackend:
             elif code == OP_RELEASE_TPL:
                 self._tpl_protos.pop(op[1], None)
             elif code == OP_REGISTER_TPL:
-                self._register_tpl(op[1], op[2])
+                self._register_tpl(op[1], op[2], op[3], op[4], op[5])
             elif code == OP_CREATE_ELEMENT_NS:
                 create_ns = getattr(doc, "createElementNS", None)
                 node = create_ns(op[2], op[3]) if create_ns is not None else doc.createElement(op[3])
@@ -1334,6 +793,19 @@ class PythonBackend:
         self._set_cursor(parent, c)
         self._reg(node_id, node)
 
+    def _claim_static(self, parent_id: int, end_marker: str) -> None:
+        state = self._hydrating
+        assert state is not None
+        parent = self._nodes[parent_id]
+        c = self._cursor(parent)
+        while c is not None:
+            if _is_comment(c) and str(c.nodeValue or "") == end_marker:
+                self._set_cursor(parent, c)
+                return
+            state.fresh.add(id(c))
+            c = c.nextSibling
+        self._set_cursor(parent, None)
+
     def _end_hydration(self) -> None:
         state = self._hydrating
         assert state is not None
@@ -1357,22 +829,28 @@ class PythonBackend:
         except Exception:
             pass
 
-    def _register_tpl(self, tpl_id: int, html: str) -> None:
+    def _register_tpl(self, tpl_id: int, html: str, count: int, texts: list[int], listens: list[Any]) -> None:
         tpl = self._tpl
         if tpl is None:
             raise RuntimeError("PythonBackend: document has no template support")
         tpl.innerHTML = html
         root = tpl.content.firstChild
         tpl.content.removeChild(root)
-        self._tpl_protos[tpl_id] = root
+        self._tpl_protos[tpl_id] = (root, count, tuple(texts), tuple((o, t) for o, t in listens))
 
-    def _clone_tpl(self, first_id: int, count: int, tpl_id: int) -> None:
-        root = self._clone_node(self._tpl_protos[tpl_id])
+    def _clone(self, op: Any) -> None:
+        first_id = op[1]
+        proto, count, texts, listens = self._tpl_protos[op[2]]
+        root = self._clone_node(proto)
+        slots = {offset: op[5 + i] for i, offset in enumerate(texts)}
         node_id = first_id
         stack = [root]
         while stack:
             node = stack.pop()
             self._reg(node_id, node)
+            text = slots.get(node_id - first_id)
+            if text is not None:
+                node.nodeValue = text
             node_id += 1
             kids = node.childNodes
             for i in range(len(kids) - 1, -1, -1):
@@ -1381,6 +859,33 @@ class PythonBackend:
             raise RuntimeError(
                 f"wybthon kernel: template node count mismatch (expected {count}, got {node_id - first_id})"
             )
+        for offset, event_type in listens:
+            self._listen_op(first_id + offset, event_type)
+        self._insert(op[3], root, op[4])
+
+    def _insert(self, parent_id: int, node: Any, anchor_id: int | None) -> None:
+        nodes = self._nodes
+        anchor = None if anchor_id is None else nodes.get(anchor_id)
+        anchor_parent = None if anchor is None else getattr(anchor, "parentNode", None)
+        if self._hydrating is not None:
+            self._hydrating.fresh.add(id(node))
+        if anchor_parent is not None:
+            anchor_parent.insertBefore(node, anchor)
+        else:
+            nodes[parent_id].appendChild(node)
+
+    def _release_tree(self, root: Any) -> None:
+        """Release every registered node in `root`'s subtree (the native disposal walk)."""
+        ids: list[int] = []
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            node_id = getattr(node, "_wyb_id", None)
+            if node_id is not None and self._nodes.get(node_id) is node:
+                ids.append(node_id)
+            stack.extend(getattr(node, "childNodes", ()) or ())
+        if ids:
+            self._release(ids)
 
     def _clone_node(self, node: Any) -> Any:
         """Structural deep copy through the stub document's factories.

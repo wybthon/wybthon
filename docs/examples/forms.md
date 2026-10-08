@@ -1,30 +1,20 @@
 # Forms
 
-Bindings, validation, an aggregated submit handler, and accessible error messages.
+Bindings, validation, an aggregated submit handler, and accessible error messages. The form helpers live in `wybthon.forms`.
 
 ```python
-from wybthon import (
-    Show,
+from wybthon import Show, button, component, form, input_, label, option, p, render, select, span
+from wybthon.forms import (
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
     bind_text,
-    button,
-    component,
     email,
     error_message_attrs,
-    form,
     form_state,
-    input_,
-    label,
     min_length,
     on_submit_validated,
-    option,
-    p,
-    render,
     required,
-    select,
-    span,
 )
 
 
@@ -87,19 +77,19 @@ render(SignupForm(), "#app")
 
 ## How it works
 
-- [`form_state`][wybthon.form_state] returns a dict of [`Field`][wybthon.Field] objects. Each field carries `value`, `error`, and `touched` accessors with matching setters, so every piece of form state is a signal.
-- [`bind_text`][wybthon.bind_text] returns `{"value": field.value, "on_input": handler}`. The `value` entry is the accessor itself, so programmatic writes through `field.set_value(...)` update the input too. Validators run on every `input` event.
+- [`form_state`][wybthon.forms.form_state] returns a dict of [`Field`][wybthon.forms.Field] objects. Each field carries `value`, `error`, and `touched` accessors with matching setters, so every piece of form state is a signal.
+- [`bind_text`][wybthon.forms.bind_text] returns `{"value": field.value, "on_input": handler}`. The `value` entry is the accessor itself, so programmatic writes through `field.set_value(...)` update the input too. Validators run on every `input` event.
 - `span(name.error, ...)` places the error accessor in the tree, so the message appears and disappears as validation runs.
-- [`a11y_control_attrs`][wybthon.a11y_control_attrs] produces reactive `aria-invalid` and `aria-describedby` props; [`error_message_attrs`][wybthon.error_message_attrs] marks the message container as a polite live region.
-- [`on_submit_validated`][wybthon.on_submit_validated] calls `prevent_default()`, validates every field in `rules` (marking them touched), and only invokes `save` when all pass. Use [`on_submit`][wybthon.on_submit] when you want to handle validation yourself.
+- [`a11y_control_attrs`][wybthon.forms.a11y_control_attrs] produces reactive `aria-invalid` and `aria-describedby` props; [`error_message_attrs`][wybthon.forms.error_message_attrs] marks the message container as a polite live region.
+- [`on_submit_validated`][wybthon.forms.on_submit_validated] calls `prevent_default()`, validates every field in `rules` (marking them touched), and only invokes `save` when all pass. Use [`on_submit`][wybthon.forms.on_submit] when you want to handle validation yourself.
 - A `Field` is a container of accessors, not an accessor itself, so the `Show` condition reads `plan.value()`.
 
 ## Schema-driven rules
 
-[`rules_from_schema`][wybthon.rules_from_schema] builds the validators map from a small declarative schema:
+[`rules_from_schema`][wybthon.forms.rules_from_schema] builds the validators map from a small declarative schema:
 
 ```python
-from wybthon import rules_from_schema
+from wybthon.forms import rules_from_schema
 
 rules = rules_from_schema(
     {
@@ -111,10 +101,10 @@ rules = rules_from_schema(
 
 ## Validating on demand
 
-Call [`validate_form`][wybthon.validate_form] to validate everything and get an `(is_valid, errors)` tuple, or [`validate_field`][wybthon.validate_field] for one field:
+Call [`validate_form`][wybthon.forms.validate_form] to validate everything and get an `(is_valid, errors)` tuple, or [`validate_field`][wybthon.forms.validate_field] for one field:
 
 ```python
-from wybthon import validate_field, validate_form
+from wybthon.forms import validate_field, validate_form
 
 ok, errors = validate_form(fields, rules)
 validate_field(fields["name"], rules["name"])

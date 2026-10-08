@@ -6,7 +6,7 @@ from wybthon import button, component, create_store, div, h2, p, span
 
 
 @component
-def Page(**rest):
+def Page():
     store, set_store = create_store(
         {
             "count": 0,

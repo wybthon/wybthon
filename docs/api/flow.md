@@ -19,6 +19,9 @@ arguments are positional except the keyword-only options noted below.
 | [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] | `Switch(Match(when, children, keyed=False), ..., fallback=None)`: first truthy branch wins. |
 | [`dynamic`][wybthon.dynamic] | `dynamic(source)`: a component whose implementation (a component or tag) is chosen by a reactive `source`. Call the result with children and props. |
 | [`client_only`][wybthon.client_only] | `client_only(children, *, fallback=None)`: render `children` only in the browser, after hydration; `fallback` renders on the server. |
+| [`NoHydration`][wybthon.NoHydration] | `NoHydration(*children)`: server-rendered HTML the browser keeps as static DOM instead of hydrating. |
+| [`Hydration`][wybthon.Hydration] | `Hydration(*children, id=None)`: a passthrough kept for parity with Solid 2.0. |
+| [`is_hydrating`][wybthon.is_hydrating] | `True` only during the synchronous mount of [`hydrate`][wybthon.hydrate]. |
 
 #### `For` keying shapes
 
@@ -69,10 +72,15 @@ view = ul(
 - `client_only` renders its fallback during a server render and while
   hydrating, then its children; see
   [Server rendering](../concepts/server-rendering.md).
+- `NoHydration` costs no Python work while hydrating: the kernel keeps
+  the region's server DOM as is (`CLAIM_STATIC`) and nothing inside it
+  mounts or updates. In a page that wasn't server-rendered, its
+  children render normally.
 
 #### See also
 
-- [`map_array`][wybthon.map_array] and [`create_selector`][wybthon.create_selector]: the engine behind `For` and per-row selection
+- [`map_array`][wybthon.map_array] and [`repeat`][wybthon.repeat]: the reactive mapping behind `For` and `Repeat`
+- [`create_projection`][wybthon.create_projection]: per-row selection that notifies only the changed rows
 - [Concepts: Components](../concepts/components.md)
 - [Guides: Authoring patterns](../guides/authoring-patterns.md)
 - [Guides: Performance](../guides/performance.md)

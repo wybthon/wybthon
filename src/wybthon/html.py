@@ -22,10 +22,13 @@ Prop name mapping (Python keyword to HTML attribute):
   stays as is. Event handlers keep the `on_` prefix (`on_click`).
 - `True` sets a boolean attribute, `False` or `None` omits it.
 
-Each helper returns a [`VNode`][wybthon.VNode]. Two element names
-collide with Python builtins, so they're exposed with a trailing
-underscore: `main_` and `input_`. SVG elements live in
-[`wybthon.svg`][wybthon.svg].
+Children may also be t-strings: `p(t"Count: {count}")` updates as one
+reactive text node.
+
+Each helper returns a [`VNode`][wybthon.VNode]. Element names that
+collide with Python builtins or keywords are exposed with a trailing
+underscore: `main_`, `input_`, `del_`, and `object_`. SVG elements live
+in [`wybthon.svg`][wybthon.svg].
 
 See Also:
     - [`h`][wybthon.h]: the underlying hyperscript constructor.
@@ -37,7 +40,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from .vnode import Fragment, VNode, h
+from .vnode import Fragment, VNode, flatten_children
 
 __all__ = [
     "Fragment",
@@ -52,6 +55,9 @@ __all__ = [
     "footer",
     "main_",
     "nav",
+    "address",
+    "hgroup",
+    "search",
     # Headings
     "h1",
     "h2",
@@ -64,18 +70,44 @@ __all__ = [
     "a",
     "strong",
     "em",
+    "b",
+    "i",
+    "u",
+    "s",
     "small",
     "code",
+    "kbd",
+    "samp",
+    "var",
     "pre",
     "br",
+    "wbr",
     "hr",
     "blockquote",
+    "q",
+    "cite",
+    "abbr",
+    "dfn",
     "mark",
     "time",
+    "data",
+    "sub",
+    "sup",
+    "del_",
+    "ins",
+    "bdi",
+    "bdo",
+    "ruby",
+    "rt",
+    "rp",
     # Lists
     "ul",
     "ol",
     "li",
+    "dl",
+    "dt",
+    "dd",
+    "menu",
     # Tables
     "table",
     "thead",
@@ -98,9 +130,11 @@ __all__ = [
     "label",
     "fieldset",
     "legend",
+    "output",
     "progress",
     "meter",
-    # Media
+    "datalist",
+    # Media and embedded content
     "img",
     "video",
     "audio",
@@ -108,33 +142,21 @@ __all__ = [
     "canvas",
     "picture",
     "track",
+    "iframe",
+    "embed",
+    "object_",
+    "map_",
+    "area",
     # Interactive
     "details",
     "summary",
     "dialog",
-    # Semantic
+    # Semantic and templating
     "figure",
     "figcaption",
+    "template",
+    "slot",
 ]
-
-
-def _process_props(kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Map reserved-word workarounds (`class_`, `html_for`) to their attribute names.
-
-    Other names are left alone; the prop applier converts underscores to
-    hyphens when it writes attributes.
-    """
-    if "class_" in kwargs or "html_for" in kwargs:
-        props: dict[str, Any] = {}
-        for key, value in kwargs.items():
-            if key == "class_":
-                props["class"] = value
-            elif key == "html_for":
-                props["for"] = value
-            else:
-                props[key] = value
-        return props
-    return kwargs
 
 
 def element(tag: str) -> Callable[..., VNode]:
@@ -149,7 +171,13 @@ def element(tag: str) -> Callable[..., VNode]:
     """
 
     def element_fn(*children: Any, **props: Any) -> VNode:
-        return h(tag, _process_props(props), *children)
+        if not children:
+            kids: list[Any] = []
+        elif len(children) == 1 and type(children[0]) in (VNode, str):
+            kids = [children[0]]
+        else:
+            kids = flatten_children(children)
+        return VNode(tag, props, kids, props.get("key") if props else None)
 
     element_fn.__name__ = tag.replace("-", "_")
     element_fn.__qualname__ = element_fn.__name__
@@ -157,87 +185,122 @@ def element(tag: str) -> Callable[..., VNode]:
     return element_fn
 
 
-_el = element
-
-
-# Layout / Structure
-div = _el("div")
-span = _el("span")
-section = _el("section")
-article = _el("article")
-aside = _el("aside")
-header = _el("header")
-footer = _el("footer")
-main_ = _el("main")
-nav = _el("nav")
+# Layout
+div = element("div")
+span = element("span")
+section = element("section")
+article = element("article")
+aside = element("aside")
+header = element("header")
+footer = element("footer")
+main_ = element("main")
+nav = element("nav")
+address = element("address")
+hgroup = element("hgroup")
+search = element("search")
 
 # Headings
-h1 = _el("h1")
-h2 = _el("h2")
-h3 = _el("h3")
-h4 = _el("h4")
-h5 = _el("h5")
-h6 = _el("h6")
+h1 = element("h1")
+h2 = element("h2")
+h3 = element("h3")
+h4 = element("h4")
+h5 = element("h5")
+h6 = element("h6")
 
 # Text
-p = _el("p")
-a = _el("a")
-strong = _el("strong")
-em = _el("em")
-small = _el("small")
-code = _el("code")
-pre = _el("pre")
-br = _el("br")
-hr = _el("hr")
-blockquote = _el("blockquote")
-mark = _el("mark")
-time = _el("time")
+p = element("p")
+a = element("a")
+strong = element("strong")
+em = element("em")
+b = element("b")
+i = element("i")
+u = element("u")
+s = element("s")
+small = element("small")
+code = element("code")
+kbd = element("kbd")
+samp = element("samp")
+var = element("var")
+pre = element("pre")
+br = element("br")
+wbr = element("wbr")
+hr = element("hr")
+blockquote = element("blockquote")
+q = element("q")
+cite = element("cite")
+abbr = element("abbr")
+dfn = element("dfn")
+mark = element("mark")
+time = element("time")
+data = element("data")
+sub = element("sub")
+sup = element("sup")
+del_ = element("del")
+ins = element("ins")
+bdi = element("bdi")
+bdo = element("bdo")
+ruby = element("ruby")
+rt = element("rt")
+rp = element("rp")
 
 # Lists
-ul = _el("ul")
-ol = _el("ol")
-li = _el("li")
+ul = element("ul")
+ol = element("ol")
+li = element("li")
+dl = element("dl")
+dt = element("dt")
+dd = element("dd")
+menu = element("menu")
 
 # Tables
-table = _el("table")
-thead = _el("thead")
-tbody = _el("tbody")
-tfoot = _el("tfoot")
-tr = _el("tr")
-th = _el("th")
-td = _el("td")
-caption = _el("caption")
-colgroup = _el("colgroup")
-col = _el("col")
+table = element("table")
+thead = element("thead")
+tbody = element("tbody")
+tfoot = element("tfoot")
+tr = element("tr")
+th = element("th")
+td = element("td")
+caption = element("caption")
+colgroup = element("colgroup")
+col = element("col")
 
 # Forms
-form = _el("form")
-input_ = _el("input")
-textarea = _el("textarea")
-select = _el("select")
-option = _el("option")
-optgroup = _el("optgroup")
-button = _el("button")
-label = _el("label")
-fieldset = _el("fieldset")
-legend = _el("legend")
-progress = _el("progress")
-meter = _el("meter")
+form = element("form")
+input_ = element("input")
+textarea = element("textarea")
+select = element("select")
+option = element("option")
+optgroup = element("optgroup")
+button = element("button")
+label = element("label")
+fieldset = element("fieldset")
+legend = element("legend")
+output = element("output")
+progress = element("progress")
+meter = element("meter")
+datalist = element("datalist")
 
-# Media
-img = _el("img")
-video = _el("video")
-audio = _el("audio")
-source = _el("source")
-canvas = _el("canvas")
-picture = _el("picture")
-track = _el("track")
+# Media and embedded content
+img = element("img")
+video = element("video")
+audio = element("audio")
+source = element("source")
+canvas = element("canvas")
+picture = element("picture")
+track = element("track")
+iframe = element("iframe")
+embed = element("embed")
+object_ = element("object")
+map_ = element("map")
+area = element("area")
 
 # Interactive
-details = _el("details")
-summary = _el("summary")
-dialog = _el("dialog")
+details = element("details")
+summary = element("summary")
+dialog = element("dialog")
 
-# Semantic
-figure = _el("figure")
-figcaption = _el("figcaption")
+# Semantic and templating
+figure = element("figure")
+figcaption = element("figcaption")
+template = element("template")
+slot = element("slot")

@@ -17,8 +17,8 @@ def Failing():
 
 def fallback(err, reset):
     return div(
-        p(f"Oops: {err}"),
-        button("Try again", on_click=lambda e: reset()),
+        p(t"Oops: {err}"),
+        button("Try again", on_click=reset),
         class_="error",
     )
 
@@ -29,6 +29,11 @@ view = Errored(lambda: Failing(), fallback=fallback)
 `children` may be a VNode, a zero-arg callable, or a list of either.
 Passing a callable defers building the subtree until the boundary
 mounts, which is what you want when the children can raise.
+
+The fallback receives the error as an **accessor**, as in Solid 2.0:
+call `err()` to read the exception, or interpolate `err` in a
+t-string, as above, to show its message. `reset` takes no arguments, so it can be passed
+straight to `on_click`.
 
 ## What gets caught
 
@@ -59,18 +64,22 @@ Errored(
 `fallback` may be:
 
 - a `VNode` or a string, shown as is;
-- a callable `(error) -> VNode`;
-- a callable `(error, reset) -> VNode`, where `reset()` clears the error and re-renders the children;
+- a callable `() -> VNode`;
+- a callable `(err) -> VNode`, where `err` is an accessor for the caught exception;
+- a callable `(err, reset) -> VNode`, where `reset()` clears the error and re-renders the children;
 - omitted, in which case the boundary renders the text "Something went wrong."
 
 A callable fallback runs each time an error is caught, so it can inspect
-the exception:
+the exception by calling `err()`:
 
 ```python
+from wybthon.html import button, div, p
+
+
 def describe(err, reset):
-    if isinstance(err, PermissionError):
+    if isinstance(err(), PermissionError):
         return p("You don't have access to this.")
-    return div(p(str(err)), button("Retry", on_click=lambda e: reset()))
+    return div(p(lambda: str(err())), button("Retry", on_click=reset))
 ```
 
 ## Resetting
@@ -81,7 +90,9 @@ automatically. Coupling a boundary to the current route is the usual
 pattern, so navigating away from a broken page recovers on its own:
 
 ```python
-from wybthon import Errored, current_path
+from wybthon import Errored
+from wybthon.html import p
+from wybthon.router import Outlet, current_path
 
 Errored(lambda: Outlet(), fallback=lambda err: p("This page failed"), reset_on=current_path)
 ```
@@ -104,7 +115,8 @@ work for causes the graph can't see, such as a network that came back.
 ## Observing errors with `on_error`
 
 Pass `on_error=` to be notified when the boundary catches something, for
-logging or monitoring. It runs in addition to showing the fallback:
+logging or monitoring. It receives the exception itself (not an
+accessor) and runs in addition to showing the fallback:
 
 ```python
 Errored(lambda: Dashboard(), fallback="Dashboard unavailable", on_error=report_to_monitoring)
@@ -144,11 +156,11 @@ so a rejected fetch inside the loading content still has a fallback:
 
 ```python
 from wybthon import Errored, Loading
-from wybthon.html import p
+from wybthon.html import button, div, p
 
 Errored(
-    lambda: Loading(lambda: UserCard(), fallback=p("Loading...")),
-    fallback=lambda err, reset: div(p(f"Could not load: {err}"), button("Retry", on_click=lambda e: reset())),
+    lambda: Loading(lambda: UserCard(user_id=user_id), fallback=p("Loading...")),
+    fallback=lambda err, reset: div(p(t"Could not load: {err}"), button("Retry", on_click=reset)),
 )
 ```
 

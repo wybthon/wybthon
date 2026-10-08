@@ -6,7 +6,7 @@ from wybthon import button, component, create_effect, create_signal, div, em, h2
 
 
 @component
-def Page(**rest):
+def Page():
     count, set_count = create_signal(0)
 
     first, set_first = create_signal("Ada")

@@ -9,7 +9,7 @@ from typing import Any
 from .flow import For
 from .html import div
 from .reactivity import Accessor, create_memo, create_signal
-from .reactivity._props import Props
+from .reactivity._props import RawProps
 from .vnode import VNode, h
 
 
@@ -72,7 +72,7 @@ def VirtualFor(
     )
 
 
-def _VirtualFor(props: Props) -> Any:
+def _VirtualFor(props: RawProps) -> Any:
     each = props.each
     scroll, set_scroll = create_signal(0.0)
     row_height = float(props.raw("row_height"))

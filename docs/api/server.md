@@ -8,26 +8,38 @@ Server rendering: the same components that run in the browser render to HTML in 
 
 | Name | Description |
 | --- | --- |
-| [`render_to_string`][wybthon.server.render_to_string] | Render synchronously. Async data isn't loaded; `Loading` boundaries render their fallbacks. |
-| [`render_to_string_async`][wybthon.server.render_to_string_async] | Resolve every async memo the page reads, then render and embed the results. |
-| [`render_to_stream`][wybthon.server.render_to_stream] | Yield the page with fallbacks, then each `Loading` boundary as its data arrives, then the state. |
+| [`render_to_string`][wybthon.server.render_to_string] | `render_to_string(view, *, url=None, event=None)`: render synchronously. Async data isn't loaded; `Loading` boundaries render their fallbacks. |
+| [`render_to_stream`][wybthon.server.render_to_stream] | `render_to_stream(view, *, url=None, event=None, timeout=30)`: returns a `RenderStream`. |
+| [`RenderStream`][wybthon.server.RenderStream] | Iterate it (`async for chunk in stream`) for the page with fallbacks, then each `Loading` boundary as its data arrives, then the state. Await it (`html = await stream`) for the complete HTML once every async memo has resolved. Use one or the other, once. |
 
-The browser side, [`hydrate`][wybthon.hydrate], [`is_server`][wybthon.is_server], [`client_only`][wybthon.client_only], and [`ServerError`][wybthon.ServerError], are exported from `wybthon`.
+Awaiting `render_to_stream` replaces the removed `render_to_string_async`.
+The browser side, [`hydrate`][wybthon.hydrate], [`is_server`][wybthon.is_server], [`is_hydrating`][wybthon.is_hydrating], [`client_only`][wybthon.client_only], [`NoHydration`][wybthon.NoHydration], and [`ServerError`][wybthon.ServerError], is exported from `wybthon`, as are the [request helpers](request.md) components use to set the status and headers.
 
 ```python
 import asyncio
-from wybthon import component, p
-from wybthon.server import render_to_string_async
+
+from wybthon import RequestEvent, component, http_header, p
+from wybthon.server import render_to_stream
+
 
 @component
 def App():
+    http_header("Cache-Control", "max-age=60")
     return p("Hello from the server")
 
-html = asyncio.run(render_to_string_async(App(), url="/"))
+
+async def main():
+    event = RequestEvent(url="/")
+    html = await render_to_stream(App(), event=event)
+    print(event.response.status, event.response.headers, html)
+
+
+asyncio.run(main())
 ```
 
 #### See also
 
+- [Request](request.md): `RequestEvent`, `http_status`, and `http_header`
 - [Concepts: Server rendering](../concepts/server-rendering.md)
 - [Guides: Deployment](../guides/deployment.md)
 - [RFC 0001](../rfcs/0001-server-rendering-and-hydration.md)

@@ -9,7 +9,7 @@ pytestmark = pytest.mark.e2e
 
 
 def python(page, code):
-    return page.evaluate("code => window.__wyb_test_python.runPythonAsync(code)", code)
+    return page.evaluate("code => window.__WYB.pyodide.runPythonAsync(code)", code)
 
 
 def test_edit_reorder_async_optimistic_error_and_unmount(goto_feature):
@@ -129,7 +129,8 @@ def test_virtual_rows_scroll_and_dispose(goto_feature):
         page,
         """
 from js import document
-from wybthon import VirtualFor, create_store, on_cleanup, render, p
+from wybthon import create_store, on_cleanup, render, p
+from wybthon.virtual import VirtualFor
 host = document.createElement("section")
 host.id = "virtual-host"
 document.body.appendChild(host)
@@ -168,7 +169,8 @@ def test_native_options_composed_events_and_composition(goto_feature):
         """
 import json
 from js import document
-from wybthon import bind_text, button, div, event, form_state, input_, p, render
+from wybthon import button, div, event, input_, p, render
+from wybthon.forms import bind_text, form_state
 host = document.createElement("section")
 host.id = "event-extra"
 document.body.appendChild(host)
@@ -214,7 +216,7 @@ def test_specialized_templates_match_native_generic_mounts(goto_feature):
         """
 from js import document
 from wybthon import div, span, h, Fragment, create_signal, flush
-from wybthon import reconciler, template, kernel
+from wybthon import reconciler, kernel
 from wybthon.dom import Element
 host = document.createElement("section")
 reference_host = document.createElement("section")
@@ -241,14 +243,15 @@ cases = [
     lambda: div(h("input", {"value": text}), span("controlled")),
     lambda: div(span("adjacent", "text"), span("tail")),
 ]
+templates_enabled = kernel.html_templates
+assert templates_enabled is True
 for make in cases:
     optimized = reconciler.render(make(), container)
-    saved = reconciler.build_plan
-    reconciler.build_plan = template._build_plan_uncached
+    kernel.html_templates = False
     try:
         reference = reconciler.render(make(), reference_container)
     finally:
-        reconciler.build_plan = saved
+        kernel.html_templates = templates_enabled
     assert str(host.innerHTML) == str(reference_host.innerHTML)
     write_text("updated")
     flush()
@@ -266,5 +269,80 @@ kernel.emit((kernel.OP_RELEASE, [container.node_id, reference_container.node_id]
 kernel.commit()
 host.remove()
 reference_host.remove()
+""",
+    )
+
+
+def test_kernel_protocol_fused_clone_declared_listeners_and_native_disposal(goto_feature):
+    page = goto_feature("contracts")
+    python(
+        page,
+        """
+import json
+from js import document
+from wybthon import For, button, create_signal, flush, li, render, span, ul
+from wybthon import kernel
+host = document.createElement("section")
+host.id = "protocol-host"
+document.body.appendChild(host)
+proto_rows, set_proto_rows = create_signal([])
+proto_clicked = []
+def proto_row(item, index):
+    return li(
+        span(item["label"]),
+        button("pick", on_click=lambda: proto_clicked.append(item["id"]), data_pick=item["id"]),
+        data_proto=item["id"],
+    )
+proto_backend = kernel._backend
+proto_apply = proto_backend.apply
+proto_ops = []
+def spy(batch):
+    proto_ops.extend(list(op) for op in batch)
+    proto_apply(batch)
+proto_backend.apply = spy
+proto_root = render(ul(For(proto_rows, proto_row)), "#protocol-host")
+proto_baseline = kernel.stats()
+proto_ops.clear()
+set_proto_rows([{"id": i, "label": f"row {i}"} for i in range(50)])
+flush()
+""",
+    )
+    created = json.loads(python(page, "json.dumps([op[0] for op in proto_ops])"))
+    expect(page.locator("[data-proto]")).to_have_count(50)
+    expect(page.locator('[data-proto="7"] span')).to_have_text("row 7")
+    # Each row mounts with one fused CLONE command; its click handler is
+    # declared by the template registration, so no LISTEN commands go out.
+    assert created.count(4) == 50, created  # OP_CLONE
+    assert 11 not in created, created  # OP_LISTEN
+    registered = json.loads(python(page, "json.dumps([op for op in proto_ops if op[0] == kernel.OP_REGISTER_TPL])"))
+    assert any(["click" in [event for _, event in op[5]] for op in registered]), registered
+    page.click('[data-pick="7"]')
+    page.click('[data-pick="12"]')
+    assert json.loads(python(page, "json.dumps(proto_clicked)")) == [7, 12]
+    # Clearing the list is one native range disposal; the kernel releases
+    # every registered node inside it.
+    cleared = json.loads(
+        python(
+            page,
+            """
+proto_ops.clear()
+set_proto_rows([])
+flush()
+json.dumps([op[0] for op in proto_ops])
+""",
+        )
+    )
+    assert cleared == [19], cleared  # OP_DISPOSE_RANGE
+    expect(page.locator("[data-proto]")).to_have_count(0)
+    stats = json.loads(python(page, "json.dumps([kernel.stats(), proto_baseline])"))
+    for name in ("nodes", "listeners", "roots"):
+        assert stats[0][name] == stats[1][name], (name, stats)
+    python(
+        page,
+        """
+del proto_backend.apply
+proto_root.dispose()
+flush()
+host.remove()
 """,
     )
