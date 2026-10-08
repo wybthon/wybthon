@@ -79,6 +79,8 @@ state.ready = (async () => {
       pyodide.globals.set("_wyb_requirements", JSON.stringify(config.wheels));
       await pyodide.runPythonAsync("import micropip, json; await micropip.install(json.loads(_wyb_requirements)); del _wyb_requirements");
     }
+    // Production bundles turn dev mode off before the application imports.
+    await pyodide.runPythonAsync(`import wybthon; wybthon.set_dev_mode(${config.dev ? "True" : "False"})`);
     pyodide.globals.set("_wyb_entry", config.entry);
     pyodide.globals.set("_wyb_mount", config.mount || "#app");
     pyodide.globals.set("_wyb_hydrate", hydrating);

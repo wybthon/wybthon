@@ -10,7 +10,7 @@ authors = [
   { name = "Owen Carey" }
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { file = "LICENSE" }
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
@@ -18,8 +18,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Environment :: WebAssembly",
   "Framework :: AsyncIO",
@@ -30,9 +28,8 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-  "black>=24.0",
-  "ruff>=0.5",
-  "mypy>=1.10",
+  "ruff>=0.12",
+  "mypy>=1.18",
   "pytest>=8.0",
   "pytest-cov>=4.1",
   "pytest-playwright>=0.5.0",
@@ -65,14 +62,16 @@ Changelog = "https://github.com/wybthon/wybthon/blob/main/CHANGELOG.md"
 where = ["src"]
 
 [tool.setuptools.package-data]
-wybthon = ["py.typed", "_bootstrap.js"]
+wybthon = ["py.typed", "_bootstrap.js", "_kernel.js"]
 
 [tool.setuptools]
 license-files = ["LICENSE*"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
+# RFCs are historical records: their examples stay as written.
+extend-exclude = ["docs/rfcs"]
 
 [tool.ruff.lint]
 # Docstring (D) rules use the Google convention — see [tool.ruff.lint.pydocstyle].
@@ -95,10 +94,6 @@ ignore = ["D107", "D105", "D203", "D213"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
-[tool.black]
-line-length = 120
-target-version = ['py312']
 
 # ── Semantic Release ────────────────────────────────────────────────
 

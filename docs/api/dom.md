@@ -23,10 +23,15 @@ node from another API, and `Element(node_id=42)` wraps a kernel id
 (what refs and event targets hand you).
 
 ```python
-from wybthon import Prop, Ref, component, input_, on_settled, prop
+from wybthon import Props, Ref, component, input_, on_settled
+
+
+class FancyInputProps(Props):
+    ref: Ref | None = None  # plain field: the parent's Ref, passed through untouched
+
 
 @component
-def FancyInput(ref: Prop[Ref | None] = prop(None)):
+def FancyInput(props: FancyInputProps):
     local = Ref()
 
     def focus():
@@ -34,7 +39,7 @@ def FancyInput(ref: Prop[Ref | None] = prop(None)):
 
     on_settled(focus)
     # Forward the parent's ref (if any) and keep a local one.
-    return input_(type="text", ref=[local, ref.peek()])
+    return input_(type="text", ref=[local, props.ref])
 ```
 
 Refs are assigned during mount, so read them in
@@ -48,6 +53,6 @@ are visible to the read.
 
 #### See also
 
-- [Props](props.md): the `ref=` prop and DOM property rules
+- [HTML helpers](html.md): the `ref=` prop and DOM property rules
 - [Events](events.md): `DomEvent.target` and `current_target` are `Element`-backed
 - [Concepts: DOM interop](../concepts/dom.md)

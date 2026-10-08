@@ -28,10 +28,10 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, overload
 
 from .reactivity import _core
-from .reactivity._props import Props
+from .reactivity._props import RawProps
 from .vnode import VNode, h
 
 __all__ = ["Context", "ContextNotFoundError", "create_context", "use_context"]
@@ -86,7 +86,11 @@ class Context[T]:
     __hash__ = object.__hash__
 
 
-def create_context[T](default: Any = _MISSING, *, name: str | None = None) -> Context[T]:
+@overload
+def create_context[T](default: T, *, name: str | None = None) -> Context[T]: ...
+@overload
+def create_context[T](*, name: str | None = None) -> Context[T]: ...
+def create_context(default: Any = _MISSING, *, name: str | None = None) -> Context[Any]:
     """Create a [`Context`][wybthon.Context].
 
     Args:
@@ -127,7 +131,7 @@ def use_context[T](ctx: Context[T]) -> T:
     return ctx.default
 
 
-def _provider(props: Props) -> Any:
+def _provider(props: RawProps) -> Any:
     """Internal provider component: stores `value` on its own owner scope."""
     owner = _core._current_owner
     assert owner is not None

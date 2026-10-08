@@ -1,6 +1,8 @@
-"""Props mappings, prop defaults, merge/omit, children(), map_array, and create_selector."""
+"""Typed Props instances, RawProps, merge/omit, children(), map_array, repeat, and projection selection."""
 
-from __future__ import annotations
+from collections.abc import Callable
+
+import pytest
 
 from wybthon.reactivity import (
     Prop,
@@ -9,7 +11,6 @@ from wybthon.reactivity import (
     create_effect,
     create_memo,
     create_root,
-    create_selector,
     create_signal,
     flush,
     map_array,
@@ -17,25 +18,37 @@ from wybthon.reactivity import (
     omit,
     on_cleanup,
     prop,
+    repeat,
     untrack,
 )
+from wybthon.reactivity._props import RawProps
+from wybthon.store import create_projection
 
 # ---------------------------------------------------------------------------
-# Props
+# Typed Props instances
 # ---------------------------------------------------------------------------
 
 
-def test_props_attribute_and_item_access_return_the_same_prop(wyb):
-    props = Props({"name": "Ada"})
-    assert isinstance(props.name, Prop)
-    assert props.name is props["name"]
+class NameProps(Props):
+    name: Prop[str]
+    greeting: Prop[str] = prop(default="hello")
+    tags: Prop[list[str]] = prop(default_factory=list)
+    on_click: Callable[..., None] | None = None
+    size: int = 1
+
+
+def test_prop_field_reads_return_one_cached_accessor(wyb):
+    props = NameProps(name="Ada")
+    assert props.name is props.name
     assert props.name() == "Ada"
     assert props.name.peek() == "Ada"
+    assert isinstance(NameProps.name, Prop)
+    assert repr(NameProps.name) == "Prop('name')"
 
 
-def test_props_unwrap_accessors_and_zero_arg_callables(wyb):
+def test_prop_fields_unwrap_accessors_and_zero_arg_callables(wyb):
     name, set_name = create_signal("Ada")
-    props = Props({"name": name, "greeting": lambda: "hi"})
+    props = NameProps(name=name, greeting=lambda: "hi")
     assert props.name() == "Ada"
     assert props.greeting() == "hi"
     set_name("Grace")
@@ -43,17 +56,79 @@ def test_props_unwrap_accessors_and_zero_arg_callables(wyb):
     assert props.name() == "Grace"
 
 
-def test_props_raw_returns_the_value_as_passed(wyb):
+def test_plain_fields_return_the_value_as_passed(wyb):
+    handler = lambda e: None  # noqa: E731
+    zero_arg = lambda: "never called"  # noqa: E731
+    props = NameProps(name="x", on_click=handler)
+    assert props.on_click is handler
+    assert NameProps(name="x", on_click=zero_arg).on_click is zero_arg
+    assert NameProps(name="x").on_click is None
+    assert props.size == 1
+
+
+def test_prop_defaults_and_default_factory(wyb):
+    a = NameProps(name="a")
+    b = NameProps(name="b")
+    assert a.greeting() == "hello"
+    assert a.tags() == [] and a.tags() is not b.tags()
+    assert NameProps._wyb_required == frozenset({"name"})
+    assert repr(a) == "NameProps({'name': 'a'})"
+
+
+def test_props_update_pushes_new_values_into_live_accessors(wyb):
+    props = NameProps(name="Ada")
+    seen: list[str] = []
+    create_root(lambda d: create_effect(props.greeting, lambda v: seen.append(v)))
+    flush()
+    props._wyb_update({"name": "Ada", "greeting": "hey"})
+    flush()
+    assert seen == ["hello", "hey"]
+    # An omitted prop falls back to its default.
+    props._wyb_update({"name": "Ada"})
+    flush()
+    assert seen == ["hello", "hey", "hello"]
+
+
+def test_props_tracked_read_subscribes_memo(wyb):
+    class N(Props):
+        n: Prop[int]
+
+    props = N(n=1)
+    doubled = create_memo(lambda: props.n() * 2)
+    assert doubled() == 2
+    props._wyb_update({"n": 3})
+    flush()
+    assert doubled() == 6
+
+
+def test_props_instances_reject_item_syntax(wyb):
+    with pytest.raises(TypeError, match="don't take children"):
+        NameProps(name="x")["child"]
+
+
+# ---------------------------------------------------------------------------
+# RawProps (framework-internal function tags)
+# ---------------------------------------------------------------------------
+
+
+def test_raw_props_attribute_and_item_access_return_the_same_accessor(wyb):
+    props = RawProps({"name": "Ada"})
+    assert props.name is props["name"]
+    assert props.name() == "Ada"
+    assert props.name.peek() == "Ada"
+
+
+def test_raw_props_raw_returns_the_value_as_passed(wyb):
     name, _ = create_signal("Ada")
     handler = lambda e: None  # noqa: E731
-    props = Props({"name": name, "on_click": handler})
+    props = RawProps({"name": name, "on_click": handler})
     assert props.raw("name") is name
     assert props.raw("on_click") is handler
-    assert props.on_click() is handler
+    assert props.name() == "Ada"
 
 
-def test_props_defaults_and_missing(wyb):
-    props = Props({"a": 1}, defaults={"b": 2})
+def test_raw_props_defaults_and_missing(wyb):
+    props = RawProps({"a": 1}, defaults={"b": 2})
     assert props.a() == 1
     assert props.b() == 2
     assert props.c() is None
@@ -62,36 +137,19 @@ def test_props_defaults_and_missing(wyb):
     assert len(props) == 2
     assert props.get("missing", "fallback") == "fallback"
     assert props.get("b")() == 2
-    assert props.snapshot() == {"a": 1, "b": 2}
 
 
-def test_props_update_pushes_new_values_into_live_accessors(wyb):
-    props = Props({"n": 1})
+def test_raw_props_update_pushes_new_values(wyb):
+    props = RawProps({"n": 1})
     seen: list[int] = []
     create_root(lambda d: create_effect(props.n, lambda v: seen.append(v)))
     flush()
-    props._update({"n": 2})
+    props._wyb_update({"n": 2})
     flush()
     assert seen == [1, 2]
-    props._update({})
+    props._wyb_update({})
     flush()
     assert seen == [1, 2, None]
-
-
-def test_prop_marker_and_default_value(wyb):
-    marker = prop(5)
-    assert isinstance(marker, Prop)
-    assert marker() == 5
-    assert marker.peek() == 5
-
-
-def test_props_tracked_read_subscribes_memo(wyb):
-    props = Props({"n": 1})
-    doubled = create_memo(lambda: props.n() * 2)
-    assert doubled() == 2
-    props._update({"n": 3})
-    flush()
-    assert doubled() == 6
 
 
 # ---------------------------------------------------------------------------
@@ -99,9 +157,14 @@ def test_props_tracked_read_subscribes_memo(wyb):
 # ---------------------------------------------------------------------------
 
 
+class ShapeProps(Props):
+    size: Prop[int] = prop(default=0)
+    color: Prop[str] = prop(default="black")
+
+
 def test_merge_later_sources_win_and_stay_reactive(wyb):
     color, set_color = create_signal("red")
-    props = Props({"size": 1, "color": color})
+    props = ShapeProps(size=1, color=color)
     merged = merge({"size": 0, "shape": "circle"}, props)
     assert merged["size"]() == 1
     assert merged["shape"]() == "circle"
@@ -109,6 +172,7 @@ def test_merge_later_sources_win_and_stay_reactive(wyb):
     set_color("blue")
     flush()
     assert merged["color"]() == "blue"
+    assert merged.color() == "blue"
     assert set(merged) == {"size", "shape", "color"}
 
 
@@ -119,13 +183,43 @@ def test_merge_skips_none_sources_but_explicit_none_values_override(wyb):
     assert merge({"a": 1}, {"a": None})["a"]() is None
 
 
+def test_merge_lets_props_override_only_what_the_parent_passed(wyb):
+    # As in Solid, defaults merged in first apply unless the parent passed the key.
+    assert merge({"color": "red"}, ShapeProps())["color"]() == "red"
+    assert merge({"color": "red"}, ShapeProps(color="blue"))["color"]() == "blue"
+    assert merge(ShapeProps(), {"color": "red"})["color"]() == "red"
+
+
 def test_omit_hides_keys(wyb):
-    props = Props({"a": 1, "b": 2, "c": 3})
-    rest = omit(props, "a")
-    assert set(rest) == {"b", "c"}
-    assert rest["b"]() == 2
-    assert "a" not in rest
-    assert rest.snapshot() == {"b": 2, "c": 3}
+    props = ShapeProps(size=2, color="green")
+    rest = omit(props, "size")
+    assert set(rest) == {"color"}
+    assert rest["color"]() == "green"
+    assert "size" not in rest
+    assert {k: rest[k]() for k in rest} == {"color": "green"}
+    assert rest["size"]() is None
+
+
+def test_omit_accepts_a_predicate(wyb):
+    rest = omit({"on_click": 1, "on_input": 2, "id": "x", "title": "t"}, lambda key: key.startswith("on_"))
+    assert sorted(rest) == ["id", "title"]
+    assert rest["id"]() == "x"
+    # Handler props pass through as values (never reactive bindings); omitted ones are None.
+    assert rest["on_click"] is None
+    nested = omit(rest, lambda key: key == "title")
+    assert list(nested) == ["id"]
+
+
+def test_omit_stays_reactive(wyb):
+    color, set_color = create_signal("red")
+    rest = omit(ShapeProps(color=color), "size")
+    seen: list[str] = []
+    create_root(lambda d: create_effect(rest["color"], lambda v: seen.append(v)))
+    flush()
+    set_color("blue")
+    flush()
+    assert seen == ["red", "blue"]
+    assert rest["color"].peek() == "blue"
 
 
 # ---------------------------------------------------------------------------
@@ -139,10 +233,22 @@ def test_children_flattens_and_drops_none(wyb):
     assert resolved() == ["a", "b", "c"]
     set_kids("solo")
     flush()
-    assert resolved() == ["solo"]
+    assert resolved() == "solo"
+    assert resolved.to_array() == ["solo"]
     set_kids(None)
     flush()
     assert resolved() == []
+    assert resolved.to_array() == []
+
+
+def test_children_resolves_nested_accessors_and_drops_booleans(wyb):
+    flag, set_flag = create_signal(False)
+    inner, _ = create_signal(["x", None])
+    resolved = children(lambda: [True, "a", inner, lambda: "b" if flag() else False, (("c",),)])
+    assert resolved.to_array() == ["a", "x", "c"]
+    set_flag(True)
+    flush()
+    assert resolved.to_array() == ["a", "x", "b", "c"]
 
 
 # ---------------------------------------------------------------------------
@@ -270,13 +376,54 @@ def test_map_array_disposes_rows_with_owner(wyb):
 
 
 # ---------------------------------------------------------------------------
-# create_selector
+# repeat
 # ---------------------------------------------------------------------------
 
 
-def test_create_selector_notifies_only_affected_keys(wyb):
+def test_repeat_maps_only_new_slots_and_disposes_removed_ones(wyb):
+    count, set_count = create_signal(2)
+    created: list[int] = []
+    disposed: list[int] = []
+
+    def row(i: int) -> str:
+        created.append(i)
+        on_cleanup(lambda: disposed.append(i))
+        return f"row{i}"
+
+    rows = create_root(lambda d: repeat(count, row))
+    assert rows() == ["row0", "row1"]
+    set_count(4)
+    flush()
+    assert rows() == ["row0", "row1", "row2", "row3"]
+    assert created == [0, 1, 2, 3]
+    set_count(1)
+    flush()
+    assert rows() == ["row0"]
+    assert sorted(disposed) == [1, 2, 3]
+
+
+def test_repeat_start_offset_and_fallback(wyb):
+    count, set_count = create_signal(0)
+    start, set_start = create_signal(5)
+    rows = create_root(lambda d: repeat(count, lambda i: i, start=start, fallback=lambda: "none"))
+    assert rows() == ["none"]
+    set_count(2)
+    flush()
+    assert rows() == [5, 6]
+    set_start(10)
+    flush()
+    assert rows() == [10, 11]
+    assert create_root(lambda d: repeat(3, lambda i: i * 2))() == [0, 2, 4]
+
+
+# ---------------------------------------------------------------------------
+# Selection with create_projection (the create_selector replacement)
+# ---------------------------------------------------------------------------
+
+
+def test_projection_selection_notifies_only_affected_keys(wyb):
     selected, set_selected = create_signal(1)
-    is_selected = create_root(lambda d: create_selector(selected))
+    is_selected = create_root(lambda d: create_projection(lambda: {} if selected() is None else {selected(): True}))
     runs: dict[int, int] = {1: 0, 2: 0, 3: 0}
     memos = {}
     for key in (1, 2, 3):
@@ -284,7 +431,7 @@ def test_create_selector_notifies_only_affected_keys(wyb):
         def make(k: int):
             def compute() -> bool:
                 runs[k] += 1
-                return is_selected(k)
+                return bool(is_selected.get(k))
 
             return compute
 
@@ -297,3 +444,7 @@ def test_create_selector_notifies_only_affected_keys(wyb):
     flush()
     assert [untrack(memos[k]) for k in (1, 2, 3)] == [False, True, False]
     assert runs == {1: 2, 2: 2, 3: 1}
+    set_selected(None)
+    flush()
+    assert [untrack(memos[k]) for k in (1, 2, 3)] == [False, False, False]
+    assert runs == {1: 2, 2: 3, 3: 1}

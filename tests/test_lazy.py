@@ -10,16 +10,30 @@ from wybthon.error_boundary import Errored
 from wybthon.html import div, h2, p, section, span
 from wybthon.lazy import LazyComponent, lazy
 from wybthon.loading import Loading
-from wybthon.reactivity import Prop, create_signal, flush, prop
+from wybthon.reactivity import ParentProps, Prop, Props, create_signal, flush, prop
 
 
 def texts(node):
-    return [t for t in collect_texts(node) if t]
+    return [t for t in collect_texts(node) if t and t.strip()]
+
+
+# Every `lazy()` component currently fails to render: `LazyComponent` wraps
+# `_render_lazy(self, props: RawProps)`, which `Component._resolve` rejects
+# because `RawProps` isn't a `Props` subclass.
+
+
+class PageProps(Props):
+    title: Prop[str] = prop(default="T")
 
 
 @component
-def Page(title: Prop[str] = prop("T")):
-    return h2(title)
+def Page(props: PageProps):
+    return h2(props.title)
+
+
+@component
+def Other():
+    return span("other")
 
 
 @pytest.fixture()
@@ -27,7 +41,7 @@ def fake_module():
     name = "_wyb_test_lazy_page_mod"
     mod = types.ModuleType(name)
     mod.Page = Page
-    mod.Other = lambda _props: span("other")
+    mod.Other = Other
     sys.modules[name] = mod
     try:
         yield name
@@ -133,7 +147,7 @@ def test_failing_loader_routes_to_errored_fallback(wyb, root_element):
         Bad = lazy(lambda: ("__wyb_no_such_module__", "X"))
         seen = []
         root = wyb["reconciler"].render(
-            div(Errored(lambda: Bad(), fallback=lambda e: (seen.append(e), p("failed"))[1])),
+            div(Errored(lambda: Bad(), fallback=lambda e: (seen.append(e()), p("failed"))[1])),
             root_element,
         )
         await asyncio.sleep(0.01)
@@ -151,7 +165,7 @@ def test_loader_raising_synchronously_routes_to_errored(wyb, root_element):
 
     Bad = lazy(loader)
     root = wyb["reconciler"].render(
-        div(Errored(lambda: Bad(), fallback=lambda e: p("err: ", str(e)))),
+        div(Errored(lambda: Bad(), fallback=lambda e: p("err: ", lambda: str(e())))),
         root_element,
     )
     flush()
@@ -160,13 +174,17 @@ def test_loader_raising_synchronously_routes_to_errored(wyb, root_element):
 
 
 def test_props_and_children_pass_through_to_loaded_component(wyb, root_element):
+    class CardProps(ParentProps):
+        title: Prop[str] = prop(default="")
+        class_: Prop[str | None] = prop(default=None)
+
     @component
-    def Card(title: Prop[str] = prop(""), children=None, **rest):
-        return section(h2(title), div(children), **rest)
+    def Card(props: CardProps):
+        return section(h2(props.title), div(props.children), class_=props.class_)
 
     Lazy = lazy(lambda: Card)
     label, set_label = create_signal("one")
-    root = wyb["reconciler"].render(Lazy(p("kid-a"), p("kid-b"), title=label, class_="card"), root_element)
+    root = wyb["reconciler"].render(Lazy(title=label, class_="card")[p("kid-a"), p("kid-b")], root_element)
     flush()
     container = root_element.element
     assert texts(container) == ["one", "kid-a", "kid-b"]
@@ -192,7 +210,9 @@ def test_failed_lazy_load_can_retry_and_recover(wyb, root_element):
 
         panel = lazy(load)
         root = wyb["reconciler"].render(
-            Errored(lambda: Loading(lambda: panel(), fallback="loading"), fallback=lambda error: p(str(error))),
+            Errored(
+                lambda: Loading(lambda: panel(), fallback="loading"), fallback=lambda error: p(lambda: str(error()))
+            ),
             root_element,
         )
         for _ in range(5):

@@ -11,9 +11,13 @@ state, key, mouse buttons, modifiers), so the common handler patterns
 (`evt.target.value`, `evt.key`, `evt.prevent_default()`) never touch a
 `JsProxy` at all.
 
-Registering a handler is itself a batched op (`LISTEN`), so mounting a
-list with thousands of handlers adds nothing to the bridge-crossing
-count.
+Registering a handler costs no bridge crossing: a template declares its
+delegated listeners when it's registered, so cloning a row marks them
+natively, and other handlers ride the same command buffer as the DOM
+mutations (`LISTEN`).
+
+A handler may take the [`DomEvent`][wybthon.DomEvent] or no arguments
+at all: `on_click=lambda: set_open(False)`.
 
 Public surface:
 
@@ -38,6 +42,7 @@ import inspect
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import FunctionType, MethodType
 from typing import Any
 
 from . import kernel
@@ -68,34 +73,93 @@ def event(
     return EventHandler(handler, capture, passive, once)
 
 
-@dataclass(slots=True)
+def _takes_event(callback: Callable[..., Any]) -> bool:
+    """Whether a handler accepts the event argument (checked once, at registration)."""
+    if type(callback) is FunctionType:
+        code = callback.__code__
+        return code.co_argcount > 0 or bool(code.co_flags & inspect.CO_VARARGS)
+    if isinstance(callback, MethodType):
+        code = getattr(callback.__func__, "__code__", None)
+        if code is not None:
+            return code.co_argcount > 1 or bool(code.co_flags & inspect.CO_VARARGS)
+    try:
+        params = inspect.signature(callback).parameters.values()
+    except TypeError, ValueError:
+        return True
+    return any(
+        p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD, p.VAR_POSITIONAL)
+        for p in params
+    )
+
+
 class _Handler:
-    callback: Callable[..., Any]
-    owner: _core.Owner | None
-    options: EventHandler
-    prop: str
-    task_owner: _core.Owner | None = None
-    fired: bool = False
+    __slots__ = ("callback", "owner", "options", "prop", "task_owner", "fired", "takes_event")
+
+    def __init__(
+        self, callback: Callable[..., Any], owner: _core.Owner | None, options: EventHandler | None, prop: str
+    ) -> None:
+        self.callback = callback
+        self.owner = owner
+        self.options = options
+        self.prop = prop
+        self.task_owner: _core.Owner | None = None
+        self.fired = False
+        self.takes_event = _takes_event(callback)
 
 
 _handlers: dict[int, dict[str, _Handler]] = {}
-_DEFAULT_OPTIONS = EventHandler(lambda value: None)
+
+# Event types that don't bubble get a direct native listener on their node.
+NON_BUBBLING = frozenset(
+    {
+        "focus",
+        "blur",
+        "mouseenter",
+        "mouseleave",
+        "pointerenter",
+        "pointerleave",
+        "scroll",
+        "load",
+        "error",
+        "invalid",
+        "toggle",
+    }
+)
+
+_event_keys: dict[str, str] = {}
 
 
-def _event_prop_to_type(name: str) -> str:
-    """Normalize a prop name like `on_click` or `onClick` to a plain event type.
+def _event_key(name: str) -> str:
+    """Map a handler prop name to its event key (memoized).
 
-    Args:
-        name: Prop key as seen on a `VNode` (e.g., `"on_click"`).
-
-    Returns:
-        The lower-cased event type (e.g., `"click"`).
+    `on_click` and `onClick` become `"click"`; a `_capture` suffix
+    (`on_click_capture`) becomes `"click:capture"`.
     """
-    if name.startswith("on_"):
-        return name[3:]
-    if name.startswith("on"):
-        return name[2:].lower()
-    return name
+    key = _event_keys.get(name)
+    if key is None:
+        if name.startswith("on_"):
+            key = name[3:]
+        elif name.startswith("on"):
+            key = name[2:].lower()
+        else:
+            key = name
+        if key.endswith("_capture"):
+            key = key[:-8] + ":capture"
+        if len(_event_keys) < 4096:
+            _event_keys[name] = key
+    return key
+
+
+def bind_delegated(node_id: int, key: str, prop: str, callback: Any) -> None:
+    """Record a delegated handler whose listener the node's template already declared."""
+    if callback is None:
+        return
+    handler = _Handler(callback, _core._current_owner, None, prop)
+    mapping = _handlers.get(node_id)
+    if mapping is None:
+        _handlers[node_id] = {key: handler}
+    else:
+        mapping[key] = handler
 
 
 class _EventTarget:
@@ -257,16 +321,16 @@ def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] 
         event_prop_name: Prop name as seen on the `VNode` (e.g.
             `"on_click"`); normalized to the underlying DOM event type
             (`"on_click"` → `"click"`).
-        handler: Callback to invoke. Pass `None` to remove an existing
-            handler for this event type on this node.
+        handler: Callback to invoke, with the event or no arguments.
+            Pass `None` to remove an existing handler for this event
+            type on this node.
     """
-    event_type = _event_prop_to_type(event_prop_name)
-    capture_name = event_type.endswith("_capture")
-    if capture_name:
-        event_type = event_type[:-8]
-    options = handler if isinstance(handler, EventHandler) else _DEFAULT_OPTIONS if handler is not None else None
-    capture = capture_name or (options.capture if options is not None else False)
-    key = event_type + (":capture" if capture else "")
+    key = _event_key(event_prop_name)
+    capture = key.endswith(":capture")
+    options = handler if isinstance(handler, EventHandler) else None
+    if options is not None and options.capture and not capture:
+        key += ":capture"
+        capture = True
     mapping = _handlers.get(node_id)
     previous_key = (
         next((name for name, item in mapping.items() if item.prop == event_prop_name), key) if mapping else key
@@ -276,18 +340,18 @@ def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] 
         if previous.task_owner is not None:
             previous.task_owner.dispose()
         kernel.emit((kernel.OP_UNLISTEN, node_id, previous_key))
-    if options is None:
+    if handler is None:
         if mapping is not None and not mapping:
             _handlers.pop(node_id, None)
         return
     if mapping is None:
         mapping = _handlers[node_id] = {}
-    callback = options.callback if isinstance(handler, EventHandler) else handler
+    callback = options.callback if options is not None else handler
     mapping[key] = _Handler(callback, _core._current_owner, options, event_prop_name)
-    if capture or options.passive or options.once:
-        kernel.emit(
-            (kernel.OP_LISTEN, node_id, key, {"capture": capture, "passive": options.passive, "once": options.once})
-        )
+    if capture or (options is not None and (options.passive or options.once)):
+        passive = options is not None and options.passive
+        once = options is not None and options.once
+        kernel.emit((kernel.OP_LISTEN, node_id, key, {"capture": capture, "passive": passive, "once": once}))
     else:
         kernel.emit((kernel.OP_LISTEN, node_id, key))
 
@@ -334,14 +398,18 @@ def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
         prevented = evt._default_prevented
         evt = DomEvent(payload, current_target=Element(node_id=current_id))
         evt._default_prevented = prevented
-        evt._passive = handler.options.passive
-        if handler.options.once:
+        options = handler.options
+        evt._passive = options is not None and options.passive
+        if options is not None and options.once:
             handler.fired = True
             # Keep the owner until its async body settles or the element unmounts.
             # Removing the native listener prevents later events reaching it.
             kernel.emit((kernel.OP_UNLISTEN, current_id, key))
         try:
-            result = _core._run_owned_untracked(handler.owner, lambda: handler.callback(evt))
+            if handler.takes_event:
+                result = _core._run_owned_untracked(handler.owner, lambda: handler.callback(evt))
+            else:
+                result = _core._run_owned_untracked(handler.owner, handler.callback)
             if inspect.isawaitable(result):
                 if handler.task_owner is None:
                     handler.task_owner = _core.Owner()

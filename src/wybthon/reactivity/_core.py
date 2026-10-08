@@ -60,7 +60,6 @@ __all__ = [
     "Signal",
     "Computation",
     "Memo",
-    "Prop",
     "Owner",
     "Transition",
     "NotReadyError",
@@ -377,7 +376,7 @@ def _accepts_positional(fn: Any) -> bool:
         return n > 0
     try:
         sig = inspect.signature(fn)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
     return any(
         p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
@@ -398,7 +397,7 @@ def _positional_count(fn: Any) -> int:
         return n
     try:
         sig = inspect.signature(fn)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return -1
     n = 0
     for p in sig.parameters.values():
@@ -889,8 +888,7 @@ def _flush() -> None:
                 rounds += 1
                 if rounds > _MAX_FLUSH_ROUNDS:
                     raise RuntimeError(
-                        "Wybthon: reactive update did not stabilize "
-                        "(an effect is probably writing its own dependency)."
+                        "Wybthon: reactive update did not stabilize (an effect is probably writing its own dependency)."
                     )
                 _round += 1
                 _track = bool(_transitions) or _async_live > 0
@@ -1208,18 +1206,6 @@ def _nearest_component() -> _ComponentContext | None:
     return None
 
 
-@dataclass(frozen=True, slots=True)
-class LiteralValue[T]:
-    """An explicit value that mustn't be interpreted as a reactive expression."""
-
-    value: T
-
-
-def literal[T](value: T) -> LiteralValue[T]:
-    """Wrap a callable value for signals and component props: ``literal(callback)``."""
-    return LiteralValue(value)
-
-
 # ---------------------------------------------------------------------------
 # Accessor: the read protocol
 # ---------------------------------------------------------------------------
@@ -1275,7 +1261,7 @@ class Signal[T](Accessor[T]):
     Most code destructures `create_signal` into `(getter, setter)`;
     `Signal` is public so it can appear in type hints and so
     self-contained reactive fields (as in
-    [`Field`][wybthon.Field]) can carry their own setter.
+    [`Field`][wybthon.forms.Field]) can carry their own setter.
 
     Args:
         value: The initial value.
@@ -1401,14 +1387,15 @@ class Signal[T](Accessor[T]):
 
     # -- writes ---------------------------------------------------------------
 
-    def set(self, value: T | Callable[[T], T] | LiteralValue[T]) -> T:
+    def set(self, value: T | Callable[[T], T]) -> T:
         """Stage a write; the new value is visible after the next flush.
 
         Supports **functional updates**: when `value` is callable it
         receives the latest value (including any write staged earlier
         in the same batch) and its result is stored, so two
         `set(lambda n: n + 1)` calls in one handler add two. To store a
-        callable *as* the value, wrap it: `set(lambda _: my_fn)`.
+        callable *as* the value, return it from an updater:
+        `set(lambda _: my_fn)`.
 
         In dev mode, writing from inside a tracking scope raises
         [`WriteInScopeError`][wybthon.WriteInScopeError].
@@ -1425,9 +1412,7 @@ class Signal[T](Accessor[T]):
                 "reactive hole). Derive the value with create_memo, or write it from the apply stage "
                 "of a split create_effect, an event handler, or an action."
             )
-        if isinstance(value, LiteralValue):
-            value = value.value
-        elif callable(value):
+        if callable(value):
             value = value(self._latest())
         self._set(value)
         return value
@@ -1569,25 +1554,22 @@ def _unwrap(value: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Prop: a component parameter
+# Prop accessors: what reading a component's reactive prop returns
 # ---------------------------------------------------------------------------
 
 
-class Prop[T](Accessor[T]):
-    """Reactive accessor for one component prop.
+class _PropAccessor[T](Accessor[T]):
+    """Reactive accessor for one `Prop[T]` field of a component's props.
 
-    Every parameter of a [`@component`][wybthon.component] function is
-    bound to a `Prop`. Calling it returns the current value the parent
-    passed (tracked); if the parent passed an accessor or a zero-arg
-    function, it's unwrapped transparently, so children always read
-    `name()` regardless of whether the parent wrote `name="Ada"` or
-    `name=lambda: user().name`.
+    Calling it returns the current value the parent passed (tracked); if
+    the parent passed an accessor or a zero-arg function, it's unwrapped
+    transparently, so children always read `props.name()` whether the
+    parent wrote `name="Ada"` or `name=lambda: user().name`.
 
-    Embed the `Prop` itself in the returned tree (`p("Hello, ", name)`)
-    to create a reactive hole that updates when the parent's value
-    changes; call it inside memos, effects, and holes to derive from
-    it. Reading it at the top level of the component body freezes the
-    value and warns in dev mode; use `.peek()` when that's intended.
+    Place it in the returned tree to create a reactive hole; call it
+    inside memos, effects, and holes to derive from it. Reading it at the
+    top level of the component body freezes the value and warns in dev
+    mode; use `.peek()` when that's intended.
     """
 
     __slots__ = ("_sig", "_key")
@@ -1610,15 +1592,11 @@ class Prop[T](Accessor[T]):
             value = sig.peek()
         else:
             value = sig._slow_read() if _slow_reads else sig._value
-        if isinstance(value, LiteralValue):
-            return value.value
         return _unwrap(value)
 
     def peek(self) -> T:
         """Return the current (unwrapped) value without subscribing."""
         value = self._sig.peek()
-        if isinstance(value, LiteralValue):
-            return value.value
         return untrack(value) if is_accessor(value) else value
 
     def __repr__(self) -> str:
@@ -1705,6 +1683,8 @@ class Computation(Owner):
         "_committed_owner",
         "_readiness_signal",
         "_publication_tx",
+        "_keep",
+        "_prev_sources",
     )
 
     def __init__(
@@ -1724,9 +1704,17 @@ class Computation(Owner):
         eager: bool = False,
         apply_scope: bool = True,
         data: bool = False,
+        keep: bool = False,
     ) -> None:
         super().__init__()
         self._fn = fn
+        # Framework render bindings (holes, reactive props) keep their
+        # current DOM state while a source isn't ready, instead of becoming
+        # pending themselves.
+        self._keep = keep
+        # The previous run's sources while the function re-runs: edges it
+        # reads again are kept rather than unsubscribed and re-added.
+        self._prev_sources: dict[Any, int] | None = None
         self._pass_prev = _accepts_positional(fn) if pass_prev is None else pass_prev
         self._sources: dict[Any, int] | None = None
         self._state: int = _DIRTY
@@ -1738,7 +1726,7 @@ class Computation(Owner):
         self._error: BaseException | None = None
         self._async: _AsyncState | None = None
         self._apply = apply
-        self._apply_arity = _positional_count(apply) if apply is not None else 0
+        self._apply_arity = (1 if keep else _positional_count(apply)) if apply is not None else 0
         self._defer = defer
         self._first = True
         self._eager = eager
@@ -1878,12 +1866,22 @@ class Computation(Owner):
         srcs = self._sources
         if srcs is None:
             self._sources = {source: mode}
-            source._add_observer(self)
         elif source not in srcs:
             srcs[source] = mode
-            source._add_observer(self)
         else:
             srcs[source] |= mode
+            return
+        prev = self._prev_sources
+        if prev is None or source not in prev:
+            source._add_observer(self)
+
+    def _prune_sources(self, prev: dict[Any, int]) -> None:
+        """Unsubscribe from the previous run's sources this run didn't read again."""
+        self._prev_sources = None
+        current = self._sources
+        for src in prev:
+            if current is None or src not in current:
+                src._remove_observer(self)
 
     def _clear_sources(self) -> None:
         srcs = self._sources
@@ -1891,6 +1889,12 @@ class Computation(Owner):
             for src in srcs:
                 src._remove_observer(self)
             srcs.clear()
+        prev = self._prev_sources
+        if prev is not None:
+            # Disposed during its own run: release the previous run's edges.
+            self._prev_sources = None
+            for src in prev:
+                src._remove_observer(self)
 
     # -- scheduling -------------------------------------------------------------
 
@@ -1996,8 +2000,10 @@ class Computation(Owner):
             self._error = None
             self._settle(fn._value)
             return
-        if self._sources:
-            self._clear_sources()
+        prev_sources = self._sources
+        if prev_sources:
+            self._sources = None
+            self._prev_sources = prev_sources
         a = self._async
         if a is not None:
             self._cancel_async()
@@ -2013,10 +2019,16 @@ class Computation(Owner):
         _current_observer = self
         _layer_working += 1
         try:
-            new_value = self._fn(self._value) if self._pass_prev else self._fn()
+            try:
+                new_value = self._fn(self._value) if self._pass_prev else self._fn()
+            finally:
+                if prev_sources:
+                    self._prune_sources(prev_sources)
         except NotReadyError:
-            self._mark_pending()
-            return
+            if not self._keep:
+                self._mark_pending()
+                return
+            new_value = _SKIP_APPLY
         except Exception as exc:
             self._fail(exc)
             return

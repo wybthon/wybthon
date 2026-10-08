@@ -13,7 +13,8 @@ from the router's context.
 from app.featuremeta import FEATURES
 from app.testkit import tid
 
-from wybthon import Link, Prop, component, div, nav, prop
+from wybthon import ParentProps, Prop, component, div, nav, prop
+from wybthon.router import Link
 
 
 def _join(base_path: str, to: str) -> str:
@@ -33,16 +34,20 @@ def _nav_link(base_path: str, to: str, label: str, slug: str):
     )
 
 
+class ShellProps(ParentProps):
+    base_path: Prop[str] = prop(default="")
+
+
 @component
-def Shell(children: Prop = prop(None), base_path: Prop[str] = prop("")):
-    bp = base_path.peek() or ""
+def Shell(props: ShellProps):
+    bp = props.base_path.peek() or ""
     links = [_nav_link(bp, "/", "Home", "home")]
     links += [_nav_link(bp, f"/{slug}", label, slug) for slug, label in FEATURES]
     links.append(_nav_link(bp, "/blank", "Blank", "blank"))
 
     return div(
         nav(*links, **tid("nav")),
-        div(children, **tid("outlet")),
+        div(props.children, **tid("outlet")),
         div("ready", **tid("app-ready")),
         **tid("shell"),
     )

@@ -24,10 +24,11 @@ uv sync --group dev --group docs
 
 ## Coding standards
 
-- Source code targets **Python 3.12+** (PEP 695 generics) with type hints throughout.
+- Source code targets **Python 3.14** with type hints throughout.
 - Docstrings use the **Google style** documented in the [docs style guide](style-guide.md). The Ruff `pydocstyle` ruleset enforces this.
-- Run `ruff check .` and `ruff format --check .` before pushing.
-- Run `mypy src` and `pytest` to verify types and tests.
+- Format with `uv run ruff format .` and lint with `uv run ruff check .` before pushing.
+- Run `uv run mypy` and `uv run pytest -q` to verify types and tests. CI requires 80% coverage.
+- `./scripts/check.sh` runs everything CI's unit job runs, in the same order.
 
 ## Updating documentation
 

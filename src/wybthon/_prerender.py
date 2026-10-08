@@ -46,7 +46,7 @@ def _route_of(href: str, base: str) -> str | None:
 async def prerender(entry: str, base: str, routes: list[str], *, crawl: bool, limit: int) -> dict[str, str]:
     """Render every route (and, with `crawl`, every in-app link) to HTML."""
     from .reactivity import _core
-    from .server import render_to_string_async
+    from .server import render_to_stream
 
     module_name, export = entry.split(":", 1)
     _core._server_depth += 1
@@ -64,7 +64,7 @@ async def prerender(entry: str, base: str, routes: list[str], *, crawl: bool, li
         if inspect.iscoroutinefunction(factory):
             view = await factory()
         url = base.rstrip("/") + route if route != "/" else base
-        pages[route] = await render_to_string_async(view, url=url)
+        pages[route] = await render_to_stream(view, url=url)
         if crawl:
             for href in _LINK.findall(pages[route]):
                 found = _route_of(href, base)

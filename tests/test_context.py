@@ -5,11 +5,11 @@ from wybthon.component import component
 from wybthon.context import Context, ContextNotFoundError, create_context, use_context
 from wybthon.flow import Show
 from wybthon.html import div, p, span
-from wybthon.reactivity import create_signal, flush
+from wybthon.reactivity import Prop, Props, create_signal, flush, prop
 
 
 def texts(node):
-    return [t for t in collect_texts(node) if t]
+    return [t for t in collect_texts(node) if t and t.strip()]
 
 
 def test_provider_value_is_read_by_descendant_component(wyb, root_element):
@@ -49,9 +49,12 @@ def test_use_context_without_provider_or_default_raises(wyb):
 def test_nested_providers_shadow_outer_value(wyb, root_element):
     Theme = create_context("light")
 
+    class ChildProps(Props):
+        label: Prop[str] = prop(default="")
+
     @component
-    def Child(label=""):
-        return span(label, "=", use_context(Theme))
+    def Child(props: ChildProps):
+        return span(props.label, "=", use_context(Theme))
 
     root = wyb["reconciler"].render(
         Theme("outer", div(Child(label="a"), Theme("inner", Child(label="b")), Child(label="c"))),
@@ -111,3 +114,23 @@ def test_context_name_repr_and_identity(wyb):
     assert anonymous.name is None
     assert named != anonymous
     assert len({named, anonymous}) == 2
+
+
+def test_provider_children_by_item_syntax_and_reactive_context_prop(wyb, root_element):
+    Theme = create_context("light")
+    theme, set_theme = create_signal("dark")
+
+    class LabelProps(Props):
+        prefix: Prop[str]
+
+    @component
+    def Label(props: LabelProps):
+        current = use_context(Theme)
+        return p(lambda: f"{props.prefix()}:{current() if callable(current) else current}")
+
+    root = wyb["reconciler"].render(Theme(theme, div()[Label(prefix="a"), Label(prefix="b")]), root_element)
+    assert texts(root_element.element) == ["a:dark", "b:dark"]
+    set_theme("light")
+    flush()
+    assert texts(root_element.element) == ["a:light", "b:light"]
+    root.dispose()

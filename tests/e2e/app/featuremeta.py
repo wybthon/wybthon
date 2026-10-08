@@ -23,4 +23,5 @@ FEATURES = [
     ("lazy", "Lazy"),
     ("portal", "Portal"),
     ("router", "Router"),
+    ("engine", "Engine"),
 ]

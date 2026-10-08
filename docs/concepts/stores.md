@@ -5,14 +5,18 @@ Stores are read-only reactive mappings and sequences. Update them with a synchro
 ```python
 from wybthon import create_store, flush, snapshot
 
-state, write = create_store({
-    "user": {"name": "Ada"},
-    "items": [{"id": 1, "title": "Build a Python UI"}],
-})
+state, write = create_store(
+    {
+        "user": {"name": "Ada"},
+        "items": [{"id": 1, "title": "Build a Python UI"}],
+    }
+)
+
 
 def edit(draft):
     draft.user.name = "Grace"
     draft["items"].append({"id": 2, "title": "Test it in the browser"})
+
 
 write(edit)
 flush()
@@ -21,7 +25,7 @@ assert state.user.name == "Grace"
 
 ## Collection protocols
 
-`Store` implements `Mapping`, and `StoreList` implements `Sequence`. Use indexing, iteration, `len`, membership, and ordinary mapping methods such as `.get()`, `.items()`, and `.keys()`. Attribute access is convenient for nonconflicting string keys. A key named `items` is `state["items"]`; `state.items()` is the mapping method. Missing entries raise ordinary Python exceptions.
+`Store` implements `Mapping`, and `StoreList` implements `Sequence`. Use indexing, iteration, `len`, membership, and ordinary mapping methods such as `.get()`, `.items()`, and `.keys()`. Attribute access is convenient for nonconflicting string keys. A key named `items` is `state["items"]`; `state.items()` is the mapping method. Missing entries raise ordinary Python exceptions: `KeyError` for indexing and `AttributeError` for attribute access. `state.get(key, default=None)` doesn't raise. It's tracked either way, so a computation reading `state.get(row_id)` reruns when that key appears.
 
 Drafts implement `MutableMapping` and `MutableSequence`. Use assignment, deletion, `update`, `append`, `extend`, `insert`, `pop`, slices, `reverse`, and `sort` as appropriate. A draft and every nested draft expire when the callback returns. Escaped reads or writes raise `DraftExpiredError`.
 
@@ -49,13 +53,21 @@ create_effect(lambda: deep(state.user), lambda user: print(user))
 ```python
 from wybthon import reconcile
 
-write(reconcile({"user": {"name": "Grace"}, "items": [
-    {"id": 2, "title": "Updated"},
-    {"id": 1, "title": "Build a Python UI"},
-]}, key="id"))
+write(
+    reconcile(
+        {
+            "user": {"name": "Grace"},
+            "items": [
+                {"id": 2, "title": "Updated"},
+                {"id": 1, "title": "Build a Python UI"},
+            ],
+        },
+        key="id",
+    )
+)
 ```
 
-Keyed reconciliation updates matching entities in place and matches duplicate keys in occurrence order. `key=None` replaces list entities. Store drafts preserve entities when moving existing proxies. Initial cyclic input isn't supported.
+`key` names the identifying field (`"id"` by default) or is a function computing the identity from an entity, such as `key=lambda row: (row["kind"], row["id"])`. Keyed reconciliation updates matching entities in place and matches duplicate keys in occurrence order. `key=None` replaces list entities positionally. Store drafts preserve entities when moving existing proxies. Initial cyclic input isn't supported.
 
 ## Derived and optimistic stores
 
@@ -64,8 +76,10 @@ Keyed reconciliation updates matching entities in place and matches duplicate ke
 ```python
 from wybthon import create_projection, is_pending, refresh
 
+
 async def load_user():
     return await fetch_user(user_id())
+
 
 user = create_projection(load_user, {"name": ""})
 # Read user.name inside Loading content.
@@ -74,5 +88,23 @@ busy = lambda: is_pending(lambda: user.name)
 ```
 
 Errors surface when the projection is read, so `Errored` handles them. Refresh is quiet and awaitable. Disposing the owner cancels the producer.
+
+A projection also replaces a selection helper. Because it notifies only the keys that change, selecting a different row updates two rows, not every row:
+
+```python
+from wybthon import For, create_projection, create_signal, td, tr
+
+selected, set_selected = create_signal(None)
+is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
+
+For(
+    lambda: state["items"],
+    lambda item, i: tr(
+        td(lambda: item.title),
+        class_=lambda: "active" if is_selected.get(item.id) else None,
+        on_click=lambda: set_selected(item.id),
+    ),
+)
+```
 
 `create_optimistic_store(source, seed)` returns a store and an optimistic draft setter. Active edits replay over new authoritative data, and each action's edits disappear when its dependency group settles. Keep draft callbacks deterministic. See [Runtime contracts](runtime-contracts.md) for concurrent action, acknowledgment, and cancellation semantics.

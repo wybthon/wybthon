@@ -10,5 +10,5 @@ from wybthon import component, div, h2, span
 
 
 @component
-def LoadedPanel(**rest):
+def LoadedPanel():
     return div(h2("Lazy"), span("lazy-loaded", **tid("lazy-loaded")), **tid("page-lazy"))

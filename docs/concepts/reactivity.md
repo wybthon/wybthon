@@ -12,10 +12,10 @@ count, set_count = create_signal(0)
 double = create_memo(lambda: count() * 2)
 
 create_effect(double, lambda value: print("double:", value))
-flush()          # prints "double: 0" (the first run is deferred to a flush)
+flush()  # prints "double: 0" (the first run is deferred to a flush)
 set_count(1)
-double()         # still 0: the write is staged
-flush()          # prints "double: 2"
+double()  # still 0: the write is staged
+flush()  # prints "double: 2"
 ```
 
 In the browser the flush happens automatically, so application code
@@ -39,11 +39,11 @@ a, set_a = create_signal(1)
 b, set_b = create_signal(2)
 
 create_effect(lambda: a() + b(), lambda total: print("sum:", total))
-flush()     # sum: 3
+flush()  # sum: 3
 
 set_a(10)
 set_b(20)
-flush()     # sum: 30, printed once
+flush()  # sum: 30, printed once
 ```
 
 ### The three phases of a flush
@@ -83,7 +83,7 @@ every accessor's `.peek()` does the same for a single read:
 from wybthon import create_effect, untrack
 
 create_effect(lambda: (a(), untrack(b)), lambda pair: print("a changed:", pair))
-seed = initial.peek()
+seed = props.initial.peek()
 ```
 
 For explicit dependencies prefer the **split effect**: the compute stage
@@ -101,10 +101,12 @@ over-subscribe the effect, and signal writes are allowed there.
 
 ## Dev-mode diagnostics
 
-With [`DEV_MODE`][wybthon.DEV_MODE] on (the default; see
-[`set_dev_mode`][wybthon.set_dev_mode]), the graph enforces two rules:
+Dev mode is on by default during development; production builds made
+with `wyb build` turn it off (see [`is_dev_mode`][wybthon.is_dev_mode]
+and [`set_dev_mode`][wybthon.set_dev_mode]). With it on, the graph
+enforces two rules:
 
-- **No writes inside tracking scopes.** Writing a signal or store from a memo body, a single-function effect, or a hole raises [`WriteInScopeError`][wybthon.WriteInScopeError]. Derive the value with a memo, or move the write into the `apply` stage of a split effect, an event handler, or an [`action`][wybthon.action].
+- **No writes inside tracking scopes.** Writing a signal or store from a memo body, a tracked effect ([`create_tracked_effect`][wybthon.create_tracked_effect]), or a hole raises [`WriteInScopeError`][wybthon.WriteInScopeError]. Derive the value with a memo, or move the write into the `apply` stage of a split effect, an event handler, or an [`action`][wybthon.action].
 - **No untracked reads at the top level of a component body.** Calling a signal, memo, or prop there freezes the value and warns once per component and value. Read it in a hole, memo, or effect, or make the one-time read explicit with `.peek()` or `untrack`.
 
 ```python
@@ -125,16 +127,17 @@ create_effect(count, lambda n: set_log(lambda l: l + [n]))
 [`map_array`][wybthon.map_array] maps a reactive list to rows with a
 stable scope per row; `keyed=True` (identity, the default), `False`
 (position), or a key function selects the matching strategy and the
-callback shape. [`create_selector`][wybthon.create_selector] turns a
-selection signal into `is_selected(key)` so only the affected rows
-update. See [Primitives](primitives.md#map_array) for the shapes.
+callback shape. [`repeat`][wybthon.repeat] does the same for an integer
+range. For selection, a [`create_projection`][wybthon.create_projection]
+keyed by the selected id notifies only the rows whose state changes. See
+[Primitives](primitives.md#map_array) for the shapes.
 
 ## Ownership tree
 
 Every computation belongs to an **ownership tree**:
 
 - [`Owner`][wybthon.Owner] tracks child owners, cleanup callbacks, context values, and an optional error handler.
-- [`Computation`][wybthon.Computation] is an `Owner` that also tracks sources; memos and effects are computations.
+- `Computation` (exported from `wybthon.reactivity`) is an `Owner` that also tracks sources; memos and effects are computations.
 
 A new effect or memo registers as a child of the owner active at
 creation time. Component instances, holes, `For` rows, and
@@ -176,19 +179,23 @@ after the `await` are tracked exactly like reads before it.
 | A `For` row | the row's owner | the row leaves the list |
 
 ```python
-from wybthon import Prop, component, create_effect, create_signal, prop
+from wybthon import Prop, Props, component, create_effect, create_signal, prop
 from wybthon.html import p
 
 
+class TimerProps(Props):
+    interval: Prop[int] = prop(default=1000)
+
+
 @component
-def Timer(interval: Prop[int] = prop(1000)):
+def Timer(props: TimerProps):
     count, set_count = create_signal(0)
 
     # Body effect: lives until the component unmounts.
     create_effect(count, lambda n: print("count is", n))
 
     # Hole: re-runs only when count changes.
-    return p(lambda: f"Elapsed: {count()}")
+    return p(t"Elapsed: {count}")
 ```
 
 ## Disposal
@@ -213,7 +220,7 @@ user_id, set_user_id = create_signal(1)
 
 
 async def load_user():
-    uid = user_id()                       # tracked: refetches when it changes
+    uid = user_id()  # tracked: refetches when it changes
     return await fetch_json(f"/api/users/{uid}")
 
 

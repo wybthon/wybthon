@@ -10,31 +10,31 @@ Wybthon's demo applications live in standalone repositories under the [wybthon G
 | [photo-lab](https://github.com/wybthon/photo-lab) | Resize, compress, convert, and strip image metadata privately in the browser. Demonstrates file handling and JS interop. |
 
 !!! note "Versions"
-    The demos are separate repositories with their own release cadence. Use `wyb init` for a starter that matches the installed version's API.
+    The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. Use `wyb init` for a starter that matches the installed version's API.
 
 ## Running a demo locally
 
-Every demo is a static site, so the workflow is the same:
+A demo that contains a `wybthon.toml` is a Wybthon project, so the workflow is the same as for your own app:
 
 ```bash
 git clone https://github.com/wybthon/demo-template.git
 cd demo-template
 pip install wybthon
-wyb dev --dir . --watch app --open
+wyb dev --open
 ```
 
-The `wyb dev` server provides hot reload over SSE; see the [dev server guide](dev-server.md).
+`wyb dev` builds the project, serves it, and reloads the page when a source file changes; see the [dev server guide](dev-server.md). A demo that ships its own `index.html` and `bootstrap.js` without a `wybthon.toml` is a plain static site, so serve it with any static file server (`python -m http.server`) and follow its README.
 
-## How the demos bootstrap
+## How a project boots
 
-Each demo follows the same pattern:
+Wybthon projects follow the same pattern:
 
-- `index.html` loads `bootstrap.js` as an ES module.
-- `bootstrap.js` loads Pyodide, installs Wybthon (from PyPI via `micropip`, or by copying source files into the Pyodide filesystem), copies the app package under `/app`, then calls `app.main.main()`.
-- `app/main.py` builds the root component and calls [`render`][wybthon.render] into the page's mount point, typically wrapping the tree in [`Errored`][wybthon.Errored] and [`Loading`][wybthon.Loading] boundaries around a [`Router`][wybthon.Router].
+- `wybthon.toml` names the entry function (`entry = "app.main:app"`), the mount selector, and the routes to prerender.
+- `wyb build` packages Wybthon and the `app/` package into archives and writes a bootstrap that loads Pyodide and the archives concurrently, then imports the entry.
+- `app/main.py` returns the root view from its entry function, typically wrapping the tree in [`Errored`][wybthon.Errored] and [`Loading`][wybthon.Loading] boundaries around a [`Router`][wybthon.router.Router] from `wybthon.router`. The bootstrap renders it, or hydrates the prerendered HTML.
 - Folders under `app/` mirror routes and components, and route pages are often loaded with [`lazy`][wybthon.lazy] so the initial import stays small.
 
-The [Pyodide guide](pyodide.md) covers the runtime details, including module loading and lazy imports.
+The [Pyodide guide](pyodide.md) covers the runtime details, and the [Deployment guide](deployment.md) covers the build.
 
 ## Next steps
 

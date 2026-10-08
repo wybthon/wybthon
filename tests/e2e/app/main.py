@@ -1,60 +1,23 @@
-"""Entrypoint for the Wybthon E2E fixture single-page app.
+"""Entry point for the Wybthon end-to-end fixture project.
 
-Boot sequence:
+The fixture is an ordinary Wybthon project (`tests/e2e/wybthon.toml`) that
+`wyb dev` builds and serves. The production bootstrap calls `app()` for the
+root view and renders it into `#app`; it records its status on
+`window.__WYB`, which the Playwright harness waits on.
 
-1. Compute the served base path (so the fixture works whether it is served
-   from ``/`` or ``/tests/e2e/index.html``).
-2. Mount the navigation shell wrapping the feature ``Router``.
-3. Remove the loading placeholder.
-4. Expose ``window.__wyb_e2e_goto`` for programmatic navigation and flip
-   ``window.__WYB_E2E_READY`` so the Playwright harness can detect readiness
-   without racing the Pyodide boot.
-
-The shell also renders a ``data-testid="app-ready"`` marker, which is the
-primary readiness signal the harness waits on.
+`app()` also exposes `window.__wyb_e2e_goto` for programmatic navigation.
+The shell renders a `data-testid="app-ready"` marker, the visible readiness
+signal.
 """
 
 from app.routes import NotFound, create_routes
 from app.shell import Shell
-from js import document, window
+from js import window
 from pyodide.ffi import create_proxy
 
-from wybthon import Element, Router, navigate, render
+from wybthon.router import Router, navigate
 
 
-def _compute_base_path() -> str:
-    path = str(window.location.pathname) or "/"
-    if path.endswith(".html"):
-        path = path.rsplit("/", 1)[0] or "/"
-    return "/" if path == "/" else path.rstrip("/")
-
-
-async def main() -> None:
-    base_path = _compute_base_path()
-    navigate(base_path or "/", replace=True)
-
-    routes = create_routes()
-    tree = Shell(
-        Router(routes, not_found=NotFound, base_path=base_path),
-        base_path=base_path,
-    )
-
-    container = Element("body", existing=True)
-    render(tree, container)
-
-    try:
-        loading = document.getElementById("loading")
-        if loading:
-            loading.remove()
-    except Exception:
-        pass
-
-    def _goto(path: str) -> None:
-        target = str(path)
-        if base_path and base_path != "/" and target.startswith("/"):
-            navigate(base_path.rstrip("/") + target)
-        else:
-            navigate(target)
-
-    window.__wyb_e2e_goto = create_proxy(_goto)
-    window.__WYB_E2E_READY = True
+def app():
+    window.__wyb_e2e_goto = create_proxy(lambda path: navigate(str(path)))
+    return Shell(children=Router(create_routes(), not_found=NotFound))

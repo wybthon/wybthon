@@ -17,7 +17,7 @@ crawl = true
 charts = ["app/charts/**"]
 ```
 
-The entry function returns the root view (it can be async); the bootstrap renders it into `mount`, or hydrates it when the page was prerendered. `index.html` must contain exactly one `<!-- wyb:bootstrap -->` marker. Files in `public/` are copied beside the output HTML; `public/assets/` is reserved for generated content.
+The entry function returns the root view (it can be async); the bootstrap renders it into `mount`, or hydrates it when the page was prerendered. Projects require Python 3.14, matching the Pyodide 314 runtime. `index.html` must contain exactly one `<!-- wyb:bootstrap -->` marker. Files in `public/` are copied beside the output HTML; `public/assets/` is reserved for generated content.
 
 ```bash
 wyb build --base /dashboard/
@@ -25,6 +25,12 @@ wyb preview --dir dist --port 8000
 ```
 
 Deploy the contents of `dist/`, configure missing extensionless routes to serve `200.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
+
+## Production mode
+
+`wyb build` writes a production build: the bootstrap calls [`set_dev_mode(False)`][wybthon.set_dev_mode] before the application imports, so production apps skip the development checks (such as unknown-prop validation and write-in-scope errors) and print no development warnings. The manifest's `dev` field records the mode. `wyb dev` builds the same project with dev mode on. From Python, [`build_app`][wybthon.build.build_app] builds for production by default; pass `dev=True` for a development build. Read the current mode with [`is_dev_mode()`][wybthon.is_dev_mode].
+
+## Reproducible output
 
 Builds sort files and normalize archive timestamps, so identical inputs produce identical assets. A complete build is prepared before the destination is replaced. Existing nonempty output must contain the `.wyb-build` marker; source directories can't be used as output. Build validation failure leaves the previous output available.
 
@@ -52,7 +58,7 @@ from wybthon import lazy
 Chart = lazy(lambda: ("app.charts.main", "Chart"), chunk="charts")
 ```
 
-The matching files are excluded from the main archive. Rendering `Chart` inside `Loading` fetches its archive once before importing the module. Hover preloading through a router `Link` can warm a lazy route. `load_chunk("charts")` is available for explicit preloading.
+The matching files are excluded from the main archive. Rendering `Chart` inside `Loading` fetches its archive once before importing the module. Hover preloading through a [`Link`][wybthon.router.Link] from `wybthon.router` can warm a lazy route, and `Chart.preload()` warms it on any user intent. `load_chunk("charts")` from `wybthon.assets` is available for explicit preloading.
 
 Chunk groups mustn't overlap, and the entry module must stay in the main bundle. This is explicit packaging, not automatic dependency analysis: keep shared imports in the main application, and don't eagerly import a chunk module. Concurrent chunk requests share one fetch; a failed fetch is evicted so a later attempt can retry. Call `Chart.retry()` to restart a failed lazy load and let its error boundary recover.
 

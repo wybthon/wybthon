@@ -19,7 +19,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install package
         run: uv sync --locked
@@ -55,7 +55,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install package and Playwright
         run: uv sync --locked --group dev

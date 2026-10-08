@@ -26,12 +26,19 @@ at once.
 | [`Reveal`][wybthon.Reveal] | `Reveal(children, *, order="sequential", collapsed=False)`; `order` is `"sequential"`, `"together"`, or `"natural"`; `collapsed=True` shows only the next fallback in a sequential group. |
 
 ```python
-from wybthon import Loading, Prop, Reveal, component, create_memo, div, is_pending, p, span
+from typing import Any
+
+from wybthon import Loading, Prop, Props, Reveal, component, create_memo, div, is_pending, p, span
+
+
+class UserCardProps(Props):
+    user_id: Prop[int]
+
 
 @component
-def UserCard(user_id: Prop[int]):
+def UserCard(props: UserCardProps):
     async def load_user():
-        uid = user_id()                    # tracked: refetches when it changes
+        uid = props.user_id()  # tracked: refetches when it changes
         return await fetch_json(f"/api/users/{uid}")
 
     user = create_memo(load_user)
@@ -43,12 +50,17 @@ def UserCard(user_id: Prop[int]):
         fallback=lambda: p("Loading..."),
     )
 
+
+class DashboardProps(Props):
+    settings: Prop[dict[str, Any]]
+
+
 @component
-def Dashboard(settings: Prop[object]):
+def Dashboard(props: DashboardProps):
     return Reveal(
         [
             Loading(UserCard(user_id=1), fallback=p("Loading user...")),
-            Loading(Activity(), fallback=p("Loading activity..."), on=settings),
+            Loading(Activity(), fallback=p("Loading activity..."), on=props.settings),
         ],
         collapsed=True,
     )

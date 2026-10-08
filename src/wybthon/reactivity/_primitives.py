@@ -19,7 +19,6 @@ from ._core import (
     _K_RENDER,
     Accessor,
     Computation,
-    LiteralValue,
     Memo,
     NotReadyError,
     Owner,
@@ -27,6 +26,7 @@ from ._core import (
     _changed,
     _positional_count,
     _schedule_flush,
+    is_accessor,
     untrack,
 )
 from ._session import SsrSource
@@ -50,6 +50,8 @@ __all__ = [
     "latest",
     "create_unique_id",
     "children",
+    "ChildrenAccessor",
+    "create_reaction",
 ]
 
 
@@ -60,7 +62,7 @@ class Setter[T](Protocol):
     functional update. Returns the value that was staged.
     """
 
-    def __call__(self, value: T | Callable[[T], T] | LiteralValue[T], /) -> T: ...
+    def __call__(self, value: T | Callable[[T], T], /) -> T: ...
 
 
 # ---------------------------------------------------------------------------
@@ -79,15 +81,13 @@ class _WritableMemo[T](Memo[T]):
         self._staged: bool = False
         self._origin: int = _core._O_NORMAL
 
-    def set(self, value: T | Callable[[T], T] | LiteralValue[T]) -> T:
+    def set(self, value: T | Callable[[T], T]) -> T:
         if _core._current_observer is not None and _core._warnings.DEV_MODE and not _core._owned_write_depth:
             raise _core.WriteInScopeError(
                 "Cannot write a derived signal inside a tracking scope. Write it from an event "
                 "handler, an action, or the apply stage of a split create_effect."
             )
-        if isinstance(value, LiteralValue):
-            value = value.value
-        elif callable(value):
+        if callable(value):
             current = self._pending if self._staged else self.peek()
             value = value(current)
         origin = _core._write_origin()
@@ -125,7 +125,7 @@ class _WritableMemo[T](Memo[T]):
 
 
 def create_signal[T](
-    value: T | Callable[[], T] | LiteralValue[T],
+    value: T | Callable[[], T],
     *,
     equals: Any = _DEFAULT_EQUALS,
     name: str | None = None,
@@ -141,8 +141,8 @@ def create_signal[T](
 
     The setter supports **functional updates**: pass `lambda n: n + 1`
     and it receives the latest staged value, so repeated updates in one
-    handler compose. To store a callable as the value, wrap it:
-    `set_fn(literal(my_callable))`.
+    handler compose. To store a callable as the value, return it from an
+    updater: `set_fn(lambda _: my_callable)`.
 
     **Function form.** When `value` is a zero-argument callable, the
     result is a *writable derived signal*: the getter tracks whatever
@@ -187,10 +187,7 @@ def create_signal[T](
     """
     getter: Accessor[T]
     setter: Callable[..., Any]
-    if isinstance(value, LiteralValue):
-        signal = Signal(value.value, equals=equals, name=name)
-        getter, setter = signal, signal.set
-    elif callable(value) and _positional_count(value) == 0:
+    if callable(value) and _positional_count(value) == 0:
         derived: _WritableMemo[T] = _WritableMemo(value, equals=equals)
         getter, setter = derived, derived.set
     else:
@@ -463,12 +460,12 @@ def create_tracked_effect(
 
 def create_render_effect(
     compute: Callable[..., Any],
-    apply: Callable[..., Any] | None = None,
+    apply: Callable[..., Any],
     *,
     defer: bool = False,
     error: Callable[[BaseException], Any] | None = None,
 ) -> Computation:
-    """Create an effect that runs in the **render phase**, before the DOM commit.
+    """Create a split effect that runs in the **render phase**, before the DOM commit.
 
     Wybthon's reactive holes and prop bindings are render effects, so a
     render effect observes the DOM in the same state the framework's own
@@ -476,7 +473,9 @@ def create_render_effect(
     [`create_effect`][wybthon.create_effect] unless you're building a
     rendering primitive.
 
-    Accepts the same arguments as `create_effect`.
+    Like Solid 2.0's `createRenderEffect`, it always takes a tracked
+    `compute` stage and an untracked `apply` stage, with the same
+    arguments as `create_effect`.
     """
     comp = Computation(compute, kind=_K_RENDER, apply=apply, defer=defer, error=error)
     owner = _core._current_owner
@@ -509,12 +508,16 @@ def on_settled(fn: Callable[[], Any]) -> None:
 
     Example:
         ```python
+        class ChartProps(Props):
+            data: Prop[list[float]]
+
+
         @component
-        def Chart(data: Prop[list[float]]):
+        def Chart(props: ChartProps):
             canvas = Ref()
 
             def start():
-                handle = draw(canvas.current, data.peek())
+                handle = draw(canvas.current, props.data.peek())
                 return lambda: handle.destroy()
 
             on_settled(start)
@@ -837,31 +840,116 @@ def create_unique_id() -> str:
     return f"wyb-{_unique_id_counter}"
 
 
-def children(fn: Callable[[], Any]) -> Memo[list[Any]]:
-    """Resolve reactive children into a flat list, memoized.
+class ChildrenAccessor(Accessor[Any]):
+    """The resolved children returned by [`children`][wybthon.children].
 
-    Wraps a getter that returns children (typically a `children` prop)
-    and returns a memo yielding a flat list with nested lists expanded
-    and `None` entries dropped.
+    Calling it returns the single resolved child, or a list when there
+    are several (or none); [`to_array`][wybthon.ChildrenAccessor.to_array]
+    always returns a list.
+    """
+
+    __slots__ = ("_memo",)
+
+    def __init__(self, memo: Memo[list[Any]]) -> None:
+        self._memo = memo
+
+    def __call__(self) -> Any:
+        items = self._memo()
+        return items[0] if len(items) == 1 else items
+
+    def peek(self) -> Any:
+        items = self._memo.peek()
+        return items[0] if len(items) == 1 else items
+
+    def to_array(self) -> list[Any]:
+        """Return the resolved children as a list (tracked)."""
+        return list(self._memo())
+
+
+def _resolve_children(value: Any, out: list[Any]) -> None:
+    if value is None or value is True or value is False:
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _resolve_children(item, out)
+        return
+    if is_accessor(value):
+        _resolve_children(value(), out)
+        return
+    out.append(value)
+
+
+def children(fn: Callable[[], Any]) -> ChildrenAccessor:
+    """Resolve a component's children once, so it can inspect or reuse them.
+
+    Wraps a getter that returns children (typically `props.children`)
+    and returns a memoized accessor. Nested lists are flattened,
+    reactive children (accessors and zero-argument functions) are called
+    and their results resolved, and `None` and booleans are dropped.
+    This matches Solid 2.0's `children` helper.
 
     ```python
     from wybthon import children as resolve_children
 
+
     @component
-    def Card(title: Prop[str], children: Prop[Any] = prop(None)):
-        kids = resolve_children(children)
-        return section(h3(title), lambda: kids())
+    def Tabs(props: ParentProps):
+        tabs = resolve_children(props.children)
+        return nav(lambda: [li(tab) for tab in tabs.to_array()])
     ```
     """
 
-    def _resolve(val: Any) -> list[Any]:
-        if val is None:
-            return []
-        if isinstance(val, (list, tuple)):
-            out: list[Any] = []
-            for item in val:
-                out.extend(_resolve(item))
-            return out
-        return [val]
+    def resolve() -> list[Any]:
+        out: list[Any] = []
+        _resolve_children(fn(), out)
+        return out
 
-    return create_memo(lambda: _resolve(fn()))
+    return ChildrenAccessor(create_memo(resolve, equals=False))
+
+
+def create_reaction(
+    effect: Callable[[], Any], *, error: Callable[[BaseException], Any] | None = None
+) -> Callable[[Callable[[], Any]], None]:
+    """Separate tracking from re-execution: run `effect` once when tracked reads change.
+
+    Returns `track(fn)`. Calling `track` runs `fn` and subscribes to what
+    it reads; the first time any of those sources changes, `effect` runs
+    (untracked, after the DOM commit) and the subscription ends. Call
+    `track` again to re-arm it. Matches Solid 2.0's `createReaction`.
+
+    ```python
+    track = create_reaction(lambda: print("count changed"))
+    track(lambda: count())
+    ```
+    """
+    owner = _core._current_owner
+    current: list[Computation | None] = [None]
+
+    def track(fn: Callable[[], Any]) -> None:
+        previous = current[0]
+        if previous is not None:
+            previous.dispose()
+        armed = [False]
+
+        def compute() -> bool:
+            if armed[0]:
+                return True
+            fn()
+            armed[0] = True
+            return False
+
+        def apply(fired: bool) -> None:
+            if not fired:
+                return
+            comp.dispose()
+            if current[0] is comp:
+                current[0] = None
+            effect()
+
+        comp = Computation(compute, kind=_K_EFFECT, apply=apply, error=error, pass_prev=False)
+        current[0] = comp
+        if owner is not None:
+            owner._add_child(comp)
+        comp._update_if_necessary()
+
+    return track

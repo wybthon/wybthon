@@ -1,18 +1,30 @@
-"""Control flow: Show, For, Repeat, Switch/Match, dynamic, client_only."""
+"""Control flow: Show, For, Repeat, Switch/Match, dynamic, NoHydration/Hydration, client_only."""
 
-from __future__ import annotations
-
-from conftest import StubNode, collect_texts
+from conftest import StubNode
 
 from wybthon import _warnings
 from wybthon.component import component
-from wybthon.flow import For, Match, Repeat, Show, Switch, dynamic
+from wybthon.flow import For, Hydration, Match, NoHydration, Repeat, Show, Switch, client_only, dynamic, is_hydrating
 from wybthon.html import div, h1, h2, li, p, span, ul
-from wybthon.reactivity import Prop, create_signal, flush, on_cleanup
+from wybthon.reactivity import Prop, Props, create_signal, flush, on_cleanup
 
 
 def texts(node: StubNode) -> list[str]:
-    return [t for t in collect_texts(node) if t]
+    """Visible text: skips comment markers and whitespace-only placeholders."""
+    if getattr(node, "_is_comment", False):
+        return []
+    out = [node.nodeValue] if node._is_text and node.nodeValue and node.nodeValue.strip() else []
+    for child in node.childNodes:
+        out.extend(texts(child))
+    return out
+
+
+class RowProps(Props):
+    item: Prop[dict]
+
+
+class LabelProps(Props):
+    label: Prop[str]
 
 
 def elements(node: StubNode) -> list[StubNode]:
@@ -224,8 +236,8 @@ def test_for_inserted_rows_mount_in_document_order(wyb, root_element):
     order: list[int] = []
 
     @component
-    def Row(item: Prop[dict]):
-        iid = item.peek()["id"]
+    def Row(props: RowProps):
+        iid = props.item.peek()["id"]
         on_settled(lambda: order.append(iid))
         return li(str(iid))
 
@@ -248,8 +260,8 @@ def test_for_never_patches_a_new_row_into_a_removed_one(wyb, root_element):
     bodies: list[int] = []
 
     @component
-    def Row(item: Prop[dict]):
-        iid = item.peek()["id"]
+    def Row(props: RowProps):
+        iid = props.item.peek()["id"]
         bodies.append(iid)
         return li(str(iid))
 
@@ -379,12 +391,12 @@ def test_dynamic_switches_tag(wyb, root_element):
 
 def test_dynamic_switches_component_and_passes_props(wyb, root_element):
     @component
-    def A(label: Prop[str]):
-        return h1("A:", label)
+    def A(props: LabelProps):
+        return h1("A:", props.label)
 
     @component
-    def B(label: Prop[str]):
-        return h2("B:", label)
+    def B(props: LabelProps):
+        return h2("B:", props.label)
 
     which, set_which = create_signal(A)
     label, set_label = create_signal("x")
@@ -416,12 +428,12 @@ def test_dynamic_accepts_positional_children(wyb, root_element):
 
 def test_dynamic_factory_is_a_reusable_component(wyb, root_element):
     @component
-    def A(label: Prop[str]):
-        return h1("A:", label)
+    def A(props: LabelProps):
+        return h1("A:", props.label)
 
     @component
-    def B(label: Prop[str]):
-        return h2("B:", label)
+    def B(props: LabelProps):
+        return h2("B:", props.label)
 
     rich, set_rich = create_signal(False)
     Editor = dynamic(lambda: B if rich() else A)
@@ -431,3 +443,71 @@ def test_dynamic_factory_is_a_reusable_component(wyb, root_element):
     set_rich(True)
     flush()
     assert texts(root_element.element) == ["B:", "x", "B:", "y"]
+
+
+def test_dynamic_with_item_syntax_children(wyb, root_element):
+    tag, set_tag = create_signal("section")
+    wyb["reconciler"].render(div(dynamic(tag)(class_="box")[p("a"), p("b")]), root_element)
+    outer = elements(root_element.element)[0]
+    assert elements(outer)[0].tag == "section"
+    assert texts(root_element.element) == ["a", "b"]
+    set_tag("article")
+    flush()
+    assert elements(outer)[0].tag == "article"
+    assert texts(root_element.element) == ["a", "b"]
+
+
+# ---------------------------------------------------------------------------
+# NoHydration / Hydration / client_only (client render, no server HTML)
+# ---------------------------------------------------------------------------
+
+
+def test_no_hydration_renders_children_normally_in_a_client_render(wyb, root_element):
+    n, set_n = create_signal(1)
+    seen: list[bool] = []
+
+    @component
+    def Probe():
+        seen.append(is_hydrating())
+        return span("probe")
+
+    root = wyb["reconciler"].render(
+        div(NoHydration(p("static"), p(lambda: f"n={n()}"), Probe()), span("after")), root_element
+    )
+    assert texts(root_element.element) == ["static", "n=1", "probe", "after"]
+    assert seen == [False]
+    assert is_hydrating() is False
+    # Outside hydration the region is ordinary, live content.
+    set_n(2)
+    flush()
+    assert texts(root_element.element) == ["static", "n=2", "probe", "after"]
+    root.dispose()
+    assert texts(root_element.element) == []
+
+
+def test_hydration_is_a_passthrough_in_a_client_render(wyb, root_element):
+    n, set_n = create_signal(0)
+    wyb["reconciler"].render(
+        div(NoHydration(p("outer"), Hydration(p(lambda: f"island {n()}"), id="isle"))), root_element
+    )
+    assert texts(root_element.element) == ["outer", "island 0"]
+    set_n(1)
+    flush()
+    assert texts(root_element.element) == ["outer", "island 1"]
+
+
+def test_no_hydration_toggled_by_show_mounts_and_unmounts(wyb, root_element):
+    on, set_on = create_signal(True)
+    wyb["reconciler"].render(div(Show(on, lambda: NoHydration(p("a"), p("b"))), p("tail")), root_element)
+    assert texts(root_element.element) == ["a", "b", "tail"]
+    set_on(False)
+    flush()
+    assert texts(root_element.element) == ["tail"]
+    set_on(True)
+    flush()
+    assert texts(root_element.element) == ["a", "b", "tail"]
+
+
+def test_client_only_renders_children_immediately_without_server_html(wyb, root_element):
+    wyb["reconciler"].render(div(client_only(lambda: p("client"), fallback=p("server"))), root_element)
+    assert texts(root_element.element) == ["client"]

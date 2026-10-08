@@ -1,14 +1,14 @@
 # Examples
 
-Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a Pyodide page (or a test) and an explanation of the patterns it demonstrates.
+Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a `wybthon.toml` project (or render in a test with [`wybthon.testing`](api/testing.md)) and an explanation of the patterns it demonstrates.
 
 | Example | What it shows |
 | --- | --- |
-| [Counter](examples/counter.md) | Signals, memos, holes, and `Prop` defaults. |
+| [Counter](examples/counter.md) | Signals, memos, holes, t-strings, and typed `Props` with `prop` defaults. |
 | [Async fetch](examples/fetch.md) | Async [`create_memo`][wybthon.create_memo] with a [`Loading`][wybthon.Loading] boundary, refetching, and [`is_pending`][wybthon.is_pending]. |
-| [Forms](examples/forms.md) | [`form_state`][wybthon.form_state], bindings, validation, and accessibility helpers. |
-| [Error handling](examples/errors.md) | Recovering from render and async errors with [`Errored`][wybthon.Errored]. |
-| [Router](examples/router.md) | [`Router`][wybthon.Router], [`Route`][wybthon.Route], [`Link`][wybthon.Link], params, and lazy routes. |
+| [Forms](examples/forms.md) | [`form_state`][wybthon.forms.form_state], bindings, validation, and accessibility helpers from `wybthon.forms`. |
+| [Error handling](examples/errors.md) | Recovering from render and async errors with [`Errored`][wybthon.Errored] and its `err` accessor. |
+| [Router](examples/router.md) | [`Router`][wybthon.router.Router], [`Route`][wybthon.router.Route], [`Link`][wybthon.router.Link], [`RouteProps`][wybthon.router.RouteProps], and lazy routes. |
 | [Authoring patterns](examples/authoring-patterns.md) | Composition with `children`, lists with `For`, stores, actions, and cleanup. |
 
 !!! tip "Complete apps"

@@ -3,15 +3,17 @@
 Form state helpers, validators, aggregated validation, and accessibility
 patterns. Everything here is a thin layer over signals and delegated
 events, so you can drop down to plain [`create_signal`][wybthon.create_signal]
-and `on_input` whenever the helpers don't fit.
+and `on_input` whenever the helpers don't fit. Import the helpers from
+`wybthon.forms`; they aren't exported from the top-level `wybthon`
+package.
 
 ```python
-from wybthon import (
+from wybthon import button, component, form, input_, label, option, select, span
+from wybthon.forms import (
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
     bind_text,
-    component,
     email,
     error_message_attrs,
     form_state,
@@ -19,7 +21,6 @@ from wybthon import (
     on_submit_validated,
     required,
 )
-from wybthon.html import button, form, input_, label, option, select, span
 
 fields = form_state({"name": "", "email": "", "agree": False, "choice": ""})
 
@@ -69,13 +70,13 @@ def SignupForm():
 
 ## Fields
 
-[`form_state`][wybthon.form_state] turns a dict of initial values into
-a `FormState` mapping of [`Field`][wybthon.Field] objects. Each field exposes
+[`form_state`][wybthon.forms.form_state] turns a dict of initial values into
+a [`FormState`][wybthon.forms.FormState] mapping of [`Field`][wybthon.forms.Field] objects. Each field exposes
 reactive values:
 
 | Attribute | Type | Meaning |
 | --- | --- | --- |
-| `value` / `set_value` | `Accessor[T]` / `Setter[T]` | The current input value. |
+| `value` / `set_value` | `Accessor[T]` / method | The current input value. |
 | `error` / `set_error` | `Accessor[str \| None]` | The latest validation message, or `None`. |
 | `touched` / `set_touched` | `Accessor[bool]` | `True` once the user has interacted with the field. |
 
@@ -98,9 +99,10 @@ helpers call under the hood.
 
 The `bind_*` helpers return prop dicts to spread onto a control:
 
-- [`bind_text(field, validators=[...])`][wybthon.bind_text] gives `value`, `on_input`, and `on_compositionend`. Composition input waits until composition ends. The `value` entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.
-- [`bind_checkbox(field)`][wybthon.bind_checkbox] gives `checked` and `on_change` for a boolean field.
-- [`bind_select(field)`][wybthon.bind_select] gives `value` and `on_change` for a `<select>`.
+- [`bind_text(field, validators=[...])`][wybthon.forms.bind_text] gives `value`, `on_input`, and `on_compositionend`. Composition input waits until composition ends. The `value` entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.
+- [`bind_checkbox(field)`][wybthon.forms.bind_checkbox] gives `checked` and `on_change` for a boolean field.
+- [`bind_select(field)`][wybthon.forms.bind_select] gives `value` and `on_change` for a `<select>`.
+- [`bind_number(field)`][wybthon.forms.bind_number] and [`bind_multiselect(field)`][wybthon.forms.bind_multiselect] cover numeric inputs and multiple selections; see [Dirty state, reset, and async workflows](#dirty-state-reset-and-async-workflows).
 
 Checkbox and select bindings clear the error on change; text bindings
 revalidate on every input event. Add more props alongside the spread
@@ -113,7 +115,7 @@ error string or `None`. The built-ins are factories so messages are
 customizable:
 
 ```python
-from wybthon import email, max_length, min_length, required
+from wybthon.forms import email, max_length, min_length, required
 
 rules = {
     "name": [required("Please enter a name"), min_length(2), max_length(40)],
@@ -121,9 +123,9 @@ rules = {
 }
 ```
 
-- [`required`][wybthon.required] rejects `None` and blank strings.
-- [`min_length`][wybthon.min_length] and [`max_length`][wybthon.max_length] compare `len(str(value))`.
-- [`email`][wybthon.email] checks a lightweight pattern and treats empty values as valid, so pair it with `required` when the field is mandatory.
+- [`required`][wybthon.forms.required] rejects `None` and blank strings.
+- [`min_length`][wybthon.forms.min_length] and [`max_length`][wybthon.forms.max_length] compare `len(str(value))`.
+- [`email`][wybthon.forms.email] checks a lightweight pattern and treats empty values as valid, so pair it with `required` when the field is mandatory.
 
 Write your own by returning a message or `None`:
 
@@ -135,28 +137,28 @@ def matches(other):
     return _v
 ```
 
-[`validate(value, validators)`][wybthon.validate] returns the first
-failing message. [`rules_from_schema`][wybthon.rules_from_schema] builds
+[`validate(value, validators)`][wybthon.forms.validate] returns the first
+failing message. [`rules_from_schema`][wybthon.forms.rules_from_schema] builds
 a rules map from a small declarative dict when you'd rather configure
 than compose.
 
 ## Submitting
 
-- [`on_submit(handler, form)`][wybthon.on_submit] prevents the default navigation and calls `handler(form)`.
-- [`on_submit_validated(rules, handler, form)`][wybthon.on_submit_validated] first runs [`validate_form`][wybthon.validate_form], which validates every field in `rules`, marks them touched, stores their errors, and returns `(is_valid, errors)`. The handler runs only when everything passes.
+- [`on_submit(handler, form)`][wybthon.forms.on_submit] prevents the default navigation and calls `handler(form)`.
+- [`on_submit_validated(rules, handler, form)`][wybthon.forms.on_submit_validated] first runs [`validate_form`][wybthon.forms.validate_form], which validates every field in `rules`, marks them touched, stores their errors, and returns `(is_valid, errors)`. The handler runs only when everything passes.
 
 Both return an event handler for the form's `on_submit` prop. Signal
 writes inside the handler flush when it returns, so error messages and
 `aria-invalid` states update in one commit.
 
 To validate a single field on blur or on demand, call
-[`validate_field(field, validators)`][wybthon.validate_field].
+[`validate_field(field, validators)`][wybthon.forms.validate_field].
 
 ## Accessibility
 
-- Set `for_` on `label` to match the control's `id`.
-- [`a11y_control_attrs(field, described_by_id=...)`][wybthon.a11y_control_attrs] returns reactive `aria_invalid` and `aria_describedby` props: `aria-invalid` is `"true"` while the field has an error, and `aria-describedby` points at the message container only while a message exists, so screen readers don't announce an empty region.
-- [`error_message_attrs(id=...)`][wybthon.error_message_attrs] returns `id`, `role="alert"`, and `aria-live="polite"` for the message container.
+- Set `html_for` (or `for_`) on `label` to match the control's `id`. The prop applier writes it as the `for` attribute.
+- [`a11y_control_attrs(field, described_by_id=...)`][wybthon.forms.a11y_control_attrs] returns reactive `aria_invalid` and `aria_describedby` props: `aria-invalid` is `"true"` while the field has an error, and `aria-describedby` points at the message container only while a message exists, so screen readers don't announce an empty region.
+- [`error_message_attrs(id=...)`][wybthon.forms.error_message_attrs] returns `id`, `role="alert"`, and `aria-live="polite"` for the message container.
 
 Because the ARIA props are accessors, they update through fine-grained
 bindings without re-rendering the form.
@@ -167,8 +169,8 @@ The helpers are optional. A controlled input is a signal, a `value`
 binding, and an `on_input` handler:
 
 ```python
-from wybthon import component, create_signal
-from wybthon.html import input_
+from wybthon import component, create_signal, input_
+
 
 @component
 def Search():
@@ -187,19 +189,23 @@ so it's cheap even in large lists. See [Events](events.md).
 
 ## Dirty state, reset, and async workflows
 
-Each field has `dirty` and `validating` accessors. `field.reset()` restores its initial value and clears touched/error state; `field.reset(value)` establishes a new baseline. `FormState.dirty` and `.validating` aggregate fields, `.data()` returns current values, and `.reset(values=None)` resets the form.
+Each field has `dirty` and `validating` accessors. `field.reset()` restores its initial value and clears touched and error state; `field.reset(value)` establishes a new baseline. [`FormState`][wybthon.forms.FormState]'s `dirty` and `validating` accessors aggregate its fields, `.data()` returns current values, and `.reset(values=None)` resets the form.
 
-`await field.validate_async(validators)` accepts synchronous or async validators. Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.
+`await field.validate_async(validators)` accepts synchronous or async validators (`AsyncValidator`). Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.
 
 ```python
 async def save(values):
     return await post_profile(values)
 
+
 async def submit(event):
     event.prevent_default()
     await fields.submit(save, rules=rules)
+
+
+form(input_(**bind_text(fields["name"])), button("Save", type="submit"), on_submit=submit)
 ```
 
 `FormState.submit` validates the fields, snapshots their values, and awaits the handler. `.submitting` and `.submit_error` expose the result. If values change during validation, that submission doesn't send stale values. The simpler `on_submit` helpers also propagate async handler results to the event task.
 
-`bind_text(field, parse=..., format=...)` separates display text from stored values and reports conversion errors. `bind_number` handles numeric values and empty inputs. `bind_multiselect` binds all selected values through `selected_values`, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.
+`bind_text(field, parse=..., format=...)` separates display text from stored values and reports conversion errors. `bind_number(field)` handles numeric values and stores an empty input as `None`. `bind_multiselect(field)` binds a list of selected values through `selected_values`, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.

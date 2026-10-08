@@ -13,7 +13,7 @@ from typing import Any
 from .kernel import OP_ROOT, OP_UNROOT
 from .reactivity import _core
 from .reactivity._primitives import on_cleanup
-from .reactivity._props import Props
+from .reactivity._props import RawProps
 from .vnode import Fragment, VNode, h, hole
 
 __all__ = ["Portal"]
@@ -29,7 +29,7 @@ def _resolve_container_id(container: Any) -> int:
     return int(container.node_id)
 
 
-def _Portal(props: Props) -> Any:
+def _Portal(props: RawProps) -> Any:
     from . import kernel, reconciler
 
     if _core._server_depth:

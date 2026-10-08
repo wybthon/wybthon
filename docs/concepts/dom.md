@@ -60,39 +60,53 @@ The `ref` prop accepts three shapes:
 - A list or tuple mixing both: every entry is assigned. This is how a component forwards a parent's ref while keeping one of its own:
 
 ```python
-from wybthon import Prop, Ref, component, on_settled, prop
+from collections.abc import Callable
+
+from wybthon import Element, Props, Ref, component, on_settled
 from wybthon.html import input_
 
 
+class FancyInputProps(Props):
+    ref: Ref | Callable[[Element], None] | None = None
+
+
 @component
-def FancyInput(ref: Prop[Ref | None] = prop(None)):
+def FancyInput(props: FancyInputProps):
     local = Ref()
     on_settled(lambda: local.current.element.focus())
-    return input_(type="text", ref=[local, ref.peek()])
+    return input_(type="text", ref=[local, props.ref])
 ```
 
 Refs pass through components like any other prop; there's no special
-forwarding API. A `None` entry in the list is ignored.
+forwarding API. Declare `ref` as a plain field (not `Prop[...]`) so
+`props.ref` returns the `Ref` or callback the parent passed, untouched.
+A `None` entry in the list is ignored.
 
 ## Ownership and disposal order
 
 Refs follow the ownership tree. A component's `ref.current` is set from
-the first commit until the component unmounts. During unmount the
-component's own cleanups run first, then its host nodes' refs are
-cleared, then the freed node ids are released to the kernel. So an
-`on_cleanup` registered in the component body can still reach
-`ref.current` to tear down a native listener or a third-party widget.
-Materializing `ref.current.element` at that point commits the pending
-remove op, so the node may already be detached from the document; use
-it for teardown, not for measurements. Cleanups that run later (for
-example ones registered by an ancestor) see `ref.current is None`, so
-guard for it. See [Lifecycle and ownership](lifecycle.md).
+the first commit until the component unmounts. Unmounting queues one
+kernel command that removes the component's nodes and releases them
+natively, then runs the component's own cleanups, then clears its host
+nodes' refs. So an `on_cleanup` registered in the component body can
+still reach `ref.current` to tear down a native listener or a
+third-party widget.
+
+The raw node is another matter. Materializing `ref.current.element` for
+the first time inside a cleanup commits the queued removal, and the
+kernel has already released the node by then, so `element` is `None`.
+If teardown needs the raw node, read `ref.current.element` while the
+component is mounted (in `on_settled`, say); the `Element` caches it,
+and the cleanup gets the detached node. Use it for teardown, not for
+measurements. Cleanups that run later (for example ones registered by
+an ancestor) see `ref.current is None`, so guard for it. See
+[Lifecycle and ownership](lifecycle.md).
 
 ## How the renderer relates to `Element`
 
 The renderer itself never touches raw DOM nodes or `Element` wrappers.
 Every host VNode is identified by an integer node id, and all mutations
-(create, insert, set-attr, listen) are emitted as compact operations
+(clone, insert, set-attr, dispose) are emitted as compact operations
 into a command buffer that a small JavaScript kernel applies in one
 bridge crossing per commit. See [Virtual DOM](vdom.md).
 

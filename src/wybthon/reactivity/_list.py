@@ -1,4 +1,4 @@
-"""Reactive list mapping and selection helpers.
+"""Reactive list mapping helpers.
 
 [`map_array`][wybthon.map_array] turns a
 reactive list into a memoized list of mapped rows, reusing each row's
@@ -14,7 +14,7 @@ from typing import Any
 from . import _core
 from ._core import Accessor, Memo, Owner, Signal
 
-__all__ = ["map_array", "create_selector"]
+__all__ = ["map_array", "repeat"]
 
 # Scalar item types matched by value rather than identity in keyed mode.
 _SCALAR = (str, int, float, bool, bytes, type(None), tuple, frozenset)
@@ -122,7 +122,11 @@ def map_array[T, U](
             key = (
                 next_key
                 if index == prefix and prefix < common
-                else empty_key if item is empty_key else index if keyed is False else key_for(item)
+                else empty_key
+                if item is empty_key
+                else index
+                if keyed is False
+                else key_for(item)
             )
             bucket = available.get(key)
             if bucket:
@@ -191,72 +195,37 @@ class _MappedMemo[T](Memo[T]):
         self._row_scope.dispose()
 
 
-def create_selector[T](
-    source: Callable[[], T],
-    equals: Callable[[T, Any], bool] | None = None,
-) -> Callable[[Any], bool]:
-    """Return `is_selected(key)`: a tracked boolean that only updates the affected keys.
+def repeat[U](
+    count: Callable[[], int] | int,
+    fn: Callable[[int], U],
+    *,
+    start: Callable[[], int] | int = 0,
+    fallback: Callable[[], U] | None = None,
+) -> Memo[list[U]]:
+    """Map an integer range to rows, each with its own owner scope.
 
-    A naive `lambda: item.id == selected()` in every row re-runs every
-    row when the selection changes. `create_selector` subscribes each
-    key once and only notifies the row that was selected and the one
-    that was deselected.
+    The counterpart of Solid 2.0's `repeat`: `fn(i)` runs once per slot
+    for `i` in `range(start, start + count)`. Growing the count maps only
+    the new slots; shrinking it disposes the removed ones. Changing
+    `start` maps every slot again, because each row received a plain int.
 
     Args:
-        source: Accessor for the current selection.
-        equals: Optional `(selection, key) -> bool` comparison.
+        count: The number of slots, or an accessor for it.
+        fn: Maps one slot number to a row.
+        start: The first slot number, or an accessor for it.
+        fallback: Optional zero-arg callable whose result is the single
+            row when the count is zero.
 
     Returns:
-        A function `key -> bool` to call inside a hole, memo, or effect.
+        A [`Memo`][wybthon.Memo] yielding the list of mapped rows.
     """
-    subs: dict[Any, Signal[bool]] = {}
-    current: Signal[Any] = Signal(_core._MISSING)
 
-    def update(value: T) -> None:
-        prev = current._latest()
-        current._set(value)
-        if equals is None:
-            try:
-                keys = {prev, value}
-                affected = [(key, subs[key]) for key in keys if key in subs]
-            except TypeError:
-                affected = list(subs.items())
-        else:
-            affected = list(subs.items())
-        for key, sig in affected:
-            now = equals(value, key) if equals else (value == key)
-            sig._set(now)
+    def slots() -> range:
+        n = count() if callable(count) else count
+        first = start() if callable(start) else start
+        return range(first, first + max(0, int(n)))
 
-    # Eager: the apply stage writes graph data (the per-key flags), so it
-    # runs immediately and its writes are held with the selection when a
-    # transition holds it.
-    comp = _core.Computation(source, kind=_core._K_RENDER, apply_scope=False, apply=update, pass_prev=False, eager=True)
-    owner = _core._current_owner
-    if owner is not None:
-        owner._add_child(comp)
-    comp._update_if_necessary()
-
-    def is_selected(key: Any) -> bool:
-        value = current.peek()
-        init = (equals(value, key) if equals else (value == key)) if value is not _core._MISSING else False
-        if _core._current_observer is None:
-            return bool(init)
-        sig = subs.get(key)
-        if sig is None:
-
-            def release() -> None:
-                if subs.get(key) is sig and not sig._observers:
-                    subs.pop(key, None)
-
-            working = current._value
-            sig = Signal(bool(equals(working, key) if equals else working == key), unobserved=release)
-            if current in _core._held:
-                shown = _core._held[current]
-                _core._hold(sig, bool(equals(shown, key) if equals else shown == key), _core._node_tx[current])
-            subs[key] = sig
-        return sig()
-
-    return is_selected
+    return map_array(slots, lambda i, _index: fn(i), fallback=fallback)
 
 
 def _accessor_of(value: Any) -> Accessor[Any]:

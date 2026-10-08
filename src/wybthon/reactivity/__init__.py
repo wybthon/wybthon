@@ -10,11 +10,9 @@ from ._actions import Action, action, affects, create_optimistic, until
 from ._core import (
     Accessor,
     Computation,
-    LiteralValue,
     Memo,
     NotReadyError,
     Owner,
-    Prop,
     Signal,
     Transition,
     WriteInScopeError,
@@ -22,17 +20,18 @@ from ._core import (
     get_observer,
     get_owner,
     is_accessor,
-    literal,
     run_with_owner,
     untrack,
 )
-from ._list import create_selector, map_array
+from ._list import map_array, repeat
 from ._primitives import (
+    ChildrenAccessor,
     Setter,
     children,
     create_effect,
     create_memo,
     create_owner,
+    create_reaction,
     create_render_effect,
     create_root,
     create_signal,
@@ -47,19 +46,18 @@ from ._primitives import (
     refresh,
     resolve,
 )
-from ._props import Props, merge, omit, prop
+from ._props import ParentProps, Prop, Props, merge, omit, prop
 from ._session import ServerError
 
 __all__ = [
     # Types
     "Accessor",
-    "LiteralValue",
-    "literal",
     "Setter",
     "Signal",
     "Memo",
     "Prop",
     "Props",
+    "ParentProps",
     "Owner",
     "Computation",
     "Transition",
@@ -99,9 +97,11 @@ __all__ = [
     "merge",
     "omit",
     "children",
+    "ChildrenAccessor",
+    "create_reaction",
     # Lists
     "map_array",
-    "create_selector",
+    "repeat",
     # Misc
     "create_unique_id",
     "is_accessor",

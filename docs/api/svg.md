@@ -28,7 +28,7 @@ from `wybthon.svg`.
   `preserve_aspect_ratio`, `gradient_units`, `gradient_transform`,
   `pattern_units`, `marker_width`, `marker_height`, `ref_x`, `ref_y`,
   `text_length`, `std_deviation`, and similar.
-- `class_` becomes `class`; any other underscore becomes a hyphen
+- `class_` becomes `class` when the attribute is written; any other underscore becomes a hyphen
   (`stroke_linecap`, `fill_opacity`).
 - `filter_` carries a trailing underscore because `filter` is a Python
   builtin. `a`, `title`, and `text` shadow the HTML helpers of the same
@@ -58,5 +58,5 @@ values exactly as they do for HTML props.
 #### See also
 
 - [HTML helpers](html.md)
-- [Props](props.md): attribute and reactive binding semantics
+- [HTML helpers](html.md#prop-values): attribute and reactive binding semantics
 - [Concepts: Virtual DOM](../concepts/vdom.md)

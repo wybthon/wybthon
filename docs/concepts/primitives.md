@@ -15,26 +15,37 @@ own render effect, so the component body runs once while the hole
 patches its region of the DOM whenever its dependencies change.
 
 ```python
-from wybthon import component, create_signal, hole
+from wybthon import component, create_memo, create_signal, hole
 from wybthon.html import button, div, p, span
 
 
 @component
 def Demo():
     count, set_count = create_signal(0)
+    doubled = create_memo(lambda: count() * 2)
 
     return div(
         # 1) An accessor as a child.
         p("Count: ", span(count)),
         # 2) A zero-arg expression as a child.
         p(lambda: f"Doubled: {count() * 2}"),
-        # 3) The explicit form, when you need a key.
+        # 3) A template string: one binding for the whole text.
+        p(t"Count is {count}, doubled {doubled}"),
+        # 4) The explicit form, when you need a key.
         p(hole(lambda: f"Tripled: {count() * 3}", key="triple")),
-        # 4) A reactive prop value (any prop except event handlers and ref).
+        # 5) A reactive prop value (any prop except event handlers and ref).
         p("Status", class_=lambda: "danger" if count() > 5 else "ok"),
-        button("+1", on_click=lambda e: set_count(lambda n: n + 1)),
+        button("+1", on_click=lambda: set_count(lambda n: n + 1)),
     )
 ```
+
+A [PEP 750](https://peps.python.org/pep-0750/) template string
+(Python 3.14) is a reactive expression wherever text is accepted, as a
+child or as an attribute value (`class_=t"card card-{variant}"`).
+Interpolated accessors and zero-arg functions are called inside one
+binding, so the whole string updates together; other interpolations are
+formatted once, and a template string with nothing reactive in it is
+static text.
 
 A hole's expression may return a string or number (a text node), a
 `VNode`, a list of either (mounted as a fragment), `None` (nothing), or
@@ -54,7 +65,7 @@ def subscribe(topic_name):
     return f"listening to {topic_name}"
 
 
-p(lambda: subscribe(topic()))   # re-subscribes when topic changes
+p(lambda: subscribe(topic()))  # re-subscribes when topic changes
 ```
 
 ## `create_signal`
@@ -67,15 +78,15 @@ from wybthon import create_signal, flush
 
 count, set_count = create_signal(0)
 set_count(5)
-count()          # 0: the write is staged
-flush()          # automatic in the browser
-count()          # 5
-set_count(lambda n: n + 1)   # functional update sees staged values
-count.peek()     # 5: untracked read of the committed value
+count()  # 0: the write is staged
+flush()  # automatic in the browser
+count()  # 5
+set_count(lambda n: n + 1)  # functional update sees staged values
+count.peek()  # 5: untracked read of the committed value
 ```
 
 - **Writes are staged.** The setter records the value; reads keep returning the committed value until the next flush. See [Staged writes](reactivity.md#staged-writes-and-flush-timing).
-- **Functional updates** receive the latest staged value, so two `set(lambda n: n + 1)` calls in one handler add two. To store a callable as the value, use `set_fn(literal(my_callable))`.
+- **Functional updates** receive the latest staged value, so two `set(lambda n: n + 1)` calls in one handler add two. To store a callable as the value, return it from an updater: `set_fn(lambda _: my_callable)`.
 - **`equals`** decides when observers are notified. The default is an identity fast path followed by `==`; `equals=False` always notifies; a callable `(old, new) -> bool` skips notification when it returns `True` (use `lambda a, b: a is b` for identity-only semantics).
 - **Function form.** `create_signal(lambda: a() + b())` returns a *writable derived signal*: it tracks what the function reads, and the setter overrides the value until the next source change.
 
@@ -91,8 +102,8 @@ read-only accessor for a derived value.
 from wybthon import create_memo
 
 doubled = create_memo(lambda: count() * 2)
-doubled()        # tracked read
-doubled.peek()   # untracked read
+doubled()  # tracked read
+doubled.peek()  # untracked read
 ```
 
 - **Eager setup, pull-based updates.** The body evaluates at creation unless `lazy=True`. After an input changes, reads bring the memo current.
@@ -143,15 +154,34 @@ Other options:
 - `compute` may be `async def`; awaits suspend the effect without blocking, and reads after an `await` are still tracked.
 - `defer=True` skips the first `apply` (tracking still starts).
 - `error=handler` receives exceptions from `compute` instead of routing them to the nearest [`Errored`][wybthon.Errored] boundary.
-- The returned [`Computation`][wybthon.Computation] has `.dispose()`.
+- The returned `Computation` (from `wybthon.reactivity`) has `.dispose()`.
 
 ## `create_render_effect`
 
 [`create_render_effect`][wybthon.create_render_effect] takes the same
-arguments as `create_effect` but runs in the **render phase**, before the
-DOM commit, and its first run happens immediately at creation. Holes
-and prop bindings are render effects. Reach for it only when building a
-rendering primitive; `create_effect` is right for application code.
+arguments as `create_effect`, including the required `apply` stage, but
+runs in the **render phase**, before the DOM commit, and its first run
+happens immediately at creation. Holes and prop bindings are render
+effects. Reach for it only when building a rendering primitive;
+`create_effect` is right for application code. For a single tracked
+function, use [`create_tracked_effect`][wybthon.create_tracked_effect].
+
+## `create_reaction`
+
+[`create_reaction`][wybthon.create_reaction] separates tracking from
+re-execution. It returns `track(fn)`: calling `track` runs `fn` and
+subscribes to what it reads, and the first time any of those sources
+changes, the effect runs once (untracked, after the DOM commit) and the
+subscription ends. Call `track` again to re-arm it.
+
+```python
+from wybthon import create_reaction
+
+track = create_reaction(lambda: print("count changed"))
+track(count)  # arms the reaction
+set_count(1)  # prints once on the next flush
+set_count(2)  # silent until track() is called again
+```
 
 ## `untrack` and `.peek()`
 
@@ -161,8 +191,8 @@ Every accessor also has `.peek()` for a single untracked read.
 ```python
 from wybthon import create_effect, untrack
 
-create_effect(lambda: (a(), untrack(b)), lambda pair: print(pair))   # depends on a only
-count.peek()   # the same idea for one read
+create_effect(lambda: (a(), untrack(b)), lambda pair: print(pair))  # depends on a only
+count.peek()  # the same idea for one read
 ```
 
 Both silence the dev-mode top-level-read warning, so they're the
@@ -175,16 +205,20 @@ mounted the current component has committed, so refs are assigned and
 the DOM is live. It may return a cleanup that runs on unmount.
 
 ```python
-from wybthon import Prop, Ref, component, on_settled
+from wybthon import Prop, Props, Ref, component, on_settled
 from wybthon.html import canvas
 
 
+class ChartProps(Props):
+    data: Prop[list[float]]
+
+
 @component
-def Chart(data: Prop[list[float]]):
+def Chart(props: ChartProps):
     ref = Ref()
 
     def start():
-        handle = draw(ref.current, data.peek())
+        handle = draw(ref.current, props.data.peek())
         return lambda: handle.destroy()
 
     on_settled(start)
@@ -212,13 +246,14 @@ global stores.
 ```python
 from wybthon import create_effect, create_root
 
+
 def setup(dispose):
     create_effect(count, lambda value: print("count", value))
     return dispose
 
 
 dispose = create_root(setup)
-dispose()   # tears the effect down
+dispose()  # tears the effect down
 ```
 
 `await` drops the active owner. Capture it with
@@ -240,22 +275,23 @@ async def later():
 
 Every read goes through [`Accessor[T]`][wybthon.Accessor]: signal
 getters are [`Signal[T]`][wybthon.Signal], memos are `Memo[T]`, and
-component parameters are [`Prop[T]`][wybthon.Prop]. Setters are
+reading a [`Prop[T]`][wybthon.Prop] field on a component's props returns
+an `Accessor[T]`. Setters are
 `Setter[T]`. Annotate function parameters as `Accessor[T]` when they
 accept any of these. See the [Typing guide](../guides/typing.md).
 
 ## Props helpers
 
-- [`prop(default)`][wybthon.prop] declares a component parameter default with a `Prop[T]` type.
-- [`merge(*sources)`][wybthon.merge] merges `Props`, dicts, and zero-arg functions returning dicts into one reactive mapping; later sources win, and `None` is a real value.
-- [`omit(source, *keys)`][wybthon.omit] returns a reactive view without the given keys (the replacement for `split_props`).
-- [`children(fn)`][wybthon.children] resolves a children prop into a memoized flat list.
+- [`prop(default=...)`][wybthon.prop] declares the default of a `Prop[T]` field on a [`Props`][wybthon.Props] class; use `prop(default_factory=...)` for mutable defaults.
+- [`merge(*sources)`][wybthon.merge] merges props instances, dicts, and zero-arg functions returning dicts into one reactive mapping; later sources win, and `None` is a real value.
+- [`omit(source, *keys)`][wybthon.omit] returns a reactive view without the given keys, or without every key a predicate accepts (the replacement for `split_props`).
+- [`children(fn)`][wybthon.children] resolves a children prop into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list.
 
 ```python
 from wybthon import merge, omit
 
-attrs = merge({"type": "button"}, rest)
-rest_without_class = omit(props, "class_", "style")
+attrs = merge({"type": "button"}, omit(props, "label", "children"))
+handlers = omit(props, lambda key: not key.startswith("on_"))
 ```
 
 ## `map_array`
@@ -285,20 +321,44 @@ Row bodies run untracked inside the row's owner, so anything reactive
 inside a row must read an accessor within a hole, memo, or effect.
 `fallback=` supplies a single row for the empty list.
 
-## `create_selector`
+## `repeat`
 
-[`create_selector`][wybthon.create_selector] returns
-`is_selected(key)`, a tracked boolean that notifies only the row that
-was selected and the one that was deselected instead of every row:
+[`repeat`][wybthon.repeat] maps an integer range to rows, each with its
+own owner scope. `fn(i)` runs once per slot for `i` in
+`range(start, start + count)`; growing the count maps only the new
+slots, and shrinking it disposes the removed ones. The `Repeat`
+component is built on it.
 
 ```python
-from wybthon import create_selector, create_signal
+from wybthon import create_signal, repeat
+
+rating, set_rating = create_signal(3)
+stars = repeat(rating, lambda i: f"star {i}", start=1)
+stars()  # ["star 1", "star 2", "star 3"]
+```
+
+`count` and `start` may be plain ints or accessors, and `fallback=`
+supplies a single row when the count is zero.
+
+## Selection with `create_projection`
+
+To mark one selected row without notifying every row, derive a
+projection keyed by the selection with
+[`create_projection`][wybthon.create_projection]. A projection notifies
+only the keys it changes, so a new selection updates the row that was
+selected and the one that was deselected:
+
+```python
+from wybthon import create_projection, create_signal
 
 selected, set_selected = create_signal(1)
-is_selected = create_selector(selected)
+is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
 
-li("Item 2", class_=lambda: "active" if is_selected(2) else None)
+li("Item 2", class_=lambda: "active" if is_selected.get(2) else None)
 ```
+
+`is_selected.get(key)` is tracked per key and returns `None` when the
+key is absent. See [Stores](stores.md) for projections in general.
 
 ## Miscellany
 

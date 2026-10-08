@@ -2,7 +2,7 @@
 
 Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM collects mutations for the Python-to-JavaScript bridge. It doesn't choose reactive dependencies or require components to rerun.
 
-The async API reference for this design is [Solid 2.0 RC.9's async data contract](https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.9/documentation/solid-2.0/05-async-data.md). This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary `async def` actions, and real asyncio tasks.
+The async API reference for this design is [Solid 2.0 RC.14's async data contract](https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.14/documentation/solid-2.0/05-async-data.md). This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary `async def` actions, and real asyncio tasks.
 
 ## Read views
 
@@ -68,14 +68,34 @@ An optimistic edit made outside an action remains until the next transition adop
 
 ## Python authoring
 
-Every named `@component` input is a `Prop[T]` accessor. Use `prop(default)` for typed defaults and `.peek()` for an intentional one-time read. Plain value annotations such as `count: int` are rejected at declaration and by mypy. An unannotated input still receives a Prop; a single `Props` parameter receives the mapping.
+A component declares its inputs on a [`Props`][wybthon.Props] subclass and takes one parameter annotated with that class, or no parameters when it has no inputs. A `Prop[T]` field is reactive: reading `props.label` returns an accessor, whether the parent passed a value, an accessor, or a zero-argument function. Use `prop(default=...)` or `prop(default_factory=...)` for defaults, and `.peek()` for an intentional one-time read. Any other annotation declares a plain field, which returns the parent's latest value untracked. A plain field is never called by the read, so callbacks belong there. In dev mode (the default outside production builds), an unknown prop or a missing required one raises `TypeError` at the call site.
 
-Children, bindings, and props use one accessor rule: an Accessor, or a function or bound method callable without required arguments. Use `literal` to pass a callable as data. `Props.get` returns the supplied default when a key is absent. Mapping iteration, length, and membership include declared defaults. Direct optional prop access still produces an accessor whose missing value is `None`.
+```python
+from collections.abc import Callable
+
+from wybthon import Prop, Props, button, component, prop
+
+
+class SaveProps(Props):
+    label: Prop[str] = prop(default="Save")
+    on_save: Callable[[], None] | None = None
+
+
+@component
+def SaveButton(props: SaveProps):
+    def save():
+        if props.on_save is not None:
+            props.on_save()  # the parent's callback, called only here
+
+    return button(props.label, on_click=save)
+```
+
+DOM positions keep one accessor rule: in children, attribute values, and bindings, an accessor or a function or bound method callable without required arguments is a reactive expression. A t-string with a reactive interpolation is one reactive binding. Event handlers and refs are never reactive, and a handler may take the event or no arguments. Component props don't use the arity rule; the declared field type decides. [`merge`][wybthon.merge] and [`omit`][wybthon.omit] return reactive mappings of accessors for spreading onto elements, and a key they don't supply reads as `None`.
 
 ## Diagnostics and limits
 
 `diagnostics.inspect_transitions()` reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. `inspect_graph(owner)` includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. `runtime_stats()` includes transition and held-node counts.
 
-The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; template cloning, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
+The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
 
 The native concurrency benchmark, `python benchmarks/async_bench.py`, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.

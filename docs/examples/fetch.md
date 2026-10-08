@@ -35,8 +35,8 @@ def TodoViewer():
     todo = create_memo(load_todo)
 
     return div(
-        button("Previous", on_click=lambda e: set_todo_id(lambda i: max(1, i - 1))),
-        button("Next", on_click=lambda e: set_todo_id(lambda i: i + 1)),
+        button("Previous", on_click=lambda: set_todo_id(lambda i: max(1, i - 1))),
+        button("Next", on_click=lambda: set_todo_id(lambda i: i + 1)),
         Errored(
             lambda: Loading(
                 lambda: p(
@@ -48,7 +48,7 @@ def TodoViewer():
                 ),
                 fallback=p("Loading..."),
             ),
-            fallback=lambda err, reset: div(p("Failed: ", str(err)), button("Retry", on_click=lambda e: reset())),
+            fallback=lambda err, reset: div(p("Failed: ", lambda: str(err())), button("Retry", on_click=reset)),
         ),
     )
 
@@ -62,7 +62,7 @@ Reading `todo()` inside the boundary is what wires it to `Loading`. Until the co
 
 Once the memo has a value, the fallback never returns. When `todo_id` changes, the memo recomputes inside a transition: it keeps serving the previous todo, and the UI that read `todo_id` holds with it, until the new one arrives, so the id and the todo never disagree on screen. [`is_pending`][wybthon.is_pending] is `True` during that window, which drives the inline hint.
 
-If `load_todo` raises, the error routes to the nearest [`Errored`][wybthon.Errored] boundary. Its `reset` callback re-renders the children, which re-reads the memo.
+If `load_todo` raises, the error routes to the nearest [`Errored`][wybthon.Errored] boundary. Its fallback reads the error through the `err` accessor, and its `reset` callback re-renders the children, which re-reads the memo.
 
 ## Refetching
 
@@ -81,7 +81,7 @@ async def load_report():
 
 report = create_memo(load_report)
 
-button("Refetch", on_click=lambda e: set_version(lambda v: v + 1))
+button("Refetch", on_click=lambda: set_version(lambda v: v + 1))
 ```
 
 To refetch *quietly* after a mutation, without showing a pending state, use [`refresh`][wybthon.refresh]. It returns an awaitable for the next settled value:
@@ -103,7 +103,7 @@ async def save_report(data):
 ```python
 from wybthon import latest, span
 
-span(lambda: (latest(lambda: todo()["title"]) or "nothing yet"))
+span(lambda: latest(lambda: todo()["title"]) or "nothing yet")
 ```
 
 [`resolve`][wybthon.resolve] awaits the next settled value, which is handy in actions and scripts:

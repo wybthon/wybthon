@@ -8,9 +8,10 @@ Design goals:
 - **Deterministic isolation.** ``goto_feature`` bounces through ``/blank``
   before navigating to the target feature, forcing the previous feature's
   component tree to unmount so each test starts from fresh component state.
-- **Fail fast on boot errors.** ``bootstrap.js`` records a boot error on
-  ``window.__WYB_E2E_ERROR``; the readiness wait surfaces it as a test error
-  instead of timing out.
+- **Fail fast on boot errors.** The fixture is an ordinary Wybthon project
+  (``tests/e2e/wybthon.toml``) served by ``wyb dev``. The production
+  bootstrap records its status on ``window.__WYB``; the readiness wait
+  surfaces a boot error as a test error instead of timing out.
 """
 
 from __future__ import annotations
@@ -27,7 +28,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-FIXTURE_URL_PATH = "/tests/e2e/index.html"
+FIXTURE_DIR = Path(__file__).resolve().parent
+FIXTURE_URL_PATH = "/"
 
 # Pyodide boots from a CDN; allow a generous ceiling for cold starts / CI.
 BOOT_TIMEOUT_MS = 180_000
@@ -56,10 +58,10 @@ def _wait_for_http(url: str, timeout_s: float = 30.0) -> None:
 
 @pytest.fixture(scope="session")
 def http_server_base_url():
-    """Start ``wyb dev`` at the repo root so the fixture app and manifest load."""
+    """Start ``wyb dev`` on the fixture project."""
     port = _free_port()
     proc = subprocess.Popen(
-        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(REPO_ROOT)],
+        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(FIXTURE_DIR)],
         cwd=str(REPO_ROOT),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -85,10 +87,10 @@ def fixture_page(http_server_base_url, browser):
     page.goto(f"{http_server_base_url}{FIXTURE_URL_PATH}")
 
     page.wait_for_function(
-        "() => window.__WYB_E2E_READY === true || window.__WYB_E2E_ERROR",
+        "() => window.__WYB && (window.__WYB.status === 'ready' || window.__WYB.status === 'error')",
         timeout=BOOT_TIMEOUT_MS,
     )
-    boot_error = page.evaluate("() => window.__WYB_E2E_ERROR")
+    boot_error = page.evaluate("() => window.__WYB.error")
     if boot_error:
         raise RuntimeError(f"Wybthon fixture failed to boot:\n{boot_error}")
     page.wait_for_selector("[data-testid=app-ready]", timeout=BOOT_TIMEOUT_MS)

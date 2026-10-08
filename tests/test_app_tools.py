@@ -7,9 +7,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from wybthon import bind_multiselect, bind_number, create_signal, create_virtualizer, flush, form_state
+from wybthon import create_signal, flush
 from wybthon.build import build_app, init_app
-from wybthon.router_core import RouteSpec, resolve
+from wybthon.forms import bind_multiselect, bind_number, form_state
+from wybthon.router import RouteSpec, resolve
+from wybthon.virtual import create_virtualizer
 
 
 def test_build_is_deterministic_and_chunks_are_separate(tmp_path):
@@ -32,6 +34,26 @@ def test_build_is_deterministic_and_chunks_are_separate(tmp_path):
         assert "app/charts/__init__.py" in archive.namelist()
     assert 'src="/demo/assets/bootstrap.' in (app / "dist" / "index.html").read_text()
     assert json.loads((app / "dist" / "manifest.json").read_text()) == first
+    assert first["dev"] is False
+
+
+def test_production_build_turns_dev_mode_off_before_app_imports(tmp_path):
+    init_app(tmp_path)
+    production = build_app(tmp_path)
+    assert production["dev"] is False
+    bootstrap = next((tmp_path / "dist" / "assets").glob("bootstrap.*.js")).read_text()
+    set_mode = bootstrap.index("wybthon.set_dev_mode(")
+    assert 'config.dev ? "True" : "False"' in bootstrap
+    # Dev mode is configured before the entry module is imported.
+    assert set_mode < bootstrap.index("importlib.import_module(_wyb_module)")
+    development = build_app(tmp_path, dev=True)
+    assert development["dev"] is True
+    assert json.loads((tmp_path / "dist" / "manifest.json").read_text())["dev"] is True
+    # The build ships the kernel's JavaScript with the runtime.
+    with zipfile.ZipFile(tmp_path / "dist" / development["runtime"]) as archive:
+        names = archive.namelist()
+    assert "wybthon/_kernel.js" in names
+    assert not any(name.endswith(("wybthon/dev.py", "wybthon/build.py", "wybthon/server.py")) for name in names)
 
 
 def test_init_and_build_preserve_existing_files(tmp_path):
@@ -157,7 +179,7 @@ def test_build_validation_failure_preserves_previous_output(tmp_path):
 
 
 def test_cooperative_work_yields_and_cancels(wyb):
-    from wybthon import map_cooperative
+    from wybthon.scheduling import map_cooperative
 
     async def main():
         completed = []
@@ -189,15 +211,15 @@ def test_testing_scope_disposes_computations(wyb):
     assert not value._observers
 
 
-def test_render_test_and_graph_inspection_release_resources(wyb):
+def test_render_and_graph_inspection_release_resources(wyb):
     from wybthon import p
     from wybthon.diagnostics import inspect_graph, runtime_stats
-    from wybthon.testing import render_test
+    from wybthon.testing import render
 
     value, _ = create_signal(1)
     before = runtime_stats()
-    with render_test(p(value)) as root:
-        graph = inspect_graph(root._owner)
+    with render(p(value)) as screen:
+        graph = inspect_graph(screen.root._owner)
         assert any(edge["kind"] == "dependency" for edge in graph["edges"])
         json.dumps(graph)
         assert runtime_stats()["nodes"] > before["nodes"]

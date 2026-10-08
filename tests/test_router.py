@@ -3,8 +3,22 @@ from conftest import collect_texts
 
 from wybthon.component import component
 from wybthon.html import div, h1, nav, p, span
-from wybthon.reactivity import Prop, Props, flush
-from wybthon.router import Link, Outlet, Route, Router, current_path, navigate, use_base_path, use_params, use_query
+from wybthon.reactivity import flush
+from wybthon.router import (
+    Link,
+    Outlet,
+    Route,
+    RouteProps,
+    Router,
+    RouteSpec,
+    current_path,
+    navigate,
+    resolve,
+    use_base_path,
+    use_hash,
+    use_params,
+    use_query,
+)
 
 
 def texts(node):
@@ -35,8 +49,8 @@ def Home():
 
 
 @component
-def User(params: Prop[dict], query: Prop[dict]):
-    return h1("User ", lambda: params()["id"], " tab=", lambda: query().get("tab", "-"))
+def User(props: RouteProps):
+    return h1("User ", lambda: props.params()["id"], " tab=", lambda: props.query().get("tab", "-"))
 
 
 @component
@@ -66,9 +80,9 @@ def test_param_change_updates_props_without_remount(wyb, root_element):
     mounted = []
 
     @component
-    def Tracked(params: Prop[dict], query: Prop[dict]):
+    def Tracked(props: RouteProps):
         mounted.append(1)
-        return span(lambda: params()["id"])
+        return span(lambda: props.params()["id"])
 
     root = wyb["reconciler"].render(Router([Route("/users/:id", Tracked)]), root_element)
     navigate("/users/1")
@@ -124,7 +138,7 @@ def test_nested_routes_match_children(wyb, root_element):
         return div(h1("About"), Outlet())
 
     @component
-    def Team(props: Props):
+    def Team(props: RouteProps):
         return h1("Team ", lambda: props.params().get("name", ""))
 
     routes = [Route("/about", About, children=[Route("team/:name", Team)])]
@@ -258,8 +272,6 @@ def test_router_accepts_accessor_routes(wyb, root_element):
 
 
 def test_nested_layout_persists_and_query_hash_decode(wyb, root_element):
-    from wybthon import use_hash
-
     mounted = []
 
     @component
@@ -287,7 +299,8 @@ def test_nested_layout_persists_and_query_hash_decode(wyb, root_element):
 def test_route_preload_is_shared_and_owned(wyb, root_element):
     import asyncio
 
-    from wybthon import Loading, preload
+    from wybthon import Loading
+    from wybthon.router import preload
 
     async def main():
         gate = asyncio.Event()
@@ -356,3 +369,78 @@ def test_async_link_callback_can_prevent_navigation_and_is_owned(wyb, root_eleme
         assert events == ["started", "closed"]
 
     asyncio.run(main())
+
+
+# ---------------------------------------------------------------------------
+# Path resolution (formerly ``wybthon.router_core``): no browser needed
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_basic_match():
+    routes = [RouteSpec("/"), RouteSpec("/about")]
+    route, info = resolve(routes, "/about")
+    assert route.path == "/about"
+    assert info["params"] == {}
+
+
+def test_resolve_params():
+    route, info = resolve([RouteSpec("/users/:id")], "/users/42")
+    assert route.path == "/users/:id"
+    assert info["params"]["id"] == "42"
+
+
+def test_resolve_nested_children_match():
+    route, info = resolve([RouteSpec("/about", children=[RouteSpec("team")])], "/about/team")
+    assert route.path == "team"
+    assert info["params"] == {}
+    assert [r.path for r in info["matches"]] == ["/about", "team"]
+
+
+def test_resolve_wildcard_match_and_empty_tail():
+    routes = [RouteSpec("/docs/*")]
+    route, info = resolve(routes, "/docs/guide/intro")
+    assert route.path == "/docs/*"
+    assert info["params"]["wildcard"] == "guide/intro"
+
+    route2, info2 = resolve(routes, "/docs")
+    assert route2.path == "/docs/*"
+    # The optional tail is empty when matching just "/docs".
+    assert info2["params"].get("wildcard", "") in ("", None)
+
+
+def test_resolve_base_path_stripping():
+    routes = [RouteSpec("/about"), RouteSpec("/docs/*")]
+    route, info = resolve(routes, "/app/docs/guide", base_path="/app")
+    assert route.path == "/docs/*"
+    assert info["params"]["wildcard"] == "guide"
+    # A base path mismatch doesn't match.
+    assert resolve(routes, "/x/docs/guide", base_path="/app") is None
+
+
+def test_resolve_prefers_static_segments_over_params():
+    routes = [RouteSpec("/users/:id"), RouteSpec("/users/new")]
+    route, info = resolve(routes, "/users/new")
+    assert route.path == "/users/new"
+    assert info["params"] == {}
+
+
+def test_resolve_accepts_any_object_with_path():
+    from dataclasses import dataclass
+
+    @dataclass
+    class R:
+        path: str
+        children: list | None = None
+
+    route, _info = resolve([R("/a", children=[R(":x")])], "/a/b?q=1")
+    assert route.path == ":x"
+
+
+def test_route_props_defaults_and_router_core_is_gone():
+    import importlib
+
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("wybthon.router_core")
+    fields = RouteProps._wyb_fields
+    assert {"params", "query"} <= set(fields)
+    assert not any(fields[name].required for name in ("params", "query"))

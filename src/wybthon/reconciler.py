@@ -35,36 +35,9 @@ from __future__ import annotations
 from bisect import bisect_left
 from typing import Any
 
+from . import _template as template
 from . import kernel
-from ._warnings import component_name, log_error
-from .component import Component
-from .dom import Element
-from .events import _handlers, remove_handlers_for, set_handler
-from .kernel import (
-    OP_CLAIM_COMMENT,
-    OP_CLAIM_ELEMENT,
-    OP_CLAIM_TEXT,
-    OP_CLONE_TPL,
-    OP_CREATE_COMMENT,
-    OP_CREATE_ELEMENT,
-    OP_CREATE_ELEMENT_NS,
-    OP_CREATE_TEXT,
-    OP_HOLE_TEXT,
-    OP_HYDRATE,
-    OP_HYDRATE_END,
-    OP_INSERT,
-    OP_MOVE_RANGE,
-    OP_RELEASE,
-    OP_REMOVE,
-    OP_REMOVE_RANGE,
-    OP_ROOT,
-    OP_SET_TEXT,
-    OP_UNROOT,
-)
-from .props import (
-    _UNSET,
-    _apply_single_prop,
-    _bind_reactive_prop,
+from ._dom_props import (
     _bindings,
     _ref_cleanups,
     apply_initial_props,
@@ -73,11 +46,35 @@ from .props import (
     detach_ref,
     remove_bindings_for,
 )
+from ._warnings import component_name, log_error
+from .component import Component
+from .dom import Element
+from .events import _handlers, remove_handlers_for
+from .kernel import (
+    OP_CLAIM_COMMENT,
+    OP_CLAIM_ELEMENT,
+    OP_CLAIM_STATIC,
+    OP_CLAIM_TEXT,
+    OP_CREATE_COMMENT,
+    OP_CREATE_ELEMENT,
+    OP_CREATE_ELEMENT_NS,
+    OP_CREATE_TEXT,
+    OP_DISPOSE,
+    OP_DISPOSE_RANGE,
+    OP_HOLE_TEXT,
+    OP_HYDRATE,
+    OP_HYDRATE_END,
+    OP_INSERT,
+    OP_MOVE_RANGE,
+    OP_RELEASE,
+    OP_ROOT,
+    OP_SET_TEXT,
+    OP_UNROOT,
+)
 from .reactivity import _core
 from .reactivity._core import (
     _K_RENDER,
     Computation,
-    NotReadyError,
     Owner,
     _ComponentContext,
     _enter_component_setup,
@@ -85,16 +82,7 @@ from .reactivity._core import (
     flush,
     is_accessor,
 )
-from .reactivity._props import Props
-from .template import (
-    BIND_EVENT,
-    BIND_PROP,
-    BIND_REACTIVE,
-    BIND_TEXT,
-    NODE_HOLE,
-    NODE_STATIC,
-    build_plan,
-)
+from .reactivity._props import RawProps
 from .vnode import NS_MATHML, NS_SVG, Fragment, VNode, hole, normalize_children, to_text_vnode
 
 __all__ = ["render", "hydrate", "Root", "mount", "unmount", "patch"]
@@ -381,7 +369,7 @@ def _dom_node_ids(vnode: VNode) -> list[int]:
         return nodes
     if vnode.subtree is not None:
         return _dom_node_ids(vnode.subtree)
-    if vnode.tag in ("_fragment", "_list", "_branch"):
+    if vnode.tag in ("_fragment", "_list", "_branch", "_static"):
         if vnode.el is None:
             return []
         frag_nodes: list[int] = [vnode.el]
@@ -408,7 +396,8 @@ def _create_lot() -> int:
 
 
 def _release_lot(lot: int) -> None:
-    _emit((OP_RELEASE, [lot]))
+    # Disposing the lot also releases any content still parked inside it.
+    _emit((OP_DISPOSE, lot))
 
 
 def _park(vnode: VNode, lot: int) -> None:
@@ -457,7 +446,9 @@ def _element_ns(tag: str, ns: str | None) -> str | None:
     return ns
 
 
-def mount(vnode: VNode | str, parent_id: int, anchor_id: int | None = None, ns: str | None = None) -> None:
+def mount(
+    vnode: VNode | str, parent_id: int, anchor_id: int | None = None, ns: str | None = None, final: bool = False
+) -> None:
     """Emit ops mounting a VNode (or string) under `parent_id`.
 
     When the VNode carries an `owner_scope` (set by list primitives for
@@ -469,17 +460,20 @@ def mount(vnode: VNode | str, parent_id: int, anchor_id: int | None = None, ns: 
         parent_id: Kernel id of the parent node.
         anchor_id: Optional sibling id to insert before (`None` appends).
         ns: Namespace of the parent (`None` for HTML).
+        final: The subtree will never be patched (a component's output).
+            List rows are final too. A final template-mounted subtree
+            releases its static VNodes once mounted.
     """
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
     scope = vnode.owner_scope
     if scope is not None:
-        _core._run_owned_untracked(scope, lambda: _mount_dispatch(vnode, parent_id, anchor_id, ns))
+        _core._run_owned_untracked(scope, lambda: _mount_dispatch(vnode, parent_id, anchor_id, ns, True))
         return
-    _mount_dispatch(vnode, parent_id, anchor_id, ns)
+    _mount_dispatch(vnode, parent_id, anchor_id, ns, final)
 
 
-def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None) -> None:
+def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None, final: bool = False) -> None:
     tag = vnode.tag
     vnode.ns = ns
 
@@ -507,11 +501,20 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
         _mount_fragment(vnode, parent_id, anchor_id, ns)
         return
 
+    if tag == "_static":
+        _mount_static(vnode, parent_id, anchor_id)
+        return
+
     if callable(tag):
         _mount_component(vnode, parent_id, anchor_id, ns)
         return
 
-    if ns is None and not kernel.claiming and _mount_template(vnode, parent_id, anchor_id):
+    if (
+        ns is None
+        and not kernel.claiming
+        and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
+        and template.mount(vnode, parent_id, anchor_id, final)
+    ):
         return
 
     _mount_element(vnode, parent_id, anchor_id, ns)
@@ -544,75 +547,6 @@ def _mount_element(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str 
     attach_ref(vnode.props, nid)
 
 
-def _mount_template(vnode: VNode, parent_id: int, anchor_id: int | None) -> bool:
-    """Mount an element subtree through the template fast path.
-
-    The static skeleton is serialized to HTML once per shape and cloned
-    natively with one `CLONE_TPL` op; text, bindings, and dynamic children
-    are then wired by id. Returns `False` when the tree isn't eligible.
-    """
-    if not kernel.supports_html():
-        return False
-    plan = build_plan(vnode)
-    if plan is None:
-        return False
-
-    count = plan.node_count
-    first = kernel.alloc_ids(count)
-    _emit((OP_CLONE_TPL, first, count, kernel.template_id(plan.html)))
-
-    holes: list[Any] = []
-    mounts: list[Any] = []
-    nid = first
-    for kind, node, parent in plan.order:
-        if kind == NODE_STATIC:
-            node.el = nid
-        elif kind == NODE_HOLE:
-            holes.append((node, parent, nid))
-        else:
-            mounts.append((node, parent, nid))
-        nid += 1
-
-    for target, bkind, name, value in plan.bindings:
-        el = target.el
-        assert el is not None
-        if bkind == BIND_TEXT:
-            if value != " ":  # the clone already holds the placeholder space
-                _emit((OP_SET_TEXT, el, value))
-        elif bkind == BIND_EVENT:
-            set_handler(el, name, value if callable(value) else None)
-        elif bkind == BIND_REACTIVE:
-            _bind_reactive_prop(el, name, value)
-        elif bkind == BIND_PROP:
-            _apply_single_prop(el, name, _UNSET, value)
-        else:  # BIND_REF
-            attach_ref({name: value}, el)
-
-    _emit((OP_INSERT, parent_id, first, anchor_id))
-
-    for node, parent, comment_id in holes:
-        _mount_hole(node, parent.el, end_id=comment_id, ns=_template_ns(parent))
-
-    if mounts:
-        removed: list[int] = []
-        for node, parent, comment_id in mounts:
-            mount(node, parent.el, comment_id, _template_ns(parent))
-            _emit((OP_REMOVE, comment_id))
-            removed.append(comment_id)
-        _emit((OP_RELEASE, removed))
-
-    return True
-
-
-def _template_ns(parent: VNode) -> str | None:
-    """Namespace for children of a template-mounted element (HTML root)."""
-    ns = parent.ns
-    tag = parent.tag
-    if isinstance(tag, str):
-        return _child_ns(tag, ns)
-    return ns
-
-
 def _mount_fragment(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None) -> None:
     """Mount a fragment: comment markers with the children directly in the parent."""
     claim_end = _open_fragment(vnode, parent_id, anchor_id)
@@ -624,6 +558,14 @@ def _mount_fragment(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
     for child in norm_children:
         mount(child, parent_id, end_id, ns)
     if claim_end:
+        _close_fragment(vnode, parent_id)
+
+
+def _mount_static(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
+    """Keep a server-rendered region as static DOM (`NoHydration` while hydrating)."""
+    claim_end = _open_fragment(vnode, parent_id, anchor_id)
+    if claim_end:
+        _emit((OP_CLAIM_STATIC, parent_id, "/" + vnode.props["marker"]))
         _close_fragment(vnode, parent_id)
 
 
@@ -701,17 +643,11 @@ def _hole_updater(
     ns = vnode.ns
     scope_parent = _core._current_owner
 
-    def compute() -> Any:
-        try:
-            return getter()
-        except NotReadyError:
-            # An async source has no value yet. Keep the current content;
-            # the read registered with the nearest Loading boundary and
-            # subscribed this hole to the resolution.
-            return _KEEP
-        except Exception as exc:
-            return _core._Failure(exc)
-
+    # The expression runs as a ``keep`` render effect: when an async source
+    # has no value yet, the hole keeps its current content (the read
+    # registered with the nearest Loading boundary and subscribed this hole
+    # to the resolution), and an exception routes to the nearest Errored
+    # boundary through the apply stage.
     def apply(result: Any) -> None:
         if result is _KEEP:
             return
@@ -751,7 +687,11 @@ def _hole_updater(
                 _unmount(prev)
                 vnode.subtree = None
             if vnode._hole_text != text:
-                _emit((OP_HOLE_TEXT, end_id, text))
+                slot = _clone_slot
+                if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
+                    slot[0][slot[1]] = text
+                else:
+                    _emit((OP_HOLE_TEXT, end_id, text))
                 vnode._hole_text = text
             return
         if vnode._hole_text is not None:
@@ -779,7 +719,7 @@ def _hole_updater(
 
         _core._run_owned_untracked(vnode.scope, commit)
 
-    fn: Any = getter if type(getter) is _core.Signal else compute
+    fn: Any = getter
     if _core._session is not None:
         # Server rendering and hydration: memos created by the expression
         # are keyed by the hole's position (checked per run, since the
@@ -797,7 +737,7 @@ def _hole_updater(
             finally:
                 _core._restore_position(previous)
 
-    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
+    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False, keep=True)
     if scope_parent is not None:
         scope_parent._add_child(comp)
     comp._update_if_necessary()
@@ -806,6 +746,11 @@ def _hole_updater(
 
 _KEEP = _core._SKIP_APPLY
 
+# While a template mount creates a text-anchored hole: `(clone command,
+# slot index, hole VNode, kernel generation)`. The hole's first text result
+# fills that slot of the not-yet-committed clone instead of a separate write.
+_clone_slot: tuple[list[Any], int, VNode, int] | None = None
+
 
 def _mount_hole(
     vnode: VNode,
@@ -813,11 +758,17 @@ def _mount_hole(
     anchor_id: int | None = None,
     end_id: int | None = None,
     ns: str | None = None,
+    text: bool = False,
+    clone: list[Any] | None = None,
+    slot: int = 0,
 ) -> None:
-    """Mount a reactive hole: an end-anchor comment plus a render effect.
+    """Mount a reactive hole: an end anchor plus a render effect.
 
     When `end_id` is provided (template fast path), the existing
-    placeholder comment is adopted as the end anchor.
+    placeholder is adopted as the end anchor. `text` marks a placeholder
+    that's a one-space text node rather than a comment: a text result is
+    then written straight into it. `clone` and `slot` name the template's
+    clone command and the text slot the hole's first text result fills.
     """
     claim: list[bool] | None = None
     if end_id is None:
@@ -829,12 +780,23 @@ def _mount_hole(
             _emit((OP_INSERT, parent_id, end_id, anchor_id))
     else:
         vnode.ns = ns
+        if text:
+            vnode._hole_text = " "
     vnode.el = end_id
     vnode._frag_end = end_id
 
     getter = vnode.props.get("getter")
     if callable(getter):
-        vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+        if clone is None:
+            vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+        else:
+            global _clone_slot
+            previous = _clone_slot
+            _clone_slot = (clone, slot, vnode, kernel.generation)
+            try:
+                vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+            finally:
+                _clone_slot = previous
     if claim is not None and claim[0]:
         # Nothing claimed the anchor (the expression isn't ready, or its
         # first result applies later): it's the server's empty-hole comment.
@@ -876,8 +838,8 @@ def _patch_hole(old: VNode, new: VNode, parent_id: int) -> None:
 def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None) -> None:
     """Mount a component with the run-once model.
 
-    The body runs exactly once under a fresh ownership scope with a
-    [`Props`][wybthon.Props] mapping bound to its parameters. Its result
+    The body runs exactly once under a fresh ownership scope, receiving
+    its typed [`Props`][wybthon.Props] instance. Its result
     is coerced to a VNode and mounted; a reactive expression result
     becomes a single hole.
     """
@@ -887,10 +849,6 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     ctx = _ComponentContext(comp)
     ctx._vnode = vnode
     vnode.component_ctx = ctx
-
-    declared: Component | None = comp if isinstance(comp, Component) else None
-    props = Props(vnode.props, declared.defaults if declared is not None else None)
-    ctx._props = props
 
     parent_owner = _core._current_owner
     if parent_owner is not None:
@@ -904,7 +862,11 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     saved = _enter_component_setup(ctx)
     try:
         try:
-            result = declared._render(props) if declared is not None else comp(props)
+            if isinstance(comp, Component):
+                result, ctx._props = comp._render(vnode.props)
+            else:
+                ctx._props = RawProps(vnode.props)
+                result = comp(ctx._props)
         except Exception as exc:
             if _dispatch_to_error_boundary(exc):
                 result = None
@@ -929,7 +891,8 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     _core._current_observer = None
     try:
         try:
-            mount(sub_tree, parent_id, anchor_id, ns)
+            # A component's output is never patched: only its props update.
+            mount(sub_tree, parent_id, anchor_id, ns, True)
             vnode.el = _first_dom_id(sub_tree)
         except Exception as exc:
             if _dispatch_to_error_boundary(exc):
@@ -952,7 +915,7 @@ def _patch_component(old: VNode, new: VNode, parent_id: int) -> None:
         return
     props = ctx._props
     if props is not None:
-        props._update(new.props)
+        props._wyb_update(new.props)
     ctx._vnode = new
     new.component_ctx = ctx
     new.render_effect = old.render_effect
@@ -978,15 +941,17 @@ def unmount(vnode: VNode) -> None:
 def _unmount(vnode: VNode) -> None:
     first, last = _range_bounds(vnode)
     if first is not None:
-        _emit((OP_REMOVE_RANGE, first, last))
-    released: list[int] = []
-    _dispose_tree(vnode, released)
-    if released:
-        _emit((OP_RELEASE, released))
+        # The kernel releases every node registered inside the range.
+        _emit((OP_DISPOSE_RANGE, first, last))
+    _dispose_tree(vnode)
 
 
-def _dispose_tree(vnode: VNode, released: list[int]) -> None:
-    """Dispose scopes, effects, and handlers recursively, collecting ids to release."""
+def _dispose_tree(vnode: VNode) -> None:
+    """Dispose scopes, effects, handlers, refs, and bindings recursively.
+
+    Native nodes are released by the kernel when their range is
+    disposed; this only tears down the Python side.
+    """
     tag = vnode.tag
 
     if tag == "_hole":
@@ -994,14 +959,16 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
             vnode.render_effect.dispose()
             vnode.render_effect = None
         if vnode.subtree is not None:
-            _dispose_tree(vnode.subtree, released)
+            _dispose_tree(vnode.subtree)
             vnode.subtree = None
         if vnode.scope is not None:
             vnode.scope.dispose()
             vnode.scope = None
-        if vnode.el is not None:
-            released.append(vnode.el)
-            vnode.el = None
+        vnode.el = None
+        return
+
+    if vnode.tpl is not None:
+        template.dispose(vnode, _dispose_tree)
         return
 
     if callable(tag):
@@ -1011,11 +978,11 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
             except Exception as e:
                 log_error(f"Component disposal failed in {component_name(tag)}", e)
         if vnode.subtree is not None:
-            _dispose_tree(vnode.subtree, released)
+            _dispose_tree(vnode.subtree)
         vnode.el = None
         return
 
-    if tag in ("_fragment", "_list", "_branch"):
+    if tag in ("_fragment", "_list", "_branch", "_static"):
         if vnode.render_effect is not None:
             vnode.render_effect.dispose()
             vnode.render_effect = None
@@ -1024,27 +991,23 @@ def _dispose_tree(vnode: VNode, released: list[int]) -> None:
             vnode.scope = None
         for child in vnode.children:
             if isinstance(child, VNode):
-                _dispose_tree(child, released)
-        if vnode.el is not None:
-            released.append(vnode.el)
-            vnode.el = None
-        if vnode._frag_end is not None:
-            released.append(vnode._frag_end)
-            vnode._frag_end = None
+                _dispose_tree(child)
+        vnode.el = None
+        vnode._frag_end = None
         return
 
-    if vnode.el is None:
+    el = vnode.el
+    if el is None:
         return
-    if vnode.el in _ref_cleanups:
-        detach_ref(vnode.el)
-    if vnode.el in _handlers:
-        remove_handlers_for(vnode.el)
-    if vnode.el in _bindings:
-        remove_bindings_for(vnode.el)
+    if el in _ref_cleanups:
+        detach_ref(el)
+    if el in _handlers:
+        remove_handlers_for(el)
+    if el in _bindings:
+        remove_bindings_for(el)
     for child in vnode.children:
         if isinstance(child, VNode):
-            _dispose_tree(child, released)
-    released.append(vnode.el)
+            _dispose_tree(child)
     vnode.el = None
 
 
@@ -1065,8 +1028,7 @@ def _replace(old: VNode, new: VNode, parent_id: int, ns: str | None) -> None:
     _emit((OP_INSERT, parent_id, marker, anchor))
     _unmount(old)
     mount(new, parent_id, marker, ns)
-    _emit((OP_REMOVE, marker))
-    _emit((OP_RELEASE, [marker]))
+    _emit((OP_DISPOSE, marker))
 
 
 def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) -> None:
@@ -1105,7 +1067,7 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
         _patch_hole(old, new, parent_id)
         return
 
-    if tag in ("_list", "_branch"):
+    if tag in ("_list", "_branch", "_static"):
         _replace(old, new, parent_id, ns)
         return
 
@@ -1117,6 +1079,8 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
         _patch_component(old, new, parent_id)
         return
 
+    if old.tpl is not None:
+        template.materialize(old)
     assert old.el is not None
     new.el = old.el
     apply_props(new.el, old.props, new.props)

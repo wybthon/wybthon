@@ -12,7 +12,6 @@ import argparse
 import contextlib
 import hashlib
 import json
-import os
 import platform
 import statistics
 import subprocess
@@ -78,11 +77,9 @@ SNAPSHOT = """() => {
 @contextlib.contextmanager
 def serve(repo):
     port = _free_port()
-    env = dict(os.environ, PYTHONPATH=str(repo / "src"))
     server = subprocess.Popen(
-        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(repo)],
+        [sys.executable, str(Path(__file__).with_name("_serve.py")), "--port", str(port), "--root", str(repo)],
         cwd=repo,
-        env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

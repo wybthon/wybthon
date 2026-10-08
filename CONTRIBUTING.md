@@ -4,7 +4,7 @@ Thanks for your interest in contributing. Wybthon is "SolidJS for Python": a sig
 
 ## Quick start
 
-Development uses Python 3.12 or newer (the source relies on PEP 695 generics). CI runs the unit tests on 3.12 and 3.13.
+Development uses Python 3.14, the same version as the Pyodide runtime that production builds target. CI runs the unit tests on Python 3.14 only.
 
 Wybthon manages its environment and dependencies with [uv](https://docs.astral.sh/uv/). Install uv, then:
 
@@ -17,7 +17,7 @@ cd wybthon
 uv sync --group dev
 
 # format code
-uv run black src
+uv run ruff format .
 
 # run the unit tests
 uv run pytest -q
@@ -38,44 +38,50 @@ Unsolicited pull requests for issues that are already assigned or already have a
 ## Project layout (high-level)
 
 - `src/wybthon/`
-  - `reactivity/` – the reactive graph, split into `_session.py` (hydration sessions and serialized server state), `_core.py` (accessors, signals, computations, scheduler), `_primitives.py` (`create_signal`, `create_memo`, `create_effect`, lifecycle, async helpers), `_actions.py` (`action`, `create_optimistic`), `_list.py` (`map_array`, `create_selector`), and `_props.py` (`Props`, `prop`, `merge`, `omit`)
-  - `component.py` – the `@component` decorator and `Component`
-  - `vnode.py` – virtual DOM nodes (`VNode`, `h`, `Fragment`, `hole`)
-  - `html.py` / `svg.py` – element helpers built on `h()`
-  - `props.py` – prop normalization and reactive prop bindings (emits kernel ops)
-  - `reconciler.py` – mounting, patching, and unmounting; `render`, `hydrate`, and `Root`
-  - `template.py` – template-based mounting fast path (static skeleton serialization)
-  - `kernel.py` – batched DOM command buffer, the JS kernel (including hydration claims), and the `BrowserBackend` / `PythonBackend` backends
-  - `server.py` / `_server_dom.py` – server rendering (`render_to_string`, `render_to_string_async`, `render_to_stream`) over an in-memory DOM
-  - `_prerender.py` – the build's prerendering subprocess
-  - `dom.py` – `Element` and `Ref` (imperative DOM escape hatch)
-  - `events.py` – root-scoped event delegation and the `DomEvent` payload object
-  - `flow.py` – `Show`, `For`, `Repeat`, `Switch`/`Match`, `Dynamic`
-  - `loading.py` – `Loading` and `Reveal` boundaries
-  - `error_boundary.py` – `Errored`
-  - `store.py` – draft-first stores, projections, optimistic stores, `reconcile`, `snapshot`, `deep`
-  - `context.py` – `create_context` / `use_context` (the `Context` is its own provider)
-  - `portal.py`, `lazy.py` – out-of-tree rendering and lazy-loaded components
-  - `router.py` / `router_core.py` – client-side router and the browser-agnostic matcher
-  - `forms.py` – form state, validators, bindings, and a11y helpers
-  - `_warnings.py` – dev-mode diagnostics
-  - `dev.py` – the `wyb dev` server
-  - `__init__.py` – public exports (`__all__`)
+  - `reactivity/`: the reactive graph, split into `_core.py` (accessors, signals, computations, transitions, the scheduler), `_primitives.py` (`create_signal`, `create_memo`, effects, `create_reaction`, lifecycle, async helpers, `children`), `_actions.py` (`action`, `create_optimistic`, `affects`, `until`), `_list.py` (`map_array`, `repeat`), `_props.py` (`Props`, `ParentProps`, `Prop`, `prop`, `merge`, `omit`), and `_session.py` (hydration sessions and serialized server state)
+  - `component.py`: the `@component` decorator and `Component`
+  - `vnode.py`: virtual DOM nodes (`VNode`, `h`, `Fragment`, `hole`), item syntax, and t-string children
+  - `html.py` / `svg.py`: element helpers built on `h()`
+  - `_dom_props.py`: private; prop normalization and reactive attribute bindings (emits kernel commands)
+  - `reconciler.py`: mounting, patching, and unmounting; `render`, `hydrate`, and `Root`
+  - `_regions.py`: mounted list and branch regions (`For`, `Repeat`, `Show`, `Switch`)
+  - `_template.py`: private; compiled shapes, generated mount functions, and native disposal
+  - `kernel.py` / `_kernel.js`: the batched DOM command buffer and the JavaScript kernel it drives (including hydration claims), plus the `BrowserBackend` and `PythonBackend` backends
+  - `server.py` / `_server_dom.py`: server rendering (`render_to_string`, `render_to_stream`) over an in-memory DOM
+  - `request.py`: `RequestEvent`, `get_request_event`, `http_status`, and `http_header`
+  - `dom.py`: `Element` and `Ref` (imperative DOM escape hatch)
+  - `events.py`: root-scoped event delegation and the `DomEvent` payload object
+  - `flow.py`: `Show`, `For`, `Repeat`, `Switch`/`Match`, `dynamic`, `client_only`, `NoHydration`, and `Hydration`
+  - `loading.py`: `Loading` and `Reveal` boundaries
+  - `error_boundary.py`: `Errored`
+  - `store.py` / `_vector.py`: draft-first stores, projections, optimistic stores, `reconcile`, `snapshot`, `deep`, and the persistent vector behind staged store lists
+  - `context.py`: `create_context` / `use_context` (the `Context` is its own provider)
+  - `portal.py`, `lazy.py`: out-of-tree rendering and lazy-loaded components
+  - `router.py`: client-side router, `RouteProps`, and the browser-agnostic matcher (`RouteSpec`, `resolve`)
+  - `forms.py`: form state, validators, bindings, and a11y helpers
+  - `virtual.py` / `scheduling.py`: list virtualization and cooperative scheduling
+  - `testing.py`: `render`, `Screen` queries, `fire`, and `cleanup` for testing components in CPython
+  - `diagnostics.py`: opt-in profiling counters and graph inspection
+  - `_warnings.py`: dev-mode diagnostics and the dev mode flag
+  - `dev.py`: the `wyb` command (`init`, `dev`, `build`, `preview`)
+  - `build.py` / `_bootstrap.js` / `assets.py` / `_prerender.py`: production builds, the generated bootstrap, lazy chunks, and build-time prerendering
+  - `__init__.py`: public exports (`__all__`)
 - `tests/`
-  - `conftest.py` – installs `kernel.PythonBackend` over an in-memory stub document and reloads the DOM-facing modules per test; don't modify it casually
-  - Unit tests (fast CPython, no browser): `test_signals.py`, `test_async.py`, `test_props_lists.py`, `test_component.py`, `test_flow.py`, `test_boundaries.py`, `test_store.py`, `test_reconciler.py`, `test_vnode_html.py`, `test_context.py`, `test_portal.py`, `test_lazy.py`, `test_router.py`, `test_forms.py`, `test_router_core.py`, `test_validators.py`, `test_props.py`, `test_warnings.py`, `test_dev.py`
-  - `e2e/` – browser end-to-end suite (Playwright + Pyodide):
-    - `app/` – dedicated fixture SPA with one route per framework feature (`app/features/*.py`), plus `data-testid` hooks
-    - `test_*.py` – per-feature Playwright tests; `conftest.py` boots Pyodide once and isolates tests via a `/blank` route
-    - `test_pyodide_smoke.py` – fixture app boot smoke test
-- `docs/` – MkDocs Material site (`mkdocs.yml` at the root); API pages render docstrings through mkdocstrings
-- `docs/rfcs/` – design documents for large changes; see [RFCs](docs/rfcs/index.md)
-- `benchmarks/` – stubbed-backend benchmarks
+  - `conftest.py`: the `wyb` and `root_element` fixtures, which install a `kernel.PythonBackend` over an in-memory stub document and reload the DOM-facing modules per test; don't modify it casually
+  - Unit tests (fast CPython, no browser): one module per area, such as `test_signals.py`, `test_component.py`, `test_props.py`, `test_flow.py`, `test_store.py`, `test_reconciler.py`, `test_ssr.py`, `test_router.py`, `test_forms.py`, and `test_testing.py`, plus contract suites (`test_*_contracts.py`)
+  - `typing/`: type-checking fixtures (valid calls and expected errors) run by `test_typing_contracts.py`
+  - `e2e/`: browser end-to-end suite (Playwright + Pyodide):
+    - `wybthon.toml`, `index.html`, and `app/`: the fixture, an ordinary Wybthon project with one route per framework feature (`app/features/*.py`) and `data-testid` hooks, served by `wyb dev --dir tests/e2e`
+    - `test_*.py`: per-feature Playwright tests; `conftest.py` boots Pyodide once and isolates tests through a `/blank` route
+    - `test_pyodide_smoke.py`: fixture boot smoke test
+- `docs/`: MkDocs Material site (`mkdocs.yml` at the root); API pages render docstrings through mkdocstrings
+- `docs/rfcs/`: design documents for large changes; see [RFCs](docs/rfcs/index.md)
+- `benchmarks/`: native and browser benchmarks, plus the `check_work.py` command-count gates
 - `README.md`, `pyproject.toml`, `uv.lock`, `CHANGELOG.md` (generated by semantic-release; don't edit by hand)
 
 ## Coding guidelines
 
-- **Style**: Black plus Ruff (`uv run ruff check .`); both ship in the `dev` dependency group.
+- **Style**: Ruff formats (`uv run ruff format .`) and lints (`uv run ruff check .`); it ships in the `dev` dependency group.
 - **Naming**: prefer explicit, descriptive names; keep browser/runtime constraints in mind.
 - **Structure**: separate pure logic from DOM interop; keep render/diff paths lean.
 - **Examples**: keep docs examples minimal and reproducible; larger demo apps live in standalone repos under the [wybthon organization](https://github.com/wybthon).
@@ -88,11 +94,15 @@ Unsolicited pull requests for issues that are already assigned or already have a
 Common commands:
 
 ```bash
-uv run black src
-uv run wyb dev --dir .
-uv run pytest -q
-./scripts/check.sh   # everything ci.yml runs, in order
+uv run ruff format .
+uv run ruff check .
+uv run mypy
+uv run pytest -q                     # unit tests (the e2e suite is excluded by default)
+uv run pytest -q -m e2e tests/e2e    # browser tests (Playwright + Pyodide)
+./scripts/check.sh                   # everything ci.yml's unit job runs, in order
 ```
+
+To try a change in a real app, create a scratch project with `uv run wyb init /tmp/scratch` and run `uv run wyb dev --dir /tmp/scratch --open`. The dev server only serves projects with a `wybthon.toml`.
 
 ## Conventional Commits
 
@@ -137,7 +147,8 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
 - Module/directory scopes:
   - `component` – the `@component` decorator and prop binding
   - `context` – `create_context`, the callable `Context`, and `use_context`
-  - `dev` – dev server and live reload (SSE)
+  - `build` – production builds, the bootstrap, lazy chunks, and prerendering
+  - `dev` – the `wyb` command, dev server, and live reload (SSE)
   - `dom` – `Element` and `Ref`
   - `error_boundary` – `Errored` and fallback rendering
   - `events` – delegated DOM events and `DomEvent`
@@ -149,16 +160,16 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `loading` – `Loading` and `Reveal` boundaries
   - `package` – `src/wybthon/__init__.py` exports and package boundary
   - `portal` – portal rendering to out-of-tree DOM containers
-  - `props` – prop normalization, reactive prop bindings, and controlled elements
+  - `props` – `Props`, `Prop`, `prop`, `merge`, `omit`, and DOM prop application (`_dom_props`)
   - `reactivity` – the reactive graph and primitives (`create_signal`, `create_memo`, `create_effect`, actions, `Props`)
   - `reconciler` – mounting, patching, and unmounting; `render` and `Root`
   - `router` – routing, `Link`, and navigation helpers
-  - `router_core` – browser-agnostic route resolution
-  - `server` – server rendering, streaming, and prerendering (`wybthon.server`)
+  - `server` – server rendering, streaming, and the request event (`wybthon.server`, `request`)
   - `store` – reactive stores (`create_store`, `create_projection`, `reconcile`) for nested state
   - `svg` – SVG element helpers
-  - `template` – template-based mounting fast path (serialization and plans)
-  - `vdom` – changes that span `vnode`, `reconciler`, and `props` together
+  - `testing` – `wybthon.testing` (render, queries, `fire`)
+  - `template` – compiled shapes and generated mount functions (`_template`)
+  - `vdom` – changes that span `vnode`, `reconciler`, and `_dom_props` together
   - `vnode` – `VNode`, `h`, `Fragment`, and `hole`
   - `warnings` – development mode warnings and error reporting
 
@@ -198,7 +209,7 @@ build: update packaging metadata
 chore: update .gitignore patterns
 docs: add contributing guidelines
 revert: revert "refactor(component): split props/state handling helpers"
-style: format code with Black
+style: format code with Ruff
 ```
 
 Breaking changes:
@@ -231,7 +242,7 @@ feat(vdom,component): expose keyed fragments; adapt component mount flow
 ## Pull requests and squash merges
 
 - **PR title**: use Conventional Commit format.
-  - Example: `feat(reactivity): add create_selector()`
+  - Example: `feat(reactivity): add create_reaction()`
   - Imperative mood; no trailing period; aim for ≤ 72 chars; use `!` for breaking changes.
   - Prefer one primary scope; use comma-separated scopes only when necessary.
 - **PR description**: include brief sections: What, Why, How (brief), Testing, Risks/Impact, Docs/Follow-ups.
@@ -270,7 +281,8 @@ Co-authored-by: Name <email>
 ## Pull request checklist
 
 - PR title: Conventional Commits format (CI-enforced by `pr-lint.yml`).
-- Format: `black src` passes.
+- Format and lint: `uv run ruff format --check .` and `uv run ruff check .` pass.
+- Types: `uv run mypy` passes.
 - Tests: added/updated if applicable; all pass.
 - Docs: update `README.md` and the docs site if behavior changes.
 - Artifacts: none committed.
@@ -319,11 +331,11 @@ Write an RFC before starting a change that alters public API, a runtime contract
 Examples:
 
 ```text
-feat/reactivity-selector
+feat/reactivity-reaction
 fix/vdom-keyed-order-123
 docs/contributing-guidelines
 ci/add-basic-workflow
-build/update-black
+build/update-ruff
 refactor/component-state-split
 test/component-lifecycle
 fix/dom-event-delegation
@@ -331,7 +343,7 @@ fix/dom-event-delegation
 
 ### CI
 
-- **CI** (`ci.yml`): runs formatter, linter, type checker, and unit tests (the `build` job, across Python 3.12–3.13) on every push and PR. A separate `e2e` job runs the full browser suite under `tests/e2e/` (fixture app plus boot smoke test) in headless Chromium with Pyodide, caching the Playwright browser between runs.
+- **CI** (`ci.yml`): runs the Ruff format check, the Ruff linter, mypy, and the unit tests with an 80% coverage gate (the `build` job, on Python 3.14) on every push and PR. A separate `e2e` job runs the full browser suite under `tests/e2e/` (fixture project plus boot smoke test) in headless Chromium with Pyodide, caching the Playwright browser between runs.
 - **PR Lint** (`pr-lint.yml`): validates the PR title against Conventional Commits format (protects squash merges) and checks individual commit messages via commitlint (protects rebase merges). Recommended: add the **PR title** job as a required status check in branch-protection settings.
 - **Release** (`release.yml`): runs on merge to `main`; computes version, generates changelog, tags, creates GitHub Release, and (when `DRAFT_RELEASE` is `"false"`) publishes to PyPI.
 - **Docs** (`docs.yml`): builds the MkDocs site with `--strict` (fail on warning) on every push and PR; on push to `main` it also deploys to GitHub Pages.

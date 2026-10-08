@@ -2,14 +2,14 @@
 """Wybthon benchmark runner — js-framework-benchmark compatible operations.
 
 Measures the idiomatic fine-grained rendering path (signals + ``For`` +
-``create_selector``) for all 9 standard operations from
+a selection projection) for all 9 standard operations from
 krausest/js-framework-benchmark using a lightweight DOM stub. This
 isolates the Python-side framework cost from browser/Pyodide overhead.
 
 The app under test is built the way a real Wybthon app should be: the
 table mounts **once**; every operation is a signal write. Rows are cached
 per item, row labels are per-row signals, and selection flows through a
-selector, so each operation touches only the DOM it must.
+projection, so each operation touches only the DOM it must.
 
 The stub DOM implements ``<template>`` + ``innerHTML`` parsing (via
 ``html.parser``) so the template-based mount fast path is exercised the
@@ -190,7 +190,7 @@ class _Node:
         if getattr(node, "parentNode", None) is not None:
             try:
                 node.parentNode.childNodes.remove(node)
-            except (ValueError, AttributeError):
+            except ValueError, AttributeError:
                 pass
         node.parentNode = self
         self.childNodes.append(node)
@@ -200,7 +200,7 @@ class _Node:
         if getattr(node, "parentNode", None) is not None:
             try:
                 node.parentNode.childNodes.remove(node)
-            except (ValueError, AttributeError):
+            except ValueError, AttributeError:
                 pass
         node.parentNode = self
         children = self.childNodes
@@ -416,7 +416,7 @@ def _load_wybthon():
         "wybthon.dom",
         "wybthon.vnode",
         "wybthon.events",
-        "wybthon.props",
+        "wybthon._dom_props",
         "wybthon.reactivity._core",
         "wybthon.reactivity._primitives",
         "wybthon.reactivity._actions",
@@ -425,7 +425,7 @@ def _load_wybthon():
         "wybthon.reactivity",
         "wybthon.component",
         "wybthon.context",
-        "wybthon.template",
+        "wybthon._template",
         "wybthon.error_boundary",
         "wybthon.loading",
         "wybthon.portal",
@@ -465,7 +465,10 @@ class BenchState:
 
         self.data, self.set_data = rx.create_signal([])
         self.selected, self.set_selected = rx.create_signal(None)
-        self._is_selected = rx.create_selector(self.selected)
+        selected = importlib.import_module("wybthon.store").create_projection(
+            lambda: {} if self.selected() is None else {self.selected(): True}
+        )
+        self._is_selected = lambda key: bool(selected.get(key))
 
         app = h(
             "table",
@@ -831,8 +834,7 @@ def format_table(results, memory=None, baseline=None):
     width = 78 + (22 if baseline else 0)
     lines.append("=" * width)
     header = (
-        f"{'Benchmark':<24} {'Mean (ms)':>10} {'± 95% CI':>10} "
-        f"{'Std Dev':>10} {'Min':>10} {'Max':>10} {'Slowdown':>10}"
+        f"{'Benchmark':<24} {'Mean (ms)':>10} {'± 95% CI':>10} {'Std Dev':>10} {'Min':>10} {'Max':>10} {'Slowdown':>10}"
     )
     if baseline:
         header += f" {'Base min':>10} {'Δ min':>10}"

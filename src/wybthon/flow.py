@@ -38,10 +38,21 @@ from typing import Any
 from ._warnings import warn_each_plain_list
 from .reactivity._core import _positional_count
 from .reactivity._primitives import create_memo
-from .reactivity._props import Props
-from .vnode import VNode, h
+from .reactivity._props import RawProps
+from .vnode import Fragment, VNode, h
 
-__all__ = ["Show", "For", "Repeat", "Switch", "Match", "dynamic", "client_only"]
+__all__ = [
+    "Show",
+    "For",
+    "Repeat",
+    "Switch",
+    "Match",
+    "dynamic",
+    "client_only",
+    "NoHydration",
+    "Hydration",
+    "is_hydrating",
+]
 
 
 def _render_slot(slot: Any, *args: Any) -> Any:
@@ -106,7 +117,7 @@ def Show(
     return h(_Show, {"when": when, "children": children, "fallback": fallback, "keyed": keyed})
 
 
-def _Show(props: Props) -> Any:
+def _Show(props: RawProps) -> Any:
     when = props.when
     keyed = props.raw("keyed")
     children = _callback(props.raw("children"))
@@ -171,7 +182,7 @@ def For(
     return h(_For, {"each": each, "children": children, "fallback": fallback, "keyed": keyed})
 
 
-def _For(props: Props) -> Any:
+def _For(props: RawProps) -> Any:
     raw_each = props.raw("each")
     if isinstance(raw_each, (list, tuple)):
         warn_each_plain_list(_For)
@@ -214,7 +225,7 @@ def Repeat(count: Any, children: Callable[[int], Any], fallback: Any = None, *, 
     return h(_Repeat, {"count": count, "children": children, "fallback": fallback, "start": start})
 
 
-def _Repeat(props: Props) -> Any:
+def _Repeat(props: RawProps) -> Any:
     children = _callback(props.raw("children"))
     fallback = props.raw("fallback")
     count = props.count
@@ -276,7 +287,7 @@ def _constant(value: Any) -> Callable[[], Any]:
     return lambda: value
 
 
-def _Switch(props: Props) -> Any:
+def _Switch(props: RawProps) -> Any:
     matches: list[Match] = props.raw("matches") or []
     fallback = props.raw("fallback")
     accessors: list[Callable[[], Any]] = []
@@ -361,7 +372,7 @@ def dynamic(source: Any) -> Callable[..., VNode]:
     return _DynamicComponent(source)
 
 
-def _Dynamic(props: Props) -> Any:
+def _Dynamic(props: RawProps) -> Any:
     component = props.component
     forwarded = [k for k in props if k != "component"]
 
@@ -411,7 +422,7 @@ def client_only(children: Any, *, fallback: Any = None) -> VNode:
     return h(_ClientOnly, {"children": children, "fallback": fallback})
 
 
-def _ClientOnly(props: Props) -> Any:
+def _ClientOnly(props: RawProps) -> Any:
     from .reactivity import _core
     from .reactivity._core import Signal
 
@@ -430,3 +441,63 @@ def _ClientOnly(props: Props) -> Any:
 
 
 _ClientOnly.__name__ = "client_only"
+
+
+# ---------------------------------------------------------------------------
+# NoHydration / Hydration
+# ---------------------------------------------------------------------------
+
+_NO_HYDRATION_MARKER = "wyb:nh"
+
+
+def is_hydrating() -> bool:
+    """Whether the browser is adopting server-rendered DOM right now.
+
+    True only during the synchronous mount of [`hydrate`][wybthon.hydrate]:
+    render what the server rendered, then switch to client-only values
+    from `on_settled`. Always false on the server and in pages that
+    weren't server-rendered.
+    """
+    from . import kernel
+
+    return bool(kernel.claiming)
+
+
+def NoHydration(*children: Any) -> VNode:
+    """Render `children` on the server as static HTML the browser won't hydrate.
+
+    While the browser hydrates, the region's server-rendered DOM is kept
+    as is and nothing inside it is mounted, so it costs no Python work
+    and never updates. In a page that wasn't server-rendered, the
+    children render normally. Use it for content that never changes
+    after the first paint: article bodies, footers, legal text.
+
+    Matches Solid 2.0's `<NoHydration>`.
+    """
+    return h(_NoHydration, {"children": list(children)})
+
+
+def _NoHydration(props: RawProps) -> Any:
+    from . import kernel
+
+    if kernel.claiming:
+        return VNode("_static", {"marker": _NO_HYDRATION_MARKER})
+    return VNode("_fragment", {"marker": _NO_HYDRATION_MARKER}, list(props.raw("children") or []))
+
+
+_NoHydration.__name__ = "NoHydration"
+
+
+def Hydration(*children: Any, id: str | None = None) -> VNode:
+    """Mark a subtree for hydration; a passthrough in Wybthon.
+
+    Solid 2.0 uses `<Hydration>` to re-enable hydration for an island
+    inside `<NoHydration>`. Wybthon keeps a `NoHydration` region static
+    as a whole while hydrating, so this renders its children unchanged.
+    It's provided so code shared with Solid's model reads the same.
+
+    Args:
+        *children: The content.
+        id: Accepted for parity; unused.
+    """
+    return Fragment(*children)

@@ -29,12 +29,14 @@ holds on the old state until the new value lands, and an
 | [`Setter`][wybthon.Setter] | Protocol for the write half of a signal; accepts a value or an updater. |
 | [`Signal`][wybthon.Signal] | Mutable container behind `create_signal`; the getter is a `Signal`. |
 | [`Memo`][wybthon.Memo] | Read-only derived value returned by `create_memo`. |
-| [`Prop`][wybthon.Prop] | Accessor for one component parameter; unwraps accessors the parent passed. |
-| [`Props`][wybthon.Props] | Read-only mapping of prop name to `Prop`. |
+| [`Props`][wybthon.Props] | Base class for a component's typed inputs (PEP 681 `dataclass_transform`, so pyright and mypy check calls without a plugin). |
+| [`ParentProps`][wybthon.ParentProps] | `Props` with a `children` field. |
+| [`Prop`][wybthon.Prop] | Field annotation `Prop[T]` marking a reactive input; reading it returns an `Accessor[T]` that unwraps whatever the parent passed. |
+| [`ChildrenAccessor`][wybthon.ChildrenAccessor] | What `children()` returns: call it for one child or a list, or `.to_array()` for a list. |
 | [`Owner`][wybthon.Owner] | Ownership scope; disposing it disposes children and runs cleanups. |
-| [`Computation`][wybthon.Computation] | Tracked function node behind memos and effects; `.dispose()` stops it. |
+| [`Computation`][wybthon.reactivity.Computation] | Tracked function node behind memos and effects; `.dispose()` stops it. Import from `wybthon.reactivity`. |
 | [`Action`][wybthon.Action] | Wrapped mutation returned by `action`; `.pending` is a tracked accessor. |
-| [`Transition`][wybthon.Transition] | The open transaction holding in-flight changes (exposed for tooling; no public methods). |
+| [`Transition`][wybthon.reactivity.Transition] | The open transaction holding in-flight changes (exposed for tooling; no public methods). Import from `wybthon.reactivity`. |
 | [`NotReadyError`][wybthon.NotReadyError] | Raised when reading an async computation that has no value yet. |
 | [`WriteInScopeError`][wybthon.WriteInScopeError] | Raised in dev mode when a signal or store is written inside a tracking scope. |
 
@@ -46,7 +48,8 @@ holds on the old state until the new value lands, and an
 | [`create_memo`][wybthon.create_memo] | Glitch-free derived value, eager initially unless `lazy=True`; `async def` bodies become async computations; `loading_value=` serves a value before the first run lands. |
 | [`create_effect`][wybthon.create_effect] | Side effect after DOM commit; requires tracked `compute` and untracked `apply`. |
 | [`create_tracked_effect`][wybthon.create_tracked_effect] | Explicit combined tracking and side-effect callback. |
-| [`create_render_effect`][wybthon.create_render_effect] | Effect in the render phase, before the DOM commit; first run is immediate. |
+| [`create_render_effect`][wybthon.create_render_effect] | `create_render_effect(compute, apply)`: effect in the render phase, before the DOM commit; first run is immediate. `apply` is required. |
+| [`create_reaction`][wybthon.create_reaction] | `create_reaction(effect, *, error=None)` returns `track(fn)`: the first change to what `fn` read runs `effect` once. |
 | [`on_settled`][wybthon.on_settled] | Run once after the flush that mounted the component; may return a cleanup. |
 | [`on_cleanup`][wybthon.on_cleanup] | Register a cleanup on the active scope. |
 | [`create_root`][wybthon.create_root] | Owned root; `fn(dispose)`, with explicit `detached=True` for independence. |
@@ -61,12 +64,12 @@ holds on the old state until the new value lands, and an
 | [`action`][wybthon.action] | Wrap a mutation in a transaction: its writes reveal together when it settles. |
 | [`create_optimistic`][wybthon.create_optimistic] | Value override that reveals now and reverts when the action settles. |
 | [`affects`][wybthon.affects] | Inside an action, mark values as pending before they're written. |
-| [`until`][wybthon.until] | Awaitable for a predicate to become truthy on the authoritative (non-optimistic) view. |
-| [`prop`][wybthon.prop] | Declare a typed component parameter default. |
-| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive prop-mapping views (later sources win; drop keys). |
-| [`children`][wybthon.children] | Memo flattening a children getter into a list. |
-| [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes; DOM lists use mounted regions. |
-| [`create_selector`][wybthon.create_selector] | `is_selected(key)` that notifies only the affected rows. |
+| [`until`][wybthon.until] | Awaitable for a predicate to become truthy on the authoritative (non-optimistic) view; `timeout=` raises the built-in `TimeoutError`. |
+| [`prop`][wybthon.prop] | `prop(default=...)` or `prop(default_factory=...)`: declare a `Prop[T]` field's default. |
+| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive mapping views over props instances or dicts (later sources win; drop keys, or keys matching a predicate), ready to spread onto elements. |
+| [`children`][wybthon.children] | `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
+| [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes and an optional `fallback`; DOM lists use mounted regions. |
+| [`repeat`][wybthon.repeat] | `repeat(count, fn, *, start=0, fallback=None)`: reactive mapping over a range of indices. |
 | [`create_unique_id`][wybthon.create_unique_id] | Process-unique id string for `id`/`for` pairs. |
 | [`is_accessor`][wybthon.is_accessor] | `True` for an `Accessor` or a zero-arg function. |
 
@@ -81,9 +84,9 @@ doubled = create_memo(lambda: count() * 2)
 create_effect(doubled, lambda value, prev: print(prev, "->", value))
 
 set_count(lambda n: n + 1)
-count()   # 0: the write is staged
-flush()   # commits the write, runs the effect: prints "None -> 2"
-count()   # 1
+count()  # 0: the write is staged
+flush()  # commits the write, runs the effect: prints "None -> 2"
+count()  # 1
 ```
 
 Async data is an ordinary memo with an `async def` body. Reads before
@@ -95,11 +98,14 @@ state until the new value lands.
 ```python
 from wybthon import action, create_memo, create_optimistic, is_pending, refresh, span
 
+
 async def load_likes():
     return await fetch_like_count()
 
+
 likes = create_memo(load_likes)
 shown, set_shown = create_optimistic(likes)
+
 
 @action
 async def like():
@@ -107,7 +113,9 @@ async def like():
     await api_like()
     await refresh(likes)
 
+
 hint = span(lambda: "Refreshing..." if is_pending(likes) else "")
+count = span(t"{shown} likes")
 ```
 
 Internally, two module globals (the active owner and the active

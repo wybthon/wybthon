@@ -50,8 +50,8 @@ from .component import Component
 from .reactivity import _core
 from .reactivity._core import Memo, run_with_owner
 from .reactivity._primitives import latest
-from .reactivity._props import Props
-from .vnode import VNode, h
+from .reactivity._props import RawProps
+from .vnode import VNode, flatten_children, h
 
 __all__ = ["lazy"]
 
@@ -107,6 +107,16 @@ class LazyComponent(Component):
         self.__name__ = "lazy"
         self.__qualname__ = "lazy"
 
+    def __call__(self, *children: Any, **props: Any) -> VNode:
+        """Return a node; props are forwarded to the loaded component unchecked."""
+        if children:
+            props["children"] = flatten_children(children)
+        return VNode(self, props, [], props.get("key"))
+
+    def _render(self, props: dict[str, Any]) -> tuple[Any, Any]:
+        raw = RawProps(props)
+        return self._render_lazy(raw), raw
+
     def _load(self) -> Any:
         result = self._loader()
         if isinstance(result, AbcAwaitable):
@@ -147,7 +157,7 @@ class LazyComponent(Component):
 
         return make() if owned else run_with_owner(None, make)
 
-    def _render_lazy(self, props: Props) -> Any:
+    def _render_lazy(self, props: RawProps) -> Any:
         memo = self._ensure_memo()
 
         def render() -> VNode | None:

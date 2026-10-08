@@ -4,13 +4,21 @@ If something isn't working as expected, scan this page for the symptom you're se
 
 ## Setup
 
-??? bug "`SyntaxError` or `TypeError` on import under an older Python"
+??? bug "`SyntaxError` or `ImportError` on import under an older Python"
 
-    **Symptoms:** importing `wybthon` in CPython fails with a syntax error mentioning `class Accessor[T]` or `type Validator = ...`, or `pip` refuses to install.
+    **Symptoms:** importing `wybthon` in CPython fails with a syntax error at a `t"..."` string, an `ImportError` for `string.templatelib` or `annotationlib`, or `pip` refuses to install.
 
-    **Likely cause:** Wybthon requires Python 3.12 or newer (PEP 695 generics and the `type` statement). In the browser that means Pyodide 0.27 or newer (Python 3.12).
+    **Likely cause:** Wybthon requires Python 3.14 (template strings and deferred annotations). In the browser that means Pyodide 314 or newer.
 
-    **Fix:** upgrade the interpreter (`uv python install 3.12` works well) and re-create your virtual environment. Pin a Pyodide release that ships Python 3.12+ in `index.html`.
+    **Fix:** upgrade the interpreter (`uv python install 3.14` works well) and re-create your virtual environment. Set `pyodide-version` in `wybthon.toml` to a 314 release.
+
+??? bug "`ImportError: cannot import name 'Router' from 'wybthon'`"
+
+    **Symptoms:** importing `Router`, `Route`, `Link`, `navigate`, `form_state`, `bind_text`, `VirtualFor`, or `map_cooperative` from `wybthon` fails.
+
+    **Likely cause:** the top-level package exports the core only. The router, forms, virtual lists, and scheduling helpers live in their own modules.
+
+    **Fix:** import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`, for example `from wybthon.router import Link, Router`.
 
 ??? bug "Pyodide fails to load"
 
@@ -34,6 +42,61 @@ If something isn't working as expected, scan this page for the symptom you're se
     **Likely cause:** an unresolved cross-reference (for example a typo in a `[label][wybthon.symbol]` link, or a link to a name that was removed in the API overhaul) or an unused `nav` entry.
 
     **Fix:** read the warning text. `mkdocstrings` reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (for example, while a feature is in flight), turn the link into plain text or remove it.
+
+## Components and props
+
+??? bug "`TypeError: Card() got unexpected prop(s): ...` or `is missing required prop(s): ...`"
+
+    **Symptoms:** calling a component raises `TypeError` at the call site in dev mode.
+
+    **Likely cause:** the call passes a keyword its props class doesn't declare (often a typo), or leaves out a field with no default. There's no `**rest`: a component accepts only what it declares, plus `key` and `children`.
+
+    **Fix:** fix the name, add the field to the props class, or give it a default with `prop(default=...)`. Pyright and mypy report the same mistakes before you run the code; see the [typing guide](../guides/typing.md).
+
+??? bug "`TypeError: Component X must take no parameters or one parameter annotated with a Props subclass`"
+
+    **Symptoms:** a component raises when it's first called.
+
+    **Likely cause:** the function uses parameter-style props (`def Card(title: Prop[str])`), several parameters, `**rest`, or an annotation that isn't a `Props` subclass.
+
+    **Fix:** move the inputs onto a props class and take it as the only parameter:
+
+    ```python
+    from wybthon import Prop, Props, component, h2, prop
+
+
+    class CardProps(Props):
+        title: Prop[str] = prop(default="")
+
+
+    @component
+    def Card(props: CardProps):
+        return h2(props.title)
+    ```
+
+    A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.
+
+??? bug "`TypeError: prop() takes 0 positional arguments`, or `prop() is for Prop[T] fields`"
+
+    **Likely cause:** `prop(0)` passes the default positionally, or `prop()` is used on a plain field.
+
+    **Fix:** write `prop(default=0)` (or `prop(default_factory=list)`) on `Prop[T]` fields, and an ordinary default (`= None`) on plain fields.
+
+??? bug "A callback prop arrives as an accessor, or a value prop never updates"
+
+    **Symptoms:** calling `props.on_save()` returns a function instead of running it, or a field the parent changes keeps its first value.
+
+    **Likely cause:** the field's annotation doesn't match its role. `Prop[T]` fields are reactive accessors; plain fields are passed through untouched and read without tracking.
+
+    **Fix:** annotate callbacks, refs, and other values you hand on as plain fields (`on_save: Callable[[], None] | None = None`). Annotate values that can change and should stay live as `Prop[T]`.
+
+??? bug "The error fallback shows an accessor instead of the message"
+
+    **Symptoms:** an `Errored` fallback renders something like `<wybthon.error_boundary._ErrorAccessor object at 0x...>` where the error message should be.
+
+    **Likely cause:** the fallback's `err` argument is an accessor, as in Solid 2.0, and `str(err)` formats the accessor itself.
+
+    **Fix:** read it: `p(lambda: str(err()))`.
 
 ## Reactive bugs
 
@@ -117,8 +180,9 @@ If something isn't working as expected, scan this page for the symptom you're se
     - The event type doesn't bubble (`focus`, `blur`, `mouseenter`, `scroll`); delegation only sees bubbling events.
     - The element lives outside every container passed to [`render`][wybthon.render] (for example a [`Portal`][wybthon.Portal] mounted into `body`), so no delegation root receives the event.
     - The handler returns a coroutine without scheduling it; nothing happens but no error is raised.
+    - The handler was forwarded inside a `merge` or `omit` spread. Every entry in those views is an accessor, so the element registers the accessor instead of your function.
 
-    **Fix:** confirm the prop name, switch to a bubbling type (`focusin`, `mouseover`) or attach a native listener through a [`Ref`][wybthon.Ref] in [`on_settled`][wybthon.on_settled], keep portal targets inside a render container, and schedule async handlers with `asyncio.create_task(...)` or wrap them in an [`action`][wybthon.action].
+    **Fix:** confirm the prop name, switch to a bubbling type (`focusin`, `mouseover`) or attach a native listener through a [`Ref`][wybthon.Ref] in [`on_settled`][wybthon.on_settled], keep portal targets inside a render container, schedule async handlers with `asyncio.create_task(...)` or wrap them in an [`action`][wybthon.action], and pass forwarded handlers by name (`on_click=props.on_click`).
 
 ??? bug "`ref.current` is `None` when I read it"
 
@@ -134,9 +198,15 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** you passed the string `"false"` rather than the boolean.
 
-    **Fix:** pass a real boolean or an accessor returning one. `True` sets the attribute, `False` or `None` removes it; see [props](../api/props.md).
+    **Fix:** pass a real boolean or an accessor returning one. `True` sets the attribute, and `False` or `None` removes it.
 
-## Dev server
+## Dev server and builds
+
+??? bug "`wyb dev` says the directory has no `wybthon.toml`"
+
+    **Likely cause:** the dev server only serves Wybthon projects; the static-directory mode, `--mount`, `--watch`, and `/__manifest` are gone.
+
+    **Fix:** run `wyb dev` from the project directory (or pass `--dir`), or create a project with `wyb init`. See the [dev server guide](../guides/dev-server.md).
 
 ??? bug "SSE reloads not firing"
 
@@ -144,25 +214,34 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely causes:**
 
-    - The dev server isn't running, or you started it from a different directory.
+    - The edited file isn't watched. `wyb dev` watches the application directory, `public/`, `index.html`, and `wybthon.toml`.
+    - The rebuild failed. The terminal shows the build error, and the previous output keeps serving.
     - A reverse proxy in front of the dev server buffers responses and breaks the persistent `/__sse` connection.
 
-    **Fix:** ensure `wyb dev` is active, that `/__sse` returns `text/event-stream`, and that any proxy you use supports HTTP/1.1 streaming.
+    **Fix:** check the terminal output, ensure `/__sse` returns `text/event-stream`, and make sure any proxy supports HTTP/1.1 streaming.
 
-??? bug "Files served as `text/plain` instead of `text/x-python`"
+??? bug "Deep links return 404 in production"
 
-    **Symptoms:** Pyodide can't import your modules in production; the browser console shows a content-type warning.
+    **Symptoms:** the home page loads, but reloading `/users/1` on the deployed site returns 404.
 
-    **Fix:** configure your static host to serve `.py` files as `text/x-python` (see the [deployment guide](../guides/deployment.md) for Netlify, Vercel, and GitHub Pages snippets).
+    **Likely cause:** the static host has no fallback for routes that weren't prerendered.
+
+    **Fix:** configure the host to serve `200.html` for missing extensionless routes, and serve the app beneath the `base` path it was built for. See the [deployment guide](../guides/deployment.md).
+
+??? bug "Dev warnings disappeared after deploying"
+
+    **Likely cause:** this is intended. `wyb build` turns dev mode off before the application imports, so production builds skip development checks (including prop validation) and warnings.
+
+    **Fix:** reproduce the problem with `wyb dev`, which keeps dev mode on.
 
 ## When all else fails
 
-- Re-run `python -m pytest tests -q` to confirm the framework itself still works in your environment.
+- Reproduce the problem in a unit test with [`wybthon.testing`][wybthon.testing]; it renders components in plain CPython.
 - Capture a minimal reproduction and [open an issue](https://github.com/wybthon/wybthon/issues/new).
-- Toggle [`set_dev_mode(False)`][wybthon.set_dev_mode] only after you've confirmed the warnings aren't pointing at a real bug.
+- Turn dev mode off with [`set_dev_mode(False)`][wybthon.set_dev_mode] only after you've confirmed the warnings aren't pointing at a real bug. Production builds already do.
 
 ## Next steps
 
 - Skim the [FAQ](faq.md) for common questions.
 - Read [Reactivity](../concepts/reactivity.md) for a refresher on signals, effects, and reactive holes.
-- See the [testing guide](../guides/testing.md) for driving flushes and events in CPython.
+- See the [testing guide](../guides/testing.md) for rendering components and firing events in CPython.

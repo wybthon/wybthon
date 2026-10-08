@@ -287,7 +287,7 @@ def reload_wybthon_modules(doc=None):
     pointing to the freshly reloaded module objects.
     """
     mods = {}
-    for name in ("kernel", "dom", "events", "reconciler"):
+    for name in ("kernel", "dom", "events", "reconciler", "_template"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
@@ -295,10 +295,9 @@ def reload_wybthon_modules(doc=None):
         "component",
         "context",
         "reactivity",
-        "props",
+        "_dom_props",
         "vnode",
         "flow",
-        "template",
         "loading",
         "error_boundary",
         "store",

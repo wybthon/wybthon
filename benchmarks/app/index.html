@@ -13,35 +13,7 @@
 </head>
 <body>
   <div class="container" id="main">
-    <div class="jumbotron">
-      <div class="row">
-        <div class="col-md-6">
-          <h1>Wybthon (keyed)</h1>
-        </div>
-        <div class="col-md-6">
-          <div class="row">
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="run">Create 1,000 rows</button>
-            </div>
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="runlots">Create 10,000 rows</button>
-            </div>
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="add">Append 1,000 rows</button>
-            </div>
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="update">Update every 10th row</button>
-            </div>
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="clear">Clear</button>
-            </div>
-            <div class="col-sm-6 smallpad">
-              <button type="button" class="btn btn-primary btn-block" id="swaprows">Swap Rows</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="app-root"></div>
     <div id="table-container"></div>
     <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
     <div id="bench-panel" style="display:none; margin-top:20px;">
@@ -67,7 +39,7 @@
       pyodide.FS.mkdir('/lib/wybthon');
       pyodide.FS.mkdir('/lib/wybthon/reactivity');
       const manifest = await fetch('/__manifest?dir=src/wybthon');
-      if (!manifest.ok) throw new Error('Run this benchmark through wyb dev');
+      if (!manifest.ok) throw new Error('Serve this benchmark with benchmarks/_serve.py');
       const modules = await manifest.json();
       await Promise.all(modules.map(async mod => {
         const resp = await fetch('../../src/wybthon/' + mod);

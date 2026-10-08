@@ -15,8 +15,9 @@ APP = """
 import asyncio
 
 from wybthon import (
-    Link, Loading, Route, Router, button, component, create_memo, create_signal, div, h1, input_, is_server, p,
+    Loading, NoHydration, button, component, create_memo, create_signal, div, footer, h1, input_, is_server, p,
 )
+from wybthon.router import Link, Route, Router
 
 
 async def fetch_greeting(name):
@@ -36,11 +37,19 @@ def Home():
     text, set_text = create_signal("")
     return div(
         h1("Prerendered", id="title"),
-        button(lambda: f"Count: {count()}", id="count", on_click=lambda e: set_count(lambda n: n + 1)),
+        button(t"Count: {count}", id="count", on_click=lambda: set_count(lambda n: n + 1)),
         input_(id="name", value=text, on_input=lambda e: set_text(e.target.value)),
         p(lambda: f"Typed: {text()}", id="typed"),
         Loading(lambda: Greeting(), fallback=p("Loading greeting")),
         Link("About", href="/about", id="about-link"),
+        # Kept as the server rendered it: never mounted, so it never updates.
+        NoHydration(
+            footer(
+                p(lambda: f"Static count: {count()}", id="static-count"),
+                button("Static", id="static-button", on_click=lambda: set_count(100)),
+                id="static",
+            )
+        ),
     )
 
 
@@ -81,6 +90,8 @@ def test_prerendered_page_hydrates_and_replays_early_input(browser, tmp_path):
         page.goto(base, wait_until="domcontentloaded")
         # The server's HTML is on screen before Python has started.
         assert page.locator("#title").inner_text() == "Prerendered"
+        assert page.locator("#static-count").inner_text() == "Static count: 0"
+        page.locator("#static").evaluate("node => { node.__serverNode = true; }")
         assert page.locator("#greeting").inner_text() == "Hello, server"
         assert page.evaluate("() => window.__WYB.status") == "loading"
         # Input before hydration is recorded and replayed.
@@ -98,6 +109,13 @@ def test_prerendered_page_hydrates_and_replays_early_input(browser, tmp_path):
         assert mismatches == 0
         page.click("#count")
         assert page.locator("#count").inner_text() == "Count: 2"
+        # The NoHydration region keeps the server's nodes and wires nothing.
+        assert page.locator("#static").evaluate("node => node.__serverNode === true")
+        assert page.locator("#static-count").inner_text() == "Static count: 0"
+        page.click("#static-button")
+        page.click("#count")
+        assert page.locator("#count").inner_text() == "Count: 3"
+        assert page.locator("#static-count").inner_text() == "Static count: 0"
         page.click("#about-link")
         page.wait_for_selector("#about")
         page.goto(base + "about", wait_until="domcontentloaded")

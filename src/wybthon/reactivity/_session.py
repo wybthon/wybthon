@@ -17,7 +17,6 @@ applied to a memo with the same function.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from collections.abc import Callable
 from typing import Any, Literal
@@ -66,6 +65,8 @@ class Session:
             still running, by key. A memo with one of these keys waits
             instead of starting the same work again.
         after_hydration: Callbacks to run once hydration has committed.
+        event: Server passes: the [`RequestEvent`][wybthon.RequestEvent]
+            being rendered.
     """
 
     __slots__ = (
@@ -82,6 +83,7 @@ class Session:
         "inflight",
         "after_hydration",
         "counts",
+        "event",
     )
 
     def __init__(
@@ -93,8 +95,10 @@ class Session:
         values: dict[str, tuple[Any, str]] | None = None,
         errors: dict[str, tuple[str, str]] | None = None,
         failed: dict[str, tuple[str, str]] | None = None,
+        event: Any = None,
     ) -> None:
         self.mode = mode
+        self.event = event
         self.url = url
         self.resolve_async = resolve_async
         self.values: dict[str, tuple[Any, str]] = values if values is not None else {}
@@ -113,6 +117,8 @@ class Session:
         counts = self.counts
         index = counts.get(position, 0)
         counts[position] = index + 1
+        import hashlib
+
         return hashlib.blake2s(f"{position}#{index}".encode(), digest_size=6).hexdigest()
 
     def enter(self, position: str) -> None:

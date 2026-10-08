@@ -7,8 +7,7 @@ it with a value and children to expose that value to every descendant,
 and read it with [`use_context`][wybthon.use_context].
 
 ```python
-from wybthon import component, create_context, use_context
-from wybthon.html import div, p
+from wybthon import component, create_context, div, p, use_context
 
 Theme = create_context("light")
 
@@ -21,18 +20,20 @@ def Label():
 
 @component
 def App():
-    return div(Theme("dark", Label()))   # value first, then children
+    return div(Theme("dark", Label()))  # value first, then children
 ```
 
 ## Providing a value
 
 The context object is callable: `Theme(value, *children)` returns a
 provider VNode. Children may be VNodes, component calls, or lists;
-anything you'd pass to an element works.
+anything you'd pass to an element works. Item syntax works too, as it
+does on elements and components:
 
 ```python
 Theme("dark", Header(), Main())
 Theme("dark", [Header(), Main()])
+Theme("dark")[Header(), Main()]
 ```
 
 There's no separate `Provider` component and no `Theme.Provider(...)`
@@ -48,8 +49,8 @@ owner exists: component bodies, effects, memos, holes, and `For` rows.
 ```python
 @component
 def Button():
-    theme = use_context(Theme)          # read once, in the body
-    return button("Hi", class_=lambda: f"btn-{theme}")
+    theme = use_context(Theme)  # read once, in the body
+    return button("Hi", class_=f"btn-{theme}")
 ```
 
 ## Defaults and `ContextNotFoundError`
@@ -61,7 +62,7 @@ above the reader. Without a default, reading outside a provider raises
 ```python
 from wybthon import ContextNotFoundError, create_context, use_context
 
-Session = create_context(name="Session")   # no default
+Session = create_context(name="Session")  # no default
 
 try:
     use_context(Session)
@@ -80,8 +81,7 @@ call it where they need the value and stay reactive without the
 provider or the subtree re-mounting:
 
 ```python
-from wybthon import Accessor, Context, component, create_context, create_signal, use_context
-from wybthon.html import button, div
+from wybthon import Accessor, Context, button, component, create_context, create_signal, div, use_context
 
 Theme: Context[Accessor[str]] = create_context()
 
@@ -89,13 +89,13 @@ Theme: Context[Accessor[str]] = create_context()
 @component
 def ThemedButton():
     theme = use_context(Theme)
-    return button("Hi", class_=lambda: f"btn-{theme()}")
+    return button("Hi", class_=t"btn-{theme}")
 
 
 @component
 def App():
     theme, set_theme = create_signal("light")
-    toggle = lambda e: set_theme(lambda t: "dark" if t == "light" else "light")
+    toggle = lambda: set_theme(lambda t: "dark" if t == "light" else "light")
     return div(
         Theme(theme, ThemedButton()),
         button("Toggle", on_click=toggle),
@@ -111,7 +111,9 @@ theme, set_theme = use_context(Theme)
 ```
 
 Passing a plain value is fine when it never changes. Don't pass a
-`lambda: theme()` unless you mean to; an accessor already is one.
+`lambda: theme()` unless you mean to; an accessor already is one. The
+`t"btn-{theme}"` attribute above calls the accessor inside one reactive
+binding, so the class follows the signal.
 
 ## How it works: the ownership tree
 
@@ -134,9 +136,10 @@ for the same context shadow outer ones because the walk finds the
 nearest first:
 
 ```python
-Theme("light",
-    Theme("dark", Label()),   # sees "dark"
-    Label(),                  # sees "light"
+Theme(
+    "light",
+    Theme("dark", Label()),  # sees "dark"
+    Label(),  # sees "light"
 )
 ```
 

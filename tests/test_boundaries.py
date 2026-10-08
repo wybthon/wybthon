@@ -16,7 +16,7 @@ from wybthon.reactivity import create_memo, create_root, create_signal, flush, i
 
 
 def texts(node: StubNode) -> list[str]:
-    return [t for t in collect_texts(node) if t]
+    return [t for t in collect_texts(node) if t and t.strip()]
 
 
 async def _tick(n: int = 3) -> None:
@@ -130,7 +130,7 @@ def test_loading_parked_content_keeps_updating_while_hidden(wyb, root_element):
         count, set_count = create_signal(0)
         slow = _gated_memo(gate, "ok")
         wyb["reconciler"].render(
-            div(Loading(lambda: p(slow, " ", lambda: str(count())), fallback=p("wait"))), root_element
+            div(Loading(lambda: p(slow, "-", lambda: str(count())), fallback=p("wait"))), root_element
         )
         await _tick()
         assert texts(root_element.element) == ["wait"]
@@ -138,7 +138,7 @@ def test_loading_parked_content_keeps_updating_while_hidden(wyb, root_element):
         await _tick()
         gate.set()
         await _tick()
-        assert texts(root_element.element) == ["ok", " ", "5"]
+        assert texts(root_element.element) == ["ok", "-", "5"]
 
     asyncio.run(main())
 
@@ -341,7 +341,7 @@ def test_errored_shows_fallback_and_resets(wyb, root_element):
     wyb["reconciler"].render(
         Errored(
             lambda: p(_risky(boom)),
-            fallback=lambda err, reset: (resets.append(reset), p("err: ", str(err)))[1],
+            fallback=lambda err, reset: (resets.append(reset), p("err: ", lambda: str(err())))[1],
             on_error=lambda e: errors.append(str(e)),
         ),
         root_element,
@@ -357,11 +357,39 @@ def test_errored_shows_fallback_and_resets(wyb, root_element):
     assert texts(root_element.element) == ["fine"]
 
 
+def test_errored_fallback_err_is_an_accessor(wyb, root_element):
+    from wybthon.reactivity import Accessor
+
+    kind, set_kind = create_signal("")
+    seen: list[object] = []
+
+    def risky():
+        if kind():
+            raise ValueError(kind())
+        return "ok"
+
+    def fallback(err, reset):
+        seen.append(err)
+        return p(lambda: f"{type(err()).__name__}: {err()}")
+
+    wyb["reconciler"].render(Errored(lambda: p(risky), fallback=fallback), root_element)
+    assert texts(root_element.element) == ["ok"]
+    set_kind("first")
+    flush()
+    assert texts(root_element.element) == ["ValueError: first"]
+    assert len(seen) == 1
+    err = seen[0]
+    assert isinstance(err, Accessor)
+    assert callable(err) and not isinstance(err, BaseException)
+    assert isinstance(err(), ValueError)
+    assert str(err.peek()) == "first"
+
+
 def test_errored_catches_error_during_initial_render(wyb, root_element):
     def broken():
         raise RuntimeError("init")
 
-    wyb["reconciler"].render(Errored(lambda: p(broken), fallback=lambda err: p(str(err))), root_element)
+    wyb["reconciler"].render(Errored(lambda: p(broken), fallback=lambda err: p(str(err.peek()))), root_element)
     flush()
     assert texts(root_element.element) == ["init"]
 
@@ -442,7 +470,7 @@ def test_errored_catches_async_memo_rejection(wyb, root_element):
             return p(data)
 
         wyb["reconciler"].render(
-            Errored(lambda: Loading(lambda: Card(), fallback=p("wait")), fallback=lambda e: p(str(e))),
+            Errored(lambda: Loading(lambda: Card(), fallback=p("wait")), fallback=lambda e: p(lambda: str(e()))),
             root_element,
         )
         await _tick()

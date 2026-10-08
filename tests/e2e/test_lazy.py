@@ -16,3 +16,4 @@ def test_lazy_missing_module_shows_error(goto_path):
     # A lazy loader pointing at a missing module raises into the
     # surrounding Errored boundary, which renders the fallback.
     expect(page.locator(".lazy-error")).to_contain_text("Failed to load")
+    expect(page.locator(".lazy-error")).to_contain_text("does_not_exist")

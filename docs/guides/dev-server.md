@@ -1,131 +1,65 @@
 # Dev server
 
-For a generated application, run `wyb dev --open` from the directory containing `wybthon.toml`. It builds the application (including any routes listed in `prerender`, so you develop against the same server-rendered pages you'll deploy), serves its configured base path with client-route fallback to `200.html`, and rebuilds before reloading on source changes. Invalid edits report a build error while the previous output remains available. New and deleted source files also trigger a rebuild.
-
-For this repository's demos, fixtures, and benchmarks, `wyb dev --dir .` retains the static server, source manifests, mounts, and SSE endpoints described below.
-
-
-`wyb dev` runs a static file server with auto-reload over Server-Sent Events (SSE).
+`wyb dev` builds a Wybthon project in development mode, serves the build, rebuilds when a source file changes, and reloads connected pages over Server-Sent Events (SSE). It serves projects only: a directory with a `wybthon.toml` (create one with `wyb init`).
 
 ```bash
 pip install wybthon
-wyb dev --dir . --host 127.0.0.1 --port 8000 --watch src app --open \
-  --mount /=. --mount /src=src
+wyb init my-app
+cd my-app
+wyb dev --open
 ```
 
 ## Behavior
 
-- Watches the `--watch` directories for file modification-time changes.
-- Notifies the browser through `/__sse`; subscribed pages reload themselves.
-- Binds to the requested port or the next available one, up to 20 ports higher.
-- Serves additional static directories with `--mount /prefix=path` (repeatable).
-- Optionally opens the browser with `--open` and `--open-path /app/`.
-- Exposes `/__manifest?dir=<path>`, which returns a JSON array of the `.py` files under a directory so a bootstrap script can copy a package into the Pyodide filesystem without a hardcoded file list.
-- Prints the resolved host and port, the selected port if your requested one was busy, active mounts, and watched paths at startup.
+- Builds the project with dev mode on, including any routes listed in `prerender`, so you develop against the same server-rendered pages you'll deploy. Production builds (`wyb build`) turn dev mode off; see [Deployment](deployment.md).
+- Serves the build under the configured `base` path with client-route fallback to `200.html`. Requests outside the base path return 404.
+- Watches the application directory (`app-dir`), `public/`, `index.html`, and `wybthon.toml`. A change, including a new or deleted file, triggers a rebuild and then a reload. Change detection polls modification times about every 0.5 seconds.
+- Reports a failed build in the terminal and keeps serving the previous output, so a typo doesn't take the page down.
+- Binds to the requested port or the next available one, up to 20 ports higher, and prints the project, the watched paths, and the URL it serves.
+- Sends `Cache-Control: no-store` on every response, so the browser never reuses a stale build.
 
 ## Options
 
-- `--dir`: root directory to serve. The default points at the Wybthon checkout, so pass `--dir .` for your own project.
+- `--dir`: the project directory (default `.`).
 - `--host` (default `127.0.0.1`) and `--port` (default `8000`).
-- `--watch`: directories to watch (default `src`). Pass `--watch` with no values to disable auto-reload.
-- `--mount /prefix=path`: mount filesystem `path` at the given URL prefix. The longest matching prefix wins. Paths resolve relative to `--dir` unless absolute.
-- `--open`: open the default browser to the server URL after it starts.
-- `--open-path`: append this path when opening the browser, for example `/app/`.
+- `--open`: open the default browser to the app after the server starts.
+- `--open-path`: open this path instead of the app's base path, for example `/about`.
 
-## Advanced usage
+To expose the server on your LAN or from a container, use `--host 0.0.0.0` and open the page via your machine's IP.
 
-### Multiple mounts and base URLs
+## How reloads work
 
-The server maps URL prefixes to filesystem directories, longest prefix first. To serve the project root at `/`, your app at `/app`, and source at `/src`:
+Each page the dev build writes includes a small script that subscribes to `GET /__sse` and reloads on a `reload` event. After a successful rebuild, the server sends that event to every connected page. A full page reload means Pyodide boots again, so expect a short delay between saving a file and seeing the change.
 
-```bash
-wyb dev --dir . \
-  --mount /=. \
-  --mount /app=app \
-  --mount /src=src \
-  --open --open-path /app/
+## Embedding the server
+
+[`serve`][wybthon.dev.serve] is the function behind `wyb dev`:
+
+```python
+from wybthon.dev import serve
+
+serve("my-app", host="127.0.0.1", port=8000, open_browser=True, open_path=None)
 ```
 
-For a base-path style setup, mount the built app under a prefix (`--mount /app=dist`), open `--open-path /app/`, and pass the same prefix to [`Router`][wybthon.Router] as `base_path="/app"`.
-
-### Host and port selection
-
-- Defaults: `--host 127.0.0.1`, `--port 8000`.
-- If the requested port is busy, the server tries the next 20 ports and prints the one it picked.
-- To expose the server on your LAN or from a container, use `--host 0.0.0.0` and open the page via your machine's IP.
-
-### Watching and reload delay
-
-- `--watch` accepts a list of directories; the default is `src`.
-- Change detection polls modification times about every 0.5 seconds. Expect a 0.5 to 1.5 second full page reload.
-- To disable auto-reload entirely:
-
-    ```bash
-    wyb dev --dir . --watch --mount /=.
-    ```
-
-### SSE endpoint for reloads
-
-The server exposes `GET /__sse`, which streams `reload` events. Wire it into your own page with a minimal client:
-
-```js
-const es = new EventSource("/__sse");
-es.addEventListener("reload", () => location.reload());
-```
-
-### Loading a package from the manifest
-
-The E2E fixture in the Wybthon repository uses `/__manifest` to copy a whole Python package into Pyodide's filesystem:
-
-```js
-async function loadPyPackage(pyodide, manifestDir, fetchBase, mountRoot) {
-  const files = await (await fetch(`/__manifest?dir=${encodeURIComponent(manifestDir)}`)).json();
-  for (const f of files) {
-    const dir = `${mountRoot}/${f}`.split("/").slice(0, -1).join("/");
-    try { pyodide.FS.mkdirTree(dir); } catch {}
-    const txt = await (await fetch(`${fetchBase}/${f}`)).text();
-    pyodide.FS.writeFile(`${mountRoot}/${f}`, new TextEncoder().encode(txt));
-  }
-}
-
-await loadPyPackage(pyodide, "app", "./app", "/app");
-await pyodide.runPythonAsync("import sys; sys.path.insert(0, '/')");
-```
-
-Most apps install Wybthon itself with `micropip.install("wybthon")` and only copy their own `app/` package this way.
-
-### Cache busting in development
-
-- Every response carries `Cache-Control: no-store, max-age=0`.
-- For ES modules, also append a timestamp query parameter so the browser doesn't reuse its module graph:
-
-    ```html
-    <script type="module">
-      import(`./bootstrap.js?v=${Date.now()}`);
-    </script>
-    ```
-
-### Path safety
-
-The server sanitizes `.` and `..` segments before mapping a URL to the filesystem. Use mounts rather than relative escapes to reach directories outside `--dir`.
+It raises `ValueError` when the directory has no `wybthon.toml`.
 
 ### Not for production
 
-The dev server is built on Python's `http.server` and is intended for development only. See the [Deployment guide](deployment.md) for hosting.
+The dev server is built on Python's `http.server` and is intended for development only. Use `wyb build` and a static host for production, and `wyb preview` to check a production build locally. See the [Deployment guide](deployment.md).
 
 ## Troubleshooting
 
-- **Auto-reload isn't firing.** Confirm the server is running and that `GET /__sse` shows an open EventSource connection in the browser's Network panel. Make sure the files you edit live under a `--watch` directory. Behind a proxy, pass `/__sse` through unbuffered (Nginx: `proxy_buffering off;` and `X-Accel-Buffering: no`).
-- **Stale assets.** Verify `Cache-Control: no-store` on responses and add the `?v=${Date.now()}` cache-buster to module imports.
+- **"has no wybthon.toml."** The dev server only serves projects. Run it from the project directory, pass `--dir path/to/project`, or create a project with `wyb init`.
+- **Auto-reload isn't firing.** Confirm `GET /__sse` shows an open EventSource connection in the browser's Network panel, and check the terminal for a build error. Only the application directory, `public/`, `index.html`, and `wybthon.toml` are watched. Behind a proxy, pass `/__sse` through unbuffered (Nginx: `proxy_buffering off;` and `X-Accel-Buffering: no`).
+- **A page shows 404.** Requests must fall under the configured `base` path. Open the URL the server prints.
 - **Port is already in use.** The server picks the next free port and prints a notice. If you need the exact port, stop the conflicting process (macOS: `lsof -i :8000`, then `kill <PID>`).
 - **The browser didn't open.** `--open` relies on the system default browser; some headless or remote setups block it. Copy the printed URL instead.
-- **Mounts aren't serving as expected.** Prefixes must start with `/` (added automatically if omitted). Check the startup "Mounts:" list to verify the mapping; the longest prefix wins.
 - **Exposing on the network.** Use `--host 0.0.0.0` and allow inbound traffic to the selected port through your firewall.
 
-See also the general troubleshooting page under Meta.
+See also the general [troubleshooting page](../meta/troubleshooting.md).
 
 ## Next steps
 
 - See the [`dev`][wybthon.dev] API reference for the underlying server.
-- Read the [Deployment guide](deployment.md) for production hosting.
-- Browse [Examples](../examples.md) to see real apps running under the dev server.
+- Read the [Deployment guide](deployment.md) for production builds and hosting.
+- Browse [Examples](../examples.md) for components to try in a starter project.

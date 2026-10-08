@@ -10,11 +10,11 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Does it work outside the browser?"
 
-    Everything except the real DOM. Signals, memos, effects, async computations, actions, stores, forms, context, flow control, and VDOM construction run in plain CPython and are tested with `pytest`. Rendering into a page, `Element` queries, and history navigation need Pyodide, or the stub backend the unit tests use (see the [testing guide](../guides/testing.md)).
+    Everything except the real browser. Signals, memos, effects, async computations, actions, stores, forms, context, flow control, and VDOM construction run in plain CPython. [`wybthon.testing`][wybthon.testing] renders components into an in-memory DOM through the real reconciler and event delegation, so you can test them with `pytest` (see the [testing guide](../guides/testing.md)), and [`wybthon.server`][wybthon.server] renders them to HTML for prerendering and server rendering.
 
 ??? question "Which Python version do I need?"
 
-    Python 3.12 or newer in CPython (the framework uses PEP 695 generics such as `Accessor[T]`). In the browser, Pyodide 0.27 or newer (Python 3.12); the E2E suite pins Pyodide 314.x.
+    Python 3.14. Template strings (PEP 750) are part of the component API, and server rendering, tests, and tooling run on the same Python version as the browser. In the browser that means Pyodide 314 or newer; `wyb init` pins 314.0.6.
 
 ??? question "Why Python in the browser?"
 
@@ -28,7 +28,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Which Pyodide version should I target?"
 
-    Pin a single version per deployment. Wybthon requires Pyodide 0.27 or newer, the first release with Python 3.12; using the same version locally and in production avoids subtle ABI mismatches.
+    Pin a single version per deployment with `pyodide-version` in `wybthon.toml`. Wybthon requires Pyodide 314 or newer (Python 3.14). Building with the same Python version as the runtime also lets `wyb build` ship precompiled bytecode.
 
 ??? question "How do I install Python packages from PyPI?"
 
@@ -36,6 +36,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
     ```python
     import micropip
+
 
     async def setup():
         await micropip.install("httpx")
@@ -52,6 +53,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
     window.alert("hello!")
 
+
     async def load_users():
         response = await fetch("/api/users")
         return await response.json()
@@ -63,11 +65,60 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Do I need a bundler or a build step?"
 
-    No. Wybthon serves Python source files directly via the dev server (`wyb dev --dir .`) and any static host can serve them in production. See the [deployment guide](../guides/deployment.md) for hosting recipes.
+    There's no JavaScript bundler, but there is a build step. `wyb build` packages Wybthon and your application into archives with a generated bootstrap, prerenders the routes you list, and turns dev mode off; any static host can serve the result. `wyb dev` runs the same build in development mode and reloads on change. See the [deployment guide](../guides/deployment.md).
 
 ??? question "Can I lazy-load route components?"
 
     Yes; see [`lazy`][wybthon.lazy]. It's backed by an async memo, so it integrates with [`Loading`][wybthon.Loading] for declarative loading UIs and with [`Errored`][wybthon.Errored] for load failures, and each lazy component has a `.preload()` method for warming the cache early.
+
+## Components and props
+
+??? question "How do I declare a component's props?"
+
+    Subclass [`Props`][wybthon.Props] and take one parameter annotated with it. `Prop[T]` fields are reactive; anything else is a plain field:
+
+    ```python
+    from collections.abc import Callable
+
+    from wybthon import Prop, Props, button, component, prop
+
+
+    class SaveButtonProps(Props):
+        label: Prop[str] = prop(default="Save")
+        on_save: Callable[[], None] | None = None
+
+
+    @component
+    def SaveButton(props: SaveButtonProps):
+        return button(props.label, on_click=props.on_save)
+    ```
+
+    A component with no inputs takes no parameters. See [Authoring patterns](../guides/authoring-patterns.md#declaring-props).
+
+??? question "How do I pass a callback to a component?"
+
+    Declare it as a plain field, such as `on_save: Callable[[], None] | None = None`. Reading `props.on_save` returns the function exactly as the parent passed it, and nothing calls it for you. Only `Prop[T]` fields are reactive.
+
+??? question "Why does my type checker reject `prop(0)`?"
+
+    Defaults must be passed by keyword: `prop(default=0)`, or `prop(default_factory=list)` for a mutable value. Type checkers only recognize a field default given by keyword. Plain fields use ordinary defaults (`= None`).
+
+??? question "How do I pass children?"
+
+    Subclass [`ParentProps`][wybthon.ParentProps] and place `props.children` in the tree. Callers use item syntax, `Card(title="Hi")[p("Body")]`, or the `children=` keyword.
+
+??? question "Do I need a mypy plugin?"
+
+    No. `Props` uses PEP 681 `dataclass_transform`, so pyright, Pylance, and mypy check component calls out of the box. See the [typing guide](../guides/typing.md).
+
+??? question "Where did `Router`, `Link`, and `form_state` go?"
+
+    The core lives in `wybthon`; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`:
+
+    ```python
+    from wybthon.forms import bind_text, form_state
+    from wybthon.router import Link, Route, Router, navigate
+    ```
 
 ## Reactivity
 
@@ -86,7 +137,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
     ```python
     set_first("Ada")
     set_last("Lovelace")
-    flush()   # the name effect runs once, not twice
+    flush()  # the name effect runs once, not twice
     ```
 
     There is no `batch()` function.
@@ -98,6 +149,22 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 ??? question "How do I fetch data?"
 
     Write an `async def` and pass it to [`create_memo`][wybthon.create_memo]. Reads before the first value raise [`NotReadyError`][wybthon.NotReadyError], which the nearest [`Loading`][wybthon.Loading] boundary turns into fallback UI; later refetches run as transitions that hold the dependent UI on the previous state until the new value lands. Use [`is_pending`][wybthon.is_pending] for a refresh hint, [`latest`][wybthon.latest] to peek without suspending, and [`refresh`][wybthon.refresh] or [`resolve`][wybthon.resolve] to drive it imperatively. Mutations go through [`action`][wybthon.action], optionally with [`create_optimistic`][wybthon.create_optimistic] for instant UI.
+
+??? question "How do I highlight the selected row without re-running every row?"
+
+    Use a projection keyed by the selection. Each row reads only its own key, so a change notifies the old and new rows:
+
+    ```python
+    from wybthon import create_projection, create_signal
+
+    selected, set_selected = create_signal(None)
+    is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
+    # In a row: class_=lambda: "active" if is_selected.get(row_id) else ""
+    ```
+
+??? question "Why don't I see dev warnings in production?"
+
+    `wyb build` turns dev mode off before your application imports, so production builds skip development checks and warnings. `wyb dev` keeps them on. Check the mode with [`is_dev_mode()`][wybthon.is_dev_mode].
 
 ## Next steps
 

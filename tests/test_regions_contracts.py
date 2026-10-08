@@ -11,7 +11,7 @@ from wybthon import (
     component,
     create_effect,
     create_memo,
-    create_selector,
+    create_projection,
     create_signal,
     create_store,
     div,
@@ -24,7 +24,7 @@ from wybthon.diagnostics import profile
 
 
 def texts(node):
-    return [value for value in collect_texts(node) if value]
+    return [value for value in collect_texts(node) if value and value.strip()]
 
 
 def test_store_append_and_swap_skip_full_list_work(wyb, root_element):
@@ -106,12 +106,12 @@ def test_repeat_tail_growth_doesnt_scan_existing_rows(wyb, root_element):
     root.dispose()
 
 
-def test_selector_keeps_shared_key_subscribers(wyb):
+def test_projection_selection_keeps_shared_key_subscribers(wyb):
     selected, set_selected = create_signal(1)
-    selector = create_selector(selected)
+    is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
     first, second = [], []
-    one = create_effect(lambda: selector(1), first.append)
-    two = create_effect(lambda: selector(1), second.append)
+    one = create_effect(lambda: bool(is_selected.get(1)), first.append)
+    two = create_effect(lambda: bool(is_selected.get(1)), second.append)
     flush()
     one.dispose()
     flush()
@@ -306,3 +306,32 @@ def test_random_store_edits_match_plain_list_and_keep_live_rows(wyb, root_elemen
         assert set(created) - set(disposed) == set(expected)
     root.dispose()
     assert sorted(created) == sorted(disposed)
+
+
+def test_projection_selection_in_rows_rerenders_only_changed_rows(wyb, root_element):
+    selected, set_selected = create_signal(None)
+    is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
+    rows, _ = create_signal(list(range(50)))
+    evaluations = []
+
+    def row(item, index):
+        def cls():
+            evaluations.append(item)
+            return "danger" if is_selected.get(item) else ""
+
+        return span(str(item), class_=cls)
+
+    root = wyb["reconciler"].render(div(For(rows, row)), root_element)
+    assert len(evaluations) == 50
+    evaluations.clear()
+    set_selected(3)
+    flush()
+    assert evaluations == [3]
+    evaluations.clear()
+    set_selected(7)
+    flush()
+    assert sorted(evaluations) == [3, 7]
+    spans = [n for n in root_element.element.childNodes[0].childNodes if n.tag == "span"]
+    assert spans[7].attributes["class"] == "danger"
+    assert "class" not in spans[3].attributes or spans[3].attributes["class"] == ""
+    root.dispose()

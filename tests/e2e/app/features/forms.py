@@ -2,33 +2,23 @@
 
 from app.testkit import tid
 
-from wybthon import (
+from wybthon import button, component, create_signal, div, form, h2, input_, label, option, select, span
+from wybthon.forms import (
     a11y_control_attrs,
     bind_checkbox,
     bind_select,
     bind_text,
-    button,
-    component,
-    create_signal,
-    div,
     email,
     error_message_attrs,
-    form,
     form_state,
-    h2,
-    input_,
-    label,
     min_length,
     on_submit_validated,
-    option,
     required,
-    select,
-    span,
 )
 
 
 @component
-def Page(**rest):
+def Page():
     fs = form_state({"name": "", "email": "", "subscribe": False, "choice": ""})
     rules = {"name": [required(), min_length(2)], "email": [email()]}
 

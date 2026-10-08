@@ -13,21 +13,27 @@ Python's import system.
 
 | Name | Description |
 | --- | --- |
-| [`lazy`][wybthon.lazy] | `lazy(loader)`; the loader is a zero-arg callable, sync or async, returning a component, a module, a module-path string, or a `(module_path, attr)` tuple. |
-| `LazyComponent` | What `lazy` returns: a `Component` with `.preload()` to start the load early. |
+| [`lazy`][wybthon.lazy] | `lazy(loader, *, chunk=None)`; the loader is a zero-arg callable, sync or async, returning a component, a module, a module-path string, or a `(module_path, attr)` tuple. `chunk` names a build chunk to fetch first. |
+| `LazyComponent` | What `lazy` returns: a `Component` with `.preload()` to start the load early and `.retry()` to retry a failed load. |
 
 ```python
-from wybthon import Link, Loading, Route, Router, component, lazy, p
+from wybthon import Loading, component, lazy, p
+from wybthon.router import Link, Route, Router
 
-About = lazy(lambda: ("app.about.page", "Page"))     # importlib, attribute "Page"
+About = lazy(lambda: ("app.about.page", "Page"))  # importlib, attribute "Page"
+
 
 async def load_chart():
     import micropip
+
     await micropip.install("app-charts")
     import app_charts
+
     return app_charts.Chart
 
+
 Chart = lazy(load_chart)
+
 
 @component
 def App():
@@ -36,7 +42,8 @@ def App():
         fallback=lambda: p("Loading..."),
     )
 
-nav_link = Link("Chart", href="/chart", on_mouseover=lambda e: Chart.preload())
+
+nav_link = Link("Chart", href="/chart", on_mouseover=Chart.preload)
 ```
 
 - When the loader returns a module, the export is picked by convention:

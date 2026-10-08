@@ -8,6 +8,6 @@ cd "$(dirname "$0")/.."
 uv sync --locked --group dev
 
 uv run ruff check .
-uv run black --check .
+uv run ruff format --check .
 uv run mypy
-uv run pytest -q --cov=wybthon --cov-branch --cov-report=term-missing --cov-fail-under=45
+uv run pytest -q --cov=wybthon --cov-branch --cov-report=term-missing --cov-fail-under=80

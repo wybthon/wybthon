@@ -35,7 +35,7 @@ _INDEX = """<!doctype html>
 </body></html>
 """
 # Build-time files that never ship to the browser.
-_SERVER_ONLY = {"build.py", "dev.py", "mypy_plugin.py", "server.py", "_server_dom.py", "_prerender.py"}
+_SERVER_ONLY = {"build.py", "dev.py", "server.py", "_server_dom.py", "_prerender.py"}
 _STARTER = '''"""A run-once component with a reactive counter."""
 
 from wybthon import button, component, create_signal, div, h1
@@ -46,7 +46,7 @@ def App():
     count, set_count = create_signal(0)
     return div(
         h1("My Wybthon app"),
-        button(lambda: f"Count: {count()}", on_click=lambda event: set_count(lambda n: n + 1)),
+        button(t"Count: {count}", on_click=lambda: set_count(lambda n: n + 1)),
     )
 
 
@@ -74,8 +74,7 @@ def init_app(directory: Path) -> None:
         encoding="utf-8",
     )
     (directory / "pyproject.toml").write_text(
-        '[project]\nname = "wybthon-app"\nversion = "0.1.0"\nrequires-python = ">=3.12"\ndependencies = ["wybthon"]\n'
-        '\n[tool.mypy]\nplugins = ["wybthon.mypy_plugin"]\n',
+        '[project]\nname = "wybthon-app"\nversion = "0.1.0"\nrequires-python = ">=3.14"\ndependencies = ["wybthon"]\n',
         encoding="utf-8",
     )
     (directory / ".gitignore").write_text("dist/\n.venv/\n__pycache__/\n.mypy_cache/\n", encoding="utf-8")
@@ -105,11 +104,15 @@ def _asset(output: Path, stem: str, data: bytes, suffix: str) -> str:
     return name
 
 
-def build_app(directory: Path, *, output: Path | None = None, base: str | None = None) -> dict[str, Any]:
+def build_app(
+    directory: Path, *, output: Path | None = None, base: str | None = None, dev: bool = False
+) -> dict[str, Any]:
     """Build source archives, explicit lazy chunks, and a pinned browser bootstrap.
 
     The output is replaced only after all inputs validate and a complete build
-    succeeds. Existing output must contain Wybthon's build marker.
+    succeeds. Existing output must contain Wybthon's build marker. A
+    production build (the default) turns dev mode off before the
+    application imports; `wyb dev` builds with `dev=True`.
     """
     directory = directory.resolve()
     config_path = directory / "wybthon.toml"
@@ -184,6 +187,7 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
         for path in package.rglob("*.py")
         if path.name not in _SERVER_ONLY or path.parent != package
     }
+    runtime["wybthon/_kernel.js"] = (package / "_kernel.js").read_bytes()
     target_python = _pyodide_python(config.get("pyodide-version", PYODIDE_VERSION))
     bytecode = config.get("bytecode", True) and target_python == sys.version_info[:2]
     if bytecode:
@@ -219,6 +223,7 @@ def build_app(directory: Path, *, output: Path | None = None, base: str | None =
             "format": 1,
             "entry": entry,
             "mount": mount,
+            "dev": dev,
             "base": base_path,
             "bytecode": bool(bytecode),
             "prerendered": sorted(pages),

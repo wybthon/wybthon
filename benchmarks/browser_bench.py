@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the browser benchmark app headlessly and report results.
 
-Serves the repository root over HTTP, loads ``benchmarks/app/index.html``
+Serves the repository root over HTTP (``_serve.py``), loads ``benchmarks/app/index.html``
 in headless Chromium via Playwright, clicks "Run Full Benchmark", and
 prints separate median synchronous commit and input-to-frame times.
 The frame measurement is a rendering opportunity, not a precise paint
@@ -63,7 +63,7 @@ def run_browser_benchmark(mode: str = "signal") -> dict:
 
     port = _free_port()
     server = subprocess.Popen(
-        [sys.executable, "-m", "wybthon.dev", "dev", "--port", str(port), "--dir", str(REPO_ROOT)],
+        [sys.executable, str(Path(__file__).with_name("_serve.py")), "--port", str(port), "--root", str(REPO_ROOT)],
         cwd=str(REPO_ROOT),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

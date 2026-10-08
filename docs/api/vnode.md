@@ -19,8 +19,20 @@ only that region when its reads change.
 | [`hole`][wybthon.hole] | Explicit reactive hole, optionally with a `key`. |
 
 Holes are created implicitly: any accessor or zero-arg callable in a
-child position becomes one. Reach for `hole()` when you need a stable
-`key` or want the hole visually explicit.
+child position becomes one, and so does a template string that
+interpolates one (`t"Hello, {name}"`, a single hole for the whole
+string). Reach for `hole()` when you need a stable `key` or want the
+hole visually explicit.
+
+`VNode[...]` sets children with item syntax and returns the node, so
+`section(class_="card")[h1("Hello"), p("Body")]` equals
+`section(h1("Hello"), p("Body"), class_="card")`. A component call
+supports the same syntax for its `children` prop.
+
+A subtree mounted from a compiled shape keeps its VNodes, but only the
+root and its dynamic children get `el` assigned at mount; static
+descendants receive node ids lazily, when the reconciler first patches
+the subtree. Don't rely on `.el` of a static descendant.
 
 ```python
 from wybthon import Fragment, create_signal, h, hole
@@ -30,8 +42,9 @@ name, set_name = create_signal("Ada")
 view = h(
     "section",
     {"class": "card"},
-    h("h1", {}, "Hello, ", name),                 # implicit hole
-    hole(lambda: f"{len(name())} letters"),       # explicit hole
+    h("h1", {}, "Hello, ", name),  # implicit hole
+    hole(lambda: f"{len(name())} letters", key="count"),  # explicit hole with a key
+    h("p", {}, t"Name: {name}"),  # t-string hole
     Fragment(h("p", {}, "Body 1"), h("p", {}, "Body 2")),
 )
 ```

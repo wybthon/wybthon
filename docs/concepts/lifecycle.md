@@ -54,7 +54,7 @@ def Pinger():
 
     create_effect(count, lambda n: print("count is", n))
 
-    return button("ping", on_click=lambda e: set_count(lambda n: n + 1))
+    return button("ping", on_click=lambda: set_count(lambda n: n + 1))
 ```
 
 Order of events for one mount:
@@ -135,7 +135,7 @@ Disposal is depth-first:
 
 1. Children are disposed before their parent.
 2. Within one owner, cleanups run in LIFO order (the last registered runs first).
-3. A component's DOM nodes are removed in the same batch, and the freed node ids are released to the kernel.
+3. A component's DOM nodes are removed in the same batch. The kernel releases every node id inside the removed range natively, so Python doesn't walk the subtree to free them.
 
 When a computation re-runs, it disposes its children and runs its
 cleanups *before* re-executing, so effects created conditionally in a

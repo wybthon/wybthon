@@ -5,13 +5,12 @@ one native listener per event type per render root, with a single
 Python call per handler that matches.
 
 ```python
-from wybthon import component
-from wybthon.html import button
+from wybthon import button, component
 
 
 @component
 def Button():
-    return button("Click", on_click=lambda evt: print("clicked"))
+    return button("Click", on_click=lambda: print("clicked"))
 ```
 
 Supported prop names: `on_click`, `on_input`, `on_change`, and so on.
@@ -19,11 +18,20 @@ Both `on_foo` and `onFoo` styles are accepted and normalize to DOM
 event names. Non-callable values are ignored, and passing `None` on an
 update removes the handler.
 
+A handler may take the event or no arguments at all. Wybthon checks the
+handler's signature once, when it's registered, so a zero-argument
+handler costs nothing extra. Prefer one whenever you don't read the
+event:
+
+```python
+button("+", on_click=lambda: set_count(lambda n: n + 1))
+```
+
 ## DomEvent
 
-Handlers receive a [`DomEvent`][wybthon.DomEvent] built from a small
-payload the kernel assembles natively, so reading the common fields
-never crosses the Python-to-JS bridge:
+Handlers that take an argument receive a [`DomEvent`][wybthon.DomEvent]
+built from a small payload the kernel assembles natively, so reading the
+common fields never crosses the Python-to-JS bridge:
 
 - `type`: the event type string (`"click"`, `"input"`).
 - `target`: a payload-backed view of the original event target. `value`, `checked`, and `files` mirror the DOM properties handlers actually read; the raw JS node is available as `target.element` when you need more.
@@ -43,13 +51,12 @@ input_(value=name, on_input=lambda e: set_name(e.target.value))
 A submit handler:
 
 ```python
-from wybthon import component
-from wybthon.html import button, form, input_
+from wybthon import DomEvent, button, component, form, input_
 
 
 @component
 def Search():
-    def submit(evt):
+    def submit(evt: DomEvent):
         evt.prevent_default()
         print("submitted from", evt.current_target)
 
@@ -68,14 +75,17 @@ native listener on each delegation root (the container you passed to
 [`render`][wybthon.render] and the mount target of any mounted
 [`Portal`][wybthon.Portal]; `document` is used until a root exists).
 When an event fires, the kernel walks up
-from the original target natively and calls into Python once per node
-that registered a handler for that type. The payload crosses the bridge
-as one JSON string, so a click on a row in a 10,000-row table costs a
-single Python call.
+from the original target natively and calls into Python once for the
+bubbling route, running each handler registered for that type along the
+way. The payload crosses the bridge as one JSON string, so a click on a
+row in a 10,000-row table costs a single Python call.
 
-Registering a handler is itself a batched op (`LISTEN`) riding the same
-command buffer as DOM mutations; mounting a list with thousands of
-handlers adds nothing to the bridge-crossing count.
+Registering a handler costs no bridge crossing of its own. A compiled
+template declares its delegated listener types when it's registered, so
+cloning a row marks its handlers natively and sends no `LISTEN` op.
+Other handlers register with a batched `LISTEN` op riding the same
+command buffer as DOM mutations. Either way, mounting a list with
+thousands of handlers adds nothing to the bridge-crossing count.
 
 !!! note "Handlers flush when they return"
     After a delegated handler returns, the dispatcher flushes: every
@@ -91,7 +101,7 @@ aren't routed to an [`Errored`][wybthon.Errored] boundary. See
 
 Cleanup guarantees:
 
-- When a node is unmounted, its handlers are dropped on the Python side and the kernel's listener bookkeeping is cleared by the same `RELEASE` op that retires the node ids.
+- When a node is unmounted, its handlers are dropped on the Python side. The kernel's native `DISPOSE_RANGE` or `DISPOSE` op removes the nodes and clears their listener bookkeeping in the same walk, so Python sends no per-node release list.
 - When the last handler for an event type is removed across the whole app (by unmount, or by diffing a handler to `None`), the native listener for that type is removed from every root.
 
 ## Naming and normalization
@@ -99,6 +109,7 @@ Cleanup guarantees:
 - `on_click` becomes `"click"`.
 - `onInput` and `on_input` both become `"input"`.
 - `onClick` and `onclick` become `"click"`.
+- A `_capture` suffix listens in the capture phase: `on_click_capture`.
 - Any prop starting with `on_` or `on` is treated as an event handler.
 
 ## Event types that work best with delegation
@@ -110,45 +121,45 @@ Prefer events that bubble:
 - Input and form: `input`, `change`, `submit`, `reset`
 - Pointer: `pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointercancel`
 
-Non-bubbling alternatives:
-
-- Use `focusin` and `focusout` instead of `focus` and `blur`.
-- Use `mouseover` and `mouseout` instead of `mouseenter` and `mouseleave`.
+Non-bubbling events still work as props. `focus`, `blur`,
+`mouseenter`, `mouseleave`, `pointerenter`, `pointerleave`, `scroll`,
+`load`, `error`, `invalid`, and `toggle` get a direct native listener on
+their node instead of the delegated one. Use `focusin` and `focusout`
+when an ancestor should hear focus changes from its descendants.
 
 ## Native listeners through a ref
 
-When you need a non-bubbling event or listener options (for example
-`passive: False`), attach a native listener directly through Pyodide
-using a [`Ref`][wybthon.Ref]. Refs are assigned during mount, so do the
-wiring in [`on_settled`][wybthon.on_settled], which runs after the first
-commit. Wrap the handler in `create_proxy` so it survives garbage
-collection, and remove it on cleanup:
+For anything the props don't cover, such as a third-party library that
+wants the element itself, attach a native listener directly through
+Pyodide using a [`Ref`][wybthon.Ref]. Refs are assigned during mount, so
+do the wiring in [`on_settled`][wybthon.on_settled], which runs after
+the first commit. Wrap the handler in `create_proxy` so it survives
+garbage collection, and remove it on cleanup:
 
 ```python
 from pyodide.ffi import create_proxy
 
-from wybthon import Ref, component, on_cleanup, on_settled
-from wybthon.html import div
+from wybthon import Ref, component, div, on_cleanup, on_settled
 
 
 @component
-def HoverDemo():
+def DropZone():
     ref = Ref()
-    proxy = create_proxy(lambda e: print("entered"))
+    proxy = create_proxy(lambda e: print("files dropped"))
 
     def setup():
         if ref.current is not None:
-            ref.current.element.addEventListener("mouseenter", proxy)
+            ref.current.element.addEventListener("drop", proxy)
 
     def teardown():
         if ref.current is not None:
-            ref.current.element.removeEventListener("mouseenter", proxy)
+            ref.current.element.removeEventListener("drop", proxy)
         proxy.destroy()
 
     on_settled(setup)
     on_cleanup(teardown)
 
-    return div("Hover me", ref=ref, class_="box")
+    return div("Drop files here", ref=ref, class_="drop-zone")
 ```
 
 Reading `ref.current.element` commits any pending batched ops first, so
@@ -157,17 +168,37 @@ the node exists and reflects every queued mutation. See
 
 ## Pyodide cross-browser notes
 
-- Delegation depends on bubbling to the render root. For non-bubbling types, use the alternatives above or a direct `addEventListener` via `Ref`.
-- Chrome and Edge may treat `touchstart` and `touchmove` listeners as passive, so `prevent_default()` may be ignored for them. Use a direct listener with `{"passive": False}` options if you need to prevent scrolling.
+- Delegation depends on bubbling to the render root. Non-bubbling types use direct listeners automatically, as described above.
+- Chrome and Edge may treat `touchstart` and `touchmove` listeners as passive, so `prevent_default()` may be ignored for them. Use `event(handler, passive=False)` or a direct listener with `{"passive": False}` options if you need to prevent scrolling.
 - `keypress` is deprecated; prefer `keydown` and `keyup`.
 
 ## Testing handlers
 
-In unit tests, the in-memory kernel backend dispatches events directly:
-`kernel._backend.dispatch("click", node, payload={...})`. The payload
-keys mirror the browser fields (`value`, `checked`, `key`, `metaKey`,
-`button`), and `flush()` runs automatically when the handler returns,
-just as in the browser.
+[`wybthon.testing`](../api/testing.md) renders into an in-memory DOM in
+plain CPython and dispatches events through the same delegated handlers. Each [`fire`][wybthon.testing.fire] helper flushes when the
+handlers return, just as in the browser:
+
+```python
+from wybthon import button, component, create_signal, div, p
+from wybthon.testing import fire, render
+
+
+@component
+def Counter():
+    count, set_count = create_signal(0)
+    return div(p(t"Count: {count}"), button("+", on_click=lambda: set_count(lambda n: n + 1)))
+
+
+def test_counter():
+    with render(Counter()) as screen:
+        fire.click(screen.get_by_text("+"))
+        assert screen.get_by_text("Count: 1")
+```
+
+`fire.input(node, value)`, `fire.change(node, checked=True)`,
+`fire.submit(form)`, and `fire.key_down(node, "Enter")` set the matching
+payload fields. `fire(node, "dblclick", shift_key=True)` dispatches any
+other type.
 
 ## Next steps
 

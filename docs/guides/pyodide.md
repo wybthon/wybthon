@@ -4,10 +4,31 @@ Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython d
 
 ## The basics
 
-- Wybthon requires Pyodide 0.27 or newer (Python 3.12). The framework's own browser test suite runs on Pyodide 314.0.6 (Python 3.14).
-- Use [`micropip`](https://micropip.pyodide.org/) to install Python packages from PyPI at runtime.
-- Import from `wybthon` after the library exists in the Pyodide filesystem; installing via `micropip` (as in the [demo-template](https://github.com/wybthon/demo-template)) handles this for you.
+- Wybthon requires Python 3.14, so in the browser it needs Pyodide 314 or newer. `wyb init` pins Pyodide 314.0.6, the version the framework's own browser test suite runs on.
+- `wyb build` packages Wybthon and your application into archives that its generated bootstrap loads, so a project doesn't install Wybthon at runtime. See [Deployment](deployment.md).
+- Use [`micropip`](https://micropip.pyodide.org/) to install other Python packages from PyPI at runtime, or list them under `packages` and `wheels` in `wybthon.toml`.
 - Bridge to the browser with the [`js` module](https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js) and [`pyodide.ffi`](https://pyodide.org/en/stable/usage/api/python-api/ffi.html). Wybthon doesn't re-export `js`; import it yourself where you need it.
+
+A project's entry function returns the root view, and the generated bootstrap renders it into the mount element (or hydrates it when the page was prerendered):
+
+```python
+from wybthon import button, component, create_signal, div, h1
+
+
+@component
+def App():
+    count, set_count = create_signal(0)
+    return div(
+        h1("My Wybthon app"),
+        button(t"Count: {count}", on_click=lambda: set_count(lambda n: n + 1)),
+    )
+
+
+def app():
+    return App()
+```
+
+Outside a project (in a Pyodide console, say), install Wybthon with `micropip` and render yourself:
 
 ```python
 import micropip
@@ -17,22 +38,6 @@ await micropip.install("wybthon")
 from wybthon import render
 
 render(App(), "#app")
-```
-
-A minimal `bootstrap.js` that does the same from the JavaScript side:
-
-```js
-const PYODIDE_VERSION = "314.0.6";
-const BASE = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
-
-const { loadPyodide } = await import(`${BASE}pyodide.mjs`);
-const pyodide = await loadPyodide({ indexURL: BASE });
-await pyodide.loadPackage("micropip");
-await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("wybthon")
-`);
-await pyodide.runPythonAsync(await (await fetch("./main.py")).text());
 ```
 
 ## The Pyodide event loop
@@ -95,13 +100,14 @@ def Clock():
 
 [`lazy`][wybthon.lazy] uses Python's regular import system, so the only requirement is that the target module is reachable on `sys.path` at import time:
 
-- Ensure module files exist in the Pyodide filesystem before the loader runs. The demo apps' `bootstrap.js` copies the app package into `/app` (the dev server's `/__manifest` endpoint lists the files), so imports like `"app.about.page"` resolve.
+- In a `wyb build` project, the application archive is unpacked before your entry runs, so imports like `"app.about.page"` resolve. Modules in an explicit `[chunks]` group are fetched the first time a lazy component in that chunk renders; see [Deployment](deployment.md#explicit-lazy-chunks).
 - For third-party packages, use an async loader that `await`s `micropip.install(...)` before importing.
 - Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's `.preload()` method on user intent (link hover) to warm the import.
 - Attribute resolution defaults to `Page`, then `default`, then the first callable export; otherwise pass the export name explicitly.
 
 ```python
-from wybthon import Link, lazy
+from wybthon import lazy
+from wybthon.router import Link
 
 About = lazy(lambda: ("app.about.page", "Page"))
 
@@ -117,14 +123,14 @@ async def load_charts():
 
 Chart = lazy(load_charts)
 
-Link("About", href="/about", on_mouseenter=lambda e: About.preload())
+Link("About", href="/about", on_mouseenter=lambda: About.preload())
 ```
 
 ## Dev mode
 
 Pyodide takes over a second to load and initialize. [Server rendering](../concepts/server-rendering.md) shows prerendered HTML during that time, and the page hydrates once Python is ready.
 
-Wybthon's dev-mode diagnostics are on by default. Call [`set_dev_mode(False)`][wybthon.set_dev_mode] at startup in production builds to silence warnings and skip the write-in-scope checks.
+Wybthon's dev-mode diagnostics (prop validation, write-in-scope errors, and warnings) are on by default, and `wyb dev` keeps them on. Production builds from `wyb build` call [`set_dev_mode(False)`][wybthon.set_dev_mode] before the application imports, so you don't need to. Outside a project build, call it yourself at startup. [`is_dev_mode()`][wybthon.is_dev_mode] reads the current mode.
 
 ## Next steps
 

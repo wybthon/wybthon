@@ -22,7 +22,10 @@ This guide maps common React idioms to Wybthon equivalents and calls out the pit
 | `useReducer` | `create_signal` plus plain functions, or a [`create_store`][wybthon.create_store] with draft mutations |
 | `{cond && <A/>}` / ternaries | [`Show`][wybthon.Show], [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
 | `items.map(item => <Row key={item.id}/>)` | [`For(items, lambda item, i: Row(...), keyed=...)`][wybthon.For] |
-| JSX | HTML helpers: `div(p("Hi"), class_="card")` |
+| `function Card({ title }: CardProps)` | A [`Props`][wybthon.Props] class and `def Card(props: CardProps)` |
+| `props.children` | [`ParentProps`][wybthon.ParentProps] and `props.children` |
+| JSX | HTML helpers: `div(p("Hi"), class_="card")`, or `div(class_="card")[p("Hi")]` |
+| `` {`Count: ${count}`} `` | A t-string: `p(t"Count: {count}")` |
 
 ## Components run once
 
@@ -36,10 +39,10 @@ from wybthon import button, component, create_signal
 def Counter():
     count, set_count = create_signal(0)
     print("Counter body running")
-    return button("count: ", count, on_click=lambda e: set_count(lambda n: n + 1))
+    return button(t"count: {count}", on_click=lambda: set_count(lambda n: n + 1))
 ```
 
-You'll see `"Counter body running"` exactly once, no matter how many clicks. The `count` accessor placed inside `button(...)` becomes a *reactive hole*, so only that text node updates. Read [Mental model](../concepts/mental-model.md) for the formal definition.
+You'll see `"Counter body running"` exactly once, no matter how many clicks. The t-string interpolating the `count` accessor becomes a *reactive hole*, so only that text node updates. Handlers may take the event or, as here, no arguments. Read [Mental model](../concepts/mental-model.md) for the formal definition.
 
 ### Implications
 
@@ -80,45 +83,66 @@ Signal writes are **staged**: after `set_count(1)`, `count()` still returns the 
 
 ## Props
 
-In React, props are a frozen object per render. In Wybthon, every prop is a [`Prop[T]`][wybthon.Prop] accessor bound to a parameter. Place it in the tree, or call it inside a reactive scope:
+In React, props are a frozen object per render, typed with an interface. In Wybthon, props are declared on a [`Props`][wybthon.Props] class, and the component takes one parameter annotated with it. Reading a [`Prop[T]`][wybthon.Prop] field returns an accessor: place it in the tree, or call it inside a reactive scope.
 
-```jsx
-function Greet({ name, excited = false }) {
-  return <p>Hello, {name}{excited ? "!" : "."}</p>;
+```tsx
+type GreetProps = { name: string; excited?: boolean; onWave?: () => void };
+
+function Greet({ name, excited = false, onWave }: GreetProps) {
+  return <p onClick={onWave}>Hello, {name}{excited ? "!" : "."}</p>;
 }
 ```
 
 becomes
 
 ```python
-from wybthon import Prop, component, p, prop
+from collections.abc import Callable
+
+from wybthon import Prop, Props, component, p, prop
+
+
+class GreetProps(Props):
+    name: Prop[str]
+    excited: Prop[bool] = prop(default=False)
+    on_wave: Callable[[], None] | None = None
 
 
 @component
-def Greet(name: Prop[str], excited: Prop[bool] = prop(False)):
-    return p("Hello, ", name, lambda: "!" if excited() else ".")
+def Greet(props: GreetProps):
+    return p("Hello, ", props.name, lambda: "!" if props.excited() else ".", on_click=props.on_wave)
 ```
 
-Destructuring a prop into a local (`value = name()`) at the top of the body freezes it at mount and loses reactivity; dev mode warns about it. When you really want a one-time read (to seed local state, for example), write `name.peek()`.
+- `Prop[T]` fields are reactive. The parent can pass a plain value or an accessor, and the child stays live either way, without re-running.
+- Other fields are plain data. Callbacks like `on_wave` go here; reading the field returns the function the parent passed.
+- Defaults use `prop(default=...)` for `Prop[T]` fields and ordinary `= value` defaults for plain fields.
+- Pyright and mypy check every call against the class, the way TypeScript checks JSX props.
 
-`{...rest}` spreading works the same way: declare `**rest` and forward it with `div(**rest)`. [`merge`][wybthon.merge] and [`omit`][wybthon.omit] cover `{...defaults, ...props}` and "everything except these keys".
+Destructuring a prop into a local (`value = props.name()`) at the top of the body freezes it at mount and loses reactivity; dev mode warns about it. When you really want a one-time read (to seed local state, for example), write `props.name.peek()`.
+
+There's no `{...rest}` catch-all: a component reads only what it declares. To forward attributes, declare them and spread the remainder with [`omit`][wybthon.omit] (`div(**omit(props, "title"))`); [`merge`][wybthon.merge] covers `{...defaults, ...props}`.
 
 ## Children
 
-`props.children` is a normal prop. Positional arguments to a component call become `children`:
+Subclass [`ParentProps`][wybthon.ParentProps] to accept children, and place `props.children` in the tree. Callers pass children with item syntax or the `children` keyword:
 
 ```python
-from wybthon import Prop, component, h3, prop, section
-from wybthon import children as resolve_children
+from wybthon import ParentProps, Prop, component, h3, p, prop, section
+
+
+class CardProps(ParentProps):
+    title: Prop[str] = prop(default="")
 
 
 @component
-def Card(title: Prop[str] = prop(""), children: Prop = prop(None)):
-    return section(h3(title), resolve_children(children), class_="card")
+def Card(props: CardProps):
+    return section(h3(props.title), props.children, class_="card")
 
 
-Card("Body text", title="Hello")
+Card(title="Hello")[p("Body text")]
+Card(title="Hello", children=p("Body text"))
 ```
+
+To inspect or reorder children, resolve them with [`children`][wybthon.children]: `kids = children(props.children)`, then `kids.to_array()`.
 
 ## Context
 
@@ -131,21 +155,21 @@ const theme = useContext(ThemeCtx);
 becomes
 
 ```python
-from wybthon import component, create_context, create_signal, use_context
+from wybthon import component, create_context, create_signal, p, use_context
 
 Theme = create_context("light")
 
 
 @component
-def Root():
-    theme, set_theme = create_signal("dark")
-    return Theme(theme, App())      # the Context object is its own provider
+def Consumer():
+    theme = use_context(Theme)  # the accessor, exactly as provided
+    return p(t"Theme: {theme}")
 
 
 @component
-def Consumer():
-    theme = use_context(Theme)      # the accessor, exactly as provided
-    return p(lambda: f"Theme: {theme()}")
+def Root():
+    theme, set_theme = create_signal("dark")
+    return Theme(theme, Consumer())  # the Context object is its own provider
 ```
 
 Pass an accessor as the value and consumers update without unmounting.
@@ -163,6 +187,8 @@ from wybthon import For, ul
 
 ul(For(items, lambda item, index: Row(item=item), keyed=lambda i: i["id"]))
 ```
+
+With a key function, `item` is an accessor, so `Row` declares `item` as a `Prop[...]` field and stays live as the row's data changes.
 
 [`For`][wybthon.For] runs the callback once per row and caches the result; reorders move DOM nodes instead of re-rendering. With a key function, the callback receives accessors for the item and the index; with the default `keyed=True`, rows match by identity and the callback gets the raw item and an index accessor. Always pass an accessor (or a store path) for the list, not a plain Python list.
 
@@ -203,7 +229,7 @@ def AutoFocus():
     return input_(ref=ref)
 ```
 
-[`on_settled`][wybthon.on_settled] is the "after mount" hook: it runs once after the flush that mounted the component, and it may return a cleanup. `ref.current` is an [`Element`][wybthon.Element]; `.element` is the raw DOM node. To forward a ref, accept it as an ordinary prop (`ref: Prop[Ref | None] = prop(None)`) and pass `ref=ref.peek()` down; there's no `forwardRef`.
+[`on_settled`][wybthon.on_settled] is the "after mount" hook: it runs once after the flush that mounted the component, and it may return a cleanup. `ref.current` is an [`Element`][wybthon.Element]; `.element` is the raw DOM node. To forward a ref, declare it as a plain field (`ref: Ref | None = None`) and pass `ref=props.ref` down; there's no `forwardRef`.
 
 ## Async data
 
@@ -239,9 +265,9 @@ shown, set_shown = create_optimistic(likes)
 
 @action
 async def like():
-    set_shown(lambda n: n + 1)   # instant UI
+    set_shown(lambda n: n + 1)  # instant UI
     await api_like()
-    await refresh(likes)         # reverts to real data when the action settles
+    await refresh(likes)  # reverts to real data when the action settles
 ```
 
 See [Async and Loading](../concepts/async-loading.md).
@@ -250,13 +276,16 @@ See [Async and Loading](../concepts/async-loading.md).
 
 ```python
 from wybthon import Errored, button, div, p
+from wybthon.router import current_path
 
 Errored(
     lambda: Dashboard(),
-    fallback=lambda err, reset: div(p(str(err)), button("Retry", on_click=lambda e: reset())),
+    fallback=lambda err, reset: div(p(lambda: str(err())), button("Retry", on_click=reset)),
     reset_on=current_path,
 )
 ```
+
+The fallback receives `err`, an accessor for the caught error, and `reset`, which re-renders the children. `reset_on` clears the error when the given accessor changes, here on every navigation.
 
 ## Things you can stop doing
 
@@ -268,9 +297,10 @@ Errored(
 
 ## Things to watch out for
 
-- **Don't read props or signals at the top level of the body.** `name()` there freezes the value (and warns). Place the accessor in the tree or read inside a memo, effect, or hole.
+- **Don't read props or signals at the top level of the body.** `props.name()` there freezes the value (and warns). Place the accessor in the tree or read inside a memo, effect, or hole.
 - **Don't expect a write to be visible immediately.** `set_x(1); x()` returns the old value until the flush. Use functional updates to compose writes.
 - **Don't write signals inside a memo or a hole.** Dev mode raises `WriteInScopeError`. Write from event handlers, actions, or the `apply` stage of an effect.
+- **Declare callbacks as plain fields.** A `Prop[...]` field is for values that can change. A callback goes in a plain field (`on_save: Callable[[], None] | None = None`), so reading it returns the function.
 - **Define components at module scope.** Creating one inside a body doesn't cause re-renders, but it does create a new component identity on every hole re-run, which forces a remount.
 
 ## Cheat sheet
@@ -281,6 +311,7 @@ from wybthon import (
     For,
     Loading,
     Match,
+    ParentProps,
     Portal,
     Prop,
     Props,
@@ -289,6 +320,7 @@ from wybthon import (
     Show,
     Switch,
     action,
+    children,
     component,
     create_context,
     create_effect,
@@ -304,6 +336,8 @@ from wybthon import (
     prop,
     use_context,
 )
+from wybthon.router import Link, Route, Router, navigate
+from wybthon.testing import fire, render
 ```
 
 ## Next steps

@@ -14,7 +14,7 @@ from wybthon import Loading, button, component, create_memo, create_signal, div,
 
 
 @component
-def Page(**rest):
+def Page():
     gate = asyncio.Event()
     attempts = [0]
     version, set_version = create_signal(0)
