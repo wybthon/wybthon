@@ -1754,8 +1754,6 @@
       
         
       
-        
-      
     
     
     
@@ -1958,62 +1956,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2258,34 +2200,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2454,6 +2368,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2549,6 +2519,8 @@
       
         
           
+        
+      
         
       
         
@@ -2654,6 +2626,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3169,10 +3169,11 @@
 </table>
 <h2 id="coding-standards">Coding standards<a class="headerlink" href="#coding-standards" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Source code targets <strong>Python 3.12+</strong> (PEP 695 generics) with type hints throughout.</li>
+<li>Source code targets <strong>Python 3.14</strong> with type hints throughout.</li>
 <li>Docstrings use the <strong>Google style</strong> documented in the <a href="../style-guide/">docs style guide</a>. The Ruff <code>pydocstyle</code> ruleset enforces this.</li>
-<li>Run <code>ruff check .</code> and <code>ruff format --check .</code> before pushing.</li>
-<li>Run <code>mypy src</code> and <code>pytest</code> to verify types and tests.</li>
+<li>Format with <code>uv run ruff format .</code> and lint with <code>uv run ruff check .</code> before pushing.</li>
+<li>Run <code>uv run mypy</code> and <code>uv run pytest -q</code> to verify types and tests. CI requires 80% coverage.</li>
+<li><code>./scripts/check.sh</code> runs everything CI's unit job runs, in the same order.</li>
 </ul>
 <h2 id="updating-documentation">Updating documentation<a class="headerlink" href="#updating-documentation" title="Permanent link">&para;</a></h2>
 <ul>

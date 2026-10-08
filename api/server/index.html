@@ -18,7 +18,7 @@
         <link rel="prev" href="../portal/">
       
       
-        <link rel="next" href="../dev/">
+        <link rel="next" href="../request/">
       
       
         
@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1961,62 +1959,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2261,34 +2203,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2508,10 +2422,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.server.render_to_string" class="md-nav__link">
+  <a href="#wybthon.server.RenderStream" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;RenderStream
       
     </span>
   </a>
@@ -2519,10 +2433,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.server.render_to_string_async" class="md-nav__link">
+  <a href="#wybthon.server.render_to_string" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string_async
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string
       
     </span>
   </a>
@@ -2577,6 +2491,62 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2690,6 +2660,8 @@
       
         
       
+        
+      
     
     
     
@@ -2789,6 +2761,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3070,10 +3070,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wybthon.server.render_to_string" class="md-nav__link">
+  <a href="#wybthon.server.RenderStream" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;RenderStream
       
     </span>
   </a>
@@ -3081,10 +3081,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.server.render_to_string_async" class="md-nav__link">
+  <a href="#wybthon.server.render_to_string" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string_async
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;render_to_string
       
     </span>
   </a>
@@ -3191,31 +3191,20 @@ browser under Pyodide renders to HTML in CPython. Serve that HTML with
 the page, and the browser shows content immediately instead of waiting
 for Pyodide to boot. Once it has, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> adopts
 the server's DOM and makes it interactive.</p>
-<p>Three entry points cover the common deployment shapes:</p>
+<p>Two entry points cover the common deployment shapes, as in Solid 2.0:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string&lt;/span&gt;" href="#wybthon.server.render_to_string"><code>render_to_string</code></a> renders
   synchronously. Async data isn't loaded; its
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a> boundaries render their fallbacks and
   the browser loads it after hydration.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string_async&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.server.render_to_string_async"><code>render_to_string_async</code></a>
-  waits for every async memo the page reads (including memos that only
-  appear once other data arrives) and embeds the results, so the
-  browser neither fetches them again nor shows a loading state.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a> sends the page
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a> sends the page
   with fallbacks immediately, then streams each boundary's content as
-  its data arrives.</li>
+  its data arrives. Awaiting it instead waits for every async memo the
+  page reads (including memos that only appear once other data arrives)
+  and returns the complete HTML with the results embedded, so the
+  browser neither fetches them again nor shows a loading state.</li>
 </ul>
-<p>All three return (or yield) the <em>contents</em> of the mount container;
+<p>Both return (or yield) the <em>contents</em> of the mount container;
 the caller writes the surrounding document. Output always ends with a
 <code>&lt;script type="application/json" data-wyb-state&gt;</code> element, which
 <code>hydrate</code> reads and removes.</p>
@@ -3224,13 +3213,23 @@ the caller writes the surrounding document. Output always ends with a
 <details class="example" open>
   <summary>Example</summary>
   <p>With any ASGI framework:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_string_async</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">render_to_string_async</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="n">HTMLResponse</span><span class="p">(</span><span class="n">TEMPLATE</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"&lt;!-- app --&gt;"</span><span class="p">,</span> <span class="n">body</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestEvent</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_stream</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">event</span> <span class="o">=</span> <span class="n">RequestEvent</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">render_to_stream</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">HTMLResponse</span><span class="p">(</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">TEMPLATE</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"&lt;!-- app --&gt;"</span><span class="p">,</span> <span class="n">body</span><span class="p">),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">status_code</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">headers</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">header_items</span><span class="p">()),</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="p">)</span>
 </span></code></pre></div>
-</details>        <p>Rendering runs the ordinary renderer against an in-memory DOM, so
+</details>        <p>Components declare the response status and headers with
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../wybthon/#wybthon.http_status"><code>http_status</code></a> and
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="../wybthon/#wybthon.http_header"><code>http_header</code></a>, and read the request with
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_request_event&lt;/span&gt;" href="../wybthon/#wybthon.get_request_event"><code>get_request_event</code></a>.</p>
+<p>Rendering runs the ordinary renderer against an in-memory DOM, so
 server output always matches what the browser's hydration expects.
 Renders may run concurrently on one event loop; don't render from
 several threads at once.</p>
@@ -3249,6 +3248,27 @@ several threads at once.</p>
 
 
 
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RenderStream&lt;/span&gt; (&lt;code&gt;wybthon.server.RenderStream&lt;/code&gt;)" href="#wybthon.server.RenderStream">RenderStream</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>The result of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -3271,28 +3291,10 @@ several threads at once.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string_async&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;wybthon.server.render_to_string_async&lt;/code&gt;)" href="#wybthon.server.render_to_string_async">render_to_string_async</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt; (&lt;code&gt;wybthon.server.render_to_stream&lt;/code&gt;)" href="#wybthon.server.render_to_stream">render_to_stream</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Render <code>view</code> to HTML once every async memo it reads has resolved.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;wybthon.server.render_to_stream&lt;/code&gt;)" href="#wybthon.server.render_to_stream">render_to_stream</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Stream <code>view</code> as HTML: the page first, then each <code>Loading</code> boundary as it resolves.</p>
+                  <p>Render <code>view</code> as a stream of HTML, or await it for the complete page.</p>
                 </div>
               </td>
             </tr>
@@ -3313,6 +3315,66 @@ several threads at once.</p>
 
 
 
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="wybthon.server.RenderStream" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">RenderStream</span>
+
+
+<a href="#wybthon.server.RenderStream" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RenderStream</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.RequestEvent&lt;/code&gt;)" href="../request/#wybthon.request.RequestEvent">RequestEvent</a></span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>The result of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a>.</p>
+<p>Iterate it (<code>async for chunk in stream</code>) to send the page as it
+renders, or await it (<code>html = await stream</code>) for the complete HTML
+once every async memo has resolved. Use one or the other, once.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -3322,7 +3384,12 @@ several threads at once.</p>
 
 
 <a href="#wybthon.server.render_to_string" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render_to_string</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render_to_string</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.RequestEvent&lt;/code&gt;)" href="../request/#wybthon.request.RequestEvent">RequestEvent</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3330,187 +3397,82 @@ several threads at once.</p>
         <p>Render <code>view</code> to HTML synchronously.</p>
 <p>Async memos don't start: the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../wybthon/#wybthon.Loading"><code>Loading</code></a>
 boundaries that read them render their fallbacks, and the browser
-loads the data after <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>. Use
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string_async&lt;/span&gt;
+loads the data after <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>. Await
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a> to include
+async data.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>view</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The root view: a VNode (such as <code>App()</code>) or a zero-arg
+callable returning one.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>url</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The request path and query, read by the router. Defaults
+to the event's URL, or <code>"/"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.server.render_to_string_async"><code>render_to_string_async</code></a>
-to include async data.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>view</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.RequestEvent&lt;/code&gt;)" href="../request/#wybthon.request.RequestEvent">RequestEvent</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The root view: a VNode (such as <code>App()</code>) or a zero-arg
-callable returning one.</p>
+                <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../wybthon/#wybthon.RequestEvent"><code>RequestEvent</code></a> being
+rendered; read its <code>response</code> afterward for the status and
+headers the page declared.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>url</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The request path and query, read by the router.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;/&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The HTML for the mount container's contents, ending with the</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>serialized state script.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.server.render_to_string_async" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">render_to_string_async</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#wybthon.server.render_to_string_async" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render_to_string_async</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Render <code>view</code> to HTML once every async memo it reads has resolved.</p>
-<p>The tree renders in passes: each pass renders with the values
-resolved so far, then waits for the async memos it started. A
-later pass can start memos that only render once earlier data has
-arrived. The final pass renders synchronously from start to
-finish, exactly as the browser will while hydrating, and its
-values are serialized for <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>view</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The root view: a VNode (such as <code>App()</code>) or a zero-arg
-callable returning one.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>url</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The request path and query, read by the router.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;/&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>timeout</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Seconds to wait for data in total. Whatever hasn't
-resolved by then renders its <code>Loading</code> fallback and loads
-in the browser.</p>
-              </div>
-            </td>
-            <td>
-                  <code>30.0</code>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -3561,26 +3523,33 @@ in the browser.</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">render_to_stream</span>
 
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
 <a href="#wybthon.server.render_to_stream" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render_to_stream</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.AsyncIterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.AsyncIterator">AsyncIterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">render_to_stream</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.RequestEvent&lt;/code&gt;)" href="../request/#wybthon.request.RequestEvent">RequestEvent</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RenderStream&lt;/span&gt; (&lt;code&gt;wybthon.server.RenderStream&lt;/code&gt;)" href="#wybthon.server.RenderStream">RenderStream</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Stream <code>view</code> as HTML: the page first, then each <code>Loading</code> boundary as it resolves.</p>
-<p>The first chunk is the page with a fallback in every boundary whose
-data isn't ready. Each later chunk carries the content of the
-boundaries that became ready, as <code>&lt;template&gt;</code> elements plus a small
-inline script that swaps them into place (out-of-order streaming).
-The last chunk is the serialized state for
+        <p>Render <code>view</code> as a stream of HTML, or await it for the complete page.</p>
+<p>Iterating the result yields the page first, with a fallback in every
+boundary whose data isn't ready. Each later chunk carries the content
+of the boundaries that became ready, as <code>&lt;template&gt;</code> elements plus a
+small inline script that swaps them into place (out-of-order
+streaming). The last chunk is the serialized state for
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>. Write every chunk inside the mount
-container, in order.</p>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../wybthon/#wybthon.Reveal"><code>Reveal</code></a> ordering is respected: a boundary is
-sent once it would show its content in the browser.</p>
+container, in order. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../wybthon/#wybthon.Reveal"><code>Reveal</code></a> ordering is
+respected: a boundary is sent once it would show its content in the
+browser. The response head is committed with the first chunk.</p>
+<p>Awaiting the result renders in passes instead: each pass renders with
+the values resolved so far, then waits for the async memos it
+started, and a later pass can start memos that only render once
+earlier data has arrived. The final pass renders synchronously, as
+the browser will while hydrating, and returns the complete HTML with
+its values serialized.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3616,15 +3585,44 @@ callable returning one.</p>
                 <code>url</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The request path and query, read by the router.</p>
+                <p>The request path and query, read by the router. Defaults
+to the event's URL, or <code>"/"</code>.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;/&#39;</code>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.RequestEvent&lt;/code&gt;)" href="../request/#wybthon.request.RequestEvent">RequestEvent</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RequestEvent&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../wybthon/#wybthon.RequestEvent"><code>RequestEvent</code></a> being
+rendered; read its <code>response</code> for the declared status and
+headers.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -3648,7 +3646,7 @@ pending then keep their fallbacks and load in the browser.</p>
     </table>
 
 
-    <p><span class="doc-section-title">Yields:</span></p>
+    <p><span class="doc-section-title">Returns:</span></p>
     <table>
       <thead>
         <tr>
@@ -3659,11 +3657,11 @@ pending then keep their fallbacks and load in the browser.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.AsyncIterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.AsyncIterator">AsyncIterator</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RenderStream&lt;/span&gt; (&lt;code&gt;wybthon.server.RenderStream&lt;/code&gt;)" href="#wybthon.server.RenderStream">RenderStream</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>HTML chunks for the mount container.</p>
+                <p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RenderStream&lt;/span&gt;" href="#wybthon.server.RenderStream"><code>RenderStream</code></a>.</p>
               </div>
             </td>
           </tr>
@@ -3693,41 +3691,43 @@ pending then keep their fallbacks and load in the browser.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string&lt;/span&gt;" href="#wybthon.server.render_to_string"><code>render_to_string</code></a></td>
-<td>Render synchronously. Async data isn't loaded; <code>Loading</code> boundaries render their fallbacks.</td>
+<td><code>render_to_string(view, *, url=None, event=None)</code>: render synchronously. Async data isn't loaded; <code>Loading</code> boundaries render their fallbacks.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_string_async&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.server.render_to_string_async"><code>render_to_string_async</code></a></td>
-<td>Resolve every async memo the page reads, then render and embed the results.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a></td>
+<td><code>render_to_stream(view, *, url=None, event=None, timeout=30)</code>: returns a <code>RenderStream</code>.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-async&quot;&gt;&lt;code&gt;async&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon.server.render_to_stream"><code>render_to_stream</code></a></td>
-<td>Yield the page with fallbacks, then each <code>Loading</code> boundary as its data arrives, then the state.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RenderStream&lt;/span&gt;" href="#wybthon.server.RenderStream"><code>RenderStream</code></a></td>
+<td>Iterate it (<code>async for chunk in stream</code>) for the page with fallbacks, then each <code>Loading</code> boundary as its data arrives, then the state. Await it (<code>html = await stream</code>) for the complete HTML once every async memo has resolved. Use one or the other, once.</td>
 </tr>
 </tbody>
 </table>
-<p>The browser side, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_server&lt;/span&gt;" href="../wybthon/#wybthon.is_server"><code>is_server</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;client_only&lt;/span&gt;" href="../wybthon/#wybthon.client_only"><code>client_only</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ServerError&lt;/span&gt;" href="../wybthon/#wybthon.ServerError"><code>ServerError</code></a>, are exported from <code>wybthon</code>.</p>
+<p>Awaiting <code>render_to_stream</code> replaces the removed <code>render_to_string_async</code>.
+The browser side, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_server&lt;/span&gt;" href="../wybthon/#wybthon.is_server"><code>is_server</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_hydrating&lt;/span&gt;" href="../wybthon/#wybthon.is_hydrating"><code>is_hydrating</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;client_only&lt;/span&gt;" href="../wybthon/#wybthon.client_only"><code>client_only</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../wybthon/#wybthon.NoHydration"><code>NoHydration</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ServerError&lt;/span&gt;" href="../wybthon/#wybthon.ServerError"><code>ServerError</code></a>, is exported from <code>wybthon</code>, as are the <a href="../request/">request helpers</a> components use to set the status and headers.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">p</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_string_async</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@component</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello from the server"</span><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">html</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">render_to_string_async</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="s2">"/"</span><span class="p">))</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestEvent</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">http_header</span><span class="p">,</span> <span class="n">p</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_stream</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nd">@component</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">http_header</span><span class="p">(</span><span class="s2">"Cache-Control"</span><span class="p">,</span> <span class="s2">"max-age=60"</span><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello from the server"</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">event</span> <span class="o">=</span> <span class="n">RequestEvent</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"/"</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">html</span> <span class="o">=</span> <span class="k">await</span> <span class="n">render_to_stream</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">html</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </span></code></pre></div>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
+<li><a href="../request/">Request</a>: <code>RequestEvent</code>, <code>http_status</code>, and <code>http_header</code></li>
 <li><a href="../../concepts/server-rendering/">Concepts: Server rendering</a></li>
 <li><a href="../../guides/deployment/">Guides: Deployment</a></li>
 <li><a href="../../rfcs/0001-server-rendering-and-hydration/">RFC 0001</a></li>

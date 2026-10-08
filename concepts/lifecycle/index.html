@@ -1914,8 +1914,6 @@
       
         
       
-        
-      
     
     
     
@@ -2118,62 +2116,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2418,34 +2360,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2614,6 +2528,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2709,6 +2679,8 @@
       
         
           
+        
+      
         
       
         
@@ -2814,6 +2786,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3291,7 +3291,7 @@ disposed and the whole subtree goes with it.</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"ping"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"ping"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Order of events for one mount:</p>
 <ol>
@@ -3356,7 +3356,7 @@ need teardown:</p>
 <ol>
 <li>Children are disposed before their parent.</li>
 <li>Within one owner, cleanups run in LIFO order (the last registered runs first).</li>
-<li>A component's DOM nodes are removed in the same batch, and the freed node ids are released to the kernel.</li>
+<li>A component's DOM nodes are removed in the same batch. The kernel releases every node id inside the removed range natively, so Python doesn't walk the subtree to free them.</li>
 </ol>
 <p>When a computation re-runs, it disposes its children and runs its
 cleanups <em>before</em> re-executing, so effects created conditionally in a

@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1981,62 +1979,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../dom/" class="md-nav__link">
         
   
@@ -2182,6 +2124,17 @@
     <span class="md-ellipsis">
       
         Naming rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prop-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prop values
       
     </span>
   </a>
@@ -2404,34 +2357,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2600,6 +2525,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dev/" class="md-nav__link">
         
   
@@ -2695,6 +2676,8 @@
       
         
           
+        
+      
         
       
         
@@ -2800,6 +2783,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3126,6 +3137,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#prop-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prop values
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#svg" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3223,10 +3245,12 @@ hyperscript. Instead of writing:</p>
   stays as is. Event handlers keep the <code>on_</code> prefix (<code>on_click</code>).</li>
 <li><code>True</code> sets a boolean attribute, <code>False</code> or <code>None</code> omits it.</li>
 </ul>
-<p>Each helper returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>. Two element names
-collide with Python builtins, so they're exposed with a trailing
-underscore: <code>main_</code> and <code>input_</code>. SVG elements live in
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;svg&lt;/span&gt;" href="../svg/#wybthon.svg"><code>wybthon.svg</code></a>.</p>
+<p>Children may also be t-strings: <code>p(t"Count: {count}")</code> updates as one
+reactive text node.</p>
+<p>Each helper returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>. Element names that
+collide with Python builtins or keywords are exposed with a trailing
+underscore: <code>main_</code>, <code>input_</code>, <code>del_</code>, and <code>object_</code>. SVG elements live
+in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;svg&lt;/span&gt;" href="../svg/#wybthon.svg"><code>wybthon.svg</code></a>.</p>
 
 
 <details class="see-also" open>
@@ -3404,10 +3428,12 @@ empty comment markers, so they never pollute selectors like
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p>One helper per common HTML element, each calling
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a> with children as positional arguments and props as
-keyword arguments, plus <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt;" href="../wybthon/#wybthon.element"><code>element()</code></a> for tags without a
-built-in helper. Every helper is also re-exported from <code>wybthon</code>.</p>
+<p>One helper per HTML element, each building a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a>
+with children as positional arguments and props as keyword arguments,
+plus <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt;" href="../wybthon/#wybthon.element"><code>element()</code></a> for tags without a built-in helper.
+Every helper is also re-exported from <code>wybthon</code>. Children can also be
+passed with item syntax, <code>div(class_="card")[h2("Title"), p("Body")]</code>,
+which keeps long prop lists ahead of the content.</p>
 <table>
 <thead>
 <tr>
@@ -3418,23 +3444,39 @@ built-in helper. Every helper is also re-exported from <code>wybthon</code>.</p>
 <tbody>
 <tr>
 <td>Layout</td>
-<td><code>div</code>, <code>span</code>, <code>section</code>, <code>article</code>, <code>aside</code>, <code>header</code>, <code>footer</code>, <code>main_</code>, <code>nav</code></td>
+<td><code>div</code>, <code>span</code>, <code>section</code>, <code>article</code>, <code>aside</code>, <code>header</code>, <code>footer</code>, <code>main_</code>, <code>nav</code>, <code>address</code>, <code>hgroup</code>, <code>search</code></td>
 </tr>
 <tr>
-<td>Headings and text</td>
-<td><code>h1</code> to <code>h6</code>, <code>p</code>, <code>a</code>, <code>strong</code>, <code>em</code>, <code>small</code>, <code>code</code>, <code>pre</code>, <code>br</code>, <code>hr</code>, <code>blockquote</code>, <code>mark</code>, <code>time</code></td>
+<td>Headings</td>
+<td><code>h1</code> to <code>h6</code></td>
 </tr>
 <tr>
-<td>Lists and tables</td>
-<td><code>ul</code>, <code>ol</code>, <code>li</code>, <code>table</code>, <code>thead</code>, <code>tbody</code>, <code>tfoot</code>, <code>tr</code>, <code>th</code>, <code>td</code>, <code>caption</code>, <code>colgroup</code>, <code>col</code></td>
+<td>Text</td>
+<td><code>p</code>, <code>a</code>, <code>strong</code>, <code>em</code>, <code>b</code>, <code>i</code>, <code>u</code>, <code>s</code>, <code>small</code>, <code>code</code>, <code>kbd</code>, <code>samp</code>, <code>var</code>, <code>pre</code>, <code>br</code>, <code>wbr</code>, <code>hr</code>, <code>blockquote</code>, <code>q</code>, <code>cite</code>, <code>abbr</code>, <code>dfn</code>, <code>mark</code>, <code>time</code>, <code>data</code>, <code>sub</code>, <code>sup</code>, <code>del_</code>, <code>ins</code>, <code>bdi</code>, <code>bdo</code>, <code>ruby</code>, <code>rt</code>, <code>rp</code></td>
+</tr>
+<tr>
+<td>Lists</td>
+<td><code>ul</code>, <code>ol</code>, <code>li</code>, <code>dl</code>, <code>dt</code>, <code>dd</code>, <code>menu</code></td>
+</tr>
+<tr>
+<td>Tables</td>
+<td><code>table</code>, <code>thead</code>, <code>tbody</code>, <code>tfoot</code>, <code>tr</code>, <code>th</code>, <code>td</code>, <code>caption</code>, <code>colgroup</code>, <code>col</code></td>
 </tr>
 <tr>
 <td>Forms</td>
-<td><code>form</code>, <code>input_</code>, <code>textarea</code>, <code>select</code>, <code>option</code>, <code>optgroup</code>, <code>button</code>, <code>label</code>, <code>fieldset</code>, <code>legend</code>, <code>progress</code>, <code>meter</code></td>
+<td><code>form</code>, <code>input_</code>, <code>textarea</code>, <code>select</code>, <code>option</code>, <code>optgroup</code>, <code>button</code>, <code>label</code>, <code>fieldset</code>, <code>legend</code>, <code>output</code>, <code>progress</code>, <code>meter</code>, <code>datalist</code></td>
 </tr>
 <tr>
-<td>Media and interactive</td>
-<td><code>img</code>, <code>video</code>, <code>audio</code>, <code>source</code>, <code>canvas</code>, <code>picture</code>, <code>track</code>, <code>details</code>, <code>summary</code>, <code>dialog</code>, <code>figure</code>, <code>figcaption</code></td>
+<td>Media and embedded content</td>
+<td><code>img</code>, <code>video</code>, <code>audio</code>, <code>source</code>, <code>canvas</code>, <code>picture</code>, <code>track</code>, <code>iframe</code>, <code>embed</code>, <code>object_</code>, <code>map_</code>, <code>area</code></td>
+</tr>
+<tr>
+<td>Interactive</td>
+<td><code>details</code>, <code>summary</code>, <code>dialog</code></td>
+</tr>
+<tr>
+<td>Semantic and templating</td>
+<td><code>figure</code>, <code>figcaption</code>, <code>template</code>, <code>slot</code></td>
 </tr>
 <tr>
 <td>Factory</td>
@@ -3443,28 +3485,92 @@ built-in helper. Every helper is also re-exported from <code>wybthon</code>.</p>
 </tbody>
 </table>
 <h4 id="naming-rules">Naming rules<a class="headerlink" href="#naming-rules" title="Permanent link">&para;</a></h4>
+<p>The helpers store props exactly as written
+(<code>div(class_="x").props == {"class_": "x"}</code>); the prop applier maps the
+names when it writes attributes:</p>
 <ul>
-<li><code>class_</code> becomes <code>class</code> and <code>html_for</code> becomes <code>for</code> (Python reserved words).</li>
+<li><code>class_</code> becomes <code>class</code>, and <code>html_for</code> (or <code>for_</code>) becomes <code>for</code>.</li>
 <li>Other underscores become hyphens: <code>aria_label</code>, <code>data_testid</code>, <code>stroke_width</code>.</li>
-<li><code>input_</code> and <code>main_</code> carry a trailing underscore because <code>input</code> and <code>main</code> collide with Python builtins.</li>
+<li><code>input_</code>, <code>main_</code>, <code>del_</code>, <code>object_</code>, and <code>map_</code> carry a trailing underscore because their names collide with Python builtins or keywords.</li>
 <li>Event handlers keep the <code>on_</code> prefix: <code>on_click</code>, <code>on_input</code>.</li>
-<li><code>True</code> sets a boolean attribute (<code>disabled=True</code>); <code>False</code> or <code>None</code> omits it. See <a href="../props/">props</a> for the full value rules.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">a</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">main_</span><span class="p">,</span> <span class="n">p</span>
+<h4 id="prop-values">Prop values<a class="headerlink" href="#prop-values" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Prop value or name</th>
+<th>What the applier does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>True</code></td>
+<td>Sets the attribute. Known boolean attributes (<code>disabled</code>, <code>checked</code>, <code>hidden</code>, <code>required</code>, <code>readonly</code>, <code>selected</code>, <code>multiple</code>, <code>open</code>, <code>autofocus</code>, ...) get <code>""</code>; anything else gets <code>"true"</code>.</td>
+</tr>
+<tr>
+<td><code>False</code> or <code>None</code></td>
+<td>Removes the attribute.</td>
+</tr>
+<tr>
+<td><code>value</code>, <code>checked</code>, <code>selected_values</code>, <code>inner_html</code> / <code>innerHTML</code></td>
+<td>Set as DOM properties, not attributes. <code>value</code> and <code>checked</code> are always re-asserted on patch so controlled inputs win over user edits.</td>
+</tr>
+<tr>
+<td><code>class_</code> as a <code>str</code>, <code>list</code>, or <code>dict</code></td>
+<td>Lists join truthy entries; dicts include keys whose values are truthy.</td>
+</tr>
+<tr>
+<td><code>style</code> as a <code>dict</code> or <code>str</code></td>
+<td>Dict keys may be snake_case or camelCase and are converted to kebab-case; <code>None</code> or <code>False</code> removes a declaration; a string sets the <code>style</code> attribute.</td>
+</tr>
+<tr>
+<td><code>dataset={...}</code></td>
+<td>Each key becomes a <code>data-*</code> attribute.</td>
+</tr>
+<tr>
+<td><code>on_click</code>, <code>on_input</code>, <code>onClick</code>, ...</td>
+<td>Registered with root-scoped event delegation; see <a href="../events/">events</a>.</td>
+</tr>
+<tr>
+<td><code>ref</code></td>
+<td>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../wybthon/#wybthon.Ref"><code>Ref</code></a>, a callback <code>ref(el)</code>, or a list of either; assigned an <code>Element</code> on mount, <code>Ref.current</code> reset to <code>None</code> on unmount.</td>
+</tr>
+<tr>
+<td><code>key</code>, <code>children</code></td>
+<td>Never written to the DOM.</td>
+</tr>
+</tbody>
+</table>
+<p>Any prop value that's an accessor, a zero-arg function, or a template
+string with a reactive interpolation (<code>class_=t"btn btn-{kind}"</code>), or a
+<code>class_</code> or <code>style</code> dict containing one, becomes a <strong>reactive binding</strong>:
+its own render effect re-applies just that prop when its reads change.
+A template string with no reactive interpolations is static. A binding
+that raises <code>NotReadyError</code> keeps the current DOM value; other
+exceptions route to the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../wybthon/#wybthon.Errored"><code>Errored</code></a> boundary.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">main_</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">my_widget</span> <span class="o">=</span> <span class="n">element</span><span class="p">(</span><span class="s2">"my-widget"</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">view</span> <span class="o">=</span> <span class="n">main_</span><span class="p">(</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">html_for</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">input_</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">aria_label</span><span class="o">=</span><span class="s2">"Your name"</span><span class="p">),</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Save"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">,</span> <span class="n">disabled</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">()),</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">class_</span><span class="o">=</span><span class="s2">"form-row"</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">data_testid</span><span class="o">=</span><span class="s2">"name-row"</span><span class="p">,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">),</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">p</span><span class="p">(</span><span class="s2">"Read the "</span><span class="p">,</span> <span class="n">a</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"https://wybthon.com/"</span><span class="p">),</span> <span class="s2">"."</span><span class="p">),</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">my_widget</span><span class="p">(</span><span class="s2">"custom element content"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"large"</span><span class="p">),</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">active</span><span class="p">,</span> <span class="n">set_active</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">field</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">my_widget</span> <span class="o">=</span> <span class="n">element</span><span class="p">(</span><span class="s2">"my-widget"</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">view</span> <span class="o">=</span> <span class="n">main_</span><span class="p">(</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">div</span><span class="p">(</span><span class="n">class_</span><span class="o">=</span><span class="s2">"form-row"</span><span class="p">,</span> <span class="n">data_testid</span><span class="o">=</span><span class="s2">"name-row"</span><span class="p">)[</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">html_for</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">input_</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">on_input</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_name</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">ref</span><span class="o">=</span><span class="n">field</span><span class="p">),</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">button</span><span class="p">(</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            <span class="s2">"Save"</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">class_</span><span class="o">=</span><span class="p">{</span><span class="s2">"btn"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"btn-active"</span><span class="p">:</span> <span class="n">active</span><span class="p">},</span>  <span class="c1"># reactive dict entry</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">aria_pressed</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>  <span class="c1"># renders "true" or is removed</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            <span class="n">disabled</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">""</span><span class="p">,</span>  <span class="c1"># boolean attribute</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>            <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_active</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="ow">not</span> <span class="n">v</span><span class="p">),</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="p">),</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="p">],</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">p</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">! Read the "</span><span class="p">,</span> <span class="n">a</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"https://wybthon.com/"</span><span class="p">),</span> <span class="s2">"."</span><span class="p">),</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">my_widget</span><span class="p">(</span><span class="s2">"custom element content"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"large"</span><span class="p">),</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="svg">SVG<a class="headerlink" href="#svg" title="Permanent link">&para;</a></h4>
 <p>SVG elements live in <a href="../svg/"><code>wybthon.svg</code></a> with the same calling
@@ -3474,9 +3580,10 @@ with HTML helpers (<code>a</code>, <code>title</code>, <code>text</code>) carry 
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Fragment&lt;/span&gt;" href="../wybthon/#wybthon.Fragment"><code>Fragment</code></a> in <a href="../vnode/">vnode</a></li>
-<li><a href="../props/">Props</a>: attribute, property, class, and style semantics</li>
 <li><a href="../events/">Events</a>: <code>on_*</code> handler props</li>
+<li><a href="../dom/">DOM</a>: <code>Element</code> and <code>Ref</code></li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
+<li><a href="../../concepts/dom/">Concepts: DOM interop</a></li>
 </ul>
 
 

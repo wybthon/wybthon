@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/dev/">
       
       
-        <link rel="prev" href="../server/">
+        <link rel="prev" href="../testing/">
       
       
         <link rel="next" href="../warnings/">
@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1961,62 +1959,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2261,34 +2203,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2454,6 +2368,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -2593,28 +2563,6 @@
         
       </ul>
     </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.dev.translate_request_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;translate_request_path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.dev.parse_mounts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_mounts
-      
-    </span>
-  </a>
   
 </li>
         
@@ -2762,6 +2710,8 @@
       
         
       
+        
+      
     
     
     
@@ -2861,6 +2811,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3203,28 +3181,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.dev.translate_request_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;translate_request_path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wybthon.dev.parse_mounts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_mounts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#wybthon.dev.serve" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3329,11 +3285,12 @@
 
     <div class="doc doc-contents first">
 
-        <p>Simple threaded dev server with live-reload via Server-Sent Events.</p>
-<p><code>wyb dev</code> serves a directory over HTTP, broadcasts a <code>reload</code> event
-on file change through <code>/__sse</code>, and exposes a small <code>/__manifest</code>
-endpoint that bootstrap scripts can use to discover application
-modules without maintaining a hardcoded file list.</p>
+        <p>The <code>wyb</code> command: develop, build, and preview Wybthon projects.</p>
+<p>A project is a directory with a <code>wybthon.toml</code> (create one with
+<code>wyb init</code>). <code>wyb dev</code> builds it in development mode, serves the build,
+rebuilds when a source changes, and reloads connected pages over
+Server-Sent Events. <code>wyb build</code> writes a production build and
+<code>wyb preview</code> serves one.</p>
 <p>Use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a> function for CLI entry, or call
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a> directly to embed the server.</p>
 
@@ -3344,27 +3301,6 @@ modules without maintaining a hardcoded file list.</p>
 
 
 
-
-
-<p><span class="doc-section-title">Classes:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SSEHandler&lt;/span&gt; (&lt;code&gt;wybthon.dev.SSEHandler&lt;/code&gt;)" href="#wybthon.dev.SSEHandler">SSEHandler</a></code></td>
-            <td>
-              <div class="doc-md-description">
-                <p>HTTP handler that serves files and a <code>/__sse</code> endpoint for reload events.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
 
 
 
@@ -3379,26 +3315,10 @@ modules without maintaining a hardcoded file list.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;translate_request_path&lt;/span&gt; (&lt;code&gt;wybthon.dev.translate_request_path&lt;/code&gt;)" href="#wybthon.dev.translate_request_path">translate_request_path</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Translate a URL path to a filesystem path using mounts and a root fallback.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;parse_mounts&lt;/span&gt; (&lt;code&gt;wybthon.dev.parse_mounts&lt;/code&gt;)" href="#wybthon.dev.parse_mounts">parse_mounts</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Parse <code>--mount</code> CLI arguments of the form <code>/prefix=path</code>.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt; (&lt;code&gt;wybthon.dev.serve&lt;/code&gt;)" href="#wybthon.dev.serve">serve</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Run a static dev server with auto-reload for <code>directory</code>.</p>
+                  <p>Build a project in development mode, serve it, and rebuild on change.</p>
                 </div>
               </td>
             </tr>
@@ -3406,7 +3326,7 @@ modules without maintaining a hardcoded file list.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt; (&lt;code&gt;wybthon.dev.main&lt;/code&gt;)" href="#wybthon.dev.main">main</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>CLI entry point for the <code>wyb</code> development server.</p>
+                  <p>CLI entry point for <code>wyb</code>.</p>
                 </div>
               </td>
             </tr>
@@ -3444,17 +3364,15 @@ modules without maintaining a hardcoded file list.</p>
 
 
 
-        <p>HTTP handler that serves files and a <code>/__sse</code> endpoint for reload events.</p>
+        <p>Serves a development build and a <code>/__sse</code> endpoint for reload events.</p>
 
 
 <details class="class-attributes" open>
   <summary>Class attributes</summary>
-  <p>watchers: List of <code>wfile</code> objects for connected SSE clients;
-    updated as clients connect and disconnect.
-root: Filesystem root used as the fallback when no mount
-    matches the request path.
-mounts: List of <code>(prefix, path)</code> mounts consulted by
-    <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;translate_request_path&lt;/span&gt;" href="#wybthon.dev.translate_request_path"><code>translate_request_path</code></a>.</p>
+  <p>watchers: <code>wfile</code> objects of connected SSE clients.
+root: The build output directory.
+app_base: The application's base path; other paths return 404,
+    and unknown paths under it serve the client shell.</p>
 </details>
 
 
@@ -3488,7 +3406,7 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;do_GET&lt;/span&gt; (&lt;code&gt;wybthon.dev.SSEHandler.do_GET&lt;/code&gt;)" href="#wybthon.dev.SSEHandler.do_GET">do_GET</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Dispatch requests to the SSE endpoint, manifest endpoint, or static handler.</p>
+                  <p>Serve the SSE stream or a file from the build.</p>
                 </div>
               </td>
             </tr>
@@ -3496,7 +3414,7 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;translate_path&lt;/span&gt; (&lt;code&gt;wybthon.dev.SSEHandler.translate_path&lt;/code&gt;)" href="#wybthon.dev.SSEHandler.translate_path">translate_path</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Translate a URL path to a filesystem path honoring configured mounts.</p>
+                  <p>Map a request under the app base to the build, falling back to the client shell.</p>
                 </div>
               </td>
             </tr>
@@ -3560,12 +3478,12 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
 
 
 <a href="#wybthon.dev.SSEHandler.do_GET" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">do_GET</span><span class="p">()</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">do_GET</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Dispatch requests to the SSE endpoint, manifest endpoint, or static handler.</p>
+        <p>Serve the SSE stream or a file from the build.</p>
 
 
     </div>
@@ -3585,7 +3503,7 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
 
     <div class="doc doc-contents ">
 
-        <p>Translate a URL path to a filesystem path honoring configured mounts.</p>
+        <p>Map a request under the app base to the build, falling back to the client shell.</p>
 
 
     </div>
@@ -3628,239 +3546,17 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.dev.translate_request_path" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">translate_request_path</span>
-
-
-<a href="#wybthon.dev.translate_request_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">translate_request_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span> <span class="n">mounts</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Translate a URL path to a filesystem path using mounts and a root fallback.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>path</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Incoming URL path.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>root</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Filesystem root used when no mount matches.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>mounts</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>List of <code>(prefix, base)</code> pairs. Longest prefix wins.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Concrete filesystem path. Directory traversal segments are</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>stripped before the path is constructed.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="wybthon.dev.parse_mounts" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">parse_mounts</span>
-
-
-<a href="#wybthon.dev.parse_mounts" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">parse_mounts</span><span class="p">(</span><span class="n">mount_args</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">],</span> <span class="n">base_dir</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">]]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Parse <code>--mount</code> CLI arguments of the form <code>/prefix=path</code>.</p>
-<ul>
-<li>Prefix must start with <code>/</code>; one is added when missing.</li>
-<li>Paths are resolved relative to <code>base_dir</code> when not absolute.</li>
-<li>Duplicate prefixes are allowed; resolution order is determined
-  by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;translate_request_path&lt;/span&gt;" href="#wybthon.dev.translate_request_path"><code>translate_request_path</code></a>.</li>
-</ul>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>mount_args</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Raw CLI strings.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>base_dir</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Directory used to resolve relative paths.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A list of <code>(prefix, path)</code> tuples ready to assign to</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SSEHandler&lt;/span&gt;" href="#wybthon.dev.SSEHandler"><code>SSEHandler.mounts</code></a>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h3 id="wybthon.dev.serve" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">serve</span>
 
 
 <a href="#wybthon.dev.serve" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">serve</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'127.0.0.1'</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="mi">8000</span><span class="p">,</span> <span class="n">watch</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'src'</span><span class="p">,),</span> <span class="n">mounts</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">open_browser</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">open_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">serve</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span> <span class="o">=</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'127.0.0.1'</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="mi">8000</span><span class="p">,</span> <span class="n">open_browser</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">open_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Run a static dev server with auto-reload for <code>directory</code>.</p>
+        <p>Build a project in development mode, serve it, and rebuild on change.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3879,15 +3575,15 @@ mounts: List of <code>(prefix, path)</code> mounts consulted by
                 <code>directory</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Filesystem root to serve.</p>
+                <p>The project directory (containing <code>wybthon.toml</code>).</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>&#39;.&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -3925,39 +3621,6 @@ ports before failing.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>watch</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Directories to recursively watch for change events.</p>
-              </div>
-            </td>
-            <td>
-                  <code>(&#39;src&#39;,)</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>mounts</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional list of <code>--mount</code> strings like
-<code>/static=path/to/static</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
                 <code>open_browser</code>
             </td>
             <td>
@@ -3965,8 +3628,8 @@ ports before failing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>When <code>True</code>, open a browser tab to the served
-URL after binding.</p>
+                <p>When <code>True</code>, open a browser tab to the app after
+binding.</p>
               </div>
             </td>
             <td>
@@ -3982,12 +3645,34 @@ URL after binding.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to open when <code>open_browser</code> is <code>True</code>. When
-omitted, defaults to <code>/</code>.</p>
+                <p>Path to open instead of the app's base path.</p>
               </div>
             </td>
             <td>
                   <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>directory</code> isn't a Wybthon project.</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -4011,7 +3696,7 @@ omitted, defaults to <code>/</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>CLI entry point for the <code>wyb</code> development server.</p>
+        <p>CLI entry point for <code>wyb</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4079,11 +3764,12 @@ omitted, defaults to <code>/</code>.</p>
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>dev</code> is the threaded development server behind the <code>wyb dev</code> command.
-It serves static files from your project, mounts extra directories at
-custom URL prefixes, exposes a <code>/__manifest</code> endpoint that lists <code>.py</code>
-files so bootstrap scripts can discover modules, and pushes a <code>reload</code>
-event over Server-Sent Events at <code>/__sse</code> when watched files change.</p>
+<p><code>dev</code> is the <code>wyb</code> command. It works on projects: a directory with a
+<code>wybthon.toml</code>, created by <code>wyb init</code>. <code>wyb dev</code> builds the project in
+development mode, serves the build, rebuilds when a source file changes,
+and pushes a <code>reload</code> event over Server-Sent Events at <code>/__sse</code> so open
+pages refresh. <code>wyb build</code> writes a production build, which turns dev
+mode off, and <code>wyb preview</code> serves one.</p>
 <table>
 <thead>
 <tr>
@@ -4094,23 +3780,23 @@ event over Server-Sent Events at <code>/__sse</code> when watched files change.<
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a></td>
-<td>CLI entry point (<code>wyb dev ...</code>).</td>
+<td>CLI entry point (<code>wyb init</code>, <code>wyb dev</code>, <code>wyb build</code>, <code>wyb preview</code>).</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a></td>
-<td>Start the server programmatically with the same options.</td>
-</tr>
-<tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;SSEHandler&lt;/span&gt;" href="#wybthon.dev.SSEHandler"><code>SSEHandler</code></a></td>
-<td>The request handler: static files, <code>/__sse</code>, <code>/__manifest</code>, and no-cache headers.</td>
+<td><code>serve(directory=".", host="127.0.0.1", port=8000, open_browser=False, open_path=None)</code>: the <code>wyb dev</code> server, callable from Python.</td>
 </tr>
 </tbody>
 </table>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--watch<span class="w"> </span>src<span class="w"> </span>app<span class="w"> </span>--open<span class="w"> </span>--open-path<span class="w"> </span>/app/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>wyb<span class="w"> </span>init<span class="w"> </span>my-app
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>my-app<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--open
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>wyb<span class="w"> </span>build<span class="w"> </span>--dir<span class="w"> </span>my-app<span class="w"> </span>--base<span class="w"> </span>/app/
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>my-app/dist
 </span></code></pre></div>
 <table>
 <thead>
 <tr>
+<th>Command</th>
 <th>Flag</th>
 <th>Default</th>
 <th>Description</th>
@@ -4118,46 +3804,67 @@ event over Server-Sent Events at <code>/__sse</code> when watched files change.<
 </thead>
 <tbody>
 <tr>
+<td><code>wyb dev</code></td>
 <td><code>--dir</code></td>
-<td>repository root</td>
-<td>Root directory to serve.</td>
+<td><code>.</code></td>
+<td>Project directory (containing <code>wybthon.toml</code>).</td>
 </tr>
 <tr>
+<td><code>wyb dev</code></td>
 <td><code>--host</code></td>
 <td><code>127.0.0.1</code></td>
 <td>Host interface to bind.</td>
 </tr>
 <tr>
+<td><code>wyb dev</code></td>
 <td><code>--port</code></td>
 <td><code>8000</code></td>
-<td>Starting port (auto-increments on conflict).</td>
+<td>Starting port (tries the next 20 on conflict).</td>
 </tr>
 <tr>
-<td><code>--watch</code></td>
-<td><code>src</code></td>
-<td>Directories to watch for live reload.</td>
-</tr>
-<tr>
-<td><code>--mount</code></td>
-<td>none</td>
-<td><code>path=/url/prefix</code> mount; repeatable.</td>
-</tr>
-<tr>
+<td><code>wyb dev</code></td>
 <td><code>--open</code></td>
 <td>off</td>
-<td>Open a browser to the server URL.</td>
+<td>Open a browser at the app's base path.</td>
 </tr>
 <tr>
+<td><code>wyb dev</code></td>
 <td><code>--open-path</code></td>
 <td>none</td>
-<td>Path to open, such as <code>/app/</code>.</td>
+<td>Path to open instead of the base path.</td>
+</tr>
+<tr>
+<td><code>wyb build</code></td>
+<td><code>--dir</code></td>
+<td><code>.</code></td>
+<td>Project directory.</td>
+</tr>
+<tr>
+<td><code>wyb build</code></td>
+<td><code>--out</code></td>
+<td><code>&lt;dir&gt;/dist</code></td>
+<td>Output directory.</td>
+</tr>
+<tr>
+<td><code>wyb build</code></td>
+<td><code>--base</code></td>
+<td>from <code>wybthon.toml</code></td>
+<td>Base URL path the app is served from.</td>
+</tr>
+<tr>
+<td><code>wyb preview</code></td>
+<td><code>--dir</code>, <code>--host</code>, <code>--port</code></td>
+<td><code>dist</code>, <code>127.0.0.1</code>, <code>8000</code></td>
+<td>Serve a production build.</td>
 </tr>
 </tbody>
 </table>
-<p>Live reload: the page opens an <code>EventSource</code> to <code>/__sse</code>; the server
-polls the <code>--watch</code> directories for modification-time changes and
-broadcasts <code>reload</code>; the page reloads itself. A small <code>EventSource</code>
-snippet in <code>index.html</code> is all that's needed; see the
+<p>Live reload: <code>wyb dev</code> watches the app directory, <code>public/</code>,
+<code>index.html</code>, and <code>wybthon.toml</code>, rebuilds on any change, and
+broadcasts <code>reload</code>; the snippet it injects into each served page
+reloads it. The static-directory mode of earlier versions, with its
+<code>/__manifest</code> endpoint and <code>--mount</code> and <code>--watch</code> flags, is gone; every
+served directory is a project. See the
 <a href="../../guides/dev-server/">dev server guide</a>.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>

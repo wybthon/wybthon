@@ -1948,8 +1948,6 @@
       
         
       
-        
-      
     
     
     
@@ -2152,62 +2150,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2452,34 +2394,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2648,6 +2562,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2743,6 +2713,8 @@
       
         
           
+        
+      
         
       
         
@@ -2848,6 +2820,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3295,10 +3295,10 @@ deferred effects, dev-mode diagnostics, and the ownership tree.
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">double</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">create_effect</span><span class="p">(</span><span class="n">double</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">value</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"double:"</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">flush</span><span class="p">()</span>          <span class="c1"># prints "double: 0" (the first run is deferred to a flush)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># prints "double: 0" (the first run is deferred to a flush)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">set_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">double</span><span class="p">()</span>         <span class="c1"># still 0: the write is staged</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">flush</span><span class="p">()</span>          <span class="c1"># prints "double: 2"</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">double</span><span class="p">()</span>  <span class="c1"># still 0: the write is staged</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># prints "double: 2"</span>
 </span></code></pre></div>
 <p>In the browser the flush happens automatically, so application code
 rarely calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a>. In CPython tests, call it after
@@ -3318,11 +3318,11 @@ write batches.</p>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">b</span><span class="p">,</span> <span class="n">set_b</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">a</span><span class="p">()</span> <span class="o">+</span> <span class="n">b</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">total</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"sum:"</span><span class="p">,</span> <span class="n">total</span><span class="p">))</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">flush</span><span class="p">()</span>     <span class="c1"># sum: 3</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># sum: 3</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">set_a</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">set_b</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">flush</span><span class="p">()</span>     <span class="c1"># sum: 30, printed once</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># sum: 30, printed once</span>
 </span></code></pre></div>
 <h3 id="the-three-phases-of-a-flush">The three phases of a flush<a class="headerlink" href="#the-three-phases-of-a-flush" title="Permanent link">&para;</a></h3>
 <ol>
@@ -3353,7 +3353,7 @@ every accessor's <code>.peek()</code> does the same for a single read:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">a</span><span class="p">(),</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"a changed:"</span><span class="p">,</span> <span class="n">pair</span><span class="p">))</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">initial</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
 </span></code></pre></div>
 <p>For explicit dependencies prefer the <strong>split effect</strong>: the compute stage
 tracks, and the apply stage runs untracked with the computed value (and
@@ -3365,15 +3365,12 @@ the previous one when it declares two parameters):</p>
 <p>Because <code>apply</code> is untracked, incidental reads inside it never
 over-subscribe the effect, and signal writes are allowed there.</p>
 <h2 id="dev-mode-diagnostics">Dev-mode diagnostics<a class="headerlink" href="#dev-mode-diagnostics" title="Permanent link">&para;</a></h2>
-<p>With <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;DEV_MODE&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../api/wybthon/#wybthon.DEV_MODE"><code>DEV_MODE</code></a> on (the default; see
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode</code></a>), the graph enforces two rules:</p>
+<p>Dev mode is on by default during development; production builds made
+with <code>wyb build</code> turn it off (see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode</code></a>
+and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode</code></a>). With it on, the graph
+enforces two rules:</p>
 <ul>
-<li><strong>No writes inside tracking scopes.</strong> Writing a signal or store from a memo body, a single-function effect, or a hole raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../../api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>. Derive the value with a memo, or move the write into the <code>apply</code> stage of a split effect, an event handler, or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>.</li>
+<li><strong>No writes inside tracking scopes.</strong> Writing a signal or store from a memo body, a tracked effect (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_tracked_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_tracked_effect"><code>create_tracked_effect</code></a>), or a hole raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../../api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>. Derive the value with a memo, or move the write into the <code>apply</code> stage of a split effect, an event handler, or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>.</li>
 <li><strong>No untracked reads at the top level of a component body.</strong> Calling a signal, memo, or prop there freezes the value and warns once per component and value. Read it in a hole, memo, or effect, or make the one-time read explicit with <code>.peek()</code> or <code>untrack</code>.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span>
@@ -3391,14 +3388,15 @@ over-subscribe the effect, and signal writes are allowed there.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;map_array&lt;/span&gt;" href="../../api/wybthon/#wybthon.map_array"><code>map_array</code></a> maps a reactive list to rows with a
 stable scope per row; <code>keyed=True</code> (identity, the default), <code>False</code>
 (position), or a key function selects the matching strategy and the
-callback shape. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_selector&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_selector"><code>create_selector</code></a> turns a
-selection signal into <code>is_selected(key)</code> so only the affected rows
-update. See <a href="../primitives/#map_array">Primitives</a> for the shapes.</p>
+callback shape. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;repeat&lt;/span&gt;" href="../../api/wybthon/#wybthon.repeat"><code>repeat</code></a> does the same for an integer
+range. For selection, a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a>
+keyed by the selected id notifies only the rows whose state changes. See
+<a href="../primitives/#map_array">Primitives</a> for the shapes.</p>
 <h2 id="ownership-tree">Ownership tree<a class="headerlink" href="#ownership-tree" title="Permanent link">&para;</a></h2>
 <p>Every computation belongs to an <strong>ownership tree</strong>:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.Owner"><code>Owner</code></a> tracks child owners, cleanup callbacks, context values, and an optional error handler.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Computation&lt;/span&gt;" href="../../api/wybthon/#wybthon.Computation"><code>Computation</code></a> is an <code>Owner</code> that also tracks sources; memos and effects are computations.</li>
+<li><code>Computation</code> (exported from <code>wybthon.reactivity</code>) is an <code>Owner</code> that also tracks sources; memos and effects are computations.</li>
 </ul>
 <p>A new effect or memo registers as a child of the owner active at
 creation time. Component instances, holes, <code>For</code> rows, and
@@ -3453,19 +3451,23 @@ after the <code>await</code> are tracked exactly like reads before it.</p>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">prop</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nd">@component</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">interval</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="mi">1000</span><span class="p">)):</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">TimerProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">interval</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="c1"># Body effect: lives until the component unmounts.</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="c1"># Hole: re-runs only when count changes.</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nd">@component</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Timer</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">TimerProps</span><span class="p">):</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="c1"># Body effect: lives until the component unmounts.</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="c1"># Hole: re-runs only when count changes.</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h2>
 <p>Calling <code>.dispose()</code> on a computation unsubscribes it from every source
@@ -3484,7 +3486,7 @@ in the graph:</p>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="n">user_id</span><span class="p">()</span>                       <span class="c1"># tracked: refetches when it changes</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="n">user_id</span><span class="p">()</span>  <span class="c1"># tracked: refetches when it changes</span>
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_json</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/api/users/</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
 </span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>

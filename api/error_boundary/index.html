@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1961,62 +1959,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2241,34 +2183,6 @@
     
   
     Router
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
   
 
     
@@ -2567,6 +2481,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dev/" class="md-nav__link">
         
   
@@ -2662,6 +2632,8 @@
       
         
           
+        
+      
         
       
         
@@ -2767,6 +2739,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3152,6 +3152,8 @@ reactive inputs the failing computation had read, and when any of them
 changes it re-renders its children. A fixed <code>user_id</code>, a re-fetched
 memo, or a corrected form field clears the error without an explicit
 <code>reset()</code>; <code>reset</code> and <code>reset_on</code> remain for manual retries.</p>
+<p>The fallback receives the error as an accessor, as in Solid 2.0: call
+<code>err()</code> to read it.</p>
 
 
 <details class="example" open>
@@ -3159,8 +3161,8 @@ memo, or a corrected form field clears the error without an explicit
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Errored</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">Dashboard</span><span class="p">(),</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Something went wrong: "</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)),</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Retry"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">reset</span><span class="p">()),</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Something went wrong: "</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">())),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Retry"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">reset</span><span class="p">),</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">),</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
@@ -3272,8 +3274,9 @@ zero-arg callable, or a list of either.</p>
             <td>
               <div class="doc-md-description">
                 <p>A VNode, a string, or a callable
-<code>(error, reset) -&gt; VNode</code> (or <code>(error) -&gt; VNode</code>). <code>reset()</code>
-clears the error and re-renders the children.</p>
+<code>(err, reset) -&gt; VNode</code> (or <code>(err) -&gt; VNode</code>). <code>err</code> is an
+accessor for the caught exception; <code>reset()</code> clears the
+error and re-renders the children.</p>
               </div>
             </td>
             <td>
@@ -3382,32 +3385,37 @@ taking down the page.</p>
 </table>
 <ul>
 <li><code>children</code>: a VNode, a zero-arg callable, or a list of either.</li>
-<li><code>fallback</code>: a VNode, a string, or a callable <code>(error, reset) -&gt; VNode</code>
-  (a one-argument <code>(error)</code> or zero-argument form also works).
-  <code>reset()</code> clears the error and re-renders the children. Without a
-  fallback the boundary renders "Something went wrong."</li>
+<li><code>fallback</code>: a VNode, a string, or a callable <code>(err, reset) -&gt; VNode</code>
+  (a one-argument <code>(err)</code> or zero-argument form also works). <code>err</code> is an
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../wybthon/#wybthon.Accessor"><code>Accessor</code></a> for the caught exception, as in
+  Solid 2.0, so call <code>err()</code> to read it. <code>reset()</code> clears the error and
+  re-renders the children. Without a fallback the boundary renders
+  "Something went wrong."</li>
 <li><code>on_error</code>: called with the exception (send it to your monitoring).</li>
 <li><code>reset_on</code>: an accessor whose change clears the current error
-  automatically, for example <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;current_path&lt;/span&gt;
+  automatically, for example
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;current_path&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../wybthon/#wybthon.current_path"><code>current_path</code></a>.</li>
+  &lt;/span&gt;" href="../router/#wybthon.router.current_path"><code>current_path</code></a>.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">current_path</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@component</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="n">Errored</span><span class="p">(</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">Dashboard</span><span class="p">(),</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="n">p</span><span class="p">(</span><span class="s2">"Something went wrong: "</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)),</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="n">button</span><span class="p">(</span><span class="s2">"Try again"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">reset</span><span class="p">()),</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="p">),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">on_error</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">:</span> <span class="n">report</span><span class="p">(</span><span class="n">err</span><span class="p">),</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">,</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_path</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@component</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">Errored</span><span class="p">(</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">Dashboard</span><span class="p">(),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="n">p</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Something went wrong: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            <span class="n">button</span><span class="p">(</span><span class="s2">"Try again"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">reset</span><span class="p">),</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="p">),</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">on_error</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">:</span> <span class="n">report</span><span class="p">(</span><span class="n">err</span><span class="p">),</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Async memos store an exception raised by their body and re-raise it on
 read, so a failed fetch inside a <code>Loading</code> surfaces at the nearest

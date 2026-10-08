@@ -1881,8 +1881,6 @@
       
         
       
-        
-      
     
     
     
@@ -2085,62 +2083,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2385,34 +2327,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2581,6 +2495,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2676,6 +2646,8 @@
       
         
           
+        
+      
         
       
         
@@ -2781,6 +2753,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3156,28 +3156,29 @@ every level. A <a class="autorefs autorefs-internal" title="&lt;code class=&quot
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_context&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_context"><code>create_context</code></a> is <strong>its own provider</strong>: call
 it with a value and children to expose that value to every descendant,
 and read it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_context&lt;/span&gt;" href="../../api/wybthon/#wybthon.use_context"><code>use_context</code></a>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">use_context</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">"light"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">use_context</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">Theme</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="s2">"light"</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nd">@component</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">():</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Theme: "</span><span class="p">,</span> <span class="n">theme</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@component</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">Label</span><span class="p">():</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Theme: "</span><span class="p">,</span> <span class="n">theme</span><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nd">@component</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Label</span><span class="p">()))</span>   <span class="c1"># value first, then children</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nd">@component</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Label</span><span class="p">()))</span>  <span class="c1"># value first, then children</span>
 </span></code></pre></div>
 <h2 id="providing-a-value">Providing a value<a class="headerlink" href="#providing-a-value" title="Permanent link">&para;</a></h2>
 <p>The context object is callable: <code>Theme(value, *children)</code> returns a
 provider VNode. Children may be VNodes, component calls, or lists;
-anything you'd pass to an element works.</p>
+anything you'd pass to an element works. Item syntax works too, as it
+does on elements and components:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">())</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="p">[</span><span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">()])</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">)[</span><span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">()]</span>
 </span></code></pre></div>
 <p>There's no separate <code>Provider</code> component and no <code>Theme.Provider(...)</code>
 form.</p>
@@ -3188,8 +3189,8 @@ ownership tree rather than a render-time stack, it works anywhere an
 owner exists: component bodies, effects, memos, holes, and <code>For</code> rows.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@component</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">Button</span><span class="p">():</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>          <span class="c1"># read once, in the body</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"btn-</span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>  <span class="c1"># read once, in the body</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="sa">f</span><span class="s2">"btn-</span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="defaults-and-contextnotfounderror">Defaults and <code>ContextNotFoundError</code><a class="headerlink" href="#defaults-and-contextnotfounderror" title="Permanent link">&para;</a></h2>
 <p><code>create_context(default)</code> declares a value to return when no provider is
@@ -3197,7 +3198,7 @@ above the reader. Without a default, reading outside a provider raises
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ContextNotFoundError&lt;/span&gt;" href="../../api/wybthon/#wybthon.ContextNotFoundError"><code>ContextNotFoundError</code></a>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextNotFoundError</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">use_context</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">Session</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Session"</span><span class="p">)</span>   <span class="c1"># no default</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">Session</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Session"</span><span class="p">)</span>  <span class="c1"># no default</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">try</span><span class="p">:</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">use_context</span><span class="p">(</span><span class="n">Session</span><span class="p">)</span>
@@ -3211,26 +3212,25 @@ and the context's <code>repr</code>.</p>
 stays a string; a signal or any accessor stays an accessor, so consumers
 call it where they need the value and stay reactive without the
 provider or the subtree re-mounting:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accessor</span><span class="p">,</span> <span class="n">Context</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">use_context</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">Theme</span><span class="p">:</span> <span class="n">Context</span><span class="p">[</span><span class="n">Accessor</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Accessor</span><span class="p">,</span> <span class="n">Context</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">use_context</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">Theme</span><span class="p">:</span> <span class="n">Context</span><span class="p">[</span><span class="n">Accessor</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">create_context</span><span class="p">()</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nd">@component</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">ThemedButton</span><span class="p">():</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"btn-</span><span class="si">{</span><span class="n">theme</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nd">@component</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">ThemedButton</span><span class="p">():</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Hi"</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="sa">t</span><span class="s2">"btn-</span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nd">@component</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"light"</span><span class="p">)</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">toggle</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_theme</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">"dark"</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">"light"</span> <span class="k">else</span> <span class="s2">"light"</span><span class="p">)</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>        <span class="n">Theme</span><span class="p">(</span><span class="n">theme</span><span class="p">,</span> <span class="n">ThemedButton</span><span class="p">()),</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Toggle"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">toggle</span><span class="p">),</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nd">@component</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"light"</span><span class="p">)</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">toggle</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">set_theme</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">"dark"</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">"light"</span> <span class="k">else</span> <span class="s2">"light"</span><span class="p">)</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>        <span class="n">Theme</span><span class="p">(</span><span class="n">theme</span><span class="p">,</span> <span class="n">ThemedButton</span><span class="p">()),</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Toggle"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">toggle</span><span class="p">),</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Provide a setter alongside the accessor when descendants need to write:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Theme</span><span class="p">((</span><span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span><span class="p">),</span> <span class="n">App</span><span class="p">())</span>
@@ -3238,7 +3238,9 @@ provider or the subtree re-mounting:</p>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Passing a plain value is fine when it never changes. Don't pass a
-<code>lambda: theme()</code> unless you mean to; an accessor already is one.</p>
+<code>lambda: theme()</code> unless you mean to; an accessor already is one. The
+<code>t"btn-{theme}"</code> attribute above calls the accessor inside one reactive
+binding, so the class follows the signal.</p>
 <h2 id="how-it-works-the-ownership-tree">How it works: the ownership tree<a class="headerlink" href="#how-it-works-the-ownership-tree" title="Permanent link">&para;</a></h2>
 <p>The provider is a tiny component that stores <code>value</code> on its own
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.Owner"><code>Owner</code></a>. <code>use_context</code> walks parent pointers until it
@@ -3254,10 +3256,11 @@ finds a scope that carries the context:</p>
 proportional to the depth between reader and provider. Nested providers
 for the same context shadow outer ones because the walk finds the
 nearest first:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"light"</span><span class="p">,</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Label</span><span class="p">()),</span>   <span class="c1"># sees "dark"</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">Label</span><span class="p">(),</span>                  <span class="c1"># sees "light"</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Theme</span><span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="s2">"light"</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Label</span><span class="p">()),</span>  <span class="c1"># sees "dark"</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">Label</span><span class="p">(),</span>  <span class="c1"># sees "light"</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="where-to-call-use_context">Where to call <code>use_context</code><a class="headerlink" href="#where-to-call-use_context" title="Permanent link">&para;</a></h2>
 <p>Call it in the component body (or at the top of an effect or memo) and

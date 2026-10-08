@@ -1859,8 +1859,6 @@
       
         
       
-        
-      
     
     
     
@@ -2063,62 +2061,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2363,34 +2305,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2559,6 +2473,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2654,6 +2624,8 @@
       
         
           
+        
+      
         
       
         
@@ -2759,6 +2731,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3140,8 +3140,8 @@
 </span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="n">todo</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_todo</span><span class="p">)</span>
 </span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
 </span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Previous"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_todo_id</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))),</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Next"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_todo_id</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Previous"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_todo_id</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))),</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Next"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_todo_id</span><span class="p">(</span><span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
 </span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="n">Errored</span><span class="p">(</span>
 </span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>            <span class="k">lambda</span><span class="p">:</span> <span class="n">Loading</span><span class="p">(</span>
 </span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>                <span class="k">lambda</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span>
@@ -3153,7 +3153,7 @@
 </span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>                <span class="p">),</span>
 </span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>                <span class="n">fallback</span><span class="o">=</span><span class="n">p</span><span class="p">(</span><span class="s2">"Loading..."</span><span class="p">),</span>
 </span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>            <span class="p">),</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>            <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">"Failed: "</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)),</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Retry"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">reset</span><span class="p">())),</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>            <span class="n">fallback</span><span class="o">=</span><span class="k">lambda</span> <span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">"Failed: "</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">())),</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Retry"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">reset</span><span class="p">)),</span>
 </span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        <span class="p">),</span>
 </span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="p">)</span>
 </span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>
@@ -3163,7 +3163,7 @@
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <p>Reading <code>todo()</code> inside the boundary is what wires it to <code>Loading</code>. Until the coroutine resolves for the first time, the read raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../../api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>; the hole keeps its previous content and the nearest boundary shows its fallback. The content stays mounted the whole time (parked off-document), so any state created inside it survives.</p>
 <p>Once the memo has a value, the fallback never returns. When <code>todo_id</code> changes, the memo recomputes inside a transition: it keeps serving the previous todo, and the UI that read <code>todo_id</code> holds with it, until the new one arrives, so the id and the todo never disagree on screen. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a> is <code>True</code> during that window, which drives the inline hint.</p>
-<p>If <code>load_todo</code> raises, the error routes to the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundary. Its <code>reset</code> callback re-renders the children, which re-reads the memo.</p>
+<p>If <code>load_todo</code> raises, the error routes to the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundary. Its fallback reads the error through the <code>err</code> accessor, and its <code>reset</code> callback re-renders the children, which re-reads the memo.</p>
 <h2 id="refetching">Refetching<a class="headerlink" href="#refetching" title="Permanent link">&para;</a></h2>
 <p>Signal reads inside the async body are dependencies, so any signal works as a refetch trigger. A "version" counter is the simplest:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span>
@@ -3178,7 +3178,7 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">report</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load_report</span><span class="p">)</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">button</span><span class="p">(</span><span class="s2">"Refetch"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_version</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">button</span><span class="p">(</span><span class="s2">"Refetch"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_version</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
 </span></code></pre></div>
 <p>To refetch <em>quietly</em> after a mutation, without showing a pending state, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../../api/wybthon/#wybthon.refresh"><code>refresh</code></a>. It returns an awaitable for the next settled value:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">refresh</span>
@@ -3193,7 +3193,7 @@
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a> evaluates an expression without ever raising <code>NotReadyError</code>; unresolved computations yield <code>None</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">latest</span><span class="p">,</span> <span class="n">span</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">latest</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">todo</span><span class="p">()[</span><span class="s2">"title"</span><span class="p">])</span> <span class="ow">or</span> <span class="s2">"nothing yet"</span><span class="p">))</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">span</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">latest</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">todo</span><span class="p">()[</span><span class="s2">"title"</span><span class="p">])</span> <span class="ow">or</span> <span class="s2">"nothing yet"</span><span class="p">)</span>
 </span></code></pre></div>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve"><code>resolve</code></a> awaits the next settled value, which is handy in actions and scripts:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve</span>

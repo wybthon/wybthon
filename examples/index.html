@@ -1815,8 +1815,6 @@
       
         
       
-        
-      
     
     
     
@@ -2019,62 +2017,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2319,34 +2261,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/flow/" class="md-nav__link">
         
   
@@ -2515,6 +2429,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/dev/" class="md-nav__link">
         
   
@@ -2610,6 +2580,8 @@
       
         
           
+        
+      
         
       
         
@@ -2715,6 +2687,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3019,7 +3019,7 @@
 
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<p>Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a Pyodide page (or a test) and an explanation of the patterns it demonstrates.</p>
+<p>Walk through focused examples of the framework's core features. Each page is a complete module you can drop into a <code>wybthon.toml</code> project (or render in a test with <a href="../api/testing/"><code>wybthon.testing</code></a>) and an explanation of the patterns it demonstrates.</p>
 <table>
 <thead>
 <tr>
@@ -3030,7 +3030,7 @@
 <tbody>
 <tr>
 <td><a href="counter/">Counter</a></td>
-<td>Signals, memos, holes, and <code>Prop</code> defaults.</td>
+<td>Signals, memos, holes, t-strings, and typed <code>Props</code> with <code>prop</code> defaults.</td>
 </tr>
 <tr>
 <td><a href="fetch/">Async fetch</a></td>
@@ -3038,20 +3038,20 @@
 </tr>
 <tr>
 <td><a href="forms/">Forms</a></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/wybthon/#wybthon.form_state"><code>form_state</code></a>, bindings, validation, and accessibility helpers.</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../api/forms/#wybthon.forms.form_state"><code>form_state</code></a>, bindings, validation, and accessibility helpers from <code>wybthon.forms</code>.</td>
 </tr>
 <tr>
 <td><a href="errors/">Error handling</a></td>
-<td>Recovering from render and async errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../api/wybthon/#wybthon.Errored"><code>Errored</code></a>.</td>
+<td>Recovering from render and async errors with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and its <code>err</code> accessor.</td>
 </tr>
 <tr>
 <td><a href="router/">Router</a></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../api/wybthon/#wybthon.Router"><code>Router</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../api/router/#wybthon.router.Router"><code>Router</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../api/wybthon/#wybthon.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/wybthon/#wybthon.Link"><code>Link</code></a>, params, and lazy routes.</td>
+  &lt;/span&gt;" href="../api/router/#wybthon.router.Route"><code>Route</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../api/router/#wybthon.router.Link"><code>Link</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RouteProps&lt;/span&gt;" href="../api/router/#wybthon.router.RouteProps"><code>RouteProps</code></a>, and lazy routes.</td>
 </tr>
 <tr>
 <td><a href="authoring-patterns/">Authoring patterns</a></td>

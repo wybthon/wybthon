@@ -1892,8 +1892,6 @@
       
         
       
-        
-      
     
     
     
@@ -2096,62 +2094,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2396,34 +2338,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2592,6 +2506,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2687,6 +2657,8 @@
       
         
           
+        
+      
         
       
         
@@ -2792,6 +2764,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3176,13 +3176,15 @@
 <p>Form state helpers, validators, aggregated validation, and accessibility
 patterns. Everything here is a thin layer over signals and delegated
 events, so you can drop down to plain <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>
-and <code>on_input</code> whenever the helpers don't fit.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">a11y_control_attrs</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">bind_checkbox</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">bind_select</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">bind_text</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">component</span><span class="p">,</span>
+and <code>on_input</code> whenever the helpers don't fit. Import the helpers from
+<code>wybthon.forms</code>; they aren't exported from the top-level <code>wybthon</code>
+package.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">span</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">a11y_control_attrs</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">bind_checkbox</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">bind_select</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">bind_text</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">email</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">error_message_attrs</span><span class="p">,</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">form_state</span><span class="p">,</span>
@@ -3190,56 +3192,55 @@ and <code>on_input</code> whenever the helpers don't fit.</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">on_submit_validated</span><span class="p">,</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">required</span><span class="p">,</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">span</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"agree"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"choice"</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="s2">"name"</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">)],</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="s2">"email"</span><span class="p">:</span> <span class="p">[</span><span class="n">email</span><span class="p">()],</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="p">}</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"agree"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"choice"</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="s2">"name"</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">)],</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="s2">"email"</span><span class="p">:</span> <span class="p">[</span><span class="n">email</span><span class="p">()],</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">}</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="nd">@component</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">SignupForm</span><span class="p">():</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="n">email_field</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="k">return</span> <span class="n">form</span><span class="p">(</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="n">input_</span><span class="p">(</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>            <span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]),</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>            <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">),</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="p">),</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>        <span class="n">span</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)),</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Email"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"email"</span><span class="p">),</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        <span class="n">input_</span><span class="p">(</span>
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>            <span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]),</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>            <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">),</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        <span class="p">),</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        <span class="n">span</span><span class="p">(</span><span class="n">email_field</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)),</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>        <span class="n">label</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"checkbox"</span><span class="p">,</span> <span class="o">**</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"agree"</span><span class="p">])),</span> <span class="s2">" Agree"</span><span class="p">),</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Choice"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"choice"</span><span class="p">),</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>        <span class="n">select</span><span class="p">(</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">""</span><span class="p">),</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">"a"</span><span class="p">),</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">"b"</span><span class="p">),</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"choice"</span><span class="p">,</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>            <span class="o">**</span><span class="n">bind_select</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"choice"</span><span class="p">]),</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>        <span class="p">),</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Submit"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">),</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>        <span class="n">on_submit</span><span class="o">=</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">fields</span><span class="p">),</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    <span class="p">)</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="nd">@component</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">SignupForm</span><span class="p">():</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">email_field</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="k">return</span> <span class="n">form</span><span class="p">(</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">input_</span><span class="p">(</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>            <span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]),</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>            <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">),</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        <span class="p">),</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="n">span</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)),</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Email"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"email"</span><span class="p">),</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>        <span class="n">input_</span><span class="p">(</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>            <span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]),</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>            <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">email_field</span><span class="p">,</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">),</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        <span class="p">),</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        <span class="n">span</span><span class="p">(</span><span class="n">email_field</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)),</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        <span class="n">label</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"checkbox"</span><span class="p">,</span> <span class="o">**</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"agree"</span><span class="p">])),</span> <span class="s2">" Agree"</span><span class="p">),</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Choice"</span><span class="p">,</span> <span class="n">for_</span><span class="o">=</span><span class="s2">"choice"</span><span class="p">),</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>        <span class="n">select</span><span class="p">(</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">""</span><span class="p">),</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">"a"</span><span class="p">),</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>            <span class="n">option</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">"b"</span><span class="p">),</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"choice"</span><span class="p">,</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>            <span class="o">**</span><span class="n">bind_select</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"choice"</span><span class="p">]),</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>        <span class="p">),</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Submit"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">),</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>        <span class="n">on_submit</span><span class="o">=</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">fields</span><span class="p">),</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../../api/wybthon/#wybthon.form_state"><code>form_state</code></a> turns a dict of initial values into
-a <code>FormState</code> mapping of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/wybthon/#wybthon.Field"><code>Field</code></a> objects. Each field exposes
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../../api/forms/#wybthon.forms.form_state"><code>form_state</code></a> turns a dict of initial values into
+a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FormState&lt;/span&gt;" href="../../api/forms/#wybthon.forms.FormState"><code>FormState</code></a> mapping of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/forms/#wybthon.forms.Field"><code>Field</code></a> objects. Each field exposes
 reactive values:</p>
 <table>
 <thead>
@@ -3252,7 +3253,7 @@ reactive values:</p>
 <tbody>
 <tr>
 <td><code>value</code> / <code>set_value</code></td>
-<td><code>Accessor[T]</code> / <code>Setter[T]</code></td>
+<td><code>Accessor[T]</code> / method</td>
 <td>The current input value.</td>
 </tr>
 <tr>
@@ -3280,9 +3281,10 @@ helpers call under the hood.</p>
 <h2 id="bindings">Bindings<a class="headerlink" href="#bindings" title="Permanent link">&para;</a></h2>
 <p>The <code>bind_*</code> helpers return prop dicts to spread onto a control:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_text"><code>bind_text(field, validators=[...])</code></a> gives <code>value</code>, <code>on_input</code>, and <code>on_compositionend</code>. Composition input waits until composition ends. The <code>value</code> entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_checkbox&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_checkbox"><code>bind_checkbox(field)</code></a> gives <code>checked</code> and <code>on_change</code> for a boolean field.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_select&lt;/span&gt;" href="../../api/wybthon/#wybthon.bind_select"><code>bind_select(field)</code></a> gives <code>value</code> and <code>on_change</code> for a <code>&lt;select&gt;</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_text"><code>bind_text(field, validators=[...])</code></a> gives <code>value</code>, <code>on_input</code>, and <code>on_compositionend</code>. Composition input waits until composition ends. The <code>value</code> entry is the field's accessor, so the DOM follows the signal. Each keystroke stores the value, marks the field touched, and runs the validators.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_checkbox&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_checkbox"><code>bind_checkbox(field)</code></a> gives <code>checked</code> and <code>on_change</code> for a boolean field.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_select&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_select"><code>bind_select(field)</code></a> gives <code>value</code> and <code>on_change</code> for a <code>&lt;select&gt;</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_number&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_number"><code>bind_number(field)</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_multiselect&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_multiselect"><code>bind_multiselect(field)</code></a> cover numeric inputs and multiple selections; see <a href="#dirty-state-reset-and-async-workflows">Dirty state, reset, and async workflows</a>.</li>
 </ul>
 <p>Checkbox and select bindings clear the error on change; text bindings
 revalidate on every input event. Add more props alongside the spread
@@ -3291,7 +3293,7 @@ revalidate on every input event. Add more props alongside the spread
 <p>A <code>Validator</code> is a function from a value to an
 error string or <code>None</code>. The built-ins are factories so messages are
 customizable:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">email</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="n">min_length</span><span class="p">,</span> <span class="n">required</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">email</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="n">min_length</span><span class="p">,</span> <span class="n">required</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">"name"</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(</span><span class="s2">"Please enter a name"</span><span class="p">),</span> <span class="n">min_length</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">max_length</span><span class="p">(</span><span class="mi">40</span><span class="p">)],</span>
@@ -3299,9 +3301,9 @@ customizable:</p>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">}</span>
 </span></code></pre></div>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;required&lt;/span&gt;" href="../../api/wybthon/#wybthon.required"><code>required</code></a> rejects <code>None</code> and blank strings.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;min_length&lt;/span&gt;" href="../../api/wybthon/#wybthon.min_length"><code>min_length</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;max_length&lt;/span&gt;" href="../../api/wybthon/#wybthon.max_length"><code>max_length</code></a> compare <code>len(str(value))</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;email&lt;/span&gt;" href="../../api/wybthon/#wybthon.email"><code>email</code></a> checks a lightweight pattern and treats empty values as valid, so pair it with <code>required</code> when the field is mandatory.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;required&lt;/span&gt;" href="../../api/forms/#wybthon.forms.required"><code>required</code></a> rejects <code>None</code> and blank strings.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;min_length&lt;/span&gt;" href="../../api/forms/#wybthon.forms.min_length"><code>min_length</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;max_length&lt;/span&gt;" href="../../api/forms/#wybthon.forms.max_length"><code>max_length</code></a> compare <code>len(str(value))</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;email&lt;/span&gt;" href="../../api/forms/#wybthon.forms.email"><code>email</code></a> checks a lightweight pattern and treats empty values as valid, so pair it with <code>required</code> when the field is mandatory.</li>
 </ul>
 <p>Write your own by returning a message or <code>None</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">matches</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
@@ -3310,33 +3312,33 @@ customizable:</p>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="n">_v</span>
 </span></code></pre></div>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate&lt;/span&gt;" href="../../api/wybthon/#wybthon.validate"><code>validate(value, validators)</code></a> returns the first
-failing message. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;rules_from_schema&lt;/span&gt;" href="../../api/wybthon/#wybthon.rules_from_schema"><code>rules_from_schema</code></a> builds
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate&lt;/span&gt;" href="../../api/forms/#wybthon.forms.validate"><code>validate(value, validators)</code></a> returns the first
+failing message. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;rules_from_schema&lt;/span&gt;" href="../../api/forms/#wybthon.forms.rules_from_schema"><code>rules_from_schema</code></a> builds
 a rules map from a small declarative dict when you'd rather configure
 than compose.</p>
 <h2 id="submitting">Submitting<a class="headerlink" href="#submitting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_submit"><code>on_submit(handler, form)</code></a> prevents the default navigation and calls <code>handler(form)</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit_validated&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_submit_validated"><code>on_submit_validated(rules, handler, form)</code></a> first runs <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate_form&lt;/span&gt;" href="../../api/wybthon/#wybthon.validate_form"><code>validate_form</code></a>, which validates every field in <code>rules</code>, marks them touched, stores their errors, and returns <code>(is_valid, errors)</code>. The handler runs only when everything passes.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit"><code>on_submit(handler, form)</code></a> prevents the default navigation and calls <code>handler(form)</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit_validated&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit_validated"><code>on_submit_validated(rules, handler, form)</code></a> first runs <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate_form&lt;/span&gt;" href="../../api/forms/#wybthon.forms.validate_form"><code>validate_form</code></a>, which validates every field in <code>rules</code>, marks them touched, stores their errors, and returns <code>(is_valid, errors)</code>. The handler runs only when everything passes.</li>
 </ul>
 <p>Both return an event handler for the form's <code>on_submit</code> prop. Signal
 writes inside the handler flush when it returns, so error messages and
 <code>aria-invalid</code> states update in one commit.</p>
 <p>To validate a single field on blur or on demand, call
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate_field&lt;/span&gt;" href="../../api/wybthon/#wybthon.validate_field"><code>validate_field(field, validators)</code></a>.</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;validate_field&lt;/span&gt;" href="../../api/forms/#wybthon.forms.validate_field"><code>validate_field(field, validators)</code></a>.</p>
 <h2 id="accessibility">Accessibility<a class="headerlink" href="#accessibility" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Set <code>for_</code> on <code>label</code> to match the control's <code>id</code>.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;a11y_control_attrs&lt;/span&gt;" href="../../api/wybthon/#wybthon.a11y_control_attrs"><code>a11y_control_attrs(field, described_by_id=...)</code></a> returns reactive <code>aria_invalid</code> and <code>aria_describedby</code> props: <code>aria-invalid</code> is <code>"true"</code> while the field has an error, and <code>aria-describedby</code> points at the message container only while a message exists, so screen readers don't announce an empty region.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;error_message_attrs&lt;/span&gt;" href="../../api/wybthon/#wybthon.error_message_attrs"><code>error_message_attrs(id=...)</code></a> returns <code>id</code>, <code>role="alert"</code>, and <code>aria-live="polite"</code> for the message container.</li>
+<li>Set <code>html_for</code> (or <code>for_</code>) on <code>label</code> to match the control's <code>id</code>. The prop applier writes it as the <code>for</code> attribute.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;a11y_control_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.a11y_control_attrs"><code>a11y_control_attrs(field, described_by_id=...)</code></a> returns reactive <code>aria_invalid</code> and <code>aria_describedby</code> props: <code>aria-invalid</code> is <code>"true"</code> while the field has an error, and <code>aria-describedby</code> points at the message container only while a message exists, so screen readers don't announce an empty region.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;error_message_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.error_message_attrs"><code>error_message_attrs(id=...)</code></a> returns <code>id</code>, <code>role="alert"</code>, and <code>aria-live="polite"</code> for the message container.</li>
 </ul>
 <p>Because the ARIA props are accessors, they update through fine-grained
 bindings without re-rendering the form.</p>
 <h2 id="controlled-inputs-without-the-helpers">Controlled inputs without the helpers<a class="headerlink" href="#controlled-inputs-without-the-helpers" title="Permanent link">&para;</a></h2>
 <p>The helpers are optional. A controlled input is a signal, a <code>value</code>
 binding, and an <code>on_input</code> handler:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">input_</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">input_</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nd">@component</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Search</span><span class="p">():</span>
@@ -3352,17 +3354,21 @@ so it's cheap even in large lists. See <a href="../events/">Events</a>.</p>
 <li>Read <a href="../events/">Events</a> for delegated handler details.</li>
 </ul>
 <h2 id="dirty-state-reset-and-async-workflows">Dirty state, reset, and async workflows<a class="headerlink" href="#dirty-state-reset-and-async-workflows" title="Permanent link">&para;</a></h2>
-<p>Each field has <code>dirty</code> and <code>validating</code> accessors. <code>field.reset()</code> restores its initial value and clears touched/error state; <code>field.reset(value)</code> establishes a new baseline. <code>FormState.dirty</code> and <code>.validating</code> aggregate fields, <code>.data()</code> returns current values, and <code>.reset(values=None)</code> resets the form.</p>
-<p><code>await field.validate_async(validators)</code> accepts synchronous or async validators. Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.</p>
+<p>Each field has <code>dirty</code> and <code>validating</code> accessors. <code>field.reset()</code> restores its initial value and clears touched and error state; <code>field.reset(value)</code> establishes a new baseline. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FormState&lt;/span&gt;" href="../../api/forms/#wybthon.forms.FormState"><code>FormState</code></a>'s <code>dirty</code> and <code>validating</code> accessors aggregate its fields, <code>.data()</code> returns current values, and <code>.reset(values=None)</code> resets the form.</p>
+<p><code>await field.validate_async(validators)</code> accepts synchronous or async validators (<code>AsyncValidator</code>). Editing the value cancels stale validation, and a response for an old revision can't overwrite the current error. Owning scope disposal cancels validation too.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">post_profile</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">event</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">await</span> <span class="n">fields</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">event</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">await</span> <span class="n">fields</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">form</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])),</span> <span class="n">button</span><span class="p">(</span><span class="s2">"Save"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">),</span> <span class="n">on_submit</span><span class="o">=</span><span class="n">submit</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>FormState.submit</code> validates the fields, snapshots their values, and awaits the handler. <code>.submitting</code> and <code>.submit_error</code> expose the result. If values change during validation, that submission doesn't send stale values. The simpler <code>on_submit</code> helpers also propagate async handler results to the event task.</p>
-<p><code>bind_text(field, parse=..., format=...)</code> separates display text from stored values and reports conversion errors. <code>bind_number</code> handles numeric values and empty inputs. <code>bind_multiselect</code> binds all selected values through <code>selected_values</code>, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.</p>
+<p><code>bind_text(field, parse=..., format=...)</code> separates display text from stored values and reports conversion errors. <code>bind_number(field)</code> handles numeric values and stores an empty input as <code>None</code>. <code>bind_multiselect(field)</code> binds a list of selected values through <code>selected_values</code>, with no per-option Python-to-JS reads. Controlled selections are applied after options are inserted or replaced.</p>
 
 
 

@@ -1870,8 +1870,6 @@
       
         
       
-        
-      
     
     
     
@@ -2074,62 +2072,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2374,34 +2316,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2570,6 +2484,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2665,6 +2635,8 @@
       
         
           
+        
+      
         
       
         
@@ -2770,6 +2742,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3132,31 +3132,35 @@
 <p>Wybthon runs in the browser through <a href="https://pyodide.org/">Pyodide</a>, a CPython distribution compiled to WebAssembly. Most of the framework is plain Python; Pyodide-specific concerns surface only at the boundaries: module loading, async and event-loop integration, and JS interop.</p>
 <h2 id="the-basics">The basics<a class="headerlink" href="#the-basics" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Wybthon requires Pyodide 0.27 or newer (Python 3.12). The framework's own browser test suite runs on Pyodide 314.0.6 (Python 3.14).</li>
-<li>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> to install Python packages from PyPI at runtime.</li>
-<li>Import from <code>wybthon</code> after the library exists in the Pyodide filesystem; installing via <code>micropip</code> (as in the <a href="https://github.com/wybthon/demo-template">demo-template</a>) handles this for you.</li>
+<li>Wybthon requires Python 3.14, so in the browser it needs Pyodide 314 or newer. <code>wyb init</code> pins Pyodide 314.0.6, the version the framework's own browser test suite runs on.</li>
+<li><code>wyb build</code> packages Wybthon and your application into archives that its generated bootstrap loads, so a project doesn't install Wybthon at runtime. See <a href="../deployment/">Deployment</a>.</li>
+<li>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> to install other Python packages from PyPI at runtime, or list them under <code>packages</code> and <code>wheels</code> in <code>wybthon.toml</code>.</li>
 <li>Bridge to the browser with the <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js"><code>js</code> module</a> and <a href="https://pyodide.org/en/stable/usage/api/python-api/ffi.html"><code>pyodide.ffi</code></a>. Wybthon doesn't re-export <code>js</code>; import it yourself where you need it.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
+<p>A project's entry function returns the root view, and the generated bootstrap renders it into the mount element (or hydrates it when the page was prerendered):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h1</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"wybthon"</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">render</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">h1</span><span class="p">(</span><span class="s2">"My Wybthon app"</span><span class="p">),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">button</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">app</span><span class="p">():</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">App</span><span class="p">()</span>
 </span></code></pre></div>
-<p>A minimal <code>bootstrap.js</code> that does the same from the JavaScript side:</p>
-<div class="language-js highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">PYODIDE_VERSION</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"314.0.6"</span><span class="p">;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kd">const</span><span class="w"> </span><span class="nx">BASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`https://cdn.jsdelivr.net/pyodide/v</span><span class="si">${</span><span class="nx">PYODIDE_VERSION</span><span class="si">}</span><span class="sb">/full/`</span><span class="p">;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">loadPyodide</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">BASE</span><span class="si">}</span><span class="sb">pyodide.mjs`</span><span class="p">);</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kd">const</span><span class="w"> </span><span class="nx">pyodide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">loadPyodide</span><span class="p">({</span><span class="w"> </span><span class="nx">indexURL</span><span class="o">:</span><span class="w"> </span><span class="nx">BASE</span><span class="w"> </span><span class="p">});</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">await</span><span class="w"> </span><span class="nx">pyodide</span><span class="p">.</span><span class="nx">loadPackage</span><span class="p">(</span><span class="s2">"micropip"</span><span class="p">);</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">await</span><span class="w"> </span><span class="nx">pyodide</span><span class="p">.</span><span class="nx">runPythonAsync</span><span class="p">(</span><span class="sb">`</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sb">import micropip</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sb">await micropip.install("wybthon")</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sb">`</span><span class="p">);</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">await</span><span class="w"> </span><span class="nx">pyodide</span><span class="p">.</span><span class="nx">runPythonAsync</span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="nx">fetch</span><span class="p">(</span><span class="s2">"./main.py"</span><span class="p">)).</span><span class="nx">text</span><span class="p">());</span>
+<p>Outside a project (in a Pyodide console, say), install Wybthon with <code>micropip</code> and render yourself:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"wybthon"</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">render</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="the-pyodide-event-loop">The Pyodide event loop<a class="headerlink" href="#the-pyodide-event-loop" title="Permanent link">&para;</a></h2>
 <p>Pyodide ships with a single-threaded event loop integrated with the browser's microtask queue. A few practical implications:</p>
@@ -3212,32 +3216,33 @@
 <h2 id="lazy-imports-and-module-loading">Lazy imports and module loading<a class="headerlink" href="#lazy-imports-and-module-loading" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> uses Python's regular import system, so the only requirement is that the target module is reachable on <code>sys.path</code> at import time:</p>
 <ul>
-<li>Ensure module files exist in the Pyodide filesystem before the loader runs. The demo apps' <code>bootstrap.js</code> copies the app package into <code>/app</code> (the dev server's <code>/__manifest</code> endpoint lists the files), so imports like <code>"app.about.page"</code> resolve.</li>
+<li>In a <code>wyb build</code> project, the application archive is unpacked before your entry runs, so imports like <code>"app.about.page"</code> resolve. Modules in an explicit <code>[chunks]</code> group are fetched the first time a lazy component in that chunk renders; see <a href="../deployment/#explicit-lazy-chunks">Deployment</a>.</li>
 <li>For third-party packages, use an async loader that <code>await</code>s <code>micropip.install(...)</code> before importing.</li>
 <li>Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's <code>.preload()</code> method on user intent (link hover) to warm the import.</li>
 <li>Attribute resolution defaults to <code>Page</code>, then <code>default</code>, then the first callable export; otherwise pass the export name explicitly.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">lazy</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_charts</span><span class="p">():</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"app-charts"</span><span class="p">)</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">app_charts</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="k">return</span> <span class="n">app_charts</span><span class="o">.</span><span class="n">Chart</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_charts</span><span class="p">():</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"app-charts"</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">app_charts</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="k">return</span> <span class="n">app_charts</span><span class="o">.</span><span class="n">Chart</span>
 </span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load_charts</span><span class="p">)</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">on_mouseenter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">About</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load_charts</span><span class="p">)</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">on_mouseenter</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">About</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
 </span></code></pre></div>
 <h2 id="dev-mode">Dev mode<a class="headerlink" href="#dev-mode" title="Permanent link">&para;</a></h2>
 <p>Pyodide takes over a second to load and initialize. <a href="../../concepts/server-rendering/">Server rendering</a> shows prerendered HTML during that time, and the page hydrates once Python is ready.</p>
-<p>Wybthon's dev-mode diagnostics are on by default. Call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> at startup in production builds to silence warnings and skip the write-in-scope checks.</p>
+<p>Wybthon's dev-mode diagnostics (prop validation, write-in-scope errors, and warnings) are on by default, and <code>wyb dev</code> keeps them on. Production builds from <code>wyb build</code> call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> before the application imports, so you don't need to. Outside a project build, call it yourself at startup. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode()</code></a> reads the current mode.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Browse the <a href="../dev-server/">dev server guide</a> for hot-reload tips.</li>

@@ -1317,6 +1317,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducible-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducible output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerendering" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1859,8 +1881,6 @@
       
         
       
-        
-      
     
     
     
@@ -2063,62 +2083,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2363,34 +2327,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2559,6 +2495,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2654,6 +2646,8 @@
       
         
           
+        
+      
         
       
         
@@ -2759,6 +2753,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3019,6 +3041,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducible-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducible output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerendering" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3121,11 +3165,14 @@
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">[chunks]</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">charts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"app/charts/**"</span><span class="p">]</span>
 </span></code></pre></div>
-<p>The entry function returns the root view (it can be async); the bootstrap renders it into <code>mount</code>, or hydrates it when the page was prerendered. <code>index.html</code> must contain exactly one <code>&lt;!-- wyb:bootstrap --&gt;</code> marker. Files in <code>public/</code> are copied beside the output HTML; <code>public/assets/</code> is reserved for generated content.</p>
+<p>The entry function returns the root view (it can be async); the bootstrap renders it into <code>mount</code>, or hydrates it when the page was prerendered. Projects require Python 3.14, matching the Pyodide 314 runtime. <code>index.html</code> must contain exactly one <code>&lt;!-- wyb:bootstrap --&gt;</code> marker. Files in <code>public/</code> are copied beside the output HTML; <code>public/assets/</code> is reserved for generated content.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wyb<span class="w"> </span>build<span class="w"> </span>--base<span class="w"> </span>/dashboard/
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>dist<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </span></code></pre></div>
 <p>Deploy the contents of <code>dist/</code>, configure missing extensionless routes to serve <code>200.html</code>, and serve the app beneath <code>/dashboard/</code> in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and <code>manifest.json</code>. The preview server demonstrates that policy; use your static host for production serving.</p>
+<h2 id="production-mode">Production mode<a class="headerlink" href="#production-mode" title="Permanent link">&para;</a></h2>
+<p><code>wyb build</code> writes a production build: the bootstrap calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> before the application imports, so production apps skip the development checks (such as unknown-prop validation and write-in-scope errors) and print no development warnings. The manifest's <code>dev</code> field records the mode. <code>wyb dev</code> builds the same project with dev mode on. From Python, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;build_app&lt;/span&gt;" href="../../api/app-tools/#wybthon.build.build_app"><code>build_app</code></a> builds for production by default; pass <code>dev=True</code> for a development build. Read the current mode with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode()</code></a>.</p>
+<h2 id="reproducible-output">Reproducible output<a class="headerlink" href="#reproducible-output" title="Permanent link">&para;</a></h2>
 <p>Builds sort files and normalize archive timestamps, so identical inputs produce identical assets. A complete build is prepared before the destination is replaced. Existing nonempty output must contain the <code>.wyb-build</code> marker; source directories can't be used as output. Build validation failure leaves the previous output available.</p>
 <h2 id="prerendering">Prerendering<a class="headerlink" href="#prerendering" title="Permanent link">&para;</a></h2>
 <p><code>prerender</code> lists routes to render to HTML at build time, and <code>crawl = true</code> adds every in-app link those pages contain. Each route is written to <code>&lt;route&gt;/index.html</code> with the markup placed between the <code>&lt;!-- wyb:app --&gt;</code> and <code>&lt;!-- /wyb:app --&gt;</code> markers in <code>index.html</code>. The browser shows the page immediately and <a href="../../concepts/server-rendering/">hydrates</a> it once Pyodide is ready. Prerendering imports the application in a separate CPython process, so browser-only imports must be guarded; the build reports the failing import otherwise. <code>wyb dev</code> prerenders the same routes on every rebuild.</p>
@@ -3140,7 +3187,7 @@
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.charts.main"</span><span class="p">,</span> <span class="s2">"Chart"</span><span class="p">),</span> <span class="n">chunk</span><span class="o">=</span><span class="s2">"charts"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The matching files are excluded from the main archive. Rendering <code>Chart</code> inside <code>Loading</code> fetches its archive once before importing the module. Hover preloading through a router <code>Link</code> can warm a lazy route. <code>load_chunk("charts")</code> is available for explicit preloading.</p>
+<p>The matching files are excluded from the main archive. Rendering <code>Chart</code> inside <code>Loading</code> fetches its archive once before importing the module. Hover preloading through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../../api/router/#wybthon.router.Link"><code>Link</code></a> from <code>wybthon.router</code> can warm a lazy route, and <code>Chart.preload()</code> warms it on any user intent. <code>load_chunk("charts")</code> from <code>wybthon.assets</code> is available for explicit preloading.</p>
 <p>Chunk groups mustn't overlap, and the entry module must stay in the main bundle. This is explicit packaging, not automatic dependency analysis: keep shared imports in the main application, and don't eagerly import a chunk module. Concurrent chunk requests share one fetch; a failed fetch is evicted so a later attempt can retry. Call <code>Chart.retry()</code> to restart a failed lazy load and let its error boundary recover.</p>
 <h2 id="startup-measurements">Startup measurements<a class="headerlink" href="#startup-measurements" title="Permanent link">&para;</a></h2>
 <p><code>window.__WYB</code> exposes startup status, errors, the runtime, and timings for runtime loading, archive loading, unpacking, application startup, readiness, and the next frame opportunity. Concurrent phases overlap; don't add them as if they were sequential. These values include network/cache conditions and differ from warmed update benchmarks.</p>

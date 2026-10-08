@@ -1848,8 +1848,6 @@
       
         
       
-        
-      
     
     
     
@@ -2052,62 +2050,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2352,34 +2294,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2548,6 +2462,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2643,6 +2613,8 @@
       
         
           
+        
+      
         
       
         
@@ -2748,6 +2720,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3088,21 +3088,25 @@
 <p>Stores are read-only reactive mappings and sequences. Update them with a synchronous, scoped draft. Containers have entity identity: moving a row changes its position without changing which object its proxy represents.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">flush</span><span class="p">,</span> <span class="n">snapshot</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">state</span><span class="p">,</span> <span class="n">write</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">},</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="s2">"items"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Build a Python UI"</span><span class="p">}],</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">})</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="n">draft</span><span class="p">):</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"Grace"</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">draft</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Test it in the browser"</span><span class="p">})</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">write</span><span class="p">(</span><span class="n">edit</span><span class="p">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">flush</span><span class="p">()</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">assert</span> <span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Grace"</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">state</span><span class="p">,</span> <span class="n">write</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">(</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="p">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">},</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="s2">"items"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Build a Python UI"</span><span class="p">}],</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="p">}</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="n">draft</span><span class="p">):</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"Grace"</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">draft</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Test it in the browser"</span><span class="p">})</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">write</span><span class="p">(</span><span class="n">edit</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="k">assert</span> <span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Grace"</span>
 </span></code></pre></div>
 <h2 id="collection-protocols">Collection protocols<a class="headerlink" href="#collection-protocols" title="Permanent link">&para;</a></h2>
-<p><code>Store</code> implements <code>Mapping</code>, and <code>StoreList</code> implements <code>Sequence</code>. Use indexing, iteration, <code>len</code>, membership, and ordinary mapping methods such as <code>.get()</code>, <code>.items()</code>, and <code>.keys()</code>. Attribute access is convenient for nonconflicting string keys. A key named <code>items</code> is <code>state["items"]</code>; <code>state.items()</code> is the mapping method. Missing entries raise ordinary Python exceptions.</p>
+<p><code>Store</code> implements <code>Mapping</code>, and <code>StoreList</code> implements <code>Sequence</code>. Use indexing, iteration, <code>len</code>, membership, and ordinary mapping methods such as <code>.get()</code>, <code>.items()</code>, and <code>.keys()</code>. Attribute access is convenient for nonconflicting string keys. A key named <code>items</code> is <code>state["items"]</code>; <code>state.items()</code> is the mapping method. Missing entries raise ordinary Python exceptions: <code>KeyError</code> for indexing and <code>AttributeError</code> for attribute access. <code>state.get(key, default=None)</code> doesn't raise. It's tracked either way, so a computation reading <code>state.get(row_id)</code> reruns when that key appears.</p>
 <p>Drafts implement <code>MutableMapping</code> and <code>MutableSequence</code>. Use assignment, deletion, <code>update</code>, <code>append</code>, <code>extend</code>, <code>insert</code>, <code>pop</code>, slices, <code>reverse</code>, and <code>sort</code> as appropriate. A draft and every nested draft expire when the callback returns. Escaped reads or writes raise <code>DraftExpiredError</code>.</p>
 <p>A callback that raises leaves the published store unchanged. Return <code>None</code> after mutations. Returning replacement mapping or sequence data replaces the draft contents; don't accidentally return the result of <code>pop</code> or a tuple of mutations. Async setters are rejected. Await external work in an action, then perform a synchronous draft edit.</p>
 <h2 id="versions-and-subscriptions">Versions and subscriptions<a class="headerlink" href="#versions-and-subscriptions" title="Permanent link">&para;</a></h2>
@@ -3118,25 +3122,50 @@
 <p><code>For(lambda: state["items"], row)</code> can use store edit records directly. Default matching preserves entity identity. Use <code>keyed=lambda item: item.id</code> when replacement objects represent the same application entity; that callback receives item and index accessors.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">reconcile</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">write</span><span class="p">(</span><span class="n">reconcile</span><span class="p">({</span><span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Grace"</span><span class="p">},</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">[</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Updated"</span><span class="p">},</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Build a Python UI"</span><span class="p">},</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">]},</span> <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">))</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">write</span><span class="p">(</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">reconcile</span><span class="p">(</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="p">{</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>            <span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Grace"</span><span class="p">},</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>            <span class="s2">"items"</span><span class="p">:</span> <span class="p">[</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>                <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Updated"</span><span class="p">},</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>                <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Build a Python UI"</span><span class="p">},</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>            <span class="p">],</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="p">},</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="p">)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="p">)</span>
 </span></code></pre></div>
-<p>Keyed reconciliation updates matching entities in place and matches duplicate keys in occurrence order. <code>key=None</code> replaces list entities. Store drafts preserve entities when moving existing proxies. Initial cyclic input isn't supported.</p>
+<p><code>key</code> names the identifying field (<code>"id"</code> by default) or is a function computing the identity from an entity, such as <code>key=lambda row: (row["kind"], row["id"])</code>. Keyed reconciliation updates matching entities in place and matches duplicate keys in occurrence order. <code>key=None</code> replaces list entities positionally. Store drafts preserve entities when moving existing proxies. Initial cyclic input isn't supported.</p>
 <h2 id="derived-and-optimistic-stores">Derived and optimistic stores<a class="headerlink" href="#derived-and-optimistic-stores" title="Permanent link">&para;</a></h2>
 <p><code>create_projection(fn, seed)</code> and <code>create_store(fn, seed)</code> derive a read-only store from tracked reads. The callback may return data or mutate a draft argument. It can await work or yield values from an async generator. Draft changes publish atomically when that result is ready.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">is_pending</span><span class="p">,</span> <span class="n">refresh</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">())</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">user</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="n">load_user</span><span class="p">,</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Read user.name inside Loading content.</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">busy</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">is_pending</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># In an async handler: await refresh(user)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_user</span><span class="p">():</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">())</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">user</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="n">load_user</span><span class="p">,</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># Read user.name inside Loading content.</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">busy</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">is_pending</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># In an async handler: await refresh(user)</span>
 </span></code></pre></div>
 <p>Errors surface when the projection is read, so <code>Errored</code> handles them. Refresh is quiet and awaitable. Disposing the owner cancels the producer.</p>
+<p>A projection also replaces a selection helper. Because it notifies only the keys that change, selecting a different row updates two rows, not every row:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">tr</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">For</span><span class="p">(</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"items"</span><span class="p">],</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">tr</span><span class="p">(</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="n">td</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">title</span><span class="p">),</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="n">class_</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">"active"</span> <span class="k">if</span> <span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>        <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_selected</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="p">),</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="p">)</span>
+</span></code></pre></div>
 <p><code>create_optimistic_store(source, seed)</code> returns a store and an optimistic draft setter. Active edits replay over new authoritative data, and each action's edits disappear when its dependency group settles. Keep draft callbacks deterministic. See <a href="../runtime-contracts/">Runtime contracts</a> for concurrent action, acknowledgment, and cancellation semantics.</p>
 
 

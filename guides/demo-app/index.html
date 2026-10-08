@@ -1244,10 +1244,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-demos-bootstrap" class="md-nav__link">
+  <a href="#how-a-project-boots" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the demos bootstrap
+        How a project boots
       
     </span>
   </a>
@@ -1837,8 +1837,6 @@
       
         
       
-        
-      
     
     
     
@@ -2041,62 +2039,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2341,34 +2283,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2537,6 +2451,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2632,6 +2602,8 @@
       
         
           
+        
+      
         
       
         
@@ -2737,6 +2709,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3008,10 +3008,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-the-demos-bootstrap" class="md-nav__link">
+  <a href="#how-a-project-boots" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the demos bootstrap
+        How a project boots
       
     </span>
   </a>
@@ -3092,25 +3092,25 @@
 </table>
 <div class="admonition note">
 <p class="admonition-title">Versions</p>
-<p>The demos are separate repositories with their own release cadence. Use <code>wyb init</code> for a starter that matches the installed version's API.</p>
+<p>The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. Use <code>wyb init</code> for a starter that matches the installed version's API.</p>
 </div>
 <h2 id="running-a-demo-locally">Running a demo locally<a class="headerlink" href="#running-a-demo-locally" title="Permanent link">&para;</a></h2>
-<p>Every demo is a static site, so the workflow is the same:</p>
+<p>A demo that contains a <code>wybthon.toml</code> is a Wybthon project, so the workflow is the same as for your own app:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/wybthon/demo-template.git
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>demo-template
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>.<span class="w"> </span>--watch<span class="w"> </span>app<span class="w"> </span>--open
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--open
 </span></code></pre></div>
-<p>The <code>wyb dev</code> server provides hot reload over SSE; see the <a href="../dev-server/">dev server guide</a>.</p>
-<h2 id="how-the-demos-bootstrap">How the demos bootstrap<a class="headerlink" href="#how-the-demos-bootstrap" title="Permanent link">&para;</a></h2>
-<p>Each demo follows the same pattern:</p>
+<p><code>wyb dev</code> builds the project, serves it, and reloads the page when a source file changes; see the <a href="../dev-server/">dev server guide</a>. A demo that ships its own <code>index.html</code> and <code>bootstrap.js</code> without a <code>wybthon.toml</code> is a plain static site, so serve it with any static file server (<code>python -m http.server</code>) and follow its README.</p>
+<h2 id="how-a-project-boots">How a project boots<a class="headerlink" href="#how-a-project-boots" title="Permanent link">&para;</a></h2>
+<p>Wybthon projects follow the same pattern:</p>
 <ul>
-<li><code>index.html</code> loads <code>bootstrap.js</code> as an ES module.</li>
-<li><code>bootstrap.js</code> loads Pyodide, installs Wybthon (from PyPI via <code>micropip</code>, or by copying source files into the Pyodide filesystem), copies the app package under <code>/app</code>, then calls <code>app.main.main()</code>.</li>
-<li><code>app/main.py</code> builds the root component and calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> into the page's mount point, typically wrapping the tree in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundaries around a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/wybthon/#wybthon.Router"><code>Router</code></a>.</li>
+<li><code>wybthon.toml</code> names the entry function (<code>entry = "app.main:app"</code>), the mount selector, and the routes to prerender.</li>
+<li><code>wyb build</code> packages Wybthon and the <code>app/</code> package into archives and writes a bootstrap that loads Pyodide and the archives concurrently, then imports the entry.</li>
+<li><code>app/main.py</code> returns the root view from its entry function, typically wrapping the tree in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundaries around a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="../../api/router/#wybthon.router.Router"><code>Router</code></a> from <code>wybthon.router</code>. The bootstrap renders it, or hydrates the prerendered HTML.</li>
 <li>Folders under <code>app/</code> mirror routes and components, and route pages are often loaded with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a> so the initial import stays small.</li>
 </ul>
-<p>The <a href="../pyodide/">Pyodide guide</a> covers the runtime details, including module loading and lazy imports.</p>
+<p>The <a href="../pyodide/">Pyodide guide</a> covers the runtime details, and the <a href="../deployment/">Deployment guide</a> covers the build.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Start from the <a href="https://github.com/wybthon/demo-template">demo-template</a> for your own app.</li>

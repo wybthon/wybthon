@@ -1754,8 +1754,6 @@
       
         
       
-        
-      
     
     
     
@@ -1958,62 +1956,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2258,34 +2200,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2454,6 +2368,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2549,6 +2519,8 @@
       
         
           
+        
+      
         
       
         
@@ -2654,6 +2626,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -2899,6 +2899,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#components-and-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components and props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reactivity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3052,6 +3063,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#components-and-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components and props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reactivity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3115,11 +3137,11 @@
 </details>
 <details class="question">
 <summary>Does it work outside the browser?</summary>
-<p>Everything except the real DOM. Signals, memos, effects, async computations, actions, stores, forms, context, flow control, and VDOM construction run in plain CPython and are tested with <code>pytest</code>. Rendering into a page, <code>Element</code> queries, and history navigation need Pyodide, or the stub backend the unit tests use (see the <a href="../../guides/testing/">testing guide</a>).</p>
+<p>Everything except the real browser. Signals, memos, effects, async computations, actions, stores, forms, context, flow control, and VDOM construction run in plain CPython. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;testing&lt;/span&gt;" href="../../api/testing/#wybthon.testing"><code>wybthon.testing</code></a> renders components into an in-memory DOM through the real reconciler and event delegation, so you can test them with <code>pytest</code> (see the <a href="../../guides/testing/">testing guide</a>), and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;server&lt;/span&gt;" href="../../api/server/#wybthon.server"><code>wybthon.server</code></a> renders them to HTML for prerendering and server rendering.</p>
 </details>
 <details class="question">
 <summary>Which Python version do I need?</summary>
-<p>Python 3.12 or newer in CPython (the framework uses PEP 695 generics such as <code>Accessor[T]</code>). In the browser, Pyodide 0.27 or newer (Python 3.12); the E2E suite pins Pyodide 314.x.</p>
+<p>Python 3.14. Template strings (PEP 750) are part of the component API, and server rendering, tests, and tooling run on the same Python version as the browser. In the browser that means Pyodide 314 or newer; <code>wyb init</code> pins 314.0.6.</p>
 </details>
 <details class="question">
 <summary>Why Python in the browser?</summary>
@@ -3132,15 +3154,16 @@
 <h2 id="pyodide-and-runtime">Pyodide and runtime<a class="headerlink" href="#pyodide-and-runtime" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Which Pyodide version should I target?</summary>
-<p>Pin a single version per deployment. Wybthon requires Pyodide 0.27 or newer, the first release with Python 3.12; using the same version locally and in production avoids subtle ABI mismatches.</p>
+<p>Pin a single version per deployment with <code>pyodide-version</code> in <code>wybthon.toml</code>. Wybthon requires Pyodide 314 or newer (Python 3.14). Building with the same Python version as the runtime also lets <code>wyb build</code> ship precompiled bytecode.</p>
 </details>
 <details class="question">
 <summary>How do I install Python packages from PyPI?</summary>
 <p>Use <a href="https://micropip.pyodide.org/"><code>micropip</code></a> inside Pyodide:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">micropip</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"httpx"</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">await</span> <span class="n">micropip</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s2">"httpx"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The package must be pure Python or available as a Pyodide-compatible wheel. See the <a href="../../guides/pyodide/">Pyodide guide</a> for details.</p>
 </details>
@@ -3151,20 +3174,64 @@
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">window</span><span class="o">.</span><span class="n">alert</span><span class="p">(</span><span class="s2">"hello!"</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_users</span><span class="p">():</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="s2">"/api/users"</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_users</span><span class="p">():</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch</span><span class="p">(</span><span class="s2">"/api/users"</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 </span></code></pre></div>
 <p>Convert Python objects with <code>pyodide.ffi.to_js(...)</code> when handing them to JS APIs that expect plain objects. For DOM nodes Wybthon rendered, prefer <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a> over <code>document.querySelector</code>.</p>
 </details>
 <h2 id="building-and-shipping-apps">Building and shipping apps<a class="headerlink" href="#building-and-shipping-apps" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Do I need a bundler or a build step?</summary>
-<p>No. Wybthon serves Python source files directly via the dev server (<code>wyb dev --dir .</code>) and any static host can serve them in production. See the <a href="../../guides/deployment/">deployment guide</a> for hosting recipes.</p>
+<p>There's no JavaScript bundler, but there is a build step. <code>wyb build</code> packages Wybthon and your application into archives with a generated bootstrap, prerenders the routes you list, and turns dev mode off; any static host can serve the result. <code>wyb dev</code> runs the same build in development mode and reloads on change. See the <a href="../../guides/deployment/">deployment guide</a>.</p>
 </details>
 <details class="question">
 <summary>Can I lazy-load route components?</summary>
 <p>Yes; see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a>. It's backed by an async memo, so it integrates with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> for declarative loading UIs and with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> for load failures, and each lazy component has a <code>.preload()</code> method for warming the cache early.</p>
+</details>
+<h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
+<details class="question">
+<summary>How do I declare a component's props?</summary>
+<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> and take one parameter annotated with it. <code>Prop[T]</code> fields are reactive; anything else is a plain field:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveButtonProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">label</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">"Save"</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">on_save</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@component</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">SaveButton</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">SaveButtonProps</span><span class="p">):</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">props</span><span class="o">.</span><span class="n">on_save</span><span class="p">)</span>
+</span></code></pre></div>
+<p>A component with no inputs takes no parameters. See <a href="../../guides/authoring-patterns/#declaring-props">Authoring patterns</a>.</p>
+</details>
+<details class="question">
+<summary>How do I pass a callback to a component?</summary>
+<p>Declare it as a plain field, such as <code>on_save: Callable[[], None] | None = None</code>. Reading <code>props.on_save</code> returns the function exactly as the parent passed it, and nothing calls it for you. Only <code>Prop[T]</code> fields are reactive.</p>
+</details>
+<details class="question">
+<summary>Why does my type checker reject <code>prop(0)</code>?</summary>
+<p>Defaults must be passed by keyword: <code>prop(default=0)</code>, or <code>prop(default_factory=list)</code> for a mutable value. Type checkers only recognize a field default given by keyword. Plain fields use ordinary defaults (<code>= None</code>).</p>
+</details>
+<details class="question">
+<summary>How do I pass children?</summary>
+<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> and place <code>props.children</code> in the tree. Callers use item syntax, <code>Card(title="Hi")[p("Body")]</code>, or the <code>children=</code> keyword.</p>
+</details>
+<details class="question">
+<summary>Do I need a mypy plugin?</summary>
+<p>No. <code>Props</code> uses PEP 681 <code>dataclass_transform</code>, so pyright, Pylance, and mypy check component calls out of the box. See the <a href="../../guides/typing/">typing guide</a>.</p>
+</details>
+<details class="question">
+<summary>Where did <code>Router</code>, <code>Link</code>, and <code>form_state</code> go?</summary>
+<p>The core lives in <code>wybthon</code>; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind_text</span><span class="p">,</span> <span class="n">form_state</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span><span class="p">,</span> <span class="n">navigate</span>
+</span></code></pre></div>
 </details>
 <h2 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h2>
 <details class="question">
@@ -3178,9 +3245,9 @@
 <details class="question">
 <summary>How do I batch multiple signal updates?</summary>
 <p>You don't need to; everything batches. Consecutive writes in one handler (or one synchronous block) coalesce into a single flush, so an effect that reads both fields runs once:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">set_first</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">set_last</span><span class="p">(</span><span class="s2">"Lovelace"</span><span class="p">)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">flush</span><span class="p">()</span>   <span class="c1"># the name effect runs once, not twice</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">set_first</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">set_last</span><span class="p">(</span><span class="s2">"Lovelace"</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">flush</span><span class="p">()</span>  <span class="c1"># the name effect runs once, not twice</span>
 </span></code></pre></div>
 <p>There is no <code>batch()</code> function.</p>
 </details>
@@ -3191,6 +3258,20 @@
 <details class="question">
 <summary>How do I fetch data?</summary>
 <p>Write an <code>async def</code> and pass it to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. Reads before the first value raise <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../../api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>, which the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="../../api/wybthon/#wybthon.Loading"><code>Loading</code></a> boundary turns into fallback UI; later refetches run as transitions that hold the dependent UI on the previous state until the new value lands. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a> for a refresh hint, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a> to peek without suspending, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../../api/wybthon/#wybthon.refresh"><code>refresh</code></a> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve"><code>resolve</code></a> to drive it imperatively. Mutations go through <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, optionally with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a> for instant UI.</p>
+</details>
+<details class="question">
+<summary>How do I highlight the selected row without re-running every row?</summary>
+<p>Use a projection keyed by the selection. Each row reads only its own key, so a change notifies the old and new rows:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># In a row: class_=lambda: "active" if is_selected.get(row_id) else ""</span>
+</span></code></pre></div>
+</details>
+<details class="question">
+<summary>Why don't I see dev warnings in production?</summary>
+<p><code>wyb build</code> turns dev mode off before your application imports, so production builds skip development checks and warnings. <code>wyb dev</code> keeps them on. Check the mode with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode()</code></a>.</p>
 </details>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

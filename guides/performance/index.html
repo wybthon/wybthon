@@ -1384,6 +1384,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-engine-does-for-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the engine does for you
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#use-the-incremental-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1859,8 +1870,6 @@
       
         
       
-        
-      
     
     
     
@@ -2063,62 +2072,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2363,34 +2316,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2559,6 +2484,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2654,6 +2635,8 @@
       
         
           
+        
+      
         
       
         
@@ -2759,6 +2742,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3030,6 +3041,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-the-engine-does-for-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the engine does for you
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#use-the-incremental-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3107,42 +3129,79 @@
 
 
 <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
-<p>Wybthon keeps fine-grained dependency tracking and a Virtual DOM that batches native mutations. Python execution, serialization, bridge calls, native DOM work, and browser rendering have different costs. Measure the operation you intend to improve.</p>
+<p>Wybthon keeps fine-grained dependency tracking and a Virtual DOM that batches native mutations into one bridge crossing per flush. Python execution, serialization, bridge calls, native DOM work, and browser rendering have different costs. Measure the operation you intend to improve.</p>
 <h2 id="start-with-startup">Start with startup<a class="headerlink" href="#start-with-startup" title="Permanent link">&para;</a></h2>
-<p>Loading and initializing Pyodide takes over a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page. <a href="../../concepts/server-rendering/">Prerender</a> the pages users land on so their content shows immediately, and build with the same Python version as the Pyodide runtime so the archives ship precompiled bytecode (see <a href="../deployment/#bytecode">Deployment</a>).</p>
+<p>Loading and initializing Pyodide takes over a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page. <a href="../../concepts/server-rendering/">Prerender</a> the pages users land on so their content shows immediately, and build with the same Python version as the Pyodide runtime so the archives ship precompiled bytecode (see <a href="../deployment/#bytecode">Deployment</a>). Production builds also turn dev mode off, so they skip the development checks and warnings.</p>
+<h2 id="what-the-engine-does-for-you">What the engine does for you<a class="headerlink" href="#what-the-engine-does-for-you" title="Permanent link">&para;</a></h2>
+<p>Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so the engine's fast paths target the Python side. None of them needs a different component API.</p>
+<ul>
+<li><strong>Compiled shapes.</strong> The first time an element subtree of a given shape mounts, Wybthon records its static skeleton, its text slots, and where its bindings and dynamic children sit. A repeated shape gets a generated mount function that runs in straight-line code: it checks the instance's structure, allocates node ids, and wires handlers, bindings, and holes by offset. A structural mismatch falls back to the generic path, so correctness never depends on the shape cache.</li>
+<li><strong>One command per row.</strong> A compiled mount sends one fused <code>CLONE</code> command that clones the pre-parsed skeleton, fills its text slots, marks its delegated listeners, and inserts it. Event handlers on template nodes need no per-handler <code>LISTEN</code> command. A typical table row costs two kernel commands instead of seven.</li>
+<li><strong>Native disposal.</strong> Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python finds its own registrations (handlers, reactive bindings, refs) through each shape's binding offsets instead of visiting every node. Clearing a <code>For</code> list is one range removal plus disposal of each row's owner.</li>
+<li><strong>Bulk replacement.</strong> When a keyed list reuses none of its rows, the old rows go in one <code>DISPOSE_RANGE</code> command and the new rows mount as one splice, instead of reconciling every unrelated pair.</li>
+<li><strong>Text placeholders.</strong> A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain <code>nodeValue</code> write rather than a node replacement.</li>
+<li><strong>Lighter computations.</strong> Rarely used reactive state (async, transitions, error handlers) lives in a side record allocated on first use, so each render binding allocates and disposes less.</li>
+</ul>
 <h2 id="use-the-incremental-paths">Use the incremental paths<a class="headerlink" href="#use-the-incremental-paths" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Pass a store list directly through a <code>For</code> accessor. Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.</li>
-<li>Use <code>create_selector(selected)</code> for selected-row flags. With ordinary equality, only the old and new keys are notified. A custom comparator may need to visit all subscribed keys.</li>
-<li>Use <code>Repeat(count, row)</code> for integer slots. Growing it mounts only the new slots.</li>
-<li>Keep component setup stable and place dynamic reads in accessors, holes, or prop expressions. Components don't rerun for ordinary state updates.</li>
-<li>Use <code>VirtualFor</code> for large scrollable collections with fixed row heights. Offscreen rows are disposed, so store durable row state outside the row component.</li>
-</ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VirtualFor</span><span class="p">,</span> <span class="n">p</span>
+<li>
+<p>Select rows with a projection. Each row reads its own key, so a selection change notifies only the old and new rows, not every row:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">VirtualFor</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">records</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>           <span class="n">row_height</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">overscan</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Rows</span><span class="p">():</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">rows</span><span class="p">,</span> <span class="n">set_rows</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Row </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)])</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">ul</span><span class="p">(</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">For</span><span class="p">(</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            <span class="n">rows</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="k">lambda</span> <span class="n">row</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">li</span><span class="p">(</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                <span class="n">row</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                <span class="n">class_</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">"danger"</span> <span class="k">if</span> <span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_selected</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="p">),</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="p">)</span>
 </span></code></pre></div>
-<p><code>map_cooperative(items, fn, budget_ms=8)</code> yields between chunks of expensive Python work. <code>yield_to_browser()</code> provides an explicit cooperative yield. A single expensive callback still blocks until it returns; these helpers don't preempt Python or replace a worker.</p>
-<h2 id="measure-work-as-well-as-time">Measure work as well as time<a class="headerlink" href="#measure-work-as-well-as-time" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">flush</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">runtime_stats</span>
+<p><code>is_selected.get(key)</code> is tracked per key and returns <code>None</code> when the key is absent.</p>
+</li>
+<li>
+<p>Use <code>Repeat(count, row)</code> for integer slots. Growing it mounts only the new slots.</p>
+</li>
+<li>Keep component setup stable and place dynamic reads in accessors, t-strings, holes, or attribute expressions. Components don't rerun for ordinary state updates.</li>
+<li>Keep row markup consistent. Rows with the same structure share one compiled shape; rows whose structure varies (a conditional element in one branch, for example) mount on the generic path. Put the variation inside a hole instead.</li>
+<li>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;VirtualFor&lt;/span&gt;" href="../../api/app-tools/#wybthon.virtual.VirtualFor"><code>VirtualFor</code></a> for large scrollable collections with fixed row heights. Offscreen rows are disposed, so store durable row state outside the row component.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">p</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.virtual</span><span class="w"> </span><span class="kn">import</span> <span class="n">VirtualFor</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">with</span> <span class="n">profile</span><span class="p">()</span> <span class="k">as</span> <span class="n">measured</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">edit</span><span class="p">(</span><span class="k">lambda</span> <span class="n">draft</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_row</span><span class="p">))</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">flush</span><span class="p">()</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">measured</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">runtime_stats</span><span class="p">())</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">records</span><span class="p">,</span> <span class="n">set_records</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([{</span><span class="s2">"name"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Record </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)])</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">VirtualFor</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">p</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]),</span> <span class="n">row_height</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">overscan</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization/kernel time when those operations occur. <code>template_recipe_hits</code> counts mounts that reuse a prepared extraction routine; <code>template_shape_walks</code> counts mounts that need generic template discovery. <code>inspect_graph(owner)</code> reports ownership and dependencies without evaluating values.</p>
-<p>Template prototypes are bounded and reused across varying instance attributes. Text-only holes reuse their anchor handle as the text node. Range operations move or remove fragment rows in one command. Keep the JSON command transport unless profiling demonstrates a better tradeoff.</p>
-<p>Repeated VDOM shapes also reuse bounded Python extraction routines. Each mount checks the tree's structure, static attributes, and binding kinds before reusing a routine. Changed shapes fall back to ordinary template discovery. Handlers, refs, and reactive expressions come from the current VNode instance. This happens at runtime and doesn't require a compiler or a different component API.</p>
-<p>Direct signal bindings retain their dependency instead of rebuilding it on each update. Stores allocate length, key, and subtree subscriptions when they're first observed. These optimizations preserve staged writes, transition visibility, cleanup, and dynamic dependency tracking.</p>
+<p><code>map_cooperative(items, fn, budget_ms=8)</code> from <code>wybthon.scheduling</code> yields between chunks of expensive Python work, and <code>yield_to_browser()</code> provides an explicit cooperative yield. A single expensive callback still blocks until it returns; these helpers don't preempt Python or replace a worker.</p>
+<h2 id="measure-work-as-well-as-time">Measure work as well as time<a class="headerlink" href="#measure-work-as-well-as-time" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_root</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">flush</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">runtime_stats</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">store</span><span class="p">,</span> <span class="n">edit</span> <span class="o">=</span> <span class="n">create_root</span><span class="p">(</span><span class="k">lambda</span> <span class="n">dispose</span><span class="p">:</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"rows"</span><span class="p">:</span> <span class="p">[]}))</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">with</span> <span class="n">profile</span><span class="p">()</span> <span class="k">as</span> <span class="n">measured</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">edit</span><span class="p">(</span><span class="k">lambda</span> <span class="n">draft</span><span class="p">:</span> <span class="n">draft</span><span class="p">[</span><span class="s2">"rows"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}))</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">measured</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">runtime_stats</span><span class="p">())</span>
+</span></code></pre></div>
+<p>Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization and kernel time when those operations occur. <code>template_recipe_hits</code> counts mounts that reused a compiled shape; <code>template_shape_walks</code> counts mounts that had to discover a shape first. A list whose rows mostly walk instead of hitting a recipe has varying structure worth unifying. <code>inspect_graph(owner)</code> reports ownership and dependencies without evaluating values.</p>
+<p>The repository's <code>benchmarks/check_work.py</code> gates command counts in CI: appending 1,000 rows must emit 1,000 row commands, and selection and swap must each emit two. Work counts are deterministic, so they make better regression gates than timings.</p>
 <h2 id="browser-benchmark">Browser benchmark<a class="headerlink" href="#browser-benchmark" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--locked<span class="w"> </span>--group<span class="w"> </span>dev
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/browser_bench.py<span class="w"> </span>--mode<span class="w"> </span>signal<span class="w"> </span>--json
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/browser_bench.py<span class="w"> </span>--mode<span class="w"> </span>store<span class="w"> </span>--json
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--locked<span class="w"> </span>--group<span class="w"> </span>dev
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/browser_bench.py<span class="w"> </span>--mode<span class="w"> </span>signal<span class="w"> </span>--json
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/browser_bench.py<span class="w"> </span>--mode<span class="w"> </span>store<span class="w"> </span>--json
 </span></code></pre></div>
 <p>The benchmark drives ordinary delegated button events. Each scenario restores its own baseline, warms up, checks that the DOM actually changed, and reports separate synchronous commit and input-to-frame samples. Append starts from 10,000 rows and verifies 11,000 afterward. Selection toggles between distinct rows.</p>
 <p>Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.</p>

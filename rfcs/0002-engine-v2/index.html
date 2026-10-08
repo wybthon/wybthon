@@ -12,13 +12,13 @@
         <meta name="author" content="Owen Carey">
       
       
-        <link rel="canonical" href="https://wybthon.com/rfcs/0001-server-rendering-and-hydration/">
+        <link rel="canonical" href="https://wybthon.com/rfcs/0002-engine-v2/">
       
       
-        <link rel="prev" href="../0000-template/">
+        <link rel="prev" href="../0001-server-rendering-and-hydration/">
       
       
-        <link rel="next" href="../0002-engine-v2/">
+        <link rel="next" href="../../meta/style-guide/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>0001: Server rendering - Wybthon</title>
+        <title>0002: Engine v2 - Wybthon</title>
       
     
     
@@ -67,17 +67,17 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="0001: Server rendering - Wybthon" />
+<meta property="og:title" content="0002: Engine v2 - Wybthon" />
 <meta property="og:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="og:image" content="https://wybthon.com/assets/images/social/rfcs/0001-server-rendering-and-hydration.png" />
+<meta property="og:image" content="https://wybthon.com/assets/images/social/rfcs/0002-engine-v2.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://wybthon.com/rfcs/0001-server-rendering-and-hydration/" />
+<meta property="og:url" content="https://wybthon.com/rfcs/0002-engine-v2/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="0001: Server rendering - Wybthon" />
+<meta property="twitter:title" content="0002: Engine v2 - Wybthon" />
 <meta property="twitter:description" content="Client-side Python SPA framework via Pyodide" />
-<meta property="twitter:image" content="https://wybthon.com/assets/images/social/rfcs/0001-server-rendering-and-hydration.png" />
+<meta property="twitter:image" content="https://wybthon.com/assets/images/social/rfcs/0002-engine-v2.png" />
 </head>
   
   
@@ -97,7 +97,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rfc-0001-server-rendering-hydration-and-the-boot-pipeline" class="md-skip">
+        <a href="#rfc-0002-engine-v2-compiled-mounting-typed-props-and-solid-20-rc14-alignment" class="md-skip">
           Skip to content
         </a>
       
@@ -133,7 +133,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0001: Server rendering
+              0002: Engine v2
             
           </span>
         </div>
@@ -2618,6 +2618,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../0001-server-rendering-and-hydration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -2637,7 +2665,7 @@
   <span class="md-ellipsis">
     
   
-    0001: Server rendering
+    0002: Engine v2
   
 
     
@@ -2655,7 +2683,7 @@
   <span class="md-ellipsis">
     
   
-    0001: Server rendering
+    0002: Engine v2
   
 
     
@@ -2700,6 +2728,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Motivation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rendering-spends-its-time-in-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering spends its time in Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#props-are-untyped-outside-mypy-and-reactivity-is-decided-by-argument-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Props are untyped outside mypy, and reactivity is decided by argument count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-api-has-drifted-from-solid-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The API has drifted from Solid 2.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-builds-ship-development-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production builds ship development checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2715,10 +2793,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#public-api" class="md-nav__link">
+  <a href="#1-compiled-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Public API
+        1. Compiled mounting
       
     </span>
   </a>
@@ -2726,10 +2804,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-the-server-renders" class="md-nav__link">
+  <a href="#2-lighter-reactive-nodes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the server renders
+        2. Lighter reactive nodes
       
     </span>
   </a>
@@ -2737,10 +2815,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-data" class="md-nav__link">
+  <a href="#3-typed-explicit-props" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Async data
+        3. Typed, explicit props
       
     </span>
   </a>
@@ -2748,10 +2826,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#streaming" class="md-nav__link">
+  <a href="#4-python-314-and-template-strings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streaming
+        4. Python 3.14 and template strings
       
     </span>
   </a>
@@ -2759,10 +2837,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hydration" class="md-nav__link">
+  <a href="#5-solid-20-rc14-alignment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hydration
+        5. Solid 2.0 RC.14 alignment
       
     </span>
   </a>
@@ -2770,32 +2848,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-boot-pipeline" class="md-nav__link">
+  <a href="#6-production-testing-startup-and-housekeeping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The boot pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#solidjs-20-rc-parity-sweep" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SolidJS 2.0 RC parity sweep
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clearing-lists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Clearing lists
+        6. Production, testing, startup, and housekeeping
       
     </span>
   </a>
@@ -2849,6 +2905,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2877,34 +2950,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0002-engine-v2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0002: Engine v2
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3176,6 +3221,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Motivation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rendering-spends-its-time-in-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering spends its time in Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#props-are-untyped-outside-mypy-and-reactivity-is-decided-by-argument-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Props are untyped outside mypy, and reactivity is decided by argument count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-api-has-drifted-from-solid-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The API has drifted from Solid 2.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-builds-ship-development-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production builds ship development checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3191,10 +3286,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#public-api" class="md-nav__link">
+  <a href="#1-compiled-mounting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Public API
+        1. Compiled mounting
       
     </span>
   </a>
@@ -3202,10 +3297,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-the-server-renders" class="md-nav__link">
+  <a href="#2-lighter-reactive-nodes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How the server renders
+        2. Lighter reactive nodes
       
     </span>
   </a>
@@ -3213,10 +3308,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-data" class="md-nav__link">
+  <a href="#3-typed-explicit-props" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Async data
+        3. Typed, explicit props
       
     </span>
   </a>
@@ -3224,10 +3319,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#streaming" class="md-nav__link">
+  <a href="#4-python-314-and-template-strings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streaming
+        4. Python 3.14 and template strings
       
     </span>
   </a>
@@ -3235,10 +3330,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hydration" class="md-nav__link">
+  <a href="#5-solid-20-rc14-alignment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hydration
+        5. Solid 2.0 RC.14 alignment
       
     </span>
   </a>
@@ -3246,32 +3341,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-boot-pipeline" class="md-nav__link">
+  <a href="#6-production-testing-startup-and-housekeeping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The boot pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#solidjs-20-rc-parity-sweep" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SolidJS 2.0 RC parity sweep
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clearing-lists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Clearing lists
+        6. Production, testing, startup, and housekeeping
       
     </span>
   </a>
@@ -3325,6 +3398,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3366,7 +3456,7 @@
 
 
   
-    <a href="https://github.com/wybthon/wybthon/edit/main/docs/rfcs/0001-server-rendering-and-hydration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/wybthon/wybthon/edit/main/docs/rfcs/0002-engine-v2.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
     </a>
@@ -3375,200 +3465,406 @@
     
       
     
-    <a href="https://github.com/wybthon/wybthon/raw/main/docs/rfcs/0001-server-rendering-and-hydration.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/wybthon/wybthon/raw/main/docs/rfcs/0002-engine-v2.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
     </a>
   
 
 
-<h1 id="rfc-0001-server-rendering-hydration-and-the-boot-pipeline">RFC 0001: Server rendering, hydration, and the boot pipeline<a class="headerlink" href="#rfc-0001-server-rendering-hydration-and-the-boot-pipeline" title="Permanent link">&para;</a></h1>
+<h1 id="rfc-0002-engine-v2-compiled-mounting-typed-props-and-solid-20-rc14-alignment">RFC 0002: Engine v2: compiled mounting, typed props, and Solid 2.0 RC.14 alignment<a class="headerlink" href="#rfc-0002-engine-v2-compiled-mounting-typed-props-and-solid-20-rc14-alignment" title="Permanent link">&para;</a></h1>
 <ul>
 <li><strong>Status:</strong> Implemented</li>
 <li><strong>Author:</strong> Owen Carey</li>
-<li><strong>Created:</strong> 2026-09-29</li>
+<li><strong>Created:</strong> 2026-10-07</li>
 </ul>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>Add server rendering to Wybthon: render a component tree to HTML in CPython, either at request time or at build time, and let the browser <em>hydrate</em> that HTML (adopt the existing DOM nodes and attach reactivity to them) instead of building the page from scratch. Resolved async data travels with the HTML so the client neither refetches it nor flashes a loading state. The production build prerenders routes, ships precompiled bytecode, and replays input that arrives before Python is ready. A small sweep aligns the remaining API with the SolidJS 2.0 release candidate.</p>
+<p>Rebuild the rendering path for speed, make component props typed and explicit, and align the public API with the SolidJS 2.0 release candidate. The Virtual DOM stays: it remains the batching layer between Python and the browser. What changes is how much Python work each mounted node costs, how components declare their inputs, and which names the package exports.</p>
+<p>The change has six parts:</p>
+<ol>
+<li><strong>Compiled mounting.</strong> Each repeated subtree shape gets a generated mount function. One fused kernel command clones, fills, inserts, and wires a whole row. Teardown releases native nodes in bulk instead of walking every node in Python.</li>
+<li><strong>Lighter reactive nodes and rows.</strong> Render bindings run their expression directly instead of through a wrapper closure, and list rows release the static nodes they never patch, so a row allocates, retains, and disposes less.</li>
+<li><strong>Typed, explicit props.</strong> Components declare inputs on a <code>Props</code> class that pyright and mypy check without a plugin. The declared type, not a function's argument count, decides whether a prop is reactive.</li>
+<li><strong>Python 3.14 and template strings.</strong> The runtime already runs Python 3.14 in Pyodide. Requiring it everywhere enables t-string holes such as <code>p(t"Count: {count}")</code>.</li>
+<li><strong>Solid 2.0 RC.14 alignment.</strong> Add the primitives the release candidate exports, and remove the ones it dropped.</li>
+<li><strong>Production and housekeeping.</strong> Production builds turn dev mode off, the package imports less at startup, a usable test renderer ships, and modules that only exist for historical reasons go away.</li>
+</ol>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
-<p>Wybthon's interactive performance is already good. The browser benchmarks show about 0.4 ms to select a row, about 10 ms to update every tenth row of 10,000, and about 20 ms to swap rows. Mounting is slower (roughly 90 ms for 1,000 rows), but it's in the same order of magnitude as other frameworks once you account for Python running on WebAssembly.</p>
-<p>Startup is the real problem. With a warm HTTP cache, loading and initializing Pyodide takes about 1.5 s, importing and starting the application takes about 270 ms more, and the page shows nothing but "Loading..." for roughly 1.8 s. A cold visit also downloads several megabytes of runtime first. No renderer optimization can close that gap, because the time is spent before the renderer runs.</p>
-<p>Server rendering can. The page's HTML arrives with the first response, so users see content immediately and search engines index it; Python boots in the background and takes over the existing DOM.</p>
-<p>Server rendering is also the largest missing piece of SolidJS parity. Solid ships <code>renderToString</code>, <code>renderToStream</code>, <code>hydrate</code>, <code>isServer</code>, per-computation control over where async data resolves (<code>ssrSource</code>), and <code>clientOnly</code>. Wybthon had none of these.</p>
-<p>Wybthon is well placed to add them. Everything already imports and runs in CPython, so the same components can render on a Python server. The renderer already speaks a narrow wire protocol to a pluggable backend, so a server backend is a new implementation of an existing interface rather than a second renderer.</p>
+<h3 id="rendering-spends-its-time-in-python">Rendering spends its time in Python<a class="headerlink" href="#rendering-spends-its-time-in-python" title="Permanent link">&para;</a></h3>
+<p>Profiling a 1,000-row table (the js-framework-benchmark shape) with a recording backend shows that Python work dominates. The browser's DOM work is under 15% of the time to create rows. Each row costs:</p>
+<ul>
+<li>about 187 Python function calls to mount and 72 to dispose;</li>
+<li>about 66 garbage-collected container objects, retaining roughly 9.75 KB;</li>
+<li>7 kernel commands (<code>CLONE_TPL</code>, <code>SET_ATTR</code>, <code>SET_TEXT</code>, <code>HOLE_TEXT</code>, two <code>LISTEN</code>, and <code>INSERT</code>).</li>
+</ul>
+<p>The largest costs are:</p>
+<table>
+<thead>
+<tr>
+<th>Share of create time</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>28%</td>
+<td>Building a <code>MountPlan</code>: the guarded extraction routine runs about 90 checks per row and allocates order and binding lists</td>
+</tr>
+<tr>
+<td>13%</td>
+<td>Building the row's VNodes (user code)</td>
+</tr>
+<tr>
+<td>11%</td>
+<td><code>_mount_template</code> plus seven command tuples</td>
+</tr>
+<tr>
+<td>11%</td>
+<td>The reactive <code>class</code> binding (one <code>Computation</code>)</td>
+</tr>
+<tr>
+<td>10%</td>
+<td>The label hole (one <code>Computation</code> and two closures)</td>
+</tr>
+<tr>
+<td>10%</td>
+<td><code>set_handler</code>, twice</td>
+</tr>
+</tbody>
+</table>
+<p>Clearing 10,000 rows takes about 420 ms in the browser, yet sends only two commands. Nearly all of it is <code>_dispose_tree</code>, which visits 100,000 nodes in Python and probes three global tables for each one. Replacing every row removes them one at a time: 1,000 range removals and 1,000 releases.</p>
+<p>A prototype that compiled each shape into a mount function was 4.1 to 4.9 times faster for create and clear at both 1,000 and 10,000 rows. It skipped VNode construction, so a realistic target is about 3 times.</p>
+<h3 id="props-are-untyped-outside-mypy-and-reactivity-is-decided-by-argument-count">Props are untyped outside mypy, and reactivity is decided by argument count<a class="headerlink" href="#props-are-untyped-outside-mypy-and-reactivity-is-decided-by-argument-count" title="Permanent link">&para;</a></h3>
+<p><code>Component.__call__(*children: Any, **props: Any)</code> means pyright and Pylance check nothing at a component's call sites. Only the bundled mypy plugin rewrites the signature.</p>
+<p>Wybthon decides what's reactive by counting a function's required arguments. Any zero-argument callable is treated as a reactive expression, including at component boundaries. A parent passing <code>on_close=lambda: set_open(False)</code> makes the child's <code>on_close()</code> <em>call</em> the handler when it reads the prop. The documentation teaches workarounds: <code>literal()</code>, <code>props.raw()</code>, and <code>on_done()()</code>.</p>
+<h3 id="the-api-has-drifted-from-solid-20">The API has drifted from Solid 2.0<a class="headerlink" href="#the-api-has-drifted-from-solid-20" title="Permanent link">&para;</a></h3>
+<p>Wybthon pins Solid 2.0 RC.9. RC.14 exports <code>createReaction</code>, <code>repeat</code>, <code>TimeoutError</code>, <code>NoHydration</code>, <code>Hydration</code>, <code>isHydrating</code>, <code>httpStatus</code>, and <code>httpHeader</code>. It removed <code>createSelector</code> (use <code>createProjection</code>) and <code>renderToStringAsync</code> (await <code>renderToStream</code>). Its <code>Errored</code> fallback receives an error accessor, and its <code>children</code> helper resolves nested accessors and offers <code>toArray()</code>.</p>
+<h3 id="production-builds-ship-development-checks">Production builds ship development checks<a class="headerlink" href="#production-builds-ship-development-checks" title="Permanent link">&para;</a></h3>
+<p><code>DEV_MODE</code> defaults to <code>True</code>, and nothing in <code>wyb build</code> or the production bootstrap turns it off. Production apps pay for dev-only checks and print development warnings. <code>wybthon.testing.render_test</code> also fails outside the browser with <code>ModuleNotFoundError: js</code>, so applications can't unit test components with the shipped helper.</p>
 <h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
-<h3 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h3>
-<p>New in <code>wybthon</code> (and <code>wybthon.server</code> for the server entry points):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">hydrate</span><span class="p">,</span> <span class="n">is_server</span><span class="p">,</span> <span class="n">client_only</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_string</span><span class="p">,</span> <span class="n">render_to_string_async</span><span class="p">,</span> <span class="n">render_to_stream</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">html</span> <span class="o">=</span> <span class="n">render_to_string</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="s2">"/users/7"</span><span class="p">)</span>              <span class="c1"># synchronous; async data renders fallbacks</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">html</span> <span class="o">=</span> <span class="k">await</span> <span class="n">render_to_string_async</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="s2">"/users/7"</span><span class="p">)</span>  <span class="c1"># waits for async data and serializes it</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">render_to_stream</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="s2">"/users/7"</span><span class="p">):</span> <span class="c1"># shell first, then each Loading boundary</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">await</span> <span class="n">send</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">hydrate</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>   <span class="c1"># in the browser, instead of render(App(), "#app")</span>
+<h3 id="1-compiled-mounting">1. Compiled mounting<a class="headerlink" href="#1-compiled-mounting" title="Permanent link">&para;</a></h3>
+<p>The VDOM, holes, reconciler, and kernel stay. The template fast path changes from "describe a plan, then interpret it" to "run a function generated for this shape."</p>
+<p><strong>Shapes.</strong> The first mount of an element subtree walks it once and records a <em>shape</em>:</p>
+<ul>
+<li>the serialized skeleton HTML;</li>
+<li>the pre-order node count;</li>
+<li>each text slot's offset;</li>
+<li>each binding's offset and kind (event, reactive prop, static prop, ref);</li>
+<li>each dynamic child's offset (hole or nested mount).</li>
+</ul>
+<p>Shapes are cached by structure, as today.</p>
+<p><strong>Mount functions.</strong> A repeated shape gets a generated Python function. It does everything the current <code>build_plan</code> plus <code>_mount_template</code> pair does, in straight-line code:</p>
+<ul>
+<li>guard the instance's structure;</li>
+<li>allocate the id block;</li>
+<li>append one fused command;</li>
+<li>wire bindings by offset;</li>
+<li>mount holes;</li>
+<li>record the template root on the root VNode.</li>
+</ul>
+<p>The guards avoid allocations: no <code>tuple(props)</code> per node, and no order or binding lists. A guard failure falls back to the generic path. The generated source contains only framework names and integer offsets; tags, prop names, and static values live in a constants table, as they do now.</p>
+<p><strong>Fused commands.</strong> <code>REGISTER_TPL</code> carries the skeleton, the text-slot offsets, and the delegated event types per offset. One <code>CLONE</code> command then:</p>
+<ul>
+<li>clones the prototype;</li>
+<li>registers its nodes;</li>
+<li>fills its text slots;</li>
+<li>marks its delegated listeners;</li>
+<li>inserts it before an anchor.</li>
+</ul>
+<p>The command is <code>[op, first_id, tpl_id, parent_id, anchor_id, ...texts]</code>. A row that used seven commands uses one, and the per-row JSON payload falls from about 140 to about 40 bytes.</p>
+<p><strong>Text holes.</strong> A hole whose neighbors in the skeleton aren't text uses a text-node placeholder instead of a comment. Its first text result fills that placeholder's slot in the clone command, which is still being built when the hole first runs, so a row with a text label costs no extra command. Later results are plain <code>nodeValue</code> writes.</p>
+<p><strong>Lazy node ids.</strong> A template-mounted subtree records its first id and its shape on the root VNode, and assigns ids to the static descendants' <code>el</code> fields only when the reconciler first needs them. That happens when a hole patches the subtree, or when a dynamic child needs an anchor. List rows and component output are never patched, so they skip those assignments entirely.</p>
+<p><strong>Released static nodes.</strong> List rows and component output are never patched: a row only moves or leaves, and a component only receives new props. Once such a subtree mounts from a template, its static VNodes are released, and the root keeps only its shape, its first node id, its dynamic children, and its binding computations. That roughly halves the memory a row retains, and the collector has fewer objects to scan.</p>
+<p><strong>Native teardown.</strong> <code>DISPOSE_RANGE</code> and <code>DISPOSE</code> remove nodes and release every registered descendant inside the kernel, walking the removed nodes natively. Python no longer builds and sends lists of every id. Python-side registrations (handlers, reactive bindings, refs) are found through the shape's binding offsets, not by visiting every node. Clearing a list becomes one native range removal plus disposal of each row's owner.</p>
+<p><strong>Bulk replacement.</strong> When a keyed list reuses no rows, the region clears in one command and mounts the new rows as one splice, instead of reconciling 1,000 unrelated pairs.</p>
+<p><strong>Event registration.</strong> Handlers are stored in one table keyed by node id, with the event key derived once per shape. Delegated listener types come from the template registration, so mounting a row with two handlers sends no <code>LISTEN</code> commands. Handlers may accept the event or take no arguments; the arity is checked once at registration: <code>on_click=lambda: set_open(False)</code>.</p>
+<h3 id="2-lighter-reactive-nodes">2. Lighter reactive nodes<a class="headerlink" href="#2-lighter-reactive-nodes" title="Permanent link">&para;</a></h3>
+<p>Every hole and reactive attribute used to wrap its expression in a second closure that turned "not ready" and errors into special values. A <code>keep</code> flag on the framework's render computations now gives the same behavior directly: a source that isn't ready keeps the current DOM state, and an error routes to the nearest <code>Errored</code> boundary through the apply stage. Framework-created computations pass their apply arity explicitly instead of inspecting the callback's signature.</p>
+<p>The reactive core stays in one module. Its hot paths read module globals, and splitting it across modules would turn those reads into attribute lookups on the critical path. That's the opposite of this RFC's goal.</p>
+<h3 id="3-typed-explicit-props">3. Typed, explicit props<a class="headerlink" href="#3-typed-explicit-props" title="Permanent link">&para;</a></h3>
+<p>Components declare inputs on a subclass of <code>Props</code>. The component function takes one parameter annotated with that class:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">CounterProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">label</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">initial</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">on_change</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nd">@component</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="o">.</span><span class="n">peek</span><span class="p">())</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">():</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="k">if</span> <span class="n">props</span><span class="o">.</span><span class="n">on_change</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            <span class="n">props</span><span class="o">.</span><span class="n">on_change</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="s2">": "</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span> <span class="n">button</span><span class="p">(</span><span class="s2">"+"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">increment</span><span class="p">))</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="nd">@component</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">return</span> <span class="n">Counter</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Clicks"</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>render_to_string(view, *, url="/")</code> renders synchronously. Async memos don't start on the server in this mode; their <code>Loading</code> boundaries render fallbacks, and the client loads the data after hydration.</li>
-<li><code>render_to_string_async(view, *, url="/", timeout=30)</code> resolves every async memo read during rendering (including waterfalls, where one async result decides what renders next), then renders the final HTML and appends the serialized state.</li>
-<li><code>render_to_stream(view, *, url="/", timeout=30)</code> yields the shell immediately, with fallbacks for pending boundaries, then yields one chunk per <code>Loading</code> boundary as its content becomes ready (out-of-order streaming), and finally the serialized state. Every chunk belongs inside the mount container.</li>
-<li><code>hydrate(view, container)</code> adopts the server-rendered DOM under <code>container</code> and returns a <code>Root</code>, like <code>render</code>.</li>
-<li><code>is_server()</code> reports whether the current code is running inside a server render.</li>
-<li><code>client_only(children, *, fallback=None)</code> renders <code>fallback</code> on the server and during hydration, then swaps in <code>children</code> once hydration has finished. Use it for widgets that need browser APIs.</li>
-<li><code>create_memo(..., ssr_source="server" | "hybrid" | "client")</code> chooses where an async memo resolves; see "Async data".</li>
+<li><code>Props</code> is a <a href="https://peps.python.org/pep-0681/">PEP 681</a> <code>dataclass_transform</code> base, so pyright and mypy check <code>Counter(label="Clicks", initial=5)</code> with no plugin. A missing required prop, a wrong type, or an unknown name is a type error. At run time an unknown or missing required prop raises <code>TypeError</code> in dev mode.</li>
+<li>A <code>Prop[T]</code> field accepts <code>T</code>, an accessor of <code>T</code>, or a zero-argument function returning <code>T</code>. Reading <code>props.label</code> returns an <code>Accessor[T]</code>. Place it in the tree to create a hole, call it inside a tracking scope, or use <code>.peek()</code>.</li>
+<li>Any other field is plain data. <code>props.on_change</code> is the callable the parent passed, never invoked by the read. A plain field reads the parent's latest value without tracking.</li>
+<li>Defaults use <code>prop(default=...)</code>. Checkers only recognize a field specifier's default when it's passed by keyword. Plain fields use ordinary defaults.</li>
+<li><code>ParentProps</code> declares <code>children: Prop[Child]</code>. Children are passed as the <code>children</code> keyword, or with item syntax: <code>Card(title="Hi")[h2("Body"), p("More")]</code>.</li>
+<li>A component with no inputs takes no parameters. Calling a component returns a node. Its static return type is the props class, which is how checkers validate the keywords; every child position accepts it.</li>
+<li><code>merge(*sources)</code> and <code>omit(props, *keys)</code> accept props instances; <code>omit</code> also accepts a predicate. Both return reactive mappings that can be spread onto elements.</li>
 </ul>
-<p>The strings returned by the server functions are the <em>contents</em> of the mount container. The caller supplies the surrounding document.</p>
-<h3 id="how-the-server-renders">How the server renders<a class="headerlink" href="#how-the-server-renders" title="Permanent link">&para;</a></h3>
-<p>The server runs the ordinary reconciler against a new <code>ServerBackend</code>. That's a small in-memory DOM that implements the kernel wire protocol and serializes to HTML. Using the real reconciler, rather than a separate string renderer, guarantees that the server produces exactly the node structure the client expects: <code>Loading</code> parking, <code>Errored</code> fallbacks, list regions, holes, and fragments all behave identically by construction. The server backend doesn't parse templates, so every element takes the per-node mount path, which is also the path hydration uses.</p>
-<p>Node ids are process-global, so concurrent renders in one asyncio process can share the backend: each render mounts into its own detached container, and the ids never collide. Rendering is synchronous within each pass, so the reactive core's module-level scope variables are never left set across an <code>await</code>.</p>
-<p>Server mode changes a few runtime behaviors, matching Solid:</p>
+<p>DOM positions keep their rule: a zero-argument callable placed as a child or as an attribute value is a reactive expression. That's Wybthon's spelling of JSX's <code>{expr}</code>. Event handlers and refs are never reactive. The arity rule no longer applies anywhere else.</p>
+<h3 id="4-python-314-and-template-strings">4. Python 3.14 and template strings<a class="headerlink" href="#4-python-314-and-template-strings" title="Permanent link">&para;</a></h3>
+<p><code>requires-python</code> becomes <code>&gt;=3.14</code>, matching the Pyodide 314 runtime that production builds already target. Server rendering, tests, and tooling run on the same version as the browser.</p>
+<p>A <a href="https://peps.python.org/pep-0750/">PEP 750</a> template string is a reactive expression wherever text is accepted:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">p</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> (doubled: </span><span class="si">{</span><span class="n">doubled</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">a</span><span class="p">(</span><span class="s2">"Profile"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="sa">t</span><span class="s2">"/users/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">div</span><span class="p">(</span><span class="n">class_</span><span class="o">=</span><span class="sa">t</span><span class="s2">"card card-</span><span class="si">{</span><span class="n">variant</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></code></pre></div>
 <ul>
-<li><code>create_effect</code>, <code>create_tracked_effect</code>, and <code>on_settled</code> don't run. Render effects (holes and prop bindings) run once, as they do during any mount. Framework-internal effects, such as the one that switches a <code>Loading</code> boundary between content and fallback, still run.</li>
-<li>The router reads the request URL instead of <code>window.location</code>, and <code>navigate</code> is a no-op.</li>
-<li><code>Portal</code> renders nothing; its content mounts in the browser after hydration.</li>
-<li><code>create_unique_id</code> produces ids that match between the server and the hydrating client.</li>
+<li>Interpolations that are accessors or zero-argument functions are called inside one binding, so the whole string updates together. Other interpolations are formatted once.</li>
+<li>Conversions and format specifications apply (<code>t"{price:.2f}"</code>).</li>
+<li>A template string with no reactive interpolations is static text.</li>
 </ul>
-<h3 id="async-data">Async data<a class="headerlink" href="#async-data" title="Permanent link">&para;</a></h3>
-<p>A <em>hydration session</em> is active during a server render pass and during <code>hydrate</code>'s initial mount. The session gives every memo, <code>Loading</code> boundary, <code>Errored</code> boundary, and unique id created during the mount a key derived from its <em>position</em>: each component, hole, list row, and branch knows its place in the rendered tree, and a counter within that place numbers what's created there. A position doesn't depend on when async data arrives, so a key identifies the same memo in every server pass and in the browser. Each serialized value also records the qualified name of the function that computed it, and a value is only applied to a memo with the same function.</p>
-<p><code>render_to_string_async</code> resolves data in passes. Each pass renders the whole tree with every value resolved so far, starts the async memos that aren't resolved yet, and waits for them. Rendering again after new values arrive discovers the next level of a waterfall (data that only renders once earlier data exists). Work still running when a pass ends carries over to the next pass instead of starting again. The final pass has every value available, so it renders synchronously from start to finish, which is exactly what the client does during hydration. Its values are serialized as JSON in a <code>&lt;script type="application/json" data-wyb-state&gt;</code> element at the end of the container.</p>
-<p>Rejections are serialized too, and the client raises them as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ServerError&lt;/span&gt;" href="../../api/wybthon/#wybthon.ServerError"><code>ServerError</code></a>, which carries the original type name and message. <code>Errored</code> boundaries that show their fallback on the server are recorded in the state as well, so the hydrating client starts them on the fallback and claims the markup the server sent instead of rendering content that would immediately fail.</p>
-<p>On the client, a memo whose key has a serialized value starts with that value instead of raising <code>NotReadyError</code>:</p>
-<ul>
-<li>If the memo's function is synchronous and <em>returns</em> an awaitable (<code>create_memo(lambda: fetch_user(user_id()))</code>), the function runs so its dependencies are tracked, and the coroutine it returns is closed without running. Nothing is fetched twice.</li>
-<li>If the memo's function is itself an <code>async def</code>, its dependencies are only discoverable by running it, so it reruns quietly in the background after hydration: no fallback, no pending state, and the server value stays on screen until the new one lands. Prefer the first form for data the server has already fetched.</li>
-</ul>
-<p><code>ssr_source</code> controls this per memo:</p>
+<h3 id="5-solid-20-rc14-alignment">5. Solid 2.0 RC.14 alignment<a class="headerlink" href="#5-solid-20-rc14-alignment" title="Permanent link">&para;</a></h3>
+<p>Added:</p>
 <table>
 <thead>
 <tr>
-<th>Value</th>
-<th>On the server</th>
-<th>While hydrating</th>
+<th>Solid 2.0 RC.14</th>
+<th>Wybthon</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>"server"</code> (default)</td>
-<td>Resolved and serialized</td>
-<td>Uses the serialized value</td>
+<td><code>createReaction(effect)</code></td>
+<td><code>create_reaction(effect, *, error=None)</code> returns <code>track(fn)</code></td>
 </tr>
 <tr>
-<td><code>"hybrid"</code></td>
-<td>Resolved and serialized</td>
-<td>Uses the serialized value, then always reruns quietly</td>
+<td><code>repeat(count, map, { from, fallback })</code></td>
+<td><code>repeat(count, fn, *, start=0, fallback=None)</code></td>
 </tr>
 <tr>
-<td><code>"client"</code></td>
-<td>Never runs; reads are pending</td>
-<td>Runs normally</td>
+<td><code>mapArray(list, map, { fallback })</code></td>
+<td><code>map_array(..., fallback=...)</code></td>
+</tr>
+<tr>
+<td><code>children(fn).toArray()</code></td>
+<td><code>children(fn)</code> resolves nested accessors; <code>.to_array()</code></td>
+</tr>
+<tr>
+<td><code>reconcile(value, key)</code></td>
+<td><code>key</code> may be a string, a function, or <code>None</code></td>
+</tr>
+<tr>
+<td><code>omit(props, predicate)</code></td>
+<td><code>omit(props, predicate)</code></td>
+</tr>
+<tr>
+<td><code>TimeoutError</code></td>
+<td><code>until(..., timeout=)</code> raises the built-in <code>TimeoutError</code></td>
+</tr>
+<tr>
+<td><code>NoHydration</code>, <code>Hydration</code>, <code>isHydrating</code></td>
+<td><code>NoHydration</code>, <code>Hydration</code>, <code>is_hydrating()</code></td>
+</tr>
+<tr>
+<td><code>httpStatus</code>, <code>httpHeader</code>, <code>getRequestEvent</code></td>
+<td><code>http_status</code>, <code>http_header</code>, <code>get_request_event</code>, and <code>RequestEvent</code>, exported from <code>wybthon</code> (no-ops in the browser)</td>
+</tr>
+<tr>
+<td><code>Errored</code> fallback <code>(err: Accessor, reset)</code></td>
+<td><code>fallback=lambda err, reset: ...</code> where <code>err</code> is an accessor</td>
 </tr>
 </tbody>
 </table>
-<p>Serialized values must be JSON-compatible. A value that isn't is skipped with a dev-mode warning, and the client loads it itself.</p>
-<h3 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h3>
-<p><code>render_to_stream</code> runs the same passes but emits as it goes, and it starts the next pass as soon as any pending work settles rather than waiting for all of it, so a fast boundary never waits for a slow one. The first pass is sent as the shell. <code>Loading</code> boundaries write their start and end markers as comments carrying the boundary's key (<code>&lt;!--wyb:b3f9c...--&gt;</code> and <code>&lt;!--/wyb:b3f9c...--&gt;</code>). After each later pass, every boundary that's present in the streamed document, was showing its fallback, and now shows its content is sent as a <code>&lt;template&gt;</code> holding the boundary's new inner HTML plus a one-line script that swaps it in between the markers. Nested boundaries arrive in later chunks. <code>Reveal</code> ordering is respected automatically, because each pass computes each boundary's display mode with the same <code>Reveal</code> logic the client uses.</p>
-<h3 id="hydration">Hydration<a class="headerlink" href="#hydration" title="Permanent link">&para;</a></h3>
-<p>Hydration reuses the mount code in a <em>claim</em> mode. Instead of creating a node and inserting it, the reconciler emits claim operations that take the next node in each parent's child list:</p>
-<table>
-<thead>
-<tr>
-<th>Op</th>
-<th>Arguments</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>HYDRATE</code></td>
-<td>root</td>
-<td>Start claiming under <code>root</code></td>
-</tr>
-<tr>
-<td><code>CLAIM_ELEMENT</code></td>
-<td>id, parent, tag</td>
-<td>Claim the next element</td>
-</tr>
-<tr>
-<td><code>CLAIM_TEXT</code></td>
-<td>id, parent, text</td>
-<td>Claim the next text node, splitting merged text</td>
-</tr>
-<tr>
-<td><code>CLAIM_COMMENT</code></td>
-<td>id, parent, data</td>
-<td>Claim the next comment marker</td>
-</tr>
-<tr>
-<td><code>HYDRATE_END</code></td>
-<td>none</td>
-<td>Remove unclaimed server nodes and stop claiming</td>
-</tr>
-</tbody>
-</table>
-<p>The kernel keeps one cursor per parent. The HTML parser merges adjacent text nodes and drops empty ones, so a text claim splits a longer server text node when it starts with the expected text and creates an empty text node when the expected text is empty. Whitespace-only text between elements is skipped.</p>
-<p>Claims are tolerant. If the next node doesn't match, the kernel creates the expected node in place, warns once in dev mode, and continues; <code>HYDRATE_END</code> removes any server nodes that were never claimed. An end marker that carries a boundary key resynchronizes by searching forward for its matching comment, so a mismatch inside a <code>Loading</code> boundary doesn't cascade past it. A mismatch therefore costs extra DOM work, never a broken page.</p>
-<p>Attribute, property, and style operations are still emitted during hydration. They're idempotent on matching nodes, and they make a node created by a mismatch correct. Event handlers and refs attach as usual. The whole initial mount remains a single bridge crossing.</p>
-<p>Hydration only claims during the synchronous initial mount. <code>Portal</code> content, lists and holes that update later, and anything an effect mounts use the normal create path.</p>
-<h3 id="the-boot-pipeline">The boot pipeline<a class="headerlink" href="#the-boot-pipeline" title="Permanent link">&para;</a></h3>
+<p>Removed:</p>
 <ul>
-<li><strong>Entry points return views.</strong> <code>entry</code> in <code>wybthon.toml</code> now names a function that returns the root view, and the new <code>mount</code> key names the container (default <code>"#app"</code>). The bootstrap calls <code>hydrate</code> when the container holds server-rendered state and <code>render</code> otherwise. The same entry point drives prerendering.</li>
-<li><strong>Prerendering.</strong> <code>prerender = ["/", "/about"]</code> in <code>wybthon.toml</code> makes <code>wyb build</code> render each listed route with <code>render_to_string_async</code> in a subprocess and write it to <code>&lt;route&gt;/index.html</code>. <code>crawl = true</code> also follows the in-app links each rendered page contains. The template marks the region to replace with <code>&lt;!-- wyb:app --&gt;</code> and <code>&lt;!-- /wyb:app --&gt;</code>. The client-only shell is written to <code>200.html</code>, which <code>wyb preview</code> and <code>wyb dev</code> serve for routes that weren't prerendered. <code>wyb dev</code> prerenders the same routes on every rebuild. The starter project prerenders <code>/</code> and crawls from there.</li>
-<li><strong>Precompiled bytecode.</strong> When the build interpreter's version matches the pinned Pyodide's Python version, the runtime and application archives include unchecked-hash <code>.pyc</code> files (PEP 552) under <code>__pycache__</code>, so the browser skips compiling Wybthon and the application at startup. <code>bytecode = false</code> opts out, and the manifest records whether bytecode shipped. Server-only modules (<code>server.py</code>, <code>_server_dom.py</code>, <code>_prerender.py</code>, and the build tools) are no longer shipped to the browser.</li>
-<li><strong>Early input replay.</strong> The bootstrap records clicks, input, changes, and form submissions that happen before hydration, prevents submissions from navigating, and replays them through the delegated event system once the page is hydrated. Input values typed before hydration are restored before their events replay.</li>
+<li><code>create_selector</code>. Use <code>create_projection</code>, which notifies only the keys it changes.</li>
+<li><code>render_to_string_async</code>. <code>render_to_stream(view)</code> returns a <code>RenderStream</code>: iterate it for chunks, or await it for the complete HTML.</li>
+<li><code>create_render_effect</code> with no apply stage. Like Solid, it takes <code>(compute, apply)</code>.</li>
 </ul>
-<h3 id="solidjs-20-rc-parity-sweep">SolidJS 2.0 RC parity sweep<a class="headerlink" href="#solidjs-20-rc-parity-sweep" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>flush(fn)</code> runs <code>fn</code> and flushes synchronously, returning <code>fn</code>'s result.</li>
-<li><code>create_signal(..., owned_write=True)</code> allows writes from inside an owned scope, Solid's narrow escape hatch from the dev-mode write guard. It covers both the value and function forms.</li>
-<li><code>create_owner()</code> and <code>is_disposed(owner)</code> join <code>create_root</code>.</li>
-<li>Reading an accessor at the top level of a <code>For</code>, <code>Show</code>, or <code>Match</code> callback body warns in dev mode, as it already does for component bodies.</li>
-<li>The <code>Dynamic</code> control-flow component is removed; <code>dynamic(source)</code> replaces it, as in Solid.</li>
-</ul>
-<h3 id="clearing-lists">Clearing lists<a class="headerlink" href="#clearing-lists" title="Permanent link">&para;</a></h3>
-<p>Replacing a list with an empty one (or clearing a store list) now disposes every row's reactive resources and emits one range removal and one release, instead of computing row matches and removing each row separately. The JavaScript kernel performs every range removal as a single native <code>Range.deleteContents()</code>. Clearing 1,000 rows makes about 13% fewer Python calls and took up to 27% less time in noisy native benchmark runs; cleanup order is unchanged.</p>
+<h3 id="6-production-testing-startup-and-housekeeping">6. Production, testing, startup, and housekeeping<a class="headerlink" href="#6-production-testing-startup-and-housekeeping" title="Permanent link">&para;</a></h3>
+<p><strong>Production mode.</strong>
+- <code>wyb build</code> writes the mode into the bundle manifest, and the bootstrap calls <code>set_dev_mode(False)</code> before the application imports.
+- <code>wyb dev</code> keeps dev mode on.
+- The stale <code>DEV_MODE</code> export is removed; <code>is_dev_mode()</code> is the live flag.</p>
+<p><strong>Startup.</strong>
+- The top-level package no longer imports the router, forms, virtual lists, or server helpers.
+- Stores load on first use; list regions learn about store lists when the store module registers itself.
+- <code>hashlib</code> loads only when hydration keys are needed.</p>
+<p><strong>Testing.</strong> <code>wybthon.testing</code> renders into the in-memory DOM in plain CPython:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">fire</span><span class="p">,</span> <span class="n">render</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">screen</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">Counter</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Clicks"</span><span class="p">))</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">fire</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">screen</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="s2">"+"</span><span class="p">))</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">assert</span> <span class="n">screen</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="s2">"Clicks: 1"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>It provides:
+- queries by text, role, label, and test id, each with <code>get</code>, <code>query</code>, and <code>get_all</code> variants;
+- <code>fire</code> helpers;
+- <code>screen.html()</code>;
+- automatic cleanup between tests.</p>
+<p><strong>Namespace.</strong>
+- <code>wybthon</code> exports the core: reactivity, components, flow control, boundaries, stores, DOM helpers, rendering, and context.
+- The router, forms, and virtual lists are imported from <code>wybthon.router</code>, <code>wybthon.forms</code>, and <code>wybthon.virtual</code>.
+- <code>wybthon.router_core</code> merges into <code>wybthon.router</code>.
+- The DOM attribute module becomes private.
+- The kernel's JavaScript moves out of a Python string into <code>_kernel.js</code>, where it can be linted.</p>
+<p><strong>HTML helpers.</strong>
+- Missing tags are added: <code>b</code>, <code>i</code>, <code>u</code>, <code>s</code>, <code>sub</code>, <code>sup</code>, <code>kbd</code>, <code>abbr</code>, <code>cite</code>, <code>q</code>, <code>dl</code>, <code>dt</code>, <code>dd</code>, <code>iframe</code>, <code>template</code>, <code>slot</code>, <code>output</code>, <code>data</code>, <code>del_</code>, <code>ins</code>, <code>samp</code>, <code>var</code>, <code>wbr</code>, <code>address</code>, <code>hgroup</code>, <code>search</code>, and <code>menu</code>.
+- <code>class</code> normalization lives in one place.</p>
+<p><strong>Tooling.</strong>
+- The dev server's static-directory mode and its <code>/__manifest</code> endpoint are removed. The browser test fixture and benchmark app become ordinary <code>wybthon.toml</code> projects.
+- <code>ruff format</code> replaces Black.
+- CI runs on Python 3.14, and the coverage gate rises from 45% to 80%.</p>
 <h2 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>entry</code> in <code>wybthon.toml</code> must return the root view instead of calling <code>render</code>. Add <code>mount</code> if the container isn't <code>#app</code>.</li>
-<li>The default <code>index.html</code> wraps its loading indicator in <code>&lt;!-- wyb:app --&gt;</code> and <code>&lt;!-- /wyb:app --&gt;</code> markers. Templates without the markers still work for client-only builds but can't be prerendered.</li>
-<li><code>Dynamic</code> and <code>DynamicComponent</code> are removed. Use <code>dynamic(source)(*children, **props)</code>.</li>
-<li><code>create_unique_id</code> returns <code>wyb-h</code> followed by a short hash of the component's position inside a hydration session, and <code>wyb-&lt;n&gt;</code> otherwise.</li>
-<li><code>wyb preview</code> and <code>wyb dev</code> fall back to <code>200.html</code> instead of <code>index.html</code> for unknown routes; configure static hosts the same way.</li>
-<li>The runtime archive no longer contains <code>wybthon.server</code>, <code>wybthon.build</code>, <code>wybthon.dev</code>, or the mypy plugin.</li>
-<li>The kernel wire protocol gains opcodes 22 through 26 (<code>HYDRATE</code>, <code>CLAIM_ELEMENT</code>, <code>CLAIM_TEXT</code>, <code>CLAIM_COMMENT</code>, and <code>HYDRATE_END</code>), and <code>CREATE_COMMENT</code> takes optional comment data.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Removed or changed</th>
+<th>Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python 3.12 and 3.13 support</td>
+<td>Python 3.14</td>
+</tr>
+<tr>
+<td>Component parameters annotated <code>Prop[T]</code> (<code>def Card(title: Prop[str])</code>), <code>**rest</code>, and a bare <code>props</code> parameter</td>
+<td>One parameter annotated with a <code>Props</code> subclass</td>
+</tr>
+<tr>
+<td><code>prop(value)</code></td>
+<td><code>prop(default=value)</code> on a <code>Props</code> field</td>
+</tr>
+<tr>
+<td><code>wybthon.mypy_plugin</code></td>
+<td>Not needed; checkers understand <code>Props</code> natively</td>
+</tr>
+<tr>
+<td><code>literal</code>, <code>LiteralValue</code>, <code>Props.raw</code></td>
+<td>Declare callbacks as plain (non-<code>Prop</code>) fields</td>
+</tr>
+<tr>
+<td><code>Props</code> as a mapping of accessors (<code>props["name"]</code>, iteration)</td>
+<td>Attribute access on the typed instance; <code>merge</code> and <code>omit</code> for spreading</td>
+</tr>
+<tr>
+<td><code>create_selector</code></td>
+<td><code>create_projection</code></td>
+</tr>
+<tr>
+<td><code>wybthon.server.render_to_string_async</code></td>
+<td><code>await render_to_stream(view)</code></td>
+</tr>
+<tr>
+<td><code>create_render_effect(fn)</code> with one argument</td>
+<td><code>create_render_effect(compute, apply)</code> or <code>create_tracked_effect(fn)</code></td>
+</tr>
+<tr>
+<td><code>Errored</code> fallback receiving the exception</td>
+<td>It receives an accessor; call <code>err()</code></td>
+</tr>
+<tr>
+<td><code>children(fn)</code> returning a flat list</td>
+<td>An accessor of resolved children with <code>.to_array()</code></td>
+</tr>
+<tr>
+<td>Router, forms, virtual list, and scheduling names exported from <code>wybthon</code></td>
+<td>Import from <code>wybthon.router</code>, <code>wybthon.forms</code>, and <code>wybthon.virtual</code></td>
+</tr>
+<tr>
+<td><code>wybthon.router_core</code></td>
+<td><code>wybthon.router</code></td>
+</tr>
+<tr>
+<td><code>wybthon.props</code> (DOM attribute application)</td>
+<td>Private (<code>wybthon._dom_props</code>)</td>
+</tr>
+<tr>
+<td><code>wybthon.DEV_MODE</code></td>
+<td><code>wybthon.is_dev_mode()</code></td>
+</tr>
+<tr>
+<td><code>wybthon.testing.render_test</code></td>
+<td><code>wybthon.testing.render</code></td>
+</tr>
+<tr>
+<td><code>wyb dev --dir</code> serving a directory without <code>wybthon.toml</code>, and <code>/__manifest</code></td>
+<td>A <code>wybthon.toml</code> project</td>
+</tr>
+<tr>
+<td>Kernel wire protocol (<code>CLONE_TPL</code>, <code>LISTEN</code> per handler, <code>RELEASE</code> id lists)</td>
+<td><code>CLONE</code>, template-declared listeners, <code>DISPOSE_RANGE</code> and <code>DISPOSE</code>; internal</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>A separate string renderer on the server.</strong> It would be faster per request, but it would duplicate the semantics of <code>Loading</code>, <code>Errored</code>, lists, and holes, and every divergence would be a hydration mismatch. Rendering through the real reconciler makes the output correct by construction. A direct string emitter remains possible later as an optimization behind the same API.</li>
-<li><strong>Render-and-swap instead of claiming.</strong> Rendering a fresh tree off-screen and swapping it in at the end is simpler and can't mismatch, but it discards focus, selection, scroll positions, and typed input, and it restarts media and CSS animations. Claiming preserves them.</li>
-<li><strong>Dense template claiming.</strong> Claiming whole template skeletons with one pre-order walk would send fewer ops, but hole content and component output are interleaved with the skeleton in the server DOM, so the pre-order ids don't line up. Per-node claims are simpler and still cross the bridge once.</li>
-<li><strong>Creation-order keys.</strong> Numbering memos in the order they're created is simpler, and it's deterministic within the final pass. But between passes it isn't: when an async value arrives, the content it reveals creates memos in the middle of the order, shifting every later key, so a value resolved in one pass would seed the wrong memo in the next. Position keys don't shift. The function-name check guards against the remaining cases, where different content renders at the same position.</li>
-<li><strong>Waiting for all data between streaming passes.</strong> It needs fewer passes, but a single slow request would hold back every boundary. The string renderer waits for everything; the stream advances on the first result.</li>
-<li><strong>Speeding up the renderer instead.</strong> A leaner binding node and call-site template caching could cut mount time by an estimated 30% to 40%. That's worth doing, but it doesn't change the 1.8 s the page spends waiting for Pyodide. It stays on the list for a later RFC.</li>
-<li><strong>Do nothing.</strong> Every Wybthon app would keep a blank page while Pyodide boots.</li>
-</ul>
+<p><strong>Remove the VDOM and compile to direct DOM calls, as Solid does.</strong> Rejected. Every DOM call from Python crosses the bridge, and the VDOM's batching is why mounting 1,000 rows is one crossing. Profiling shows the remaining cost is Python bookkeeping around the VDOM, not the VDOM itself.</p>
+<p><strong>A build-time AST compiler</strong> that rewrites <code>div(...)</code> trees into template factories. Deferred. It would also remove VNode construction, worth about 13% of create time beyond this RFC. But it needs source access the bytecode-only production build doesn't keep, and it must reason about name shadowing. Runtime shape compilation captures most of the gain with none of those constraints. It also gives a future compiler a ready target.</p>
+<p><strong>Keep parameter-style components and the mypy plugin.</strong> Rejected. Pyright and Pylance users get no checking, and the plugin must track mypy's internals. Function parameters can't be checked without a plugin: the body needs accessors while call sites pass plain values, and Python's type system can't express that mapping.</p>
+<p><strong>Class components</strong> (<code>class Card(Component)</code> with a <code>render</code> method). Rejected. They type-check, but they move away from Solid's function components and its <code>props</code> object, which the <code>Props</code> class mirrors directly.</p>
+<p><strong>A binary wire format.</strong> Rejected for now. JSON encoding is about 5% of commit time. Fusing commands reduces the payload more than a new encoding would.</p>
+<p><strong>A <code>Runtime</code> object replacing module globals.</strong> Deferred. It would help thread-safe server rendering, but it adds an indirection to every signal read.</p>
+<p><strong>Do nothing.</strong> Mounting stays about 3 times slower than it needs to be, pyright users stay unchecked, and production builds keep shipping development checks.</p>
 <h2 id="drawbacks-and-risks">Drawbacks and risks<a class="headerlink" href="#drawbacks-and-risks" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Server throughput.</strong> Rendering through the backend costs more per request than concatenating strings. It's adequate for prerendering and modest request rates; a direct emitter can replace it later.</li>
-<li><strong>Multiple passes.</strong> Async rendering renders the tree once per level of data dependency. Apps rarely have more than two or three levels, and each pass is synchronous Python.</li>
-<li><strong>Determinism.</strong> Hydration assumes the client's initial render matches the server's final pass. Code that reads the clock, random numbers, or browser-only state during render produces mismatches. They heal, but they cost DOM work; <code>client_only</code> and <code>is_server</code> are the tools for avoiding them.</li>
-<li><strong>Server-incompatible code.</strong> Application code that imports <code>js</code> or <code>pyodide</code> at module scope can't be prerendered. The prerender step reports the import error with advice to guard it with <code>is_server()</code>.</li>
+<li>Small components get more verbose: a props class plus a function, instead of annotated parameters.</li>
+<li>A component call is statically typed as its props class. Code that inspects the result with <code>isinstance</code> sees a <code>VNode</code> at run time.</li>
+<li>Requiring Python 3.14 excludes older interpreters for server rendering and tests.</li>
+<li>Generated mount functions add code that's harder to read than an interpreter loop. The guards must stay exhaustive, or a changed shape could be mounted with a stale routine. Fallback tests cover every guard.</li>
+<li>Native teardown relies on the kernel walking removed nodes. Content parked off-document by <code>Loading</code> must be disposed explicitly, since it isn't inside the removed range.</li>
 </ul>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>tests/test_ssr.py</code> renders views on the server backend, parses the HTML into the stub DOM, hydrates it through the reference <code>PythonBackend</code>, and asserts that no element was created, that there were no mismatches, and that events and reactive updates work afterward. The cases cover text merging, empty text, holes, fragments, lists, <code>Show</code>, <code>Switch</code>, <code>Loading</code>, <code>Errored</code>, portals, the router, lazy components, unique ids, and <code>client_only</code>. It also covers async resolution across waterfalls, serialized errors, every <code>ssr_source</code>, <code>async def</code> memos, non-JSON values, timeouts, streaming chunk order (including nested boundaries and <code>Reveal</code>), the equivalence of the streamed document and the async render, resynchronization at <code>Loading</code> end markers, recovery from deliberately mismatched HTML, and event replay.</li>
-<li><code>tests/test_parity.py</code> covers <code>flush(fn)</code>, <code>owned_write</code>, <code>create_owner</code>, <code>is_disposed</code>, the callback read warnings, the list clear path (one range removal, unchanged cleanup order), prerendering, crawling, the <code>200.html</code> shell, bytecode that imports without its source, and configuration validation.</li>
-<li><code>tests/e2e/test_hydration.py</code> builds a prerendered app, loads it in Chromium, checks that the server HTML shows while Pyodide is still loading, clicks and types before hydration, and verifies that the input replays, that the server's data isn't fetched again, and that hydration reports no mismatches.</li>
-<li>All 572 unit tests and all 63 browser tests pass, as do Ruff, Black, mypy, and the strict documentation build. Python call counts for creating 1,000 rows are unchanged (179,099 versus 179,100 on the baseline).</li>
+<li><strong>Unit tests.</strong> Every existing behavior suite is ported to the new component API. That covers reactivity, transitions, async, stores, flow, boundaries, the router, forms, server rendering, and hydration. New suites cover:</li>
+<li>generated mount guards, including every fallback path;</li>
+<li>native teardown and replacement;</li>
+<li>zero-argument handlers;</li>
+<li>t-strings in text and attributes;</li>
+<li><code>Props</code> typing at run time;</li>
+<li>the RC.14 additions;</li>
+<li>production mode;</li>
+<li>the test renderer.</li>
+<li><strong>Type checks.</strong> A typing fixture runs under both mypy and pyright, with expected errors for missing, mistyped, and unknown props.</li>
+<li><strong>Browser tests.</strong> The Playwright suite runs against the converted fixture project, including hydration and production builds.</li>
+<li><strong>Work gates.</strong> <code>benchmarks/check_work.py</code> gates command counts. Appending 1,000 rows must emit 1,000 row commands, not 7,000. Selection and swap must still emit two.</li>
+<li><strong>Benchmarks.</strong> Native and browser benchmarks compare against v0.36.0 with the existing interleaved method. Targets:</li>
+<li>create and replace at least 2.5 times faster in Python;</li>
+<li>clearing 10,000 rows at least 3 times faster;</li>
+<li>update, select, swap, and remove no slower;</li>
+<li>lower retained memory per row.</li>
+</ul>
+<h3 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h3>
+<p>The <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v2.md">engine v2 evaluation</a> measured the implementation against v0.36.0:</p>
+<ul>
+<li><strong>Python cost</strong> (<code>benchmarks/row_bench.py</code>):</li>
+<li>Creating and replacing rows is 1.4 to 1.5 times faster in the idiomatic table, and 1.8 to 1.9 times faster for the engine alone, without the selection binding.</li>
+<li>Clearing is 2.0 to 2.5 times faster.</li>
+<li>Each row sends one command instead of seven.</li>
+<li>A mounted row retains 44% less memory.</li>
+<li><strong>Startup:</strong> application startup is 60% faster.</li>
+<li><strong>Targets:</strong> both speedup targets were missed. Create reached 1.4 to 1.9 times against a target of 2.5, and clear reached 2.0 to 2.5 times against a target of 3. The largest remaining cost is building VNode trees in application code, which the deferred build-time compiler addresses.</li>
+<li><strong>Selection:</strong> it's about 0.05 ms slower per change, because a projection does more work than the removed selector.</li>
 </ul>
 <h2 id="unresolved-questions">Unresolved questions<a class="headerlink" href="#unresolved-questions" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Derived and projected stores (<code>create_store(fn)</code>, <code>create_projection</code>) with async bodies aren't serialized yet; they load on the client after hydration.</li>
-<li>Server functions (Solid's <code>"use server"</code>) and HTTP status and header control are left for a later RFC.</li>
-<li>A native-code or string-emitting server renderer, and a leaner client binding node, are candidates for a performance RFC.</li>
+<li>Whether to compile <code>For</code> row callbacks ahead of their first call, so the first row avoids the generic walk.</li>
+<li>Head management (<code>Title</code>, <code>Meta</code>). It belongs with a later routing and data-loading RFC.</li>
+<li>Whether <code>Props</code> should support generic components (<code>class ListProps[T](Props)</code>) beyond what the checkers infer today.</li>
+<li>Moving rarely used <code>Computation</code> and <code>Owner</code> fields into a side record allocated on first use. It would shrink each binding further, but it touches every transition path, so it's left for a focused change.</li>
+<li><code>Hydration</code> is a passthrough: a <code>NoHydration</code> region stays static as a whole while hydrating. Islands that re-enable hydration inside it need ID namespaces in the hydration keys.</li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Accepted on 2026-09-29, with implementation requested in the same change.</p>
+<p>Accepted on 2026-10-07. Wybthon is pre-1.0 and has no production users yet, so the breaking changes ship without a compatibility layer.</p>
 
 
 

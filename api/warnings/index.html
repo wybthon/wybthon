@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1961,62 +1959,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2261,34 +2203,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2437,6 +2351,62 @@
     
   
     Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
   
 
     
@@ -2745,6 +2715,8 @@
       
         
       
+        
+      
     
     
     
@@ -2844,6 +2816,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3649,19 +3649,20 @@ exception tracebacks can be disabled for production; error messages
 still go to <code>stderr</code>.</p>
 <p>Three things live here:</p>
 <ul>
-<li><strong>Dev-mode toggling</strong>: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;DEV_MODE&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#wybthon._warnings.DEV_MODE"><code>DEV_MODE</code></a>
-  defaults to <code>True</code>. Call
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="#wybthon._warnings.set_dev_mode"><code>set_dev_mode(False)</code></a> at startup
-  to silence warnings and traceback printing for production builds.
-  This also disables <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>
-  for signal and store writes inside tracking scopes.
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="#wybthon._warnings.is_dev_mode"><code>is_dev_mode()</code></a> reports the current
-  state. Both are re-exported from the top-level <code>wybthon</code> package.</li>
+<li><strong>Dev-mode toggling</strong>: dev mode is on by default, and <code>wyb dev</code>
+  keeps it on. Production builds (<code>wyb build</code>) record the mode in the
+  bundle manifest, and the bootstrap calls
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="#wybthon._warnings.set_dev_mode"><code>set_dev_mode(False)</code></a> before the
+  application imports, so production apps skip the dev-only checks and
+  warnings. Call it yourself when you mount outside the production
+  bootstrap. Turning dev mode off also disables
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a> for signal and store
+  writes inside tracking scopes, and the run-time <code>TypeError</code> for
+  unknown or missing component props.
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="#wybthon._warnings.is_dev_mode"><code>is_dev_mode()</code></a> reports the live
+  state. Both functions are re-exported from the top-level <code>wybthon</code>
+  package; the module-level <code>DEV_MODE</code> flag is internal, and
+  <code>wybthon.DEV_MODE</code> no longer exists.</li>
 <li><strong>Warnings</strong>: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;warn&lt;/span&gt;" href="#wybthon._warnings.warn"><code>warn</code></a> prints a
   message to <code>stderr</code> every time it's called (a no-op when dev mode is
   off), while <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;warn_once&lt;/span&gt;" href="#wybthon._warnings.warn_once"><code>warn_once</code></a> deduplicates
@@ -3671,7 +3672,7 @@ still go to <code>stderr</code>.</p>
   component body. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;warn_each_plain_list&lt;/span&gt;" href="#wybthon._warnings.warn_each_plain_list"><code>warn_each_plain_list</code></a>
   also uses it when <code>For</code> receives a static list or tuple.</li>
 <li><strong>Error logging</strong>: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;log_error&lt;/span&gt;" href="#wybthon._warnings.log_error"><code>log_error</code></a> always
-  prints, regardless of <code>DEV_MODE</code>; in dev mode it also prints the full
+  prints, regardless of dev mode; in dev mode it also prints the full
   traceback of an attached exception.</li>
 </ul>
 <p><code>component_name</code> is a small formatting helper shared by the warning

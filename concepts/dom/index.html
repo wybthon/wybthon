@@ -1898,8 +1898,6 @@
       
         
       
-        
-      
     
     
     
@@ -2102,62 +2100,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2402,34 +2344,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2598,6 +2512,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2693,6 +2663,8 @@
       
         
           
+        
+      
         
       
         
@@ -2798,6 +2770,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3234,34 +3234,47 @@ at the top of the component body during initial render.</p>
 <li>A callable: <code>ref(element)</code> is called once on mount. It isn't called again on unmount, so pair it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> if you need teardown.</li>
 <li>A list or tuple mixing both: every entry is assigned. This is how a component forwards a parent's ref while keeping one of its own:</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_settled</span><span class="p">,</span> <span class="n">prop</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">input_</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nd">@component</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">return</span> <span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">[</span><span class="n">local</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">peek</span><span class="p">()])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">on_settled</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">input_</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">FancyInputProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Element</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@component</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">FancyInputProps</span><span class="p">):</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">return</span> <span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">[</span><span class="n">local</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">])</span>
 </span></code></pre></div>
 <p>Refs pass through components like any other prop; there's no special
-forwarding API. A <code>None</code> entry in the list is ignored.</p>
+forwarding API. Declare <code>ref</code> as a plain field (not <code>Prop[...]</code>) so
+<code>props.ref</code> returns the <code>Ref</code> or callback the parent passed, untouched.
+A <code>None</code> entry in the list is ignored.</p>
 <h2 id="ownership-and-disposal-order">Ownership and disposal order<a class="headerlink" href="#ownership-and-disposal-order" title="Permanent link">&para;</a></h2>
 <p>Refs follow the ownership tree. A component's <code>ref.current</code> is set from
-the first commit until the component unmounts. During unmount the
-component's own cleanups run first, then its host nodes' refs are
-cleared, then the freed node ids are released to the kernel. So an
-<code>on_cleanup</code> registered in the component body can still reach
-<code>ref.current</code> to tear down a native listener or a third-party widget.
-Materializing <code>ref.current.element</code> at that point commits the pending
-remove op, so the node may already be detached from the document; use
-it for teardown, not for measurements. Cleanups that run later (for
-example ones registered by an ancestor) see <code>ref.current is None</code>, so
-guard for it. See <a href="../lifecycle/">Lifecycle and ownership</a>.</p>
+the first commit until the component unmounts. Unmounting queues one
+kernel command that removes the component's nodes and releases them
+natively, then runs the component's own cleanups, then clears its host
+nodes' refs. So an <code>on_cleanup</code> registered in the component body can
+still reach <code>ref.current</code> to tear down a native listener or a
+third-party widget.</p>
+<p>The raw node is another matter. Materializing <code>ref.current.element</code> for
+the first time inside a cleanup commits the queued removal, and the
+kernel has already released the node by then, so <code>element</code> is <code>None</code>.
+If teardown needs the raw node, read <code>ref.current.element</code> while the
+component is mounted (in <code>on_settled</code>, say); the <code>Element</code> caches it,
+and the cleanup gets the detached node. Use it for teardown, not for
+measurements. Cleanups that run later (for example ones registered by
+an ancestor) see <code>ref.current is None</code>, so guard for it. See
+<a href="../lifecycle/">Lifecycle and ownership</a>.</p>
 <h2 id="how-the-renderer-relates-to-element">How the renderer relates to <code>Element</code><a class="headerlink" href="#how-the-renderer-relates-to-element" title="Permanent link">&para;</a></h2>
 <p>The renderer itself never touches raw DOM nodes or <code>Element</code> wrappers.
 Every host VNode is identified by an integer node id, and all mutations
-(create, insert, set-attr, listen) are emitted as compact operations
+(clone, insert, set-attr, dispose) are emitted as compact operations
 into a command buffer that a small JavaScript kernel applies in one
 bridge crossing per commit. See <a href="../vdom/">Virtual DOM</a>.</p>
 <p><code>Element</code> sits on top of that system as the escape hatch for imperative

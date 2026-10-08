@@ -1892,8 +1892,6 @@
       
         
       
-        
-      
     
     
     
@@ -2096,62 +2094,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2396,34 +2338,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2592,6 +2506,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2687,6 +2657,8 @@
       
         
           
+        
+      
         
       
         
@@ -2792,6 +2764,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3178,7 +3178,7 @@
 <ol>
 <li><strong>Signals are the source of truth.</strong> A signal is a <code>(getter, setter)</code> pair. Reading it inside a tracking scope subscribes that scope; writing it stages a change that becomes visible at the next flush. Every write batches; there's no <code>batch()</code>.</li>
 <li><strong>Derivations are lazy and glitch-free.</strong> A memo recomputes only when it's read after a source changed, and it notifies its observers only when its value actually changed. An <code>async def</code> memo is the data-fetching primitive.</li>
-<li><strong>Components run once.</strong> The body executes a single time when the component mounts and returns a tree. Every parameter is a <code>Prop[T]</code> accessor. Anything reactive lives in a hole, a memo, or an effect, never in the body itself.</li>
+<li><strong>Components run once.</strong> The body executes a single time when the component mounts and returns a tree. Inputs are declared on a typed <code>Props</code> class, and every <code>Prop[T]</code> field reads as an accessor. Anything reactive lives in a hole, a memo, or an effect, never in the body itself.</li>
 <li><strong>Holes, not re-renders.</strong> A reactive expression placed in the tree becomes a <em>hole</em>: its own render effect that re-renders only its subtree. A signal change re-runs the holes that read it, never whole components.</li>
 <li><strong>Ownership, not lifecycle methods.</strong> Effects, memos, cleanups, and context attach to the <em>owner</em> that was active when they were created. Disposing the owner tears everything down depth-first.</li>
 </ol>
@@ -3195,42 +3195,52 @@
 <li>In the effect phase, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a> computations run and observe the committed DOM.</li>
 </ul>
 <h2 id="what-this-looks-like-in-practice">What this looks like in practice<a class="headerlink" href="#what-this-looks-like-in-practice" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">prop</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">p</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@component</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="mi">1</span><span class="p">)):</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">CounterProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">step</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">p</span><span class="p">(</span><span class="s2">"Count: "</span><span class="p">,</span> <span class="n">count</span><span class="p">),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"+"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="n">step</span><span class="p">())),</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nd">@component</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Counter</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CounterProps</span><span class="p">):</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">p</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"+"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="n">props</span><span class="o">.</span><span class="n">step</span><span class="p">())),</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="p">)</span>
 </span></code></pre></div>
+<p>Template strings (<code>t"..."</code>) are <a href="https://peps.python.org/pep-0750/">PEP 750</a> syntax, so Wybthon requires Python 3.14.</p>
 <p>What happens here:</p>
 <ul>
 <li><code>Counter</code> runs <strong>once</strong>. The <code>div</code>, <code>p</code>, and <code>button</code> VNodes are created exactly one time.</li>
-<li><code>count</code> is an accessor placed as a child, so it becomes a hole. Only that text node patches when the count changes.</li>
-<li><code>step</code> is a <code>Prop[int]</code>. The parent may pass <code>step=5</code> or <code>step=my_signal</code>; the child reads <code>step()</code> either way.</li>
-<li>The click handler stages a functional update. The handler returns, the graph flushes, and the DOM op commits before the browser paints.</li>
+<li><code>t"Count: {count}"</code> interpolates an accessor, so the template string becomes one reactive binding. Only that text node patches when the count changes.</li>
+<li><code>step</code> is a <code>Prop[int]</code> field. The parent may pass <code>step=5</code> or <code>step=my_signal</code>; the child reads <code>props.step()</code> either way.</li>
+<li>The click handler takes no arguments because it doesn't need the event. It stages a functional update, the handler returns, the graph flushes, and the DOM op commits before the browser paints.</li>
 </ul>
 <h2 id="how-props-become-reactive">How props become reactive<a class="headerlink" href="#how-props-become-reactive" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">p</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@component</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"!"</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">GreetingProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nd">@component</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">GreetingProps</span><span class="p">):</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Hello, "</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"!"</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><code>name</code> is an accessor. Placing it in <code>p(...)</code> creates a hole, so when the parent's value changes only that text node updates.</li>
-<li>Calling <code>name()</code> at the top level of the body would freeze the value at mount, and dev mode warns about it. Read props inside holes, memos, and effects, or use <code>name.peek()</code> when a one-time read is what you want.</li>
+<li><code>props.name</code> is an accessor. Placing it in <code>p(...)</code> creates a hole, so when the parent's value changes only that text node updates.</li>
+<li>Calling <code>props.name()</code> at the top level of the body would freeze the value at mount, and dev mode warns about it. Read props inside holes, memos, and effects, or use <code>props.name.peek()</code> when a one-time read is what you want.</li>
+<li>Fields that aren't <code>Prop[T]</code>, such as callbacks, are plain data: the read returns exactly what the parent passed.</li>
 </ul>
 <p>See <a href="../components/">Components</a> for the full prop story.</p>
 <h2 id="why-a-virtual-dom-at-all">Why a virtual DOM at all?<a class="headerlink" href="#why-a-virtual-dom-at-all" title="Permanent link">&para;</a></h2>
-<p>SolidJS compiles JSX into direct DOM instructions. Python has no JSX compiler, and in Pyodide every DOM call crosses the Python-to-JS bridge, which dominates rendering cost. Wybthon therefore keeps a small VDOM as an implementation detail: the reconciler diffs hole subtrees and emits compact ops that the JS kernel applies in one crossing per flush. Static subtrees are serialized once as HTML templates and cloned natively. The reactive model is Solid's; the VDOM is the batching layer that makes it fast under Pyodide. See <a href="../vdom/">Virtual DOM</a>.</p>
+<p>SolidJS compiles JSX into direct DOM instructions. Python has no JSX compiler, and in Pyodide every DOM call crosses the Python-to-JS bridge, which dominates rendering cost. Wybthon therefore keeps a small VDOM as an implementation detail: the reconciler diffs hole subtrees and emits compact ops that the JS kernel applies in one crossing per flush. Each repeated subtree shape is serialized once as an HTML template, and a single fused command clones, fills, and inserts it natively. The reactive model is Solid's; the VDOM is the batching layer that makes it fast under Pyodide. See <a href="../vdom/">Virtual DOM</a>.</p>
 <h2 id="where-it-differs-from-react">Where it differs from React<a class="headerlink" href="#where-it-differs-from-react" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No per-component re-render. The tree is built once; updates target individual holes.</li>
@@ -3240,7 +3250,7 @@
 </ul>
 <p>If you're coming from React, read <a href="../../guides/migrating-from-react/">Migrating from React</a> next.</p>
 <h2 id="where-it-matches-solid">Where it matches Solid<a class="headerlink" href="#where-it-matches-solid" title="Permanent link">&para;</a></h2>
-<p>Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no <code>batch()</code>; async as part of the graph; <code>Loading</code>, <code>Reveal</code>, and <code>Errored</code> boundaries; draft-first stores; actions and optimistic state. The differences are the language, the tree builders (Python call syntax instead of JSX), and a handful of names. See <a href="../../guides/migrating-from-solid/">Migrating from Solid</a>.</p>
+<p>Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no <code>batch()</code>; async as part of the graph; <code>Loading</code>, <code>Reveal</code>, and <code>Errored</code> boundaries; draft-first stores; actions and optimistic state. The differences are the language, the tree builders (Python call syntax and template strings instead of JSX), typed <code>Props</code> classes in place of TypeScript prop interfaces, and a handful of names. See <a href="../../guides/migrating-from-solid/">Migrating from Solid</a>.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read <a href="../reactivity/">Reactivity</a> for signals, memos, effects, and flush timing.</li>

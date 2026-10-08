@@ -1881,8 +1881,6 @@
       
         
       
-        
-      
     
     
     
@@ -2085,62 +2083,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2385,34 +2327,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2581,6 +2495,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2676,6 +2646,8 @@
       
         
           
+        
+      
         
       
         
@@ -2781,6 +2753,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3152,7 +3152,7 @@
 
 <h1 id="runtime-contracts">Runtime contracts<a class="headerlink" href="#runtime-contracts" title="Permanent link">&para;</a></h1>
 <p>Wybthon uses run-once component setup, explicit accessors, and a batched Virtual DOM. The VDOM collects mutations for the Python-to-JavaScript bridge. It doesn't choose reactive dependencies or require components to rerun.</p>
-<p>The async API reference for this design is <a href="https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.9/documentation/solid-2.0/05-async-data.md">Solid 2.0 RC.9's async data contract</a>. This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary <code>async def</code> actions, and real asyncio tasks.</p>
+<p>The async API reference for this design is <a href="https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.14/documentation/solid-2.0/05-async-data.md">Solid 2.0 RC.14's async data contract</a>. This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary <code>async def</code> actions, and real asyncio tasks.</p>
 <h2 id="read-views">Read views<a class="headerlink" href="#read-views" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3226,11 +3226,29 @@
 <p><code>affects(signal_or_memo)</code> marks that value pending without starting a new fetch. <code>affects(store.child)</code> marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.</p>
 <p>An optimistic edit made outside an action remains until the next transition adopts it. Prefer actions when an edit needs a clear lifetime.</p>
 <h2 id="python-authoring">Python authoring<a class="headerlink" href="#python-authoring" title="Permanent link">&para;</a></h2>
-<p>Every named <code>@component</code> input is a <code>Prop[T]</code> accessor. Use <code>prop(default)</code> for typed defaults and <code>.peek()</code> for an intentional one-time read. Plain value annotations such as <code>count: int</code> are rejected at declaration and by mypy. An unannotated input still receives a Prop; a single <code>Props</code> parameter receives the mapping.</p>
-<p>Children, bindings, and props use one accessor rule: an Accessor, or a function or bound method callable without required arguments. Use <code>literal</code> to pass a callable as data. <code>Props.get</code> returns the supplied default when a key is absent. Mapping iteration, length, and membership include declared defaults. Direct optional prop access still produces an accessor whose missing value is <code>None</code>.</p>
+<p>A component declares its inputs on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> subclass and takes one parameter annotated with that class, or no parameters when it has no inputs. A <code>Prop[T]</code> field is reactive: reading <code>props.label</code> returns an accessor, whether the parent passed a value, an accessor, or a zero-argument function. Use <code>prop(default=...)</code> or <code>prop(default_factory=...)</code> for defaults, and <code>.peek()</code> for an intentional one-time read. Any other annotation declares a plain field, which returns the parent's latest value untracked. A plain field is never called by the read, so callbacks belong there. In dev mode (the default outside production builds), an unknown prop or a missing required one raises <code>TypeError</code> at the call site.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">label</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">"Save"</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">on_save</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nd">@component</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">SaveButton</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">SaveProps</span><span class="p">):</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">():</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="k">if</span> <span class="n">props</span><span class="o">.</span><span class="n">on_save</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">props</span><span class="o">.</span><span class="n">on_save</span><span class="p">()</span>  <span class="c1"># the parent's callback, called only here</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">save</span><span class="p">)</span>
+</span></code></pre></div>
+<p>DOM positions keep one accessor rule: in children, attribute values, and bindings, an accessor or a function or bound method callable without required arguments is a reactive expression. A t-string with a reactive interpolation is one reactive binding. Event handlers and refs are never reactive, and a handler may take the event or no arguments. Component props don't use the arity rule; the declared field type decides. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> return reactive mappings of accessors for spreading onto elements, and a key they don't supply reads as <code>None</code>.</p>
 <h2 id="diagnostics-and-limits">Diagnostics and limits<a class="headerlink" href="#diagnostics-and-limits" title="Permanent link">&para;</a></h2>
 <p><code>diagnostics.inspect_transitions()</code> reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. <code>inspect_graph(owner)</code> includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. <code>runtime_stats()</code> includes transition and held-node counts.</p>
-<p>The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; template cloning, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.</p>
+<p>The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.</p>
 <p>The native concurrency benchmark, <code>python benchmarks/async_bench.py</code>, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.</p>
 
 

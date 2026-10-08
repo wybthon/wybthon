@@ -18,7 +18,7 @@
         <link rel="prev" href="../reconciler/">
       
       
-        <link rel="next" href="../template/">
+        <link rel="next" href="../dom/">
       
       
         
@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -2308,10 +2306,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.kernel.template_id" class="md-nav__link">
+  <a href="#wybthon.kernel.register_template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;template_id
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;register_template
       
     </span>
   </a>
@@ -2459,7 +2457,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" reset">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.kernel.kernel_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;kernel_source
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" kernel_source">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2509,62 +2518,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2801,34 +2754,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2997,6 +2922,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dev/" class="md-nav__link">
         
   
@@ -3092,6 +3073,8 @@
       
         
           
+        
+      
         
       
         
@@ -3197,6 +3180,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3754,10 +3765,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#wybthon.kernel.template_id" class="md-nav__link">
+  <a href="#wybthon.kernel.register_template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;template_id
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;register_template
       
     </span>
   </a>
@@ -3905,7 +3916,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" reset">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.kernel.kernel_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;kernel_source
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" kernel_source">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4033,7 +4055,7 @@ one bridge crossing instead of tens of thousands.</p>
   <code>wybthon.events</code> for the Python half.</li>
 </ul>
 <p>Application code never imports this module directly; it's plumbing for
-the reconciler, <code>wybthon.props</code>, and <code>wybthon.events</code>.</p>
+the reconciler, <code>wybthon._dom_props</code>, and <code>wybthon.events</code>.</p>
 
 
 
@@ -4870,19 +4892,21 @@ handler, exactly like the JS kernel's root listener.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="wybthon.kernel.template_id" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">template_id</span>
+<h3 id="wybthon.kernel.register_template" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">register_template</span>
 
 
-<a href="#wybthon.kernel.template_id" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">template_id</span><span class="p">(</span><span class="n">html</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span>
+<a href="#wybthon.kernel.register_template" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_template</span><span class="p">(</span><span class="n">shape</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Return the template id for <code>html</code>, registering it on first use.</p>
+        <p>Register <code>shape</code>'s skeleton with the backend and return its template id.</p>
 <p>The registration op travels in the same batch as the clone that
-needs it, so no extra bridge crossing occurs.</p>
+needs it, so no extra bridge crossing occurs. The oldest template is
+retired once more than <code>_TEMPLATE_LIMIT</code> are live; its shape
+registers again on its next mount.</p>
 
 
     </div>
@@ -5162,6 +5186,26 @@ skeletons, so they must be re-sent on next use.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.kernel.kernel_source" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">kernel_source</span>
+
+
+<a href="#wybthon.kernel.kernel_source" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">kernel_source</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the JavaScript kernel's source.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -5170,12 +5214,14 @@ skeletons, so they must be re-sent on next use.</p>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
 <p><code>kernel</code> is the single point of contact between the renderer and the
-real DOM. The reconciler, prop appliers, and event system emit compact
-ops (JSON-serializable tuples against integer node ids) into a buffer;
-<code>commit()</code> hands the whole buffer to the active backend in one
-Python-to-JS bridge crossing. Application code never imports this
-module; it matters when you're writing tests against the stub backend
-or debugging the wire protocol.</p>
+real DOM. The reconciler, the compiled template mounts, the prop
+appliers, and the event system emit compact ops (JSON-serializable
+tuples against integer node ids) into a buffer; <code>commit()</code> hands the
+whole buffer to the active backend in one Python-to-JS bridge crossing.
+The browser half lives in <code>_kernel.js</code>, shipped with the package.
+Application code never imports this module; it matters when you're
+writing low-level tests against the stub backend or debugging the wire
+protocol. For component tests, use <a href="../testing/"><code>wybthon.testing</code></a>.</p>
 <table>
 <thead>
 <tr>
@@ -5190,11 +5236,11 @@ or debugging the wire protocol.</p>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BrowserBackend&lt;/span&gt;" href="#wybthon.kernel.BrowserBackend"><code>BrowserBackend</code></a></td>
-<td>Drives the real DOM through the embedded JS kernel; created automatically in Pyodide.</td>
+<td>Drives the real DOM through the JS kernel; created automatically in Pyodide.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;PythonBackend&lt;/span&gt;" href="#wybthon.kernel.PythonBackend"><code>PythonBackend</code></a></td>
-<td>Reference interpreter applying the same ops to a DOM-like stub document (used by the unit tests and the stubbed benchmark).</td>
+<td>Reference interpreter applying the same ops to a DOM-like stub document (used by <code>wybthon.testing</code>, the unit tests, and the stubbed benchmark).</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_backend&lt;/span&gt;" href="#wybthon.kernel.set_backend"><code>set_backend</code></a></td>
@@ -5206,6 +5252,11 @@ or debugging the wire protocol.</p>
 </tr>
 </tbody>
 </table>
+<p>Two more module-level hooks matter to tests. <code>register_template(shape)</code>
+registers a compiled shape's skeleton in the same batch as its first
+clone, and <code>html_templates</code> (<code>True</code>, <code>False</code>, or <code>None</code> for "ask the
+backend") gates template mounting; set it to <code>False</code> to force per-node
+commands.</p>
 <h4 id="wire-protocol">Wire protocol<a class="headerlink" href="#wire-protocol" title="Permanent link">&para;</a></h4>
 <p>Each op is a JSON array whose first element is the opcode. Node ids are
 allocated on the Python side, so no <code>JsProxy</code> objects flow through the
@@ -5241,13 +5292,13 @@ hot path; <code>None</code> anchors mean "append".</p>
 </tr>
 <tr>
 <td><code>REGISTER_TPL</code></td>
-<td><code>tpl_id, html</code></td>
-<td>Parse a skeleton once via <code>&lt;template&gt;</code></td>
+<td><code>tpl_id, html, count, [text offsets], [[offset, event_type], ...]</code></td>
+<td>Parse a shape's skeleton once via <code>&lt;template&gt;</code>, and record its text slots and delegated listeners</td>
 </tr>
 <tr>
-<td><code>CLONE_TPL</code></td>
-<td><code>first_id, count, tpl_id</code></td>
-<td>Clone the proto; assign a dense id block in pre-order</td>
+<td><code>CLONE</code></td>
+<td><code>first_id, tpl_id, parent_id, anchor_id, *texts</code></td>
+<td>Clone the prototype, register a dense id block in pre-order, fill the text slots, mark the delegated listeners, and insert before the anchor</td>
 </tr>
 <tr>
 <td><code>INSERT</code></td>
@@ -5257,7 +5308,7 @@ hot path; <code>None</code> anchors mean "append".</p>
 <tr>
 <td><code>REMOVE</code></td>
 <td><code>id</code></td>
-<td>Detach from the parent</td>
+<td>Detach from the parent; the node stays registered</td>
 </tr>
 <tr>
 <td><code>MOVE_RANGE</code></td>
@@ -5265,14 +5316,19 @@ hot path; <code>None</code> anchors mean "append".</p>
 <td>Move a contiguous mounted range</td>
 </tr>
 <tr>
-<td><code>REMOVE_RANGE</code></td>
+<td><code>DISPOSE_RANGE</code></td>
 <td><code>first_id, last_id</code></td>
-<td>Detach a contiguous mounted range (one native range deletion)</td>
+<td>Remove a contiguous range of siblings and release every registered node inside it, walking the removed nodes natively</td>
+</tr>
+<tr>
+<td><code>DISPOSE</code></td>
+<td><code>id</code></td>
+<td>Remove one node and release every registered node inside it</td>
 </tr>
 <tr>
 <td><code>HOLE_TEXT</code></td>
 <td><code>id, text</code></td>
-<td>Reuse a hole anchor as a visible text node</td>
+<td>Reuse a hole's placeholder as a visible text node</td>
 </tr>
 <tr>
 <td><code>RELEASE_TPL</code></td>
@@ -5302,12 +5358,12 @@ hot path; <code>None</code> anchors mean "append".</p>
 <tr>
 <td><code>LISTEN</code> / <code>UNLISTEN</code></td>
 <td><code>id, event_type[, options]</code></td>
-<td>Delegated bookkeeping or direct native options; unlisten omits options</td>
+<td>Delegated bookkeeping for nodes outside a template, or a direct native listener with options; unlisten omits options</td>
 </tr>
 <tr>
 <td><code>RELEASE</code></td>
 <td><code>[ids]</code></td>
-<td>Drop registry entries and listener sets for a retired subtree</td>
+<td>Drop registry entries and listener sets (used for a disposed root's container)</td>
 </tr>
 <tr>
 <td><code>ROOT</code> / <code>UNROOT</code></td>
@@ -5335,13 +5391,24 @@ hot path; <code>None</code> anchors mean "append".</p>
 <td>Adopt the next comment; a keyed end marker (<code>/...</code>) resynchronizes by searching forward</td>
 </tr>
 <tr>
+<td><code>CLAIM_STATIC</code></td>
+<td><code>parent_id, end_marker</code></td>
+<td>Keep the server nodes before the marker as static DOM (a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> region)</td>
+</tr>
+<tr>
 <td><code>HYDRATE_END</code></td>
 <td>none</td>
 <td>Remove server nodes nobody claimed and stop claiming</td>
 </tr>
 </tbody>
 </table>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> emits the claim ops; see <a href="../../concepts/server-rendering/">Server rendering</a>. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;stats&lt;/span&gt;" href="#wybthon.kernel.stats"><code>stats</code></a> reports <code>hydration_mismatches</code>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;take_state&lt;/span&gt;" href="#wybthon.kernel.take_state"><code>take_state</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;replay_events&lt;/span&gt;" href="#wybthon.kernel.replay_events"><code>replay_events</code></a> read the server state and replay input recorded before hydration.</p>
+<p>A template-mounted row of the js-framework-benchmark table costs two
+commands, <code>CLONE</code> and <code>HOLE_TEXT</code>, and clearing a list is one
+<code>DISPOSE_RANGE</code>. Unmounting never sends lists of every node id: the
+kernel releases the removed nodes itself. See
+<a href="../../concepts/vdom/#compiled-mounting">Virtual DOM</a> for how shapes,
+generated mount functions, and lazy node ids fit together.</p>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> emits the claim ops; see <a href="../../concepts/server-rendering/">Server rendering</a>. <code>stats()</code> reports node, template, listener, and root counts plus <code>hydration_mismatches</code>, and <code>take_state()</code> and <code>replay_events()</code> read the server state and replay input recorded before hydration.</p>
 <p>Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,
 and calls the Python dispatcher once for the matching bubbling route with a small
@@ -5349,14 +5416,15 @@ JSON payload (see <a href="../events/">events</a>).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">kernel</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># In a CPython test, install the stub backend over any DOM-like document</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># (the test suite's conftest does this for you).</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># (wybthon.testing and the test suite's conftest do this for you).</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">kernel</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">PythonBackend</span><span class="p">(</span><span class="n">stub_document</span><span class="p">))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">kernel</span><span class="o">.</span><span class="n">html_templates</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># optional: force per-node commands</span>
 </span></code></pre></div>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../reconciler/">Reconciler</a>: emits the ops</li>
-<li><a href="../template/">Template</a>: <code>REGISTER_TPL</code> and <code>CLONE_TPL</code> in practice</li>
 <li><a href="../events/">Events</a>: the Python half of delegation</li>
+<li><a href="../testing/">Testing</a>: the in-memory renderer built on <code>PythonBackend</code></li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 <li><a href="../../guides/testing/">Guides: Testing</a></li>
 </ul>

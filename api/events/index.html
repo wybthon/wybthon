@@ -1756,8 +1756,6 @@
       
         
       
-        
-      
     
     
     
@@ -1961,62 +1959,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2272,6 +2214,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.bind_delegated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;bind_delegated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.set_handler" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2487,34 +2440,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../flow/" class="md-nav__link">
         
   
@@ -2683,6 +2608,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dev/" class="md-nav__link">
         
   
@@ -2778,6 +2759,8 @@
       
         
           
+        
+      
         
       
         
@@ -2883,6 +2866,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -3236,6 +3247,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.events.bind_delegated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;bind_delegated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.events.set_handler" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3384,9 +3406,12 @@ The call carries a small JSON payload (event type, target value/checked
 state, key, mouse buttons, modifiers), so the common handler patterns
 (<code>evt.target.value</code>, <code>evt.key</code>, <code>evt.prevent_default()</code>) never touch a
 <code>JsProxy</code> at all.</p>
-<p>Registering a handler is itself a batched op (<code>LISTEN</code>), so mounting a
-list with thousands of handlers adds nothing to the bridge-crossing
-count.</p>
+<p>Registering a handler costs no bridge crossing: a template declares its
+delegated listeners when it's registered, so cloning a row marks them
+natively, and other handlers ride the same command buffer as the DOM
+mutations (<code>LISTEN</code>).</p>
+<p>A handler may take the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> or no arguments
+at all: <code>on_click=lambda: set_open(False)</code>.</p>
 <p>Public surface:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a>: the event object passed to handlers,
@@ -3915,6 +3940,26 @@ fire.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.events.bind_delegated" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">bind_delegated</span>
+
+
+<a href="#wybthon.events.bind_delegated" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">bind_delegated</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">prop</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Record a delegated handler whose listener the node's template already declared.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.events.set_handler" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">set_handler</span>
 
@@ -3985,8 +4030,9 @@ handlers costs no extra bridge crossings.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Callback to invoke. Pass <code>None</code> to remove an existing
-handler for this event type on this node.</p>
+                <p>Callback to invoke, with the event or no arguments.
+Pass <code>None</code> to remove an existing handler for this event
+type on this node.</p>
               </div>
             </td>
             <td>
@@ -4156,7 +4202,10 @@ registered), walks the ancestor chain natively when an event fires, and
 calls into Python once for the matching bubbling route with a small JSON payload.
 Handlers receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> built from that
 payload, so the common reads (<code>evt.target.value</code>, <code>evt.key</code>) never touch
-a <code>JsProxy</code>. Registering a handler is itself a batched <code>LISTEN</code> op.</p>
+a <code>JsProxy</code>. Registering a handler costs no bridge crossing: handlers
+on template-mounted nodes are declared by the template itself, so a
+cloned row marks its listeners natively, and other handlers ride the
+command buffer as a batched <code>LISTEN</code> op.</p>
 <table>
 <thead>
 <tr>
@@ -4169,6 +4218,19 @@ a <code>JsProxy</code>. Registering a handler is itself a batched <code>LISTEN</
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../wybthon/#wybthon.DomEvent"><code>DomEvent</code></a></td>
 <td>The event object: <code>type</code>, <code>target</code> (<code>.value</code>, <code>.checked</code>, <code>.files</code>, <code>.element</code>), <code>current_target</code>, <code>key</code>, <code>code</code>, <code>alt_key</code>, <code>ctrl_key</code>, <code>meta_key</code>, <code>shift_key</code>, <code>button</code>, <code>client_x</code>, <code>client_y</code>, <code>prevent_default()</code>, <code>stop_propagation()</code>, <code>raw</code>.</td>
 </tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;event&lt;/span&gt;" href="../wybthon/#wybthon.event"><code>event</code></a></td>
+<td><code>event(handler, *, capture=False, passive=False, once=False)</code>: attach a direct native listener with options instead of delegating.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;EventHandler&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../wybthon/#wybthon.EventHandler"><code>EventHandler</code></a></td>
+<td>What <code>event</code> returns: the callback plus its listener options.</td>
+</tr>
 </tbody>
 </table>
 <p><code>set_handler</code>, <code>remove_handlers_for</code>, and <code>dispatch_event</code> are internal
@@ -4178,54 +4240,62 @@ entry points used by the renderer and the kernel.</p>
 <li>Any prop named <code>on_&lt;type&gt;</code> (or <code>on&lt;Type&gt;</code>) is a handler: <code>on_click</code>,
   <code>on_input</code>, <code>on_keydown</code>, <code>onChange</code>. The prefix is stripped and the
   remainder lower-cased to get the DOM event type.</li>
-<li>Handlers take one argument, the <code>DomEvent</code>. Signal writes made inside
-  a handler are flushed automatically when it returns, so the DOM
-  updates before the browser paints.</li>
+<li>A handler takes the <code>DomEvent</code> or no arguments at all
+  (<code>on_click=lambda: set_open(False)</code>); the arity is checked once, at
+  registration. Signal writes made inside a handler are flushed
+  automatically when it returns, so the DOM updates before the browser
+  paints.</li>
 <li><code>evt.raw</code> is the native event and is valid only synchronously during
   dispatch.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomEvent</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">ul</span><span class="p">,</span> <span class="n">li</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomEvent</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">draft</span><span class="p">,</span> <span class="n">set_draft</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">evt</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">set_items</span><span class="p">(</span><span class="k">lambda</span> <span class="n">xs</span><span class="p">:</span> <span class="p">[</span><span class="o">*</span><span class="n">xs</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">peek</span><span class="p">()])</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">keydown</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">if</span> <span class="n">evt</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">"Escape"</span><span class="p">:</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">view</span> <span class="o">=</span> <span class="n">form</span><span class="p">(</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">input_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">draft</span><span class="p">,</span> <span class="n">on_input</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_draft</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">on_keydown</span><span class="o">=</span><span class="n">keydown</span><span class="p">),</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">ul</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">()]),</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">on_submit</span><span class="o">=</span><span class="n">submit</span><span class="p">,</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">evt</span><span class="o">.</span><span class="n">prevent_default</span><span class="p">()</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">set_items</span><span class="p">(</span><span class="k">lambda</span> <span class="n">xs</span><span class="p">:</span> <span class="p">[</span><span class="o">*</span><span class="n">xs</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">peek</span><span class="p">()])</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">keydown</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">if</span> <span class="n">evt</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">"Escape"</span><span class="p">:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">view</span> <span class="o">=</span> <span class="n">form</span><span class="p">(</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">input_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">draft</span><span class="p">,</span> <span class="n">on_input</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_draft</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">on_keydown</span><span class="o">=</span><span class="n">keydown</span><span class="p">),</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">button</span><span class="p">(</span><span class="s2">"Clear"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"button"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_items</span><span class="p">([])),</span>  <span class="c1"># no event needed</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">ul</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">()]),</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">on_submit</span><span class="o">=</span><span class="n">submit</span><span class="p">,</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">on_touchstart</span><span class="o">=</span><span class="n">event</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">passive</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># direct native listener</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="delegation-notes">Delegation notes<a class="headerlink" href="#delegation-notes" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Because delegation relies on bubbling, non-bubbling types don't reach
-  prop handlers. Use <code>focusin</code>/<code>focusout</code> instead of <code>focus</code>/<code>blur</code>, and
-  <code>mouseover</code>/<code>mouseout</code> instead of <code>mouseenter</code>/<code>mouseleave</code>. For
-  <code>scroll</code>, media events, or listener options such as <code>passive</code>, attach
-  a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../wybthon/#wybthon.Ref"><code>Ref</code></a> inside
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../wybthon/#wybthon.on_settled"><code>on_settled</code></a> and remove it in the cleanup it
-  returns.</li>
+<li>Delegation relies on bubbling, so non-bubbling types (<code>focus</code>, <code>blur</code>,
+  <code>mouseenter</code>, <code>mouseleave</code>, <code>pointerenter</code>, <code>pointerleave</code>, <code>scroll</code>,
+  <code>load</code>, <code>error</code>, <code>invalid</code>, and <code>toggle</code>) get a direct native listener
+  on the element instead. For listener options such as <code>passive</code> or
+  <code>capture</code>, wrap the handler in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;event&lt;/span&gt;" href="../wybthon/#wybthon.event"><code>event</code></a>, which also
+  attaches a direct listener.</li>
 <li><code>stop_propagation()</code> stops both the delegated walk and native
   propagation; <code>prevent_default()</code> is applied by the kernel after the
   handler returns.</li>
 <li>Unmounting a subtree drops its handlers on the Python side, and the
-  <code>RELEASE</code> op clears the kernel's listener bookkeeping. <code>Root.dispose()</code>
-  unregisters the container as a delegation root.</li>
-<li>In CPython tests the stub backend exposes <code>dispatch(event_type, node)</code>
-  to run the handler chain; see the <a href="../../guides/testing/">testing guide</a>.</li>
+  kernel's <code>DISPOSE_RANGE</code> or <code>DISPOSE</code> command clears its listener
+  bookkeeping natively. <code>Root.dispose()</code> unregisters the container as a
+  delegation root.</li>
+<li>In CPython tests, <a href="../testing/"><code>wybthon.testing</code></a> fires events
+  through the real dispatcher: <code>fire.click(node)</code>,
+  <code>fire.input(node, value)</code>, <code>fire.key_down(node, key)</code>.</li>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../props/">Props</a>: how handler props are recognized</li>
-<li><a href="../kernel/">Kernel</a>: <code>LISTEN</code>, <code>UNLISTEN</code>, <code>ROOT</code>, and the dispatch payload</li>
+<li><a href="../html/">HTML helpers</a>: how handler props are recognized</li>
+<li><a href="../kernel/">Kernel</a>: <code>REGISTER_TPL</code>, <code>LISTEN</code>, <code>UNLISTEN</code>, <code>ROOT</code>, and the dispatch payload</li>
 <li><a href="../../concepts/events/">Concepts: Events</a></li>
 <li><a href="../../concepts/forms/">Concepts: Forms</a></li>
 </ul>

@@ -1754,8 +1754,6 @@
       
         
       
-        
-      
     
     
     
@@ -1958,62 +1956,6 @@
     
   
     Kernel
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Template
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/props/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Props
   
 
     
@@ -2258,34 +2200,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/router_core/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Router core
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/flow/" class="md-nav__link">
         
   
@@ -2454,6 +2368,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/request/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/dev/" class="md-nav__link">
         
   
@@ -2549,6 +2519,8 @@
       
         
           
+        
+      
         
       
         
@@ -2654,6 +2626,34 @@
     
   
     0001: Server rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-engine-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002: Engine v2
   
 
     
@@ -2905,6 +2905,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#components-and-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components and props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reactive-bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2927,10 +2938,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dev-server" class="md-nav__link">
+  <a href="#dev-server-and-builds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dev server
+        Dev server and builds
       
     </span>
   </a>
@@ -3041,6 +3052,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#components-and-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components and props
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reactive-bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3063,10 +3085,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dev-server" class="md-nav__link">
+  <a href="#dev-server-and-builds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dev server
+        Dev server and builds
       
     </span>
   </a>
@@ -3132,10 +3154,16 @@
 <p>If something isn't working as expected, scan this page for the symptom you're seeing. Each entry includes the most likely cause and a fix; expand for more detail.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <details class="bug">
-<summary><code>SyntaxError</code> or <code>TypeError</code> on import under an older Python</summary>
-<p><strong>Symptoms:</strong> importing <code>wybthon</code> in CPython fails with a syntax error mentioning <code>class Accessor[T]</code> or <code>type Validator = ...</code>, or <code>pip</code> refuses to install.</p>
-<p><strong>Likely cause:</strong> Wybthon requires Python 3.12 or newer (PEP 695 generics and the <code>type</code> statement). In the browser that means Pyodide 0.27 or newer (Python 3.12).</p>
-<p><strong>Fix:</strong> upgrade the interpreter (<code>uv python install 3.12</code> works well) and re-create your virtual environment. Pin a Pyodide release that ships Python 3.12+ in <code>index.html</code>.</p>
+<summary><code>SyntaxError</code> or <code>ImportError</code> on import under an older Python</summary>
+<p><strong>Symptoms:</strong> importing <code>wybthon</code> in CPython fails with a syntax error at a <code>t"..."</code> string, an <code>ImportError</code> for <code>string.templatelib</code> or <code>annotationlib</code>, or <code>pip</code> refuses to install.</p>
+<p><strong>Likely cause:</strong> Wybthon requires Python 3.14 (template strings and deferred annotations). In the browser that means Pyodide 314 or newer.</p>
+<p><strong>Fix:</strong> upgrade the interpreter (<code>uv python install 3.14</code> works well) and re-create your virtual environment. Set <code>pyodide-version</code> in <code>wybthon.toml</code> to a 314 release.</p>
+</details>
+<details class="bug">
+<summary><code>ImportError: cannot import name 'Router' from 'wybthon'</code></summary>
+<p><strong>Symptoms:</strong> importing <code>Router</code>, <code>Route</code>, <code>Link</code>, <code>navigate</code>, <code>form_state</code>, <code>bind_text</code>, <code>VirtualFor</code>, or <code>map_cooperative</code> from <code>wybthon</code> fails.</p>
+<p><strong>Likely cause:</strong> the top-level package exports the core only. The router, forms, virtual lists, and scheduling helpers live in their own modules.</p>
+<p><strong>Fix:</strong> import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>, for example <code>from wybthon.router import Link, Router</code>.</p>
 </details>
 <details class="bug">
 <summary>Pyodide fails to load</summary>
@@ -3157,6 +3185,48 @@
 <p><strong>Symptoms:</strong> the docs site builds locally with <code>mkdocs serve</code> but <code>mkdocs build --strict</code> fails.</p>
 <p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link, or a link to a name that was removed in the API overhaul) or an unused <code>nav</code> entry.</p>
 <p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (for example, while a feature is in flight), turn the link into plain text or remove it.</p>
+</details>
+<h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
+<details class="bug">
+<summary><code>TypeError: Card() got unexpected prop(s): ...</code> or <code>is missing required prop(s): ...</code></summary>
+<p><strong>Symptoms:</strong> calling a component raises <code>TypeError</code> at the call site in dev mode.</p>
+<p><strong>Likely cause:</strong> the call passes a keyword its props class doesn't declare (often a typo), or leaves out a field with no default. There's no <code>**rest</code>: a component accepts only what it declares, plus <code>key</code> and <code>children</code>.</p>
+<p><strong>Fix:</strong> fix the name, add the field to the props class, or give it a default with <code>prop(default=...)</code>. Pyright and mypy report the same mistakes before you run the code; see the <a href="../../guides/typing/">typing guide</a>.</p>
+</details>
+<details class="bug">
+<summary><code>TypeError: Component X must take no parameters or one parameter annotated with a Props subclass</code></summary>
+<p><strong>Symptoms:</strong> a component raises when it's first called.</p>
+<p><strong>Likely cause:</strong> the function uses parameter-style props (<code>def Card(title: Prop[str])</code>), several parameters, <code>**rest</code>, or an annotation that isn't a <code>Props</code> subclass.</p>
+<p><strong>Fix:</strong> move the inputs onto a props class and take it as the only parameter:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nd">@component</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">):</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+</span></code></pre></div>
+<p>A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.</p>
+</details>
+<details class="bug">
+<summary><code>TypeError: prop() takes 0 positional arguments</code>, or <code>prop() is for Prop[T] fields</code></summary>
+<p><strong>Likely cause:</strong> <code>prop(0)</code> passes the default positionally, or <code>prop()</code> is used on a plain field.</p>
+<p><strong>Fix:</strong> write <code>prop(default=0)</code> (or <code>prop(default_factory=list)</code>) on <code>Prop[T]</code> fields, and an ordinary default (<code>= None</code>) on plain fields.</p>
+</details>
+<details class="bug">
+<summary>A callback prop arrives as an accessor, or a value prop never updates</summary>
+<p><strong>Symptoms:</strong> calling <code>props.on_save()</code> returns a function instead of running it, or a field the parent changes keeps its first value.</p>
+<p><strong>Likely cause:</strong> the field's annotation doesn't match its role. <code>Prop[T]</code> fields are reactive accessors; plain fields are passed through untouched and read without tracking.</p>
+<p><strong>Fix:</strong> annotate callbacks, refs, and other values you hand on as plain fields (<code>on_save: Callable[[], None] | None = None</code>). Annotate values that can change and should stay live as <code>Prop[T]</code>.</p>
+</details>
+<details class="bug">
+<summary>The error fallback shows an accessor instead of the message</summary>
+<p><strong>Symptoms:</strong> an <code>Errored</code> fallback renders something like <code>&lt;wybthon.error_boundary._ErrorAccessor object at 0x...&gt;</code> where the error message should be.</p>
+<p><strong>Likely cause:</strong> the fallback's <code>err</code> argument is an accessor, as in Solid 2.0, and <code>str(err)</code> formats the accessor itself.</p>
+<p><strong>Fix:</strong> read it: <code>p(lambda: str(err()))</code>.</p>
 </details>
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -3222,8 +3292,9 @@
 <li>The event type doesn't bubble (<code>focus</code>, <code>blur</code>, <code>mouseenter</code>, <code>scroll</code>); delegation only sees bubbling events.</li>
 <li>The element lives outside every container passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> (for example a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a> mounted into <code>body</code>), so no delegation root receives the event.</li>
 <li>The handler returns a coroutine without scheduling it; nothing happens but no error is raised.</li>
+<li>The handler was forwarded inside a <code>merge</code> or <code>omit</code> spread. Every entry in those views is an accessor, so the element registers the accessor instead of your function.</li>
 </ul>
-<p><strong>Fix:</strong> confirm the prop name, switch to a bubbling type (<code>focusin</code>, <code>mouseover</code>) or attach a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, keep portal targets inside a render container, and schedule async handlers with <code>asyncio.create_task(...)</code> or wrap them in an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>.</p>
+<p><strong>Fix:</strong> confirm the prop name, switch to a bubbling type (<code>focusin</code>, <code>mouseover</code>) or attach a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, keep portal targets inside a render container, schedule async handlers with <code>asyncio.create_task(...)</code> or wrap them in an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, and pass forwarded handlers by name (<code>on_click=props.on_click</code>).</p>
 </details>
 <details class="bug">
 <summary><code>ref.current</code> is <code>None</code> when I read it</summary>
@@ -3235,35 +3306,47 @@
 <summary>A boolean attribute renders as <code>disabled=\"false\"</code></summary>
 <p><strong>Symptoms:</strong> the element stays disabled even though you passed <code>False</code>.</p>
 <p><strong>Likely cause:</strong> you passed the string <code>"false"</code> rather than the boolean.</p>
-<p><strong>Fix:</strong> pass a real boolean or an accessor returning one. <code>True</code> sets the attribute, <code>False</code> or <code>None</code> removes it; see <a href="../../api/props/">props</a>.</p>
+<p><strong>Fix:</strong> pass a real boolean or an accessor returning one. <code>True</code> sets the attribute, and <code>False</code> or <code>None</code> removes it.</p>
 </details>
-<h2 id="dev-server">Dev server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h2>
+<h2 id="dev-server-and-builds">Dev server and builds<a class="headerlink" href="#dev-server-and-builds" title="Permanent link">&para;</a></h2>
+<details class="bug">
+<summary><code>wyb dev</code> says the directory has no <code>wybthon.toml</code></summary>
+<p><strong>Likely cause:</strong> the dev server only serves Wybthon projects; the static-directory mode, <code>--mount</code>, <code>--watch</code>, and <code>/__manifest</code> are gone.</p>
+<p><strong>Fix:</strong> run <code>wyb dev</code> from the project directory (or pass <code>--dir</code>), or create a project with <code>wyb init</code>. See the <a href="../../guides/dev-server/">dev server guide</a>.</p>
+</details>
 <details class="bug">
 <summary>SSE reloads not firing</summary>
 <p><strong>Symptoms:</strong> edits to source files don't trigger a browser refresh.</p>
 <p><strong>Likely causes:</strong></p>
 <ul>
-<li>The dev server isn't running, or you started it from a different directory.</li>
+<li>The edited file isn't watched. <code>wyb dev</code> watches the application directory, <code>public/</code>, <code>index.html</code>, and <code>wybthon.toml</code>.</li>
+<li>The rebuild failed. The terminal shows the build error, and the previous output keeps serving.</li>
 <li>A reverse proxy in front of the dev server buffers responses and breaks the persistent <code>/__sse</code> connection.</li>
 </ul>
-<p><strong>Fix:</strong> ensure <code>wyb dev</code> is active, that <code>/__sse</code> returns <code>text/event-stream</code>, and that any proxy you use supports HTTP/1.1 streaming.</p>
+<p><strong>Fix:</strong> check the terminal output, ensure <code>/__sse</code> returns <code>text/event-stream</code>, and make sure any proxy supports HTTP/1.1 streaming.</p>
 </details>
 <details class="bug">
-<summary>Files served as <code>text/plain</code> instead of <code>text/x-python</code></summary>
-<p><strong>Symptoms:</strong> Pyodide can't import your modules in production; the browser console shows a content-type warning.</p>
-<p><strong>Fix:</strong> configure your static host to serve <code>.py</code> files as <code>text/x-python</code> (see the <a href="../../guides/deployment/">deployment guide</a> for Netlify, Vercel, and GitHub Pages snippets).</p>
+<summary>Deep links return 404 in production</summary>
+<p><strong>Symptoms:</strong> the home page loads, but reloading <code>/users/1</code> on the deployed site returns 404.</p>
+<p><strong>Likely cause:</strong> the static host has no fallback for routes that weren't prerendered.</p>
+<p><strong>Fix:</strong> configure the host to serve <code>200.html</code> for missing extensionless routes, and serve the app beneath the <code>base</code> path it was built for. See the <a href="../../guides/deployment/">deployment guide</a>.</p>
+</details>
+<details class="bug">
+<summary>Dev warnings disappeared after deploying</summary>
+<p><strong>Likely cause:</strong> this is intended. <code>wyb build</code> turns dev mode off before the application imports, so production builds skip development checks (including prop validation) and warnings.</p>
+<p><strong>Fix:</strong> reproduce the problem with <code>wyb dev</code>, which keeps dev mode on.</p>
 </details>
 <h2 id="when-all-else-fails">When all else fails<a class="headerlink" href="#when-all-else-fails" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Re-run <code>python -m pytest tests -q</code> to confirm the framework itself still works in your environment.</li>
+<li>Reproduce the problem in a unit test with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;testing&lt;/span&gt;" href="../../api/testing/#wybthon.testing"><code>wybthon.testing</code></a>; it renders components in plain CPython.</li>
 <li>Capture a minimal reproduction and <a href="https://github.com/wybthon/wybthon/issues/new">open an issue</a>.</li>
-<li>Toggle <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> only after you've confirmed the warnings aren't pointing at a real bug.</li>
+<li>Turn dev mode off with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> only after you've confirmed the warnings aren't pointing at a real bug. Production builds already do.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Skim the <a href="../faq/">FAQ</a> for common questions.</li>
 <li>Read <a href="../../concepts/reactivity/">Reactivity</a> for a refresher on signals, effects, and reactive holes.</li>
-<li>See the <a href="../../guides/testing/">testing guide</a> for driving flushes and events in CPython.</li>
+<li>See the <a href="../../guides/testing/">testing guide</a> for rendering components and firing events in CPython.</li>
 </ul>
 
 
