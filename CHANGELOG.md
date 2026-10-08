@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.37.0 (2026-10-08)
+
+### Features
+
+- **vdom,props**: Compile templates and add typed props
+  ([#39](https://github.com/wybthon/wybthon/pull/39),
+  [`ebb0540`](https://github.com/wybthon/wybthon/commit/ebb0540e32ff9f5a00dd9860551c1e933e96fa86))
+
+
 ## v0.36.0 (2026-09-30)
 
 ### Features
