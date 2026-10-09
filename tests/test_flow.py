@@ -4,8 +4,8 @@ from conftest import StubNode
 
 from wybthon import _warnings
 from wybthon.component import component
+from wybthon.elements import div, h1, h2, li, p, span, ul
 from wybthon.flow import For, Hydration, Match, NoHydration, Repeat, Show, Switch, client_only, dynamic, is_hydrating
-from wybthon.html import div, h1, h2, li, p, span, ul
 from wybthon.reactivity import Prop, Props, create_signal, flush, on_cleanup
 
 

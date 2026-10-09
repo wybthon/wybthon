@@ -11,10 +11,10 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
 
-from . import diagnostics, kernel
+from . import _shapes, diagnostics, kernel, reconciler, templates
 from .kernel import OP_DISPOSE_RANGE
 from .reactivity import _core
-from .reactivity._core import Computation, Owner, Signal, _CallbackScope, _run_callback_body
+from .reactivity._core import Computation, Owner, Signal, _CallbackScope, _run_callback_body, _unwrap
 from .vnode import VNode
 
 _SCALARS = (str, int, float, bool, bytes, type(None), tuple, frozenset)
@@ -92,10 +92,16 @@ class _ListRegion:
         "repeat",
         "start",
         "unique",
+        "source",
+        "cell",
     )
 
     def __init__(self, vnode: VNode, parent: int) -> None:
         self.vnode, self.parent, self.scope = vnode, parent, vnode.scope
+        self.source = vnode.props["source"]
+        # A region a re-rendering hole can patch reads its source through a
+        # signal, so a new source can be pushed in (see ``patch_region``).
+        self.cell: Signal[Any] | None = Signal(self.source) if reconciler._patchable else None
         self.rows: list[_Row] = []
         self.keyed = vnode.props.get("keyed", True)
         self.callback = vnode.props["children"]
@@ -106,7 +112,14 @@ class _ListRegion:
         self.unique = True
 
     def prepare(self) -> _Input:
-        value = self.vnode.props["source"]()
+        cell = self.cell
+        source = cell() if cell is not None else self.source
+        if self.repeat:
+            count, start = source
+            n = max(0, int(_unwrap(count) or 0))
+            first = int(_unwrap(start) or 0)
+            return _Input(source, range(first, first + n))
+        value = _unwrap(source)
         if isinstance(value, StoreList):
             state = value._wyb_list_state()
             return _Input(value, state.data, state.revision)
@@ -116,8 +129,6 @@ class _ListRegion:
         return self.keyed(item) if callable(self.keyed) else _identity(item)
 
     def new_row(self, item: Any, index: int, key: Any) -> _Row:
-        from .reconciler import _coerce_result
-
         if diagnostics._active is not None:
             diagnostics._active.counts["rows_created"] += 1
         owner = Owner()
@@ -143,10 +154,10 @@ class _ListRegion:
                     result = _run_callback_body(owner, scope, lambda: self.callback(*args))
                 finally:
                     _core._restore_position(previous)
-                node = _coerce_result(result)
+                node = reconciler._coerce_result(result)
                 node.pk = position
             else:
-                node = _coerce_result(_run_callback_body(owner, scope, lambda: self.callback(*args)))
+                node = reconciler._coerce_result(_run_callback_body(owner, scope, lambda: self.callback(*args)))
             node.owner_scope = owner
             return _Row(owner, item, item_signal, index_signal, node, key)
         except BaseException:
@@ -261,20 +272,20 @@ class _ListRegion:
                     row = self.new_row(item, index, key)
                 self.update_row(row, item, index)
                 replacements.append((index, row))
-            from .reconciler import _first_dom_id, _move_range, mount
-
             # Replace the logical slots before deriving anchors for DOM moves.
             for index, row in replacements:
                 self.rows[index] = row
                 self.vnode.children[index] = row.vnode
             for index, row in reversed(replacements):
                 anchor = (
-                    _first_dom_id(self.rows[index + 1].vnode) if index + 1 < len(self.rows) else self.vnode._frag_end
+                    reconciler._first_dom_id(self.rows[index + 1].vnode)
+                    if index + 1 < len(self.rows)
+                    else self.vnode._frag_end
                 )
                 if row.vnode.el is None:
-                    mount(row.vnode, self.parent, anchor, self.vnode.ns)
+                    reconciler.mount(row.vnode, self.parent, anchor, self.vnode.ns)
                 elif row is not old_at[index]:
-                    _move_range(row.vnode, self.parent, anchor)
+                    reconciler._move_range(row.vnode, self.parent, anchor)
             for row in old_rows:
                 if row not in reused:
                     self.dispose_row(row)
@@ -311,8 +322,6 @@ class _ListRegion:
             data[start : start + delete] = items
             self.replace(data)
             return
-        from .reconciler import _first_dom_id, _move_range, mount
-
         if start == 0 and delete == len(self.rows) and delete and not len(items):
             self.clear(reverse_disposal)
             return
@@ -334,13 +343,15 @@ class _ListRegion:
                 row = self.new_row(item, i, key)
             added.append(row)
         anchor = (
-            _first_dom_id(self.rows[start + delete].vnode) if start + delete < len(self.rows) else self.vnode._frag_end
+            reconciler._first_dom_id(self.rows[start + delete].vnode)
+            if start + delete < len(self.rows)
+            else self.vnode._frag_end
         )
         for row in added:
             if row.vnode.el is None:
-                mount(row.vnode, self.parent, anchor, self.vnode.ns)
+                reconciler.mount(row.vnode, self.parent, anchor, self.vnode.ns)
             else:
-                _move_range(row.vnode, self.parent, anchor)
+                reconciler._move_range(row.vnode, self.parent, anchor)
         # MutableSequence.clear() previously popped from the end. A single
         # clear edit must preserve that observable row cleanup order.
         for row in reversed(removed) if reverse_disposal else removed:
@@ -364,19 +375,24 @@ class _ListRegion:
 
     def _dispose_rows(self, rows: list[_Row], reverse: bool = False) -> None:
         """Dispose a contiguous run of mounted rows with one range command."""
-        from . import _template as template
-        from .reconciler import _dispose_tree, _range_bounds
-
+        _dispose_tree = reconciler._dispose_tree
+        _range_bounds = reconciler._range_bounds
         first, _ = _range_bounds(rows[0].vnode)
         _, last = _range_bounds(rows[-1].vnode)
         if first is not None and last is not None:
             kernel.emit((OP_DISPOSE_RANGE, first, last))
-        dispose_template = template.dispose
+        dispose_shape = _shapes.dispose
+        dispose_template = templates.dispose
         for row in reversed(rows) if reverse else rows:
             vnode = row.vnode
-            if vnode.tpl is not None:
-                # The row's owner disposes its computations and scopes.
-                dispose_template(vnode, _dispose_tree, True)
+            # The row's owner disposes its computations and scopes.
+            if vnode.tag == "_tpl":
+                if vnode.subtree is None:
+                    dispose_template(vnode, True)
+                else:
+                    _dispose_tree(vnode)
+            elif vnode.tpl is not None:
+                dispose_shape(vnode, _dispose_tree, True)
             else:
                 _dispose_tree(vnode)
             row.owner.dispose()
@@ -384,8 +400,6 @@ class _ListRegion:
     def replace(self, items: Any) -> None:
         if diagnostics._active is not None:
             diagnostics._active.counts["list_scanned"] += len(items)
-        from .reconciler import _reconcile_children
-
         if self.keyed is False:
             common = min(len(self.rows), len(items))
             for i in range(common):
@@ -442,27 +456,23 @@ class _ListRegion:
             self.update_row(row, items[new_end + offset], new_end + offset)
             next_rows.append(row)
         children = [row.vnode for row in next_rows]
-        from .reconciler import _first_dom_id
-
         if not reused and not prefix and not suffix:
             # Nothing was kept: mount the new rows as one run, then dispose
             # the old ones with a single range instead of matching pairs.
-            from .reconciler import mount
-
             old_rows = self.rows
             end = self.vnode._frag_end
             parent, ns = self.parent, self.vnode.ns
             for row in next_rows:
-                mount(row.vnode, parent, end, ns)
+                reconciler.mount(row.vnode, parent, end, ns)
             self._dispose_rows(old_rows)
             self.rows = next_rows
             self.vnode.children = children
             return
-        _reconcile_children(
+        reconciler._reconcile_children(
             self.vnode.children[prefix:old_end],
             children[prefix:new_end],
             self.parent,
-            _first_dom_id(children[new_end]) if suffix else self.vnode._frag_end,
+            reconciler._first_dom_id(children[new_end]) if suffix else self.vnode._frag_end,
             self.vnode.ns,
         )
         for row in self.rows[prefix:old_end]:
@@ -491,9 +501,27 @@ def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
 
 
 def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
-    """Mount a selected branch, retaining its committed scope until replacement."""
+    """Mount a selected branch, retaining its committed scope until replacement.
+
+    The branch's `select(inputs)` returns `(token, slot, args)`; the
+    content re-mounts only when the token changes.
+    """
     from .flow import _render_slot
-    from .reconciler import _close_fragment, _coerce_result, _open_fragment, _unmount, mount
+    from .reconciler import _close_fragment, _coerce_result, _open_fragment, _unmount
+
+    select = vnode.props["select"]
+    inputs = vnode.props["inputs"]
+    if reconciler._patchable:
+        cell: Signal[Any] = Signal(inputs)
+        vnode.props["_cell"] = cell
+
+        def choose() -> Any:
+            return select(cell())
+
+    else:
+
+        def choose() -> Any:
+            return select(inputs)
 
     claim_end = _open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()
@@ -525,16 +553,52 @@ def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
             else:
                 node = _run_callback_body(owner, _BRANCH_SCOPE, lambda: _coerce_result(_render_slot(slot, *args)))
             node.owner_scope = owner
-            mount(node, parent, vnode._frag_end, vnode.ns)
+            reconciler.mount(node, parent, vnode._frag_end, vnode.ns)
             vnode.children[:] = [node]
             previous[0] = token
         except BaseException:
             owner.dispose()
             raise
 
-    comp = Computation(vnode.props["choose"], kind=_core._K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
+    comp = Computation(choose, kind=_core._K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
     scope._add_child(comp)
     vnode.render_effect = comp
     comp._update_if_necessary()
     if claim_end:
         _close_fragment(vnode, parent)
+
+
+def patch_region(old: VNode, new: VNode) -> bool:
+    """Push a re-rendered region's new condition or source into the mounted one.
+
+    Returns False (the caller replaces the region) when the two aren't
+    the same kind of region, or the mounted one can't be patched.
+    """
+    tag = old.tag
+    if tag == "_list":
+        region = old.props.get("_region")
+        if (
+            region is None
+            or region.cell is None
+            or bool(old.props.get("repeat")) != bool(new.props.get("repeat"))
+            or old.props.get("keyed", True) is not new.props.get("keyed", True)
+        ):
+            return False
+        region.cell._set(new.props["source"])
+        new.props["_region"] = region
+    else:
+        cell = old.props.get("_cell")
+        if cell is None or old.props["select"] is not new.props["select"]:
+            return False
+        cell._set(new.props["inputs"])
+        new.props["_cell"] = cell
+    new.el = old.el
+    new._frag_end = old._frag_end
+    new.scope = old.scope
+    new.render_effect = old.render_effect
+    new.children = old.children
+    new.ns = old.ns
+    region = new.props.get("_region")
+    if region is not None:
+        region.vnode = new
+    return True

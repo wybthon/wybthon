@@ -5,7 +5,7 @@
 #### What's in this module
 
 SVG element helpers with the same calling convention as
-[`wybthon.html`](html.md): children are positional, props are keyword
+[`wybthon.elements`](elements.md): children are positional, props are keyword
 arguments, and underscores in prop names become hyphens
 (`stroke_width="2"` renders `stroke-width="2"`). The reconciler infers
 the SVG namespace from the `svg` root and creates the subtree with
@@ -19,7 +19,7 @@ from `wybthon.svg`.
 | Shapes | `path`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `rect` |
 | Text and metadata | `text`, `tspan`, `title`, `desc`, `image` |
 | Paint and effects | `linearGradient`, `radialGradient`, `stop`, `pattern`, `marker`, `mask`, `clipPath`, `filter_` |
-| Factory | `element(tag)` (re-exported from `wybthon.html`) for tags without a helper, such as `element("feGaussianBlur")`. |
+| Factory | `element(tag)` (re-exported from `wybthon.elements`) for tags without a helper, such as `element("feGaussianBlur")`. |
 
 #### Naming rules
 
@@ -55,8 +55,32 @@ chart = div(
 Reactive values (accessors or zero-arg functions) work as SVG attribute
 values exactly as they do for HTML props.
 
+#### SVG in templates
+
+An [`html`][wybthon.html] template can contain `<svg>` markup too,
+written with SVG's own attribute names:
+
+```python
+from wybthon import create_signal, html
+
+color, set_color = create_signal("tomato")
+
+chart = html(t"""
+  <div class="chart">
+    <svg viewBox="0 0 100 100" width="200" height="200">
+      <circle cx="50" cy="50" r="40" fill={color} stroke="black" stroke-width="2" />
+    </svg>
+  </div>
+""")
+```
+
+A template containing `<svg>` or `<math>` is expanded into the same
+VNodes these helpers build, so it mounts with the correct namespace.
+It's expanded rather than cloned from a native `<template>`.
+
 #### See also
 
-- [HTML helpers](html.md)
-- [HTML helpers](html.md#prop-values): attribute and reactive binding semantics
+- [Element helpers](elements.md)
+- [Templates](../concepts/templates.md#server-rendering-hydration-and-svg)
+- [Element helpers](elements.md#prop-values): attribute and reactive binding semantics
 - [Concepts: Virtual DOM](../concepts/vdom.md)

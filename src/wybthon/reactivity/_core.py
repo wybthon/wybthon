@@ -823,7 +823,8 @@ def _partition_applies() -> None:
         previous = comp._publication_tx
         if previous is not None:
             previous.root().held_applies.pop(comp, None)
-        comp._publication_tx = tx
+        if tx is not None or previous is not None:
+            comp._publication_tx = tx
         if tx is not None:
             tx.held_applies[comp] = (value, prev)
         else:
@@ -1026,6 +1027,9 @@ class Owner:
     handler installed by [`Errored`][wybthon.Errored].
     """
 
+    # Every field is a slot. Fields most owners never set still are: the
+    # interpreter only specializes slot reads, and the read paths of every
+    # binding check these (see RFC 0003, "A leaner reactive core").
     __slots__ = (
         "_parent",
         "_provisional",
@@ -1057,7 +1061,9 @@ class Owner:
             child.dispose()
             return
         child._parent = self
-        child._provisional = self._provisional
+        provisional = self._provisional
+        if provisional is not None:
+            child._provisional = provisional
         if self._children is None:
             self._children = {id(child): child}
         else:
@@ -1137,7 +1143,8 @@ class Owner:
             if parent._children is not None:
                 parent._children.pop(id(self), None)
             self._parent = None
-        self._provisional = None
+        if self._provisional is not None:
+            self._provisional = None
 
 
 class _Preparation(Owner):
@@ -1195,15 +1202,6 @@ class _ComponentContext(Owner):
         self._props: Any = None
         self._vnode: Any = None
         self._component = component
-
-
-def _nearest_component() -> _ComponentContext | None:
-    owner = _current_owner
-    while owner is not None:
-        if isinstance(owner, _ComponentContext):
-            return owner
-        owner = owner._parent
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -1561,46 +1559,84 @@ def _unwrap(value: Any) -> Any:
 class _PropAccessor[T](Accessor[T]):
     """Reactive accessor for one `Prop[T]` field of a component's props.
 
-    Calling it returns the current value the parent passed (tracked); if
-    the parent passed an accessor or a zero-arg function, it's unwrapped
-    transparently, so children always read `props.name()` whether the
-    parent wrote `name="Ada"` or `name=lambda: user().name`.
+    Calling it returns the current value the parent passed; if the parent
+    passed an accessor or a zero-arg function, it's unwrapped
+    transparently (and tracked), so children always read `props.name()`
+    whether the parent wrote `name="Ada"` or `name=lambda: user().name`.
 
-    Place it in the returned tree to create a reactive hole; call it
-    inside memos, effects, and holes to derive from it. Reading it at the
-    top level of the component body freezes the value and warns in dev
-    mode; use `.peek()` when that's intended.
+    A constant is tracked only when the component can receive new props:
+    when it was mounted directly in a reactive hole's result (or a root),
+    a later re-render patches it, and the read subscribes to the props
+    instance's single signal. Anywhere else a constant can never change,
+    so the read subscribes to nothing and costs nothing.
+
+    Reading it at the top level of the component body freezes the value
+    and warns in dev mode; use `.peek()` when that's intended.
     """
 
-    __slots__ = ("_sig", "_key")
+    __slots__ = ("_props", "_field")
 
-    def __init__(self, sig: Signal[Any], key: str) -> None:
-        self._sig = sig
-        self._key = key
+    def __init__(self, props: Any, field: Any) -> None:
+        self._props = props
+        self._field = field
 
     def _label(self) -> str:
-        return f"prop {self._key!r}"
+        return f"prop {self._field.name!r}"
 
     def __call__(self) -> T:
-        sig = self._sig
+        props = self._props
+        sig = props._sig
         obs = _current_observer
         if obs is not None:
-            obs._add_source(sig)
+            if sig is None and props._patchable:
+                sig = props._wyb_signal()
+            if sig is not None:
+                obs._add_source(sig)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
-        if _in_action is not None:
-            value = sig.peek()
+        if sig is None:
+            raw = props._raw
+        elif _in_action is not None:
+            raw = sig.peek()
         else:
-            value = sig._slow_read() if _slow_reads else sig._value
-        return _unwrap(value)
+            raw = sig._slow_read() if _slow_reads else sig._value
+        field = self._field
+        value = raw.get(field.name, _MISSING)
+        if value is _MISSING:
+            value = props._wyb_default(field)
+        return value() if is_accessor(value) else value
 
     def peek(self) -> T:
         """Return the current (unwrapped) value without subscribing."""
-        value = self._sig.peek()
+        props = self._props
+        sig = props._sig
+        raw = props._raw if sig is None else sig.peek()
+        field = self._field
+        value = raw.get(field.name, _MISSING)
+        if value is _MISSING:
+            value = props._wyb_default(field)
         return untrack(value) if is_accessor(value) else value
 
     def __repr__(self) -> str:
-        return f"Prop({self._key!r})"
+        return f"Prop({self._field.name!r})"
+
+
+def _constant_prop(value: Any) -> Any:
+    """The value behind a prop accessor that can never change, else `_MISSING`.
+
+    A component that can't be patched holding a constant: binding it would
+    create a computation with nothing to track, so renderers use the value.
+    """
+    if type(value) is _PropAccessor:
+        props = value._props
+        if not props._patchable:
+            field = value._field
+            raw = props._raw.get(field.name, _MISSING)
+            if raw is _MISSING:
+                raw = props._wyb_default(field)
+            if not is_accessor(raw):
+                return raw
+    return _MISSING
 
 
 # ---------------------------------------------------------------------------
@@ -1667,14 +1703,16 @@ class Computation(Owner):
         "_async",
         "_apply",
         "_apply_arity",
-        "_defer",
         "_first",
+        "_applied_value",
+        "_keep",
+        "_prev_sources",
+        "_defer",
         "_eager",
         "_land_held",
         "_apply_cleanup",
         "_apply_owner",
         "_uses_apply_scope",
-        "_applied_value",
         "_error_fn",
         "_lazy",
         "_unobserved",
@@ -1683,8 +1721,6 @@ class Computation(Owner):
         "_committed_owner",
         "_readiness_signal",
         "_publication_tx",
-        "_keep",
-        "_prev_sources",
     )
 
     def __init__(
@@ -1727,16 +1763,18 @@ class Computation(Owner):
         self._async: _AsyncState | None = None
         self._apply = apply
         self._apply_arity = (1 if keep else _positional_count(apply)) if apply is not None else 0
-        self._defer = defer
         self._first = True
+        self._applied_value: Any = value
+        # Effects run their apply stage under a fresh owner per run;
+        # framework render bindings apply under the computation itself.
+        self._uses_apply_scope = apply is not None and apply_scope
+        self._defer = defer
         self._eager = eager
         # Set by ``refresh`` inside an action: the run's landing is truth
         # that belongs to the open transaction and reveals with it.
         self._land_held: Transition | None = None
         self._apply_cleanup: Callable[[], Any] | None = None
         self._apply_owner: Owner | None = None
-        self._uses_apply_scope = apply_scope
-        self._applied_value: Any = value
         self._error_fn = error
         self._lazy = lazy
         self._unobserved = unobserved
@@ -1745,6 +1783,26 @@ class Computation(Owner):
         self._committed_owner: _Preparation | None = None
         self._readiness_signal: Signal[int] | None = None
         self._publication_tx: Transition | None = None
+
+    def _inert(self) -> bool:
+        """Whether this settled computation can never run again or own anything.
+
+        True after a run that read no reactive source and left no async
+        work, children, cleanups, or published resources behind. The
+        renderer disposes such bindings right away and keeps only the DOM
+        they produced.
+        """
+        return (
+            not self._sources
+            and self._state == _CLEAN
+            and self._async is None
+            and not self._children
+            and not self._cleanups
+            and self._prepared_owner is None
+            and self._committed_owner is None
+            and self._apply_cleanup is None
+            and not self._disposed
+        )
 
     def _track_readiness(self) -> None:
         if self._readiness_signal is None:
@@ -1776,13 +1834,16 @@ class Computation(Owner):
             super()._add_cleanup(fn)
 
     def _discard_preparation(self) -> None:
-        owner, self._prepared_owner = self._prepared_owner, None
+        owner = self._prepared_owner
         if owner is not None:
+            self._prepared_owner = None
             owner.dispose()
 
     def _publish_preparation(self) -> None:
         previous = self._committed_owner
-        self._committed_owner, self._prepared_owner = self._prepared_owner, None
+        self._committed_owner = self._prepared_owner
+        if self._prepared_owner is not None:
+            self._prepared_owner = None
         if previous is not None:
             previous.dispose()
         if self._committed_owner is not None:
@@ -2055,8 +2116,9 @@ class Computation(Owner):
 
     def _settle(self, value: Any) -> None:
         """Accept a new value: notify memo observers or schedule an effect's apply stage."""
-        landing, self._land_held = self._land_held, None
+        landing = self._land_held
         if landing is not None:
+            self._land_held = None
             landing = landing.root()
             if landing not in _transitions:
                 landing = None
@@ -2132,7 +2194,8 @@ class Computation(Owner):
         if self._uses_apply_scope:
             apply_owner = self._apply_owner = Owner()
             apply_owner._parent = self
-            apply_owner._provisional = self._provisional
+            if self._provisional is not None:
+                apply_owner._provisional = self._provisional
         else:
             apply_owner = self
         global _current_owner, _current_observer, _applying

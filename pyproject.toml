@@ -76,7 +76,7 @@ extend-exclude = ["docs/rfcs"]
 [tool.ruff.lint]
 # Docstring (D) rules use the Google convention — see [tool.ruff.lint.pydocstyle].
 # Selectively enabled so tests/benchmarks aren't penalised.
-select = ["E", "F", "I", "D"]
+select = ["E", "F", "I", "D", "RUF100"]
 # D107 (missing __init__ docstring) — mkdocstrings is configured to merge
 #   __init__ into the class docstring, so the class docstring is the source of truth.
 # D105 (magic method docstring) — most are self-explanatory (__repr__, __eq__, etc.).
@@ -86,11 +86,7 @@ ignore = ["D107", "D105", "D203", "D213"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["D"]
-"scripts/**/*.py" = ["D"]
 "benchmarks/**/*.py" = ["D"]
-"docs/**/*.py" = ["D"]
-"setup.py" = ["D"]
-"conftest.py" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

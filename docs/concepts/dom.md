@@ -3,7 +3,7 @@
 [`Element`][wybthon.Element] is Wybthon's thin wrapper around browser
 DOM nodes. It provides helpers for attributes, classes, styles, and
 queries while still giving you the raw `element` for any escape hatch
-you need. For events, use the delegated `on_*` props (see
+you need. For events, use the delegated `on*` attributes (see
 [Events](events.md)); for non-bubbling event types, attach a native
 listener via `ref.current.element.addEventListener` with a Pyodide
 proxy.
@@ -26,12 +26,12 @@ measuring, third-party widgets) or when you receive a node back from a
 ## Refs: holding onto an element
 
 A [`Ref`][wybthon.Ref] is a small mutable container that the renderer
-fills with the mounted `Element`. Pass `ref=` to any host element and
-read `ref.current` after mount:
+fills with the mounted `Element`. Pass it as the `ref` attribute of any
+host element (`ref=` with the element helpers) and read `ref.current`
+after mount:
 
 ```python
-from wybthon import Ref, component, on_settled
-from wybthon.html import div, input_
+from wybthon import Ref, component, html, on_settled
 
 
 @component
@@ -43,7 +43,7 @@ def AutoFocusInput():
             ref.current.element.focus()
 
     on_settled(focus)
-    return div(input_(type="text", placeholder="Focus me", ref=ref))
+    return html(t'<div><input type="text" placeholder="Focus me" ref={ref}></div>')
 ```
 
 Refs are assigned while the element mounts and reset to `None` when it
@@ -56,14 +56,13 @@ at the top of the component body during initial render.
 The `ref` prop accepts three shapes:
 
 - A `Ref` object: `ref.current` is set on mount and cleared on unmount.
-- A callable: `ref(element)` is called once on mount. It isn't called again on unmount, so pair it with [`on_cleanup`][wybthon.on_cleanup] if you need teardown.
+- A callable: `ref(element)` is called once on mount. It isn't called again on unmount, so pair it with [`on_cleanup`][wybthon.on_cleanup] if you need teardown. A callback ref is the closest match to Solid 2.0's function refs. Name it, or wrap an inline lambda in parentheses: `ref={(lambda el: el.element.focus())}`.
 - A list or tuple mixing both: every entry is assigned. This is how a component forwards a parent's ref while keeping one of its own:
 
 ```python
 from collections.abc import Callable
 
-from wybthon import Element, Props, Ref, component, on_settled
-from wybthon.html import input_
+from wybthon import Element, Props, Ref, component, html, on_settled
 
 
 class FancyInputProps(Props):
@@ -74,7 +73,7 @@ class FancyInputProps(Props):
 def FancyInput(props: FancyInputProps):
     local = Ref()
     on_settled(lambda: local.current.element.focus())
-    return input_(type="text", ref=[local, props.ref])
+    return html(t'<input type="text" ref={[local, props.ref]}>')
 ```
 
 Refs pass through components like any other prop; there's no special
@@ -105,7 +104,7 @@ an ancestor) see `ref.current is None`, so guard for it. See
 ## How the renderer relates to `Element`
 
 The renderer itself never touches raw DOM nodes or `Element` wrappers.
-Every host VNode is identified by an integer node id, and all mutations
+Every host node is identified by an integer node id, and all mutations
 (clone, insert, set-attr, dispose) are emitted as compact operations
 into a command buffer that a small JavaScript kernel applies in one
 bridge crossing per commit. See [Virtual DOM](vdom.md).
@@ -123,10 +122,9 @@ work through a ref stays in sync with the framework's bookkeeping.
 
 !!! warning "Don't fight the renderer"
     Attributes, classes, and children that the renderer owns should be
-    driven by reactive bindings, not by `Element` calls. The next
-    reconciliation only patches what changed on the VNode, so it won't
-    notice manual edits and may leave them in place, or overwrite them
-    unexpectedly. Use `Element` for things the renderer doesn't manage:
+    driven by reactive bindings, not by `Element` calls. A binding only
+    writes when its own value changes, so it won't notice manual edits
+    and may leave them in place, or overwrite them unexpectedly. Use `Element` for things the renderer doesn't manage:
     focus, selection, scroll position, measurements, and third-party
     widgets that own their subtree.
 
@@ -146,13 +144,21 @@ The wrapper mirrors familiar DOM names:
 | `Element.query`, `Element.query_all`, `find`, `find_all` | Selector queries (commit pending ops first). |
 | `attach_ref(ref)` | Store this element on `ref.current`. |
 
-## Styles and dataset via the VDOM
+## Styles, classes, and dataset through bindings
 
-You usually don't need `Element` for styling:
+You usually don't need `Element` for styling. Templates and element
+helpers share one set of prop appliers, so these work the same in both:
 
-- The `style` prop takes a dict with camelCase or snake_case keys (`background_color`, `fontSize`); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing `None` clears earlier styles. Values may be accessors, and a raw style string is accepted too.
-- The `dataset` prop takes a dict; entries render as `data-*` attributes and missing keys on update are removed. Keyword props like `data_testid="x"` also work.
-- `class_` accepts a string, a list of strings, a `{name: truthy_or_accessor}` dict, or an accessor returning any of those.
+- `style` takes a dict with camelCase or snake_case keys (`background_color`, `fontSize`); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing `None` clears earlier styles. Values may be accessors, and a raw style string is accepted too.
+- `dataset` takes a dict; entries render as `data-*` attributes and missing keys on update are removed. A plain `data-testid="x"` attribute (`data_testid="x"` on a helper) also works.
+- `class` (`class_` on a helper) accepts a string, a list of strings, a `{name: truthy_or_accessor}` dict, or an accessor returning any of those.
+
+```python
+styles = {"background_color": "white", "fontSize": "14px"}
+classes = {"card": True, "active": is_active}
+
+html(t'<div class={classes} style={styles} data-testid="card">...</div>')
+```
 
 ## Rendering into an existing node
 
@@ -161,10 +167,9 @@ container and returns a [`Root`][wybthon.Root]. Call `root.dispose()` to
 unmount, run every cleanup, and clear the container's kernel bookkeeping:
 
 ```python
-from wybthon import Element, render
-from wybthon.html import h1
+from wybthon import Element, html, render
 
-root = render(h1("Hello"), Element("#app", existing=True))
+root = render(html(t"<h1>Hello</h1>"), Element("#app", existing=True))
 root.dispose()
 ```
 

@@ -26,6 +26,14 @@ wyb preview --dir dist --port 8000
 
 Deploy the contents of `dist/`, configure missing extensionless routes to serve `200.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
 
+## What the page loads
+
+The build replaces the `<!-- wyb:bootstrap -->` marker with the tags that start the application, so every page it writes (`index.html`, `200.html`, and each prerendered route) carries them:
+
+- A `<link rel="modulepreload">` for Pyodide's `pyodide.mjs`, and a `<link rel="preload" as="fetch" crossorigin>` for the runtime archive and the application archive. The browser starts downloading all three while the page parses, instead of after the bootstrap has run.
+- The manifest, inlined as `<script type="application/json" id="wyb-manifest">`, so the bootstrap doesn't spend a round trip fetching it. `manifest.json` is still written at the root of the output, and the bootstrap falls back to fetching it when a page doesn't carry the inline copy.
+- The bootstrap module itself.
+
 ## Production mode
 
 `wyb build` writes a production build: the bootstrap calls [`set_dev_mode(False)`][wybthon.set_dev_mode] before the application imports, so production apps skip the development checks (such as unknown-prop validation and write-in-scope errors) and print no development warnings. The manifest's `dev` field records the mode. `wyb dev` builds the same project with dev mode on. From Python, [`build_app`][wybthon.build.build_app] builds for production by default; pass `dev=True` for a development build. Read the current mode with [`is_dev_mode()`][wybthon.is_dev_mode].
@@ -46,7 +54,7 @@ When the interpreter running the build has the same Python version as the pinned
 
 ## Runtime and dependencies
 
-The bootstrap loads Pyodide and the runtime/application archives concurrently, then unpacks and imports Python. It doesn't fetch every Python module separately. `packages` names packages in the pinned Pyodide distribution. `wheels` accepts exact `name==version` requirements or explicit wheel URLs compatible with the selected runtime. Set `pyodide-url` to host that runtime yourself.
+The bootstrap loads Pyodide and the runtime/application archives concurrently (the preload hints have usually started all three already), then unpacks and imports Python. It doesn't fetch every Python module separately. `packages` names packages in the pinned Pyodide distribution. `wheels` accepts exact `name==version` requirements or explicit wheel URLs compatible with the selected runtime. Set `pyodide-url` to host that runtime yourself.
 
 Pin dependencies and keep the runtime version deliberate. Browser Python code is public, including bundled configuration. Keep application secrets on a server.
 

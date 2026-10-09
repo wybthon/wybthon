@@ -22,13 +22,13 @@ at once.
 
 | Name | Description |
 | --- | --- |
-| [`Loading`][wybthon.Loading] | `Loading(children, *, fallback=None, on=None)`; `children` is a VNode, callable, or list; `on` is an accessor or list of accessors the boundary waits for, and whose change shows the fallback again. |
+| [`Loading`][wybthon.Loading] | `Loading(children, *, fallback=None, on=None)`; `children` is a node, callable, or list; `on` is an accessor or list of accessors the boundary waits for, and whose change shows the fallback again. |
 | [`Reveal`][wybthon.Reveal] | `Reveal(children, *, order="sequential", collapsed=False)`; `order` is `"sequential"`, `"together"`, or `"natural"`; `collapsed=True` shows only the next fallback in a sequential group. |
 
 ```python
 from typing import Any
 
-from wybthon import Loading, Prop, Props, Reveal, component, create_memo, div, is_pending, p, span
+from wybthon import Loading, Prop, Props, Reveal, component, create_memo, html, is_pending
 
 
 class UserCardProps(Props):
@@ -42,12 +42,16 @@ def UserCard(props: UserCardProps):
         return await fetch_json(f"/api/users/{uid}")
 
     user = create_memo(load_user)
+
+    def name():
+        return user()["name"]
+
+    def hint():
+        return "Refreshing..." if is_pending(user) else ""
+
     return Loading(
-        lambda: div(
-            p(lambda: user()["name"]),
-            span(lambda: "Refreshing..." if is_pending(user) else ""),
-        ),
-        fallback=lambda: p("Loading..."),
+        html(t"<div><p>{name}</p><span>{hint}</span></div>"),
+        fallback=html(t"<p>Loading...</p>"),
     )
 
 
@@ -59,8 +63,8 @@ class DashboardProps(Props):
 def Dashboard(props: DashboardProps):
     return Reveal(
         [
-            Loading(UserCard(user_id=1), fallback=p("Loading user...")),
-            Loading(Activity(), fallback=p("Loading activity..."), on=props.settings),
+            Loading(UserCard(user_id=1), fallback=html(t"<p>Loading user...</p>")),
+            Loading(Activity(), fallback=html(t"<p>Loading activity...</p>"), on=props.settings),
         ],
         collapsed=True,
     )

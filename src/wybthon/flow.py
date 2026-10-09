@@ -1,10 +1,14 @@
 """Control flow: `Show`, `For`, `Repeat`, `Switch`/`Match`, `dynamic`, and `client_only`.
 
-These primitives create **isolated reactive scopes** so only the
-relevant subtree updates when a condition or list changes. Each is a
-function returning a component `VNode`; conditions and sources are
-accessors (or plain values), and `children`/`fallback` slots are VNodes
-or callables evaluated inside the primitive's own scope.
+`Show`, `For`, `Repeat`, and `Switch` mount as native *regions*: one
+reactive computation that selects what to render, and an owned scope per
+branch or row. There's no wrapper component. A condition or source is
+an accessor (or a plain value); `children` and `fallback` are nodes or
+callables evaluated inside the region's own scope.
+
+When a reactive hole re-renders and returns the same kind of region at
+the same place, the new condition or source is pushed into the mounted
+region; branches and rows that are still selected survive.
 
 Callback shapes follow SolidJS 2.0:
 
@@ -22,23 +26,23 @@ Callback shapes follow SolidJS 2.0:
 
 Example:
     ```python
-    Show(is_logged_in, lambda: p("Welcome!"), fallback=lambda: p("Please log in"))
+    Show(is_logged_in, html(t"<p>Welcome!</p>"), fallback=html(t"<p>Please log in</p>"))
 
-    For(todos, lambda todo, i: li(todo["title"]))
+    For(todos, lambda todo, i: html(t"<li>{todo['title']}</li>"))
 
-    Repeat(rating, lambda i: span("*"))
+    Repeat(rating, lambda i: html(t"<span>*</span>"))
     ```
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any
+from collections.abc import Callable, Sequence
+from typing import Any, Literal, overload
 
 from ._warnings import warn_each_plain_list
-from .reactivity._core import _positional_count
-from .reactivity._primitives import create_memo
-from .reactivity._props import RawProps
+from .component import component
+from .reactivity._core import Accessor, Signal, _positional_count, is_accessor
+from .reactivity._props import Prop, Props
 from .vnode import Fragment, VNode, h
 
 __all__ = [
@@ -60,7 +64,7 @@ def _render_slot(slot: Any, *args: Any) -> Any:
 
     A callable slot is invoked with `args` when it declares positional
     parameters and with none otherwise. Anything else (a VNode, string,
-    list, or `None`) is returned as is for the hole to coerce.
+    list, or `None`) is returned as is for the region to coerce.
     """
     if slot is None or isinstance(slot, VNode):
         return slot
@@ -80,21 +84,62 @@ def _callback(value: Any) -> Any:
     return value
 
 
+def _constant(value: Any) -> Callable[[], Any]:
+    return lambda: value
+
+
 # ---------------------------------------------------------------------------
 # Show
 # ---------------------------------------------------------------------------
 
 
+def _show(inputs: tuple[Any, Any, Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+    when, children, fallback = inputs
+    if is_accessor(when):
+        if when():
+            return (True,), children, (when,)
+        return (False,), fallback, ()
+    if when:
+        return (True,), children, (_constant(when),)
+    return (False,), fallback, ()
+
+
+def _show_keyed(inputs: tuple[Any, Any, Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+    when, children, fallback = inputs
+    value = when() if is_accessor(when) else when
+    if value:
+        return (True, value), children, (value,)
+    return (False,), fallback, ()
+
+
+@overload
+def Show[T](
+    when: Callable[[], T | None],
+    children: Callable[[Accessor[T]], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[False] = False,
+) -> VNode: ...
+@overload
+def Show[T](
+    when: Callable[[], T | None],
+    children: Callable[[T], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[True],
+) -> VNode: ...
+@overload
 def Show(
-    when: Any,
-    children: Any = None,
+    when: object,
+    children: Callable[[], object] | VNode | str | list[Any] | None = None,
     fallback: Any = None,
     *,
     keyed: bool = False,
-) -> VNode:
+) -> VNode: ...
+def Show(when: Any, children: Any = None, fallback: Any = None, *, keyed: bool = False) -> VNode:
     """Render `children` while `when` is truthy, else `fallback`.
 
-    Only the **truthiness** of `when` is tracked by default: the branch
+    Only the **truthiness** of `when` decides the branch: the branch
     re-renders when the condition flips, not on every value change. A
     callable `children` may accept one argument, an
     [`Accessor`][wybthon.Accessor] for the (truthy) value, so inner
@@ -105,50 +150,52 @@ def Show(
 
     Args:
         when: Condition accessor or plain value.
-        children: VNode, zero-arg callable, or `(value) -> VNode`.
+        children: A node, a zero-arg callable, or `(value) -> node`.
         fallback: Rendered when `when` is falsy.
         keyed: Re-create the branch on every value change.
 
     Example:
         ```python
-        Show(user, lambda u: p("Hello, ", lambda: u().name), fallback=p("Sign in"))
+        Show(user, lambda u: html(t"<p>Hello, {u().name}</p>"), fallback=html(t"<p>Sign in</p>"))
         ```
     """
-    return h(_Show, {"when": when, "children": children, "fallback": fallback, "keyed": keyed})
-
-
-def _Show(props: RawProps) -> Any:
-    when = props.when
-    keyed = props.raw("keyed")
-    children = _callback(props.raw("children"))
-    fallback = props.raw("fallback")
-
-    truthy = create_memo(lambda: bool(when()))
-
-    def choose() -> Any:
-        if keyed:
-            value = when()
-            return ((True, value), children, (value,)) if value else ((False,), fallback, ())
-        return ((True,), children, (when,)) if truthy() else ((False,), fallback, ())
-
-    return VNode("_branch", {"choose": choose})
-
-
-_Show.__name__ = "Show"
+    return VNode(
+        "_branch", {"select": _show_keyed if keyed else _show, "inputs": (when, _callback(children), fallback)}
+    )
 
 
 # ---------------------------------------------------------------------------
 # For
 # ---------------------------------------------------------------------------
 
+type _Each[T] = Callable[[], Sequence[T]] | Sequence[T]
 
-def For(
-    each: Any,
-    children: Callable[..., Any],
+
+@overload
+def For[T](
+    each: _Each[T],
+    children: Callable[[T, Accessor[int]], object],
     fallback: Any = None,
     *,
-    keyed: bool | Callable[[Any], Any] = True,
-) -> VNode:
+    keyed: Literal[True] = True,
+) -> VNode: ...
+@overload
+def For[T](
+    each: _Each[T],
+    children: Callable[[Accessor[T], int], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[False],
+) -> VNode: ...
+@overload
+def For[T](
+    each: _Each[T],
+    children: Callable[[Accessor[T], Accessor[int]], object],
+    fallback: Any = None,
+    *,
+    keyed: Callable[[T], object],
+) -> VNode: ...
+def For(each: Any, children: Any, fallback: Any = None, *, keyed: Any = True) -> VNode:
     """Render a list with a stable subtree per row.
 
     The mapping callback runs **once per row**; when the list changes,
@@ -176,27 +223,12 @@ def For(
     Example:
         ```python
         # With a key function both arguments are accessors.
-        For(todos, lambda todo, i: li(lambda: todo()["title"]), keyed=lambda t: t["id"])
+        For(todos, lambda todo, i: html(t"<li>{(lambda: todo()['title'])}</li>"), keyed=lambda t: t["id"])
         ```
     """
-    return h(_For, {"each": each, "children": children, "fallback": fallback, "keyed": keyed})
-
-
-def _For(props: RawProps) -> Any:
-    raw_each = props.raw("each")
-    if isinstance(raw_each, (list, tuple)):
-        warn_each_plain_list(_For)
-    each = props.each
-    keyed = props.raw("keyed")
-    fallback = props.raw("fallback")
-    children = _callback(props.raw("children"))
-    if children is None:
-        return None
-
-    return VNode("_list", {"source": each, "children": children, "keyed": keyed, "fallback": fallback})
-
-
-_For.__name__ = "For"
+    if isinstance(each, (list, tuple)):
+        warn_each_plain_list(For)
+    return VNode("_list", {"source": each, "children": _callback(children), "keyed": keyed, "fallback": fallback})
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +236,13 @@ _For.__name__ = "For"
 # ---------------------------------------------------------------------------
 
 
-def Repeat(count: Any, children: Callable[[int], Any], fallback: Any = None, *, start: int | Any = 0) -> VNode:
+def Repeat(
+    count: int | Callable[[], int],
+    children: Callable[[int], object],
+    fallback: Any = None,
+    *,
+    start: int | Callable[[], int] = 0,
+) -> VNode:
     """Render `children(i)` for `i` in `range(start, start + count)` with no diffing.
 
     Rendering is driven purely by the count: growing mounts new tail
@@ -213,33 +251,19 @@ def Repeat(count: Any, children: Callable[[int], Any], fallback: Any = None, *, 
 
     Args:
         count: Count accessor or plain integer.
-        children: `(index: int) -> VNode`, rendered once per slot.
+        children: `(index: int) -> node`, rendered once per slot.
         fallback: Rendered when the count is zero.
         start: First index (accessor or int).
 
     Example:
         ```python
-        Repeat(rating, lambda i: span("*"))
+        Repeat(rating, lambda i: html(t"<span>*</span>"))
         ```
     """
-    return h(_Repeat, {"count": count, "children": children, "fallback": fallback, "start": start})
-
-
-def _Repeat(props: RawProps) -> Any:
-    children = _callback(props.raw("children"))
-    fallback = props.raw("fallback")
-    count = props.count
-    start = props.start
-
-    def source() -> range:
-        n = max(0, int(count() or 0))
-        s = int(start() or 0)
-        return range(s, s + n)
-
-    return VNode("_list", {"source": source, "children": children, "fallback": fallback, "repeat": True})
-
-
-_Repeat.__name__ = "Repeat"
+    return VNode(
+        "_list",
+        {"source": (count, start), "children": _callback(children), "fallback": fallback, "repeat": True},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +276,7 @@ class Match:
 
     Args:
         when: Condition accessor or plain value.
-        children: VNode, zero-arg callable, or `(value) -> VNode`
+        children: A node, zero-arg callable, or `(value) -> node`
             receiving an `Accessor` (or the raw value with `keyed=True`).
         keyed: Re-create the branch on every value change.
     """
@@ -261,70 +285,73 @@ class Match:
 
     def __init__(self, when: Any, children: Any = None, *, keyed: bool = False) -> None:
         self.when = when
-        self.children = children
+        self.children = _callback(children)
         self.keyed = keyed
+
+
+def _switch(inputs: tuple[tuple[Match, ...], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+    matches, fallback = inputs
+    for index, match in enumerate(matches):
+        when = match.when
+        reactive = callable(when) and _positional_count(when) == 0
+        value = when() if reactive else when
+        if value:
+            if match.keyed:
+                return (index, value), match.children, (value,)
+            return (index,), match.children, (when if reactive else _constant(when),)
+    return (-1,), fallback, ()
 
 
 def Switch(*matches: Match, fallback: Any = None) -> VNode:
     """Render the first [`Match`][wybthon.Match] whose condition is truthy.
 
-    Conditions are evaluated in order inside the switch's own scope;
-    only a change in *which* branch matches re-renders, so unrelated
-    value changes are ignored (unless a branch is `keyed`).
+    Conditions are evaluated in order; only a change in *which* branch
+    matches re-renders, so unrelated value changes are ignored (unless a
+    branch is `keyed`).
 
     ```python
     Switch(
-        Match(lambda: status() == "loading", lambda: p("Loading...")),
-        Match(lambda: status() == "ready", lambda: p("Ready")),
-        fallback=lambda: p("Unknown"),
+        Match(lambda: status() == "loading", html(t"<p>Loading...</p>")),
+        Match(lambda: status() == "ready", html(t"<p>Ready</p>")),
+        fallback=html(t"<p>Unknown</p>"),
     )
     ```
     """
-    return h(_Switch, {"matches": [m for m in matches if isinstance(m, Match)], "fallback": fallback})
-
-
-def _constant(value: Any) -> Callable[[], Any]:
-    return lambda: value
-
-
-def _Switch(props: RawProps) -> Any:
-    matches: list[Match] = props.raw("matches") or []
-    fallback = props.raw("fallback")
-    accessors: list[Callable[[], Any]] = []
-    for m in matches:
-        w = m.when
-        if callable(w) and _positional_count(w) == 0:
-            accessors.append(w)
-        else:
-            accessors.append(_constant(w))
-
-    def active() -> int:
-        for i, acc in enumerate(accessors):
-            if acc():
-                return i
-        return -1
-
-    index = create_memo(active)
-
-    def choose() -> Any:
-        i = index()
-        if i < 0:
-            return ((-1,), fallback, ())
-        match = matches[i]
-        acc = accessors[i]
-        value = acc() if match.keyed else acc
-        token = (i, value) if match.keyed else (i,)
-        return token, _callback(match.children), (value,)
-
-    return VNode("_branch", {"choose": choose})
-
-
-_Switch.__name__ = "Switch"
+    return VNode(
+        "_branch", {"select": _switch, "inputs": (tuple(m for m in matches if isinstance(m, Match)), fallback)}
+    )
 
 
 # ---------------------------------------------------------------------------
 # Dynamic
 # ---------------------------------------------------------------------------
+
+
+class _DynamicProps(Props):
+    _wyb_open = True
+    component: Prop[Any]
+
+
+@component
+def _Dynamic(props: _DynamicProps) -> Any:
+    source = props.component
+
+    def render() -> Any:
+        comp = source()
+        if comp is None:
+            return None
+        inner = {k: v for k, v in props._raw.items() if k != "component"}
+        children = inner.pop("children", None)
+        if children is None:
+            return h(comp, inner)
+        if not isinstance(children, list):
+            children = [children]
+        return h(comp, inner, *children)
+
+    return render
+
+
+_Dynamic.__name__ = "Dynamic"
 
 
 class _DynamicComponent:
@@ -365,38 +392,43 @@ def dynamic(source: Any) -> Callable[..., VNode]:
         ```python
         Editor = dynamic(lambda: RichEditor if rich_mode() else PlainEditor)
 
+        @component
         def Page():
-            return div(Editor(value=draft, on_change=set_draft))
+            return html(t"<div>{Editor(value=draft, on_change=set_draft)}</div>")
         ```
     """
     return _DynamicComponent(source)
 
 
-def _Dynamic(props: RawProps) -> Any:
-    component = props.component
-    forwarded = [k for k in props if k != "component"]
-
-    def render() -> Any:
-        comp = component()
-        if comp is None:
-            return None
-        inner: dict[str, Any] = {k: props.raw(k) for k in forwarded}
-        children = inner.pop("children", None)
-        if children is None:
-            return h(comp, inner)
-        if not isinstance(children, list):
-            children = [children]
-        return h(comp, inner, *children)
-
-    return render
-
-
-_Dynamic.__name__ = "Dynamic"
-
-
 # ---------------------------------------------------------------------------
 # client_only
 # ---------------------------------------------------------------------------
+
+
+class _ClientOnlyProps(Props):
+    children: Any = None
+    fallback: Any = None
+
+
+@component
+def _ClientOnly(props: _ClientOnlyProps) -> Any:
+    from .reactivity import _core
+
+    children = _callback(props.children)
+    fallback = props.fallback
+    session = _core._session
+    hydrating = session is not None and session.mode == "hydrate"
+    ready: Signal[bool] = Signal(not (_core._server_depth or hydrating))
+    if hydrating:
+        session.after_hydration.append(lambda: ready._set(True, _core._O_REVEAL))
+
+    def select(_: Any) -> tuple[Any, Any, tuple[Any, ...]]:
+        return ((True,), children, ()) if ready() else ((False,), fallback, ())
+
+    return VNode("_branch", {"select": select, "inputs": None})
+
+
+_ClientOnly.__name__ = "client_only"
 
 
 def client_only(children: Any, *, fallback: Any = None) -> VNode:
@@ -410,37 +442,16 @@ def client_only(children: Any, *, fallback: Any = None) -> VNode:
     measured from the viewport, the user's local time).
 
     Args:
-        children: A VNode or a zero-arg callable returning the content.
+        children: A node or a zero-arg callable returning the content.
         fallback: What the server renders, and what shows until
             hydration finishes.
 
     Example:
         ```python
-        client_only(lambda: Chart(data=data), fallback=p("Loading chart..."))
+        client_only(lambda: Chart(data=data), fallback=html(t"<p>Loading chart...</p>"))
         ```
     """
     return h(_ClientOnly, {"children": children, "fallback": fallback})
-
-
-def _ClientOnly(props: RawProps) -> Any:
-    from .reactivity import _core
-    from .reactivity._core import Signal
-
-    children = _callback(props.raw("children"))
-    fallback = props.raw("fallback")
-    session = _core._session
-    hydrating = session is not None and session.mode == "hydrate"
-    ready: Signal[bool] = Signal(not (_core._server_depth or hydrating))
-    if hydrating:
-        session.after_hydration.append(lambda: ready._set(True, _core._O_REVEAL))
-
-    def choose() -> Any:
-        return ((True,), children, ()) if ready() else ((False,), fallback, ())
-
-    return VNode("_branch", {"choose": choose})
-
-
-_ClientOnly.__name__ = "client_only"
 
 
 # ---------------------------------------------------------------------------
@@ -463,6 +474,22 @@ def is_hydrating() -> bool:
     return bool(kernel.claiming)
 
 
+class _NoHydrationProps(Props):
+    children: Any = None
+
+
+@component
+def _NoHydration(props: _NoHydrationProps) -> Any:
+    from . import kernel
+
+    if kernel.claiming:
+        return VNode("_static", {"marker": _NO_HYDRATION_MARKER})
+    return VNode("_fragment", {"marker": _NO_HYDRATION_MARKER}, list(props.children or []))
+
+
+_NoHydration.__name__ = "NoHydration"
+
+
 def NoHydration(*children: Any) -> VNode:
     """Render `children` on the server as static HTML the browser won't hydrate.
 
@@ -475,17 +502,6 @@ def NoHydration(*children: Any) -> VNode:
     Matches Solid 2.0's `<NoHydration>`.
     """
     return h(_NoHydration, {"children": list(children)})
-
-
-def _NoHydration(props: RawProps) -> Any:
-    from . import kernel
-
-    if kernel.claiming:
-        return VNode("_static", {"marker": _NO_HYDRATION_MARKER})
-    return VNode("_fragment", {"marker": _NO_HYDRATION_MARKER}, list(props.raw("children") or []))
-
-
-_NoHydration.__name__ = "NoHydration"
 
 
 def Hydration(*children: Any, id: str | None = None) -> VNode:

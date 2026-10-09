@@ -4,7 +4,7 @@
 
 #### What's in this module
 
-Server rendering: the same components that run in the browser render to HTML in CPython. See [Server rendering](../concepts/server-rendering.md) for the full guide.
+Server rendering: the same components that run in the browser render to HTML in CPython. A server render expands each `html` template into the same nodes the element helpers would build, so the output and hydration keys don't depend on which style you used. See [Server rendering](../concepts/server-rendering.md) for the full guide.
 
 | Name | Description |
 | --- | --- |
@@ -18,20 +18,20 @@ The browser side, [`hydrate`][wybthon.hydrate], [`is_server`][wybthon.is_server]
 ```python
 import asyncio
 
-from wybthon import RequestEvent, component, http_header, p
+from wybthon import RequestEvent, component, html, http_header
 from wybthon.server import render_to_stream
 
 
 @component
 def App():
     http_header("Cache-Control", "max-age=60")
-    return p("Hello from the server")
+    return html(t"<p>Hello from the server</p>")
 
 
 async def main():
     event = RequestEvent(url="/")
-    html = await render_to_stream(App(), event=event)
-    print(event.response.status, event.response.headers, html)
+    page = await render_to_stream(App(), event=event)
+    print(event.response.status, event.response.headers, page)
 
 
 asyncio.run(main())

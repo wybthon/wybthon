@@ -10,7 +10,14 @@ uv run python benchmarks/browser_bench.py --mode store --json > store.json
 uv run python benchmarks/check_work.py store.json
 ```
 
-To use the interactive app, run `python benchmarks/_serve.py --root .` and open `/benchmarks/app/index.html?mode=store`. The page loads the framework straight from `src/wybthon` through the server's `/__manifest` endpoint, so any checkout can be served and compared without building it.
+`benchmarks/app` is an ordinary Wybthon project: a `wybthon.toml` with the entry `bench.main:app`, the app in `bench/main.py` (the js-framework-benchmark table, written with `html` templates), and an `index.html` whose harness drives the app through the runtime the bootstrap exposes. The benchmark scripts serve it through `serve_checkout` in `benchmarks/_app.py`, which builds a checkout's `benchmarks/app` with that checkout's own `wyb build` into a temporary directory and serves the `dist`. A checkout from before the app became a project has no `benchmarks/app/wybthon.toml`; `serve_checkout` serves it with that checkout's own `benchmarks/_serve.py` instead, so new and old checkouts can still be compared.
+
+To use the interactive app, build and preview it, then open `/?mode=store` (or `/?mode=signal`) and click "Run Full Benchmark":
+
+```bash
+uv run wyb build --dir benchmarks/app
+uv run wyb preview --dir benchmarks/app/dist
+```
 
 Each browser scenario restores its baseline, performs one warmup, then records three samples. It reports median synchronous commit time separately from input-to-frame time. Frame time is a requestAnimationFrame opportunity, not a precise paint completion measurement. DOM snapshots verify that each sample changes the UI.
 
@@ -28,7 +35,7 @@ Each browser scenario restores its baseline, performs one warmup, then records t
 
 The JSON includes runtime/browser metadata, individual samples, operation counters, and registry counts. Signal mode uses per-row label signals; store mode uses entity-preserving draft edits. Arbitrary replacement signal arrays still need list matching. Store edit records let the mounted list skip that scan for local updates.
 
-`check_work.py` gates operation counts for store selection, swap, and append. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
+`check_work.py` gates deterministic work in a store-mode report. Selection and swap create no rows, scan no list, and send at most two commands. Appending 1,000 rows sends one command per row in a single commit: every row must be a template clone, counted as `template_clones` for `html` templates or `template_recipe_hits` for compiled helper shapes, with no `template_shape_walks`. Clearing 10,000 rows is at most two commands. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
 
 ## Comparing checkouts
 
@@ -40,7 +47,7 @@ uv run python benchmarks/compare_browser.py --baseline /tmp/wybthon-before > sig
 uv run python benchmarks/compare_browser.py --baseline /tmp/wybthon-before --mode store > store-comparison.json
 ```
 
-Both checkouts run in separate pages of the same browser. Every operation restores its initial state, and the execution order alternates between samples. The default is one warmup and five measurements per operation. Avoid running other CPU-intensive work during comparisons; alternating order reduces drift but doesn't eliminate interference.
+Each checkout is built and served by `serve_checkout`, and both run in separate pages of the same browser. Every operation restores its initial state, and the execution order alternates between samples. The default is one warmup and five measurements per operation. Avoid running other CPU-intensive work during comparisons; alternating order reduces drift but doesn't eliminate interference.
 
 These comparisons invoke the Python operation directly and measure through its synchronous DOM commit. They also record a subsequent frame opportunity. They don't include delegated event dispatch and shouldn't be mixed with the event-driven timings above. DOM snapshots verify row counts and visible changes. `--profile` appends separate, untimed cProfile reports, and `--scenarios` selects specific operations.
 
@@ -58,8 +65,15 @@ uv run python benchmarks/row_bench.py /tmp/wybthon-before/src --reps 5 > rows-be
 uv run python benchmarks/row_bench.py src --reps 5 > rows-after.json
 ```
 
+Rows are written with the element helpers by default. Pass `--template` to write them as `html` t-string templates instead. It needs a checkout with templates (RFC 0003 or later), so comparing template rows against an older baseline's helper rows measures the change in authoring style as well as in the engine:
+
+```bash
+uv run python benchmarks/row_bench.py src --reps 5 --template > rows-template.json
+```
+
 Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare the rendering engines alone. Alternate the two checkouts across several fresh processes and compare minimums when the machine is busy.
 
+`bench_runner.py` measures the collection operations natively:
 
 ```bash
 uv run python benchmarks/bench_runner.py --memory --json
@@ -95,6 +109,8 @@ This builds both applications in temporary directories and alternates fresh page
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v3 evaluation](results/engine-v3.md) records compiled t-string templates, zero-cost components, and native control-flow regions against v0.37.0.
 
 The [engine v2 evaluation](results/engine-v2.md) records compiled mounting, native disposal, and released row nodes against v0.36.0.
 

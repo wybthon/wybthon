@@ -99,10 +99,16 @@ Consider a header that shows the selected user's id and a body that
 shows the fetched user:
 
 ```python
-div(
-    h1(t"User #{user_id}"),
-    p(lambda: user()["name"]),
-)
+def user_name():
+    return user()["name"]
+
+
+html(t"""
+  <div>
+    <h1>User #{user_id}</h1>
+    <p>{user_name}</p>
+  </div>
+""")
 ```
 
 When `set_user_id(2)` runs, the header could update immediately while
@@ -134,11 +140,18 @@ Three helpers work with in-flight state without making you catch
 - **`await resolve(fn)`** returns the next settled value of `fn()` (or raises the exception it raised). It's for imperative code.
 
 ```python
-from wybthon import is_pending, latest
-from wybthon.html import h1, span
+from wybthon import html, is_pending, latest
 
-h1(lambda: f"User #{latest(user_id)}")  # moves ahead
-span(lambda: "Loading..." if is_pending(user) else "")  # shows during the hold
+
+def newest_id():
+    return latest(user_id)  # moves ahead
+
+
+def status():
+    return "Loading..." if is_pending(user) else ""  # shows during the hold
+
+
+html(t"<h1>User #{newest_id}</h1><span>{status}</span>")
 ```
 
 A quiet **`await refresh(memo)`** recomputes without opening a
@@ -153,8 +166,7 @@ any registered computation has no value yet it shows `fallback`; once
 everything has a first value it reveals the content.
 
 ```python
-from wybthon import Loading, Prop, Props, component, create_memo
-from wybthon.html import div, p, span
+from wybthon import Loading, Prop, Props, component, create_memo, html
 
 
 class ProfileProps(Props):
@@ -168,16 +180,24 @@ def Profile(props: ProfileProps):
 
     user = create_memo(load_user)
 
+    def name():
+        return user()["name"]
+
+    def email():
+        return user()["email"]
+
     return Loading(
-        lambda: div(
-            p("Name: ", span(lambda: user()["name"])),
-            p("Email: ", span(lambda: user()["email"])),
-        ),
-        fallback=lambda: p("Loading..."),
+        html(t"""
+          <div>
+            <p>Name: <span>{name}</span></p>
+            <p>Email: <span>{email}</span></p>
+          </div>
+        """),
+        fallback=html(t"<p>Loading...</p>"),
     )
 ```
 
-- `children` may be a VNode, a zero-arg callable, or a list of either. `fallback` may be a VNode, a string, or a callable.
+- `children` may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass nodes directly: the reads inside `{name}` and `{email}` don't run until the boundary mounts them, so there's no need for a `lambda:` wrapper. `fallback` may be a node, a string, or a callable.
 - Reading a `Prop[T]` field such as `props.user_id()` inside the memo tracks it like any signal, so the parent passing a new id refetches without remounting `Profile`.
 - Any read that raises `NotReadyError` under the boundary registers its computation automatically; there's no manual wiring.
 - **Content stays mounted.** The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.
@@ -190,7 +210,7 @@ to user 2 is a new page, not a refresh of the old one, and a spinner is
 the honest thing to show. Name the boundary's inputs with `on=`:
 
 ```python
-Loading(lambda: UserPage(), fallback=Spinner(), on=user_id)
+Loading(UserPage(), fallback=Spinner(), on=user_id)
 ```
 
 The boundary waits for the `on` accessors initially even if the children
@@ -212,14 +232,13 @@ as each resolves. Wrap them in `Reveal` to control the order and how
 many fallbacks show at once:
 
 ```python
-from wybthon import Loading, Reveal
-from wybthon.html import p
+from wybthon import Loading, Reveal, html
 
 Reveal(
     [
-        Loading(lambda: ProfilePanel(), fallback=p("Loading profile...")),
-        Loading(lambda: FeedPanel(), fallback=p("Loading feed...")),
-        Loading(lambda: TrendsPanel(), fallback=p("Loading trends...")),
+        Loading(ProfilePanel(), fallback=html(t"<p>Loading profile...</p>")),
+        Loading(FeedPanel(), fallback=html(t"<p>Loading feed...</p>")),
+        Loading(TrendsPanel(), fallback=html(t"<p>Loading trends...</p>")),
     ],
     collapsed=True,
 )
@@ -238,12 +257,16 @@ parallel; `order` only controls when each is revealed.
 fetch failures and render errors:
 
 ```python
-from wybthon import Errored, Loading
-from wybthon.html import p
+from wybthon import Errored, Loading, html
+
+
+def failed(err, reset):
+    return html(t"<p>Something went wrong: {err}</p>")
+
 
 Errored(
-    lambda: Loading(lambda: p(lambda: user()["name"]), fallback=p("Loading...")),
-    fallback=lambda err, reset: p(t"Something went wrong: {err}"),
+    Loading(html(t"<p>{user_name}</p>"), fallback=html(t"<p>Loading...</p>")),
+    fallback=failed,
 )
 ```
 
@@ -295,15 +318,15 @@ a [store setter](stores.md#collection-protocols):
 ```python
 from wybthon import action, create_optimistic_store, create_store, deep
 
-todos, set_todos = create_store({"items": []})
-shown, set_shown = create_optimistic_store(lambda: deep(todos)["items"], [])
+state, set_state = create_store({"todos": []})
+shown, set_shown = create_optimistic_store(lambda: deep(state.todos), [])
 
 
 @action
 async def add(title):
     set_shown(lambda s: s.append({"title": title, "saving": True}))
     saved = await api_create(title)
-    set_todos(lambda s: s["items"].append(saved))
+    set_state(lambda s: s.todos.append(saved))
 ```
 
 ### `affects` and `until`
@@ -340,15 +363,14 @@ once resolved the real component mounts in place. The result is cached
 for every later mount.
 
 ```python
-from wybthon import Loading, component, lazy
-from wybthon.html import p
+from wybthon import Loading, component, html, lazy
 
 HeavyChart = lazy(lambda: ("app.heavy_chart", "Chart"))
 
 
 @component
 def Dashboard():
-    return Loading(lambda: HeavyChart(data=chart_data), fallback=lambda: p("Loading chart..."))
+    return Loading(HeavyChart(data=chart_data), fallback=html(t"<p>Loading chart...</p>"))
 ```
 
 - The loader may return a component, an imported module (`Page`, then `default`, then the first callable export is used), a module-path string, or a `(module_path, attr)` tuple.

@@ -2,6 +2,7 @@
 
 A single page that exercises the idioms from the [Authoring patterns guide](../guides/authoring-patterns.md):
 
+- Markup written as [`html`][wybthon.html] templates, with components used as tags.
 - Composition through `children` (a `Card` component built on `ParentProps` that forwards an `id` with `omit`).
 - State with `create_signal` and derived values with `create_memo`.
 - Reactive list rendering with `For` over a draft-first store.
@@ -11,30 +12,24 @@ A single page that exercises the idioms from the [Authoring patterns guide](../g
 ## Full listing
 
 ```python
+import asyncio
+
 from wybthon import (
     For,
     ParentProps,
     Prop,
     Show,
     action,
-    button,
     component,
     create_memo,
     create_signal,
     create_store,
-    div,
-    h3,
-    input_,
-    li,
+    html,
     omit,
     on_cleanup,
     on_settled,
-    p,
     prop,
     render,
-    section,
-    span,
-    ul,
 )
 
 
@@ -45,7 +40,12 @@ class CardProps(ParentProps):
 
 @component
 def Card(props: CardProps):
-    return section(h3(props.title), props.children, class_="card", **omit(props, "title", "children"))
+    return html(t"""
+      <section class="card" {omit(props, "title", "children")}>
+        <h3>{props.title}</h3>
+        {props.children}
+      </section>
+    """)
 
 
 @component
@@ -59,32 +59,39 @@ def NamesList():
     @action
     async def add(text: str):
         # Simulate a slow save; the button is disabled while ``add.pending()``.
-        import asyncio
-
         await asyncio.sleep(0.3)
         set_store(lambda s: s.names.append({"id": len(s.names) + 1, "text": text}))
         set_draft("")
 
+    def save():
+        add(draft.peek())
+
     def clear():
         set_store(lambda s: s.names.clear())
 
-    return div(
-        p(t"Total: {total} | Starts with A: {starts_with_a}"),
-        div(
-            input_(value=draft, on_input=lambda e: set_draft(e.target.value), placeholder="Name"),
-            button("Add", on_click=lambda: add(draft.peek()), disabled=add.pending),
-            button("Clear", on_click=clear),
-        ),
-        Show(add.pending, lambda: p("Saving...")),
-        ul(
-            For(
-                lambda: store.names,
-                lambda item, index: li(lambda: f"{index() + 1}. {item()['text']}"),
-                fallback=li("No names yet."),
-                keyed=lambda n: n["id"],
-            )
-        ),
-    )
+    def edit(e):
+        set_draft(e.target.value)
+
+    def row(item, index):
+        def label():
+            return f"{index() + 1}. {item()['text']}"
+
+        return html(t"<li>{label}</li>")
+
+    return html(t"""
+      <div>
+        <p>Total: {total} | Starts with A: {starts_with_a}</p>
+        <div>
+          <input value={draft} oninput={edit} placeholder="Name">
+          <button onclick={save} disabled={add.pending}>Add</button>
+          <button onclick={clear}>Clear</button>
+        </div>
+        {Show(add.pending, html(t"<p>Saving...</p>"))}
+        <ul>
+          {For(store.names, row, fallback=html(t"<li>No names yet.</li>"), keyed=lambda n: n["id"])}
+        </ul>
+      </div>
+    """)
 
 
 @component
@@ -107,19 +114,27 @@ def Timer():
     on_settled(start)
     on_cleanup(lambda: print("Timer unmounted"))
 
-    return div(span(t"Seconds: {seconds}"), class_="timer")
+    return html(t'<div class="timer"><span>Seconds: {seconds}</span></div>')
 
 
 @component
 def Page():
     show_timer, set_show_timer = create_signal(True)
-    return div(
-        Card(title="State and derived values", id="names")[NamesList()],
-        Card(title="Cleanup")[
-            button("Toggle timer", on_click=lambda: set_show_timer(lambda v: not v)),
-            Show(show_timer, lambda: Timer()),
-        ],
-    )
+
+    def toggle_timer():
+        set_show_timer(lambda v: not v)
+
+    return html(t"""
+      <div>
+        <{Card} title="State and derived values" id="names">
+          <{NamesList} />
+        </{Card}>
+        <{Card} title="Cleanup">
+          <button onclick={toggle_timer}>Toggle timer</button>
+          {Show(show_timer, Timer())}
+        </{Card}>
+      </div>
+    """)
 
 
 render(Page(), "#app")
@@ -127,14 +142,16 @@ render(Page(), "#app")
 
 ## What to notice
 
-- `Card` subclasses `ParentProps`, so it accepts children, and declares the props it handles. It forwards `id` by spreading `omit(props, "title", "children")` onto the `<section>`, so the parent's `id="names"` lands there. A `None` value removes the attribute.
-- `Page` passes each card's children with item syntax: `Card(title=...)[...]`.
+- `Card` subclasses `ParentProps`, so it accepts children, and declares the props it handles. It forwards `id` by spreading `omit(props, "title", "children")` onto the `<section>` (`<section {...}>` is a spread), so the parent's `id="names"` lands there. A `None` value removes the attribute.
+- `Page` uses the component tag form: `<{Card} title="...">...</{Card}>` passes the attributes as props and the nested markup as `children`, and `<{NamesList} />` takes none. The call form, `{Card(title="Cleanup", children=[...])}` or `Card(title=...)[...]`, does the same and is fully type-checked; dev mode checks the tag form's props at run time.
 - `NamesList` keeps its list in a store. `set_store(lambda s: s.names.append(...))` mutates a draft; only the leaf signals that changed notify, and `For` matches rows by `id` so existing `<li>` elements are kept.
-- With a key function, `For` hands the row callback accessors for both the item and the index, so the row text reads `item()` and `index()` inside a hole.
-- The summary line is a t-string: `total` and `starts_with_a` are memos, read inside one binding.
-- `add` is an [`action`][wybthon.action]. While it's in flight, `add.pending()` is `True`, which disables the button and shows the "Saving..." line.
-- Handlers that don't need the event take no arguments (`on_click=clear`); `on_input` takes the event to read `e.target.value`.
-- `Timer` starts its interval in [`on_settled`][wybthon.on_settled] and returns a cleanup from it, so the interval stops when `Show` unmounts the timer. [`on_cleanup`][wybthon.on_cleanup] in the body runs at the same time.
+- The store list goes to `For` as is: `For(store.names, ...)` tracks it without a wrapping lambda.
+- With a key function, `For` hands the row callback accessors for both the item and the index, so `row` reads `item()` and `index()` inside `label`, a function the template turns into a hole.
+- The summary line interpolates two memos, `total` and `starts_with_a`; each is its own text binding.
+- `add` is an [`action`][wybthon.action]. While it's in flight, `add.pending()` is `True`, which disables the button (`disabled={add.pending}`) and shows the "Saving..." line.
+- Handlers that don't need the event take no arguments (`onclick={clear}`); `edit` takes the event to read `e.target.value`. Every handler is a named function, since Python doesn't allow a bare `lambda` inside a t-string interpolation.
+- `Show` and `For` mount as native regions, not wrapper components: each is one computation that selects what to render, with no component scope or props of its own.
+- `Timer` starts its interval in [`on_settled`][wybthon.on_settled] and returns a cleanup from it, so the interval stops when `Show` unmounts the timer. [`on_cleanup`][wybthon.on_cleanup] in the body runs at the same time. Showing it again mounts a fresh `Timer` with its own state.
 
 ## Next steps
 

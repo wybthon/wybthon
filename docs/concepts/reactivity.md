@@ -48,7 +48,7 @@ flush()  # sum: 30, printed once
 
 ### The three phases of a flush
 
-1. **Render phase.** Staged writes commit and their observers are marked dirty. Render effects (holes, reactive prop bindings, and [`create_render_effect`][wybthon.create_render_effect]) run and emit DOM operations into the kernel's buffer.
+1. **Render phase.** Staged writes commit and their observers are marked dirty. Render effects (holes, reactive attribute bindings, and [`create_render_effect`][wybthon.create_render_effect]) run and emit DOM operations into the kernel's buffer.
 2. **DOM commit.** The buffered operations cross the Pyodide bridge once and the JS kernel applies them.
 3. **Effect phase.** User effects ([`create_effect`][wybthon.create_effect]) run and observe the committed DOM.
 
@@ -179,8 +179,7 @@ after the `await` are tracked exactly like reads before it.
 | A `For` row | the row's owner | the row leaves the list |
 
 ```python
-from wybthon import Prop, Props, component, create_effect, create_signal, prop
-from wybthon.html import p
+from wybthon import Prop, Props, component, create_effect, create_signal, html, prop
 
 
 class TimerProps(Props):
@@ -194,9 +193,15 @@ def Timer(props: TimerProps):
     # Body effect: lives until the component unmounts.
     create_effect(count, lambda n: print("count is", n))
 
-    # Hole: re-runs only when count changes.
-    return p(t"Elapsed: {count}")
+    # Binding: re-runs only when count changes.
+    return html(t"<p>Elapsed: {count}</p>")
 ```
+
+A binding or hole whose first run reads nothing reactive, and creates
+no children, cleanups, or async work, can never run again. The renderer
+disposes it right away and keeps only the DOM it produced. A hole such
+as `{(lambda: props.label().upper())}` over a constant prop therefore
+costs nothing after its first run.
 
 ## Disposal
 

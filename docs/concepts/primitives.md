@@ -9,14 +9,14 @@ together and when the graph flushes.
 ## Reactive holes
 
 A **reactive hole** is a reactive expression (an
-[`Accessor`][wybthon.Accessor] or a zero-arg function) placed in a VNode
-tree, as a child or as a prop value. The reconciler runs it inside its
-own render effect, so the component body runs once while the hole
-patches its region of the DOM whenever its dependencies change.
+[`Accessor`][wybthon.Accessor] or a zero-arg function) placed in a
+template or VNode tree, as a child or as an attribute value. The
+reconciler runs it inside its own render effect, so the component body
+runs once while the hole patches its region of the DOM whenever its
+dependencies change.
 
 ```python
-from wybthon import component, create_memo, create_signal, hole
-from wybthon.html import button, div, p, span
+from wybthon import component, create_memo, create_signal, hole, html
 
 
 @component
@@ -24,32 +24,56 @@ def Demo():
     count, set_count = create_signal(0)
     doubled = create_memo(lambda: count() * 2)
 
-    return div(
-        # 1) An accessor as a child.
-        p("Count: ", span(count)),
-        # 2) A zero-arg expression as a child.
-        p(lambda: f"Doubled: {count() * 2}"),
-        # 3) A template string: one binding for the whole text.
-        p(t"Count is {count}, doubled {doubled}"),
-        # 4) The explicit form, when you need a key.
-        p(hole(lambda: f"Tripled: {count() * 3}", key="triple")),
-        # 5) A reactive prop value (any prop except event handlers and ref).
-        p("Status", class_=lambda: "danger" if count() > 5 else "ok"),
-        button("+1", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+    def tripled():
+        return f"Tripled: {count() * 3}"
+
+    def status():
+        return "danger" if count() > 5 else "ok"
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <!-- 1) An accessor as a child. -->
+        <p>Count: <span>{count}</span></p>
+        <!-- 2) A zero-arg function as a child. -->
+        <p>{tripled}</p>
+        <!-- 3) Accessors in text: each one is its own binding. -->
+        <p>Count is {count}, doubled {doubled}</p>
+        <!-- 4) The explicit form, when you need a key. -->
+        <p>{hole(tripled, key="triple")}</p>
+        <!-- 5) A reactive attribute (any attribute except events and ref). -->
+        <p class={status}>Status</p>
+        <!-- 6) Part of an attribute: one binding for the whole value. -->
+        <p class="badge badge-{status}">Badge</p>
+        <button onclick={increment}>+1</button>
+      </div>
+    """)
 ```
 
-A [PEP 750](https://peps.python.org/pep-0750/) template string
-(Python 3.14) is a reactive expression wherever text is accepted, as a
-child or as an attribute value (`class_=t"card card-{variant}"`).
-Interpolated accessors and zero-arg functions are called inside one
-binding, so the whole string updates together; other interpolations are
-formatted once, and a template string with nothing reactive in it is
-static text.
+Python doesn't allow a bare `lambda` inside a template interpolation,
+so the expressions above are named functions. An inline lambda works
+when it's wrapped in parentheses: `{(lambda: count() * 3)}`. See
+[Templates](templates.md#lambdas-need-parentheses).
+
+With the [element helpers](../api/elements.md), the same rule applies
+to children and prop values (`p(count)`, `p(class_=status)`). A
+[PEP 750](https://peps.python.org/pep-0750/) template string passed to
+a helper is a reactive expression wherever text is accepted, as a child
+or as an attribute value (`p(t"Count is {count}")`,
+`div(class_=t"card card-{variant}")`). Interpolated accessors and
+zero-arg functions are called inside one binding, so the whole string
+updates together; other interpolations are formatted once, and a
+template string with nothing reactive in it is static text.
 
 A hole's expression may return a string or number (a text node), a
-`VNode`, a list of either (mounted as a fragment), `None` (nothing), or
-another accessor (nested hole).
+template or other `VNode`, a list of either (mounted as a fragment),
+`None` (nothing), or another accessor (nested hole). When it returns a
+template from the same literal as last time, the mounted instance is
+patched slot by slot instead of replaced. A hole that reads nothing
+reactive on its first run is dropped after that run, keeping the DOM
+it produced.
 
 Holes are ownership scopes. Use [`on_cleanup`][wybthon.on_cleanup]
 inside one to register teardown that runs before each re-evaluation and
@@ -65,7 +89,11 @@ def subscribe(topic_name):
     return f"listening to {topic_name}"
 
 
-p(lambda: subscribe(topic()))  # re-subscribes when topic changes
+def status():
+    return subscribe(topic())  # re-subscribes when topic changes
+
+
+html(t"<p>{status}</p>")
 ```
 
 ## `create_signal`
@@ -161,7 +189,7 @@ Other options:
 [`create_render_effect`][wybthon.create_render_effect] takes the same
 arguments as `create_effect`, including the required `apply` stage, but
 runs in the **render phase**, before the DOM commit, and its first run
-happens immediately at creation. Holes and prop bindings are render
+happens immediately at creation. Holes and attribute bindings are render
 effects. Reach for it only when building a rendering primitive;
 `create_effect` is right for application code. For a single tracked
 function, use [`create_tracked_effect`][wybthon.create_tracked_effect].
@@ -205,8 +233,7 @@ mounted the current component has committed, so refs are assigned and
 the DOM is live. It may return a cleanup that runs on unmount.
 
 ```python
-from wybthon import Prop, Props, Ref, component, on_settled
-from wybthon.html import canvas
+from wybthon import Prop, Props, Ref, component, html, on_settled
 
 
 class ChartProps(Props):
@@ -222,7 +249,7 @@ def Chart(props: ChartProps):
         return lambda: handle.destroy()
 
     on_settled(start)
-    return canvas(ref=ref)
+    return html(t"<canvas ref={ref}></canvas>")
 ```
 
 ## `on_cleanup`
@@ -298,8 +325,8 @@ handlers = omit(props, lambda key: not key.startswith("on_"))
 
 [`map_array`][wybthon.map_array] maps a reactive list to values with a stable
 owner scope per row. `keyed` selects how rows are matched, and with it
-the callback shape. `For` uses mounted list regions with the same matching modes
-and can consume store edit records directly:
+the callback shape. `For` is a native list region with the same matching
+modes, and it can consume store edit records directly:
 
 | `keyed` | Rows matched by | `fn(item, index)` receives |
 | --- | --- | --- |
@@ -327,7 +354,7 @@ inside a row must read an accessor within a hole, memo, or effect.
 own owner scope. `fn(i)` runs once per slot for `i` in
 `range(start, start + count)`; growing the count maps only the new
 slots, and shrinking it disposes the removed ones. The `Repeat`
-component is built on it.
+region uses the same model.
 
 ```python
 from wybthon import create_signal, repeat
@@ -354,7 +381,12 @@ from wybthon import create_projection, create_signal
 selected, set_selected = create_signal(1)
 is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
 
-li("Item 2", class_=lambda: "active" if is_selected.get(2) else None)
+
+def row_class():
+    return "active" if is_selected.get(2) else None
+
+
+html(t"<li class={row_class}>Item 2</li>")
 ```
 
 `is_selected.get(key)` is tracked per key and returns `None` when the

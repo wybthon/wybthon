@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from math import ceil
 from typing import Any
 
+from .component import component
+from .elements import div
 from .flow import For
-from .html import div
 from .reactivity import Accessor, create_memo, create_signal
-from .reactivity._props import RawProps
+from .reactivity._props import Prop, Props
 from .vnode import VNode, h
 
 
@@ -72,25 +73,37 @@ def VirtualFor(
     )
 
 
-def _VirtualFor(props: RawProps) -> Any:
+class _VirtualForProps(Props):
+    _wyb_open = True
+    each: Prop[Any]
+    children: Any = None
+    height: float = 0.0
+    row_height: float = 0.0
+    overscan: int = 3
+    keyed: Any = True
+    style: Any = None
+    on_scroll: Any = None
+
+
+_OWN = frozenset({"each", "children", "height", "row_height", "overscan", "keyed", "style", "on_scroll", "key"})
+
+
+@component
+def _VirtualFor(props: _VirtualForProps) -> Any:
     each = props.each
     scroll, set_scroll = create_signal(0.0)
-    row_height = float(props.raw("row_height"))
-    height = float(props.raw("height"))
+    row_height = float(props.row_height)
+    height = float(props.height)
     virtualizer = create_virtualizer(
         lambda: len(each()),
         item_size=row_height,
         viewport_size=height,
         scroll_offset=scroll,
-        overscan=int(props.raw("overscan")),
+        overscan=int(props.overscan),
     )
-    children = props.raw("children")
-    keyed = props.raw("keyed")
-    forwarded = {
-        key: props.raw(key)
-        for key in props
-        if key not in {"each", "children", "height", "row_height", "overscan", "keyed", "style", "on_scroll"}
-    }
+    children = props.children
+    keyed = props.keyed
+    forwarded = {key: value for key, value in props._raw.items() if key not in _OWN}
 
     def row(item: Any, index: Any) -> Any:
         absolute = create_memo(lambda: virtualizer.start() + (index() if callable(index) else index))
@@ -102,13 +115,13 @@ def _VirtualFor(props: RawProps) -> Any:
             aria_setsize=lambda: len(each()),
         )
 
-    user_scroll = props.raw("on_scroll")
+    user_scroll = props.on_scroll
 
     def changed(event: Any) -> Any:
         set_scroll(float(event.target.scroll_top))
         return user_scroll(event) if callable(user_scroll) else None
 
-    styles = dict(props.raw("style") or {})
+    styles = dict(props.style or {})
     styles.update({"height": f"{height}px", "overflow_y": "auto", "position": "relative"})
     return div(
         div(

@@ -1,0 +1,5 @@
+# The browser benchmark app: an ordinary Wybthon project built with `wyb build`.
+entry = "bench.main:app"
+mount = "#app-root"
+app-dir = "bench"
+base = "/"

@@ -32,7 +32,7 @@ returns the match or `None`, and `get_all_by_*` returns every match.
 ```python
 import pytest
 
-from wybthon import Prop, Props, button, component, create_signal, div, p, prop
+from wybthon import Prop, Props, component, create_signal, html, prop
 from wybthon.testing import cleanup, fire, render
 
 
@@ -43,7 +43,11 @@ class CounterProps(Props):
 @component
 def Counter(props: CounterProps):
     count, set_count = create_signal(0)
-    return div(p(props.label, t": {count}"), button("+", on_click=lambda: set_count(lambda n: n + 1)))
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"<div><p>{props.label}: {count}</p><button onclick={increment}>+</button></div>")
 
 
 @pytest.fixture(autouse=True)

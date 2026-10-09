@@ -29,6 +29,8 @@ EXPECTED = {
     "accessor-is-not-value": {"mypy": 'expression has type "Accessor[str]"', "pyright": '"Accessor[str]"'},
     "action-arg": {"mypy": 'incompatible type "str"; expected "int"', "pyright": "Literal['wrong']"},
     "store-append": {"mypy": 'TypedDict item "age" has type "int"', "pyright": '"Person"'},
+    "for-row": {"mypy": 'TypedDict "Todo" has no key "titel"', "pyright": '"titel"'},
+    "html-arg": {"mypy": 'Argument 1 to "html" has incompatible type "str"', "pyright": '"Template"'},
 }
 
 

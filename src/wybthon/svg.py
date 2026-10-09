@@ -1,6 +1,6 @@
 """SVG element helpers.
 
-The same calling convention as [`wybthon.html`][wybthon.html]: children
+The same calling convention as [`wybthon.elements`][wybthon.elements]: children
 are positional, props are keyword arguments, and underscores in prop
 names become hyphens (`stroke_width="2"` renders `stroke-width="2"`).
 Attribute names that are camelCase in SVG (`viewBox`, `preserveAspectRatio`)
@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .html import element
+from .elements import element
 from .vnode import VNode, h
 
 __all__ = [

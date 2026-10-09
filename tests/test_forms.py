@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from conftest import collect_texts
 
+from wybthon.elements import form, input_, option, select, span
 from wybthon.forms import (
     Field,
     a11y_control_attrs,
@@ -19,7 +20,6 @@ from wybthon.forms import (
     validate_field,
     validate_form,
 )
-from wybthon.html import form, input_, option, select, span
 from wybthon.reactivity import flush
 
 

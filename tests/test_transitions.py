@@ -8,8 +8,8 @@ import pytest
 from conftest import StubNode, collect_texts
 
 from wybthon.component import component
+from wybthon.elements import div, p, span
 from wybthon.error_boundary import Errored
-from wybthon.html import div, p, span
 from wybthon.loading import Loading
 from wybthon.reactivity import (
     Memo,

@@ -4,7 +4,7 @@
 
 Usage:
 
-    python benchmarks/row_bench.py <checkout>/src [--reps N] [--noselect]
+    python benchmarks/row_bench.py <checkout>/src [--reps N] [--noselect] [--template]
 
 The backend JSON-encodes every command batch exactly like the browser
 backend but applies nothing, so each time is the Python cost of the
@@ -14,7 +14,9 @@ The browser adds the JavaScript kernel's DOM work on top.
 Rows are written with the HTML helpers. Selection uses each checkout's
 idiomatic primitive: `create_selector` where it exists (v0.36.0 and
 earlier) and a projection otherwise. `--noselect` drops the selection
-binding to compare the rendering engines alone. Prints JSON: the minimum
+binding to compare the rendering engines alone. `--template` writes the
+rows as `html` t-string templates (RFC 0003) instead of element helpers.
+Prints JSON: the minimum
 and median process CPU time per workload, the commands the last sample
 sent, and Python bytes retained per mounted row.
 """
@@ -104,7 +106,14 @@ def build(n):
     return out
 
 
-from wybthon.html import a, span, td, tr  # noqa: E402
+try:
+    from wybthon.elements import a, span, td, tr
+except ImportError:  # checkouts before RFC 0003 named the module `wybthon.html`
+    from wybthon.html import a, span, td, tr
+
+
+def selected_class(iid):
+    return lambda: "danger" if is_sel(iid) else ""
 
 
 def row(d, idx):
@@ -118,6 +127,25 @@ def row(d, idx):
         td(class_="col-md-6"),
         class_=lambda: "danger" if is_sel(iid) else "",
     )
+
+
+if "--template" in sys.argv:
+    from wybthon import html
+
+    def row(d, idx):
+        iid = d["id"]
+        return html(
+            t"""<tr class={selected_class(iid)}>
+                  <td class="col-md-1">{iid}</td>
+                  <td class="col-md-4"><a onclick={(lambda e: set_selected(iid))}>{d["label"]}</a></td>
+                  <td class="col-md-1">
+                    <a onclick={(lambda e: None)}>
+                      <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </a>
+                  </td>
+                  <td class="col-md-6"></td>
+                </tr>"""
+        )
 
 
 root_el = Element(node_id=kernel.alloc_id())

@@ -24,35 +24,18 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.js"></script>
+  <!-- wyb:bootstrap -->
   <script>
-
-
     async function main() {
       const statusEl = document.createElement('p');
-      statusEl.textContent = 'Loading Pyodide...';
+      statusEl.textContent = 'Loading...';
       document.getElementById('table-container').appendChild(statusEl);
-
-      const pyodide = await loadPyodide();
-      statusEl.textContent = 'Loading Wybthon...';
-
-      pyodide.FS.mkdir('/lib/wybthon');
-      pyodide.FS.mkdir('/lib/wybthon/reactivity');
-      const manifest = await fetch('/__manifest?dir=src/wybthon');
-      if (!manifest.ok) throw new Error('Serve this benchmark with benchmarks/_serve.py');
-      const modules = await manifest.json();
-      await Promise.all(modules.map(async mod => {
-        const resp = await fetch('../../src/wybthon/' + mod);
-        const text = await resp.text();
-        pyodide.FS.writeFile('/lib/wybthon/' + mod, text);
-      }));
-      pyodide.runPython('import sys; sys.path.insert(0, "/lib")');
-
-      statusEl.textContent = 'Starting benchmark app...';
-      const appResp = await fetch('./main.py');
-      const appCode = await appResp.text();
-      await pyodide.runPythonAsync(appCode);
-
+      while (!globalThis.__WYB) await new Promise(r => setTimeout(r, 10));
+      const state = await globalThis.__WYB.ready;
+      if (state.status !== 'ready') throw new Error(state.error || 'The benchmark app failed to start');
+      const pyodide = state.pyodide;
+      // The harness drives the app's module-level operations directly.
+      pyodide.runPython('from bench.main import *');
       statusEl.remove();
       window._pyodide = pyodide;
       document.getElementById('bench-panel').style.display = 'block';

@@ -10,7 +10,7 @@ Wybthon's demo applications live in standalone repositories under the [wybthon G
 | [photo-lab](https://github.com/wybthon/photo-lab) | Resize, compress, convert, and strip image metadata privately in the browser. Demonstrates file handling and JS interop. |
 
 !!! note "Versions"
-    The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. Use `wyb init` for a starter that matches the installed version's API.
+    The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. A demo written before templates builds its markup with the element helpers, which still work; one that imports them from the `wybthon.html` module needs `wybthon.elements` (or a plain `from wybthon import div`) on the current release, because `wybthon.html` is now the template function. Use `wyb init` for a starter that matches the installed version's API.
 
 ## Running a demo locally
 

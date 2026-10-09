@@ -12,7 +12,7 @@ Two rules cover most of what's different about testing reactive code:
 [`render`][wybthon.testing.render] mounts a view into a fresh container, flushes it, and returns a [`Screen`][wybthon.testing.Screen]:
 
 ```python
-from wybthon import Prop, Props, button, component, create_signal, div, p
+from wybthon import Prop, Props, component, create_signal, html
 from wybthon.testing import fire, render
 
 
@@ -23,10 +23,16 @@ class CounterProps(Props):
 @component
 def Counter(props: CounterProps):
     count, set_count = create_signal(0)
-    return div(
-        p(t"{props.label}: {count}"),
-        button("+", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <p>{props.label}: {count}</p>
+        <button onclick={increment}>+</button>
+      </div>
+    """)
 
 
 def test_counter_increments():
@@ -36,13 +42,15 @@ def test_counter_increments():
         assert screen.get_by_text("Clicks: 1")
 ```
 
+`render` accepts any node: a component call, an [`html`][wybthon.html] template, or a tree built with the element helpers. A template whose markup the browser would rewrite raises [`TemplateError`][wybthon.TemplateError] the first time it's used, so rendering a component in a test also checks its markup.
+
 Use `render` as a context manager to unmount when the block ends, or call `screen.unmount()` yourself. `screen.html()` returns the container's inner HTML without Wybthon's comment markers, and `screen.text()` returns its text with whitespace collapsed:
 
 ```python
-from wybthon import li, ul
+from wybthon import html
 from wybthon.testing import render
 
-with render(ul(li("a"), li("b"))) as screen:
+with render(html(t"<ul><li>a</li><li>b</li></ul>")) as screen:
     assert screen.html() == "<ul><li>a</li><li>b</li></ul>"
     assert screen.text() == "ab"
 ```
@@ -78,24 +86,26 @@ Queries come in three forms, as in Testing Library:
 | `get_by_text(text, exact=True)`, `query_by_text`, `get_all_by_text` | The deepest elements whose text matches. With `exact=False` the match is a case-insensitive substring; pass a compiled regular expression to search. |
 | `get_by_role(role, name=None)`, `query_by_role`, `get_all_by_role` | Elements with an explicit `role` or an implicit one (`button`, `link`, `textbox`, `checkbox`, `heading`, `list`, ...). `name` matches the accessible name: `aria-label`, then the text content (or placeholder for inputs). |
 | `get_by_label_text(text)`, `query_by_label_text` | The form control a `<label>` names (through `for` or by nesting), or the element with that `aria-label`. |
-| `get_by_test_id(id)`, `query_by_test_id`, `get_all_by_test_id` | Elements whose `data-testid` matches. `data_testid="save"` writes that attribute. |
+| `get_by_test_id(id)`, `query_by_test_id`, `get_all_by_test_id` | Elements whose `data-testid` matches. Write `data-testid="save"` in a template, or `data_testid="save"` with an element helper. |
 
 Queries return [`TestNode`][wybthon.testing.TestNode]s. Read `.text_content`, `.attributes` (a dict of strings), `.value`, `.checked`, and `.tag`, or use `.classList.contains(name)`:
 
 ```python
 import re
 
-from wybthon import button, div, input_, label, p
+from wybthon import html
 from wybthon.testing import render
 
-with render(
-    div(
-        label("Email", html_for="email"),
-        input_(id="email", type="email", placeholder="you@example.com"),
-        p("Saved 3 items", data_testid="status"),
-        button("Save", class_="primary"),
-    )
-) as screen:
+form = html(t"""
+  <div>
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="you@example.com">
+    <p data-testid="status">Saved 3 items</p>
+    <button class="primary">Save</button>
+  </div>
+""")
+
+with render(form) as screen:
     assert screen.get_by_label_text("Email").attributes["type"] == "email"
     assert screen.get_by_text(re.compile(r"Saved \d+ items"))
     assert screen.get_by_test_id("status").text_content == "Saved 3 items"
@@ -118,17 +128,23 @@ with render(
 | `fire(node, "dblclick", **payload)` | Dispatches any event type. Keyword fields become event fields (`shift_key=True` is `e.shift_key`). |
 
 ```python
-from wybthon import component, create_signal, div, input_, p
+from wybthon import component, create_signal, html
 from wybthon.testing import fire, render
 
 
 @component
 def Mirror():
     text, set_text = create_signal("")
-    return div(
-        input_(aria_label="Name", value=text, on_input=lambda e: set_text(e.target.value)),
-        p(t"Hello, {text}"),
-    )
+
+    def update(e):
+        set_text(e.target.value)
+
+    return html(t"""
+      <div>
+        <input aria-label="Name" value={text} oninput={update}>
+        <p>Hello, {text}</p>
+      </div>
+    """)
 
 
 def test_input_updates_text():
@@ -142,7 +158,7 @@ def test_input_updates_text():
 Pass an accessor to drive a prop from the test, then [`flush`][wybthon.flush] after writing it. The component body runs once; only the bound text updates:
 
 ```python
-from wybthon import Prop, Props, component, create_signal, flush, p
+from wybthon import Prop, Props, component, create_signal, flush, html
 from wybthon.testing import render
 
 
@@ -156,7 +172,7 @@ runs: list[int] = []
 @component
 def Greeting(props: GreetingProps):
     runs.append(1)
-    return p("Hello, ", props.name)
+    return html(t"<p>Hello, {props.name}</p>")
 
 
 def test_prop_updates_without_rerunning_body():
@@ -177,7 +193,7 @@ Async memos, actions, and `Loading` boundaries need an event loop. Run the test 
 ```python
 import asyncio
 
-from wybthon import Loading, component, create_memo, p
+from wybthon import Loading, component, create_memo, html
 from wybthon.testing import render, wait_for
 
 
@@ -188,7 +204,11 @@ def UserCard():
         return {"name": "Ada"}
 
     user = create_memo(load)
-    return Loading(lambda: p("User: ", lambda: user()["name"]), fallback=p("Loading..."))
+
+    def name():
+        return user()["name"]
+
+    return Loading(html(t"<p>User: {name}</p>"), fallback=html(t"<p>Loading...</p>"))
 
 
 def test_loading_shows_fallback_then_content():
@@ -241,7 +261,7 @@ Dev-mode warnings print to `stderr`; capture them with pytest's `capsys`. Warnin
 
 ## Framework tests
 
-Wybthon's own unit tests under `tests/` also use a lower-level `wyb` fixture from `tests/conftest.py`. It installs stub `js` and `pyodide` modules, reloads the browser-facing modules (`kernel`, `dom`, `events`, `reconciler`, `_template`), and installs a `kernel.PythonBackend` over an in-memory document; `root_element` provides a fresh container. Use it when a test needs to inspect kernel commands or reconciler internals. For component behavior, prefer `wybthon.testing`.
+Wybthon's own unit tests under `tests/` also use a lower-level `wyb` fixture from `tests/conftest.py`. It installs stub `js` and `pyodide` modules, reloads the browser-facing modules (`kernel`, `dom`, `events`, `reconciler`, `_shapes`), and installs a `kernel.PythonBackend` over the same in-memory document `wybthon.testing` uses; `root_element` provides a fresh container. Use it when a test needs to inspect kernel commands or reconciler internals. For component behavior, prefer `wybthon.testing`.
 
 Run the unit suite with:
 

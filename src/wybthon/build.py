@@ -38,16 +38,22 @@ _INDEX = """<!doctype html>
 _SERVER_ONLY = {"build.py", "dev.py", "server.py", "_server_dom.py", "_prerender.py"}
 _STARTER = '''"""A run-once component with a reactive counter."""
 
-from wybthon import button, component, create_signal, div, h1
+from wybthon import component, create_signal, html
 
 
 @component
 def App():
     count, set_count = create_signal(0)
-    return div(
-        h1("My Wybthon app"),
-        button(t"Count: {count}", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <h1>My Wybthon app</h1>
+        <button onclick={increment}>Count: {count}</button>
+      </div>
+    """)
 
 
 def app():
@@ -240,9 +246,7 @@ def build_app(
         }
         bootstrap = _asset(staging, "bootstrap", (package / "_bootstrap.js").read_bytes(), "js")
         (staging / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-        page = template.replace(
-            _MARKER, f'<script type="module" src="{html.escape(base_path + bootstrap, quote=True)}"></script>'
-        )
+        page = template.replace(_MARKER, _boot_tags(manifest, base_path, bootstrap))
         # The client-only shell: the fallback for routes that weren't prerendered.
         (staging / "200.html").write_text(page, encoding="utf-8")
         (staging / "index.html").write_text(page, encoding="utf-8")
@@ -266,6 +270,28 @@ def build_app(
                     backup.rename(destination)
                 raise
     return manifest
+
+
+def _boot_tags(manifest: dict[str, Any], base_path: str, bootstrap: str) -> str:
+    """The tags that start the application, replacing the bootstrap marker.
+
+    The manifest is inlined so the bootstrap needn't fetch it, and preload
+    hints start downloading the runtime and both source archives while the
+    page parses, instead of after the bootstrap has run.
+    """
+    pyodide_url = manifest["pyodide_url"]
+    if not urlsplit(pyodide_url).scheme:
+        pyodide_url = base_path + pyodide_url.removeprefix("./")
+    hints = [f'<link rel="modulepreload" href="{html.escape(pyodide_url + "pyodide.mjs", quote=True)}" crossorigin>']
+    for archive in (manifest["runtime"], manifest["application"]):
+        href = html.escape(base_path + archive, quote=True)
+        hints.append(f'<link rel="preload" href="{href}" as="fetch" crossorigin>')
+    inline = json.dumps(manifest, separators=(",", ":")).replace("</", "<\\/")
+    return (
+        "\n".join(hints)
+        + f'\n<script type="application/json" id="wyb-manifest">{inline}</script>'
+        + f'\n<script type="module" src="{html.escape(base_path + bootstrap, quote=True)}"></script>'
+    )
 
 
 def _pyodide_python(version: str) -> tuple[int, int] | None:
