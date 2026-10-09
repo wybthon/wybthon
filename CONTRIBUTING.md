@@ -40,12 +40,14 @@ Unsolicited pull requests for issues that are already assigned or already have a
 - `src/wybthon/`
   - `reactivity/`: the reactive graph, split into `_core.py` (accessors, signals, computations, transitions, the scheduler), `_primitives.py` (`create_signal`, `create_memo`, effects, `create_reaction`, lifecycle, async helpers, `children`), `_actions.py` (`action`, `create_optimistic`, `affects`, `until`), `_list.py` (`map_array`, `repeat`), `_props.py` (`Props`, `ParentProps`, `Prop`, `prop`, `merge`, `omit`), and `_session.py` (hydration sessions and serialized server state)
   - `component.py`: the `@component` decorator and `Component`
-  - `vnode.py`: virtual DOM nodes (`VNode`, `h`, `Fragment`, `hole`), item syntax, and t-string children
-  - `html.py` / `svg.py`: element helpers built on `h()`
-  - `_dom_props.py`: private; prop normalization and reactive attribute bindings (emits kernel commands)
+  - `templates.py`: `html` and `TemplateError`; compiled t-string templates (parsing, validation, the native `<template>` skeleton, generated mount functions, and slot-wise patching)
+  - `vnode.py`: virtual DOM nodes (`VNode`, `h`, `Fragment`, `hole`), item syntax, and t-string children of helpers
+  - `elements.py` / `svg.py`: element helpers built on `h()`, the programmatic layer (`elements.py` was `html.py`)
+  - `_dom_props.py`: private; prop normalization and reactive attribute bindings shared by templates and helpers (emits kernel commands)
   - `reconciler.py`: mounting, patching, and unmounting; `render`, `hydrate`, and `Root`
-  - `_regions.py`: mounted list and branch regions (`For`, `Repeat`, `Show`, `Switch`)
-  - `_template.py`: private; compiled shapes, generated mount functions, and native disposal
+  - `_regions.py`: private; native `Show`, `For`, `Repeat`, and `Switch` regions, and patching them in place when a hole re-renders
+  - `_shapes.py`: private; RFC 0002's compiled shapes for element helper trees, generated mount functions, and native disposal (was `_template.py`)
+  - `_html_rules.py`: private; the HTML parser's content rules (void and raw-text elements, table and paragraph nesting) shared by templates, shapes, server rendering, and the test DOM
   - `kernel.py` / `_kernel.js`: the batched DOM command buffer and the JavaScript kernel it drives (including hydration claims), plus the `BrowserBackend` and `PythonBackend` backends
   - `server.py` / `_server_dom.py`: server rendering (`render_to_string`, `render_to_stream`) over an in-memory DOM
   - `request.py`: `RequestEvent`, `get_request_event`, `http_status`, and `http_header`
@@ -67,8 +69,8 @@ Unsolicited pull requests for issues that are already assigned or already have a
   - `build.py` / `_bootstrap.js` / `assets.py` / `_prerender.py`: production builds, the generated bootstrap, lazy chunks, and build-time prerendering
   - `__init__.py`: public exports (`__all__`)
 - `tests/`
-  - `conftest.py`: the `wyb` and `root_element` fixtures, which install a `kernel.PythonBackend` over an in-memory stub document and reload the DOM-facing modules per test; don't modify it casually
-  - Unit tests (fast CPython, no browser): one module per area, such as `test_signals.py`, `test_component.py`, `test_props.py`, `test_flow.py`, `test_store.py`, `test_reconciler.py`, `test_ssr.py`, `test_router.py`, `test_forms.py`, and `test_testing.py`, plus contract suites (`test_*_contracts.py`)
+  - `conftest.py`: the `wyb` and `root_element` fixtures, which install a `kernel.PythonBackend` over an in-memory document and reload the DOM-facing modules per test. The document is `wybthon.testing`'s DOM (`TestDocument`, `TestNode`) under the suite's `Stub*` names, so the suite and `wybthon.testing` share one implementation; don't modify it casually
+  - Unit tests (fast CPython, no browser): one module per area, such as `test_signals.py`, `test_templates.py`, `test_component.py`, `test_zero_cost.py`, `test_props.py`, `test_flow.py`, `test_store.py`, `test_reconciler.py`, `test_ssr.py`, `test_router.py`, `test_forms.py`, and `test_testing.py`, plus contract suites (`test_*_contracts.py`)
   - `typing/`: type-checking fixtures (valid calls and expected errors) run by `test_typing_contracts.py`
   - `e2e/`: browser end-to-end suite (Playwright + Pyodide):
     - `wybthon.toml`, `index.html`, and `app/`: the fixture, an ordinary Wybthon project with one route per framework feature (`app/features/*.py`) and `data-testid` hooks, served by `wyb dev --dir tests/e2e`
@@ -76,7 +78,7 @@ Unsolicited pull requests for issues that are already assigned or already have a
     - `test_pyodide_smoke.py`: fixture boot smoke test
 - `docs/`: MkDocs Material site (`mkdocs.yml` at the root); API pages render docstrings through mkdocstrings
 - `docs/rfcs/`: design documents for large changes; see [RFCs](docs/rfcs/index.md)
-- `benchmarks/`: native and browser benchmarks, plus the `check_work.py` command-count gates
+- `benchmarks/`: native and browser benchmarks, plus the `check_work.py` command-count gates; `benchmarks/app` is an ordinary Wybthon project the browser benchmarks build with `wyb build` (see [benchmarks/README.md](benchmarks/README.md))
 - `README.md`, `pyproject.toml`, `uv.lock`, `CHANGELOG.md` (generated by semantic-release; don't edit by hand)
 
 ## Coding guidelines
@@ -84,8 +86,8 @@ Unsolicited pull requests for issues that are already assigned or already have a
 - **Style**: Ruff formats (`uv run ruff format .`) and lints (`uv run ruff check .`); it ships in the `dev` dependency group.
 - **Naming**: prefer explicit, descriptive names; keep browser/runtime constraints in mind.
 - **Structure**: separate pure logic from DOM interop; keep render/diff paths lean.
-- **Examples**: keep docs examples minimal and reproducible; larger demo apps live in standalone repos under the [wybthon organization](https://github.com/wybthon).
-- **Tests**: put fast CPython unit tests directly under `tests/` (browser APIs are stubbed, no network/large IO). Browser-dependent behaviour goes in the Playwright + Pyodide suite under `tests/e2e/`; mark those with the `e2e` pytest marker so they stay out of the fast unit run. See the [Testing guide](docs/guides/testing.md).
+- **Examples**: keep docs examples minimal and reproducible, and write their markup as `html` templates (no bare `lambda` inside a t-string interpolation; name it or wrap it in parentheses). Larger demo apps live in standalone repos under the [wybthon organization](https://github.com/wybthon).
+- **Tests**: put fast CPython unit tests directly under `tests/` (browser APIs are stubbed, no network/large IO). Browser-dependent behavior goes in the Playwright + Pyodide suite under `tests/e2e/`; mark those with the `e2e` pytest marker so they stay out of the fast unit run. See the [Testing guide](docs/guides/testing.md).
 - **Docstrings**: Google-style for all public modules, classes, and functions. See the
   [Documentation style guide](docs/meta/style-guide.md) for the full conventions, or
   the rendered version at <https://wybthon.com/meta/style-guide/>.
@@ -152,9 +154,9 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `dom` – `Element` and `Ref`
   - `error_boundary` – `Errored` and fallback rendering
   - `events` – delegated DOM events and `DomEvent`
-  - `flow` – control-flow components (`Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only`)
+  - `flow` – control flow (`Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only`) and its native regions (`_regions`)
   - `forms` – form state, validators, bindings, and a11y helpers
-  - `html` – HTML element helpers and `element()`
+  - `elements` – element helpers and `element()` (`elements.py`)
   - `kernel` – batched DOM command buffer, JS kernel, and rendering backends
   - `lazy` – lazy loading and preloading utilities
   - `loading` – `Loading` and `Reveal` boundaries
@@ -168,7 +170,7 @@ Recommended scopes (choose the smallest, most accurate unit; prefer module/direc
   - `store` – reactive stores (`create_store`, `create_projection`, `reconcile`) for nested state
   - `svg` – SVG element helpers
   - `testing` – `wybthon.testing` (render, queries, `fire`)
-  - `template` – compiled shapes and generated mount functions (`_template`)
+  - `template` – `html` templates (`templates`), compiled helper shapes (`_shapes`), and generated mount functions
   - `vdom` – changes that span `vnode`, `reconciler`, and `_dom_props` together
   - `vnode` – `VNode`, `h`, `Fragment`, and `hole`
   - `warnings` – development mode warnings and error reporting

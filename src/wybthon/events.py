@@ -75,9 +75,13 @@ def event(
 
 def _takes_event(callback: Callable[..., Any]) -> bool:
     """Whether a handler accepts the event argument (checked once, at registration)."""
-    if type(callback) is FunctionType:
+    t = type(callback)
+    if t is FunctionType:
         code = callback.__code__
         return code.co_argcount > 0 or bool(code.co_flags & inspect.CO_VARARGS)
+    if t is _Action:
+        # An action's call signature is its wrapped function's.
+        return _takes_event(callback._fn)  # type: ignore[attr-defined]
     if isinstance(callback, MethodType):
         code = getattr(callback.__func__, "__code__", None)
         if code is not None:
@@ -108,6 +112,9 @@ class _Handler:
 
 
 _handlers: dict[int, dict[str, _Handler]] = {}
+
+# `reactivity._actions` imports nothing from here, so this import is cycle-free.
+from .reactivity._actions import Action as _Action  # noqa: E402
 
 # Event types that don't bubble get a direct native listener on their node.
 NON_BUBBLING = frozenset(

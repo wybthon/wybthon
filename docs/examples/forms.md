@@ -3,7 +3,7 @@
 Bindings, validation, an aggregated submit handler, and accessible error messages. The form helpers live in `wybthon.forms`.
 
 ```python
-from wybthon import Show, button, component, form, input_, label, option, p, render, select, span
+from wybthon import Show, component, html, render
 from wybthon.forms import (
     a11y_control_attrs,
     bind_checkbox,
@@ -34,42 +34,44 @@ def SignupForm():
     plan = fields["plan"]
     subscribe = fields["subscribe"]
 
-    return form(
-        p(
-            label("Name", html_for="name"),
-            input_(
-                id="name",
-                **bind_text(name, validators=rules["name"]),
-                **a11y_control_attrs(name, described_by_id="name-err"),
-            ),
-            span(name.error, **error_message_attrs(id="name-err")),
-        ),
-        p(
-            label("Email", html_for="email"),
-            input_(
-                id="email",
-                type="email",
-                **bind_text(mail, validators=rules["email"]),
-                **a11y_control_attrs(mail, described_by_id="email-err"),
-            ),
-            span(mail.error, **error_message_attrs(id="email-err")),
-        ),
-        p(
-            label("Plan", html_for="plan"),
-            select(
-                option("Free", value="free"),
-                option("Pro", value="pro"),
-                id="plan",
-                **bind_select(plan),
-            ),
-        ),
-        p(
-            label(input_(type="checkbox", **bind_checkbox(subscribe)), " Subscribe to the newsletter"),
-        ),
-        Show(lambda: plan.value() == "pro", lambda: p("Pro plans are billed monthly.")),
-        button("Sign up", type="submit"),
-        on_submit=on_submit_validated(rules, save, fields),
-    )
+    def is_pro():
+        return plan.value() == "pro"
+
+    return html(t"""
+      <form onsubmit={on_submit_validated(rules, save, fields)}>
+        <p>
+          <label for="name">Name</label>
+          <input
+            id="name"
+            {bind_text(name, validators=rules["name"])}
+            {a11y_control_attrs(name, described_by_id="name-err")}
+          >
+          <span {error_message_attrs(id="name-err")}>{name.error}</span>
+        </p>
+        <p>
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            {bind_text(mail, validators=rules["email"])}
+            {a11y_control_attrs(mail, described_by_id="email-err")}
+          >
+          <span {error_message_attrs(id="email-err")}>{mail.error}</span>
+        </p>
+        <p>
+          <label for="plan">Plan</label>
+          <select id="plan" {bind_select(plan)}>
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+          </select>
+        </p>
+        <p>
+          <label><input type="checkbox" {bind_checkbox(subscribe)}> Subscribe to the newsletter</label>
+        </p>
+        {Show(is_pro, html(t"<p>Pro plans are billed monthly.</p>"))}
+        <button type="submit">Sign up</button>
+      </form>
+    """)
 
 
 render(SignupForm(), "#app")
@@ -79,10 +81,12 @@ render(SignupForm(), "#app")
 
 - [`form_state`][wybthon.forms.form_state] returns a dict of [`Field`][wybthon.forms.Field] objects. Each field carries `value`, `error`, and `touched` accessors with matching setters, so every piece of form state is a signal.
 - [`bind_text`][wybthon.forms.bind_text] returns `{"value": field.value, "on_input": handler}`. The `value` entry is the accessor itself, so programmatic writes through `field.set_value(...)` update the input too. Validators run on every `input` event.
-- `span(name.error, ...)` places the error accessor in the tree, so the message appears and disappears as validation runs.
+- `{bind_text(...)}` in the `<input>` tag is a **spread**: the mapping's entries are applied as props, exactly like `**bind_text(...)` on an element helper. A tag can take several spreads alongside ordinary attributes. Spread keys use the helpers' Python names (`on_input`, `aria_invalid`); they mean the same thing in both styles.
+- `<span ...>{name.error}</span>` places the error accessor in the template, so the message appears and disappears as validation runs.
 - [`a11y_control_attrs`][wybthon.forms.a11y_control_attrs] produces reactive `aria-invalid` and `aria-describedby` props; [`error_message_attrs`][wybthon.forms.error_message_attrs] marks the message container as a polite live region.
 - [`on_submit_validated`][wybthon.forms.on_submit_validated] calls `prevent_default()`, validates every field in `rules` (marking them touched), and only invokes `save` when all pass. Use [`on_submit`][wybthon.forms.on_submit] when you want to handle validation yourself.
-- A `Field` is a container of accessors, not an accessor itself, so the `Show` condition reads `plan.value()`.
+- A `Field` is a container of accessors, not an accessor itself, so `is_pro` reads `plan.value()`. `Show` mounts the note only while it's true.
+- Static attributes such as `for="name"` and `type="email"` are written into the compiled template, so they cost nothing per instance.
 
 ## Schema-driven rules
 

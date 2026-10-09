@@ -39,7 +39,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
             and unknown paths under it serve the client shell.
     """
 
-    watchers: list = []  # noqa: RUF012
+    watchers: list = []
     root: Path = Path.cwd()
     app_base: str = "/"
 
@@ -50,7 +50,7 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Expires", "0")
         super().end_headers()
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         """Serve the SSE stream or a file from the build."""
         if self.path == "/__sse":
             self.send_response(200)

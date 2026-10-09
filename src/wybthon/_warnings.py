@@ -22,7 +22,6 @@ import traceback
 from typing import Any
 
 __all__ = [
-    "DEV_MODE",
     "set_dev_mode",
     "is_dev_mode",
     "warn",

@@ -18,9 +18,9 @@ def check(report):
     assert append["commits"] == 1, append
     # One fused clone command per row: the row's text and its label hole's
     # first value ride in the clone, and its delegated listeners are declared
-    # by the template.
+    # by the template. Template rows (`html`) and compiled helper shapes both count.
     assert append["dom_ops"] <= 1001, append
-    assert append.get("template_recipe_hits", 0) == 1000, append
+    assert append.get("template_clones", 0) + append.get("template_recipe_hits", 0) == 1000, append
     assert append.get("template_shape_walks", 0) == 0, append
     clear = scenarios["clear_10k"]["counts"]
     # One native range disposal releases every row's nodes.

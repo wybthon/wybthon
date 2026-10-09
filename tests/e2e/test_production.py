@@ -36,12 +36,15 @@ def _serve(project, mode, base_path="/"):
     )
     base = f"http://127.0.0.1:{port}{base_path}"
     try:
-        for _ in range(200):
+        # `wyb dev` builds (and prerenders) before it serves; give a loaded
+        # machine time instead of a fixed number of quick retries.
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
             try:
                 urllib.request.urlopen(base, timeout=1).close()
                 break
             except OSError:
-                time.sleep(0.05)
+                time.sleep(0.1)
         yield base
     finally:
         proc.terminate()

@@ -3,6 +3,7 @@
 import asyncio
 import json
 import zipfile
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -235,3 +236,18 @@ def test_build_rejects_invalid_python_before_replacing_output(tmp_path):
     with pytest.raises(ValueError, match="Invalid Python source"):
         build_app(tmp_path)
     assert (tmp_path / "dist" / "manifest.json").read_bytes() == previous
+
+
+def test_build_inlines_the_manifest_and_preloads_the_runtime(tmp_path: Path):
+    from wybthon.build import build_app, init_app
+
+    app = tmp_path / "app"
+    init_app(app)
+    manifest = build_app(app, base="/demo/")
+    page = (app / "dist" / "index.html").read_text()
+    inline = page.split('<script type="application/json" id="wyb-manifest">', 1)[1].split("</script>", 1)[0]
+    assert json.loads(inline) == manifest
+    assert f'<link rel="modulepreload" href="{manifest["pyodide_url"]}pyodide.mjs" crossorigin>' in page
+    for archive in (manifest["runtime"], manifest["application"]):
+        assert f'<link rel="preload" href="/demo/{archive}" as="fetch" crossorigin>' in page
+    assert page.index("wyb-manifest") < page.index('src="/demo/assets/bootstrap.')

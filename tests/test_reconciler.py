@@ -3,7 +3,7 @@
 import pytest
 from conftest import StubNode, collect_texts
 
-from wybthon.html import a, button, div, em, h1, input_, li, p, span, strong, ul
+from wybthon.elements import a, button, div, em, h1, input_, li, p, span, strong, ul
 from wybthon.reactivity import create_signal
 from wybthon.svg import circle, foreignObject, svg
 from wybthon.vnode import NS_SVG, Fragment, hole

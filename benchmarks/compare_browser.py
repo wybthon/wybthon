@@ -18,7 +18,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from browser_bench import APP_URL_PATH, BOOT_TIMEOUT_MS, REPO_ROOT, _free_port, _wait_for_http
+from _app import BOOT_TIMEOUT_MS, serve_checkout
+from browser_bench import REPO_ROOT
 from playwright.sync_api import sync_playwright
 
 SCENARIOS = {
@@ -74,28 +75,6 @@ SNAPSHOT = """() => {
 }"""
 
 
-@contextlib.contextmanager
-def serve(repo):
-    port = _free_port()
-    server = subprocess.Popen(
-        [sys.executable, str(Path(__file__).with_name("_serve.py")), "--port", str(port), "--root", str(repo)],
-        cwd=repo,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    url = f"http://127.0.0.1:{port}{APP_URL_PATH}"
-    try:
-        _wait_for_http(url)
-        yield url
-    finally:
-        server.terminate()
-        try:
-            server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server.kill()
-            server.wait(timeout=5)
-
-
 def python(page, code):
     return page.evaluate("code => window._pyodide.runPython(code)", code)
 
@@ -114,7 +93,7 @@ def source_digest(repo):
 
 def compare(baseline, mode, iterations, warmup, names, cpu_profile):
     with contextlib.ExitStack() as stack:
-        urls = [stack.enter_context(serve(repo)) for repo in (baseline, REPO_ROOT)]
+        urls = [stack.enter_context(serve_checkout(repo)) for repo in (baseline, REPO_ROOT)]
         playwright = stack.enter_context(sync_playwright())
         browser = playwright.chromium.launch()
         stack.callback(browser.close)

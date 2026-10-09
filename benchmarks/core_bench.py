@@ -173,7 +173,7 @@ def run(repo, iterations, warmup):
     runtime = {
         "wybthon/" + path.relative_to(package).as_posix(): path.read_bytes()
         for path in package.rglob("*.py")
-        if path.name not in {"build.py", "dev.py", "mypy_plugin.py"}
+        if path.name not in {"build.py", "dev.py"}
     }
     digest = hashlib.sha256()
     for name, data in sorted(runtime.items()):

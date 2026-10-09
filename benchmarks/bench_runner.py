@@ -425,7 +425,7 @@ def _load_wybthon():
         "wybthon.reactivity",
         "wybthon.component",
         "wybthon.context",
-        "wybthon._template",
+        "wybthon._shapes",
         "wybthon.error_boundary",
         "wybthon.loading",
         "wybthon.portal",

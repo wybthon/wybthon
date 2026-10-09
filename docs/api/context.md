@@ -24,7 +24,7 @@ or accessor when consumers should react to changes, and call it where
 you need the value.
 
 ```python
-from wybthon import Accessor, Context, button, component, create_context, create_signal, div, use_context
+from wybthon import Accessor, Context, component, create_context, create_signal, html, use_context
 
 Theme: Context[Accessor[str]] = create_context(name="Theme")
 
@@ -32,18 +32,24 @@ Theme: Context[Accessor[str]] = create_context(name="Theme")
 @component
 def ThemedButton():
     theme = use_context(Theme)  # the accessor the provider passed
-    return button("Hi", class_=t"btn-{theme}")
+    return html(t'<button class="btn-{theme}">Hi</button>')
 
 
 @component
 def App():
     theme, set_theme = create_signal("light")
+
+    def toggle():
+        set_theme("dark" if theme.peek() == "light" else "light")
+
     return Theme(  # value first, then children
         theme,
-        div(
-            ThemedButton(),
-            button("Toggle", on_click=lambda: set_theme("dark" if theme.peek() == "light" else "light")),
-        ),
+        html(t"""
+          <div>
+            {ThemedButton()}
+            <button onclick={toggle}>Toggle</button>
+          </div>
+        """),
     )
 ```
 

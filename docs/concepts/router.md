@@ -5,26 +5,29 @@ active links. Import the router from `wybthon.router`; its names aren't
 exported from the top-level `wybthon` package.
 
 ```python
-from wybthon import component, div, h1, nav
+from wybthon import component, create_memo, html
 from wybthon.router import Link, Route, RouteProps, Router
 
 
 @component
 def Home():
-    return h1("Home")
+    return html(t"<h1>Home</h1>")
 
 
 @component
 def User(props: RouteProps):
-    return h1("User ", lambda: props.params()["id"])
+    user_id = create_memo(lambda: props.params()["id"])
+    return html(t"<h1>User {user_id}</h1>")
 
 
 @component
 def App():
-    return div(
-        nav(Link("Home", href="/"), Link("Ada", href="/users/1")),
-        Router([Route("/", Home), Route("/users/:id", User)]),
-    )
+    return html(t"""
+      <div>
+        <nav>{Link("Home", href="/")} {Link("Ada", href="/users/1")}</nav>
+        {Router([Route("/", Home), Route("/users/:id", User)])}
+      </div>
+    """)
 ```
 
 - [`Router(routes, *, base_path="", not_found=None)`][wybthon.router.Router] renders the component of the route matching [`current_path`][wybthon.router.current_path].
@@ -70,7 +73,7 @@ the matched one) can read the same accessors with
 [`use_base_path`][wybthon.router.use_base_path]:
 
 ```python
-from wybthon import component, p
+from wybthon import component, create_memo, html
 from wybthon.router import use_params, use_query
 
 
@@ -78,7 +81,9 @@ from wybthon.router import use_params, use_query
 def Breadcrumb():
     params = use_params()
     query = use_query()
-    return p(lambda: f"{params().get('slug', '')} | {query().get('page', '1')}")
+    slug = create_memo(lambda: params().get("slug", ""))
+    page = create_memo(lambda: query().get("page", "1"))
+    return html(t"<p>{slug} | {page}</p>")
 ```
 
 Outside a router, `use_params()` and `use_query()` return accessors
@@ -92,13 +97,13 @@ are merged into `params`. A parent component renders
 Parent layouts stay mounted while child routes change:
 
 ```python
-from wybthon import component, div, h1
+from wybthon import component, html
 from wybthon.router import Outlet
 
 
 @component
 def About():
-    return div(h1("About"), Outlet())
+    return html(t"<div><h1>About</h1>{Outlet()}</div>")
 ```
 
 ```python
@@ -128,13 +133,13 @@ also receives `params` and `query`) or, if none is given, a literal
 set the response status with [`http_status`][wybthon.http_status]:
 
 ```python
-from wybthon import component, h1, http_status
+from wybthon import component, html, http_status
 
 
 @component
 def NotFound():
     http_status(404)  # ignored in the browser
-    return h1("Not found")
+    return html(t"<h1>Not found</h1>")
 
 
 Router(routes, not_found=NotFound)
@@ -154,6 +159,12 @@ Hrefs starting with `http://`, `https://`, or `#` are left alone.
 
 ## Links
 
+`Link` is a function, like the element helpers, so as a call it takes
+Python keyword names (`class_`, `aria_label`). Place it in a template
+with an interpolation, `<nav>{Link("Users", href="/users")}</nav>`, or
+with the tag form, `<nav><{Link} href="/users" class="nav">Users</{Link}></nav>`,
+where `class` maps to `class_`.
+
 ```python
 Link("Users", href="/users", class_="nav-link")
 Link("Users", href="/users", end=True)  # active only on an exact match
@@ -165,7 +176,7 @@ Link("Home", href="/", active_class=None)  # no active class
 - The link is active when the current path equals its target, or starts with it as a path prefix unless `end=True`. The active class (default `"active"`) is merged with any `class_` you pass.
 - Clicks with a modifier key (Cmd, Ctrl, Shift) or a non-primary button are passed through to the browser so users can open links in new tabs.
 - `href` may be an accessor for links whose target changes.
-- Other keyword arguments (`aria_label`, `on_click`, `data_*`) are forwarded to the `<a>` element. A user `on_click` receives the event and runs before the router's navigation.
+- Other keyword arguments (`aria_label`, `on_click`, `data_*`) are forwarded to the `<a>` element. A user `on_click` runs before the router's navigation and may take the event or no arguments, like any handler.
 
 ## Programmatic navigation
 
@@ -195,7 +206,7 @@ component, and it may be async. While the module loads, the nearest
 [`Loading`][wybthon.Loading] boundary shows its fallback.
 
 ```python
-from wybthon import Loading, lazy, p
+from wybthon import Loading, html, lazy
 from wybthon.router import Link, Route, Router
 
 Docs = lazy(lambda: ("app.docs.page", "Page"))
@@ -206,7 +217,7 @@ routes = [
     Route("/about", About),
 ]
 
-Loading(lambda: Router(routes), fallback=p("Loading page..."))
+Loading(Router(routes), fallback=html(t"<p>Loading page...</p>"))
 Link("About", href="/about")  # warms About's code on hover or focus
 ```
 
@@ -222,14 +233,15 @@ when the route changes, so a broken page recovers as soon as the user
 navigates away. The fallback's `err` is an accessor for the exception:
 
 ```python
-from wybthon import Errored, p
+from wybthon import Errored, html
 from wybthon.router import Router, current_path
 
-Errored(
-    lambda: Router(routes),
-    fallback=lambda err, reset: p(t"This page failed: {err}"),
-    reset_on=current_path,
-)
+
+def page_failed(err, reset):
+    return html(t"<p>This page failed: {err}</p>")
+
+
+Errored(Router(routes), fallback=page_failed, reset_on=current_path)
 ```
 
 ## Next steps

@@ -119,10 +119,9 @@ def test_warn_once_dedupes_per_category_and_key(capsys):
         _reset_warning_dedupe()
 
 
-def test_dev_mode_constant_is_not_exported_at_top_level():
+def test_dev_mode_functions_are_exported_at_top_level():
     import wybthon
 
-    assert not hasattr(wybthon, "DEV_MODE")
     assert wybthon.is_dev_mode is is_dev_mode
     assert wybthon.set_dev_mode is set_dev_mode
 

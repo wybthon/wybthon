@@ -14,16 +14,10 @@ from __future__ import annotations
 from html import escape
 from typing import Any, Iterator
 
+from ._html_rules import LEADING_NEWLINE_ELEMENTS, RAW_TEXT_ELEMENTS, VOID_ELEMENTS
 from .kernel import PythonBackend
 
 __all__ = ["ServerDocument", "ServerBackend", "serialize_children", "serialize_node"]
-
-VOID_ELEMENTS = frozenset(
-    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-)
-_RAW_TEXT = frozenset({"script", "style", "xmp", "iframe", "noembed", "noframes", "noscript"})
-# The HTML parser drops a newline that immediately follows these start tags.
-_LEADING_NEWLINE = frozenset({"pre", "textarea", "listing"})
 
 
 class _Style:
@@ -34,10 +28,10 @@ class _Style:
     def __init__(self) -> None:
         self.decls: dict[str, str] = {}
 
-    def setProperty(self, name: str, value: Any) -> None:  # noqa: N802 - DOM API
+    def setProperty(self, name: str, value: Any) -> None:
         self.decls[name] = str(value)
 
-    def removeProperty(self, name: str) -> None:  # noqa: N802 - DOM API
+    def removeProperty(self, name: str) -> None:
         self.decls.pop(name, None)
 
     def parse(self, text: str) -> None:
@@ -68,7 +62,7 @@ class _Node:
         self.nextSibling: _Node | None = None
 
     @property
-    def childNodes(self) -> list[_Node]:  # noqa: N802 - DOM API
+    def childNodes(self) -> list[_Node]:
         return list(self._children())
 
     def _children(self) -> Iterator[_Node]:
@@ -92,7 +86,7 @@ class _Node:
             following.previousSibling = prev
         self.parentNode = self.previousSibling = self.nextSibling = None
 
-    def insertBefore(self, node: _Node, anchor: _Node | None) -> _Node:  # noqa: N802 - DOM API
+    def insertBefore(self, node: _Node, anchor: _Node | None) -> _Node:
         if anchor is not None and anchor.parentNode is not self:
             anchor = None
         if node is anchor:
@@ -118,18 +112,18 @@ class _Node:
                 prev.nextSibling = node
         return node
 
-    def appendChild(self, node: _Node) -> _Node:  # noqa: N802 - DOM API
+    def appendChild(self, node: _Node) -> _Node:
         return self.insertBefore(node, None)
 
-    def removeChild(self, node: _Node) -> _Node:  # noqa: N802 - DOM API
+    def removeChild(self, node: _Node) -> _Node:
         if node.parentNode is self:
             node._detach()
         return node
 
-    def addEventListener(self, *_args: Any) -> None:  # noqa: N802 - DOM API
+    def addEventListener(self, *_args: Any) -> None:
         """Server nodes never dispatch events."""
 
-    def removeEventListener(self, *_args: Any) -> None:  # noqa: N802 - DOM API
+    def removeEventListener(self, *_args: Any) -> None:
         """Server nodes never dispatch events."""
 
 
@@ -148,17 +142,17 @@ class ServerElement(_Node):
         self.selectedValues: Any = None
         self.innerHTML: str | None = None
 
-    def setAttribute(self, name: str, value: Any) -> None:  # noqa: N802 - DOM API
+    def setAttribute(self, name: str, value: Any) -> None:
         if name == "style":
             self.style.parse(str(value))
         self.attributes[name] = str(value)
 
-    def getAttribute(self, name: str) -> str | None:  # noqa: N802 - DOM API
+    def getAttribute(self, name: str) -> str | None:
         if name == "style" and self.style.decls:
             return self.style.text()
         return self.attributes.get(name)
 
-    def removeAttribute(self, name: str) -> None:  # noqa: N802 - DOM API
+    def removeAttribute(self, name: str) -> None:
         if name == "style":
             self.style.decls.clear()
         self.attributes.pop(name, None)
@@ -188,25 +182,25 @@ class ServerComment(_Node):
 class ServerDocument:
     """The factory side of the DOM API that `PythonBackend` calls."""
 
-    def createElement(self, tag: str) -> ServerElement:  # noqa: N802 - DOM API
+    def createElement(self, tag: str) -> ServerElement:
         return ServerElement(tag)
 
-    def createElementNS(self, namespace: str, tag: str) -> ServerElement:  # noqa: N802 - DOM API
+    def createElementNS(self, namespace: str, tag: str) -> ServerElement:
         return ServerElement(tag, namespace)
 
-    def createTextNode(self, text: Any) -> ServerText:  # noqa: N802 - DOM API
+    def createTextNode(self, text: Any) -> ServerText:
         return ServerText(str(text))
 
-    def createComment(self, text: Any = "") -> ServerComment:  # noqa: N802 - DOM API
+    def createComment(self, text: Any = "") -> ServerComment:
         return ServerComment(str(text))
 
-    def addEventListener(self, *_args: Any) -> None:  # noqa: N802 - DOM API
+    def addEventListener(self, *_args: Any) -> None:
         """The server document never dispatches events."""
 
-    def removeEventListener(self, *_args: Any) -> None:  # noqa: N802 - DOM API
+    def removeEventListener(self, *_args: Any) -> None:
         """The server document never dispatches events."""
 
-    def querySelector(self, _selector: str) -> None:  # noqa: N802 - DOM API
+    def querySelector(self, _selector: str) -> None:
         """Selectors don't resolve on the server; render into a created container."""
         return None
 
@@ -303,8 +297,8 @@ def serialize_node(node: _Node, out: list[str], select: ServerElement | None = N
     else:
         start = len(out)
         inner_select = node if lower == "select" else select
-        serialize_children(node, out, inner_select, raw=lower in _RAW_TEXT)
-        if lower in _LEADING_NEWLINE and len(out) > start and out[start].startswith("\n"):
+        serialize_children(node, out, inner_select, raw=lower in RAW_TEXT_ELEMENTS)
+        if lower in LEADING_NEWLINE_ELEMENTS and len(out) > start and out[start].startswith("\n"):
             out.insert(start, "\n")
     out.append(f"</{tag}>")
 

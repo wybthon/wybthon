@@ -25,14 +25,14 @@ is restored. The head is committed once the render finishes, or when a
 stream sends its shell; later declarations are ignored.
 
 ```python
-from wybthon import RequestEvent, component, get_request_event, h1, http_header, http_status, p
+from wybthon import RequestEvent, component, get_request_event, html, http_header, http_status
 from wybthon.server import render_to_string
 
 
 @component
 def NotFound():
     http_status(404)
-    return h1("Not found")
+    return html(t"<h1>Not found</h1>")
 
 
 @component
@@ -40,7 +40,7 @@ def Greeting():
     event = get_request_event()
     user = event.locals.get("user") if event is not None else None
     http_header("Vary", "Cookie")
-    return p("Hello, ", user or "guest")
+    return html(t"<p>Hello, {user or 'guest'}</p>")
 
 
 event = RequestEvent(url="/missing", locals={"user": "Ada"})

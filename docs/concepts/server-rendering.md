@@ -18,24 +18,34 @@ crawl = true
 `entry` names a function that returns the root view; the bootstrap renders it into `mount`, or hydrates it when the page was prerendered. With `crawl = true`, the build also renders every in-app link it finds in the rendered pages. Each route is written to `<route>/index.html`, and the client-only shell is written to `200.html` for routes that weren't prerendered. Point your static host's fallback at `200.html`.
 
 ```python
-from wybthon import component, p
+from wybthon import component, html
 from wybthon.router import Route, Router
 
 
 @component
 def Home():
-    return p("Welcome")
+    return html(t"<p>Welcome</p>")
 
 
 def app():
     return Router([Route("/", Home)])
 ```
 
-`index.html` marks the region the rendered markup replaces:
+`index.html` marks the region the rendered markup replaces, and where
+the build inserts the tags that start the app:
 
 ```html
-<div id="app"><!-- wyb:app --><p id="wyb-loading">Loading...</p><!-- /wyb:app --></div>
+<div id="app"><!-- wyb:app --><p id="wyb-loading" role="status">Loading...</p><!-- /wyb:app --></div>
+<!-- wyb:bootstrap -->
 ```
+
+At the bootstrap marker, the build inlines the manifest as
+`<script type="application/json" id="wyb-manifest">`, so the bootstrap
+doesn't fetch it, and adds preload hints: `<link rel="modulepreload">`
+for Pyodide's `pyodide.mjs`, and `<link rel="preload" as="fetch"
+crossorigin>` for the runtime and application archives. The downloads
+start while the browser parses the page, instead of after the
+bootstrap runs.
 
 Prerendering imports your application in a fresh CPython 3.14 process, so module-level code must run outside the browser. Import `js` and `pyodide` inside the functions that need them, and use [`is_server`][wybthon.is_server] to choose server-safe behavior.
 
@@ -111,13 +121,13 @@ Inside components, three functions work with the request:
 - [`http_header(name, value, *, append=False)`][wybthon.http_header] sets a header, replacing earlier values; pass `append=True` to add another value instead (for `set-cookie`, say).
 
 ```python
-from wybthon import component, get_request_event, h1, http_header, http_status, p
+from wybthon import component, get_request_event, html, http_header, http_status
 
 
 @component
 def NotFound():
     http_status(404)
-    return h1("Not found")
+    return html(t"<h1>Not found</h1>")
 
 
 @component
@@ -127,9 +137,9 @@ def Account():
     if user is None:
         http_status(302)
         http_header("location", "/login")
-        return p("Redirecting...")
+        return html(t"<p>Redirecting...</p>")
     http_header("cache-control", "private, no-store")
-    return h1(f"Welcome back, {user}")
+    return html(t"<h1>Welcome back, {user}</h1>")
 ```
 
 `http_status` and `http_header` only act on the server; in the browser they do nothing, so the same component works on both sides. Declarations belong to the reactive scope that made them, as in Solid 2.0. When that scope is disposed before the response is committed (an [`Errored`](error-boundaries.md) boundary showing its fallback, a [`Show`][wybthon.Show] branch switching), the previous status or header is restored. If a component declares a cache header and then raises, the boundary's fallback replaces it and the header is withdrawn; the fallback can declare its own, such as `http_status(500)`.
@@ -196,6 +206,13 @@ hydrate(App(), "#app")
 
 The production bootstrap calls `hydrate` automatically when the page contains server state. `hydrate` mounts the tree exactly as [`render`][wybthon.render] would, except that each node *claims* the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.
 
+Templates need nothing special. A server render and a hydrating client
+expand each template into the same VNodes the element helpers would
+build, so the markup and hydration keys match whichever style a
+component uses. Once hydration has committed, browser updates use the
+compiled path. See
+[Templates](templates.md#server-rendering-hydration-and-svg).
+
 Hydration never breaks the page. When a node doesn't match, the kernel creates the expected node in place, removes server nodes nobody claimed, and logs a console warning for the first few mismatches. `kernel.stats()["hydration_mismatches"]` counts them. A mismatch inside a `Loading` boundary stops at the boundary's end.
 
 Mismatches cost extra DOM work, so avoid them. Hydration assumes the browser's first render matches the server's:
@@ -205,9 +222,9 @@ Mismatches cost extra DOM work, so avoid them. Hydration assumes the browser's f
 - Pass the same view, and for request-time rendering, the same URL the browser will show.
 
 ```python
-from wybthon import client_only
+from wybthon import client_only, html
 
-client_only(lambda: MapWidget(lat=lat, lng=lng), fallback=p("Loading map..."))
+client_only(MapWidget(lat=lat, lng=lng), fallback=html(t"<p>Loading map...</p>"))
 ```
 
 `client_only` renders its fallback on the server and while hydrating, then swaps in its children once hydration has committed.
@@ -215,7 +232,7 @@ client_only(lambda: MapWidget(lat=lat, lng=lng), fallback=p("Loading map..."))
 [`is_hydrating()`][wybthon.is_hydrating] is `True` only during the synchronous mount that `hydrate` performs. Use it to render what the server rendered, then switch to a browser-only value once the page is live:
 
 ```python
-from wybthon import component, create_signal, is_hydrating, is_server, on_settled, span
+from wybthon import component, create_signal, html, is_hydrating, is_server, on_settled
 
 
 @component
@@ -223,7 +240,7 @@ def LocalTime():
     initial = "" if is_server() or is_hydrating() else local_time()
     time, set_time = create_signal(initial)
     on_settled(lambda: set_time(local_time()))
-    return span(time)
+    return html(t"<span>{time}</span>")
 ```
 
 In a page that wasn't server-rendered, `is_hydrating()` is `False` and the component shows the time on its first render.
@@ -233,18 +250,16 @@ In a page that wasn't server-rendered, `is_hydrating()` is `False` and the compo
 Some content never changes after the first paint: an article body, a footer, legal text. Wrap it in [`NoHydration`][wybthon.NoHydration] and the browser skips it while hydrating:
 
 ```python
-from wybthon import NoHydration, article, component, div, footer, p
+from wybthon import NoHydration, component, html
 
 
 @component
 def Post():
-    return div(
-        LikeButton(),
-        NoHydration(
-            article(p("A long, static article body...")),
-            footer(p("Copyright 2026")),
-        ),
-    )
+    static = html(t"""
+      <article><p>A long, static article body...</p></article>
+      <footer><p>Copyright 2026</p></footer>
+    """)
+    return html(t"<div>{LikeButton()}{NoHydration(static)}</div>")
 ```
 
 On the server, `NoHydration(*children)` renders its children normally, between two marker comments. While hydrating, the kernel claims the whole marked region as is, with one command, and nothing inside it is mounted: no components run, no handlers attach, and it costs no Python work. The region never updates afterward, so don't put reactive content, event handlers, or refs inside it. In a page that wasn't server-rendered, the children render normally.

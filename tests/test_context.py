@@ -3,8 +3,8 @@ from conftest import collect_texts
 
 from wybthon.component import component
 from wybthon.context import Context, ContextNotFoundError, create_context, use_context
+from wybthon.elements import div, p, span
 from wybthon.flow import Show
-from wybthon.html import div, p, span
 from wybthon.reactivity import Prop, Props, create_signal, flush, prop
 
 

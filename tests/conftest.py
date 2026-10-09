@@ -8,230 +8,31 @@ modules without a real browser environment.
 
 import importlib
 import sys
-from html.parser import HTMLParser
 from types import ModuleType
 
 import pytest
 
+from wybthon.testing import TestDocument, TestNode, _Parser, _Template
+
 # ---------------------------------------------------------------------------
-# DOM stub classes
+# DOM stubs: the in-memory DOM `wybthon.testing` ships, under the names the
+# suite has always used.
 # ---------------------------------------------------------------------------
 
-
-class StubClassList:
-    def __init__(self):
-        self._set = set()
-
-    def add(self, name):
-        self._set.add(name)
-
-    def remove(self, name):
-        self._set.discard(name)
-
-    def contains(self, name):
-        return name in self._set
+StubNode = TestNode
+StubTemplate = _Template
+_StubHTMLParser = _Parser
 
 
-class StubStyle:
-    def __init__(self):
-        self._props = {}
+class StubDocument(TestDocument):
+    """The shipped test document, with a forgiving `querySelector` for unit tests."""
 
-    def setProperty(self, name, value):
-        self._props[name] = str(value)
+    __test__ = False
 
-    def removeProperty(self, name):
-        self._props.pop(name, None)
+    def querySelector(self, selector):
+        return super().querySelector(selector) or TestNode(tag="div")
 
-
-class StubNode:
-    """In-memory stub for a browser DOM node."""
-
-    def __init__(self, tag=None, text=None):
-        self.tag = tag
-        self.nodeValue = text
-        self._is_text = text is not None
-        self.parentNode = None
-        self.childNodes = []
-        self.attributes = {}
-        self.classList = StubClassList()
-        self.style = StubStyle()
-        self.value = ""
-        self.checked = False
-
-    @property
-    def nextSibling(self):
-        if self.parentNode is None:
-            return None
-        try:
-            idx = self.parentNode.childNodes.index(self)
-        except ValueError:
-            return None
-        return self.parentNode.childNodes[idx + 1] if idx + 1 < len(self.parentNode.childNodes) else None
-
-    @property
-    def firstChild(self):
-        return self.childNodes[0] if self.childNodes else None
-
-    def appendChild(self, node):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        self.childNodes.append(node)
-        return node
-
-    def insertBefore(self, node, anchor):
-        if getattr(node, "parentNode", None) is not None:
-            try:
-                node.parentNode.childNodes.remove(node)
-            except Exception:
-                pass
-        node.parentNode = self
-        if anchor is None:
-            self.childNodes.append(node)
-            return node
-        try:
-            idx = self.childNodes.index(anchor)
-        except ValueError:
-            self.childNodes.append(node)
-            return node
-        self.childNodes.insert(idx, node)
-        return node
-
-    def removeChild(self, node):
-        try:
-            self.childNodes.remove(node)
-            node.parentNode = None
-        except ValueError:
-            pass
-        return node
-
-    def setAttribute(self, name, value):
-        self.attributes[name] = str(value)
-
-    def getAttribute(self, name):
-        return self.attributes.get(name)
-
-    def removeAttribute(self, name):
-        self.attributes.pop(name, None)
-
-
-_VOID_TAGS = {
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-}
-
-
-class _StubHTMLParser(HTMLParser):
-    """Minimal HTML parser building StubNode trees (backs template.innerHTML)."""
-
-    def __init__(self, root):
-        super().__init__(convert_charrefs=True)
-        self._stack = [root]
-
-    def _add_element(self, tag, attrs):
-        node = StubNode(tag=tag)
-        for name, value in attrs:
-            value = "" if value is None else value
-            node.setAttribute(name, value)
-            if name == "class":
-                for cls in value.split():
-                    node.classList.add(cls)
-            elif name == "style":
-                for decl in value.split(";"):
-                    if ":" in decl:
-                        k, v = decl.split(":", 1)
-                        node.style.setProperty(k.strip(), v.strip())
-        self._stack[-1].appendChild(node)
-        return node
-
-    def handle_starttag(self, tag, attrs):
-        node = self._add_element(tag, attrs)
-        if tag not in _VOID_TAGS:
-            self._stack.append(node)
-
-    def handle_startendtag(self, tag, attrs):
-        self._add_element(tag, attrs)
-
-    def handle_endtag(self, tag):
-        if len(self._stack) > 1:
-            self._stack.pop()
-
-    def handle_data(self, data):
-        if data:
-            self._stack[-1].appendChild(StubNode(text=data))
-
-    def handle_comment(self, data):
-        node = StubNode(text=data)
-        node._is_comment = True
-        self._stack[-1].appendChild(node)
-
-
-class StubTemplate(StubNode):
-    """Stub for `<template>`: parses innerHTML into a content fragment."""
-
-    def __init__(self):
-        super().__init__(tag="template")
-        self.content = StubNode(tag="#fragment")
-
-    @property
-    def innerHTML(self):
-        return ""
-
-    @innerHTML.setter
-    def innerHTML(self, html):
-        self.content.childNodes = []
-        if html:
-            parser = _StubHTMLParser(self.content)
-            parser.feed(html)
-            parser.close()
-
-
-class StubDocument:
-    """In-memory stub for the browser ``document`` object."""
-
-    def __init__(self):
-        self._listeners = {}
-
-    def createElement(self, tag):
-        if tag == "template":
-            return StubTemplate()
-        return StubNode(tag=tag)
-
-    def createTextNode(self, text):
-        return StubNode(text=str(text))
-
-    def createComment(self, text=""):
-        node = StubNode(text=str(text))
-        node._is_comment = True
-        return node
-
-    def addEventListener(self, event_type, proxy):
-        self._listeners.setdefault(event_type, set()).add(proxy)
-
-    def removeEventListener(self, event_type, proxy):
-        s = self._listeners.get(event_type)
-        if s is not None and proxy in s:
-            s.remove(proxy)
-
-    def querySelector(self, sel):
-        return StubNode(tag="div")
-
-    def querySelectorAll(self, sel):
+    def querySelectorAll(self, selector):
         return []
 
 
@@ -287,7 +88,7 @@ def reload_wybthon_modules(doc=None):
     pointing to the freshly reloaded module objects.
     """
     mods = {}
-    for name in ("kernel", "dom", "events", "reconciler", "_template"):
+    for name in ("kernel", "dom", "events", "reconciler", "_shapes"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
@@ -305,7 +106,8 @@ def reload_wybthon_modules(doc=None):
         "lazy",
         "router",
         "forms",
-        "html",
+        "elements",
+        "templates",
         "svg",
     ):
         mods[name] = importlib.import_module(f"wybthon.{name}")

@@ -67,7 +67,7 @@ def repeat(count, fn, *, start=0, fallback=None):
     Example:
         ```python
         count, set_count = create_signal(3)
-        rows = repeat(count, lambda i: li(f"Row {i}"))
+        rows = repeat(count, lambda i: html(t"<li>Row {i}</li>"))
         ```
     """
 ```
@@ -102,8 +102,7 @@ class Field[T]:
         ```python
         fields = form_state({"name": ""})
         name = fields["name"]
-        input_(**bind_text(name))
-        span(lambda: name.error() or "")
+        html(t"<input {bind_text(name)}><span>{name.error}</span>")
         ```
     """
 ```
@@ -206,6 +205,15 @@ typically enough; autorefs picks them up via signature annotations
   ` ```yaml `.
 - Prefer **runnable** snippets that include the imports needed to
   copy-paste them.
+- Write markup as [`html`][wybthon.html] templates. Use the element
+  helpers (`div(...)`, `h(...)`) only where the page is about them or
+  the markup is built by code.
+- Never put a bare `lambda` inside a t-string interpolation; it's a
+  `SyntaxError`. Prefer a named function or memo, and wrap an inline
+  lambda in parentheses when one is clearer: `{(lambda: count() * 2)}`.
+- Check that every template parses: `<tr>` needs a `<tbody>`, and a
+  `<p>` can't hold block elements. Malformed markup raises
+  [`TemplateError`][wybthon.TemplateError].
 - For longer multi-step examples, lean on Material's `pymdownx.tabbed`
   to show the same example in different forms (e.g., "Component" vs.
   "Direct call").

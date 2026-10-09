@@ -431,7 +431,7 @@ def remove_bindings_for(node_id: int) -> None:
 
 def _bind_reactive_prop(
     node_id: int, name: str, getter: Any, initial: Any = _UNSET, register: bool = True
-) -> Computation:
+) -> Computation | None:
     """Wrap `getter` in a render effect that re-applies prop `name` on change.
 
     Render-phase scheduling means every dirty binding in a flush emits
@@ -444,6 +444,12 @@ def _bind_reactive_prop(
     bindings are recorded on the template root and registered by node
     only if the subtree is ever patched.
     """
+    if type(getter) is _core._PropAccessor:
+        constant = _core._constant_prop(getter)
+        if constant is not _core._MISSING:
+            # A prop that can never change: apply its value, track nothing.
+            _apply_single_prop(node_id, name, initial, constant)
+            return None
     last = initial
 
     def apply(new_val: Any) -> None:
@@ -458,13 +464,17 @@ def _bind_reactive_prop(
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)
+    comp._update_if_necessary()
+    if not comp._sources and comp._inert():
+        # Nothing reactive was read: the value can never change again.
+        comp.dispose()
+        return None
     if register:
         table = _bindings.get(node_id)
         if table is None:
             _bindings[node_id] = {name: comp}
         else:
             table[name] = comp
-    comp._update_if_necessary()
     return comp
 
 
@@ -473,17 +483,42 @@ def _bind_reactive_prop(
 # ---------------------------------------------------------------------------
 
 
+def class_names(value: Any) -> list[str]:
+    """Flatten a class value to its names.
+
+    A string is split on whitespace; a dict contributes the keys whose
+    values are truthy (accessors are called); lists and tuples are
+    flattened recursively; an accessor is called first.
+    """
+    if value is None or value is False:
+        return []
+    if is_accessor(value):
+        value = value()
+    if isinstance(value, str):
+        return value.split()
+    if isinstance(value, dict):
+        out: list[str] = []
+        for name, on in value.items():
+            if is_accessor(on):
+                on = on()
+            if on:
+                out.extend(str(name).split())
+        return out
+    if isinstance(value, (list, tuple)):
+        out = []
+        for item in value:
+            out.extend(class_names(item))
+        return out
+    return [str(value)]
+
+
 def _class_string(value: Any) -> str:
     """Normalize a class prop (string, list, or dict) to a class string."""
     if value is None or value is False:
         return ""
     if isinstance(value, str):
         return value
-    if isinstance(value, (list, tuple)):
-        return " ".join(str(x) for x in value if x)
-    if isinstance(value, dict):
-        return " ".join(str(k) for k, v in value.items() if v)
-    return str(value)
+    return " ".join(class_names(value))
 
 
 def _remove_styles(node_id: int, old_val: Any) -> None:

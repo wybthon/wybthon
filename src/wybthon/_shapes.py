@@ -29,10 +29,10 @@ so a text result is a plain `nodeValue` write.
 
 Trees mounted this way keep their VNodes, but assign node ids to static
 descendants only when the reconciler first needs them, which happens when
-a reactive hole patches the subtree ([`materialize`][wybthon._template.materialize]).
+a reactive hole patches the subtree ([`materialize`][wybthon._shapes.materialize]).
 List rows and component output are never patched, so they skip that work.
 Teardown uses the shape's binding offsets instead of visiting every node
-([`dispose`][wybthon._template.dispose]).
+([`dispose`][wybthon._shapes.dispose]).
 
 Trees the HTML parser would rewrite (adjacent text, raw-text elements,
 implied `<tbody>`, auto-closed `<p>`, and similar) aren't eligible; the
@@ -65,16 +65,22 @@ from ._dom_props import (
     detach_ref,
     prop_kind,
 )
+from ._html_rules import (
+    ALLOWED_CHILDREN,
+    FOREIGN_ELEMENTS,
+    NO_NESTED_CHILD,
+    NO_NESTED_DESCENDANT,
+    NO_TEXT_CONTENT,
+    P_CLOSERS,
+    RAW_CONTENT_ELEMENTS,
+    VOID_ELEMENTS,
+)
 from .events import NON_BUBBLING, EventHandler, _event_key, _handlers, bind_delegated, set_handler
 from .reactivity._core import is_accessor
 from .vnode import VNode, hole, normalize_children
 
 __all__ = ["Shape", "mount", "materialize", "dispose"]
 
-# Node kinds in a shape's pre-order.
-_STATIC = 0  # element or static text
-_HOLE = 1  # reactive hole: its placeholder becomes the hole's end anchor
-_MOUNT = 2  # component, fragment, or list: mounted before its placeholder, which is then disposed
 
 # Minimum number of serialized nodes before the template path is used;
 # a single element is as cheap to create directly.
@@ -82,78 +88,6 @@ MIN_TEMPLATE_NODES = 2
 
 # Props applied as DOM properties after the clone rather than serialized.
 _PROP_NAMES = frozenset({"value", "checked", "selected_values", "inner_html", "innerHTML"})
-
-_VOID_ELEMENTS = frozenset(
-    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-)
-
-# Raw-text and escapable-raw-text elements whose children the fragment
-# parser treats specially; excluded from the fast path for safety.
-_RAW_TEXT_ELEMENTS = frozenset({"script", "style", "textarea", "title", "xmp", "iframe", "noscript", "template"})
-
-# Namespace roots. SVG and MathML subtrees always mount with per-node
-# ``createElementNS`` commands: the HTML parser only preserves the case of
-# attribute names it knows about, so serializing them isn't safe.
-_FOREIGN_ROOTS = frozenset({"svg", "math"})
-
-# Elements whose content model forbids bare text children (the parser
-# would foster-parent the text outside the table).
-_NO_TEXT_CONTENT = frozenset({"table", "thead", "tbody", "tfoot", "tr", "colgroup", "select", "optgroup", "html"})
-
-# Content models the parser enforces by *rewriting* the tree (inserting
-# implied elements or dropping illegal ones). Serialized HTML must parse
-# 1:1 into the node list, so trees that violate these fall back.
-_ALLOWED_CHILDREN = {
-    "table": frozenset({"caption", "colgroup", "thead", "tbody", "tfoot"}),
-    "thead": frozenset({"tr"}),
-    "tbody": frozenset({"tr"}),
-    "tfoot": frozenset({"tr"}),
-    "tr": frozenset({"td", "th"}),
-    "select": frozenset({"option", "optgroup"}),
-    "optgroup": frozenset({"option"}),
-    "colgroup": frozenset({"col"}),
-}
-
-# Start tags that implicitly close an open ``<p>`` element.
-_P_CLOSERS = frozenset(
-    {
-        "address",
-        "article",
-        "aside",
-        "blockquote",
-        "details",
-        "div",
-        "dl",
-        "fieldset",
-        "figcaption",
-        "figure",
-        "footer",
-        "form",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "header",
-        "hgroup",
-        "hr",
-        "main",
-        "menu",
-        "nav",
-        "ol",
-        "p",
-        "pre",
-        "search",
-        "section",
-        "table",
-        "ul",
-    }
-)
-
-# Elements the parser auto-closes (or drops) when nested directly in an
-# element of the same tag.
-_NO_SELF_NESTING = frozenset({"a", "button", "form", "li", "dt", "dd", "option"})
 
 # Low-cardinality semantic attributes stay in the native skeleton so cloning
 # copies them for free. Instance ids, dataset values, text, and arbitrary
@@ -403,6 +337,9 @@ class _Compiler:
         self.binding_vars: list[str] = []
         self.hole_effects: list[str] = []
         self.mount_effects: list[str] = []
+        # Counter for generated local names (node offsets aren't unique: a
+        # child mounted without a placeholder has none).
+        self.names = 0
 
     def const(self, value: Any) -> str:
         self.constants.append(value)
@@ -415,7 +352,7 @@ class _Compiler:
         tag = vnode.tag
         assert isinstance(tag, str)
         lower = tag.lower()
-        if lower in _RAW_TEXT_ELEMENTS or lower in _FOREIGN_ROOTS:
+        if lower in RAW_CONTENT_ELEMENTS or lower in FOREIGN_ELEMENTS:
             raise _NotEligible
         offset = self.count
         self.count += 1
@@ -481,7 +418,7 @@ class _Compiler:
                 html.append(f' {attribute}="{escape(text, quote=True)}"')
         html.append(">")
         children = vnode.children
-        if lower in _VOID_ELEMENTS:
+        if lower in VOID_ELEMENTS:
             if children:
                 raise _NotEligible
             self.guard(f"if {var}.children: return False")
@@ -493,14 +430,15 @@ class _Compiler:
             self.guard(f"if type({c}) is not list or len({c}) != {len(children)}: return False")
         else:
             self.guard(f"if len({c}) != {len(children)}: return False")
-        no_text = lower in _NO_TEXT_CONTENT
-        allowed = _ALLOWED_CHILDREN.get(lower)
+        no_text = lower in NO_TEXT_CONTENT
+        allowed = ALLOWED_CHILDREN.get(lower)
         # Whether the previously serialized sibling is a text node: adjacent
         # text nodes would merge when the browser parses the skeleton.
         prev_text = False
         for index, child in enumerate(children):
             ctag = child.tag
-            x = f"x{self.count}"
+            self.names += 1
+            x = f"x{self.names}"
             self.guard(f"{x} = {c}[{index}]")
             if ctag == "_text":
                 if prev_text or no_text:
@@ -521,9 +459,9 @@ class _Compiler:
                 clower = ctag.lower()
                 if allowed is not None and clower not in allowed:
                     raise _NotEligible
-                if lower == "p" and clower in _P_CLOSERS:
+                if lower == "p" and clower in P_CLOSERS:
                     raise _NotEligible
-                if clower == lower and lower in _NO_SELF_NESTING:
+                if clower == lower and (lower in NO_NESTED_CHILD or lower in NO_NESTED_DESCENDANT):
                     raise _NotEligible
                 self.element(child, x, offset)
                 prev_text = False
@@ -555,13 +493,22 @@ class _Compiler:
                 html.append(" " if text_anchor else "<!---->")
                 prev_text = text_anchor
                 continue
-            # Component, fragment, list, or branch: a comment placeholder marks
-            # its position; it mounts before the placeholder, which is then disposed.
+            # Component, fragment, list, or branch. Followed by an element (or
+            # last), it mounts in front of that element (or appends); otherwise
+            # a comment placeholder marks its position, and is disposed once
+            # the child has mounted in front of it.
             self.guard(f"if type({x}) is not VNode: return False")
             self.guard(f"tg = {x}.tag")
             self.guard("if isinstance(tg, str) and (tg in ('_text', '_hole') or not tg.startswith('_')): return False")
             self.guard(f"if tg == '_fragment' and {x}.owner_scope is None and {x}.key is None: return False")
             self.mounts.append(x)
+            next_child = children[index + 1] if index + 1 < len(children) else None
+            if not _needs_placeholder(next_child):
+                self.count -= 1
+                anchor = "None" if next_child is None else f"first + {self.count}"
+                self.mount_effects.append(f"mount_child({x}, {nid}, {anchor}, None)")
+                prev_text = False
+                continue
             self.mount_effects.append(f"mount_child({x}, {nid}, {cnid}, None)")
             self.mount_effects.append(f"OPS(({kernel.OP_DISPOSE}, {cnid}))")
             html.append("<!---->")
@@ -641,6 +588,18 @@ class _Compiler:
         return shape
 
 
+def _needs_placeholder(next_child: VNode | None) -> bool:
+    """Whether a mounted child (component, fragment, list) needs a placeholder to anchor it.
+
+    It doesn't when it's the last child (it appends) or when an element
+    follows it (it mounts in front of that element's node).
+    """
+    if next_child is None:
+        return False
+    tag = next_child.tag
+    return not (isinstance(tag, str) and not tag.startswith("_"))
+
+
 def _build_shape(vnode: VNode) -> Shape | None:
     """Serialize and compile the shape of a normalized tree, or `None` when ineligible."""
     return _Compiler().build(vnode)
@@ -681,13 +640,14 @@ def materialize(root: VNode) -> None:
         for index, child in enumerate(children):
             if type(child) is not VNode:
                 child = children[index] = VNode("_text", {"nodeValue": str(child)})
+        for index, child in enumerate(children):
             tag = child.tag
             if tag == "_text":
                 child.el = counter[0]
                 counter[0] += 1
             elif isinstance(tag, str) and not tag.startswith("_"):
                 walk(child)
-            else:
+            elif tag == "_hole" or _needs_placeholder(children[index + 1] if index + 1 < len(children) else None):
                 counter[0] += 1
 
     walk(root)
@@ -695,6 +655,8 @@ def materialize(root: VNode) -> None:
     if shape.bindings and dyn:
         comps = dyn[shape.dynamic :]
         for (offset, name), comp in zip(shape.bindings, comps, strict=True):
+            if comp is None:
+                continue
             table = _bindings.get(first + offset)
             if table is None:
                 _bindings[first + offset] = {name: comp}
@@ -745,7 +707,7 @@ def dispose(root: VNode, dispose_tree: Callable[[VNode], None], owned: bool = Fa
             for index, item in enumerate(dyn):
                 if index < n:
                     dispose_tree(item)
-                else:
+                elif item is not None:
                     item.dispose()
     root.el = None
     root.tpl = None

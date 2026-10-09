@@ -30,8 +30,9 @@ from __future__ import annotations
 
 from typing import Any, overload
 
+from .component import component
 from .reactivity import _core
-from .reactivity._props import RawProps
+from .reactivity._props import Prop, Props, prop
 from .vnode import VNode, h
 
 __all__ = ["Context", "ContextNotFoundError", "create_context", "use_context"]
@@ -131,11 +132,18 @@ def use_context[T](ctx: Context[T]) -> T:
     return ctx.default
 
 
-def _provider(props: RawProps) -> Any:
+class _ProviderProps(Props):
+    context: Any = None
+    value: Any = None
+    children: Prop[Any] = prop(default=None)
+
+
+@component
+def _provider(props: _ProviderProps) -> Any:
     """Internal provider component: stores `value` on its own owner scope."""
     owner = _core._current_owner
     assert owner is not None
-    owner._set_context(props.raw("context"), props.raw("value"))
+    owner._set_context(props.context, props.value)
     kids = props.children
     return lambda: kids()
 

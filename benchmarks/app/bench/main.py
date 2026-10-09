@@ -5,8 +5,9 @@ mount once, every operation is a signal (or store) write, rows are cached
 per item by `For`, row labels are per-row signals, and selection is a
 projection that notifies only the two rows whose state changes.
 
-It's loaded by `index.html` inside Pyodide, straight from the checkout's
-sources (see `benchmarks/_serve.py`).
+`benchmarks/app` is an ordinary Wybthon project: the benchmark scripts build
+it with `wyb build` and drive it from `index.html` through the runtime the
+bootstrap exposes (`window.__WYB.pyodide`).
 
 Reference: https://github.com/krausest/js-framework-benchmark
 """
@@ -20,21 +21,12 @@ from wybthon import (
     Accessor,
     For,
     Setter,
-    a,
-    button,
     component,
     create_projection,
     create_signal,
     create_store,
-    div,
     flush,
-    h1,
-    render,
-    span,
-    table,
-    tbody,
-    td,
-    tr,
+    html,
 )
 
 # ---------------------------------------------------------------------------
@@ -234,49 +226,58 @@ def delete(item_id):
 def _row(d, _index):
     iid = d["id"]
     label = (lambda: d["label"]) if STORE_MODE else d["label"]
-    return tr(
-        td(str(iid), class_="col-md-1"),
-        td(a(label, on_click=lambda: select(iid)), class_="col-md-4"),
-        td(
-            a(span(class_="glyphicon glyphicon-remove", aria_hidden="true"), on_click=lambda: delete(iid)),
-            class_="col-md-1",
-        ),
-        td(class_="col-md-6"),
-        class_=lambda: "danger" if is_selected.get(iid) else "",
+
+    def selected_class():
+        return "danger" if is_selected.get(iid) else ""
+
+    return html(
+        t"""<tr class={selected_class}>
+              <td class="col-md-1">{iid}</td>
+              <td class="col-md-4"><a onclick={(lambda: select(iid))}>{label}</a></td>
+              <td class="col-md-1">
+                <a onclick={(lambda: delete(iid))}>
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                </a>
+              </td>
+              <td class="col-md-6"></td>
+            </tr>"""
     )
 
 
 def _control(label, element_id, handler):
-    return div(
-        button(label, type="button", class_="btn btn-primary btn-block", id=element_id, on_click=handler),
-        class_="col-sm-6 smallpad",
+    return html(
+        t"""<div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id={element_id} onclick={handler}>{label}</button>
+            </div>"""
     )
 
 
 @component
 def App():
-    return div(
-        div(
-            div(
-                div(h1("Wybthon (keyed)"), class_="col-md-6"),
-                div(
-                    div(
-                        _control("Create 1,000 rows", "run", run),
-                        _control("Create 10,000 rows", "runlots", run_lots),
-                        _control("Append 1,000 rows", "add", add),
-                        _control("Update every 10th row", "update", update),
-                        _control("Clear", "clear", clear),
-                        _control("Swap Rows", "swaprows", swap_rows),
-                        class_="row",
-                    ),
-                    class_="col-md-6",
-                ),
-                class_="row",
-            ),
-            class_="jumbotron",
-        ),
-        table(tbody(For(data, _row), id="tbody"), class_="table table-hover table-striped test-data"),
+    return html(
+        t"""<div>
+              <div class="jumbotron">
+                <div class="row">
+                  <div class="col-md-6"><h1>Wybthon (keyed)</h1></div>
+                  <div class="col-md-6">
+                    <div class="row">
+                      {_control("Create 1,000 rows", "run", run)}
+                      {_control("Create 10,000 rows", "runlots", run_lots)}
+                      {_control("Append 1,000 rows", "add", add)}
+                      {_control("Update every 10th row", "update", update)}
+                      {_control("Clear", "clear", clear)}
+                      {_control("Swap Rows", "swaprows", swap_rows)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <table class="table table-hover table-striped test-data">
+                <tbody id="tbody">{For(data, _row)}</tbody>
+              </table>
+            </div>"""
     )
 
 
-render(App(), "#app-root")
+def app():
+    """The entry the bootstrap renders into `#app-root`."""
+    return App()
