@@ -3,10 +3,10 @@
 Nothing here renders, so no browser stubs are needed.
 """
 
-from wybthon import html as html_mod
+from wybthon import elements as html_mod
 from wybthon import svg as svg_mod
 from wybthon._dom_props import attr_name, to_kebab
-from wybthon.html import a, div, element, input_, label, li, main_, span
+from wybthon.elements import a, div, element, input_, label, li, main_, span
 from wybthon.reactivity import create_memo, create_signal, flush
 from wybthon.svg import circle, filter_, linearGradient, path, svg
 from wybthon.vnode import (
@@ -313,7 +313,7 @@ def test_new_html_tags_are_exported_helpers():
 
 
 def test_new_tags_compose_with_item_syntax():
-    from wybthon.html import abbr, dd, dl, dt
+    from wybthon.elements import abbr, dd, dl, dt
 
     v = dl(class_="terms")[dt("API"), dd(abbr("App Programming Interface", title="API"))]
     assert v.tag == "dl"

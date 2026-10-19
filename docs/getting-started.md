@@ -1,6 +1,6 @@
 # Getting started
 
-Wybthon runs client-side Python through Pyodide. Components run once; accessors and explicit expressions update their reactive parts. The renderer batches a Virtual DOM's mutations into JavaScript.
+Wybthon runs client-side Python through Pyodide. Components run once and return HTML written as template strings; the accessors and expressions you interpolate update their own parts of the page. The renderer batches every DOM mutation into one call to a small JavaScript kernel.
 
 ## Create an application
 
@@ -17,24 +17,36 @@ The generated project has `app/main.py`, `index.html`, `pyproject.toml`, and `wy
 
 ## Write a component
 
+`wyb init` generates this `app/main.py`:
+
 ```python
-from wybthon import button, component, create_signal, div, h1
+from wybthon import component, create_signal, html
 
 
 @component
 def App():
     count, set_count = create_signal(0)
-    return div(
-        h1("My Wybthon app"),
-        button(t"Count: {count}", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <h1>My Wybthon app</h1>
+        <button onclick={increment}>Count: {count}</button>
+      </div>
+    """)
 
 
 def app():
     return App()
 ```
 
-`count` is an accessor. The template string `t"Count: {count}"` (a Python 3.14 t-string) is a tracked expression, so the button's text updates whenever `count` changes; reading `count()` directly during setup would capture a one-time value. The handler takes no arguments because it doesn't need the event. Event writes batch automatically.
+[`html`][wybthon.html] takes a `t"..."` template string (new in Python 3.14) and returns a node. The markup is ordinary HTML, and each `{...}` is a Python expression placed where it appears. Wybthon compiles each template literal once, so mounting it again later only fills in the values.
+
+`count` is an accessor. Interpolating it creates a reactive binding, so the button's text updates whenever `count` changes; reading `count()` directly during setup would capture a one-time value. `onclick={increment}` binds a delegated click handler. The handler takes no arguments because it doesn't need the event, and writes made in a handler batch automatically.
+
+`increment` is a named function rather than an inline `lambda`, because Python doesn't allow a bare `lambda` inside a template interpolation. If you want one inline, wrap it in parentheses: `{(lambda: set_count(0))}`. See [Templates](concepts/templates.md) for the full syntax.
 
 `app` is the entry point named in `wybthon.toml`. It returns the root view, and the bootstrap mounts it into `#app`. The generated project prerenders `/` at build time, so the page shows the counter before Pyodide has loaded and then [hydrates](concepts/server-rendering.md) it. Outside the production bootstrap, mount a view yourself with [`render`][wybthon.render].
 
@@ -43,7 +55,7 @@ def app():
 A component that takes inputs declares them on a [`Props`][wybthon.Props] class. Each [`Prop[T]`][wybthon.Prop] field reads as an accessor, and pyright and mypy check every call without a plugin:
 
 ```python
-from wybthon import Prop, Props, button, component, create_signal, div, h1, p, prop
+from wybthon import Prop, Props, component, create_signal, html, prop
 
 
 class CounterProps(Props):
@@ -54,18 +66,29 @@ class CounterProps(Props):
 @component
 def Counter(props: CounterProps):
     count, set_count = create_signal(props.initial.peek())
-    return div(
-        p(props.label, t": {count}"),
-        button("+1", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <p>{props.label}: {count}</p>
+        <button onclick={increment}>+1</button>
+      </div>
+    """)
 
 
 @component
 def App():
-    return div(h1("My Wybthon app"), Counter(label="Clicks", initial=5))
+    return html(t"""
+      <main>
+        <h1>My Wybthon app</h1>
+        {Counter(label="Clicks", initial=5)}
+      </main>
+    """)
 ```
 
-See [Components](concepts/components.md) for children, callbacks, and defaults.
+Calling `Counter(...)` inside an interpolation keeps full type checking of its props. Templates also accept a tag form, `<{Counter} label="Clicks" initial={5} />`, which reads like the surrounding markup and is checked at run time in dev mode. See [Components](concepts/components.md) for children, callbacks, and defaults.
 
 ## Test it
 
@@ -88,6 +111,6 @@ wyb build
 wyb preview
 ```
 
-The output in `dist/` contains prerendered pages, hashed source archives, a browser bootstrap, and an asset manifest. Production builds turn dev mode off before your application imports, so dev-only checks and warnings don't ship. Deploy those files to a static host. See [Deployment](guides/deployment.md) for base paths, pinned dependencies, lazy chunks, and route fallback configuration.
+The output in `dist/` contains prerendered pages, hashed source archives, and a browser bootstrap. Each page carries the asset manifest inline and preloads Pyodide and the archives, so the browser starts fetching them while it parses the HTML. Production builds turn dev mode off before your application imports, so dev-only checks and warnings don't ship. Deploy those files to a static host. See [Deployment](guides/deployment.md) for base paths, pinned dependencies, lazy chunks, and route fallback configuration.
 
-Continue with the [mental model](concepts/mental-model.md), [stores](concepts/stores.md), and [runtime contracts](concepts/runtime-contracts.md).
+Continue with the [mental model](concepts/mental-model.md), [templates](concepts/templates.md), [stores](concepts/stores.md), and [runtime contracts](concepts/runtime-contracts.md).

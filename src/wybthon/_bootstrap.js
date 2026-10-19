@@ -35,9 +35,16 @@ async function fetchBytes(url) {
 
 state.ready = (async () => {
   try {
-    const response = await fetch(manifestURL, { cache: "no-cache" });
-    if (!response.ok) throw new Error(`Manifest request failed: ${response.status}`);
-    const config = await response.json();
+    // `wyb build` inlines the manifest into the page; fetch it only when absent.
+    const inline = document.getElementById("wyb-manifest");
+    let config;
+    if (inline !== null) {
+      config = JSON.parse(inline.textContent);
+    } else {
+      const response = await fetch(manifestURL, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`Manifest request failed: ${response.status}`);
+      config = await response.json();
+    }
     const mount = document.querySelector(config.mount || "#app");
     if (mount === null) throw new Error(`Mount element not found: ${config.mount}`);
     mount.setAttribute("data-wyb-root", "");

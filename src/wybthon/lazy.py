@@ -50,7 +50,7 @@ from .component import Component
 from .reactivity import _core
 from .reactivity._core import Memo, run_with_owner
 from .reactivity._primitives import latest
-from .reactivity._props import RawProps
+from .reactivity._props import Props
 from .vnode import VNode, flatten_children, h
 
 __all__ = ["lazy"]
@@ -97,6 +97,12 @@ def _coerce_component(result: Any) -> Any:
     raise TypeError(f"lazy loader returned {result!r}, which is not a component, module, or module path")
 
 
+class _LazyProps(Props):
+    """Whatever the loaded component is called with, forwarded unchecked."""
+
+    _wyb_open = True
+
+
 class LazyComponent(Component):
     """A component returned by [`lazy`][wybthon.lazy]; call `.preload()` to load early."""
 
@@ -113,9 +119,9 @@ class LazyComponent(Component):
             props["children"] = flatten_children(children)
         return VNode(self, props, [], props.get("key"))
 
-    def _render(self, props: dict[str, Any]) -> tuple[Any, Any]:
-        raw = RawProps(props)
-        return self._render_lazy(raw), raw
+    def _render(self, props: dict[str, Any], patchable: bool) -> tuple[Any, Any]:
+        instance = _LazyProps._wyb_bind(props, patchable)
+        return self._render_lazy(instance), instance
 
     def _load(self) -> Any:
         result = self._loader()
@@ -157,14 +163,14 @@ class LazyComponent(Component):
 
         return make() if owned else run_with_owner(None, make)
 
-    def _render_lazy(self, props: RawProps) -> Any:
+    def _render_lazy(self, props: _LazyProps) -> Any:
         memo = self._ensure_memo()
 
         def render() -> VNode | None:
             comp = memo()  # raises NotReadyError while loading
             if comp is None:
                 return None
-            forwarded = {k: props.raw(k) for k in props}
+            forwarded = dict(props._raw)
             children = forwarded.pop("children", None)
             if children is None:
                 return h(comp, forwarded)

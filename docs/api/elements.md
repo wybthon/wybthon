@@ -1,8 +1,28 @@
-### wybthon.html
+### wybthon.elements
 
-::: wybthon.html
+::: wybthon.elements
 
 #### What's in this module
+
+The element helpers are Wybthon's programmatic layer, the counterpart of
+Solid's `h`. Most markup is written as [`html`][wybthon.html] templates
+(see [Templates](../concepts/templates.md)); reach for the helpers when
+code builds the markup: generated forms, recursive trees, or components
+that compute their tag. Templates and helpers mix freely and share one
+set of prop appliers, so the prop value rules on this page apply to
+template attributes too; only the attribute names are spelled
+differently (see [Naming rules](#naming-rules)).
+
+```python
+from wybthon import html, li, ul
+
+items = ["Ship", "Test"]
+html(t"<ul>{[li(item) for item in items]}</ul>")  # helpers inside a template
+ul(html(t"<li>First</li>"), class_="list")  # a template inside a helper
+```
+
+Before [RFC 0003](../rfcs/0003-engine-v3.md), this module was
+`wybthon.html`; `wybthon.html` is now the template function.
 
 One helper per HTML element, each building a [`VNode`][wybthon.VNode]
 with children as positional arguments and props as keyword arguments,
@@ -34,6 +54,10 @@ names when it writes attributes:
 - Other underscores become hyphens: `aria_label`, `data_testid`, `stroke_width`.
 - `input_`, `main_`, `del_`, `object_`, and `map_` carry a trailing underscore because their names collide with Python builtins or keywords.
 - Event handlers keep the `on_` prefix: `on_click`, `on_input`.
+
+Templates use the HTML names instead: `class`, `for`, `aria-label`,
+`data-testid`, `onclick`. A spread (`<input {attrs}>`) takes the
+helpers' Python names, since it's a mapping of props.
 
 #### Prop values
 
@@ -92,6 +116,7 @@ with HTML helpers (`a`, `title`, `text`) carry their SVG meaning there.
 
 #### See also
 
+- [Templates](../concepts/templates.md): the `html` template function, the primary way to write markup
 - [`h`][wybthon.h] and [`Fragment`][wybthon.Fragment] in [vnode](vnode.md)
 - [Events](events.md): `on_*` handler props
 - [DOM](dom.md): `Element` and `Ref`

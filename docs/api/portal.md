@@ -12,10 +12,10 @@ tooltips, popovers, and toasts that must escape their parent's layout.
 
 | Name | Description |
 | --- | --- |
-| [`Portal`][wybthon.Portal] | `Portal(children, *, mount="body")`; `children` is a VNode, a list, or a zero-arg callable (rendered as a hole); `mount` is an `Element`, a CSS selector, or a kernel node id. |
+| [`Portal`][wybthon.Portal] | `Portal(children, *, mount="body")`; `children` is a node, a list, or a zero-arg callable (rendered as a hole); `mount` is an `Element`, a CSS selector, or a kernel node id. |
 
 ```python
-from wybthon import Portal, Show, button, component, create_signal, div, p
+from wybthon import Portal, Show, component, create_signal, html
 
 
 @component
@@ -25,22 +25,28 @@ def Modal():
     def toggle():
         set_open(lambda v: not v)
 
-    return div(
-        button("Open", on_click=toggle),
-        Show(
-            is_open,
-            lambda: Portal(
-                div(p("I'm in #modal-root"), button("Close", on_click=toggle), class_="modal"),
-                mount="#modal-root",
-            ),
-        ),
+    dialog = Portal(
+        html(t"""
+          <div class="modal">
+            <p>I'm in #modal-root</p>
+            <button onclick={toggle}>Close</button>
+          </div>
+        """),
+        mount="#modal-root",
     )
+
+    return html(t"""
+      <div>
+        <button onclick={toggle}>Open</button>
+        {Show(is_open, dialog)}
+      </div>
+    """)
 ```
 
 - Content is removed when the portal's owner is disposed (here, when
   `Show` flips back to falsy).
 - The mount target becomes an event delegation root for as long as the
-  portal is mounted, so `on_*` handlers inside it fire even when the
+  portal is mounted, so event handlers inside it fire even when the
   target sits outside the container passed to [`render`][wybthon.render]
   (a `<body>`-level modal layer, for example).
 - Context flows through the reactive tree, not the DOM tree, so

@@ -53,12 +53,14 @@ from functools import lru_cache
 from typing import Any
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
+from ._dom_props import class_names
+from .component import component
 from .context import Context, create_context, use_context
-from .html import a
+from .elements import a
 from .reactivity import _core
-from .reactivity._core import Accessor, Signal, is_accessor
+from .reactivity._core import Accessor, Signal
 from .reactivity._primitives import create_memo
-from .reactivity._props import Prop, Props, RawProps, prop
+from .reactivity._props import Prop, Props, prop
 from .vnode import VNode, h
 
 __all__ = [
@@ -516,7 +518,14 @@ def Router(routes: Any, *, base_path: Any = "", not_found: Any = None) -> VNode:
     return h(_Router, {"routes": routes, "base_path": base_path, "not_found": not_found})
 
 
-def _Router(props: RawProps) -> Any:
+class _RouterProps(Props):
+    routes: Prop[Any] = prop(default=None)
+    base_path: Prop[Any] = prop(default="")
+    not_found: Prop[Any] = prop(default=None)
+
+
+@component
+def _Router(props: _RouterProps) -> Any:
     routes, base_path, not_found = props.routes, props.base_path, props.not_found
 
     def location() -> tuple[str, str]:
@@ -623,9 +632,18 @@ def _Router(props: RawProps) -> Any:
     return RouteContext(state, lambda: level(0))
 
 
-def _RouteEntry(props: RawProps) -> Any:
-    route = props.raw("route")
-    parent = props.raw("router_state")
+class _RouteEntryProps(Props):
+    route: Any = None
+    router_state: Any = None
+    params: Prop[Any] = prop(default=None)
+    query: Prop[Any] = prop(default=None)
+    matches: Prop[Any] = prop(default=None)
+
+
+@component
+def _RouteEntry(props: _RouteEntryProps) -> Any:
+    route = props.route
+    parent = props.router_state
     # A departing route keeps its last inputs until unmount. Preparing the
     # destination mustn't give its still-mounted predecessor missing params.
     params = create_memo(lambda previous: props.params() if route in props.matches() else (previous or {}))
@@ -646,7 +664,8 @@ def Outlet() -> VNode:
     return h(_Outlet)
 
 
-def _Outlet(props: RawProps) -> Any:
+@component
+def _Outlet() -> Any:
     child = use_context(OutletContext)
     return child if child is not None else None
 
@@ -676,29 +695,6 @@ def _with_base(target: str, base_path: str) -> str:
     if base_path == "/":
         return "/" + target.strip("/")
     return (base_path.rstrip("/") or "") + "/" + target.strip("/")
-
-
-def _class_names(value: Any) -> list[str]:
-    if value is None or value is False:
-        return []
-    if is_accessor(value):
-        value = value()
-    if isinstance(value, str):
-        return value.split()
-    if isinstance(value, dict):
-        out: list[str] = []
-        for name, on in value.items():
-            if is_accessor(on):
-                on = on()
-            if on:
-                out.extend(str(name).split())
-        return out
-    if isinstance(value, (list, tuple)):
-        out = []
-        for item in value:
-            out.extend(_class_names(item))
-        return out
-    return [str(value)]
 
 
 def Link(
@@ -745,7 +741,19 @@ def Link(
     )
 
 
-def _Link(props: RawProps) -> Any:
+class _LinkProps(Props):
+    _wyb_open = True
+    href: Prop[Any] = prop(default="/")
+    replace: Prop[bool] = prop(default=False)
+    active_class: Prop[str | None] = prop(default="active")
+    end: Prop[bool] = prop(default=False)
+    class_: Any = None
+    children: Any = None
+    on_click: Any = None
+
+
+@component
+def _Link(props: _LinkProps) -> Any:
     from .events import DomEvent
 
     base_path = use_base_path()
@@ -753,9 +761,9 @@ def _Link(props: RawProps) -> Any:
     replace = props.replace
     active_class = props.active_class
     end = props.end
-    user_class = props.raw("class_")
-    children = props.raw("children") or []
-    forwarded = {k: props.raw(k) for k in props if k not in _LINK_OWN}
+    user_class = props.class_
+    children = props.children or []
+    forwarded = {k: v for k, v in props._raw.items() if k not in _LINK_OWN}
 
     def full_href() -> str:
         return _with_base(href(), base_path)
@@ -770,14 +778,14 @@ def _Link(props: RawProps) -> Any:
         return target != "/" and current.startswith(target.rstrip("/") + "/")
 
     def classes() -> str | None:
-        names = _class_names(user_class)
+        names = class_names(user_class)
         ac = active_class()
         if ac and is_active():
             names.extend(str(ac).split())
         return " ".join(dict.fromkeys(names)) or None
 
     def handle_click(evt: DomEvent) -> None:
-        user_click = props.raw("on_click")
+        user_click = props._raw.get("on_click")
         if callable(user_click):
             from .events import _takes_event
 
@@ -797,7 +805,7 @@ def _Link(props: RawProps) -> Any:
         if evt._default_prevented or evt.meta_key or evt.ctrl_key or evt.shift_key or evt.alt_key or evt.button != 0:
             return
         target = full_href()
-        if props.raw("download") is not None or props.raw("target") not in (None, "", "_self"):
+        if props._raw.get("download") is not None or props._raw.get("target") not in (None, "", "_self"):
             return
         if target.startswith("#") or urlsplit(target).scheme or target.startswith("//"):
             return
@@ -815,4 +823,4 @@ def _Link(props: RawProps) -> Any:
 
 
 _Link.__name__ = "Link"
-_LINK_OWN = frozenset({"href", "replace", "active_class", "end", "children", "class_", "on_click"})
+_LINK_OWN = frozenset({"href", "replace", "active_class", "end", "children", "class_", "on_click", "key"})

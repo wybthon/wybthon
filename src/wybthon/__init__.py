@@ -1,10 +1,12 @@
 """Wybthon: SolidJS for Python, running in the browser on Pyodide.
 
 Wybthon brings SolidJS 2.0's signals-first reactive model to Python.
-Component bodies run **once** at mount; reactivity flows through
-*reactive holes*: accessors embedded in the VNode tree that update only
-the DOM nodes that depend on them. A virtual DOM batches every mutation
-into a single crossing of the Python-to-JavaScript bridge.
+Component bodies run **once** at mount and return markup written as a
+t-string template, [`html(t"...")`][wybthon.html], which compiles once
+per literal into a native template the kernel clones. Reactivity flows
+through *reactive holes*: accessors placed in the markup that update
+only the DOM nodes that depend on them. A virtual DOM batches every
+mutation into a single crossing of the Python-to-JavaScript bridge.
 
 Highlights of the reactive model:
 
@@ -51,7 +53,7 @@ Example:
     A minimal counter component:
 
     ```python
-    from wybthon import Prop, Props, button, component, create_signal, div, p, prop, render
+    from wybthon import Prop, Props, component, create_signal, html, prop, render
 
 
     class CounterProps(Props):
@@ -61,10 +63,11 @@ Example:
     @component
     def Counter(props: CounterProps):
         count, set_count = create_signal(props.initial.peek())
-        return div(
-            p(t"Count: {count}"),
-            button("+1", on_click=lambda: set_count(lambda n: n + 1)),
-        )
+
+        def increment():
+            set_count(lambda n: n + 1)
+
+        return html(t"<div><p>Count: {count}</p><button onclick={increment}>+1</button></div>")
 
 
     render(Counter(initial=5), "#app")
@@ -73,6 +76,7 @@ Example:
 See Also:
     * [Getting started](https://wybthon.com/getting-started/)
     * [Mental model](https://wybthon.com/concepts/mental-model/)
+    * [Templates](https://wybthon.com/concepts/templates/)
     * [API reference](https://wybthon.com/api/wybthon/)
 """
 
@@ -82,10 +86,7 @@ from ._warnings import is_dev_mode, set_dev_mode
 from .component import Component, component
 from .context import Context, ContextNotFoundError, create_context, use_context
 from .dom import Element, Ref
-from .error_boundary import Errored
-from .events import DomEvent, EventHandler, event
-from .flow import For, Hydration, Match, NoHydration, Repeat, Show, Switch, client_only, dynamic, is_hydrating
-from .html import (
+from .elements import (
     a,
     abbr,
     address,
@@ -190,6 +191,9 @@ from .html import (
     video,
     wbr,
 )
+from .error_boundary import Errored
+from .events import DomEvent, EventHandler, event
+from .flow import For, Hydration, Match, NoHydration, Repeat, Show, Switch, client_only, dynamic, is_hydrating
 from .lazy import lazy
 from .loading import Loading, Reveal
 from .portal import Portal
@@ -243,6 +247,7 @@ from .reactivity import (
 )
 from .reconciler import Root, hydrate, render
 from .request import RequestEvent, ResponseHead, get_request_event, http_header, http_status
+from .templates import TemplateError, html
 from .vnode import Fragment, VNode, h, hole
 
 if TYPE_CHECKING:
@@ -307,7 +312,9 @@ __all__ = [
     "omit",
     "children",
     "ChildrenAccessor",
-    # Nodes
+    # Templates and nodes
+    "html",
+    "TemplateError",
     "VNode",
     "h",
     "hole",

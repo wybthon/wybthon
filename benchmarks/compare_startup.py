@@ -17,7 +17,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from browser_bench import BOOT_TIMEOUT_MS, REPO_ROOT, _free_port, _wait_for_http
+from _app import BOOT_TIMEOUT_MS, free_port, wait_for_http
+from browser_bench import REPO_ROOT
 from playwright.sync_api import sync_playwright
 
 
@@ -36,7 +37,7 @@ def production(repo, project):
         env=env,
         check=True,
     )
-    port = _free_port()
+    port = free_port()
     server = subprocess.Popen(
         [sys.executable, "-m", "wybthon.dev", "preview", "--dir", str(project / "dist"), "--port", str(port)],
         cwd=repo,
@@ -46,7 +47,7 @@ def production(repo, project):
     )
     url = f"http://127.0.0.1:{port}/"
     try:
-        _wait_for_http(url)
+        wait_for_http(url)
         yield url
     finally:
         server.terminate()

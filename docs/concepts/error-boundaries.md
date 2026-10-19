@@ -6,8 +6,7 @@ untouched. It's the recommended way to surface unexpected errors
 without crashing the whole app.
 
 ```python
-from wybthon import Errored, component
-from wybthon.html import button, div, p
+from wybthon import Errored, component, html
 
 
 @component
@@ -16,24 +15,28 @@ def Failing():
 
 
 def fallback(err, reset):
-    return div(
-        p(t"Oops: {err}"),
-        button("Try again", on_click=reset),
-        class_="error",
-    )
+    return html(t"""
+      <div class="error">
+        <p>Oops: {err}</p>
+        <button onclick={reset}>Try again</button>
+      </div>
+    """)
 
 
-view = Errored(lambda: Failing(), fallback=fallback)
+view = Errored(Failing(), fallback=fallback)
 ```
 
-`children` may be a VNode, a zero-arg callable, or a list of either.
-Passing a callable defers building the subtree until the boundary
-mounts, which is what you want when the children can raise.
+`children` may be a node (a template, a component call, or any other
+VNode), a zero-arg callable, or a list of either. Pass nodes directly:
+component bodies and reactive expressions don't run until the boundary
+mounts them, so their errors are caught. A callable is only needed when
+*building* the node can raise, for example when a template interpolates
+the result of a function call made eagerly.
 
 The fallback receives the error as an **accessor**, as in Solid 2.0:
-call `err()` to read the exception, or interpolate `err` in a
-t-string, as above, to show its message. `reset` takes no arguments, so it can be passed
-straight to `on_click`.
+call `err()` to read the exception, or interpolate `err` in a template,
+as above, to show its message. `reset` takes no arguments, so it can be
+passed straight to `onclick`.
 
 ## What gets caught
 
@@ -51,11 +54,13 @@ own subtree; only errors outside it reach the outer one:
 
 ```python
 Errored(
-    lambda: div(
-        Sidebar(),
-        Errored(lambda: RiskyPanel(), fallback=lambda err: p("Panel failed")),
-    ),
-    fallback=lambda err: p("Page failed"),
+    html(t"""
+      <div>
+        {Sidebar()}
+        {Errored(RiskyPanel(), fallback=html(t"<p>Panel failed</p>"))}
+      </div>
+    """),
+    fallback=html(t"<p>Page failed</p>"),
 )
 ```
 
@@ -73,13 +78,13 @@ A callable fallback runs each time an error is caught, so it can inspect
 the exception by calling `err()`:
 
 ```python
-from wybthon.html import button, div, p
+from wybthon import html
 
 
 def describe(err, reset):
     if isinstance(err(), PermissionError):
-        return p("You don't have access to this.")
-    return div(p(lambda: str(err())), button("Retry", on_click=reset))
+        return html(t"<p>You don't have access to this.</p>")
+    return html(t"<div><p>{err}</p><button onclick={reset}>Retry</button></div>")
 ```
 
 ## Resetting
@@ -90,11 +95,10 @@ automatically. Coupling a boundary to the current route is the usual
 pattern, so navigating away from a broken page recovers on its own:
 
 ```python
-from wybthon import Errored
-from wybthon.html import p
+from wybthon import Errored, html
 from wybthon.router import Outlet, current_path
 
-Errored(lambda: Outlet(), fallback=lambda err: p("This page failed"), reset_on=current_path)
+Errored(Outlet(), fallback=html(t"<p>This page failed</p>"), reset_on=current_path)
 ```
 
 Resetting re-renders the children. If the cause hasn't been fixed, the
@@ -119,7 +123,7 @@ logging or monitoring. It receives the exception itself (not an
 accessor) and runs in addition to showing the fallback:
 
 ```python
-Errored(lambda: Dashboard(), fallback="Dashboard unavailable", on_error=report_to_monitoring)
+Errored(Dashboard(), fallback="Dashboard unavailable", on_error=report_to_monitoring)
 ```
 
 ## Effects with their own handler
@@ -142,7 +146,7 @@ create_effect(
 ## Event handlers are not routed
 
 Like SolidJS, Wybthon runs event handlers outside rendering. An
-exception in an `on_click` handler is logged to the console (with a
+exception in an `onclick` handler is logged to the console (with a
 traceback in dev mode); the boundary isn't involved and the UI stays
 intact. Handle expected failures inside the handler, or move the work
 into an [`action`][wybthon.action], whose errors *are* routed to the
@@ -155,12 +159,16 @@ not-ready state. Wrap async regions with both, `Errored` on the outside
 so a rejected fetch inside the loading content still has a fallback:
 
 ```python
-from wybthon import Errored, Loading
-from wybthon.html import button, div, p
+from wybthon import Errored, Loading, html
+
+
+def load_failed(err, reset):
+    return html(t"<div><p>Could not load: {err}</p><button onclick={reset}>Retry</button></div>")
+
 
 Errored(
-    lambda: Loading(lambda: UserCard(user_id=user_id), fallback=p("Loading...")),
-    fallback=lambda err, reset: div(p(t"Could not load: {err}"), button("Retry", on_click=reset)),
+    Loading(UserCard(user_id=user_id), fallback=html(t"<p>Loading...</p>")),
+    fallback=load_failed,
 )
 ```
 

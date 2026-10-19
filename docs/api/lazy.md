@@ -17,7 +17,7 @@ Python's import system.
 | `LazyComponent` | What `lazy` returns: a `Component` with `.preload()` to start the load early and `.retry()` to retry a failed load. |
 
 ```python
-from wybthon import Loading, component, lazy, p
+from wybthon import Loading, component, html, lazy
 from wybthon.router import Link, Route, Router
 
 About = lazy(lambda: ("app.about.page", "Page"))  # importlib, attribute "Page"
@@ -38,8 +38,8 @@ Chart = lazy(load_chart)
 @component
 def App():
     return Loading(
-        lambda: Router([Route("/about", About), Route("/chart", Chart)]),
-        fallback=lambda: p("Loading..."),
+        Router([Route("/about", About), Route("/chart", Chart)]),
+        fallback=html(t"<p>Loading...</p>"),
     )
 
 

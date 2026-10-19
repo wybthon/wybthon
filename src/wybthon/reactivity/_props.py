@@ -30,12 +30,9 @@ import re
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any, ClassVar, Self, dataclass_transform, overload
 
-from ._core import Accessor, Signal, _PropAccessor, _unwrap, untrack
+from ._core import _MISSING, Accessor, Signal, _PropAccessor, _unwrap, untrack
 
 __all__ = ["Props", "ParentProps", "Prop", "prop", "merge", "omit"]
-
-_MISSING: Any = object()
-_NO_DEFAULTS: Mapping[str, Any] = {}
 
 
 class _Default:
@@ -135,7 +132,7 @@ class _Plain:
             return self
         field = self._field
         value = obj._raw.get(field.name, _MISSING)
-        return field.initial() if value is _MISSING else value
+        return obj._wyb_default(field) if value is _MISSING else value
 
     def __set__(self, obj: object, value: Any) -> None:
         raise AttributeError("Component props are read-only")
@@ -171,13 +168,17 @@ class Props(_PropsBase):
     (or an accessor) updates the child without re-running it.
     """
 
-    __slots__ = ("_raw", "_signals", "_accessors")
+    __slots__ = ("_raw", "_sig", "_accessors", "_patchable", "_defaults")
 
     key: str | int | None = None
 
     _wyb_fields: ClassVar[dict[str, _Field]] = {}
     _wyb_required: ClassVar[frozenset[str]] = frozenset()
     _wyb_names: ClassVar[frozenset[str]] = frozenset({"key"})
+    _wyb_reactive: ClassVar[tuple[str, ...]] = ()
+    # Internal props classes (built-in components that forward attributes)
+    # accept keys they don't declare.
+    _wyb_open: ClassVar[bool] = False
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -201,31 +202,69 @@ class Props(_PropsBase):
         cls._wyb_fields = fields
         cls._wyb_required = frozenset(name for name, field in fields.items() if field.required)
         cls._wyb_names = frozenset(fields) | {"key"}
+        cls._wyb_reactive = tuple(name for name, field in fields.items() if field.reactive)
 
     def __init__(self, **values: Any) -> None:
         self._raw: dict[str, Any] = values
-        self._signals: dict[str, Signal[Any]] | None = None
+        self._sig: Signal[dict[str, Any]] | None = None
         self._accessors: dict[str, Accessor[Any]] | None = None
+        self._patchable = True
+        self._defaults: dict[str, Any] | None = None
+
+    @classmethod
+    def _wyb_bind(cls, values: dict[str, Any], patchable: bool) -> Self:
+        """The live instance a mounted component reads (reconciler internal)."""
+        instance = cls.__new__(cls)
+        instance._raw = values
+        instance._sig = None
+        instance._accessors = None
+        instance._patchable = patchable
+        instance._defaults = None
+        return instance
 
     @classmethod
     def _wyb_check(cls, values: Mapping[str, Any], component: str) -> None:
         """Dev-mode validation of the keywords a component was called with."""
-        unknown = values.keys() - cls._wyb_names
-        if unknown:
-            raise TypeError(f"{component}() got unexpected prop(s): {', '.join(sorted(unknown))}")
+        if not cls._wyb_open:
+            unknown = values.keys() - cls._wyb_names
+            if unknown:
+                raise TypeError(f"{component}() got unexpected prop(s): {', '.join(sorted(unknown))}")
         missing = cls._wyb_required - values.keys()
         if missing:
             raise TypeError(f"{component}() is missing required prop(s): {', '.join(sorted(missing))}")
 
-    def _wyb_signal(self, field: _Field) -> Signal[Any]:
-        signals = self._signals
-        if signals is None:
-            signals = self._signals = {}
-        sig = signals.get(field.name)
+    def _wyb_signal(self) -> Signal[dict[str, Any]]:
+        """The signal reactive reads of a patchable instance subscribe to (created on first read)."""
+        sig = self._sig
         if sig is None:
-            value = self._raw.get(field.name, _MISSING)
-            sig = signals[field.name] = Signal(field.initial() if value is _MISSING else value, name=field.name)
+            sig = self._sig = Signal(self._raw, equals=self._wyb_same, name=type(self).__name__)
         return sig
+
+    def _wyb_same(self, old: dict[str, Any], new: dict[str, Any]) -> bool:
+        """Whether two raw prop dicts agree on every reactive field."""
+        for name in type(self)._wyb_reactive:
+            a = old.get(name, _MISSING)
+            b = new.get(name, _MISSING)
+            if a is b:
+                continue
+            try:
+                if a == b:
+                    continue
+            except Exception:
+                pass
+            return False
+        return True
+
+    def _wyb_default(self, field: _Field) -> Any:
+        """A missing field's default; a `default_factory` result is created once per instance."""
+        if field.factory is None:
+            return None if field.default is _MISSING else field.default
+        defaults = self._defaults
+        if defaults is None:
+            defaults = self._defaults = {}
+        if field.name not in defaults:
+            defaults[field.name] = field.factory()
+        return defaults[field.name]
 
     def _wyb_accessor(self, field: _Field) -> Accessor[Any]:
         accessors = self._accessors
@@ -233,18 +272,19 @@ class Props(_PropsBase):
             accessors = self._accessors = {}
         accessor = accessors.get(field.name)
         if accessor is None:
-            accessor = accessors[field.name] = _PropAccessor(self._wyb_signal(field), field.name)
+            accessor = accessors[field.name] = _PropAccessor(self, field)
         return accessor
 
     def _wyb_update(self, values: dict[str, Any]) -> None:
-        """Push new parent props into the live accessors (reconciler patch path)."""
+        """Push new parent props into the live instance (reconciler patch path)."""
         self._raw = values
-        signals = self._signals
-        if signals:
-            fields = type(self)._wyb_fields
-            for name, sig in signals.items():
-                value = values.get(name, _MISSING)
-                sig._set(fields[name].initial() if value is _MISSING else value)
+        sig = self._sig
+        if sig is not None:
+            sig._set(values)
+
+    def _wyb_raw(self, name: str, default: Any = None) -> Any:
+        """The parent's current value for `name`, declared or not, without tracking."""
+        return self._raw.get(name, default)
 
     def _wyb_items(self) -> Iterator[tuple[str, Any]]:
         """Yield `(name, accessor or value)` for every declared field and passed key."""
@@ -273,100 +313,6 @@ class ParentProps(Props):
     children: Prop[Any] = prop(default=None)
 
 
-class RawProps(Mapping[str, Accessor[Any]]):
-    """The props of a framework-internal function component.
-
-    Internal components (`Show`, `For`, `Loading`, `Router`, and the like)
-    are plain functions used as node tags. They receive this mapping:
-    attribute and item access return a reactive accessor for that name
-    (unwrapping accessors the parent passed), and `raw` returns a value
-    exactly as passed. Application components use typed
-    [`Props`][wybthon.Props] classes instead.
-    """
-
-    __slots__ = ("_raw", "_defaults", "_signals", "_props")
-
-    def __init__(self, raw: Mapping[str, Any], defaults: Mapping[str, Any] | None = None) -> None:
-        self._raw: dict[str, Any] = dict(raw)
-        # Read-only here, so the component's declared defaults are shared
-        # by every instance rather than copied per mount.
-        self._defaults: Mapping[str, Any] = defaults if defaults else _NO_DEFAULTS
-        self._signals: dict[str, Signal[Any]] = {}
-        self._props: dict[str, Accessor[Any]] = {}
-
-    def _signal(self, key: str) -> Signal[Any]:
-        sig = self._signals.get(key)
-        if sig is None:
-            value = self._raw.get(key, _MISSING)
-            if value is _MISSING:
-                value = self._defaults.get(key)
-            sig = Signal(value, name=key)
-            self._signals[key] = sig
-        return sig
-
-    def __getitem__(self, key: str) -> Accessor[Any]:
-        accessor = self._props.get(key)
-        if accessor is None:
-            accessor = _PropAccessor(self._signal(key), key)
-            self._props[key] = accessor
-        return accessor
-
-    def __getattr__(self, name: str) -> Accessor[Any]:
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return self[name]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(dict.fromkeys((*self._raw, *self._defaults))) if self._defaults else iter(self._raw)
-
-    def __len__(self) -> int:
-        return len(self._raw.keys() | self._defaults.keys()) if self._defaults else len(self._raw)
-
-    def __contains__(self, key: object) -> bool:
-        return key in self._raw or key in self._defaults
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """Return an existing prop accessor, or `default` when the key is absent."""
-        return self[key] if key in self else default
-
-    def raw(self, key: str) -> Any:
-        """Return the value for `key` exactly as the parent passed it, untracked.
-
-        A reactive expression is returned as is (not called). Use this
-        when a prop is a callback or an accessor you intend to hand on
-        rather than read.
-        """
-        value = self._raw.get(key, _MISSING)
-        if value is _MISSING:
-            value = self._defaults.get(key)
-        return value
-
-    def _wyb_update(self, new_raw: Mapping[str, Any]) -> None:
-        """Push new parent props into the live signals (reconciler patch path)."""
-        self._raw = dict(new_raw)
-        for key, sig in self._signals.items():
-            value = self._raw.get(key, _MISSING)
-            if value is _MISSING:
-                value = self._defaults.get(key)
-            sig._set(value)
-
-    def __repr__(self) -> str:
-        return f"Props({self._raw!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, RawProps):
-            return self._raw == other._raw
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return id(self)
-
-
-# ---------------------------------------------------------------------------
-# merge / omit
-# ---------------------------------------------------------------------------
-
-
 def _resolve_source(source: Any) -> Any:
     if isinstance(source, Accessor):
         return source()
@@ -391,10 +337,6 @@ def _lookup(source: Any, key: str, defaults: bool = True) -> tuple[bool, Any]:
                 return True, source._wyb_accessor(field)()
             return True, getattr(source, key)
         return True, _unwrap(source._raw[key])
-    if isinstance(source, RawProps):
-        if key in source:
-            return True, source[key]()
-        return False, None
     if isinstance(source, Mapping):
         if key in source:
             return True, _unwrap(source[key])

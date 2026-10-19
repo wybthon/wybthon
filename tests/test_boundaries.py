@@ -8,9 +8,9 @@ import pytest
 from conftest import StubNode, collect_texts
 
 from wybthon.component import component
+from wybthon.elements import button, div, p, span
 from wybthon.error_boundary import Errored
 from wybthon.flow import Show
-from wybthon.html import button, div, p, span
 from wybthon.loading import Loading, Reveal
 from wybthon.reactivity import create_memo, create_root, create_signal, flush, is_pending, on_cleanup
 

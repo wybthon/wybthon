@@ -9,7 +9,7 @@ Components declare their inputs on a [`Props`][wybthon.Props] subclass. `Props` 
 ```python
 from collections.abc import Callable
 
-from wybthon import Accessor, Prop, Props, VNode, component, create_signal, p, prop
+from wybthon import Accessor, Prop, Props, VNode, component, create_signal, html, prop
 
 
 class GreetingProps(Props):
@@ -21,7 +21,11 @@ class GreetingProps(Props):
 @component
 def Greeting(props: GreetingProps) -> VNode:
     label: Accessor[str] = props.name
-    return p(lambda: label() * props.copies())
+
+    def text() -> str:
+        return label() * props.copies()
+
+    return html(t"<p>{text}</p>")
 
 
 name, set_name = create_signal("Ada")
@@ -51,7 +55,7 @@ Write defaults as `prop(default=value)`, or `prop(default_factory=list)` for mut
 [`ParentProps`][wybthon.ParentProps] declares `children: Prop[Any]`. Both the `children` keyword and item syntax are checked:
 
 ```python
-from wybthon import ParentProps, Prop, VNode, component, div, h2, p
+from wybthon import ParentProps, Prop, VNode, component, html
 
 
 class CardProps(ParentProps):
@@ -60,20 +64,106 @@ class CardProps(ParentProps):
 
 @component
 def Card(props: CardProps) -> VNode:
-    return div(h2(props.title), props.children)
+    return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
 
 
-Card(title="Hi")[p("a"), p("b")]
-Card(title="Hi", children=[p("a"), p("b")])
+Card(title="Hi")[html(t"<p>a</p>"), html(t"<p>b</p>")]
+Card(title="Hi", children=html(t"<p>a</p><p>b</p>"))
 ```
 
-Positional children (`Card(p("a"), title="Hi")`) work at run time, but checkers reject them because the props constructor is keyword-only.
+Positional children (`Card(html(t"<p>a</p>"), title="Hi")`) work at run time, but checkers reject them because the props constructor is keyword-only.
 
 ### What a component call returns
 
-`@component` is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. At run time the call returns a [`VNode`][wybthon.VNode]. Every child position in the HTML helpers accepts the props type, so this mismatch only shows if you inspect the result yourself: an `isinstance` check sees a `VNode`. A component with no parameters is typed as a function returning `VNode`.
+`@component` is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. At run time the call returns a [`VNode`][wybthon.VNode]. Every child position, in a template interpolation or an element helper, accepts the props type, so this mismatch only shows if you inspect the result yourself: an `isinstance` check sees a `VNode`. A component with no parameters is typed as a function returning `VNode`.
 
-Under `mypy --strict`, annotate component functions with `-> VNode`, as above; the HTML helpers return `VNode`.
+Under `mypy --strict`, annotate component functions with `-> VNode`, as above; [`html`][wybthon.html] and the element helpers return `VNode`.
+
+## Templates
+
+A template's interpolations are ordinary Python expressions, so the checker sees them like any other code. What's checked depends on where a value appears:
+
+| In a template | Checked |
+| --- | --- |
+| `{expression}` in any position | Statically, as ordinary code: an undefined name, a wrong attribute, or a bad call is reported. |
+| `{Card(title="Hi")}` | Statically, with full prop checking, like any component call. |
+| `<{Card} title="Hi">...</{Card}>` | At run time only, in dev mode: an unknown or missing prop raises `TypeError` when the template renders. |
+| The HTML markup itself | At run time: markup the parser would rewrite raises [`TemplateError`][wybthon.TemplateError] the first time the template is used. |
+
+Type checkers can't see inside the template's static text, so the attributes of a `<{Card}>` tag are strings to them. Use the call form inside an interpolation when you want the checker's help with a component's props, and the tag form when passing nested markup as children reads better.
+
+`html()` is annotated to take a `string.templatelib.Template`, so passing a plain string is a type error, and it raises `TypeError` at run time:
+
+```python
+from wybthon import html
+
+html("<p>Hello</p>")  # error: expected "Template", got "str"
+```
+
+## Control flow
+
+[`For`][wybthon.For] and [`Show`][wybthon.Show] have generic overloads, so their callbacks are checked against the data you pass. With `For`, the `keyed` strategy decides which arguments are accessors:
+
+| Call | Callback arguments |
+| --- | --- |
+| `For(items, fn)` (the default, `keyed=True`) | `(item: T, index: Accessor[int])` |
+| `For(items, fn, keyed=False)` | `(item: Accessor[T], index: int)` |
+| `For(items, fn, keyed=lambda item: ...)` | `(item: Accessor[T], index: Accessor[int])` |
+
+```python
+from typing import TypedDict
+
+from wybthon import Accessor, For, VNode, create_signal, html
+
+
+class Todo(TypedDict):
+    id: int
+    title: str
+
+
+todos, set_todos = create_signal([Todo(id=1, title="Write docs")])
+
+
+def row(todo: Todo, index: Accessor[int]) -> VNode:
+    return html(t"<li>{todo['title']}</li>")
+
+
+def slot(todo: Accessor[Todo], index: int) -> VNode:
+    def title() -> str:
+        return todo()["title"]
+
+    return html(t"<li>{index}: {title}</li>")
+
+
+For(todos, row)
+For(todos, slot, keyed=False)
+For(todos, lambda todo, i: html(t"<li>{todo['title']}</li>"))  # todo: Todo
+For(todos, lambda todo, i: html(t"<li>{todo['titel']}</li>"))  # error: no key "titel"
+```
+
+A lambda's parameters are inferred from the overload, so the last line is reported even though nothing is annotated.
+
+`Show` passes the truthy value to a one-argument callback as an `Accessor`, or as the value itself with `keyed=True`. Either way, `None` is narrowed away, because the branch only renders when the value is truthy:
+
+```python
+from typing import TypedDict
+
+from wybthon import Show, create_memo, create_signal, html
+
+
+class User(TypedDict):
+    name: str
+
+
+users, set_users = create_signal([User(name="Ada")])
+user = create_memo(lambda: next(iter(users()), None))  # Memo[User | None]
+
+Show(user, lambda u: html(t"<p>{(lambda: u()['name'])}</p>"))  # u: Accessor[User]
+Show(user, lambda u: html(t"<p>{u['name']}</p>"), keyed=True)  # u: User
+Show(user, html(t"<p>Signed in</p>"), fallback=html(t"<p>Sign in</p>"))
+```
+
+`Repeat`'s callback receives an `int` index. `Switch` and `Match` take their children untyped.
 
 ## Accessors, setters, and memos
 
@@ -143,10 +233,10 @@ pythonVersion = "3.14"
 typeCheckingMode = "strict"
 ```
 
-The repository's `tests/typing` fixtures check valid calls and expected errors (missing, mistyped, and unknown props) as part of the unit test gate.
+The repository's `tests/typing` fixtures check valid calls and expected errors (missing, mistyped, and unknown props, a mistyped `For` row, and a plain string passed to `html()`) as part of the unit test gate.
 
 ## Next steps
 
-- Read [Components](../concepts/components.md) for the full props model.
+- Read [Components](../concepts/components.md) for the full props model, and [Templates](../concepts/templates.md) for template syntax.
 - See [Authoring patterns](authoring-patterns.md) for plain fields, children, and forwarding attributes.
 - Browse the [`reactivity`][wybthon.reactivity] API for `Props`, `Prop`, and `prop`.

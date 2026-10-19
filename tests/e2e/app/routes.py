@@ -20,6 +20,7 @@ from app.features import props as props_feat
 from app.features import reactivity as reactivity_feat
 from app.features import router as router_feat
 from app.features import stores as stores_feat
+from app.features import templates as templates_feat
 from app.features import transitions as transitions_feat
 from app.testkit import tid
 
@@ -71,6 +72,7 @@ def create_routes():
         Route(path="/errors", component=errors_feat.Page),
         Route(path="/components", component=components_feat.Page),
         Route(path="/engine", component=engine_feat.Page),
+        Route(path="/templates", component=templates_feat.Page),
         Route(path="/lazy", component=LazyPanel),
         Route(path="/lazy-error", component=LazyMissing),
         Route(path="/portal", component=portal_feat.Page),

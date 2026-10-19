@@ -10,10 +10,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from .component import component
 from .kernel import OP_ROOT, OP_UNROOT
 from .reactivity import _core
 from .reactivity._primitives import on_cleanup
-from .reactivity._props import RawProps
+from .reactivity._props import Props
 from .vnode import Fragment, VNode, h, hole
 
 __all__ = ["Portal"]
@@ -29,15 +30,21 @@ def _resolve_container_id(container: Any) -> int:
     return int(container.node_id)
 
 
-def _Portal(props: RawProps) -> Any:
+class _PortalProps(Props):
+    children: Any = None
+    mount: Any = "body"
+
+
+@component
+def _Portal(props: _PortalProps) -> Any:
     from . import kernel, reconciler
 
     if _core._server_depth:
         # Portal targets live outside the rendered container; the content
         # mounts in the browser once the page has hydrated.
         return None
-    container_id = _resolve_container_id(props.raw("mount"))
-    children = props.raw("children")
+    container_id = _resolve_container_id(props.mount)
+    children = props.children
     tree: VNode
     if isinstance(children, VNode):
         tree = children

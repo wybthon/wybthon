@@ -78,7 +78,7 @@ def test_attr_name_maps_pythonic_names(browser_stubs):
 
 
 def test_html_helpers_keep_pythonic_names_in_vnode_props(browser_stubs):
-    from wybthon.html import div, label
+    from wybthon.elements import div, label
 
     assert div(class_="x").props == {"class_": "x"}
     assert label(html_for="name").props == {"html_for": "name"}

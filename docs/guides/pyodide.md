@@ -12,16 +12,22 @@ Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython d
 A project's entry function returns the root view, and the generated bootstrap renders it into the mount element (or hydrates it when the page was prerendered):
 
 ```python
-from wybthon import button, component, create_signal, div, h1
+from wybthon import component, create_signal, html
 
 
 @component
 def App():
     count, set_count = create_signal(0)
-    return div(
-        h1("My Wybthon app"),
-        button(t"Count: {count}", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"""
+      <div>
+        <h1>My Wybthon app</h1>
+        <button onclick={increment}>Count: {count}</button>
+      </div>
+    """)
 
 
 def app():
@@ -75,7 +81,7 @@ Async memos and [`action`][wybthon.action]s integrate with Pyodide's event loop 
 - Wrap Python callbacks in `create_proxy` when handing them to JS APIs that keep them (`setInterval`, `addEventListener`). Wybthon already does this internally for its delegated event handlers and its `popstate` listener. Destroy the proxy in a cleanup:
 
 ```python
-from wybthon import component, create_signal, div, on_settled
+from wybthon import component, create_signal, html, on_settled
 
 
 @component
@@ -91,7 +97,7 @@ def Clock():
         return lambda: (clearInterval(handle), proxy.destroy())
 
     on_settled(start)
-    return div(now)
+    return html(t"<div>{now}</div>")
 ```
 
 - For imperative DOM work, [`Ref`][wybthon.Ref] gives you an [`Element`][wybthon.Element] whose `.element` is the raw node. Event handlers receive a [`DomEvent`][wybthon.DomEvent] built from a payload (no bridge crossing to read `e.target.value`); `e.raw` is the native event when you need it.

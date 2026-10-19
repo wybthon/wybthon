@@ -43,6 +43,7 @@ from html.parser import HTMLParser
 from typing import Any
 
 from . import kernel
+from ._html_rules import VOID_ELEMENTS
 from .reactivity import _core
 
 __all__ = [
@@ -85,13 +86,13 @@ class _Style:
     def __init__(self) -> None:
         self._props: dict[str, str] = {}
 
-    def setProperty(self, name: str, value: Any) -> None:  # noqa: D102 - DOM API
+    def setProperty(self, name: str, value: Any) -> None:
         self._props[name] = str(value)
 
-    def removeProperty(self, name: str) -> None:  # noqa: D102 - DOM API
+    def removeProperty(self, name: str) -> None:
         self._props.pop(name, None)
 
-    def getPropertyValue(self, name: str) -> str:  # noqa: D102 - DOM API
+    def getPropertyValue(self, name: str) -> str:
         return self._props.get(name, "")
 
 
@@ -219,11 +220,6 @@ class TestNode:
         return f"<{self.tag}>"
 
 
-_VOID_TAGS = frozenset(
-    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-)
-
-
 class _Parser(HTMLParser):
     """Builds `TestNode` trees from template HTML (backs `<template>.innerHTML`)."""
 
@@ -249,7 +245,7 @@ class _Parser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         node = self._element(tag, attrs)
-        if tag not in _VOID_TAGS:
+        if tag not in VOID_ELEMENTS:
             self._stack.append(node)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -277,11 +273,11 @@ class _Template(TestNode):
         self.content = TestNode(tag="#fragment")
 
     @property
-    def innerHTML(self) -> str:  # noqa: D102 - DOM API
+    def innerHTML(self) -> str:
         return ""
 
     @innerHTML.setter
-    def innerHTML(self, html: str) -> None:  # noqa: D102 - DOM API
+    def innerHTML(self, html: str) -> None:
         self.content.childNodes = []
         if html:
             parser = _Parser(self.content)
@@ -363,7 +359,7 @@ def _serialize(node: TestNode, out: list[str]) -> None:
         return
     attrs = "".join(f' {name}="{escape(value)}"' for name, value in node.attributes.items())
     out.append(f"<{node.tag}{attrs}>")
-    if node.tag not in _VOID_TAGS:
+    if node.tag not in VOID_ELEMENTS:
         for child in node.childNodes:
             _serialize(child, out)
         out.append(f"</{node.tag}>")

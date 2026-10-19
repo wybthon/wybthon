@@ -12,7 +12,7 @@ and settled callbacks run, and the order in which things are torn down.
 When a component mounts, the reconciler creates a fresh
 [`Owner`][wybthon.Owner] for it and runs the body under that owner.
 Anything created during the body (effects, memos, child components,
-holes) attaches to it. When the component unmounts, the owner is
+holes and bindings in the returned template) attaches to it. When the component unmounts, the owner is
 disposed and the whole subtree goes with it.
 
 ```mermaid
@@ -26,7 +26,7 @@ flowchart TD
     Hole --> RenderEffect((render effect))
 ```
 
-- Owners form a tree mirroring the component tree, with extra nodes for holes, `For` rows, and [`create_root`][wybthon.create_root] roots.
+- Owners form a tree mirroring the component tree, with extra nodes for holes, `Show` and `Switch` branches, `For` and `Repeat` rows, and [`create_root`][wybthon.create_root] roots.
 - Cleanups registered with [`on_cleanup`][wybthon.on_cleanup] run when their owner is disposed.
 - Disposing a parent disposes every descendant, so nothing is orphaned.
 
@@ -41,8 +41,7 @@ flowchart TD
 | [`create_memo`][wybthon.create_memo] with `async def` | Starts at creation unless `lazy=True`; revalidates when tracked sources change. | Data fetching with [`Loading`][wybthon.Loading]. |
 
 ```python
-from wybthon import component, create_effect, create_signal, on_cleanup, on_settled
-from wybthon.html import button
+from wybthon import component, create_effect, create_signal, html, on_cleanup, on_settled
 
 
 @component
@@ -54,13 +53,16 @@ def Pinger():
 
     create_effect(count, lambda n: print("count is", n))
 
-    return button("ping", on_click=lambda: set_count(lambda n: n + 1))
+    def ping():
+        set_count(lambda n: n + 1)
+
+    return html(t"<button onclick={ping}>ping</button>")
 ```
 
 Order of events for one mount:
 
-1. The body runs once. The button VNode is created; the effect and callbacks are registered but nothing has run yet.
-2. The tree mounts and the flush commits the DOM.
+1. The body runs once and returns the template instance; the effect and callbacks are registered but nothing has run yet.
+2. The template mounts (one clone command) and the flush commits the DOM.
 3. The effect phase runs the effect: `count is 0`.
 4. The settled queue runs: `mounted`.
 5. Each click stages a write; the handler returns, the graph flushes, and the effect prints the new count.
@@ -105,15 +107,14 @@ Refs are assigned during mount, so `ref.current` is `None` while the
 body runs. Read refs in `on_settled` or in an effect:
 
 ```python
-from wybthon import Ref, component, on_settled
-from wybthon.html import div, input_
+from wybthon import Ref, component, html, on_settled
 
 
 @component
 def AutoFocus():
     ref = Ref()
     on_settled(lambda: ref.current.element.focus())
-    return div(input_(type="text", ref=ref))
+    return html(t'<div><input type="text" ref={ref}></div>')
 ```
 
 `on_settled` may return a cleanup, which runs when the component
@@ -144,7 +145,9 @@ previous run never leak into the next.
 A hole is a scope of its own. Components mounted inside a hole survive
 the hole's re-evaluations as long as the reconciler can patch them in
 place (same tag, same key); they're disposed when the hole drops them
-or when the hole itself unmounts.
+or when the hole itself unmounts. A hole that returns a template from
+the same literal again patches it slot by slot, so components in its
+slots survive the same way.
 
 ## Roots
 

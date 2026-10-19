@@ -6,8 +6,8 @@ import pytest
 from conftest import collect_texts
 
 from wybthon.component import component
+from wybthon.elements import div, h2, p, section, span
 from wybthon.error_boundary import Errored
-from wybthon.html import div, h2, p, section, span
 from wybthon.lazy import LazyComponent, lazy
 from wybthon.loading import Loading
 from wybthon.reactivity import ParentProps, Prop, Props, create_signal, flush, prop
@@ -15,11 +15,6 @@ from wybthon.reactivity import ParentProps, Prop, Props, create_signal, flush, p
 
 def texts(node):
     return [t for t in collect_texts(node) if t and t.strip()]
-
-
-# Every `lazy()` component currently fails to render: `LazyComponent` wraps
-# `_render_lazy(self, props: RawProps)`, which `Component._resolve` rejects
-# because `RawProps` isn't a `Props` subclass.
 
 
 class PageProps(Props):

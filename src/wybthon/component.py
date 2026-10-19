@@ -104,15 +104,17 @@ class Component:
                 cls._wyb_check(props, self.__qualname__)
         return VNode(self, props, [], props.get("key"))
 
-    def _render(self, props: dict[str, Any]) -> tuple[Any, Props | None]:
-        """Run the body once; returns its result and the live props instance."""
+    def _render(self, props: dict[str, Any], patchable: bool) -> tuple[Any, Props | None]:
+        """Run the body once; returns its result and the live props instance.
+
+        `patchable` says whether the reconciler may later push new props
+        into this instance (see `Props`): only then do reads of constant
+        props subscribe to anything.
+        """
         cls = self._resolve()
         if cls is None:
             return self.fn(), None
-        instance = cls.__new__(cls)
-        instance._raw = props
-        instance._signals = None
-        instance._accessors = None
+        instance = cls._wyb_bind(props, patchable)
         return self.fn(instance), instance
 
     def __repr__(self) -> str:

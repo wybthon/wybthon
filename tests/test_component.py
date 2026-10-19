@@ -8,7 +8,7 @@ from conftest import StubNode, collect_texts
 
 from wybthon import _warnings
 from wybthon.component import Component, component
-from wybthon.html import button, div, h2, li, p, span, ul
+from wybthon.elements import button, div, h2, li, p, span, ul
 from wybthon.reactivity import (
     ChildrenAccessor,
     ParentProps,
@@ -449,7 +449,7 @@ def test_zero_arg_callable_plain_fields_are_never_called_on_read(wyb, root_eleme
 
     class DialogProps(Props):
         on_close: Callable[[], None] | None = None
-        make_label: Callable[[], str] = lambda: "default"  # noqa: E731
+        make_label: Callable[[], str] = lambda: "default"
 
     @component
     def Dialog(props: DialogProps):

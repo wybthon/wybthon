@@ -1,22 +1,33 @@
 # Events
 
-Event handlers are `on_*` props on host elements. They're delegated:
-one native listener per event type per render root, with a single
-Python call per handler that matches.
+Event handlers are `on*` attributes on host elements. They're
+delegated: one native listener per event type per render root, with a
+single Python call per handler that matches.
 
 ```python
-from wybthon import button, component
+from wybthon import component, html
 
 
 @component
 def Button():
-    return button("Click", on_click=lambda: print("clicked"))
+    def clicked():
+        print("clicked")
+
+    return html(t"<button onclick={clicked}>Click</button>")
 ```
 
-Supported prop names: `on_click`, `on_input`, `on_change`, and so on.
-Both `on_foo` and `onFoo` styles are accepted and normalize to DOM
-event names. Non-callable values are ignored, and passing `None` on an
-update removes the handler.
+In a template, `onclick`, `onClick`, and `on:click` all bind a `click`
+handler; use whichever reads best to you. The
+[element helpers](../api/elements.md) spell the same prop with a Python
+name, `on_click`:
+
+```python
+button("Click", on_click=clicked)
+```
+
+Both styles go through the same prop applier, so a handler behaves
+identically in either. Non-callable values are ignored, and passing
+`None` on an update removes the handler.
 
 A handler may take the event or no arguments at all. Wybthon checks the
 handler's signature once, when it's registered, so a zero-argument
@@ -24,8 +35,20 @@ handler costs nothing extra. Prefer one whenever you don't read the
 event:
 
 ```python
-button("+", on_click=lambda: set_count(lambda n: n + 1))
+count, set_count = create_signal(0)
+
+
+def increment():
+    set_count(lambda n: n + 1)
+
+
+html(t"<button onclick={increment}>+</button>")
 ```
+
+Name your handlers, as above. Python doesn't allow a bare `lambda`
+inside a t-string interpolation, so an inline handler needs parentheses:
+`onclick={(lambda: set_count(0))}`. See
+[Templates](templates.md#lambdas-need-parentheses).
 
 ## DomEvent
 
@@ -45,26 +68,37 @@ common fields never crosses the Python-to-JS bridge:
 Read input values as you would in JavaScript or SolidJS:
 
 ```python
-input_(value=name, on_input=lambda e: set_name(e.target.value))
+name, set_name = create_signal("")
+
+
+def update_name(e: DomEvent):
+    set_name(e.target.value)
+
+
+html(t"<input value={name} oninput={update_name}>")
 ```
 
 A submit handler:
 
 ```python
-from wybthon import DomEvent, button, component, form, input_
+from wybthon import DomEvent, component, html
 
 
 @component
 def Search():
+    def typed(evt: DomEvent):
+        print("typed", evt.target.value)
+
     def submit(evt: DomEvent):
         evt.prevent_default()
         print("submitted from", evt.current_target)
 
-    return form(
-        input_(name="q", on_input=lambda e: print("typed", e.target.value)),
-        button("Go", type="submit"),
-        on_submit=submit,
-    )
+    return html(t"""
+      <form onsubmit={submit}>
+        <input name="q" oninput={typed}>
+        <button type="submit">Go</button>
+      </form>
+    """)
 ```
 
 ## Delegation model
@@ -106,11 +140,17 @@ Cleanup guarantees:
 
 ## Naming and normalization
 
-- `on_click` becomes `"click"`.
-- `onInput` and `on_input` both become `"input"`.
-- `onClick` and `onclick` become `"click"`.
-- A `_capture` suffix listens in the capture phase: `on_click_capture`.
-- Any prop starting with `on_` or `on` is treated as an event handler.
+Every spelling normalizes to a lowercase DOM event name:
+
+| Where | Spellings | Event |
+| --- | --- | --- |
+| Template | `onclick`, `onClick`, `on:click` | `"click"` |
+| Template | `ondblclick`, `onDblClick`, `on:dblclick` | `"dblclick"` |
+| Helper | `on_click`, `onClick` | `"click"` |
+| Helper | `on_input`, `onInput` | `"input"` |
+
+- A `Capture` suffix listens in the capture phase: `onClickCapture` in a template, `on_click_capture` on a helper.
+- Any attribute or prop starting with `on` (`on_` or `on:` included) is treated as an event handler.
 
 ## Event types that work best with delegation
 
@@ -121,7 +161,7 @@ Prefer events that bubble:
 - Input and form: `input`, `change`, `submit`, `reset`
 - Pointer: `pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointercancel`
 
-Non-bubbling events still work as props. `focus`, `blur`,
+Non-bubbling events still work as attributes and props. `focus`, `blur`,
 `mouseenter`, `mouseleave`, `pointerenter`, `pointerleave`, `scroll`,
 `load`, `error`, `invalid`, and `toggle` get a direct native listener on
 their node instead of the delegated one. Use `focusin` and `focusout`
@@ -129,7 +169,7 @@ when an ancestor should hear focus changes from its descendants.
 
 ## Native listeners through a ref
 
-For anything the props don't cover, such as a third-party library that
+For anything the `on*` attributes don't cover, such as a third-party library that
 wants the element itself, attach a native listener directly through
 Pyodide using a [`Ref`][wybthon.Ref]. Refs are assigned during mount, so
 do the wiring in [`on_settled`][wybthon.on_settled], which runs after
@@ -139,7 +179,7 @@ garbage collection, and remove it on cleanup:
 ```python
 from pyodide.ffi import create_proxy
 
-from wybthon import Ref, component, div, on_cleanup, on_settled
+from wybthon import Ref, component, html, on_cleanup, on_settled
 
 
 @component
@@ -159,7 +199,7 @@ def DropZone():
     on_settled(setup)
     on_cleanup(teardown)
 
-    return div("Drop files here", ref=ref, class_="drop-zone")
+    return html(t'<div class="drop-zone" ref={ref}>Drop files here</div>')
 ```
 
 Reading `ref.current.element` commits any pending batched ops first, so
@@ -179,14 +219,18 @@ plain CPython and dispatches events through the same delegated handlers. Each [`
 handlers return, just as in the browser:
 
 ```python
-from wybthon import button, component, create_signal, div, p
+from wybthon import component, create_signal, html
 from wybthon.testing import fire, render
 
 
 @component
 def Counter():
     count, set_count = create_signal(0)
-    return div(p(t"Count: {count}"), button("+", on_click=lambda: set_count(lambda n: n + 1)))
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"<div><p>Count: {count}</p><button onclick={increment}>+</button></div>")
 
 
 def test_counter():
@@ -211,9 +255,9 @@ other type.
 An ordinary `async def` handler is scheduled automatically. It runs in an owned asyncio task and is canceled on handler replacement or unmount. Payload fields and `current_target` remain usable after an await; `event.raw` is valid only during synchronous dispatch. Call `prevent_default` before the first await when you need to prevent native behavior.
 
 ```python
-from wybthon import button, event
+from wybthon import event, html
 
-button("Once", on_click=event(save, once=True))
+html(t"<button onclick={event(save, once=True)}>Once</button>")
 ```
 
-`event(callback, capture=True, passive=False, once=False)` configures native listener options. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses `composedPath`, sends one route across the bridge, and flushes after its handlers. Custom event `detail`, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.
+`event(callback, capture=False, passive=False, once=False)` configures native listener options. It works the same in any spelling: `on_click=event(save, once=True)` on a helper. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses `composedPath`, sends one route across the bridge, and flushes after its handlers. Custom event `detail`, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.

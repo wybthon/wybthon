@@ -42,10 +42,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Literal
 
+from .component import component
 from .reactivity import _core
 from .reactivity._core import LOADING_CONTEXT_KEY, Computation, NotReadyError, Signal
 from .reactivity._primitives import _create_effect, on_cleanup
-from .reactivity._props import RawProps
+from .reactivity._props import Props
 from .vnode import Fragment, VNode, h, hole, to_text_vnode
 
 __all__ = ["Loading", "Reveal"]
@@ -187,7 +188,14 @@ def _render_fallback(fb: Any) -> VNode:
     return to_text_vnode("" if fb is None else str(fb))
 
 
-def _Loading(props: RawProps) -> Any:
+class _LoadingProps(Props):
+    children: Any = None
+    fallback: Any = None
+    on: Any = None
+
+
+@component
+def _Loading(props: _LoadingProps) -> Any:
     from . import reconciler
 
     collector = _LoadingCollector()
@@ -206,9 +214,9 @@ def _Loading(props: RawProps) -> Any:
             # boundary, not with the outer Reveal.
             owner._set_context(REVEAL_CONTEXT_KEY, None)
 
-    children = props.raw("children")
-    fallback = props.raw("fallback")
-    on = props.raw("on")
+    children = props.children
+    fallback = props.fallback
+    on = props.on
     waits: list[Callable[[], Any]] = []
     if on is not None:
         waits = list(on) if isinstance(on, (list, tuple)) else [on]
@@ -415,13 +423,20 @@ def Reveal(
     return h(_Reveal, {"children": children, "order": order, "collapsed": collapsed})
 
 
-def _Reveal(props: RawProps) -> Any:
+class _RevealProps(Props):
+    children: Any = None
+    order: str = "sequential"
+    collapsed: bool = False
+
+
+@component
+def _Reveal(props: _RevealProps) -> Any:
     owner = _core._current_owner
     parent = owner._lookup_context(REVEAL_CONTEXT_KEY, None) if owner is not None else None
-    state = _RevealState(props.raw("order"), props.raw("collapsed"), parent)
+    state = _RevealState(props.order, props.collapsed, parent)
     if owner is not None:
         owner._set_context(REVEAL_CONTEXT_KEY, state)
-    return _render_content(props.raw("children"))
+    return _render_content(props.children)
 
 
 _Reveal.__name__ = "Reveal"

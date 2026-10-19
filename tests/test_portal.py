@@ -2,8 +2,8 @@ from conftest import StubNode, collect_texts
 
 from wybthon.component import component
 from wybthon.context import create_context, use_context
+from wybthon.elements import div, p, span
 from wybthon.flow import Show
-from wybthon.html import div, p, span
 from wybthon.portal import Portal
 from wybthon.reactivity import create_signal, flush
 
@@ -60,7 +60,7 @@ def test_portal_unmount_via_show_removes_children_from_target(wyb, root_element)
 
 
 def test_portal_target_outside_render_root_receives_delegated_events(wyb, root_element):
-    from wybthon.html import button
+    from wybthon.elements import button
 
     target, target_el = make_target(wyb)
     clicks: list[str] = []
@@ -76,7 +76,7 @@ def test_portal_target_outside_render_root_receives_delegated_events(wyb, root_e
 
 
 def test_portal_into_the_render_root_keeps_delegation_after_unmount(wyb, root_element):
-    from wybthon.html import button
+    from wybthon.elements import button
 
     show, set_show = create_signal(True)
     clicks: list[str] = []

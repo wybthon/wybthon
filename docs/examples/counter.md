@@ -1,9 +1,9 @@
 # Counter
 
-Signals, a derived value, holes, t-strings, and typed props with defaults in one small component.
+Signals, derived values, a template, and typed props with defaults in one small component.
 
 ```python
-from wybthon import Prop, Props, button, component, create_memo, create_signal, div, p, prop, render, span
+from wybthon import Prop, Props, component, create_memo, create_signal, html, prop, render
 
 
 class CounterProps(Props):
@@ -17,9 +17,10 @@ def Counter(props: CounterProps):
     # subscribing, which is exactly what a signal seed needs.
     count, set_count = create_signal(props.initial.peek())
 
-    # Memos are lazy and glitch-free; ``doubled`` recomputes only when read
-    # after ``count`` changed.
+    # Memos are cached and glitch-free; ``doubled`` recomputes only when
+    # ``count`` changes.
     doubled = create_memo(lambda: count() * 2)
+    parity = create_memo(lambda: "even" if count() % 2 == 0 else "odd")
 
     def increment():
         # Writes are staged until the next flush, so use the functional form
@@ -29,14 +30,15 @@ def Counter(props: CounterProps):
     def reset():
         set_count(props.initial.peek())
 
-    return div(
-        p("Count: ", span(count), ", doubled: ", span(doubled)),
-        p(lambda: "even" if count() % 2 == 0 else "odd"),
-        p(t"Next: {count} + {props.step}"),
-        button("Increment", on_click=increment),
-        button("Reset", on_click=reset),
-        class_="counter",
-    )
+    return html(t"""
+      <div class="counter">
+        <p>Count: {count}, doubled: {doubled}</p>
+        <p>{parity}</p>
+        <p>Next: {count} + {props.step}</p>
+        <button onclick={increment}>Increment</button>
+        <button onclick={reset}>Reset</button>
+      </div>
+    """)
 
 
 render(Counter(initial=5, step=2), "#app")
@@ -45,9 +47,10 @@ render(Counter(initial=5, step=2), "#app")
 ## How it works
 
 - `CounterProps` declares two optional inputs. `Prop[int]` makes each reactive, and `prop(default=...)` supplies the default.
-- `count` and `doubled` are accessors. Placing an accessor in the tree creates a **reactive hole**: the reconciler runs it inside its own render effect and patches only that text node when a dependency changes.
-- `lambda: "even" if count() % 2 == 0 else "odd"` is also a hole. Any zero-argument callable in a child position is treated the same way as an accessor.
-- `t"Next: {count} + {props.step}"` is a t-string. Its reactive interpolations are read inside one binding, so the whole line updates together.
+- [`html`][wybthon.html] takes the `t"..."` template string and returns a node. The literal is compiled once, the first time it runs, into a native `<template>` that's cloned for every instance. See [Templates](../concepts/templates.md).
+- `count`, `doubled`, `parity`, and `props.step` are accessors. Placing an accessor in a template creates a **reactive hole**: it gets its own render effect, and only that text node changes when its dependencies do. Everything else in the markup is static.
+- `parity` could also be written inline, as `{(lambda: "even" if count() % 2 == 0 else "odd")}`. Python doesn't allow a bare `lambda` inside `{...}`, so an inline one needs the parentheses. A named memo or function usually reads better.
+- `onclick={increment}` registers a delegated click handler. Attribute names in templates are the HTML names (`class`, `onclick`), not the helpers' Python names (`class_`, `on_click`).
 - The component body runs once. There's no re-render to worry about, so closures like `increment` never go stale.
 - The handlers take no arguments; a handler may also accept the event. `props.step()` inside a handler is a plain read: event handlers aren't tracking scopes, so it neither subscribes nor warns.
 
@@ -63,6 +66,13 @@ Counter(initial=5, step=10)
 
 An unknown or misspelled prop (`Counter(stpe=2)`) is a type error in pyright and mypy, and a `TypeError` at run time in dev mode.
 
+Inside another template, call it in an interpolation to keep that type checking, or use the tag form, which dev mode checks at run time:
+
+```python
+html(t"<main>{Counter(initial=5)}</main>")
+html(t"<main><{Counter} initial={5} /></main>")
+```
+
 Pass an accessor to react to parent state without changing the child:
 
 ```python
@@ -72,7 +82,7 @@ seed, set_seed = create_signal(0)
 Counter(initial=seed)  # ``props.initial()`` reflects ``seed()``
 ```
 
-Because the counter only peeks at `initial` to seed its own signal, later changes to `seed` don't reset the count. That's the intended semantics of a seed; if you want a prop to drive the display directly, place the prop in the tree instead of copying it into a signal.
+Because the counter only peeks at `initial` to seed its own signal, later changes to `seed` don't reset the count. That's the intended semantics of a seed; if you want a prop to drive the display directly, place the prop in the template instead of copying it into a signal. A prop passed as a constant, like `step=2` here, costs nothing to read: it never changes, so nothing subscribes to it.
 
 ## Testing it
 
@@ -88,6 +98,6 @@ with render(Counter(initial=5, step=2)) as screen:
 
 ## Next steps
 
-- Read [Primitives](../concepts/primitives.md) and [Authoring patterns](../guides/authoring-patterns.md).
+- Read [Templates](../concepts/templates.md), [Primitives](../concepts/primitives.md), and [Authoring patterns](../guides/authoring-patterns.md).
 - See the [Async fetch example](fetch.md) for async data handling.
 - Browse the [`reactivity`][wybthon.reactivity] API for signal helpers.

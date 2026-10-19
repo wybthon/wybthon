@@ -29,7 +29,7 @@ from `wybthon.forms`; these names aren't re-exported from `wybthon`.
 | [`error_message_attrs`][wybthon.forms.error_message_attrs] | `id`, `role="alert"`, and `aria_live="polite"` for the message container. |
 
 ```python
-from wybthon import button, component, form, input_, label, span
+from wybthon import component, html
 from wybthon.forms import (
     a11y_control_attrs,
     bind_checkbox,
@@ -46,28 +46,34 @@ from wybthon.forms import (
 def Signup():
     fields = form_state({"name": "", "email": "", "agree": False})
     rules = {"name": [required()], "email": [required(), email()]}
+    name = fields["name"]
 
     def save(f):
         print({k: field.value.peek() for k, field in f.items()})
 
-    return form(
-        label("Name", html_for="name"),
-        input_(
-            id="name",
-            **bind_text(fields["name"], validators=rules["name"]),
-            **a11y_control_attrs(fields["name"], described_by_id="name-error"),
-        ),
-        span(fields["name"].error, **error_message_attrs(id="name-error")),
-        label(input_(type="checkbox", **bind_checkbox(fields["agree"])), " I agree"),
-        button("Save", type="submit"),
-        on_submit=on_submit_validated(rules, save, fields),
-    )
+    return html(t"""
+      <form onsubmit={on_submit_validated(rules, save, fields)}>
+        <label for="name">Name</label>
+        <input
+          id="name"
+          {bind_text(name, validators=rules["name"])}
+          {a11y_control_attrs(name, described_by_id="name-error")}
+        >
+        <span {error_message_attrs(id="name-error")}>{name.error}</span>
+        <label><input type="checkbox" {bind_checkbox(fields["agree"])}> I agree</label>
+        <button type="submit">Save</button>
+      </form>
+    """)
 ```
 
+- The binding helpers return prop mappings: spread them onto a template
+  tag (`<input {bind_text(field)}>`) or an element helper
+  (`input_(**bind_text(field))`).
 - A field's `error` accessor is `None` while valid, so embedding it as a
   child renders nothing until there's a message.
 - `touched` becomes `True` on the first input, so you can delay showing
-  errors: `lambda: fields["name"].error() if fields["name"].touched() else None`.
+  errors with a function such as
+  `def name_error(): return name.error() if name.touched() else None`.
 - `email()` accepts empty values; combine it with `required()`.
 - In CPython tests, drive a form with [`wybthon.testing`](testing.md):
   `fire.input(screen.get_by_label_text("Name"), "Ada")`, then
@@ -76,6 +82,6 @@ def Signup():
 #### See also
 
 - [Events](events.md): the `DomEvent` these handlers receive
-- [HTML helpers](html.md): why `value` and `checked` are DOM properties
+- [Element helpers](elements.md): why `value` and `checked` are DOM properties
 - [Concepts: Forms](../concepts/forms.md)
 - [Examples: Forms](../examples/forms.md)

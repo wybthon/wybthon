@@ -7,7 +7,7 @@ import pytest
 from conftest import StubNode, collect_texts
 
 from wybthon import For, Fragment, Ref, create_signal, div, flush, h, span
-from wybthon import _template as template
+from wybthon import _shapes as template
 from wybthon.diagnostics import profile
 
 

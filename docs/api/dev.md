@@ -9,7 +9,12 @@
 development mode, serves the build, rebuilds when a source file changes,
 and pushes a `reload` event over Server-Sent Events at `/__sse` so open
 pages refresh. `wyb build` writes a production build, which turns dev
-mode off, and `wyb preview` serves one.
+mode off, and `wyb preview` serves one. Every built page carries its
+build manifest inline (`<script type="application/json"
+id="wyb-manifest">`) and preloads what boot needs: a
+`<link rel="modulepreload">` for Pyodide's `pyodide.mjs`, and
+`<link rel="preload" as="fetch" crossorigin>` for the runtime and
+application archives, so they download in parallel with Pyodide.
 
 | Name | Description |
 | --- | --- |

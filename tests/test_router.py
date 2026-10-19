@@ -2,7 +2,7 @@ import pytest
 from conftest import collect_texts
 
 from wybthon.component import component
-from wybthon.html import div, h1, nav, p, span
+from wybthon.elements import div, h1, nav, p, span
 from wybthon.reactivity import flush
 from wybthon.router import (
     Link,
@@ -436,11 +436,7 @@ def test_resolve_accepts_any_object_with_path():
     assert route.path == ":x"
 
 
-def test_route_props_defaults_and_router_core_is_gone():
-    import importlib
-
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("wybthon.router_core")
+def test_route_props_defaults():
     fields = RouteProps._wyb_fields
     assert {"params", "query"} <= set(fields)
     assert not any(fields[name].required for name in ("params", "query"))

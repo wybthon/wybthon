@@ -7,7 +7,7 @@ it with a value and children to expose that value to every descendant,
 and read it with [`use_context`][wybthon.use_context].
 
 ```python
-from wybthon import component, create_context, div, p, use_context
+from wybthon import component, create_context, html, use_context
 
 Theme = create_context("light")
 
@@ -15,19 +15,20 @@ Theme = create_context("light")
 @component
 def Label():
     theme = use_context(Theme)
-    return p("Theme: ", theme)
+    return html(t"<p>Theme: {theme}</p>")
 
 
 @component
 def App():
-    return div(Theme("dark", Label()))  # value first, then children
+    return html(t"<div>{Theme('dark', Label())}</div>")  # value first, then children
 ```
 
 ## Providing a value
 
 The context object is callable: `Theme(value, *children)` returns a
-provider VNode. Children may be VNodes, component calls, or lists;
-anything you'd pass to an element works. Item syntax works too, as it
+provider VNode. Children may be templates, component calls, VNodes, or
+lists; anything you'd pass to an element works. Place the provider in a
+template with an interpolation, as above. Item syntax works too, as it
 does on elements and components:
 
 ```python
@@ -50,7 +51,7 @@ owner exists: component bodies, effects, memos, holes, and `For` rows.
 @component
 def Button():
     theme = use_context(Theme)  # read once, in the body
-    return button("Hi", class_=f"btn-{theme}")
+    return html(t'<button class="btn-{theme}">Hi</button>')
 ```
 
 ## Defaults and `ContextNotFoundError`
@@ -81,7 +82,7 @@ call it where they need the value and stay reactive without the
 provider or the subtree re-mounting:
 
 ```python
-from wybthon import Accessor, Context, button, component, create_context, create_signal, div, use_context
+from wybthon import Accessor, Context, component, create_context, create_signal, html, use_context
 
 Theme: Context[Accessor[str]] = create_context()
 
@@ -89,17 +90,22 @@ Theme: Context[Accessor[str]] = create_context()
 @component
 def ThemedButton():
     theme = use_context(Theme)
-    return button("Hi", class_=t"btn-{theme}")
+    return html(t'<button class="btn btn-{theme}">Hi</button>')
 
 
 @component
 def App():
     theme, set_theme = create_signal("light")
-    toggle = lambda: set_theme(lambda t: "dark" if t == "light" else "light")
-    return div(
-        Theme(theme, ThemedButton()),
-        button("Toggle", on_click=toggle),
-    )
+
+    def toggle():
+        set_theme(lambda t: "dark" if t == "light" else "light")
+
+    return html(t"""
+      <div>
+        {Theme(theme, ThemedButton())}
+        <button onclick={toggle}>Toggle</button>
+      </div>
+    """)
 ```
 
 Provide a setter alongside the accessor when descendants need to write:
@@ -112,8 +118,9 @@ theme, set_theme = use_context(Theme)
 
 Passing a plain value is fine when it never changes. Don't pass a
 `lambda: theme()` unless you mean to; an accessor already is one. The
-`t"btn-{theme}"` attribute above calls the accessor inside one reactive
-binding, so the class follows the signal.
+`class="btn btn-{theme}"` attribute above joins its parts into one
+reactive binding that calls the accessor, so the class follows the
+signal.
 
 ## How it works: the ownership tree
 

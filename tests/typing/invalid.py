@@ -2,7 +2,7 @@
 
 from typing import TypedDict
 
-from wybthon import Prop, Props, VNode, action, component, create_store, p
+from wybthon import For, Prop, Props, VNode, action, component, create_signal, create_store, html, p
 
 
 class StrictProps(Props):
@@ -40,3 +40,12 @@ save("wrong")  # error: action-arg
 
 people, edit_people = create_store(list[Person]())
 edit_people(lambda draft: draft.append({"age": "wrong"}))  # error: store-append
+
+
+class Todo(TypedDict):
+    title: str
+
+
+todos, _set_todos = create_signal([Todo(title="a")])
+For(todos, lambda todo, i: p(todo["titel"]))  # error: for-row
+html("<p>not a t-string</p>")  # error: html-arg

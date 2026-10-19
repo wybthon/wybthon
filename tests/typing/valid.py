@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING, Any, TypedDict, assert_type
 
 from wybthon import (
     Accessor,
+    For,
     ParentProps,
     Prop,
     Props,
+    Show,
     VNode,
     action,
     component,
@@ -16,6 +18,7 @@ from wybthon import (
     create_store,
     div,
     h2,
+    html,
     p,
     prop,
 )
@@ -114,3 +117,27 @@ if TYPE_CHECKING:
 
 nested, edit_nested = create_store(list[list[Person]]())
 edit_nested(lambda draft: draft.append([{"name": "Ada", "age": 36, "items": []}]))
+
+
+class Todo(TypedDict):
+    title: str
+    done: bool
+
+
+todos, _set_todos = create_signal([Todo(title="a", done=False)])
+current: Accessor[Todo | None] = create_signal(Todo(title="b", done=True))[0]
+
+
+def todo_row(todo: Todo, index: Accessor[int]) -> VNode:
+    return p(todo["title"], lambda: index() + 1)
+
+
+For(todos, todo_row)
+For(todos, lambda todo, i: p(todo["title"]))
+For(todos, lambda todo, i: p(lambda: todo()["title"], i), keyed=False)
+For(todos, lambda todo, i: p(lambda: todo()["title"], i), keyed=lambda t: t["title"])
+Show(current, lambda todo: p(lambda: todo()["title"]))
+Show(current, lambda todo: p(todo["title"]), keyed=True)
+Show(current, lambda: p("shown"), fallback=p("hidden"))
+Show(True, p("always"))
+template_node: VNode = html(t"<p class={current}>{todos}</p>")

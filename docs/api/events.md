@@ -27,19 +27,26 @@ entry points used by the renderer and the kernel.
 
 #### Handler props
 
-- Any prop named `on_<type>` (or `on<Type>`) is a handler: `on_click`,
-  `on_input`, `on_keydown`, `onChange`. The prefix is stripped and the
-  remainder lower-cased to get the DOM event type.
-- A handler takes the `DomEvent` or no arguments at all
-  (`on_click=lambda: set_open(False)`); the arity is checked once, at
-  registration. Signal writes made inside a handler are flushed
-  automatically when it returns, so the DOM updates before the browser
-  paints.
+- In a template, an attribute named `on<type>` is a handler:
+  `onclick={save}`, `oninput={edit}`. `onClick` and `on:click` work
+  too. The DOM event type is the rest of the name, lower-cased.
+- With the element helpers, a prop named `on_<type>` (or `on<Type>`) is
+  a handler: `on_click`, `on_input`, `on_keydown`, `onChange`. Spreads
+  such as `<input {bind_text(field)}>` use these names.
+- A capture suffix listens in the capture phase: `onClickCapture` in a
+  template, `on_click_capture` on a helper.
+- A handler takes the `DomEvent` or no arguments at all; the arity is
+  checked once, at registration. Signal writes made inside a handler
+  are flushed automatically when it returns, so the DOM updates before
+  the browser paints.
+- Python doesn't allow a bare `lambda` inside a template interpolation.
+  Name the handler, or wrap an inline one in parentheses:
+  `onclick={(lambda: set_open(False))}`.
 - `evt.raw` is the native event and is valid only synchronously during
   dispatch.
 
 ```python
-from wybthon import DomEvent, button, create_signal, event, form, input_, li, ul
+from wybthon import DomEvent, create_signal, event, html
 
 items, set_items = create_signal([])
 draft, set_draft = create_signal("")
@@ -51,18 +58,32 @@ def submit(evt: DomEvent) -> None:
     set_draft("")
 
 
+def edit(evt: DomEvent) -> None:
+    set_draft(evt.target.value)
+
+
 def keydown(evt: DomEvent) -> None:
     if evt.key == "Escape":
         set_draft("")
 
 
-view = form(
-    input_(value=draft, on_input=lambda e: set_draft(e.target.value), on_keydown=keydown),
-    button("Clear", type="button", on_click=lambda: set_items([])),  # no event needed
-    ul(lambda: [li(x) for x in items()]),
-    on_submit=submit,
-    on_touchstart=event(lambda: None, passive=True),  # direct native listener
-)
+def clear() -> None:  # no event needed
+    set_items([])
+
+
+def rows():
+    return [html(t"<li>{x}</li>") for x in items()]
+
+
+ignore_touch = event(lambda: None, passive=True)  # direct native listener
+
+view = html(t"""
+  <form onsubmit={submit} ontouchstart={ignore_touch}>
+    <input value={draft} oninput={edit} onkeydown={keydown}>
+    <button type="button" onclick={clear}>Clear</button>
+    <ul>{rows}</ul>
+  </form>
+""")
 ```
 
 #### Delegation notes
@@ -86,7 +107,8 @@ view = form(
 
 #### See also
 
-- [HTML helpers](html.md): how handler props are recognized
+- [Templates](../concepts/templates.md#interpolations): event attributes in templates
+- [Element helpers](elements.md): how handler props are recognized
 - [Kernel](kernel.md): `REGISTER_TPL`, `LISTEN`, `UNLISTEN`, `ROOT`, and the dispatch payload
 - [Concepts: Events](../concepts/events.md)
 - [Concepts: Forms](../concepts/forms.md)

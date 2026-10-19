@@ -831,10 +831,9 @@ def test_awaited_stream_matches_sync_render_without_async_data(wyb):
     assert render_async(Counter(start=4)) == render_to_string(Counter(start=4))
 
 
-def test_render_to_string_async_is_removed():
+def test_server_exports():
     import wybthon.server as server
 
-    assert not hasattr(server, "render_to_string_async")
     assert set(server.__all__) == {"render_to_string", "render_to_stream", "RenderStream"}
 
 

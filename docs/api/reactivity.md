@@ -68,7 +68,7 @@ holds on the old state until the new value lands, and an
 | [`prop`][wybthon.prop] | `prop(default=...)` or `prop(default_factory=...)`: declare a `Prop[T]` field's default. |
 | [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive mapping views over props instances or dicts (later sources win; drop keys, or keys matching a predicate), ready to spread onto elements. |
 | [`children`][wybthon.children] | `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
-| [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes and an optional `fallback`; DOM lists use mounted regions. |
+| [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes and an optional `fallback`; DOM lists use `For`'s native regions. |
 | [`repeat`][wybthon.repeat] | `repeat(count, fn, *, start=0, fallback=None)`: reactive mapping over a range of indices. |
 | [`create_unique_id`][wybthon.create_unique_id] | Process-unique id string for `id`/`for` pairs. |
 | [`is_accessor`][wybthon.is_accessor] | `True` for an `Accessor` or a zero-arg function. |
@@ -96,7 +96,7 @@ recomputes open a transition that holds the dependent UI on the old
 state until the new value lands.
 
 ```python
-from wybthon import action, create_memo, create_optimistic, is_pending, refresh, span
+from wybthon import action, create_memo, create_optimistic, html, is_pending, refresh
 
 
 async def load_likes():
@@ -114,8 +114,15 @@ async def like():
     await refresh(likes)
 
 
-hint = span(lambda: "Refreshing..." if is_pending(likes) else "")
-count = span(t"{shown} likes")
+def hint():
+    return "Refreshing..." if is_pending(likes) else ""
+
+
+def on_like():
+    like()
+
+
+view = html(t"<p>{shown} likes <span>{hint}</span> <button onclick={on_like}>Like</button></p>")
 ```
 
 Internally, two module globals (the active owner and the active

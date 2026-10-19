@@ -23,10 +23,11 @@ protocol. For component tests, use [`wybthon.testing`](testing.md).
 | [`reset`][wybthon.kernel.reset] | Test helper: clear the op buffer, id counters, and template registry, optionally installing a backend. |
 
 Two more module-level hooks matter to tests. `register_template(shape)`
-registers a compiled shape's skeleton in the same batch as its first
-clone, and `html_templates` (`True`, `False`, or `None` for "ask the
-backend") gates template mounting; set it to `False` to force per-node
-commands.
+registers the static skeleton of a compiled [`html`][wybthon.html]
+template, or of an element helper's compiled shape, in the same batch
+as its first clone. `html_templates` (`True`, `False`, or `None` for
+"ask the backend") gates template mounting; set it to `False` to force
+per-node commands.
 
 #### Wire protocol
 
@@ -40,7 +41,7 @@ hot path; `None` anchors mean "append".
 | `CREATE_ELEMENT_NS` | `id, namespace, tag` | `document.createElementNS` (SVG, MathML) |
 | `CREATE_TEXT` | `id, text` | `document.createTextNode` |
 | `CREATE_COMMENT` | `id[, data]` | Comment marker (fragment and hole anchors); `Loading` boundaries carry a key in `data` during server rendering and hydration |
-| `REGISTER_TPL` | `tpl_id, html, count, [text offsets], [[offset, event_type], ...]` | Parse a shape's skeleton once via `<template>`, and record its text slots and delegated listeners |
+| `REGISTER_TPL` | `tpl_id, html, count, [text offsets], [[offset, event_type], ...]` | Parse a template's or shape's skeleton once via `<template>`, and record its text slots and delegated listeners |
 | `CLONE` | `first_id, tpl_id, parent_id, anchor_id, *texts` | Clone the prototype, register a dense id block in pre-order, fill the text slots, mark the delegated listeners, and insert before the anchor |
 | `INSERT` | `parent_id, id, anchor_id` | `insertBefore` (`None` anchor appends) |
 | `REMOVE` | `id` | Detach from the parent; the node stays registered |
@@ -63,12 +64,14 @@ hot path; `None` anchors mean "append".
 | `CLAIM_STATIC` | `parent_id, end_marker` | Keep the server nodes before the marker as static DOM (a [`NoHydration`][wybthon.NoHydration] region) |
 | `HYDRATE_END` | none | Remove server nodes nobody claimed and stop claiming |
 
-A template-mounted row of the js-framework-benchmark table costs two
-commands, `CLONE` and `HOLE_TEXT`, and clearing a list is one
-`DISPOSE_RANGE`. Unmounting never sends lists of every node id: the
+A row of the js-framework-benchmark table costs one command, a `CLONE`
+that carries the row's text and its label's first value, whether it's
+written as an `html` template or with element helpers. Clearing a list
+is one `DISPOSE_RANGE`. Unmounting never sends lists of every node id: the
 kernel releases the removed nodes itself. See
-[Virtual DOM](../concepts/vdom.md#compiled-mounting) for how shapes,
-generated mount functions, and lazy node ids fit together.
+[Virtual DOM](../concepts/vdom.md#compiled-templates) for how compiled
+templates, helper shapes, generated mount functions, and lazy node ids
+fit together.
 
 [`hydrate`][wybthon.hydrate] emits the claim ops; see [Server rendering](../concepts/server-rendering.md). `stats()` reports node, template, listener, and root counts plus `hydration_mismatches`, and `take_state()` and `replay_events()` read the server state and replay input recorded before hydration.
 

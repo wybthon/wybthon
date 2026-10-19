@@ -9,6 +9,7 @@ pages linked in the left column carry the details.
 
 | Area | Names |
 | --- | --- |
+| [Templates](templates.md) | `html`, `TemplateError` |
 | [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `Prop`, `prop`, `merge`, `omit`, `children`, `ChildrenAccessor` |
 | [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `element`, `is_accessor` |
 | [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `create_owner`, `is_disposed`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
@@ -21,7 +22,7 @@ pages linked in the left column carry the details.
 | Rendering | [`render`, `hydrate`, `Root`](reconciler.md), `is_server`, [`is_hydrating`, `NoHydration`, `Hydration`](flow.md) |
 | [Server requests](request.md) | `RequestEvent`, `ResponseHead`, `get_request_event`, `http_status`, `http_header` |
 | Dev mode | `is_dev_mode`, `set_dev_mode` |
-| [HTML helpers](html.md) | One helper per HTML element (`div`, `p`, `button`, `input_`, ...), plus `element` |
+| [Element helpers](elements.md) | One helper per HTML element (`div`, `p`, `button`, `input_`, ...), plus `element` |
 
 Other modules are imported by name and aren't re-exported:
 

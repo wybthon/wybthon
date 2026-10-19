@@ -83,7 +83,7 @@ class VNode:
     _frag_end: int | None = None
     _hole_text: str | None = None
     # Set on the root of a template-mounted subtree: its compiled shape, and
-    # its dynamic children plus binding computations (see ``wybthon._template``).
+    # its dynamic children plus binding computations (see ``wybthon._shapes``).
     tpl: Any = None
     dyn: tuple[Any, ...] | None = None
     # ``pk`` (position key: the node's place in the rendered tree) is left
@@ -292,7 +292,7 @@ def h(tag: str | Callable[..., Any] | None, props: PropsDict | None = None, *chi
     """Create a VNode from a tag, props, and children.
 
     The low-level constructor behind the helpers in
-    [`wybthon.html`][wybthon.html]. Reactive expressions in child
+    [`wybthon.elements`][wybthon.elements]. Reactive expressions in child
     positions are wrapped as holes when the parent mounts; components
     receive their children verbatim through the `children` prop.
 
@@ -361,6 +361,8 @@ def copy_vnode(value: Any) -> Any:
     """
     if not isinstance(value, VNode):
         return value
+    if value.tag == "_tpl":
+        return VNode("_tpl", value.props, tuple(copy_vnode(v) for v in value.children))  # type: ignore[arg-type]
     props = dict(value.props)
     nested = props.get("children")
     if isinstance(nested, list):

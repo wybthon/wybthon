@@ -1,4 +1,4 @@
-"""Typed Props instances, RawProps, merge/omit, children(), map_array, repeat, and projection selection."""
+"""Typed Props instances, merge/omit, children(), map_array, repeat, and projection selection."""
 
 from collections.abc import Callable
 
@@ -21,7 +21,6 @@ from wybthon.reactivity import (
     repeat,
     untrack,
 )
-from wybthon.reactivity._props import RawProps
 from wybthon.store import create_projection
 
 # ---------------------------------------------------------------------------
@@ -104,52 +103,6 @@ def test_props_tracked_read_subscribes_memo(wyb):
 def test_props_instances_reject_item_syntax(wyb):
     with pytest.raises(TypeError, match="don't take children"):
         NameProps(name="x")["child"]
-
-
-# ---------------------------------------------------------------------------
-# RawProps (framework-internal function tags)
-# ---------------------------------------------------------------------------
-
-
-def test_raw_props_attribute_and_item_access_return_the_same_accessor(wyb):
-    props = RawProps({"name": "Ada"})
-    assert props.name is props["name"]
-    assert props.name() == "Ada"
-    assert props.name.peek() == "Ada"
-
-
-def test_raw_props_raw_returns_the_value_as_passed(wyb):
-    name, _ = create_signal("Ada")
-    handler = lambda e: None  # noqa: E731
-    props = RawProps({"name": name, "on_click": handler})
-    assert props.raw("name") is name
-    assert props.raw("on_click") is handler
-    assert props.name() == "Ada"
-
-
-def test_raw_props_defaults_and_missing(wyb):
-    props = RawProps({"a": 1}, defaults={"b": 2})
-    assert props.a() == 1
-    assert props.b() == 2
-    assert props.c() is None
-    assert "a" in props and "b" in props and "c" not in props
-    assert list(props) == ["a", "b"]
-    assert len(props) == 2
-    assert props.get("missing", "fallback") == "fallback"
-    assert props.get("b")() == 2
-
-
-def test_raw_props_update_pushes_new_values(wyb):
-    props = RawProps({"n": 1})
-    seen: list[int] = []
-    create_root(lambda d: create_effect(props.n, lambda v: seen.append(v)))
-    flush()
-    props._wyb_update({"n": 2})
-    flush()
-    assert seen == [1, 2]
-    props._wyb_update({})
-    flush()
-    assert seen == [1, 2, None]
 
 
 # ---------------------------------------------------------------------------

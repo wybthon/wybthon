@@ -5,11 +5,19 @@
 #### What's in this module
 
 Control-flow primitives that create isolated reactive scopes, so only
-the relevant subtree updates when a condition or list changes. Each is a
-function returning a component `VNode`; conditions and sources are
-accessors (or plain values), and `children` and `fallback` slots are
-VNodes or callables evaluated inside the primitive's own scope. All
-arguments are positional except the keyword-only options noted below.
+the relevant subtree updates when a condition or list changes.
+Conditions and sources are accessors (or plain values), and `children`
+and `fallback` slots are nodes or callables evaluated inside the
+primitive's own scope. All arguments are positional except the
+keyword-only options noted below.
+
+`Show`, `For`, `Repeat`, and `Switch` mount as native **regions**, not
+wrapper components: each is one computation that selects what to
+render, plus an owned scope per branch or row. There's no component
+context or props object. When a reactive hole re-renders and returns
+the same kind of region in the same place, the new condition or source
+is pushed into the mounted region, so branches and rows that are still
+selected survive.
 
 | Name | Description |
 | --- | --- |
@@ -37,32 +45,79 @@ callback shape:
 The row callback runs once per row inside the row's owner scope and
 untracked; anything reactive inside a row must read an accessor within
 a hole, memo, or effect. Passing a plain list for `each` renders once
-and warns in dev mode.
+and warns in dev mode. A store list can be passed as is.
+
+#### Typed callbacks
+
+`For` and `Show` have generic overloads, so type checkers infer the
+callback's parameters from the source (`Repeat`'s callback is typed as
+taking an `int`):
+
+| Call | Inferred parameters |
+| --- | --- |
+| `For(todos, lambda todo, i: ...)` | `todo: Todo`, `i: Accessor[int]` |
+| `For(todos, lambda todo, i: ..., keyed=False)` | `todo: Accessor[Todo]`, `i: int` |
+| `For(todos, lambda todo, i: ..., keyed=lambda t: t.id)` | `todo: Accessor[Todo]`, `i: Accessor[int]` |
+| `Show(user, lambda u: ...)` | `u: Accessor[User]` |
+| `Show(user, lambda u: ..., keyed=True)` | `u: User` |
+
+The callbacks here are arguments to `For` and `Show`, not template
+interpolations, so they may be bare lambdas. Inside a t-string, wrap a
+lambda in parentheses or give it a name.
 
 ```python
-from wybthon import For, Match, Repeat, Show, Switch, create_signal, li, p, span, ul
+from wybthon import For, Match, Repeat, Show, Switch, create_signal, html
 
 todos, set_todos = create_signal([{"id": 1, "title": "Ship", "done": False}])
 status, set_status = create_signal("ready")
 rating, set_rating = create_signal(3)
 user, set_user = create_signal(None)
 
-view = ul(
-    Show(user, lambda u: li("Hello, ", lambda: u()["name"]), fallback=li("Sign in")),
-    For(todos, lambda todo, i: li(lambda: f"{i() + 1}. {todo['title']}")),
-    For(todos, lambda todo, i: li(lambda: todo()["title"]), keyed=lambda t: t["id"]),
-    li(Repeat(rating, lambda i: span("*"), start=1)),
+
+def greeting(u):
+    return html(t"<li>Hello, {(lambda: u()['name'])}</li>")
+
+
+def numbered(todo, i):
+    return html(t"<li>{(lambda: i() + 1)}. {todo['title']}</li>")
+
+
+def live_title(todo, i):
+    return html(t"<li>{(lambda: todo()['title'])}</li>")
+
+
+def is_loading():
+    return status() == "loading"
+
+
+def is_ready():
+    return status() == "ready"
+
+
+view = html(t"""
+  <ul>
+    {Show(user, greeting, fallback=html(t"<li>Sign in</li>"))}
+    {For(todos, numbered)}
+    {For(todos, live_title, keyed=lambda t: t["id"])}
+    <li>{Repeat(rating, lambda i: html(t"<span>*</span>"), start=1)}</li>
+    {
     Switch(
-        Match(lambda: status() == "loading", lambda: p("Loading...")),
-        Match(lambda: status() == "ready", lambda: p("Ready")),
-        fallback=lambda: p("Unknown"),
-    ),
-)
+        Match(is_loading, html(t"<li>Loading...</li>")),
+        Match(is_ready, html(t"<li>Ready</li>")),
+        fallback=html(t"<li>Unknown</li>"),
+    )
+}
+  </ul>
+""")
 ```
 
 - `Show` tracks only the truthiness of `when`; a callable `children`
   may take the value accessor (or the raw value with `keyed=True`, which
-  re-creates the branch on every change).
+  re-creates the branch on every change). `Show` and `Switch` are one
+  branch computation that re-mounts only when the selected branch
+  changes.
+- `children` and `fallback` may be nodes, such as templates, or
+  callables. A node branch is mounted afresh each time it's selected.
 - `Repeat` is driven purely by the count: growing mounts tail slots,
   shrinking disposes them, and nothing else is touched. `count` and
   `start` may be accessors or ints.

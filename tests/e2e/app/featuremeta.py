@@ -24,4 +24,5 @@ FEATURES = [
     ("portal", "Portal"),
     ("router", "Router"),
     ("engine", "Engine"),
+    ("templates", "Templates"),
 ]

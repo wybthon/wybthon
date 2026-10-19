@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from . import _core
-from ._core import Accessor, Memo, Owner, Signal
+from ._core import Memo, Owner, Signal
 
 __all__ = ["map_array", "repeat"]
 
@@ -226,23 +226,3 @@ def repeat[U](
         return range(first, first + max(0, int(n)))
 
     return map_array(slots, lambda i, _index: fn(i), fallback=fallback)
-
-
-def _accessor_of(value: Any) -> Accessor[Any]:
-    """Wrap any zero-arg callable as an Accessor (identity for existing accessors)."""
-    if isinstance(value, Accessor):
-        return value
-    return _Fn(value)
-
-
-class _Fn[T](Accessor[T]):
-    __slots__ = ("_fn",)
-
-    def __init__(self, fn: Callable[[], T]) -> None:
-        self._fn = fn
-
-    def __call__(self) -> T:
-        return self._fn()
-
-    def peek(self) -> T:
-        return _core.untrack(self._fn)

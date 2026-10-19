@@ -35,9 +35,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from .component import component
 from .reactivity import _core
 from .reactivity._core import Accessor, Computation, Signal, _positional_count
-from .reactivity._props import RawProps
+from .reactivity._props import Prop, Props, prop
 from .vnode import Fragment, VNode, h, to_text_vnode
 
 __all__ = ["Errored"]
@@ -131,7 +132,15 @@ def _render_fallback(fb: Any, err: Accessor[BaseException], reset: Callable[[], 
     return vnode
 
 
-def _Errored(props: RawProps) -> Any:
+class _ErroredProps(Props):
+    children: Any = None
+    fallback: Any = None
+    on_error: Any = None
+    reset_on: Prop[Any] = prop(default=None)
+
+
+@component
+def _Errored(props: _ErroredProps) -> Any:
     # Framework-internal signal: the handler runs inside whatever tracking
     # scope raised, so it bypasses the dev-mode write guard, and it
     # reveals immediately even while a transition holds data.
@@ -148,9 +157,9 @@ def _Errored(props: RawProps) -> Any:
 
             type_name, message = session.failed[key]
             error._value = ServerError(message, type_name)
-    children = props.raw("children")
-    fallback = props.raw("fallback")
-    on_error = props.raw("on_error")
+    children = props.children
+    fallback = props.fallback
+    on_error = props.on_error
     reset_on = props.reset_on
     last_token: list[Any] = [_UNSET]
     # Sources the failing computation had read when it raised. The

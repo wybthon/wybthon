@@ -66,6 +66,7 @@ nav:
   - Getting Started: getting-started.md
   - Concepts:
     - Mental Model: concepts/mental-model.md
+    - Templates: concepts/templates.md
     - Components: concepts/components.md
     - Primitives: concepts/primitives.md
     - Reactivity: concepts/reactivity.md
@@ -108,7 +109,8 @@ nav:
     - Reconciler: api/reconciler.md
     - Kernel: api/kernel.md
     - DOM: api/dom.md
-    - HTML helpers: api/html.md
+    - Element helpers: api/elements.md
+    - Templates: api/templates.md
     - SVG helpers: api/svg.md
     - Events: api/events.md
     - Forms: api/forms.md
@@ -131,6 +133,7 @@ nav:
     - Template: rfcs/0000-template.md
     - "0001: Server rendering": rfcs/0001-server-rendering-and-hydration.md
     - "0002: Engine v2": rfcs/0002-engine-v2.md
+    - "0003: Engine v3": rfcs/0003-engine-v3.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

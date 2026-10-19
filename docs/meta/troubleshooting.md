@@ -20,6 +20,14 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`, for example `from wybthon.router import Link, Router`.
 
+??? bug "`ModuleNotFoundError: No module named 'wybthon.html'`"
+
+    **Symptoms:** `from wybthon.html import div` (or `import wybthon.html`) fails after upgrading.
+
+    **Likely cause:** the element helper module was renamed to `wybthon.elements` by [RFC 0003](../rfcs/0003-engine-v3.md). `wybthon.html` is now the [`html`][wybthon.html] template function.
+
+    **Fix:** import the helpers from `wybthon` (`from wybthon import div, p`) or from `wybthon.elements`. Consider writing new markup as templates; see [Templates](../concepts/templates.md).
+
 ??? bug "Pyodide fails to load"
 
     **Symptoms:** the page renders nothing; the browser console shows a network error or an `Importing pyodide failed` message.
@@ -43,6 +51,69 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** read the warning text. `mkdocstrings` reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (for example, while a feature is in flight), turn the link into plain text or remove it.
 
+## Templates
+
+??? bug "`SyntaxError: t-string: lambda expressions are not allowed without parentheses`"
+
+    **Symptoms:** the module containing a template fails to import, pointing at a `lambda` inside `{...}`, such as `html(t"<button onclick={lambda: save()}>Save</button>")`.
+
+    **Likely cause:** Python's grammar doesn't allow a bare `lambda` in a t-string (or f-string) interpolation, because its `:` would start a format spec. The error comes from Python itself, before Wybthon runs.
+
+    **Fix:** wrap the lambda in parentheses, or give it a name. Named handlers and memos are the idiomatic form:
+
+    ```python
+    from wybthon import create_memo, create_signal, html
+
+    count, set_count = create_signal(0)
+
+    html(t"<p>{(lambda: count() * 2)}</p>")  # parentheses
+
+    doubled = create_memo(lambda: count() * 2)  # or a name
+
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+
+    html(t"<p>{doubled}</p><button onclick={increment}>+</button>")
+    ```
+
+    A lambda passed as an argument inside the interpolation is fine, because it's already inside parentheses: `{For(todos, lambda todo, i: row(todo))}`.
+
+??? bug "`TemplateError: <tr> can't be a child of <table> (add a <tbody>)`"
+
+    **Symptoms:** calling [`html`][wybthon.html] raises [`TemplateError`][wybthon.TemplateError] the first time a template runs. The message names the problem and quotes the template:
+
+    ```text
+    <tr> can't be a child of <table> (add a <tbody>)
+      in template: t'<table><tr><td>1</td></tr></table>'
+    ```
+
+    **Likely cause:** the markup is malformed, or the browser's HTML parser would silently rearrange it. Wybthon clones exactly the nodes the template describes, so it rejects markup that wouldn't parse back to the same tree. Other messages you may see:
+
+    - `<div> can't be inside <p>; the HTML parser would close the <p>`: block content inside a paragraph. Use a `<div>` for the outer element, or an inline element inside.
+    - `<a> can't be nested inside another <a>`: links, buttons, and forms can't contain themselves, even through other elements.
+    - `Closing tag </div> doesn't match <span>`: a missing or misordered closing tag.
+    - Text directly inside `<tbody>` or another table section, a `<li>` directly inside a `<li>`, and an interpolation inside `<script>`, `<style>`, or `<textarea>` are rejected too.
+
+    **Fix:** write the markup the parser expects, for example `<table><tbody><tr>...</tr></tbody></table>`. Give a `<textarea>` its value with `value={...}`. See [Templates](../concepts/templates.md#markup-the-parser-would-rewrite-is-an-error).
+
+??? bug "A template attribute such as `class_` shows up literally in the DOM"
+
+    **Symptoms:** the rendered element has an attribute named `class_` or `html_for`, and no class or label association.
+
+    **Likely cause:** templates use HTML attribute names. The Python spellings (`class_`, `html_for`, `aria_label`) belong to the element helpers.
+
+    **Fix:** write `class`, `for`, and `aria-label` in templates. Event attributes accept `onclick`, `onClick`, and `on:click`. A spread (`<input {attrs}>`) is the exception: its mapping uses the helpers' Python names, such as `on_input`.
+
+??? bug "A component tag receives a dict, or its props aren't checked by my type checker"
+
+    **Symptoms:** a plain function used as `<{fn} ...>` gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in `<{Card} titel="Hi" />`.
+
+    **Likely cause:** the tag form calls a [`@component`][wybthon.component] with keyword props. Any other callable is called the way its signature takes children: with a `children` keyword (`Show`, `Loading`), with positional children (`Link`, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.
+
+    **Fix:** decorate the function with `@component` and give it a `Props` class, or call it inside an interpolation (`{Link("Home", href="/")}`), which is type-checked like any other call.
+
 ## Components and props
 
 ??? bug "`TypeError: Card() got unexpected prop(s): ...` or `is missing required prop(s): ...`"
@@ -62,7 +133,7 @@ If something isn't working as expected, scan this page for the symptom you're se
     **Fix:** move the inputs onto a props class and take it as the only parameter:
 
     ```python
-    from wybthon import Prop, Props, component, h2, prop
+    from wybthon import Prop, Props, component, html, prop
 
 
     class CardProps(Props):
@@ -71,7 +142,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     @component
     def Card(props: CardProps):
-        return h2(props.title)
+        return html(t"<h2>{props.title}</h2>")
     ```
 
     A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.
@@ -96,7 +167,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** the fallback's `err` argument is an accessor, as in Solid 2.0, and `str(err)` formats the accessor itself.
 
-    **Fix:** read it: `p(lambda: str(err()))`.
+    **Fix:** read it inside a hole, `html(t"<p>{(lambda: str(err()))}</p>")`, or place `err` itself in the template: `html(t"<p>{err}</p>")`.
 
 ## Reactive bugs
 
@@ -114,7 +185,7 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely cause:** you called `my_prop()` or `count()` in the component body before returning the tree. Components run once, so that read isn't tracked and its value is frozen.
 
-    **Fix:** put the accessor itself in the tree (`span(my_prop)`), wrap the expression in a zero-arg lambda (`span(lambda: my_prop().upper())`), or derive it with `create_memo`. If a one-time read is what you want (seeding local state, for example), make it explicit with `my_prop.peek()` or [`untrack`][wybthon.untrack]; both silence the warning.
+    **Fix:** put the accessor itself in the template (`<span>{my_prop}</span>`), place a zero-argument function there (a named `def`, or `{(lambda: my_prop().upper())}`), or derive it with `create_memo`. If a one-time read is what you want (seeding local state, for example), make it explicit with `my_prop.peek()` or [`untrack`][wybthon.untrack]; both silence the warning.
 
 ??? bug "My signal read shows the old value right after I set it"
 
@@ -176,13 +247,13 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Likely causes:**
 
-    - The prop name is misspelled. Wybthon expects `on_click`, `on_input`, `on_change`, and so on (`onClick` also works).
+    - The name is misspelled. Templates expect `onclick`, `oninput`, `onchange`, and so on (`onClick` and `on:click` also work); element helpers expect `on_click`, `on_input`, and `on_change`.
     - The event type doesn't bubble (`focus`, `blur`, `mouseenter`, `scroll`); delegation only sees bubbling events.
     - The element lives outside every container passed to [`render`][wybthon.render] (for example a [`Portal`][wybthon.Portal] mounted into `body`), so no delegation root receives the event.
     - The handler returns a coroutine without scheduling it; nothing happens but no error is raised.
     - The handler was forwarded inside a `merge` or `omit` spread. Every entry in those views is an accessor, so the element registers the accessor instead of your function.
 
-    **Fix:** confirm the prop name, switch to a bubbling type (`focusin`, `mouseover`) or attach a native listener through a [`Ref`][wybthon.Ref] in [`on_settled`][wybthon.on_settled], keep portal targets inside a render container, schedule async handlers with `asyncio.create_task(...)` or wrap them in an [`action`][wybthon.action], and pass forwarded handlers by name (`on_click=props.on_click`).
+    **Fix:** confirm the name, switch to a bubbling type (`focusin`, `mouseover`) or attach a native listener through a [`Ref`][wybthon.Ref] in [`on_settled`][wybthon.on_settled], keep portal targets inside a render container, schedule async handlers with `asyncio.create_task(...)` or wrap them in an [`action`][wybthon.action], and pass forwarded handlers by name (`onclick={props.on_click}`).
 
 ??? bug "`ref.current` is `None` when I read it"
 
