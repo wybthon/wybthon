@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2216,14 +2248,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2739,6 +2799,8 @@
       
         
       
+        
+      
     
     
     
@@ -2866,6 +2928,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3837,7 +3927,7 @@ interpolation, so the whole string updates as one binding.</p>
 
         <p>Create a VNode from a tag, props, and children.</p>
 <p>The low-level constructor behind the helpers in
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;html&lt;/span&gt;" href="../html/#wybthon.html"><code>wybthon.html</code></a>. Reactive expressions in child
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;elements&lt;/span&gt;" href="../elements/#wybthon.elements"><code>wybthon.elements</code></a>. Reactive expressions in child
 positions are wrapped as holes when the parent mounts; components
 receive their children verbatim through the <code>children</code> prop.</p>
 
@@ -4070,7 +4160,7 @@ only that region when its reads change.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt;" href="../wybthon/#wybthon.VNode"><code>VNode</code></a></td>
-<td>Element, text, component, fragment, or hole node; <code>tag</code>, <code>props</code>, <code>children</code>, <code>key</code>.</td>
+<td>Element, text, component, fragment, hole, template, or region node; <code>tag</code>, <code>props</code>, <code>children</code>, <code>key</code>.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a></td>
@@ -4086,19 +4176,35 @@ only that region when its reads change.</p>
 </tr>
 </tbody>
 </table>
+<p>Most nodes are built for you:</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../wybthon/#wybthon.html"><code>html</code></a> returns a <code>_tpl</code> node for a template with one
+  root element: a reference to the compiled template plus the
+  interpolated values, with no VNodes for the static markup. A template
+  with several roots returns a fragment, and one with no elements
+  returns text.</li>
+<li><code>Show</code> and <code>Switch</code> return <code>_branch</code> nodes, and <code>For</code> and <code>Repeat</code> return
+  <code>_list</code> nodes; the reconciler mounts these as native regions.</li>
+<li>The <a href="../elements/">element helpers</a> and <code>h()</code> build ordinary element
+  VNodes.</li>
+</ul>
+<p>Treat these special tags as internal: build nodes with <code>html</code>, the
+helpers, and the flow functions rather than by tag name.</p>
 <p>Holes are created implicitly: any accessor or zero-arg callable in a
-child position becomes one, and so does a template string that
-interpolates one (<code>t"Hello, {name}"</code>, a single hole for the whole
-string). Reach for <code>hole()</code> when you need a stable <code>key</code> or want the
-hole visually explicit.</p>
+child position becomes one, in a template or a helper. A t-string
+passed as a helper child (<code>p(t"Hello, {name}")</code>) is a single hole for
+the whole string. Reach for <code>hole()</code> when you need a stable <code>key</code> or
+want the hole visually explicit.</p>
 <p><code>VNode[...]</code> sets children with item syntax and returns the node, so
 <code>section(class_="card")[h1("Hello"), p("Body")]</code> equals
 <code>section(h1("Hello"), p("Body"), class_="card")</code>. A component call
 supports the same syntax for its <code>children</code> prop.</p>
-<p>A subtree mounted from a compiled shape keeps its VNodes, but only the
-root and its dynamic children get <code>el</code> assigned at mount; static
-descendants receive node ids lazily, when the reconciler first patches
-the subtree. Don't rely on <code>.el</code> of a static descendant.</p>
+<p>A subtree mounted from a compiled helper shape keeps its VNodes, but
+only the root and its dynamic children get <code>el</code> assigned at mount;
+static descendants receive node ids lazily, when the reconciler first
+patches the subtree. Don't rely on <code>.el</code> of a static descendant.</p>
+<p><code>h()</code> is the lowest-level way to build a tree, useful when the tag
+itself is computed:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">hole</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">name</span><span class="p">,</span> <span class="n">set_name</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Ada"</span><span class="p">)</span>
@@ -4112,12 +4218,13 @@ the subtree. Don't rely on <code>.el</code> of a static descendant.</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 1"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Body 2"</span><span class="p">)),</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
 </span></code></pre></div>
-<p>The <a href="../html/"><code>wybthon.html</code></a> helpers wrap <code>h()</code> with keyword props, so
-most application code writes <code>section(h1("Hello, ", name), class_="card")</code>
-instead.</p>
+<p>The <a href="../elements/"><code>wybthon.elements</code></a> helpers wrap <code>h()</code> with keyword
+props (<code>section(h1("Hello, ", name), class_="card")</code>), and most
+application code writes a template instead:
+<code>html(t'&lt;section class="card"&gt;&lt;h1&gt;Hello, {name}&lt;/h1&gt;&lt;/section&gt;')</code>.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../html/">HTML helpers</a> and <a href="../svg/">SVG helpers</a></li>
+<li><a href="../../concepts/templates/">Templates</a>, <a href="../elements/">element helpers</a>, and <a href="../svg/">SVG helpers</a></li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_accessor&lt;/span&gt;" href="../wybthon/#wybthon.is_accessor"><code>is_accessor</code></a>: the rule that decides what becomes a hole</li>
 <li><a href="../reconciler/">Reconciler</a>: how VNodes mount and patch</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>

@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2007,14 +2039,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2767,6 +2827,8 @@
       
         
       
+        
+      
     
     
     
@@ -2894,6 +2956,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -4237,18 +4327,25 @@ command buffer as a batched <code>LISTEN</code> op.</p>
 entry points used by the renderer and the kernel.</p>
 <h4 id="handler-props">Handler props<a class="headerlink" href="#handler-props" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Any prop named <code>on_&lt;type&gt;</code> (or <code>on&lt;Type&gt;</code>) is a handler: <code>on_click</code>,
-  <code>on_input</code>, <code>on_keydown</code>, <code>onChange</code>. The prefix is stripped and the
-  remainder lower-cased to get the DOM event type.</li>
-<li>A handler takes the <code>DomEvent</code> or no arguments at all
-  (<code>on_click=lambda: set_open(False)</code>); the arity is checked once, at
-  registration. Signal writes made inside a handler are flushed
-  automatically when it returns, so the DOM updates before the browser
-  paints.</li>
+<li>In a template, an attribute named <code>on&lt;type&gt;</code> is a handler:
+  <code>onclick={save}</code>, <code>oninput={edit}</code>. <code>onClick</code> and <code>on:click</code> work
+  too. The DOM event type is the rest of the name, lower-cased.</li>
+<li>With the element helpers, a prop named <code>on_&lt;type&gt;</code> (or <code>on&lt;Type&gt;</code>) is
+  a handler: <code>on_click</code>, <code>on_input</code>, <code>on_keydown</code>, <code>onChange</code>. Spreads
+  such as <code>&lt;input {bind_text(field)}&gt;</code> use these names.</li>
+<li>A capture suffix listens in the capture phase: <code>onClickCapture</code> in a
+  template, <code>on_click_capture</code> on a helper.</li>
+<li>A handler takes the <code>DomEvent</code> or no arguments at all; the arity is
+  checked once, at registration. Signal writes made inside a handler
+  are flushed automatically when it returns, so the DOM updates before
+  the browser paints.</li>
+<li>Python doesn't allow a bare <code>lambda</code> inside a template interpolation.
+  Name the handler, or wrap an inline one in parentheses:
+  <code>onclick={(lambda: set_open(False))}</code>.</li>
 <li><code>evt.raw</code> is the native event and is valid only synchronously during
   dispatch.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomEvent</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">li</span><span class="p">,</span> <span class="n">ul</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomEvent</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">items</span><span class="p">,</span> <span class="n">set_items</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">([])</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">draft</span><span class="p">,</span> <span class="n">set_draft</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
@@ -4260,18 +4357,32 @@ entry points used by the renderer and the kernel.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">keydown</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">if</span> <span class="n">evt</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">"Escape"</span><span class="p">:</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">set_draft</span><span class="p">(</span><span class="n">evt</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">view</span> <span class="o">=</span> <span class="n">form</span><span class="p">(</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">input_</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">draft</span><span class="p">,</span> <span class="n">on_input</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">set_draft</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">on_keydown</span><span class="o">=</span><span class="n">keydown</span><span class="p">),</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">button</span><span class="p">(</span><span class="s2">"Clear"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"button"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_items</span><span class="p">([])),</span>  <span class="c1"># no event needed</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">ul</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">()]),</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">on_submit</span><span class="o">=</span><span class="n">submit</span><span class="p">,</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">on_touchstart</span><span class="o">=</span><span class="n">event</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">passive</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># direct native listener</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">keydown</span><span class="p">(</span><span class="n">evt</span><span class="p">:</span> <span class="n">DomEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">if</span> <span class="n">evt</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">"Escape"</span><span class="p">:</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">set_draft</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># no event needed</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">set_items</span><span class="p">([])</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="k">def</span><span class="w"> </span><span class="nf">rows</span><span class="p">():</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">()]</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">ignore_touch</span> <span class="o">=</span> <span class="n">event</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">passive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># direct native listener</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="s2">  &lt;form onsubmit=</span><span class="si">{</span><span class="n">submit</span><span class="si">}</span><span class="s2"> ontouchstart=</span><span class="si">{</span><span class="n">ignore_touch</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="s2">    &lt;input value=</span><span class="si">{</span><span class="n">draft</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">edit</span><span class="si">}</span><span class="s2"> onkeydown=</span><span class="si">{</span><span class="n">keydown</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="s2">    &lt;button type="button" onclick=</span><span class="si">{</span><span class="n">clear</span><span class="si">}</span><span class="s2">&gt;Clear&lt;/button&gt;</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">rows</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="s2">  &lt;/form&gt;</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="delegation-notes">Delegation notes<a class="headerlink" href="#delegation-notes" title="Permanent link">&para;</a></h4>
 <ul>
@@ -4294,7 +4405,8 @@ entry points used by the renderer and the kernel.</p>
 </ul>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../html/">HTML helpers</a>: how handler props are recognized</li>
+<li><a href="../../concepts/templates/#interpolations">Templates</a>: event attributes in templates</li>
+<li><a href="../elements/">Element helpers</a>: how handler props are recognized</li>
 <li><a href="../kernel/">Kernel</a>: <code>REGISTER_TPL</code>, <code>LISTEN</code>, <code>UNLISTEN</code>, <code>ROOT</code>, and the dispatch payload</li>
 <li><a href="../../concepts/events/">Concepts: Events</a></li>
 <li><a href="../../concepts/forms/">Concepts: Forms</a></li>

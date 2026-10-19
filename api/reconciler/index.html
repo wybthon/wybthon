@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2200,14 +2232,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2723,6 +2783,8 @@
       
         
       
+        
+      
     
     
     
@@ -2850,6 +2912,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3319,6 +3409,15 @@ phase of every flush).</p>
   during mount and its returned tree is mounted directly. Updates flow
   through reactive holes and prop bindings embedded in that tree, never
   by re-running the body.</li>
+<li><strong>Templates mount from compiled literals.</strong> An <code>html(t"...")</code> instance
+  (a <code>_tpl</code> node) clones its literal's native template with one command
+  and fills its slots (see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;templates&lt;/span&gt;" href="../templates/#wybthon.templates"><code>wybthon.templates</code></a>).
+  Element helper trees mount from runtime shapes (<code>wybthon._shapes</code>).</li>
+<li><strong>Constant props are free.</strong> Only a tree a reactive hole returns (or
+  one passed to <code>render</code>) is ever patched, so a component mounted
+  anywhere else reads constant props without subscribing to anything,
+  and a binding that reads nothing reactive is dropped after its first
+  run.</li>
 <li><strong>Reactive holes</strong> are <code>_hole</code> VNodes whose expression runs inside a
   render effect; when its dependencies change, only that region is
   patched. Holes are created for every reactive expression in a child
@@ -3684,7 +3783,7 @@ an existing DOM node, or a kernel node id.</p>
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.html</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.elements</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello, world!"</span><span class="p">),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
@@ -3981,9 +4080,23 @@ touches the DOM directly: every mutation is an op against an integer
 node id (see <a href="../kernel/">kernel</a>), and the whole buffer is applied in
 one bridge crossing at commit time. Components run once; updates flow
 through reactive holes and prop bindings, each patching only its own
-region. Element subtrees mount through compiled shapes: a generated
-mount function per shape and one fused <code>CLONE</code> command per mount (see
-<a href="../../concepts/vdom/#compiled-mounting">Virtual DOM</a>).</p>
+region.</p>
+<p>What it mounts:</p>
+<ul>
+<li><strong>Templates.</strong> An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../wybthon/#wybthon.html"><code>html</code></a> template mounts as a <code>_tpl</code>
+  node: one fused <code>CLONE</code> command copies the template's native
+  <code>&lt;template&gt;</code>, and a generated mount function fills its slots. No
+  VNodes exist for the static parts.</li>
+<li><strong>Element helper trees.</strong> Subtrees built with the
+  <a href="../elements/">element helpers</a> mount through compiled shapes, also
+  with one <code>CLONE</code> per mount.</li>
+<li><strong>Regions.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions
+  with no component wrapped around them.</li>
+<li><strong>Components and holes.</strong> A component body runs once; a hole runs in
+  its own render effect.</li>
+</ul>
+<p>See <a href="../../concepts/vdom/#compiled-templates">Virtual DOM</a> for the
+details.</p>
 <table>
 <thead>
 <tr>
@@ -4020,13 +4133,13 @@ mount function per shape and one fused <code>CLONE</code> command per mount (see
 </table>
 <p><code>render</code>, <code>hydrate</code>, and <code>Root</code> are re-exported from <code>wybthon</code>; <code>mount</code>, <code>patch</code>,
 and <code>unmount</code> are for control-flow primitives and tests.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">render</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">render</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">title</span><span class="p">,</span> <span class="n">set_title</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">div</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="n">title</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Rendered once; the heading is a hole."</span><span class="p">))</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h1&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h1&gt;&lt;p&gt;Rendered once; the heading is a hole.&lt;/p&gt;&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
@@ -4043,7 +4156,14 @@ and <code>unmount</code> are for control-flow primitives and tests.</p>
 <li><code>flush()</code> commits staged writes, runs effects, and sends the op
    buffer across the bridge once.</li>
 </ol>
-<p>Patching matches VNodes by type and key: a different tag or key
+<p>Patching only happens where a reactive hole re-renders, or when
+<code>render</code> runs again into the same container. A hole that returns a
+template from the same literal as before patches the mounted instance
+slot by slot; a hole that returns the same kind of region pushes the
+new condition or source into the mounted one. Components are patched
+with new props only in those two places; everywhere else their props
+can't change, which is why a constant prop costs nothing.</p>
+<p>For everything else, patching matches VNodes by type and key: a different tag or key
 unmounts and remounts at the same position (so <code>Leaf(key=user_id())</code>
 restarts its state when the id changes). Keyed children use an
 identity, key, then type match with a longest-increasing-subsequence
@@ -4055,6 +4175,7 @@ route to the nearest <a class="autorefs autorefs-internal" title="&lt;code class
 <ul>
 <li><a href="../kernel/">Kernel</a>: the op protocol and backends</li>
 <li><a href="../vnode/">VNode</a>: the data structure being diffed</li>
+<li><a href="../../concepts/templates/">Templates</a>: how <code>html</code> templates compile and mount</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 <li><a href="../../concepts/lifecycle/">Concepts: Lifecycle and ownership</a></li>
 </ul>

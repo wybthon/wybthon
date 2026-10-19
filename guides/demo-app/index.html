@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1837,6 +1867,8 @@
       
         
       
+        
+      
     
     
     
@@ -2087,14 +2119,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/html/" class="md-nav__link">
+      <a href="../../api/elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2610,6 +2670,8 @@
       
         
       
+        
+      
     
     
     
@@ -2737,6 +2799,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3092,7 +3182,7 @@
 </table>
 <div class="admonition note">
 <p class="admonition-title">Versions</p>
-<p>The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. Use <code>wyb init</code> for a starter that matches the installed version's API.</p>
+<p>The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. A demo written before templates builds its markup with the element helpers, which still work; one that imports them from the <code>wybthon.html</code> module needs <code>wybthon.elements</code> (or a plain <code>from wybthon import div</code>) on the current release, because <code>wybthon.html</code> is now the template function. Use <code>wyb init</code> for a starter that matches the installed version's API.</p>
 </div>
 <h2 id="running-a-demo-locally">Running a demo locally<a class="headerlink" href="#running-a-demo-locally" title="Permanent link">&para;</a></h2>
 <p>A demo that contains a <code>wybthon.toml</code> is a Wybthon project, so the workflow is the same as for your own app:</p>

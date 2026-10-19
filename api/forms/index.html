@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2007,14 +2039,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2949,6 +3009,8 @@
       
         
       
+        
+      
     
     
     
@@ -3076,6 +3138,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -5058,7 +5148,7 @@ from <code>wybthon.forms</code>; these names aren't re-exported from <code>wybth
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">span</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.forms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">a11y_control_attrs</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">bind_checkbox</span><span class="p">,</span>
@@ -5075,28 +5165,34 @@ from <code>wybthon.forms</code>; these names aren't re-exported from <code>wybth
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">Signup</span><span class="p">():</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="n">form_state</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"agree"</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">rules</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">()],</span> <span class="s2">"email"</span><span class="p">:</span> <span class="p">[</span><span class="n">required</span><span class="p">(),</span> <span class="n">email</span><span class="p">()]}</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">return</span> <span class="n">form</span><span class="p">(</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">label</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="n">html_for</span><span class="o">=</span><span class="s2">"name"</span><span class="p">),</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">input_</span><span class="p">(</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            <span class="nb">id</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            <span class="o">**</span><span class="n">bind_text</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]),</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>            <span class="o">**</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-error"</span><span class="p">),</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="p">),</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="n">span</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-error"</span><span class="p">)),</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="n">label</span><span class="p">(</span><span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"checkbox"</span><span class="p">,</span> <span class="o">**</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"agree"</span><span class="p">])),</span> <span class="s2">" I agree"</span><span class="p">),</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>        <span class="n">button</span><span class="p">(</span><span class="s2">"Save"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="p">),</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>        <span class="n">on_submit</span><span class="o">=</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">fields</span><span class="p">),</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="s2">      &lt;form onsubmit=</span><span class="si">{</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span><span class="w"> </span><span class="n">save</span><span class="p">,</span><span class="w"> </span><span class="n">fields</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="s2">        &lt;label for="name"&gt;Name&lt;/label&gt;</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="s2">        &lt;input</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="s2">          id="name"</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="s2">          </span><span class="si">{</span><span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span><span class="si">}</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="s2">          </span><span class="si">{</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-error"</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="s2">        &gt;</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="s2">        &lt;span </span><span class="si">{</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-error"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">&lt;/span&gt;</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="s2">        &lt;label&gt;&lt;input type="checkbox" </span><span class="si">{</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"agree"</span><span class="p">])</span><span class="si">}</span><span class="s2">&gt; I agree&lt;/label&gt;</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="s2">        &lt;button type="submit"&gt;Save&lt;/button&gt;</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="s2">      &lt;/form&gt;</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
+<li>The binding helpers return prop mappings: spread them onto a template
+  tag (<code>&lt;input {bind_text(field)}&gt;</code>) or an element helper
+  (<code>input_(**bind_text(field))</code>).</li>
 <li>A field's <code>error</code> accessor is <code>None</code> while valid, so embedding it as a
   child renders nothing until there's a message.</li>
 <li><code>touched</code> becomes <code>True</code> on the first input, so you can delay showing
-  errors: <code>lambda: fields["name"].error() if fields["name"].touched() else None</code>.</li>
+  errors with a function such as
+  <code>def name_error(): return name.error() if name.touched() else None</code>.</li>
 <li><code>email()</code> accepts empty values; combine it with <code>required()</code>.</li>
 <li>In CPython tests, drive a form with <a href="../testing/"><code>wybthon.testing</code></a>:
   <code>fire.input(screen.get_by_label_text("Name"), "Ada")</code>, then
@@ -5105,7 +5201,7 @@ from <code>wybthon.forms</code>; these names aren't re-exported from <code>wybth
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../events/">Events</a>: the <code>DomEvent</code> these handlers receive</li>
-<li><a href="../html/">HTML helpers</a>: why <code>value</code> and <code>checked</code> are DOM properties</li>
+<li><a href="../elements/">Element helpers</a>: why <code>value</code> and <code>checked</code> are DOM properties</li>
 <li><a href="../../concepts/forms/">Concepts: Forms</a></li>
 <li><a href="../../examples/forms/">Examples: Forms</a></li>
 </ul>

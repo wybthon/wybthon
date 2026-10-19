@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1317,6 +1347,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-the-page-loads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the page loads
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#production-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1881,6 +1922,8 @@
       
         
       
+        
+      
     
     
     
@@ -2131,14 +2174,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/html/" class="md-nav__link">
+      <a href="../../api/elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2654,6 +2725,8 @@
       
         
       
+        
+      
     
     
     
@@ -2781,6 +2854,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3041,6 +3142,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-the-page-loads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the page loads
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#production-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3170,6 +3282,13 @@
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>dist<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </span></code></pre></div>
 <p>Deploy the contents of <code>dist/</code>, configure missing extensionless routes to serve <code>200.html</code>, and serve the app beneath <code>/dashboard/</code> in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and <code>manifest.json</code>. The preview server demonstrates that policy; use your static host for production serving.</p>
+<h2 id="what-the-page-loads">What the page loads<a class="headerlink" href="#what-the-page-loads" title="Permanent link">&para;</a></h2>
+<p>The build replaces the <code>&lt;!-- wyb:bootstrap --&gt;</code> marker with the tags that start the application, so every page it writes (<code>index.html</code>, <code>200.html</code>, and each prerendered route) carries them:</p>
+<ul>
+<li>A <code>&lt;link rel="modulepreload"&gt;</code> for Pyodide's <code>pyodide.mjs</code>, and a <code>&lt;link rel="preload" as="fetch" crossorigin&gt;</code> for the runtime archive and the application archive. The browser starts downloading all three while the page parses, instead of after the bootstrap has run.</li>
+<li>The manifest, inlined as <code>&lt;script type="application/json" id="wyb-manifest"&gt;</code>, so the bootstrap doesn't spend a round trip fetching it. <code>manifest.json</code> is still written at the root of the output, and the bootstrap falls back to fetching it when a page doesn't carry the inline copy.</li>
+<li>The bootstrap module itself.</li>
+</ul>
 <h2 id="production-mode">Production mode<a class="headerlink" href="#production-mode" title="Permanent link">&para;</a></h2>
 <p><code>wyb build</code> writes a production build: the bootstrap calls <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> before the application imports, so production apps skip the development checks (such as unknown-prop validation and write-in-scope errors) and print no development warnings. The manifest's <code>dev</code> field records the mode. <code>wyb dev</code> builds the same project with dev mode on. From Python, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;build_app&lt;/span&gt;" href="../../api/app-tools/#wybthon.build.build_app"><code>build_app</code></a> builds for production by default; pass <code>dev=True</code> for a development build. Read the current mode with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_dev_mode"><code>is_dev_mode()</code></a>.</p>
 <h2 id="reproducible-output">Reproducible output<a class="headerlink" href="#reproducible-output" title="Permanent link">&para;</a></h2>
@@ -3180,7 +3299,7 @@
 <h2 id="bytecode">Bytecode<a class="headerlink" href="#bytecode" title="Permanent link">&para;</a></h2>
 <p>When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. The manifest's <code>bytecode</code> field records whether it was included. Set <code>bytecode = false</code> to ship source only.</p>
 <h2 id="runtime-and-dependencies">Runtime and dependencies<a class="headerlink" href="#runtime-and-dependencies" title="Permanent link">&para;</a></h2>
-<p>The bootstrap loads Pyodide and the runtime/application archives concurrently, then unpacks and imports Python. It doesn't fetch every Python module separately. <code>packages</code> names packages in the pinned Pyodide distribution. <code>wheels</code> accepts exact <code>name==version</code> requirements or explicit wheel URLs compatible with the selected runtime. Set <code>pyodide-url</code> to host that runtime yourself.</p>
+<p>The bootstrap loads Pyodide and the runtime/application archives concurrently (the preload hints have usually started all three already), then unpacks and imports Python. It doesn't fetch every Python module separately. <code>packages</code> names packages in the pinned Pyodide distribution. <code>wheels</code> accepts exact <code>name==version</code> requirements or explicit wheel URLs compatible with the selected runtime. Set <code>pyodide-url</code> to host that runtime yourself.</p>
 <p>Pin dependencies and keep the runtime version deliberate. Browser Python code is public, including bundled configuration. Keep application secrets on a server.</p>
 <h2 id="explicit-lazy-chunks">Explicit lazy chunks<a class="headerlink" href="#explicit-lazy-chunks" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>

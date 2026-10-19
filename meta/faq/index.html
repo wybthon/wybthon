@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1754,6 +1784,8 @@
       
         
       
+        
+      
     
     
     
@@ -2004,14 +2036,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/html/" class="md-nav__link">
+      <a href="../../api/elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2527,6 +2587,8 @@
       
         
       
+        
+      
     
     
     
@@ -2654,6 +2716,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3149,7 +3239,15 @@
 </details>
 <details class="question">
 <summary>Why is there a virtual DOM if this is 'SolidJS for Python'?</summary>
-<p>Python has no JSX compiler to split static markup from dynamic parts, and every DOM call crosses the Python-to-JavaScript bridge. The VDOM is a rendering implementation detail: each reactive hole diffs only its own subtree, and the reconciler batches the resulting mutations through a JavaScript kernel in one bridge crossing. The reactive model is still fine-grained; a signal change re-runs the holes that read it, never whole components.</p>
+<p>Every DOM call crosses the Python-to-JavaScript bridge, so Wybthon batches mutations instead of making them one at a time. The VDOM is that batching layer, not a re-render model: each reactive hole diffs only its own subtree, and the reconciler sends the resulting mutations to a JavaScript kernel in one bridge crossing. The static parts of an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template never become VNodes at all. Each template literal compiles once to a native <code>&lt;template&gt;</code> that's cloned with one command, which is the job Solid's compiler does for JSX. The reactive model is fine-grained; a signal change re-runs the holes that read it, never whole components.</p>
+</details>
+<details class="question">
+<summary>Why do templates and element helpers both exist?</summary>
+<p>They serve different jobs, like JSX and <code>h</code> in Solid. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates are the primary way to write markup: they read like the HTML they produce, and each literal compiles once, so mounting one skips the per-node work. The <a href="../../api/elements/">element helpers</a> (<code>div(...)</code>, <code>p(...)</code>) are the programmatic layer, for markup that code builds: generated forms, recursive trees, or a component that computes its tag. The two mix freely and share one set of prop appliers, so a prop means the same thing in both. Only the attribute names differ: templates use HTML names (<code>class</code>, <code>for</code>, <code>onclick</code>), and helpers use Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>). See <a href="../../concepts/templates/#templates-and-the-element-helpers">Templates</a>.</p>
+</details>
+<details class="question">
+<summary>Why can't I write <code>{lambda: ...}</code> in a template?</summary>
+<p>Python's grammar doesn't allow a bare <code>lambda</code> inside a t-string interpolation, because its <code>:</code> would start a format spec, so it's a <code>SyntaxError</code> before Wybthon ever sees it. Wrap it in parentheses, <code>{(lambda: count() * 2)}</code>, or better, give it a name with <code>def</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. See the <a href="../troubleshooting/#templates">troubleshooting entry</a>.</p>
 </details>
 <h2 id="pyodide-and-runtime">Pyodide and runtime<a class="headerlink" href="#pyodide-and-runtime" title="Permanent link">&para;</a></h2>
 <details class="question">
@@ -3196,7 +3294,7 @@
 <p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> and take one parameter annotated with it. <code>Prop[T]</code> fields are reactive; anything else is a plain field:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveButtonProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
@@ -3206,7 +3304,7 @@
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@component</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">SaveButton</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">SaveButtonProps</span><span class="p">):</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">button</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">props</span><span class="o">.</span><span class="n">on_save</span><span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">on_save</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2">&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A component with no inputs takes no parameters. See <a href="../../guides/authoring-patterns/#declaring-props">Authoring patterns</a>.</p>
 </details>
@@ -3220,7 +3318,11 @@
 </details>
 <details class="question">
 <summary>How do I pass children?</summary>
-<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> and place <code>props.children</code> in the tree. Callers use item syntax, <code>Card(title="Hi")[p("Body")]</code>, or the <code>children=</code> keyword.</p>
+<p>Subclass <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ParentProps&lt;/span&gt;" href="../../api/wybthon/#wybthon.ParentProps"><code>ParentProps</code></a> and place <code>props.children</code> in the template. Callers nest markup inside a component tag, <code>&lt;{Card} title="Hi"&gt;&lt;p&gt;Body&lt;/p&gt;&lt;/{Card}&gt;</code>, or pass it with item syntax, <code>Card(title="Hi")[html(t"&lt;p&gt;Body&lt;/p&gt;")]</code>, or the <code>children=</code> keyword.</p>
+</details>
+<details class="question">
+<summary>Is the <code>&lt;{Card}&gt;</code> tag form type-checked?</summary>
+<p>Not statically. Type checkers can't see inside a template string, so dev mode checks a tag's props when it runs, like any component call. When you want the checker's help, call the component inside an interpolation instead: <code>{Card(title="Hi")}</code> is checked like any other call.</p>
 </details>
 <details class="question">
 <summary>Do I need a mypy plugin?</summary>
@@ -3236,7 +3338,7 @@
 <h2 id="reactivity">Reactivity<a class="headerlink" href="#reactivity" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Why didn't my component re-run after a signal changed?</summary>
-<p>Because components run <strong>once</strong> by design. A read in the component body captures the value at setup time. To stay reactive, place the accessor itself in the rendered tree (<code>span(my_signal)</code>), wrap the expression in a zero-arg lambda (<code>span(lambda: f"{count()} items")</code>), or derive it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use <code>.peek()</code> when a one-time read is what you want.</p>
+<p>Because components run <strong>once</strong> by design. A read in the component body captures the value at setup time. To stay reactive, place the accessor itself in the template (<code>&lt;span&gt;{my_signal}&lt;/span&gt;</code>), place a zero-argument function there (<code>&lt;span&gt;{(lambda: f"{count()} items")}&lt;/span&gt;</code>, or a named <code>def</code>), or derive it with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use <code>.peek()</code> when a one-time read is what you want.</p>
 </details>
 <details class="question">
 <summary>Why does my signal still show the old value right after I set it?</summary>
@@ -3266,7 +3368,7 @@
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">selected</span><span class="p">,</span> <span class="n">set_selected</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># In a row: class_=lambda: "active" if is_selected.get(row_id) else ""</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># In a row: html(t"&lt;tr class={(lambda: 'active' if is_selected.get(row_id) else '')}&gt;...&lt;/tr&gt;")</span>
 </span></code></pre></div>
 </details>
 <details class="question">

@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/meta/style-guide/">
       
       
-        <link rel="prev" href="../../rfcs/0002-engine-v2/">
+        <link rel="prev" href="../../rfcs/0003-engine-v3/">
       
       
         <link rel="next" href="../contributing/">
@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1754,6 +1784,8 @@
       
         
       
+        
+      
     
     
     
@@ -2004,14 +2036,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/html/" class="md-nav__link">
+      <a href="../../api/elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2527,6 +2587,8 @@
       
         
       
+        
+      
     
     
     
@@ -2654,6 +2716,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3356,7 +3446,7 @@ the standard sections as tables.</p>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    Example:</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">        ```python</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">        count, set_count = create_signal(3)</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">        rows = repeat(count, lambda i: li(f"Row {i}"))</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">        rows = repeat(count, lambda i: html(t"&lt;li&gt;Row {i}&lt;/li&gt;"))</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="sd">        ```</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="sd">    """</span>
 </span></code></pre></div>
@@ -3388,10 +3478,9 @@ the standard sections as tables.</p>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">        ```python</span>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">        fields = form_state({"name": ""})</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">        name = fields["name"]</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">        input_(**bind_text(name))</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">        span(lambda: name.error() or "")</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="sd">        ```</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="sd">    """</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">        html(t"&lt;input {bind_text(name)}&gt;&lt;span&gt;{name.error}&lt;/span&gt;")</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">        ```</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="sd">    """</span>
 </span></code></pre></div>
 <p>The class summary describes the type's purpose. Document construction in
 <code>__init__</code> only when there's more to say than the signature already conveys
@@ -3473,6 +3562,15 @@ typically enough; autorefs picks them up via signature annotations
   <code>```yaml</code>.</li>
 <li>Prefer <strong>runnable</strong> snippets that include the imports needed to
   copy-paste them.</li>
+<li>Write markup as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates. Use the element
+  helpers (<code>div(...)</code>, <code>h(...)</code>) only where the page is about them or
+  the markup is built by code.</li>
+<li>Never put a bare <code>lambda</code> inside a t-string interpolation; it's a
+  <code>SyntaxError</code>. Prefer a named function or memo, and wrap an inline
+  lambda in parentheses when one is clearer: <code>{(lambda: count() * 2)}</code>.</li>
+<li>Check that every template parses: <code>&lt;tr&gt;</code> needs a <code>&lt;tbody&gt;</code>, and a
+  <code>&lt;p&gt;</code> can't hold block elements. Malformed markup raises
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a>.</li>
 <li>For longer multi-step examples, lean on Material's <code>pymdownx.tabbed</code>
   to show the same example in different forms (e.g., "Component" vs.
   "Direct call").</li>

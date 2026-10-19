@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2007,14 +2039,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2712,6 +2772,8 @@
       
         
       
+        
+      
     
     
     
@@ -2839,6 +2901,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3769,7 +3859,12 @@ binding.</p>
 development mode, serves the build, rebuilds when a source file changes,
 and pushes a <code>reload</code> event over Server-Sent Events at <code>/__sse</code> so open
 pages refresh. <code>wyb build</code> writes a production build, which turns dev
-mode off, and <code>wyb preview</code> serves one.</p>
+mode off, and <code>wyb preview</code> serves one. Every built page carries its
+build manifest inline (<code>&lt;script type="application/json"
+id="wyb-manifest"&gt;</code>) and preloads what boot needs: a
+<code>&lt;link rel="modulepreload"&gt;</code> for Pyodide's <code>pyodide.mjs</code>, and
+<code>&lt;link rel="preload" as="fetch" crossorigin&gt;</code> for the runtime and
+application archives, so they download in parallel with Pyodide.</p>
 <table>
 <thead>
 <tr>

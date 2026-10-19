@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1754,6 +1784,8 @@
       
         
       
+        
+      
     
     
     
@@ -2004,14 +2036,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/html/" class="md-nav__link">
+      <a href="../../api/elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2527,6 +2587,8 @@
       
         
       
+        
+      
     
     
     
@@ -2654,6 +2716,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -2905,6 +2995,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Templates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#components-and-props" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3052,6 +3153,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Templates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#components-and-props" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3166,6 +3278,12 @@
 <p><strong>Fix:</strong> import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>, for example <code>from wybthon.router import Link, Router</code>.</p>
 </details>
 <details class="bug">
+<summary><code>ModuleNotFoundError: No module named 'wybthon.html'</code></summary>
+<p><strong>Symptoms:</strong> <code>from wybthon.html import div</code> (or <code>import wybthon.html</code>) fails after upgrading.</p>
+<p><strong>Likely cause:</strong> the element helper module was renamed to <code>wybthon.elements</code> by <a href="../../rfcs/0003-engine-v3/">RFC 0003</a>. <code>wybthon.html</code> is now the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> template function.</p>
+<p><strong>Fix:</strong> import the helpers from <code>wybthon</code> (<code>from wybthon import div, p</code>) or from <code>wybthon.elements</code>. Consider writing new markup as templates; see <a href="../../concepts/templates/">Templates</a>.</p>
+</details>
+<details class="bug">
 <summary>Pyodide fails to load</summary>
 <p><strong>Symptoms:</strong> the page renders nothing; the browser console shows a network error or an <code>Importing pyodide failed</code> message.</p>
 <p><strong>Likely causes:</strong></p>
@@ -3186,6 +3304,56 @@
 <p><strong>Likely cause:</strong> an unresolved cross-reference (for example a typo in a <code>[label][wybthon.symbol]</code> link, or a link to a name that was removed in the API overhaul) or an unused <code>nav</code> entry.</p>
 <p><strong>Fix:</strong> read the warning text. <code>mkdocstrings</code> reports the exact symbol it couldn't find, so update the page or the symbol's docstring accordingly. If the broken link is intentional (for example, while a feature is in flight), turn the link into plain text or remove it.</p>
 </details>
+<h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
+<details class="bug">
+<summary><code>SyntaxError: t-string: lambda expressions are not allowed without parentheses</code></summary>
+<p><strong>Symptoms:</strong> the module containing a template fails to import, pointing at a <code>lambda</code> inside <code>{...}</code>, such as <code>html(t"&lt;button onclick={lambda: save()}&gt;Save&lt;/button&gt;")</code>.</p>
+<p><strong>Likely cause:</strong> Python's grammar doesn't allow a bare <code>lambda</code> in a t-string (or f-string) interpolation, because its <code>:</code> would start a format spec. The error comes from Python itself, before Wybthon runs.</p>
+<p><strong>Fix:</strong> wrap the lambda in parentheses, or give it a name. Named handlers and memos are the idiomatic form:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>  <span class="c1"># parentheses</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># or a name</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">():</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">doubled</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+&lt;/button&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>A lambda passed as an argument inside the interpolation is fine, because it's already inside parentheses: <code>{For(todos, lambda todo, i: row(todo))}</code>.</p>
+</details>
+<details class="bug">
+<summary><code>TemplateError: &lt;tr&gt; can't be a child of &lt;table&gt; (add a &lt;tbody&gt;)</code></summary>
+<p><strong>Symptoms:</strong> calling <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> the first time a template runs. The message names the problem and quotes the template:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&lt;tr&gt; can't be a child of &lt;table&gt; (add a &lt;tbody&gt;)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  in template: t'&lt;table&gt;&lt;tr&gt;&lt;td&gt;1&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;'
+</span></code></pre></div>
+<p><strong>Likely cause:</strong> the markup is malformed, or the browser's HTML parser would silently rearrange it. Wybthon clones exactly the nodes the template describes, so it rejects markup that wouldn't parse back to the same tree. Other messages you may see:</p>
+<ul>
+<li><code>&lt;div&gt; can't be inside &lt;p&gt;; the HTML parser would close the &lt;p&gt;</code>: block content inside a paragraph. Use a <code>&lt;div&gt;</code> for the outer element, or an inline element inside.</li>
+<li><code>&lt;a&gt; can't be nested inside another &lt;a&gt;</code>: links, buttons, and forms can't contain themselves, even through other elements.</li>
+<li><code>Closing tag &lt;/div&gt; doesn't match &lt;span&gt;</code>: a missing or misordered closing tag.</li>
+<li>Text directly inside <code>&lt;tbody&gt;</code> or another table section, a <code>&lt;li&gt;</code> directly inside a <code>&lt;li&gt;</code>, and an interpolation inside <code>&lt;script&gt;</code>, <code>&lt;style&gt;</code>, or <code>&lt;textarea&gt;</code> are rejected too.</li>
+</ul>
+<p><strong>Fix:</strong> write the markup the parser expects, for example <code>&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;...&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;</code>. Give a <code>&lt;textarea&gt;</code> its value with <code>value={...}</code>. See <a href="../../concepts/templates/#markup-the-parser-would-rewrite-is-an-error">Templates</a>.</p>
+</details>
+<details class="bug">
+<summary>A template attribute such as <code>class_</code> shows up literally in the DOM</summary>
+<p><strong>Symptoms:</strong> the rendered element has an attribute named <code>class_</code> or <code>html_for</code>, and no class or label association.</p>
+<p><strong>Likely cause:</strong> templates use HTML attribute names. The Python spellings (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>) belong to the element helpers.</p>
+<p><strong>Fix:</strong> write <code>class</code>, <code>for</code>, and <code>aria-label</code> in templates. Event attributes accept <code>onclick</code>, <code>onClick</code>, and <code>on:click</code>. A spread (<code>&lt;input {attrs}&gt;</code>) is the exception: its mapping uses the helpers' Python names, such as <code>on_input</code>.</p>
+</details>
+<details class="bug">
+<summary>A component tag receives a dict, or its props aren't checked by my type checker</summary>
+<p><strong>Symptoms:</strong> a plain function used as <code>&lt;{fn} ...&gt;</code> gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in <code>&lt;{Card} titel="Hi" /&gt;</code>.</p>
+<p><strong>Likely cause:</strong> the tag form calls a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>@component</code></a> with keyword props. Any other callable is called the way its signature takes children: with a <code>children</code> keyword (<code>Show</code>, <code>Loading</code>), with positional children (<code>Link</code>, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.</p>
+<p><strong>Fix:</strong> decorate the function with <code>@component</code> and give it a <code>Props</code> class, or call it inside an interpolation (<code>{Link("Home", href="/")}</code>), which is type-checked like any other call.</p>
+</details>
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
 <details class="bug">
 <summary><code>TypeError: Card() got unexpected prop(s): ...</code> or <code>is missing required prop(s): ...</code></summary>
@@ -3198,16 +3366,16 @@
 <p><strong>Symptoms:</strong> a component raises when it's first called.</p>
 <p><strong>Likely cause:</strong> the function uses parameter-style props (<code>def Card(title: Prop[str])</code>), several parameters, <code>**rest</code>, or an annotation that isn't a <code>Props</code> subclass.</p>
 <p><strong>Fix:</strong> move the inputs onto a props class and take it as the only parameter:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">prop</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nd">@component</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">):</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">h2</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">title</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nd">@component</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">Card</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">CardProps</span><span class="p">):</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h2&gt;</span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h2&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A component with no inputs takes no parameters. If the annotation is defined later in the module, make sure the name resolves by the time the component is first called.</p>
 </details>
@@ -3226,7 +3394,7 @@
 <summary>The error fallback shows an accessor instead of the message</summary>
 <p><strong>Symptoms:</strong> an <code>Errored</code> fallback renders something like <code>&lt;wybthon.error_boundary._ErrorAccessor object at 0x...&gt;</code> where the error message should be.</p>
 <p><strong>Likely cause:</strong> the fallback's <code>err</code> argument is an accessor, as in Solid 2.0, and <code>str(err)</code> formats the accessor itself.</p>
-<p><strong>Fix:</strong> read it: <code>p(lambda: str(err()))</code>.</p>
+<p><strong>Fix:</strong> read it inside a hole, <code>html(t"&lt;p&gt;{(lambda: str(err()))}&lt;/p&gt;")</code>, or place <code>err</code> itself in the template: <code>html(t"&lt;p&gt;{err}&lt;/p&gt;")</code>.</p>
 </details>
 <h2 id="reactive-bugs">Reactive bugs<a class="headerlink" href="#reactive-bugs" title="Permanent link">&para;</a></h2>
 <details class="bug">
@@ -3239,7 +3407,7 @@
 <summary>A component reads a prop or signal but doesn't update</summary>
 <p><strong>Symptoms:</strong> the console shows <code>[wybthon] Warning: Component &lt;X&gt; read reactive value prop '&lt;name&gt;' at the top level of its body.</code> during the first render, and the value never changes afterwards.</p>
 <p><strong>Likely cause:</strong> you called <code>my_prop()</code> or <code>count()</code> in the component body before returning the tree. Components run once, so that read isn't tracked and its value is frozen.</p>
-<p><strong>Fix:</strong> put the accessor itself in the tree (<code>span(my_prop)</code>), wrap the expression in a zero-arg lambda (<code>span(lambda: my_prop().upper())</code>), or derive it with <code>create_memo</code>. If a one-time read is what you want (seeding local state, for example), make it explicit with <code>my_prop.peek()</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a>; both silence the warning.</p>
+<p><strong>Fix:</strong> put the accessor itself in the template (<code>&lt;span&gt;{my_prop}&lt;/span&gt;</code>), place a zero-argument function there (a named <code>def</code>, or <code>{(lambda: my_prop().upper())}</code>), or derive it with <code>create_memo</code>. If a one-time read is what you want (seeding local state, for example), make it explicit with <code>my_prop.peek()</code> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a>; both silence the warning.</p>
 </details>
 <details class="bug">
 <summary>My signal read shows the old value right after I set it</summary>
@@ -3288,13 +3456,13 @@
 <p><strong>Symptoms:</strong> no console log, no state change.</p>
 <p><strong>Likely causes:</strong></p>
 <ul>
-<li>The prop name is misspelled. Wybthon expects <code>on_click</code>, <code>on_input</code>, <code>on_change</code>, and so on (<code>onClick</code> also works).</li>
+<li>The name is misspelled. Templates expect <code>onclick</code>, <code>oninput</code>, <code>onchange</code>, and so on (<code>onClick</code> and <code>on:click</code> also work); element helpers expect <code>on_click</code>, <code>on_input</code>, and <code>on_change</code>.</li>
 <li>The event type doesn't bubble (<code>focus</code>, <code>blur</code>, <code>mouseenter</code>, <code>scroll</code>); delegation only sees bubbling events.</li>
 <li>The element lives outside every container passed to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> (for example a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Portal"><code>Portal</code></a> mounted into <code>body</code>), so no delegation root receives the event.</li>
 <li>The handler returns a coroutine without scheduling it; nothing happens but no error is raised.</li>
 <li>The handler was forwarded inside a <code>merge</code> or <code>omit</code> spread. Every entry in those views is an accessor, so the element registers the accessor instead of your function.</li>
 </ul>
-<p><strong>Fix:</strong> confirm the prop name, switch to a bubbling type (<code>focusin</code>, <code>mouseover</code>) or attach a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, keep portal targets inside a render container, schedule async handlers with <code>asyncio.create_task(...)</code> or wrap them in an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, and pass forwarded handlers by name (<code>on_click=props.on_click</code>).</p>
+<p><strong>Fix:</strong> confirm the name, switch to a bubbling type (<code>focusin</code>, <code>mouseover</code>) or attach a native listener through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled</code></a>, keep portal targets inside a render container, schedule async handlers with <code>asyncio.create_task(...)</code> or wrap them in an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>, and pass forwarded handlers by name (<code>onclick={props.on_click}</code>).</p>
 </details>
 <details class="bug">
 <summary><code>ref.current</code> is <code>None</code> when I read it</summary>

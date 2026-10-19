@@ -18,7 +18,7 @@
         <link rel="prev" href="../kernel/">
       
       
-        <link rel="next" href="../html/">
+        <link rel="next" href="../elements/">
       
       
         
@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2398,14 +2430,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2921,6 +2981,8 @@
       
         
       
+        
+      
     
     
     
@@ -3048,6 +3110,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -5186,7 +5276,7 @@ element with <code>ref=</code> mounts.</p>
 <code>Element("#app", existing=True)</code> queries one, <code>Element(node=raw)</code> wraps a
 node from another API, and <code>Element(node_id=42)</code> wraps a kernel id
 (what refs and event targets hand you).</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">on_settled</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">FancyInputProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
@@ -5202,18 +5292,26 @@ node from another API, and <code>Element(node_id=42)</code> wraps a kernel id
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="n">focus</span><span class="p">)</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="c1"># Forward the parent's ref (if any) and keep a local one.</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">return</span> <span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">[</span><span class="n">local</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">])</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Refs are assigned during mount, so read them in
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../wybthon/#wybthon.on_settled"><code>on_settled</code></a>, an effect, or an event handler, not
-at the top of the component body. The <code>ref=</code> prop also accepts a
-callback <code>ref(el)</code>.</p>
+at the top of the component body. The <code>ref</code> attribute (or the helpers'
+<code>ref=</code> prop) also accepts a callback that receives the <code>Element</code>, which
+is closer to Solid 2.0's function refs:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">measure</span><span class="p">(</span><span class="n">el</span><span class="p">):</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">offsetWidth</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div ref=</span><span class="si">{</span><span class="n">measure</span><span class="si">}</span><span class="s2">&gt;Sized&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div ref=</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="w"> </span><span class="n">el</span><span class="p">:</span><span class="w"> </span><span class="n">el</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span><span class="si">}</span><span class="s2">&gt;Inline&lt;/div&gt;"</span><span class="p">)</span>  <span class="c1"># an inline lambda needs parentheses</span>
+</span></code></pre></div>
 <p><code>Element.query(selector)</code>, <code>.find(selector)</code>, and <code>.element</code> commit
 pending batched ops first, so nodes created earlier in the same update
 are visible to the read.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../html/">HTML helpers</a>: the <code>ref=</code> prop and DOM property rules</li>
+<li><a href="../elements/">Element helpers</a>: the <code>ref=</code> prop and DOM property rules</li>
 <li><a href="../events/">Events</a>: <code>DomEvent.target</code> and <code>current_target</code> are <code>Element</code>-backed</li>
 <li><a href="../../concepts/dom/">Concepts: DOM interop</a></li>
 </ul>

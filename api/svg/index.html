@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/svg/">
       
       
-        <link rel="prev" href="../html/">
+        <link rel="prev" href="../templates/">
       
       
         <link rel="next" href="../events/">
@@ -557,6 +557,8 @@
       
         
       
+        
+      
     
     
     
@@ -619,6 +621,34 @@
     
   
     Mental Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -1756,6 +1786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2007,14 +2039,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../html/" class="md-nav__link">
+      <a href="../elements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTML helpers
+    Element helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
   
 
     
@@ -2129,6 +2189,17 @@
     <span class="md-ellipsis">
       
         Naming rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#svg-in-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SVG in templates
       
     </span>
   </a>
@@ -2634,6 +2705,8 @@
       
         
       
+        
+      
     
     
     
@@ -2761,6 +2834,34 @@
     
   
     0002: Engine v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0003-engine-v3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003: Engine v3
   
 
     
@@ -3064,6 +3165,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#svg-in-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SVG in templates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3130,7 +3242,7 @@
     <div class="doc doc-contents first">
 
         <p>SVG element helpers.</p>
-<p>The same calling convention as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;html&lt;/span&gt;" href="../html/#wybthon.html"><code>wybthon.html</code></a>: children
+<p>The same calling convention as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;elements&lt;/span&gt;" href="../elements/#wybthon.elements"><code>wybthon.elements</code></a>: children
 are positional, props are keyword arguments, and underscores in prop
 names become hyphens (<code>stroke_width="2"</code> renders <code>stroke-width="2"</code>).
 Attribute names that are camelCase in SVG (<code>viewBox</code>, <code>preserveAspectRatio</code>)
@@ -3177,7 +3289,7 @@ under their SVG meaning; import from this module explicitly.</p>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
 <p>SVG element helpers with the same calling convention as
-<a href="../html/"><code>wybthon.html</code></a>: children are positional, props are keyword
+<a href="../elements/"><code>wybthon.elements</code></a>: children are positional, props are keyword
 arguments, and underscores in prop names become hyphens
 (<code>stroke_width="2"</code> renders <code>stroke-width="2"</code>). The reconciler infers
 the SVG namespace from the <code>svg</code> root and creates the subtree with
@@ -3210,7 +3322,7 @@ from <code>wybthon.svg</code>.</p>
 </tr>
 <tr>
 <td>Factory</td>
-<td><code>element(tag)</code> (re-exported from <code>wybthon.html</code>) for tags without a helper, such as <code>element("feGaussianBlur")</code>.</td>
+<td><code>element(tag)</code> (re-exported from <code>wybthon.elements</code>) for tags without a helper, such as <code>element("feGaussianBlur")</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -3245,10 +3357,29 @@ from <code>wybthon.svg</code>.</p>
 </span></code></pre></div>
 <p>Reactive values (accessors or zero-arg functions) work as SVG attribute
 values exactly as they do for HTML props.</p>
+<h4 id="svg-in-templates">SVG in templates<a class="headerlink" href="#svg-in-templates" title="Permanent link">&para;</a></h4>
+<p>An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../wybthon/#wybthon.html"><code>html</code></a> template can contain <code>&lt;svg&gt;</code> markup too,
+written with SVG's own attribute names:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">color</span><span class="p">,</span> <span class="n">set_color</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"tomato"</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">chart</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s2">  &lt;div class="chart"&gt;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s2">    &lt;svg viewBox="0 0 100 100" width="200" height="200"&gt;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s2">      &lt;circle cx="50" cy="50" r="40" fill=</span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2"> stroke="black" stroke-width="2" /&gt;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="s2">    &lt;/svg&gt;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="s2">  &lt;/div&gt;</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="s2">"""</span><span class="p">)</span>
+</span></code></pre></div>
+<p>A template containing <code>&lt;svg&gt;</code> or <code>&lt;math&gt;</code> is expanded into the same
+VNodes these helpers build, so it mounts with the correct namespace.
+It's expanded rather than cloned from a native <code>&lt;template&gt;</code>.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../html/">HTML helpers</a></li>
-<li><a href="../html/#prop-values">HTML helpers</a>: attribute and reactive binding semantics</li>
+<li><a href="../elements/">Element helpers</a></li>
+<li><a href="../../concepts/templates/#server-rendering-hydration-and-svg">Templates</a></li>
+<li><a href="../elements/#prop-values">Element helpers</a>: attribute and reactive binding semantics</li>
 <li><a href="../../concepts/vdom/">Concepts: Virtual DOM</a></li>
 </ul>
 
