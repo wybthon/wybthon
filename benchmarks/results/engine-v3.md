@@ -100,8 +100,8 @@ Moving rarely set `Computation` and `Owner` fields to class defaults cut a compu
 
 ## Validation
 
-- **Unit tests:** 785 pass on Python 3.14 with 87% branch coverage. That includes 46 template tests, 15 zero-cost component tests, and typing contracts for `For`, `Show`, and `html` under both mypy and pyright.
-- **Browser tests:** 79 pass in Chromium on Pyodide 314.0.6. Eight of them cover templates in the real HTML parser: compiled rows inside a `<tbody>`, slot patching, component tags, event spellings, whitespace, and SVG expansion.
+- **Unit tests:** 798 pass on Python 3.14 with 87% branch coverage. That includes 58 template tests, 17 zero-cost component tests, and typing contracts for `For`, `Show`, and `html` under both mypy and pyright.
+- **Browser tests:** 82 pass in Chromium on Pyodide 314.0.6. Eleven of them cover templates in the real HTML parser and JavaScript kernel: compiled rows inside a `<tbody>`, slot patching, component tags, event spellings and restored handlers, whitespace, SVG expansion, and a check that the validation rules reject exactly the markup Chromium's parser rearranges.
 - **Static checks:** Ruff, mypy, and the strict documentation build pass.
 
 ## Reproduction

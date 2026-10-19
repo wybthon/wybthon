@@ -257,8 +257,8 @@ The [engine v3 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmar
 - **Updates** are no slower.
 - **The leaner reactive core (part 3) was reverted.** Moving rare fields to class defaults made a computation 112 bytes smaller, but slot-free reads of those fields aren't specialized by CPython 3.14 and were 3.5 times slower on every binding's hot path.
 - **Validation:**
-  - 785 unit tests pass with 87% branch coverage, including typing contracts under mypy and pyright.
-  - 79 browser tests pass on Pyodide, eight of them for templates in the real HTML parser.
+  - 798 unit tests pass with 87% branch coverage, including typing contracts under mypy and pyright.
+  - 82 browser tests pass on Pyodide. Eleven of them cover templates in the real HTML parser and JavaScript kernel, including checks that the validation rules match Chromium's parser.
 
 The largest remaining costs per row are now one object each: the row's owner and index signal, the label's computation, and the delegated handler records. Further gains need cheaper reactive nodes rather than less tree work.
 
