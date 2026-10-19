@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.38.0 (2026-10-19)
+
+### Features
+
+- **template**: Compile t-string templates and cheap components
+  ([#40](https://github.com/wybthon/wybthon/pull/40),
+  [`30928df`](https://github.com/wybthon/wybthon/commit/30928df74f4bf53ae2583593ba3554d87ed50c4b))
+
+
 ## v0.37.0 (2026-10-08)
 
 ### Features
