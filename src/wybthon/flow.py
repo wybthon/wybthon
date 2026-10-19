@@ -41,7 +41,7 @@ from typing import Any, Literal, overload
 
 from ._warnings import warn_each_plain_list
 from .component import component
-from .reactivity._core import Accessor, Signal, _positional_count, is_accessor
+from .reactivity._core import Accessor, Signal, _positional_count, _unwrap, is_accessor
 from .reactivity._props import Prop, Props
 from .vnode import Fragment, VNode, h
 
@@ -84,8 +84,15 @@ def _callback(value: Any) -> Any:
     return value
 
 
-def _constant(value: Any) -> Callable[[], Any]:
-    return lambda: value
+def _unwrap_when(when: Any) -> Any:
+    """A `Match` condition's value: called when it's a zero-argument callable."""
+    return when() if callable(when) and _positional_count(when) == 0 else when
+
+
+# A branch region's `select(inputs, current)` picks `(token, slot, args)` from
+# its inputs. `current` reads the region's latest inputs (tracked), so the
+# accessor a kept branch receives follows a condition that a re-rendering
+# hole pushed in, not the one the branch first mounted with.
 
 
 # ---------------------------------------------------------------------------
@@ -93,18 +100,14 @@ def _constant(value: Any) -> Callable[[], Any]:
 # ---------------------------------------------------------------------------
 
 
-def _show(inputs: tuple[Any, Any, Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+def _show(inputs: tuple[Any, Any, Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
     when, children, fallback = inputs
-    if is_accessor(when):
-        if when():
-            return (True,), children, (when,)
-        return (False,), fallback, ()
-    if when:
-        return (True,), children, (_constant(when),)
+    if when() if is_accessor(when) else when:
+        return (True,), children, (lambda: _unwrap(current()[0]),)
     return (False,), fallback, ()
 
 
-def _show_keyed(inputs: tuple[Any, Any, Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+def _show_keyed(inputs: tuple[Any, Any, Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
     when, children, fallback = inputs
     value = when() if is_accessor(when) else when
     if value:
@@ -289,16 +292,14 @@ class Match:
         self.keyed = keyed
 
 
-def _switch(inputs: tuple[tuple[Match, ...], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
+def _switch(inputs: tuple[tuple[Match, ...], Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
     matches, fallback = inputs
     for index, match in enumerate(matches):
-        when = match.when
-        reactive = callable(when) and _positional_count(when) == 0
-        value = when() if reactive else when
+        value = _unwrap_when(match.when)
         if value:
             if match.keyed:
                 return (index, value), match.children, (value,)
-            return (index,), match.children, (when if reactive else _constant(when),)
+            return (index,), match.children, (lambda index=index: _unwrap_when(current()[0][index].when),)
     return (-1,), fallback, ()
 
 
@@ -422,7 +423,7 @@ def _ClientOnly(props: _ClientOnlyProps) -> Any:
     if hydrating:
         session.after_hydration.append(lambda: ready._set(True, _core._O_REVEAL))
 
-    def select(_: Any) -> tuple[Any, Any, tuple[Any, ...]]:
+    def select(_: Any, __: Any) -> tuple[Any, Any, tuple[Any, ...]]:
         return ((True,), children, ()) if ready() else ((False,), fallback, ())
 
     return VNode("_branch", {"select": select, "inputs": None})

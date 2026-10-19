@@ -283,3 +283,29 @@ def test_a_plain_function_tag_receives_the_props_dict_and_reruns_on_change():
     flush()
     assert screen.text() == "b"
     assert [c["label"] for c in calls] == ["a", "b"]
+
+
+def test_a_patched_show_keeps_its_branch_and_reads_the_new_value():
+    value, set_value = create_signal(1)
+    mounts: list[int] = []
+
+    def branch(current):
+        mounts.append(1)
+        return span(current)
+
+    screen = render(div(lambda: Show(value(), branch)))
+    set_value(2)
+    flush()
+    assert screen.text() == "2"
+    assert mounts == [1]
+    set_value(0)
+    flush()
+    assert screen.text() == ""
+
+
+def test_a_patched_switch_match_reads_the_new_condition_value():
+    value, set_value = create_signal("a")
+    screen = render(div(lambda: Switch(Match(value(), lambda current: span(current)), fallback=p("none"))))
+    set_value("b")
+    flush()
+    assert screen.text() == "b"

@@ -71,9 +71,12 @@ from ._html_rules import (
     NO_NESTED_CHILD,
     NO_NESTED_DESCENDANT,
     NO_TEXT_CONTENT,
-    P_CLOSERS,
     RAW_CONTENT_ELEMENTS,
+    ROOT_SCOPE,
     VOID_ELEMENTS,
+    Scope,
+    enter_scope,
+    scope_conflict,
 )
 from .events import NON_BUBBLING, EventHandler, _event_key, _handlers, bind_delegated, set_handler
 from .reactivity._core import is_accessor
@@ -348,10 +351,19 @@ class _Compiler:
     def guard(self, line: str) -> None:
         self.guards.append(line)
 
-    def element(self, vnode: VNode, var: str, parent_offset: int) -> None:
+    def element(
+        self,
+        vnode: VNode,
+        var: str,
+        parent_offset: int,
+        scope: Scope = ROOT_SCOPE,
+        ancestors: frozenset[str] = frozenset(),
+    ) -> None:
         tag = vnode.tag
         assert isinstance(tag, str)
         lower = tag.lower()
+        inner = enter_scope(scope, lower)
+        inside = ancestors | {lower}
         if lower in RAW_CONTENT_ELEMENTS or lower in FOREIGN_ELEMENTS:
             raise _NotEligible
         offset = self.count
@@ -459,11 +471,15 @@ class _Compiler:
                 clower = ctag.lower()
                 if allowed is not None and clower not in allowed:
                     raise _NotEligible
-                if lower == "p" and clower in P_CLOSERS:
+                # Markup the parser would close or rearrange (a block inside
+                # a <p> however deep, a link inside a link) mounts per node.
+                if scope_conflict(inner, clower) is not None:
                     raise _NotEligible
-                if clower == lower and (lower in NO_NESTED_CHILD or lower in NO_NESTED_DESCENDANT):
+                if clower == lower and clower in NO_NESTED_CHILD:
                     raise _NotEligible
-                self.element(child, x, offset)
+                if clower in NO_NESTED_DESCENDANT and clower in inside:
+                    raise _NotEligible
+                self.element(child, x, offset, inner, inside)
                 prev_text = False
                 continue
             if no_text and ctag == "_hole":

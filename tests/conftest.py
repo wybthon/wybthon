@@ -111,6 +111,11 @@ def reload_wybthon_modules(doc=None):
         "svg",
     ):
         mods[name] = importlib.import_module(f"wybthon.{name}")
+    # Reloading ``kernel`` empties its template registry, so compiled
+    # templates cached from earlier tests would carry registration ids the
+    # new registry never issued. Recompile them.
+    mods["templates"]._by_identity.clear()
+    mods["templates"]._by_value.clear()
     if doc is not None:
         kernel = mods["kernel"]
         kernel.set_backend(kernel.PythonBackend(doc))

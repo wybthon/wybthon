@@ -78,9 +78,12 @@ from ._html_rules import (
     NO_NESTED_CHILD,
     NO_NESTED_DESCENDANT,
     NO_TEXT_CONTENT,
-    P_CLOSERS,
     RAW_CONTENT_ELEMENTS,
+    ROOT_SCOPE,
     VOID_ELEMENTS,
+    Scope,
+    enter_scope,
+    scope_conflict,
 )
 from .reactivity._core import is_accessor
 from .vnode import VNode, flatten_children, render_template, to_text_vnode
@@ -385,8 +388,14 @@ def _clean_text(text: str) -> str:
     return "".join(out)
 
 
-def _normalize(nodes: list[Any], parent: _Element | None, parser: _Parser, ancestors: frozenset[str]) -> list[Any]:
-    """Clean whitespace, decode entities, merge text, and validate content models."""
+def _normalize(
+    nodes: list[Any], parent: _Element | None, parser: _Parser, ancestors: frozenset[str], scope: Scope = ROOT_SCOPE
+) -> list[Any]:
+    """Clean whitespace, decode entities, merge text, and validate content models.
+
+    `scope` tracks the ancestors whose closing rules reach past the parent
+    (see `wybthon._html_rules.scope_conflict`).
+    """
     lower = parent.tag.lower() if parent is not None else None
     verbatim = lower == "pre" or "pre" in ancestors
     out: list[Any] = []
@@ -416,14 +425,18 @@ def _normalize(nodes: list[Any], parent: _Element | None, parser: _Parser, ances
                 if allowed is not None and tag not in allowed:
                     hint = " (add a <tbody>)" if lower == "table" and tag == "tr" else ""
                     raise parser.error(f"<{node.tag}> can't be a child of <{parent.tag}>{hint}")
-                if lower == "p" and tag in P_CLOSERS:
-                    raise parser.error(f"<{node.tag}> can't be inside <p>; the HTML parser would close the <p>")
                 if tag in NO_NESTED_CHILD and (tag == lower or (tag in HEADINGS and lower in HEADINGS)):
                     raise parser.error(f"<{node.tag}> can't be a direct child of <{parent.tag}>")
+            conflict = scope_conflict(scope, tag)
+            if conflict is not None:
+                raise parser.error(conflict)
             if tag in NO_NESTED_DESCENDANT and tag in ancestors:
                 raise parser.error(f"<{node.tag}> can't be nested inside another <{node.tag}>")
-            node.children = _normalize(node.children, node, parser, ancestors | {tag})
+            node.children = _normalize(node.children, node, parser, ancestors | {tag}, enter_scope(scope, tag))
         elif isinstance(node, _Component):
+            # A component's content compiles as its own template and is
+            # inserted with DOM operations, so no parser sees it inside
+            # this markup's open elements.
             node.children = _normalize(node.children, None, parser, ancestors)
         out.append(node)
     return out
@@ -664,12 +677,19 @@ def _walk_components(node: _Element, parser: _Parser) -> None:
 
 
 class _Entry:
-    __slots__ = ("strings", "program", "formats")
+    """A compiled template, shared by every literal with the same static strings.
 
-    def __init__(self, strings: tuple[str, ...], program: _Program, formats: tuple[int, ...]) -> None:
+    Conversions and format specs aren't part of the entry: literals with
+    equal strings can differ in them (`{price}` and `{price:.2f}`), and
+    CPython may even give such literals one shared strings tuple, so
+    `html()` reads them from each template it's called with.
+    """
+
+    __slots__ = ("strings", "program")
+
+    def __init__(self, strings: tuple[str, ...], program: _Program) -> None:
         self.strings = strings
         self.program = program
-        self.formats = formats
 
 
 # Keyed by ``id(strings)``; the entry holds the tuple, so the id can't be reused
@@ -693,10 +713,7 @@ def _compile(template: Template) -> _Entry:
             for part in program[1]:
                 if isinstance(part, _Compiled):
                     _walk_components(part.root, parser)
-        formats = tuple(
-            index for index, item in enumerate(template.interpolations) if item.conversion or item.format_spec
-        )
-        entry = _Entry(strings, program, formats)
+        entry = _Entry(strings, program)
         if len(_by_value) >= _VALUE_CACHE_MAX:
             _by_value.pop(next(iter(_by_value)))
         _by_value[strings] = entry
@@ -770,13 +787,15 @@ def html(template: Template) -> VNode:
     entry = _by_identity.get(id(strings))
     if entry is None or entry.strings is not strings:
         entry = _compile(template)
-    values: tuple[Any, ...] = template.values
-    if entry.formats:
-        items = template.interpolations
-        mutable = list(values)
-        for index in entry.formats:
-            mutable[index] = _format_value(items[index])
-        values = tuple(mutable)
+    items = template.interpolations
+    for item in items:
+        if item.conversion or item.format_spec:
+            values: tuple[Any, ...] = tuple(
+                _format_value(i) if i.conversion or i.format_spec else i.value for i in items
+            )
+            break
+    else:
+        values = template.values
     kind, data = entry.program
     if kind == "element":
         return VNode("_tpl", data, values)  # type: ignore[arg-type]
@@ -1272,10 +1291,12 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
             elif not (type(value) is type(previous) and value == previous):
                 _apply_single_prop(nid, slot[3], _FRESH, value)
         elif kind == _S_EVENT:
-            mapping = _events._handlers.get(nid)
-            if mapping is not None:
-                mapping.pop(slot[4], None)
-            _bind_event(nid, slot, value)
+            if value is not None and not callable(value):
+                raise TypeError(f"{slot[3]} must be callable, got {value!r}")
+            # `set_handler` releases whatever listener the slot had (delegated,
+            # direct, or already spent by `once`) and registers the new one
+            # with the kernel, so a handler restored after `None` fires again.
+            _events.set_handler(nid, slot[3], value)
         elif kind == _S_REF:
             detach_ref(nid)
             if value is not None:

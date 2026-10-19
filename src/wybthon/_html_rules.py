@@ -48,7 +48,7 @@ ALLOWED_CHILDREN = {
     "colgroup": frozenset({"col"}),
 }
 
-# Start tags that implicitly close an open `<p>`.
+# Start tags that implicitly close a `<p>` open in button scope, however deep.
 P_CLOSERS = frozenset(
     {
         "address",
@@ -70,19 +70,25 @@ P_CLOSERS = frozenset(
         "h4",
         "h5",
         "h6",
+        "dd",
+        "dt",
         "header",
         "hgroup",
         "hr",
+        "li",
+        "listing",
         "main",
         "menu",
         "nav",
         "ol",
         "p",
+        "plaintext",
         "pre",
         "search",
         "section",
         "table",
         "ul",
+        "xmp",
     }
 )
 
@@ -94,3 +100,137 @@ NO_NESTED_DESCENDANT = frozenset({"a", "button", "form"})
 NO_NESTED_CHILD = frozenset({"li", "dt", "dd", "option", "h1", "h2", "h3", "h4", "h5", "h6"})
 
 HEADINGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+
+# Elements that end "button scope": a `<p>` outside one of these is out of
+# reach of a start tag inside it.
+BUTTON_SCOPE_BOUNDARIES = frozenset(
+    {"applet", "button", "caption", "html", "marquee", "object", "table", "td", "template", "th"}
+    | {"foreignObject", "foreignobject", "desc", "title", "mi", "mo", "mn", "ms", "mtext", "annotation-xml"}
+)
+
+# The parser's "special" elements. An `<li>` (or `<dd>`/`<dt>`) start tag
+# closes an open one unless a special element other than these three
+# intervenes.
+SPECIAL_ELEMENTS = frozenset(
+    {
+        "address",
+        "applet",
+        "area",
+        "article",
+        "aside",
+        "base",
+        "basefont",
+        "bgsound",
+        "blockquote",
+        "body",
+        "br",
+        "button",
+        "caption",
+        "center",
+        "col",
+        "colgroup",
+        "dd",
+        "details",
+        "dir",
+        "div",
+        "dl",
+        "dt",
+        "embed",
+        "fieldset",
+        "figcaption",
+        "figure",
+        "footer",
+        "form",
+        "frame",
+        "frameset",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "head",
+        "header",
+        "hgroup",
+        "hr",
+        "html",
+        "iframe",
+        "img",
+        "input",
+        "keygen",
+        "li",
+        "link",
+        "listing",
+        "main",
+        "marquee",
+        "menu",
+        "meta",
+        "nav",
+        "noembed",
+        "noframes",
+        "noscript",
+        "object",
+        "ol",
+        "p",
+        "param",
+        "plaintext",
+        "pre",
+        "script",
+        "search",
+        "section",
+        "select",
+        "source",
+        "style",
+        "summary",
+        "table",
+        "tbody",
+        "td",
+        "template",
+        "textarea",
+        "tfoot",
+        "th",
+        "thead",
+        "title",
+        "tr",
+        "track",
+        "ul",
+        "wbr",
+        "xmp",
+    }
+)
+_LIST_SCOPE_TRANSPARENT = frozenset({"address", "div", "p"})
+
+# What's open above an element, for the closing rules that reach past
+# its parent: `(p open in button scope, li open, dd or dt open)`.
+type Scope = tuple[bool, bool, bool]
+ROOT_SCOPE: Scope = (False, False, False)
+
+
+def enter_scope(scope: Scope, tag: str) -> Scope:
+    """The scope an element's children see, given the scope it was opened in."""
+    p_open, li_open, dd_open = scope
+    if tag == "p":
+        p_open = True
+    elif tag in BUTTON_SCOPE_BOUNDARIES:
+        p_open = False
+    if tag in SPECIAL_ELEMENTS and tag not in _LIST_SCOPE_TRANSPARENT:
+        li_open = tag == "li"
+        dd_open = tag == "dd" or tag == "dt"
+    return (p_open, li_open, dd_open)
+
+
+def scope_conflict(scope: Scope, tag: str) -> str | None:
+    """Why the parser would close an open ancestor on seeing `tag` here, or `None`.
+
+    A block start tag closes a `<p>` open in button scope even through
+    inline elements (`<p><span><div>`), and an `<li>`, `<dd>`, or `<dt>`
+    closes an open one unless a special element such as a list intervenes.
+    """
+    p_open, li_open, dd_open = scope
+    if p_open and tag in P_CLOSERS:
+        return f"<{tag}> can't be inside <p>; the HTML parser would close the <p>"
+    if li_open and tag == "li":
+        return "<li> can't be inside another <li> unless a list (<ul> or <ol>) wraps it; the parser would close it"
+    if dd_open and (tag == "dd" or tag == "dt"):
+        return f"<{tag}> can't be inside <dd> or <dt> unless a <dl> wraps it; the parser would close it"
+    return None

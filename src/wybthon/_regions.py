@@ -503,8 +503,9 @@ def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
 def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
     """Mount a selected branch, retaining its committed scope until replacement.
 
-    The branch's `select(inputs)` returns `(token, slot, args)`; the
-    content re-mounts only when the token changes.
+    The branch's `select(inputs, current)` returns `(token, slot, args)`;
+    the content re-mounts only when the token changes. `current` reads the
+    latest inputs (a signal when the region can be patched).
     """
     from .flow import _render_slot
     from .reconciler import _close_fragment, _coerce_result, _open_fragment, _unmount
@@ -516,12 +517,15 @@ def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
         vnode.props["_cell"] = cell
 
         def choose() -> Any:
-            return select(cell())
+            return select(cell(), cell)
 
     else:
 
+        def current() -> Any:
+            return inputs
+
         def choose() -> Any:
-            return select(inputs)
+            return select(inputs, current)
 
     claim_end = _open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()

@@ -103,9 +103,9 @@ Wybthon hands each template's markup to the browser's HTML parser and relies on 
 | Markup | Why it's rejected |
 | --- | --- |
 | `<table><tr>...</tr></table>` | The parser inserts a `<tbody>`; write it yourself. |
-| `<p><div>...</div></p>` | A `<div>` closes the open `<p>`. |
+| `<p><span><div>...</div></span></p>` | A block element closes an open `<p>`, however deeply it's nested (a `<button>` or table cell in between stops this). |
 | `<a><span><a>...</a></span></a>` | Links, buttons, and forms can't nest. |
-| `<ul><li><li>...</li></li></ul>` | A `<li>` closes the previous one. |
+| `<li><div><li>...</li></div></li>` | A `<li>` closes an open one unless a list wraps it; `<dd>` and `<dt>` work the same way inside a `<dl>`. |
 | `<tbody>text</tbody>` | Table sections can't hold text. |
 | `<div><span></div>` | Mismatched or unclosed tags. |
 

@@ -539,3 +539,124 @@ def test_an_action_is_a_handler_with_or_without_the_event():
     fire.click(screen.get_by_text("a"))
     fire.click(screen.get_by_text("b"))
     assert calls == ["save", "click"]
+
+
+# ---------------------------------------------------------------------------
+# Review regressions (PR #40)
+# ---------------------------------------------------------------------------
+
+
+def test_an_event_handler_restored_after_none_fires_again():
+    hits: list[str] = []
+    handlers = [lambda: hits.append("first"), None, lambda: hits.append("restored")]
+    mode, set_mode = create_signal(0)
+    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+    for m in range(3):
+        set_mode(m)
+        flush()
+        fire.click(screen.get_by_text("go"))
+    assert hits == ["first", "restored"]
+
+
+def test_a_spent_once_handler_can_be_replaced_by_a_plain_one():
+    hits: list[str] = []
+    handlers = [event(lambda: hits.append("once"), once=True), lambda: hits.append("plain")]
+    mode, set_mode = create_signal(0)
+    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+    fire.click(screen.get_by_text("go"))
+    set_mode(1)
+    flush()
+    fire.click(screen.get_by_text("go"))
+    fire.click(screen.get_by_text("go"))
+    assert hits == ["once", "plain", "plain"]
+
+
+def test_a_plain_handler_can_become_a_capture_handler_and_back():
+    from wybthon import kernel
+
+    hits: list[str] = []
+    handlers = [lambda: hits.append("plain"), event(lambda: hits.append("capture"), capture=True)]
+    mode, set_mode = create_signal(0)
+    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+    button = screen.get_by_text("go")
+    fire.click(button)
+    set_mode(1)
+    flush()
+    backend = kernel._backend
+    assert (button_id := next(i for i, n in backend._nodes.items() if n is button))
+    assert (button_id, "click:capture") in backend._listener_options
+    set_mode(0)
+    flush()
+    fire.click(button)
+    assert hits == ["plain", "plain"]
+
+
+def test_identical_markup_with_different_format_specs_formats_each():
+    price = 3.14159
+    first = render(html(t"<p>{price}</p>"))
+    second = render(html(t"<p>{price:.2f}</p>"))
+    third = render(html(t"<p>{price!r:>10}</p>"))
+    assert first.text() == "3.14159"
+    assert second.text() == "3.14"
+    assert third.html() == "<p>   3.14159</p>"
+
+
+def test_literals_sharing_one_strings_tuple_keep_their_own_formats():
+    def views(x: float) -> tuple[Any, Any]:
+        return html(t"<i>{x}</i>"), html(t"<i>{x:.1f}</i>")
+
+    a, b = views(2.25)
+    assert render(a).text() == "2.25"
+    assert render(b).text() == "2.2"
+
+
+@pytest.mark.parametrize(
+    "make",
+    [
+        lambda: html(t"<p><span><div>{42}</div></span></p>"),
+        lambda: html(t"<p><em><b><ul><li>x</li></ul></b></em></p>"),
+        lambda: html(t"<p><span><table><tbody></tbody></table></span></p>"),
+    ],
+)
+def test_a_block_anywhere_inside_a_p_is_rejected(make):
+    with pytest.raises(TemplateError, match="inside <p>"):
+        make()
+
+
+def test_list_items_and_definitions_close_through_inline_and_div_elements():
+    with pytest.raises(TemplateError, match="another <li>"):
+        html(t"<ul><li><div><li>x</li></div></li></ul>")
+    with pytest.raises(TemplateError, match="unless a <dl>"):
+        html(t"<dl><dd><span><dt>x</dt></span></dd></dl>")
+
+
+def test_scope_boundaries_and_nested_lists_are_accepted():
+    screen = render(
+        html(
+            t"""<div>
+                  <p><button><div>in button</div></button></p>
+                  <ul><li><ul><li>nested</li></ul></li></ul>
+                  <dl><dd><dl><dt>inner</dt></dl></dd></dl>
+                </div>"""
+        )
+    )
+    assert screen.text() == "in buttonnestedinner"
+
+
+def test_helper_markup_the_parser_would_rearrange_mounts_per_node():
+    from wybthon import diagnostics, kernel
+    from wybthon.elements import a as a_
+    from wybthon.elements import p as p_
+    from wybthon.elements import span as span_
+
+    # The outer <p> and <a> mount node by node; their inner subtrees are valid
+    # standalone templates, so they may still be cloned and inserted by DOM
+    # operations, which the parser never sees.
+    with diagnostics.profile() as prof:
+        screen = render(div(p_(span_(div("block"))), a_(span_(a_("inner", href="#i")), href="#o")))
+        kernel.commit()
+    assert prof.counts[f"op_{kernel.OP_CREATE_ELEMENT}"] >= 2
+    assert (
+        screen.html()
+        == '<div><p><span><div>block</div></span></p><a href="#o"><span><a href="#i">inner</a></span></a></div>'
+    )
