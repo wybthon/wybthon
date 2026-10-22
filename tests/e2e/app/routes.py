@@ -22,9 +22,8 @@ from app.features import router as router_feat
 from app.features import stores as stores_feat
 from app.features import templates as templates_feat
 from app.features import transitions as transitions_feat
-from app.testkit import tid
 
-from wybthon import Errored, component, div, lazy
+from wybthon import Errored, component, html, lazy
 from wybthon.router import Route
 
 LazyPanel = lazy(lambda: ("app.features.lazy_target", "LoadedPanel"))
@@ -34,24 +33,24 @@ _LazyMissingInner = lazy(lambda: ("app.features.does_not_exist", "Missing"))
 @component
 def LazyMissing():
     def fallback(err, reset):
-        return div(f"Failed to load: {err()}", class_="lazy-error")
+        return html(t'<div class="lazy-error">Failed to load: {err()}</div>')
 
-    return Errored(lambda: _LazyMissingInner(), fallback=fallback)
+    return html(t"{Errored(_LazyMissingInner(), fallback=fallback)}")
 
 
 @component
 def Home():
-    return div("home", **tid("page-home"))
+    return html(t'<div data-testid="page-home">home</div>')
 
 
 @component
 def Blank():
-    return div("blank", **tid("page-blank"))
+    return html(t'<div data-testid="page-blank">blank</div>')
 
 
 @component
 def NotFound():
-    return div("not found", **tid("page-not-found"))
+    return html(t'<div data-testid="page-not-found">not found</div>')
 
 
 def create_routes():

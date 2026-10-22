@@ -28,12 +28,6 @@ def TodoViewer():
     def next_todo():
         set_todo_id(lambda i: i + 1)
 
-    def summary():
-        return f"Todo #{todo()['id']}: {todo()['title']}"
-
-    def hint():
-        return " (refreshing...)" if is_pending(todo) else ""
-
     def failed(err, reset):
         def retry():
             refresh(todo)  # fetch again
@@ -41,24 +35,23 @@ def TodoViewer():
 
         return html(t"""
           <div>
-            <p>Failed: {(lambda: str(err()))}</p>
+            <p>Failed: {err()}</p>
             <button onclick={retry}>Retry</button>
           </div>
         """)
-
-    details = Errored(
-        Loading(
-            html(t"<p>{summary}<span>{hint}</span></p>"),
-            fallback=html(t"<p>Loading...</p>"),
-        ),
-        fallback=failed,
-    )
 
     return html(t"""
       <div>
         <button onclick={previous}>Previous</button>
         <button onclick={next_todo}>Next</button>
-        {details}
+        <{Errored} fallback={failed}>
+          <{Loading} fallback={html(t"<p>Loading...</p>")}>
+            <p>
+              Todo #{todo()["id"]}: {todo()["title"]}
+              <span>{" (refreshing...)" if is_pending(todo) else ""}</span>
+            </p>
+          </{Loading}>
+        </{Errored}>
       </div>
     """)
 
@@ -68,13 +61,13 @@ render(TodoViewer(), "#app")
 
 ## How it works
 
-Reading `todo()` inside the boundary is what wires it to `Loading`. `summary` and `hint` are zero-argument functions placed in the template, so each is a reactive hole. Until the coroutine resolves for the first time, the read raises [`NotReadyError`][wybthon.NotReadyError]; the hole keeps its previous content and the nearest boundary shows its fallback. The content stays mounted the whole time (parked off-document), so any state created inside it survives.
+Reading `todo()` inside the boundary is what wires it to `Loading`. Each expression that calls `todo()` or `is_pending(...)` is dynamic, so the compiler turns it into a getter, and each becomes its own reactive hole. Until the coroutine resolves for the first time, the read raises [`NotReadyError`][wybthon.NotReadyError]; the hole keeps its previous content and the nearest boundary shows its fallback. The content stays mounted the whole time (parked off-document), so any state created inside it survives.
 
 Once the memo has a value, the fallback never returns. When `todo_id` changes, the memo recomputes inside a transition: it keeps serving the previous todo, and the UI that read `todo_id` holds with it, until the new one arrives, so the id and the todo never disagree on screen. [`is_pending`][wybthon.is_pending] is `True` during that window, which drives the inline hint.
 
 If `load_todo` raises, the error routes to the nearest [`Errored`][wybthon.Errored] boundary. Its fallback reads the error through the `err` accessor. The memo keeps the error until something makes it run again, so `retry` calls [`refresh`][wybthon.refresh] to fetch again and `reset` to re-render the children. Changing `todo_id` with "Previous" or "Next" also clears the error, because the boundary heals when an input of the failed computation changes.
 
-The boundaries take nodes directly: `Errored(Loading(...))` needs no wrapping lambdas, because nothing in a node runs until it mounts inside the boundary.
+The boundaries take nodes directly: `Errored(Loading(...))` needs no wrapping lambdas, because nothing in a node runs until it mounts inside the boundary. Written inside the template, the boundary calls are built the way component tags are, with getters for their dynamic arguments; the nested template's holes don't run until `Loading` mounts them. An interpolation can span several lines, as this one does.
 
 ## Refetching
 
@@ -121,11 +114,7 @@ async def save_report(data):
 from wybthon import html, latest
 
 
-def title():
-    return latest(lambda: todo()["title"]) or "nothing yet"
-
-
-html(t"<span>{title}</span>")
+html(t"<span>{latest(lambda: todo()['title']) or 'nothing yet'}</span>")
 ```
 
 [`resolve`][wybthon.resolve] awaits the next settled value, which is handy in actions and scripts:

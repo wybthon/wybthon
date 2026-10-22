@@ -32,12 +32,12 @@ returns the match or `None`, and `get_all_by_*` returns every match.
 ```python
 import pytest
 
-from wybthon import Prop, Props, component, create_signal, html, prop
+from wybthon import Props, component, create_signal, html
 from wybthon.testing import cleanup, fire, render
 
 
 class CounterProps(Props):
-    label: Prop[str] = prop(default="Count")
+    label: str = "Count"
 
 
 @component
@@ -47,7 +47,7 @@ def Counter(props: CounterProps):
     def increment():
         set_count(lambda n: n + 1)
 
-    return html(t"<div><p>{props.label}: {count}</p><button onclick={increment}>+</button></div>")
+    return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
 
 
 @pytest.fixture(autouse=True)
@@ -62,6 +62,11 @@ def test_counter():
     assert screen.get_by_text("Clicks: 1")
     assert screen.html() == "<div><p>Clicks: 1</p><button>+</button></div>"
 ```
+
+Templates in test modules are compiled by Wybthon's pytest plugin, so
+they behave exactly as they do in the application; see
+[Guides: Testing](../guides/testing.md). For a script outside pytest,
+use `wyb run script.py`.
 
 #### See also
 

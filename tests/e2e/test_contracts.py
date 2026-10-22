@@ -1,4 +1,10 @@
-"""Observable integration and registry contracts in the real JS backend."""
+"""Observable integration and registry contracts in the real JS backend.
+
+The Python snippets these tests run in the page aren't compiled (they're
+`runPythonAsync` source), so they build markup with `h()` or with
+templates whose interpolations are names, which mean the same thing
+compiled or not.
+"""
 
 import json
 
@@ -73,11 +79,11 @@ async def clicked(event):
     checks.append("async-click")
 def focus(event):
     checks.append("focus")
-root = render(div(
-    input_(id="contract-input", on_focus=focus, ref=[ref, cleanup_ref]),
-    button("Go", id="contract-button", on_click=clicked),
-    select(For(options, lambda value, index: option(value, value=value)),
-           multiple=True, selected_values=selected, id="contract-select"),
+root = render(h("div", {},
+    h("input", {"id": "contract-input", "on_focus": focus, "ref": [ref, cleanup_ref]}),
+    h("button", {"id": "contract-button", "on_click": clicked}, "Go"),
+    h("select", {"multiple": True, "selected_values": selected, "id": "contract-select"},
+      For(options, lambda value, index: h("option", {"value": value}, value))),
 ), "#contract-host")
 """,
     )
@@ -107,10 +113,12 @@ flush()
     python(
         page,
         """
+from string.templatelib import Template
 for iteration in range(300):
-    # Distinct structural classes exceed the bounded template cache.
-    root = render(div(span("x"), id=f"unique-{iteration}", class_=f"shape-{iteration}"), "#contract-host")
-    assert render(p("replacement"), "#contract-host") is root
+    # Distinct literals exceed the kernel's bounded template cache.
+    markup = Template(f'<div id="unique-{iteration}" class="shape-{iteration}"><span>x</span></div>')
+    root = render(html(markup), "#contract-host")
+    assert render(h("p", {}, "replacement"), "#contract-host") is root
     assert host.textContent == "replacement"
     root.dispose()
 flush()
@@ -129,7 +137,7 @@ def test_virtual_rows_scroll_and_dispose(goto_feature):
         page,
         """
 from js import document
-from wybthon import create_store, on_cleanup, render, p
+from wybthon import create_store, h, on_cleanup, render
 from wybthon.virtual import VirtualFor
 host = document.createElement("section")
 host.id = "virtual-host"
@@ -139,7 +147,7 @@ virtual_created, virtual_removed = [], []
 def virtual_row(item, index):
     virtual_created.append(item.id)
     on_cleanup(lambda: virtual_removed.append(item.id))
-    return p(lambda: str(index()), data_virtual=item.id)
+    return h("p", {"data_virtual": item.id}, lambda: str(index()))
 virtual_root = render(
     VirtualFor(lambda: virtual_data, virtual_row, height=200, row_height=20, overscan=2, id="virtual-scroll"),
     "#virtual-host",
@@ -169,19 +177,19 @@ def test_native_options_composed_events_and_composition(goto_feature):
         """
 import json
 from js import document
-from wybthon import button, div, event, input_, p, render
+from wybthon import event, h, render
 from wybthon.forms import bind_text, form_state
 host = document.createElement("section")
 host.id = "event-extra"
 document.body.appendChild(host)
 checks = []
 field = form_state({"text": ""})["text"]
-extra_root = render(div(
-    button("Once", id="once-button", on_click=event(lambda e: checks.append("once"), once=True)),
-    div(id="shadow-target", on_ping=lambda e: checks.append(e.detail["answer"])),
-    div(id="wheel-target", on_wheel=event(lambda e: e.prevent_default(), passive=True)),
-    input_(id="composition-input", **bind_text(field)),
-    p(field.value, id="composition-value"),
+extra_root = render(h("div", {},
+    h("button", {"id": "once-button", "on_click": event(lambda e: checks.append("once"), once=True)}, "Once"),
+    h("div", {"id": "shadow-target", "on_ping": lambda e: checks.append(e.detail["answer"])}),
+    h("div", {"id": "wheel-target", "on_wheel": event(lambda e: e.prevent_default(), passive=True)}),
+    h("input", {"id": "composition-input", **bind_text(field)}),
+    h("p", {"id": "composition-value"}, field.value),
 ), "#event-extra")
 """,
     )
@@ -209,13 +217,14 @@ extra_root = render(div(
     python(page, "extra_root.dispose()\nhost.remove()")
 
 
-def test_specialized_templates_match_native_generic_mounts(goto_feature):
+def test_templates_match_expanded_generic_mounts(goto_feature):
+    """A template mounted by cloning matches the generic tree it stands for, before and after updates."""
     page = goto_feature("contracts")
     python(
         page,
         """
 from js import document
-from wybthon import div, span, h, Fragment, create_signal, flush
+from wybthon import h, html, Fragment, create_signal, flush
 from wybthon import reconciler, kernel
 from wybthon.dom import Element
 host = document.createElement("section")
@@ -225,23 +234,21 @@ container, reference_container = Element(node=host), Element(node=reference_host
 text, write_text = create_signal("initial")
 clicked = []
 def view(label="base", extra=False):
-    return div(
-        h("button", {"on_click": lambda e: clicked.append(label)}, label),
-        span(text),
-        *([h("svg", {}, h("circle", {"viewBox": "0 0 2 2"}))] if extra else []),
-        class_=label,
-    )
+    handler = lambda e: clicked.append(label)
+    figure = html(t'<svg><circle viewBox="0 0 2 2" /></svg>') if extra else None
+    return html(t'<div class={label}><button onclick={handler}>{label}</button><span>{text}</span>{figure}</div>')
 for _ in range(3):
     current = reconciler.render(view(), container)
     current.dispose()
+fragment = h(Fragment, {"key": "fragment"}, h("span", {}, "first"), h("span", {}, "second"))
 cases = [
     lambda: view(),
     lambda: view("changed"),
     lambda: view("base", True),
-    lambda: div(h(Fragment, {"key": "fragment"}, span("first"), span("second")), span(text)),
-    lambda: h("table", {}, h("tbody", {}, h("tr", {}, h("td", {}, "cell")))),
-    lambda: div(h("input", {"value": text}), span("controlled")),
-    lambda: div(span("adjacent", "text"), span("tail")),
+    lambda: html(t"<div>{fragment}<span>{text}</span></div>"),
+    lambda: html(t"<table><tbody><tr><td>cell</td></tr></tbody></table>"),
+    lambda: html(t"<div><input value={text}><span>controlled</span></div>"),
+    lambda: html(t"<div><span>adjacent{'text'}</span><span>tail</span></div>"),
 ]
 templates_enabled = kernel.html_templates
 assert templates_enabled is True
@@ -252,10 +259,10 @@ for make in cases:
         reference = reconciler.render(make(), reference_container)
     finally:
         kernel.html_templates = templates_enabled
-    assert str(host.innerHTML) == str(reference_host.innerHTML)
+    assert str(host.innerHTML) == str(reference_host.innerHTML), (str(host.innerHTML), str(reference_host.innerHTML))
     write_text("updated")
     flush()
-    assert str(host.innerHTML) == str(reference_host.innerHTML)
+    assert str(host.innerHTML) == str(reference_host.innerHTML), (str(host.innerHTML), str(reference_host.innerHTML))
     button = host.querySelector("button")
     if button:
         button.click()
@@ -280,7 +287,7 @@ def test_kernel_protocol_fused_clone_declared_listeners_and_native_disposal(goto
         """
 import json
 from js import document
-from wybthon import For, button, create_signal, flush, li, render, span, ul
+from wybthon import For, create_signal, flush, h, html, render
 from wybthon import kernel
 host = document.createElement("section")
 host.id = "protocol-host"
@@ -288,11 +295,11 @@ document.body.appendChild(host)
 proto_rows, set_proto_rows = create_signal([])
 proto_clicked = []
 def proto_row(item, index):
-    return li(
-        span(item["label"]),
-        button("pick", on_click=lambda: proto_clicked.append(item["id"]), data_pick=item["id"]),
-        data_proto=item["id"],
-    )
+    row_id, label = item["id"], item["label"]
+    pick = lambda: proto_clicked.append(row_id)
+    return html(t'''
+      <li data-proto={row_id}><span>{label}</span><button data-pick={row_id} onclick={pick}>pick</button></li>
+    ''')
 proto_backend = kernel._backend
 proto_apply = proto_backend.apply
 proto_ops = []
@@ -300,7 +307,7 @@ def spy(batch):
     proto_ops.extend(list(op) for op in batch)
     proto_apply(batch)
 proto_backend.apply = spy
-proto_root = render(ul(For(proto_rows, proto_row)), "#protocol-host")
+proto_root = render(h("ul", {}, For(proto_rows, proto_row)), "#protocol-host")
 proto_baseline = kernel.stats()
 proto_ops.clear()
 set_proto_rows([{"id": i, "label": f"row {i}"} for i in range(50)])

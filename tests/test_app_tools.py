@@ -213,13 +213,13 @@ def test_testing_scope_disposes_computations(wyb):
 
 
 def test_render_and_graph_inspection_release_resources(wyb):
-    from wybthon import p
+    from wybthon import html
     from wybthon.diagnostics import inspect_graph, runtime_stats
     from wybthon.testing import render
 
     value, _ = create_signal(1)
     before = runtime_stats()
-    with render(p(value)) as screen:
+    with render(html(t"<p>{value}</p>")) as screen:
         graph = inspect_graph(screen.root._owner)
         assert any(edge["kind"] == "dependency" for edge in graph["edges"])
         json.dumps(graph)

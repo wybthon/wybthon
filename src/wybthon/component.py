@@ -7,30 +7,37 @@ counterpart of Solid's `props` object:
 
 ```python
 class CounterProps(Props):
-    label: Prop[str] = prop(default="Count")
-    initial: Prop[int] = prop(default=0)
+    label: str = "Count"
+    initial: int = 0
 
 
 @component
 def Counter(props: CounterProps):
-    count, set_count = create_signal(props.initial.peek())
-    return div(
-        p(props.label, ": ", count),
-        button("+", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+    count, set_count = create_signal(untrack(lambda: props.initial))
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
 
 
 render(Counter(initial=10), "#app")
 ```
 
-Calling a component with keyword props returns a node. Type checkers
+Reading `props.label` returns the parent's value, tracked; in markup the
+compiler turns `{props.label}` into a getter, so it updates when the
+parent passes an expression that changes.
+
+Calling a component with keyword props returns a node, and so does a
+component tag in a template (`<{Counter} initial={5} />`). Type checkers
 see the call as constructing the props class, so missing, mistyped, and
 unknown props are errors without a plugin. A component with no inputs
 takes no parameters.
 
-Children are the `children` prop. Pass them as a keyword, or use item
-syntax on the call: `Card(title="Hi")[h2("Body"), p("More")]`. Declare
-them with [`ParentProps`][wybthon.ParentProps].
+Children are the `children` prop. Pass them as a tag's content, as a
+keyword, or with item syntax on the call:
+`Card(title="Hi")[html(t"<p>Body</p>")]`. Declare them with
+[`ParentProps`][wybthon.ParentProps].
 """
 
 from __future__ import annotations
@@ -44,7 +51,7 @@ from . import _warnings
 from .reactivity._props import Props
 from .vnode import VNode, flatten_children
 
-__all__ = ["component", "Component"]
+__all__ = ["component", "Component", "builtin"]
 
 
 class Component:
@@ -55,6 +62,10 @@ class Component:
     """
 
     __slots__ = ("fn", "_props_class", "_resolved", "__dict__")
+
+    # A component call in a compiled template receives getters for its
+    # dynamic props (see `wybthon._compiled.call`).
+    __wybthon_component__ = True
 
     __name__: str
     __qualname__: str
@@ -121,6 +132,17 @@ class Component:
         return f"<component {self.__qualname__}>"
 
 
+def builtin[F](fn: F) -> F:
+    """Mark a built-in that renders markup, so compiled templates pass it getters (internal).
+
+    `Show`, `For`, `Loading`, and the other flow and boundary functions
+    aren't `@component`s, but a call of one in a template should build it
+    with getters for its dynamic arguments, as a component call does.
+    """
+    fn.__wybthon_component__ = True  # type: ignore[attr-defined]
+    return fn
+
+
 @overload
 def component[P: Props](fn: Callable[[P], Any]) -> type[P]: ...
 @overload
@@ -140,16 +162,16 @@ def component(fn: Callable[..., Any]) -> Any:
     Example:
         ```python
         class GreetingProps(Props):
-            name: Prop[str] = prop(default="world")
+            name: str = "world"
 
 
         @component
         def Greeting(props: GreetingProps):
-            return p("Hello, ", props.name, "!")
+            return html(t"<p>Hello, {props.name}!</p>")
 
 
-        Greeting(name="Ada")          # a node
-        Greeting(name=lambda: user())  # reactive: updates when user() changes
+        Greeting(name="Ada")                       # a node
+        html(t"<{Greeting} name={user().name} />")  # updates when user() changes
         ```
     """
     if isinstance(fn, Component):

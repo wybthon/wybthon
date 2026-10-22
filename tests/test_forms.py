@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 from conftest import collect_texts
 
-from wybthon.elements import form, input_, option, select, span
+from wybthon import html
 from wybthon.forms import (
     Field,
     a11y_control_attrs,
@@ -219,16 +219,18 @@ def test_bound_input_end_to_end_in_dom(wyb, root_element):
         **bind_text(fields["name"], validators=rules["name"]),
         **a11y_control_attrs(fields["name"], described_by_id="e"),
     }
-    root = wyb["reconciler"].render(
-        form(
-            input_(**name_attrs),
-            span(fields["name"].error, **error_message_attrs(id="e")),
-            select(option("red", value="red"), option("blue", value="blue"), **bind_select(fields["color"])),
-            input_(type="checkbox", **bind_checkbox(fields["agree"])),
-            on_submit=on_submit_validated(rules, lambda f: saved.append(f["name"].value()), fields),
-        ),
-        root_element,
-    )
+    submit = on_submit_validated(rules, lambda f: saved.append(f["name"].value()), fields)
+    error_attrs = error_message_attrs(id="e")
+    view = html(t"""<form onsubmit={submit}>
+        <input {name_attrs}>
+        <span {error_attrs}>{fields["name"].error()}</span>
+        <select {bind_select(fields["color"])}>
+            <option value="red">red</option>
+            <option value="blue">blue</option>
+        </select>
+        <input type="checkbox" {bind_checkbox(fields["agree"])}>
+    </form>""")
+    root = wyb["reconciler"].render(view, root_element)
     backend = wyb["kernel"]._backend
     frm = root_element.element.childNodes[0]
     inp, err, sel, chk = [n for n in frm.childNodes if n.tag]

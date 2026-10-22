@@ -96,7 +96,8 @@ def inspect_graph(owner: Any) -> dict[str, Any]:
                 queue.append(node._apply_owner)
         if isinstance(node, _core.Owner):
             entry["tasks"] = len(node._tasks or ())
-            for child in (node._children or {}).values():
+            children = node._children
+            for child in children.values() if type(children) is dict else (children,) if children else ():
                 edges.append({"from": id(node), "to": id(child), "kind": "owns"})
                 queue.append(child)
         nodes.append(entry)

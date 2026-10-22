@@ -1,0 +1,1405 @@
+{
+ "metadata": {
+  "baseline": "e636b4c (v0.38.0)",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+  "python": "3.14.8",
+  "method": "benchmarks/row_bench.py, checkouts alternating in fresh processes, 5 reps per workload per round; rounds 1-3 predate the suffix fast path for remove_first_10k, so that workload is reported from rounds 4-5",
+  "machine": "heavily loaded by unrelated work (load average 12 to 100+)"
+ },
+ "rounds": {
+  "selection": [
+   {
+    "round": 1,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 77.08,
+      "median": 78.81,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 97.04,
+      "median": 99.98,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 830.25,
+      "median": 916.5,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 19.45,
+      "median": 20.01,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 187.05,
+      "median": 190.53,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.92,
+      "median": 13.23,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.31,
+      "median": 0.37,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 22.31,
+      "median": 23.31,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 18.0,
+      "median": 18.38,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 95.46,
+      "median": 101.09,
+      "ops": 1000
+     },
+     "bytes_per_row": 6082,
+     "gc_objects_per_row": 42.03,
+     "gc_objects_by_type": {
+      "cell": 10.0,
+      "dict": 8.0,
+      "function": 7.0,
+      "tuple": 6.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 105101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 52.13,
+      "median": 54.52,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 67.59,
+      "median": 72.24,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 664.98,
+      "median": 680.31,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 10.11,
+      "median": 10.55,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 107.71,
+      "median": 121.23,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 7.55,
+      "median": 7.96,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.24,
+      "median": 0.29,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 5.42,
+      "median": 6.03,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 12.91,
+      "median": 13.62,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 75.24,
+      "median": 84.34,
+      "ops": 1000
+     },
+     "bytes_per_row": 3856,
+     "gc_objects_per_row": 20.03,
+     "gc_objects_by_type": {
+      "dict": 5.0,
+      "function": 3.0,
+      "tuple": 3.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0
+     },
+     "calls_create_1k": 101098
+    }
+   },
+   {
+    "round": 2,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 66.35,
+      "median": 72.15,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 89.46,
+      "median": 90.05,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 683.68,
+      "median": 743.8,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 14.18,
+      "median": 15.55,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 156.44,
+      "median": 158.48,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 9.26,
+      "median": 11.47,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.27,
+      "median": 0.3,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 15.21,
+      "median": 18.39,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 18.47,
+      "median": 18.78,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 93.51,
+      "median": 97.36,
+      "ops": 1000
+     },
+     "bytes_per_row": 6082,
+     "gc_objects_per_row": 42.03,
+     "gc_objects_by_type": {
+      "cell": 10.0,
+      "dict": 8.0,
+      "function": 7.0,
+      "tuple": 6.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 105101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 80.7,
+      "median": 81.36,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 101.97,
+      "median": 102.09,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 861.74,
+      "median": 890.63,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 15.82,
+      "median": 17.73,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 162.38,
+      "median": 165.27,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.28,
+      "median": 12.5,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.29,
+      "median": 0.33,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 7.34,
+      "median": 8.09,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 14.5,
+      "median": 16.63,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 86.0,
+      "median": 86.45,
+      "ops": 1000
+     },
+     "bytes_per_row": 3856,
+     "gc_objects_per_row": 20.03,
+     "gc_objects_by_type": {
+      "dict": 5.0,
+      "function": 3.0,
+      "tuple": 3.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0
+     },
+     "calls_create_1k": 101098
+    }
+   },
+   {
+    "round": 3,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 85.03,
+      "median": 87.41,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 107.91,
+      "median": 108.23,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 866.8,
+      "median": 984.88,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 19.65,
+      "median": 21.03,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 191.0,
+      "median": 194.13,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.57,
+      "median": 12.89,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.27,
+      "median": 0.32,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 21.58,
+      "median": 22.96,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 17.42,
+      "median": 19.12,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 95.55,
+      "median": 96.45,
+      "ops": 1000
+     },
+     "bytes_per_row": 6082,
+     "gc_objects_per_row": 42.03,
+     "gc_objects_by_type": {
+      "cell": 10.0,
+      "dict": 8.0,
+      "function": 7.0,
+      "tuple": 6.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 105101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 75.3,
+      "median": 78.02,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 96.67,
+      "median": 99.01,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 853.12,
+      "median": 866.27,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 15.94,
+      "median": 17.11,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 161.64,
+      "median": 163.06,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.38,
+      "median": 12.64,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.29,
+      "median": 0.33,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 8.61,
+      "median": 8.7,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 15.58,
+      "median": 15.71,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 85.78,
+      "median": 91.75,
+      "ops": 1000
+     },
+     "bytes_per_row": 3856,
+     "gc_objects_per_row": 20.03,
+     "gc_objects_by_type": {
+      "dict": 5.0,
+      "function": 3.0,
+      "tuple": 3.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0
+     },
+     "calls_create_1k": 101098
+    }
+   },
+   {
+    "round": 4,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 67.37,
+      "median": 71.53,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 87.85,
+      "median": 90.25,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 775.05,
+      "median": 817.75,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 12.69,
+      "median": 18.12,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 171.94,
+      "median": 199.14,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 11.55,
+      "median": 12.53,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.29,
+      "median": 0.3,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 17.92,
+      "median": 22.52,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 16.82,
+      "median": 18.44,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 63.99,
+      "median": 68.0,
+      "ops": 1000
+     },
+     "bytes_per_row": 6082,
+     "gc_objects_per_row": 42.03,
+     "gc_objects_by_type": {
+      "cell": 10.0,
+      "dict": 8.0,
+      "function": 7.0,
+      "tuple": 6.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 105101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 44.46,
+      "median": 44.73,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 52.76,
+      "median": 53.4,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 460.11,
+      "median": 487.48,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 8.03,
+      "median": 8.56,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 78.82,
+      "median": 81.36,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 6.08,
+      "median": 6.23,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.21,
+      "median": 0.22,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 3.91,
+      "median": 4.19,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 5.32,
+      "median": 9.73,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 74.3,
+      "median": 76.68,
+      "ops": 1000
+     },
+     "bytes_per_row": 3856,
+     "gc_objects_per_row": 20.03,
+     "gc_objects_by_type": {
+      "dict": 5.0,
+      "function": 3.0,
+      "tuple": 3.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0
+     },
+     "calls_create_1k": 101100
+    }
+   },
+   {
+    "round": 5,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 40.33,
+      "median": 40.64,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 51.04,
+      "median": 51.76,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 417.16,
+      "median": 451.1,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 8.96,
+      "median": 9.16,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 84.55,
+      "median": 86.51,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 5.76,
+      "median": 6.01,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.17,
+      "median": 0.17,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 9.9,
+      "median": 10.05,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 7.89,
+      "median": 8.38,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 45.1,
+      "median": 45.86,
+      "ops": 1000
+     },
+     "bytes_per_row": 6082,
+     "gc_objects_per_row": 42.03,
+     "gc_objects_by_type": {
+      "cell": 10.0,
+      "dict": 8.0,
+      "function": 7.0,
+      "tuple": 6.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 105101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 45.85,
+      "median": 48.34,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 54.63,
+      "median": 54.84,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 479.09,
+      "median": 502.3,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 7.73,
+      "median": 8.07,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 73.21,
+      "median": 78.15,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 5.88,
+      "median": 6.14,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.2,
+      "median": 0.21,
+      "ops": 2
+     },
+     "swap_10k": {
+      "min": 3.74,
+      "median": 3.95,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 4.53,
+      "median": 4.96,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 45.92,
+      "median": 46.22,
+      "ops": 1000
+     },
+     "bytes_per_row": 3856,
+     "gc_objects_per_row": 20.03,
+     "gc_objects_by_type": {
+      "dict": 5.0,
+      "function": 3.0,
+      "tuple": 3.0,
+      "Computation": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "_Row": 1.0,
+      "_PropertySignal": 1.0
+     },
+     "calls_create_1k": 101100
+    }
+   }
+  ],
+  "noselect": [
+   {
+    "round": 1,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 67.92,
+      "median": 69.86,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 82.95,
+      "median": 85.29,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 712.27,
+      "median": 767.47,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 12.14,
+      "median": 12.77,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 122.56,
+      "median": 122.56,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 14.16,
+      "median": 14.58,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.2,
+      "median": 0.27,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 21.14,
+      "median": 22.99,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 13.59,
+      "median": 15.61,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 62.03,
+      "median": 77.78,
+      "ops": 1000
+     },
+     "bytes_per_row": 4514,
+     "gc_objects_per_row": 32.03,
+     "gc_objects_by_type": {
+      "cell": 7.0,
+      "dict": 6.0,
+      "function": 5.0,
+      "tuple": 5.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Computation": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 91101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 61.34,
+      "median": 63.73,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 74.04,
+      "median": 75.7,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 655.08,
+      "median": 683.37,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 9.61,
+      "median": 9.9,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 89.48,
+      "median": 92.11,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 11.27,
+      "median": 11.96,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.19,
+      "median": 0.22,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 7.68,
+      "median": 8.12,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 14.74,
+      "median": 15.16,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 63.56,
+      "median": 68.4,
+      "ops": 1000
+     },
+     "bytes_per_row": 2352,
+     "gc_objects_per_row": 13.03,
+     "gc_objects_by_type": {
+      "function": 2.0,
+      "dict": 2.0,
+      "tuple": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "Computation": 1.0,
+      "_Row": 1.0
+     },
+     "calls_create_1k": 84098
+    }
+   },
+   {
+    "round": 2,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 66.93,
+      "median": 69.65,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 83.38,
+      "median": 86.91,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 750.39,
+      "median": 785.36,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 12.25,
+      "median": 13.35,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 122.21,
+      "median": 123.01,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 13.32,
+      "median": 13.54,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.18,
+      "median": 0.2,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 22.37,
+      "median": 23.25,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 18.87,
+      "median": 19.4,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 90.88,
+      "median": 92.1,
+      "ops": 1000
+     },
+     "bytes_per_row": 4514,
+     "gc_objects_per_row": 32.03,
+     "gc_objects_by_type": {
+      "cell": 7.0,
+      "dict": 6.0,
+      "function": 5.0,
+      "tuple": 5.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Computation": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 91101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 43.61,
+      "median": 47.54,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 58.1,
+      "median": 62.38,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 607.55,
+      "median": 645.7,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 8.28,
+      "median": 8.93,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 86.27,
+      "median": 87.74,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 11.46,
+      "median": 12.05,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.19,
+      "median": 0.2,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 7.65,
+      "median": 7.86,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 14.67,
+      "median": 15.72,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 64.8,
+      "median": 67.36,
+      "ops": 1000
+     },
+     "bytes_per_row": 2352,
+     "gc_objects_per_row": 13.03,
+     "gc_objects_by_type": {
+      "function": 2.0,
+      "dict": 2.0,
+      "tuple": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "Computation": 1.0,
+      "_Row": 1.0
+     },
+     "calls_create_1k": 84098
+    }
+   },
+   {
+    "round": 3,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 73.97,
+      "median": 75.0,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 86.95,
+      "median": 90.84,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 750.6,
+      "median": 791.68,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 11.84,
+      "median": 13.32,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 103.02,
+      "median": 123.59,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 13.18,
+      "median": 13.34,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.18,
+      "median": 0.19,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 22.99,
+      "median": 23.32,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 18.71,
+      "median": 20.34,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 86.94,
+      "median": 87.59,
+      "ops": 1000
+     },
+     "bytes_per_row": 4514,
+     "gc_objects_per_row": 32.03,
+     "gc_objects_by_type": {
+      "cell": 7.0,
+      "dict": 6.0,
+      "function": 5.0,
+      "tuple": 5.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Computation": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 91101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 71.68,
+      "median": 72.2,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 83.74,
+      "median": 84.44,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 704.27,
+      "median": 753.34,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 10.14,
+      "median": 10.4,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 95.99,
+      "median": 98.38,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.82,
+      "median": 12.98,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.13,
+      "median": 0.18,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 6.9,
+      "median": 7.44,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 17.2,
+      "median": 17.55,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 73.8,
+      "median": 74.19,
+      "ops": 1000
+     },
+     "bytes_per_row": 2352,
+     "gc_objects_per_row": 13.03,
+     "gc_objects_by_type": {
+      "function": 2.0,
+      "dict": 2.0,
+      "tuple": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "Computation": 1.0,
+      "_Row": 1.0
+     },
+     "calls_create_1k": 84100
+    }
+   },
+   {
+    "round": 4,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 41.48,
+      "median": 42.82,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 50.92,
+      "median": 53.64,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 439.56,
+      "median": 478.5,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 7.38,
+      "median": 7.44,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 62.72,
+      "median": 65.58,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 6.77,
+      "median": 7.72,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.13,
+      "median": 0.16,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 11.79,
+      "median": 12.08,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 9.72,
+      "median": 10.24,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 43.94,
+      "median": 46.1,
+      "ops": 1000
+     },
+     "bytes_per_row": 4514,
+     "gc_objects_per_row": 32.03,
+     "gc_objects_by_type": {
+      "cell": 7.0,
+      "dict": 6.0,
+      "function": 5.0,
+      "tuple": 5.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Computation": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 91101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 38.72,
+      "median": 39.43,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 44.05,
+      "median": 45.84,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 403.03,
+      "median": 444.28,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 5.26,
+      "median": 5.67,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 52.32,
+      "median": 54.66,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 6.99,
+      "median": 7.17,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.14,
+      "median": 0.17,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 4.8,
+      "median": 5.16,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 5.59,
+      "median": 7.13,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 43.88,
+      "median": 47.58,
+      "ops": 1000
+     },
+     "bytes_per_row": 2352,
+     "gc_objects_per_row": 13.03,
+     "gc_objects_by_type": {
+      "function": 2.0,
+      "dict": 2.0,
+      "tuple": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "Computation": 1.0,
+      "_Row": 1.0
+     },
+     "calls_create_1k": 84100
+    }
+   },
+   {
+    "round": 5,
+    "v0.38.0": {
+     "compiled": false,
+     "create_1k": {
+      "min": 66.25,
+      "median": 68.97,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 82.5,
+      "median": 86.99,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 696.11,
+      "median": 809.26,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 12.05,
+      "median": 12.77,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 110.55,
+      "median": 126.77,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 12.26,
+      "median": 13.46,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.21,
+      "median": 0.22,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 22.32,
+      "median": 22.86,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 12.8,
+      "median": 14.76,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 62.24,
+      "median": 65.69,
+      "ops": 1000
+     },
+     "bytes_per_row": 4514,
+     "gc_objects_per_row": 32.03,
+     "gc_objects_by_type": {
+      "cell": 7.0,
+      "dict": 6.0,
+      "function": 5.0,
+      "tuple": 5.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "Signal": 1.0,
+      "Computation": 1.0,
+      "Owner": 1.0,
+      "_Row": 1.0,
+      "list": 1.0
+     },
+     "calls_create_1k": 91101
+    },
+    "engine_v4": {
+     "compiled": true,
+     "create_1k": {
+      "min": 30.06,
+      "median": 30.72,
+      "ops": 1000
+     },
+     "replace_1k": {
+      "min": 35.6,
+      "median": 37.64,
+      "ops": 1001
+     },
+     "create_10k": {
+      "min": 417.81,
+      "median": 426.06,
+      "ops": 10000
+     },
+     "clear_1k": {
+      "min": 7.64,
+      "median": 7.91,
+      "ops": 1
+     },
+     "clear_10k": {
+      "min": 78.17,
+      "median": 81.84,
+      "ops": 1
+     },
+     "update_10th_10k": {
+      "min": 10.36,
+      "median": 10.75,
+      "ops": 1000
+     },
+     "select_10k": {
+      "min": 0.15,
+      "median": 0.18,
+      "ops": 0
+     },
+     "swap_10k": {
+      "min": 6.98,
+      "median": 7.11,
+      "ops": 2
+     },
+     "remove_first_10k": {
+      "min": 9.29,
+      "median": 9.74,
+      "ops": 1
+     },
+     "append_1k_to_10k": {
+      "min": 65.81,
+      "median": 66.7,
+      "ops": 1000
+     },
+     "bytes_per_row": 2352,
+     "gc_objects_per_row": 13.03,
+     "gc_objects_by_type": {
+      "function": 2.0,
+      "dict": 2.0,
+      "tuple": 2.0,
+      "VNode": 2.0,
+      "_Handler": 2.0,
+      "cell": 1.0,
+      "Computation": 1.0,
+      "_Row": 1.0
+     },
+     "calls_create_1k": 84100
+    }
+   }
+  ]
+ }
+}

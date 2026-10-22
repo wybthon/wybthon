@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
+from .compiler import compile_source
+
 PYODIDE_VERSION = "314.0.6"
 _MARKER = "<!-- wyb:bootstrap -->"
 # Prerendered pages replace everything between these markers (inclusive)
@@ -35,7 +37,13 @@ _INDEX = """<!doctype html>
 </body></html>
 """
 # Build-time files that never ship to the browser.
-_SERVER_ONLY = {"build.py", "dev.py", "server.py", "_server_dom.py", "_prerender.py"}
+_SERVER_ONLY = {
+    "build.py",
+    "dev.py",
+    "server.py",
+    "_server_dom.py",
+    "_prerender.py",
+}
 _STARTER = '''"""A run-once component with a reactive counter."""
 
 from wybthon import component, create_signal, html
@@ -51,7 +59,8 @@ def App():
     return html(t"""
       <div>
         <h1>My Wybthon app</h1>
-        <button onclick={increment}>Count: {count}</button>
+        <button onclick={increment}>Count: {count()}</button>
+        <p>Doubled: {count() * 2}</p>
       </div>
     """)
 
@@ -180,7 +189,7 @@ def build_app(
             raise ValueError(f"Source belongs to multiple chunks: {name}")
         data = path.read_bytes()
         try:
-            compile(data, str(path), "exec")
+            compile_source(data, str(path))
         except SyntaxError as exc:
             raise ValueError(f"Invalid Python source at {name}:{exc.lineno}: {exc.msg}") from exc
         groups[matched[0] if matched else "application"][name] = data
@@ -197,7 +206,7 @@ def build_app(
     target_python = _pyodide_python(config.get("pyodide-version", PYODIDE_VERSION))
     bytecode = config.get("bytecode", True) and target_python == sys.version_info[:2]
     if bytecode:
-        runtime.update(_bytecode(runtime, "/wybthon-app"))
+        runtime.update(_bytecode(runtime, "/wybthon-app", application=False))
         for name, files in list(groups.items()):
             groups[name] = {**files, **_bytecode(files, "/wybthon-app")}
     template_path = directory / "index.html"
@@ -302,13 +311,15 @@ def _pyodide_python(version: str) -> tuple[int, int] | None:
     return {"0.26": (3, 12), "0.27": (3, 12), "0.28": (3, 13), "0.29": (3, 13)}.get(".".join(version.split(".")[:2]))
 
 
-def _bytecode(files: dict[str, bytes], root: str) -> dict[str, bytes]:
+def _bytecode(files: dict[str, bytes], root: str, *, application: bool = True) -> dict[str, bytes]:
     """Unchecked-hash bytecode (PEP 552) for each module, so the browser skips compiling it.
 
     The interpreter imports ``__pycache__/<module>.<tag>.pyc`` without
     comparing it to the source, so the archive's timestamps don't
-    matter. Only valid when this interpreter's version matches the
-    browser runtime's; the caller checks.
+    matter. Application modules go through Wybthon's compiler first,
+    so a page never compiles a template, and the import hook uses this
+    bytecode as is. Only valid when this interpreter's version matches
+    the browser runtime's; the caller checks.
     """
     from importlib._bootstrap_external import _code_to_hash_pyc  # type: ignore[attr-defined]
     from importlib.util import source_hash
@@ -318,7 +329,8 @@ def _bytecode(files: dict[str, bytes], root: str) -> dict[str, bytes]:
     for name, data in files.items():
         if not name.endswith(".py"):
             continue
-        code = compile(data, f"{root}/{name}", "exec", dont_inherit=True)
+        filename = f"{root}/{name}"
+        code = compile_source(data, filename) if application else compile(data, filename, "exec", dont_inherit=True)
         folder, _, filename = name.rpartition("/")
         target = (
             f"{folder}/__pycache__/{filename[:-3]}.{tag}.pyc" if folder else f"__pycache__/{filename[:-3]}.{tag}.pyc"

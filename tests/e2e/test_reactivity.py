@@ -11,9 +11,13 @@ def test_signal_and_memo(goto_feature):
     expect(page.get_by_test_id("rx-count")).to_have_text("0")
     expect(page.get_by_test_id("rx-doubled")).to_have_text("0")
 
+    expect(page.get_by_test_id("rx-inline")).to_have_text("1")
+
     page.get_by_test_id("rx-inc").click()
     expect(page.get_by_test_id("rx-count")).to_have_text("1")
     expect(page.get_by_test_id("rx-doubled")).to_have_text("2")
+    # `{count() * 2 + 1}` is compiled into a getter: an inline derived hole.
+    expect(page.get_by_test_id("rx-inline")).to_have_text("3")
 
     page.get_by_test_id("rx-inc").click()
     expect(page.get_by_test_id("rx-doubled")).to_have_text("4")

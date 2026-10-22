@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -26,10 +27,27 @@ EXPECTED = {
     "wrong-type": {"mypy": 'Argument "name" to "StrictProps" has incompatible type "int"', "pyright": "Literal[42]"},
     "unknown-prop": {"mypy": 'Unexpected keyword argument "typo"', "pyright": 'No parameter named "typo"'},
     "no-props": {"mypy": 'Unexpected keyword argument "title" for "Bare"', "pyright": 'No parameter named "title"'},
-    "accessor-is-not-value": {"mypy": 'expression has type "Accessor[str]"', "pyright": '"Accessor[str]"'},
+    # Fields are plain annotations: passing an accessor to a `str` field is a
+    # type error outside templates, and reading a field returns the value.
+    "accessor-is-not-value": {
+        "mypy": 'incompatible type "Accessor[str]"; expected "str"',
+        "pyright": '"Accessor[str]" is not assignable to "str"',
+    },
+    "template-call": {
+        "mypy": 'Argument "name" to "StrictProps" has incompatible type "int"',
+        "pyright": '"int" is not assignable to "str"',
+    },
+    "value-is-not-accessor": {
+        "mypy": 'expression has type "str", variable has type "Accessor[str]"',
+        "pyright": '"str" is not assignable to "Accessor[str]"',
+    },
     "action-arg": {"mypy": 'incompatible type "str"; expected "int"', "pyright": "Literal['wrong']"},
     "store-append": {"mypy": 'TypedDict item "age" has type "int"', "pyright": '"Person"'},
     "for-row": {"mypy": 'TypedDict "Todo" has no key "titel"', "pyright": '"titel"'},
+    "show-branch": {
+        "mypy": 'Value of type "Accessor[Todo]" is not indexable',
+        "pyright": '"__getitem__" method not defined on type "Accessor[Todo]"',
+    },
     "html-arg": {"mypy": 'Argument 1 to "html" has incompatible type "str"', "pyright": '"Template"'},
 }
 
@@ -148,13 +166,14 @@ def test_pyright_reports_invalid_fixture(pyright):
 
 
 def test_typed_component_fixture_executes_in_renderer(wyb, root_element):
-    import runpy
-
     from conftest import collect_texts
 
     from wybthon import create_signal, flush
+    from wybthon.compiler import compile_source
 
-    fixture = runpy.run_path(str(VALID))
+    # Compile the fixture's templates, as the import hook would.
+    fixture: dict[str, Any] = {"__name__": "typing_valid"}
+    exec(compile_source(VALID.read_text(), str(VALID)), fixture)
     name, rename = create_signal("Ada")
     count, set_count = create_signal(2)
     root = wyb["reconciler"].render(fixture["Greeting"](name=name, count=count), root_element)

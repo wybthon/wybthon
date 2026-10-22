@@ -97,21 +97,65 @@ def _takes_event(callback: Callable[..., Any]) -> bool:
 
 
 class _Handler:
-    __slots__ = ("callback", "owner", "options", "prop", "task_owner", "fired", "takes_event")
+    __slots__ = ("callback", "owner", "options", "prop", "key", "task_owner", "fired", "takes_event")
 
     def __init__(
-        self, callback: Callable[..., Any], owner: _core.Owner | None, options: EventHandler | None, prop: str
+        self,
+        callback: Callable[..., Any],
+        owner: _core.Owner | None,
+        options: EventHandler | None,
+        prop: str,
+        key: str,
     ) -> None:
         self.callback = callback
         self.owner = owner
         self.options = options
         self.prop = prop
+        self.key = key
         self.task_owner: _core.Owner | None = None
         self.fired = False
         self.takes_event = _takes_event(callback)
 
 
-_handlers: dict[int, dict[str, _Handler]] = {}
+# Handlers by node id: the handler itself when the node has one (the common
+# case, which then needs no per-node dict), or a dict by event key.
+_handlers: dict[int, _Handler | dict[str, _Handler]] = {}
+
+
+def _mapping(node_id: int) -> dict[str, _Handler] | None:
+    """The node's handlers as a dict by event key (a new dict for a single handler)."""
+    entry = _handlers.get(node_id)
+    if entry is None or isinstance(entry, dict):
+        return entry
+    return {entry.key: entry}
+
+
+def _store(node_id: int, mapping: dict[str, _Handler]) -> None:
+    if not mapping:
+        _handlers.pop(node_id, None)
+    elif len(mapping) == 1:
+        _handlers[node_id] = next(iter(mapping.values()))
+    else:
+        _handlers[node_id] = mapping
+
+
+def handlers_of(entry: Any) -> tuple[_Handler, ...] | Any:
+    """The handlers in one table entry (internal)."""
+    if entry is None:
+        return ()
+    if type(entry) is dict:
+        return entry.values()
+    return (entry,)
+
+
+def _lookup(node_id: int, key: str) -> _Handler | None:
+    entry = _handlers.get(node_id)
+    if entry is None:
+        return None
+    if isinstance(entry, dict):
+        return entry.get(key)
+    return entry if entry.key == key else None
+
 
 # `reactivity._actions` imports nothing from here, so this import is cycle-free.
 from .reactivity._actions import Action as _Action  # noqa: E402
@@ -161,12 +205,14 @@ def bind_delegated(node_id: int, key: str, prop: str, callback: Any) -> None:
     """Record a delegated handler whose listener the node's template already declared."""
     if callback is None:
         return
-    handler = _Handler(callback, _core._current_owner, None, prop)
-    mapping = _handlers.get(node_id)
-    if mapping is None:
-        _handlers[node_id] = {key: handler}
+    handler = _Handler(callback, _core._current_owner, None, prop, key)
+    entry = _handlers.get(node_id)
+    if entry is None or (isinstance(entry, _Handler) and entry.key == key):
+        _handlers[node_id] = handler
+    elif isinstance(entry, dict):
+        entry[key] = handler
     else:
-        mapping[key] = handler
+        _handlers[node_id] = {entry.key: entry, key: handler}
 
 
 class _EventTarget:
@@ -338,7 +384,7 @@ def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] 
     if options is not None and options.capture and not capture:
         key += ":capture"
         capture = True
-    mapping = _handlers.get(node_id)
+    mapping = _mapping(node_id)
     previous_key = (
         next((name for name, item in mapping.items() if item.prop == event_prop_name), key) if mapping else key
     )
@@ -348,13 +394,14 @@ def set_handler(node_id: int, event_prop_name: str, handler: Callable[..., Any] 
             previous.task_owner.dispose()
         kernel.emit((kernel.OP_UNLISTEN, node_id, previous_key))
     if handler is None:
-        if mapping is not None and not mapping:
-            _handlers.pop(node_id, None)
+        if mapping is not None:
+            _store(node_id, mapping)
         return
     if mapping is None:
-        mapping = _handlers[node_id] = {}
+        mapping = {}
     callback = options.callback if options is not None else handler
-    mapping[key] = _Handler(callback, _core._current_owner, options, event_prop_name)
+    mapping[key] = _Handler(callback, _core._current_owner, options, event_prop_name, key)
+    _store(node_id, mapping)
     if capture or (options is not None and (options.passive or options.once)):
         passive = options is not None and options.passive
         once = options is not None and options.once
@@ -370,11 +417,9 @@ def remove_handlers_for(node_id: int) -> None:
     bookkeeping is cleared by the `RELEASE` op that accompanies the
     subtree removal, so no per-handler ops are needed.
     """
-    mapping = _handlers.pop(node_id, None)
-    if mapping:
-        for handler in mapping.values():
-            if handler.task_owner is not None:
-                handler.task_owner.dispose()
+    for handler in handlers_of(_handlers.pop(node_id, None)):
+        if handler.task_owner is not None:
+            handler.task_owner.dispose()
 
 
 def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
@@ -398,8 +443,7 @@ def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
 
     evt = DomEvent(payload)
     for current_id, key in route:
-        mapping = _handlers.get(current_id)
-        handler = mapping.get(key) if mapping is not None else None
+        handler = _lookup(current_id, key)
         if handler is None or (handler.owner is not None and handler.owner._disposed) or handler.fired:
             continue
         prevented = evt._default_prevented

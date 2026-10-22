@@ -1,8 +1,6 @@
 """Portal: render children into a different DOM container while staying reactive."""
 
-from app.testkit import tid
-
-from wybthon import Portal, Show, button, component, create_signal, div, h2, span
+from wybthon import Portal, Show, component, create_signal, html
 
 
 @component
@@ -11,19 +9,14 @@ def Page():
     count, set_count = create_signal(0)
 
     def content():
-        return div(
-            span(lambda: str(count()), **tid("portal-count")),
-            **tid("portal-content"),
-        )
+        return html(t'<div data-testid="portal-content"><span data-testid="portal-count">{count()}</span></div>')
 
-    return div(
-        h2("Portal"),
-        button("toggle", on_click=lambda e: set_show(lambda v: not v), **tid("portal-toggle")),
-        button("inc", on_click=lambda e: set_count(lambda n: n + 1), **tid("portal-inc")),
-        div(
-            Show(show, lambda: Portal(content(), mount="#portal-target-inner")),
-            **tid("portal-source"),
-        ),
-        div(div(id="portal-target-inner", **tid("portal-target-inner")), **tid("portal-target")),
-        **tid("page-portal"),
-    )
+    return html(t"""
+      <div data-testid="page-portal">
+        <h2>Portal</h2>
+        <button data-testid="portal-toggle" onclick={(lambda e: set_show(lambda v: not v))}>toggle</button>
+        <button data-testid="portal-inc" onclick={(lambda e: set_count(lambda n: n + 1))}>inc</button>
+        <div data-testid="portal-source">{Show(show(), Portal(content(), mount="#portal-target-inner"))}</div>
+        <div data-testid="portal-target"><div id="portal-target-inner" data-testid="portal-target-inner"></div></div>
+      </div>
+    """)

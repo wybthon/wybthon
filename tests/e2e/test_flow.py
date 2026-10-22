@@ -22,12 +22,17 @@ def test_for_keyed_add_remove_reorder(goto_feature):
     expect(page.get_by_test_id("flow-for-count")).to_have_text("3")
     expect(items).to_have_text(["0:alpha", "1:beta", "2:gamma"])
 
+    expect(page.get_by_test_id("flow-for-many")).to_have_count(0)
+
     page.get_by_test_id("flow-for-add").click()
     expect(page.get_by_test_id("flow-for-count")).to_have_text("4")
     expect(items).to_have_text(["0:alpha", "1:beta", "2:gamma", "3:item-1"])
+    # `Show(len(items()) > 3, ...)`: the compiled condition is a getter.
+    expect(page.get_by_test_id("flow-for-many")).to_have_text("many")
 
     page.get_by_test_id("flow-for-remove").click()
     expect(page.get_by_test_id("flow-for-count")).to_have_text("3")
+    expect(page.get_by_test_id("flow-for-many")).to_have_count(0)
 
     page.get_by_test_id("flow-for-reverse").click()
     expect(items).to_have_text(["0:gamma", "1:beta", "2:alpha"])

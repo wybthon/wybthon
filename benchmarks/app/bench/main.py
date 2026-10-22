@@ -2,8 +2,10 @@
 
 The app is written the idiomatic Wybthon way: the table and its controls
 mount once, every operation is a signal (or store) write, rows are cached
-per item by `For`, row labels are per-row signals, and selection is a
-projection that notifies only the two rows whose state changes.
+per item by `For`, row labels are per-row signals (or store fields), and
+selection is a projection that notifies only the two rows whose state
+changes. Rows are `html` templates; the compiler turns their dynamic
+expressions (`{row["label"]}`, the row's `class`) into reactive bindings.
 
 `benchmarks/app` is an ordinary Wybthon project: the benchmark scripts build
 it with `wyb build` and drive it from `index.html` through the runtime the
@@ -223,19 +225,16 @@ def delete(item_id):
 # ---------------------------------------------------------------------------
 
 
-def _row(d, _index):
-    iid = d["id"]
-    label = (lambda: d["label"]) if STORE_MODE else d["label"]
-
-    def selected_class():
-        return "danger" if is_selected.get(iid) else ""
-
+def _row(row, _index):
+    row_id = row["id"]
+    # `row["label"]` is a per-row label signal in signal mode and a tracked
+    # store field in store mode; either way the compiler makes it a getter.
     return html(
-        t"""<tr class={selected_class}>
-              <td class="col-md-1">{iid}</td>
-              <td class="col-md-4"><a onclick={(lambda: select(iid))}>{label}</a></td>
+        t"""<tr class={"danger" if is_selected.get(row_id) else ""}>
+              <td class="col-md-1">{row_id}</td>
+              <td class="col-md-4"><a onclick={(lambda: select(row_id))}>{row["label"]}</a></td>
               <td class="col-md-1">
-                <a onclick={(lambda: delete(iid))}>
+                <a onclick={(lambda: delete(row_id))}>
                   <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
                 </a>
               </td>
@@ -272,7 +271,7 @@ def App():
                 </div>
               </div>
               <table class="table table-hover table-striped test-data">
-                <tbody id="tbody">{For(data, _row)}</tbody>
+                <tbody id="tbody">{For(data(), _row)}</tbody>
               </table>
             </div>"""
     )

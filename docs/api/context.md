@@ -32,7 +32,7 @@ Theme: Context[Accessor[str]] = create_context(name="Theme")
 @component
 def ThemedButton():
     theme = use_context(Theme)  # the accessor the provider passed
-    return html(t'<button class="btn-{theme}">Hi</button>')
+    return html(t'<button class="btn-{theme()}">Hi</button>')
 
 
 @component

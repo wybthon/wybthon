@@ -1,4 +1,4 @@
-"""E2E: reactive props (class, style, dataset) and controlled inputs."""
+"""E2E: reactive attributes (class, style, data attributes) and controlled inputs."""
 
 import re
 
@@ -11,8 +11,14 @@ pytestmark = pytest.mark.e2e
 def test_reactive_class(goto_feature):
     page = goto_feature("props")
     expect(page.get_by_test_id("props-class")).to_have_class("pill")
+    expect(page.get_by_test_id("props-class-on")).not_to_have_class("on")
     page.get_by_test_id("props-class-btn").click()
+    # A compiled class mapping and a compiled conditional string.
     expect(page.get_by_test_id("props-class")).to_have_class("pill danger")
+    expect(page.get_by_test_id("props-class-on")).to_have_class("on")
+    page.get_by_test_id("props-class-btn").click()
+    expect(page.get_by_test_id("props-class")).to_have_class("pill")
+    expect(page.get_by_test_id("props-class-on")).not_to_have_class("on")
 
 
 def test_reactive_style(goto_feature):

@@ -11,10 +11,10 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
 
-from . import _shapes, diagnostics, kernel, reconciler, templates
+from . import diagnostics, kernel, reconciler, templates
 from .kernel import OP_DISPOSE_RANGE
 from .reactivity import _core
-from .reactivity._core import Computation, Owner, Signal, _CallbackScope, _run_callback_body, _unwrap
+from .reactivity._core import Accessor, Computation, Owner, Signal, _CallbackScope, _read, _run_callback_body
 from .vnode import VNode
 
 _SCALARS = (str, int, float, bool, bytes, type(None), tuple, frozenset)
@@ -58,17 +58,62 @@ class _Input:
     revision: int = -1
 
 
-@dataclass(slots=True, eq=False)
-class _Row:
-    owner: Owner
-    item: Any
-    value: Signal[Any] | None
-    index: Signal[int]
-    vnode: VNode
-    key: Any
+class _Row(Owner, Accessor[int]):
+    """A mounted list row: the owner of its subtree, and its own index accessor.
+
+    The row callback receives the row as its index accessor. The index is
+    a plain integer until something reads it in a tracking scope; only
+    then is the signal behind it created, so a row whose callback never
+    reads its index (most rows) allocates nothing for it.
+    """
+
+    __slots__ = ("item", "value", "_index", "_index_signal", "vnode", "key")
+
+    def __init__(self, item: Any, value: Signal[Any] | None, index: int, key: Any) -> None:
+        # Owner's fields, assigned directly (one row per list item); keep
+        # in sync with `Owner.__init__`.
+        self._tasks = None
+        self._parent = None
+        self._provisional = None
+        self._children = None
+        self._cleanups = None
+        self._disposed = False
+        self._context_map = None
+        self._error_handler = None
+        self.item = item
+        self.value = value
+        self._index = index
+        self._index_signal: Signal[int] | None = None
+        self.vnode: VNode | None = None
+        self.key = key
+
+    def __call__(self) -> int:
+        sig = self._index_signal
+        if sig is None:
+            if _core._current_observer is None:
+                if _core._setup_depth and not _core._untrack_depth:
+                    _core._warn_top_level_read(self)
+                return self._index
+            sig = self._index_signal = Signal(self._index)
+        return sig()
+
+    def peek(self) -> int:
+        sig = self._index_signal
+        return self._index if sig is None else sig.peek()
+
+    def _label(self) -> str:
+        return "the row index"
 
 
-def _update_index(signal: Signal[int], index: int) -> None:
+def _update_index(row: _Row, index: int) -> None:
+    if row._index == index:
+        sig = row._index_signal
+        if sig is None or not sig._staged:
+            return
+    row._index = index
+    signal = row._index_signal
+    if signal is None:
+        return
     if signal._value == index and not signal._staged:
         return
     if not signal._observers and not signal._staged and not _core._track and not _core._held:
@@ -116,10 +161,10 @@ class _ListRegion:
         source = cell() if cell is not None else self.source
         if self.repeat:
             count, start = source
-            n = max(0, int(_unwrap(count) or 0))
-            first = int(_unwrap(start) or 0)
+            n = max(0, int(_read(count) or 0))
+            first = int(_read(start) or 0)
             return _Input(source, range(first, first + n))
-        value = _unwrap(source)
+        value = _read(source)
         if isinstance(value, StoreList):
             state = value._wyb_list_state()
             return _Input(value, state.data, state.revision)
@@ -131,10 +176,9 @@ class _ListRegion:
     def new_row(self, item: Any, index: int, key: Any) -> _Row:
         if diagnostics._active is not None:
             diagnostics._active.counts["rows_created"] += 1
-        owner = Owner()
-        self.scope._add_child(owner)
         item_signal = None if self.repeat or self.keyed is True else Signal(item)
-        index_signal = Signal(index)
+        owner = _Row(item, item_signal, index, key)
+        self.scope._add_child(owner)
         try:
             args: tuple[Any, ...]
             if self.repeat:
@@ -142,9 +186,9 @@ class _ListRegion:
             elif self.keyed is False:
                 args = (item_signal, index)
             elif self.keyed is True:
-                args = (item, index_signal)
+                args = (item, owner)
             else:
-                args = (item_signal, index_signal)
+                args = (item_signal, owner)
             scope = _REPEAT_SCOPE if self.repeat else _FOR_SCOPE
             session = _core._session
             if session is not None and session.keying:
@@ -159,7 +203,8 @@ class _ListRegion:
             else:
                 node = reconciler._coerce_result(_run_callback_body(owner, scope, lambda: self.callback(*args)))
             node.owner_scope = owner
-            return _Row(owner, item, item_signal, index_signal, node, key)
+            owner.vnode = node
+            return owner
         except BaseException:
             owner.dispose()
             raise
@@ -174,8 +219,7 @@ class _ListRegion:
                 row.item = row.value._value
             else:
                 row.item = item
-        if row.index._value != index or row.index._staged:
-            _update_index(row.index, index)
+        _update_index(row, index)
 
     def dispose_row(self, row: _Row) -> None:
         self._dispose_rows([row])
@@ -361,7 +405,7 @@ class _ListRegion:
         self.vnode.children[start : start + delete] = [row.vnode for row in added]
         if len(added) != delete:
             for i in range(start + len(added), len(self.rows)):
-                _update_index(self.rows[i].index, i)
+                _update_index(self.rows[i], i)
         if added:
             self.unique = len({row.key for row in added}) == len(added) if len(self.rows) == len(added) else False
 
@@ -381,7 +425,6 @@ class _ListRegion:
         _, last = _range_bounds(rows[-1].vnode)
         if first is not None and last is not None:
             kernel.emit((OP_DISPOSE_RANGE, first, last))
-        dispose_shape = _shapes.dispose
         dispose_template = templates.dispose
         for row in reversed(rows) if reverse else rows:
             vnode = row.vnode
@@ -391,11 +434,9 @@ class _ListRegion:
                     dispose_template(vnode, True)
                 else:
                     _dispose_tree(vnode)
-            elif vnode.tpl is not None:
-                dispose_shape(vnode, _dispose_tree, True)
             else:
                 _dispose_tree(vnode)
-            row.owner.dispose()
+            row.dispose()
 
     def replace(self, items: Any) -> None:
         if diagnostics._active is not None:
@@ -406,38 +447,49 @@ class _ListRegion:
                 self.update_row(self.rows[i], items[i], i)
             self.splice(common, len(self.rows) - common, items[common:])
             return
+        rows = self.rows
+        common = min(len(rows), len(items))
         # Retaining the unchanged prefix avoids rebuilding a matching table
         # for ordinary append/truncate operations. Match duplicates from the
         # front, preserving occurrence identity just like the general path.
+        # Rows matched by identity at the same position need no update.
         prefix = 0
-        common = min(len(self.rows), len(items))
+        if self.keyed is True:
+            while prefix < common and rows[prefix].item is items[prefix]:
+                prefix += 1
         while prefix < common:
-            row, item = self.rows[prefix], items[prefix]
+            row, item = rows[prefix], items[prefix]
             if not (self.keyed is True and row.item is item) and row.key != self.key(item):
                 break
             self.update_row(row, item, prefix)
             prefix += 1
         if prefix == common:
-            self.splice(prefix, len(self.rows) - prefix, items[prefix:])
+            self.splice(prefix, len(rows) - prefix, items[prefix:])
             return
         suffix = 0
         if self.unique:
-            while suffix < common - prefix:
-                row, item = self.rows[-1 - suffix], items[-1 - suffix]
+            limit = common - prefix
+            if self.keyed is True:
+                while suffix < limit and rows[-1 - suffix].item is items[-1 - suffix]:
+                    suffix += 1
+            while suffix < limit:
+                row, item = rows[-1 - suffix], items[-1 - suffix]
                 if not (self.keyed is True and row.item is item) and row.key != self.key(item):
                     break
                 suffix += 1
-            if suffix:
+            if suffix and len(items) - suffix > prefix:
                 middle_keys = {self.key(items[i]) for i in range(prefix, len(items) - suffix)}
                 # A newly introduced duplicate must consume the old row at
                 # its first occurrence, not reserve it for the suffix.
-                if any(row.key in middle_keys for row in self.rows[len(self.rows) - suffix :]):
+                if any(row.key in middle_keys for row in rows[len(rows) - suffix :]):
                     suffix = 0
-        old_end, new_end = len(self.rows) - suffix, len(items) - suffix
+        old_end, new_end = len(rows) - suffix, len(items) - suffix
+        if self._swap_ends(items, prefix, old_end, new_end):
+            return
         available: dict[Any, deque[_Row]] = defaultdict(deque)
-        for row in self.rows[prefix:old_end]:
+        for row in rows[prefix:old_end]:
             available[row.key].append(row)
-        next_rows = self.rows[:prefix]
+        next_rows = rows[:prefix]
         reused = set()
         for i in range(prefix, new_end):
             item = items[i]
@@ -451,15 +503,24 @@ class _ListRegion:
                 row = self.new_row(item, i, key)
                 self.unique = False
             next_rows.append(row)
-        for offset in range(suffix):
-            row = self.rows[old_end + offset]
-            self.update_row(row, items[new_end + offset], new_end + offset)
-            next_rows.append(row)
+        shift = new_end - old_end
+        if suffix:
+            tail = rows[old_end:]
+            if shift or self.keyed is not True:
+                for offset, row in enumerate(tail):
+                    index = new_end + offset
+                    item = items[index]
+                    if row.item is item and row._index_signal is None:
+                        # An index nothing has read is a plain integer.
+                        row._index = index
+                    else:
+                        self.update_row(row, item, index)
+            next_rows.extend(tail)
         children = [row.vnode for row in next_rows]
         if not reused and not prefix and not suffix:
             # Nothing was kept: mount the new rows as one run, then dispose
             # the old ones with a single range instead of matching pairs.
-            old_rows = self.rows
+            old_rows = rows
             end = self.vnode._frag_end
             parent, ns = self.parent, self.vnode.ns
             for row in next_rows:
@@ -475,11 +536,38 @@ class _ListRegion:
             reconciler._first_dom_id(children[new_end]) if suffix else self.vnode._frag_end,
             self.vnode.ns,
         )
-        for row in self.rows[prefix:old_end]:
+        for row in rows[prefix:old_end]:
             if row not in reused:
-                row.owner.dispose()
+                row.dispose()
         self.rows = next_rows
         self.vnode.children = children
+
+    def _swap_ends(self, items: Any, start: int, old_end: int, new_end: int) -> bool:
+        """Apply a replacement that only swapped the first and last rows of the changed run.
+
+        Solid's `reconcileArrays` special-cases the same move: two native
+        moves and two index updates, instead of matching the whole run.
+        Returns False (nothing changed) when the run isn't such a swap.
+        """
+        rows = self.rows
+        last = old_end - 1
+        if old_end != new_end or last - start < 1 or self.keyed is not True:
+            return False
+        first_row, last_row = rows[start], rows[last]
+        if first_row.item is not items[last] or last_row.item is not items[start]:
+            return False
+        for i in range(start + 1, last):
+            if rows[i].item is not items[i]:
+                return False
+        children = self.vnode.children
+        after = reconciler._first_dom_id(rows[old_end].vnode) if old_end < len(rows) else self.vnode._frag_end
+        reconciler._move_range(last_row.vnode, self.parent, reconciler._first_dom_id(first_row.vnode))
+        reconciler._move_range(first_row.vnode, self.parent, after)
+        rows[start], rows[last] = last_row, first_row
+        children[start], children[last] = children[last], children[start]
+        _update_index(last_row, start)
+        _update_index(first_row, last)
+        return True
 
 
 def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:

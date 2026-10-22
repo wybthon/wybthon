@@ -1,4 +1,6 @@
-"""E2E: engine v2 surface (zero-argument handlers, t-strings, typed component props)."""
+"""E2E: engine surface (zero-argument handlers, compiled expressions, typed component props)."""
+
+import json
 
 import pytest
 from playwright.sync_api import expect
@@ -22,24 +24,31 @@ def test_zero_argument_handlers(goto_feature):
     expect(page.get_by_test_id("eng-async-taps")).to_have_text("1")
 
 
-def test_tstring_text_and_attributes_update(goto_feature):
+def test_compiled_expressions_update_text_and_attributes(goto_feature):
     page = goto_feature("engine")
-    expect(page.get_by_test_id("eng-t-count")).to_have_text("Count: 1 (doubled: 2)")
+    count = page.get_by_test_id("eng-t-count")
+    expect(count).to_have_text("Count: 1 (doubled: 2)")
+    expect(page.get_by_test_id("eng-t-memo")).to_have_text("Memo: 2")
     expect(page.get_by_test_id("eng-t-price")).to_have_text("Price: 3.50")
     expect(page.get_by_test_id("eng-t-static")).to_have_text("Hello, Ada!")
     attr = page.get_by_test_id("eng-t-attr")
     expect(attr).to_have_attribute("title", "count is 1")
     expect(attr).to_have_attribute("class", "item item-1")
-    # One binding per t-string: the text node is updated in place.
-    text_node = page.get_by_test_id("eng-t-count").evaluate_handle("el => el.firstChild")
+    # Each compiled expression is its own hole: the text nodes are updated
+    # in place, never replaced.
+    nodes = count.evaluate_handle("el => [...el.childNodes]")
 
     page.get_by_test_id("eng-inc").click()
-    expect(page.get_by_test_id("eng-t-count")).to_have_text("Count: 2 (doubled: 4)")
+    expect(count).to_have_text("Count: 2 (doubled: 4)")
+    expect(page.get_by_test_id("eng-t-memo")).to_have_text("Memo: 4")
     expect(attr).to_have_attribute("title", "count is 2")
     expect(attr).to_have_attribute("class", "item item-2")
-    assert page.get_by_test_id("eng-t-count").evaluate("(el, node) => el.firstChild === node", text_node)
-    assert page.get_by_test_id("eng-t-count").evaluate("el => el.childNodes.length") == 1
+    assert count.evaluate(
+        "(el, nodes) => el.childNodes.length === nodes.length && nodes.every((n, i) => el.childNodes[i] === n)",
+        nodes,
+    )
 
+    # A format spec folds into the getter.
     page.get_by_test_id("eng-price").click()
     expect(page.get_by_test_id("eng-t-price")).to_have_text("Price: 4.75")
     expect(page.get_by_test_id("eng-t-static")).to_have_text("Hello, Ada!")
@@ -56,7 +65,7 @@ def test_typed_component_receives_reactive_props(goto_feature):
     expect(page.get_by_test_id("eng-badge-static-count")).to_have_text("0")
     expect(page.get_by_test_id("eng-badge-static-t")).to_have_text("fixed=0 (plain)")
 
-    # A signal, a derived zero-argument function, and a plain callback field.
+    # A compiled getter, a signal, a derived expression, and a callback field.
     page.get_by_test_id("eng-inc").click()
     page.get_by_test_id("eng-inc").click()
     page.get_by_test_id("eng-rename").click()
@@ -95,3 +104,36 @@ f"{wybthon.is_dev_mode()}|{len(errors)}|{' / '.join(errors)}"
     assert count == "2", messages
     assert "bogus" in messages
     assert "label" in messages
+
+
+def test_fixture_templates_are_precompiled_by_the_build(goto_feature):
+    """`wyb dev` compiles the app's templates: each literal carries its parse tree and mount functions."""
+    page = goto_feature("engine")
+    result = json.loads(
+        python(
+            page,
+            """
+import json, sys
+from wybthon.templates import Precompiled
+
+entries = [
+    value
+    for name, module in list(sys.modules.items())
+    if name == "app" or name.startswith("app.")
+    for key, value in vars(module).items()
+    if key.startswith("__wybthon_t") and isinstance(value, Precompiled)
+]
+from app.features import engine
+json.dumps({
+    "entries": len(entries),
+    "loaded": sum(entry.entry is not None for entry in entries),
+    "engine_loaded": all(
+        value.entry is not None for key, value in vars(engine).items() if key.startswith("__wybthon_t")
+    ),
+})
+""",
+        )
+    )
+    assert result["entries"] > 30, result
+    assert result["loaded"] > 10, result
+    assert result["engine_loaded"], result

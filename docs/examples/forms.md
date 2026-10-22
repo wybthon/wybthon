@@ -34,9 +34,6 @@ def SignupForm():
     plan = fields["plan"]
     subscribe = fields["subscribe"]
 
-    def is_pro():
-        return plan.value() == "pro"
-
     return html(t"""
       <form onsubmit={on_submit_validated(rules, save, fields)}>
         <p>
@@ -46,7 +43,7 @@ def SignupForm():
             {bind_text(name, validators=rules["name"])}
             {a11y_control_attrs(name, described_by_id="name-err")}
           >
-          <span {error_message_attrs(id="name-err")}>{name.error}</span>
+          <span {error_message_attrs(id="name-err")}>{name.error()}</span>
         </p>
         <p>
           <label for="email">Email</label>
@@ -56,7 +53,7 @@ def SignupForm():
             {bind_text(mail, validators=rules["email"])}
             {a11y_control_attrs(mail, described_by_id="email-err")}
           >
-          <span {error_message_attrs(id="email-err")}>{mail.error}</span>
+          <span {error_message_attrs(id="email-err")}>{mail.error()}</span>
         </p>
         <p>
           <label for="plan">Plan</label>
@@ -68,7 +65,7 @@ def SignupForm():
         <p>
           <label><input type="checkbox" {bind_checkbox(subscribe)}> Subscribe to the newsletter</label>
         </p>
-        {Show(is_pro, html(t"<p>Pro plans are billed monthly.</p>"))}
+        {Show(plan.value() == "pro", html(t"<p>Pro plans are billed monthly.</p>"))}
         <button type="submit">Sign up</button>
       </form>
     """)
@@ -81,11 +78,11 @@ render(SignupForm(), "#app")
 
 - [`form_state`][wybthon.forms.form_state] returns a dict of [`Field`][wybthon.forms.Field] objects. Each field carries `value`, `error`, and `touched` accessors with matching setters, so every piece of form state is a signal.
 - [`bind_text`][wybthon.forms.bind_text] returns `{"value": field.value, "on_input": handler}`. The `value` entry is the accessor itself, so programmatic writes through `field.set_value(...)` update the input too. Validators run on every `input` event.
-- `{bind_text(...)}` in the `<input>` tag is a **spread**: the mapping's entries are applied as props, exactly like `**bind_text(...)` on an element helper. A tag can take several spreads alongside ordinary attributes. Spread keys use the helpers' Python names (`on_input`, `aria_invalid`); they mean the same thing in both styles.
-- `<span ...>{name.error}</span>` places the error accessor in the template, so the message appears and disappears as validation runs.
+- `{bind_text(...)}` in the `<input>` tag is a **spread**: the mapping's entries are applied as props. A spread is evaluated once, when the template is created; the accessors inside it (the value, the ARIA state) are what keep the input in sync. A tag can take several spreads alongside ordinary attributes. Spread keys use Python names (`on_input`, `aria_invalid`), the same names [`h`][wybthon.h] props take.
+- `<span ...>{name.error()}</span>` reads the error in the template, so the message appears and disappears as validation runs.
 - [`a11y_control_attrs`][wybthon.forms.a11y_control_attrs] produces reactive `aria-invalid` and `aria-describedby` props; [`error_message_attrs`][wybthon.forms.error_message_attrs] marks the message container as a polite live region.
 - [`on_submit_validated`][wybthon.forms.on_submit_validated] calls `prevent_default()`, validates every field in `rules` (marking them touched), and only invokes `save` when all pass. Use [`on_submit`][wybthon.forms.on_submit] when you want to handle validation yourself.
-- A `Field` is a container of accessors, not an accessor itself, so `is_pro` reads `plan.value()`. `Show` mounts the note only while it's true.
+- A `Field` is a container of accessors, not an accessor itself, so the condition reads `plan.value()`. The compiler passes `Show` a getter for `plan.value() == "pro"`, and `Show` mounts the note only while it's true.
 - Static attributes such as `for="name"` and `type="email"` are written into the compiled template, so they cost nothing per instance.
 
 ## Schema-driven rules

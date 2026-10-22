@@ -3,38 +3,37 @@
 Signals, derived values, a template, and typed props with defaults in one small component.
 
 ```python
-from wybthon import Prop, Props, component, create_memo, create_signal, html, prop, render
+from wybthon import Props, component, create_memo, create_signal, html, render, untrack
 
 
 class CounterProps(Props):
-    initial: Prop[int] = prop(default=0)
-    step: Prop[int] = prop(default=1)
+    initial: int = 0
+    step: int = 1
 
 
 @component
 def Counter(props: CounterProps):
-    # ``props.initial`` is an accessor. ``.peek()`` reads it once without
-    # subscribing, which is exactly what a signal seed needs.
-    count, set_count = create_signal(props.initial.peek())
+    # ``untrack`` reads ``initial`` once without subscribing, which is
+    # exactly what a signal seed needs.
+    count, set_count = create_signal(untrack(lambda: props.initial))
 
-    # Memos are cached and glitch-free; ``doubled`` recomputes only when
+    # Memos are cached and glitch-free; ``parity`` recomputes only when
     # ``count`` changes.
-    doubled = create_memo(lambda: count() * 2)
     parity = create_memo(lambda: "even" if count() % 2 == 0 else "odd")
 
     def increment():
         # Writes are staged until the next flush, so use the functional form
         # when the new value depends on the current one.
-        set_count(lambda n: n + props.step())
+        set_count(lambda n: n + props.step)
 
     def reset():
-        set_count(props.initial.peek())
+        set_count(props.initial)
 
     return html(t"""
       <div class="counter">
-        <p>Count: {count}, doubled: {doubled}</p>
-        <p>{parity}</p>
-        <p>Next: {count} + {props.step}</p>
+        <p>Count: {count()}, doubled: {count() * 2}</p>
+        <p>{parity()}</p>
+        <p>Next: {count()} + {props.step}</p>
         <button onclick={increment}>Increment</button>
         <button onclick={reset}>Reset</button>
       </div>
@@ -46,13 +45,14 @@ render(Counter(initial=5, step=2), "#app")
 
 ## How it works
 
-- `CounterProps` declares two optional inputs. `Prop[int]` makes each reactive, and `prop(default=...)` supplies the default.
-- [`html`][wybthon.html] takes the `t"..."` template string and returns a node. The literal is compiled once, the first time it runs, into a native `<template>` that's cloned for every instance. See [Templates](../concepts/templates.md).
-- `count`, `doubled`, `parity`, and `props.step` are accessors. Placing an accessor in a template creates a **reactive hole**: it gets its own render effect, and only that text node changes when its dependencies do. Everything else in the markup is static.
-- `parity` could also be written inline, as `{(lambda: "even" if count() % 2 == 0 else "odd")}`. Python doesn't allow a bare `lambda` inside `{...}`, so an inline one needs the parentheses. A named memo or function usually reads better.
-- `onclick={increment}` registers a delegated click handler. Attribute names in templates are the HTML names (`class`, `onclick`), not the helpers' Python names (`class_`, `on_click`).
+- `CounterProps` declares two optional inputs as plain annotations with ordinary defaults. Use [`prop`][wybthon.prop] only when a default needs a factory: `tags: list[str] = prop(default_factory=list)`.
+- [`html`][wybthon.html] takes the `t"..."` template string and returns a node. Wybthon's compiler prepares each literal when the module is compiled, and the static markup becomes a native `<template>` that's cloned for every instance. See [Templates](../concepts/templates.md).
+- `{count()}`, `{count() * 2}`, `{parity()}`, and `{props.step}` contain a call or an attribute access, so the compiler turns each into a getter. Each one becomes a **reactive hole**: only that text node changes when what it reads changes. Everything else in the markup is static.
+- `count() * 2` needs no memo: it's cheap, and the hole recomputes it only when `count` changes. `parity` is a memo to show the other option; a memo is worth it when a derived value is expensive or read in several places.
+- `props.step` is a tracked read of the current value. If the parent passes a reactive value, the hole updates.
+- `onclick={increment}` registers a delegated click handler. The compiler never wraps an event handler. Attribute names in templates are the HTML names (`class`, `onclick`).
 - The component body runs once. There's no re-render to worry about, so closures like `increment` never go stale.
-- The handlers take no arguments; a handler may also accept the event. `props.step()` inside a handler is a plain read: event handlers aren't tracking scopes, so it neither subscribes nor warns.
+- The handlers take no arguments; a handler may also accept the event. `props.step` and `props.initial` inside a handler are plain reads: event handlers aren't tracking scopes, so they neither subscribe nor warn.
 
 ## Calling the component
 
@@ -73,16 +73,16 @@ html(t"<main>{Counter(initial=5)}</main>")
 html(t"<main><{Counter} initial={5} /></main>")
 ```
 
-Pass an accessor to react to parent state without changing the child:
+Pass a dynamic expression to react to parent state. In a template, the compiler passes the counter a getter, so `props.initial` reads the parent's current value:
 
 ```python
 from wybthon import create_signal
 
 seed, set_seed = create_signal(0)
-Counter(initial=seed)  # ``props.initial()`` reflects ``seed()``
+html(t"<main>{Counter(initial=seed())}</main>")  # props.initial reflects seed()
 ```
 
-Because the counter only peeks at `initial` to seed its own signal, later changes to `seed` don't reset the count. That's the intended semantics of a seed; if you want a prop to drive the display directly, place the prop in the template instead of copying it into a signal. A prop passed as a constant, like `step=2` here, costs nothing to read: it never changes, so nothing subscribes to it.
+Because the counter reads `initial` once, untracked, to seed its own signal, later changes to `seed` don't reset the count; "Reset" reads the current seed. That's the intended semantics of a seed. If you want a prop to drive the display directly, place it in the template instead of copying it into a signal. A prop passed as a constant, like `step=2` above, costs nothing to read: it never changes, so nothing subscribes to it.
 
 ## Testing it
 

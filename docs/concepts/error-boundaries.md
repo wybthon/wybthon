@@ -17,7 +17,7 @@ def Failing():
 def fallback(err, reset):
     return html(t"""
       <div class="error">
-        <p>Oops: {err}</p>
+        <p>Oops: {err()}</p>
         <button onclick={reset}>Try again</button>
       </div>
     """)
@@ -28,15 +28,16 @@ view = Errored(Failing(), fallback=fallback)
 
 `children` may be a node (a template, a component call, or any other
 VNode), a zero-arg callable, or a list of either. Pass nodes directly:
-component bodies and reactive expressions don't run until the boundary
-mounts them, so their errors are caught. A callable is only needed when
-*building* the node can raise, for example when a template interpolates
-the result of a function call made eagerly.
+component bodies and a template's dynamic expressions don't run until
+the boundary mounts them, so their errors are caught. A callable is only
+needed when *building* the node can raise, for example when Python code
+outside a template computes a prop eagerly:
+`Errored(lambda: Chart(points=parse(raw)), fallback=...)`.
 
 The fallback receives the error as an **accessor**, as in Solid 2.0:
-call `err()` to read the exception, or interpolate `err` in a template,
-as above, to show its message. `reset` takes no arguments, so it can be
-passed straight to `onclick`.
+call `err()` to read the exception. In a template, `{err()}` shows its
+message. `reset` takes no arguments, so it can be passed straight to
+`onclick`.
 
 ## What gets caught
 
@@ -84,7 +85,7 @@ from wybthon import html
 def describe(err, reset):
     if isinstance(err(), PermissionError):
         return html(t"<p>You don't have access to this.</p>")
-    return html(t"<div><p>{err}</p><button onclick={reset}>Retry</button></div>")
+    return html(t"<div><p>{err()}</p><button onclick={reset}>Retry</button></div>")
 ```
 
 ## Resetting
@@ -163,13 +164,18 @@ from wybthon import Errored, Loading, html
 
 
 def load_failed(err, reset):
-    return html(t"<div><p>Could not load: {err}</p><button onclick={reset}>Retry</button></div>")
+    return html(t"<div><p>Could not load: {err()}</p><button onclick={reset}>Retry</button></div>")
 
 
-Errored(
-    Loading(UserCard(user_id=user_id), fallback=html(t"<p>Loading...</p>")),
-    fallback=load_failed,
-)
+html(t"""
+  <main>
+    <{Errored} fallback={load_failed}>
+      <{Loading} fallback={html(t"<p>Loading...</p>")}>
+        <{UserCard} user_id={user_id()} />
+      </{Loading}>
+    </{Errored}>
+  </main>
+""")
 ```
 
 ## Next steps

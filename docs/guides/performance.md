@@ -17,28 +17,31 @@ Production builds also turn dev mode off, so they skip the development checks an
 
 Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so the engine's fast paths target the Python side.
 
-- **Templates compile once per literal.** A t-string literal hands [`html`][wybthon.html] the same static strings on every call, so Wybthon parses and compiles each literal once. The static markup becomes a native `<template>`, and each instance mounts with one fused `CLONE` command that clones it, fills its text slots, marks its delegated listeners, and inserts it. No VNode tree is built for static parts, and nothing is checked node by node: the literal guarantees its own structure. See [Templates](../concepts/templates.md#why-templates).
-- **Components cost what their markup costs.** A component can only receive new props when a reactive hole re-renders a tree that contains it (or `render` runs again into the same container). Everywhere else (another component's output, a list row, a `Show` branch, a template slot), a prop passed as a constant subscribes to nothing; a prop passed as an accessor subscribes the reader directly.
-- **Inert bindings are dropped.** A hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) can never run again, so Wybthon disposes it immediately and keeps only the DOM it produced.
+- **Templates are compiled ahead of time.** Wybthon's [compiler](../concepts/compiler.md) parses and validates each `html(t"...")` literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. `wyb build` turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native `<template>`, and each instance mounts with one fused `CLONE` command that clones it, fills its text slots, marks its delegated listeners, and inserts it. No VNode tree is built for static parts. See [Templates](../concepts/templates.md#why-templates).
+- **Bindings that read nothing cost nothing.** The compiler's rule is syntactic, so `{item["label"]}` or `{props.title}` becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.
+- **Bindings keep their state in slots.** A hole or attribute binding is a small computation that holds its node, name, and last value in slots and applies changes with a method, instead of a closure with its cells. A node with one delegated handler stores it directly in the handler table. Fewer objects per row means less work for the garbage collector, which matters most in Pyodide.
+- **Components cost what their markup costs.** A component can only receive new props when a reactive hole re-renders a tree that contains it (or `render` runs again into the same container). Everywhere else (another component's output, a list row, a `Show` branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.
 - **Native control flow.** `Show`, `For`, `Repeat`, and `Switch` mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.
+- **Rows are cheap.** A list row is its own owner and its own index accessor. Its index is a plain integer until something reads `index()` in a tracking scope; only then is a signal created for it, so a row that never reads its index allocates nothing for it.
+- **Keyed matching skips what didn't change.** Matching a new list against the mounted rows first skips the common prefix and suffix by identity, without calling into each row. A replacement that only swapped two rows is detected the way Solid's `reconcileArrays` detects it, and becomes two native moves. Only what's left goes through a key table.
 - **Native disposal.** Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python releases its own registrations (handlers, reactive bindings, refs) without visiting every node. Clearing a `For` list is one range removal plus disposal of each row's owner.
 - **Bulk replacement.** When a keyed list reuses none of its rows, the old rows go in one `DISPOSE_RANGE` command and the new rows mount as one splice, instead of reconciling every unrelated pair.
 - **Text placeholders.** A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain `nodeValue` write rather than a node replacement.
 - **Lighter computations.** Async state lives outside each computation until a computation actually runs async work, so an ordinary render binding doesn't allocate it.
 
-## Templates and element helpers
+## Templates and `h()`
 
-Both styles share one set of prop appliers, so they behave the same; they differ in what happens before mounting.
+Templates and [`h`][wybthon.h] share one set of prop appliers, so they behave the same; they differ in what happens before mounting.
 
-- A **template** costs one cached lookup per call, then one clone. Its structure is fixed by the literal.
-- An **element helper** tree is built as VNodes on every call. Wybthon compiles each repeated helper shape at run time, so a repeated row still mounts with one clone command, but every instance pays for building its VNodes and for matching them against the compiled shape. A helper subtree whose structure varies (a conditional element in one branch, for example) mounts on the generic path.
+- A **template** is prepared by the compiler. Each call costs a cached lookup and one clone, and its structure is fixed by the literal.
+- An **`h()` tree** is built as VNodes on every call and mounts on the generic path, with no template to clone.
 
-Use templates for markup you write by hand, and especially for list rows. Use the helpers where markup is built by code. In a helper tree, keep row structure consistent and put any variation inside a hole.
+Use templates for markup you write by hand, and especially for list rows. Use `h()` where markup is built by code.
 
 ## Use the incremental paths
 
-- **Pass accessors instead of re-rendering holes.** Put a signal straight into the markup (`<b title={role}>{name}</b>`) and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. Pass accessors to components too: a hole that rebuilds `Card(title=title())` patches the component on every change, while `Card(title=title)` placed once never re-runs.
-- **Keep holes small.** A function hole around a single text node patches one node.
+- **Bind values where they're shown.** Write the read where it's used (`<b title={role()}>{name()}</b>`), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (`{user_card(user())}`) is such a hole, so make it a component instead: `{UserCard(name=user().name)}` mounts once and receives a getter, so a change updates only the text that reads `props.name`.
+- **Keep holes small.** A hole around a single text node patches one node.
 - **Pass a store list directly through a `For` accessor.** Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.
 - **Select rows with a projection.** Each row reads its own key, so a selection change notifies only the old and new rows, not every row:
 
@@ -53,13 +56,12 @@ Use templates for markup you write by hand, and especially for list rows. Use th
         is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
 
         def row(item, index):
-            def row_class():
-                return "danger" if is_selected.get(item["id"]) else ""
-
             def select():
                 set_selected(item["id"])
 
-            return html(t"<li class={row_class} onclick={select}>{item['label']}</li>")
+            return html(t"""
+              <li class={"danger" if is_selected.get(item["id"]) else ""} onclick={select}>{item["label"]}</li>
+            """)
 
         return html(t"<ul>{For(rows, row)}</ul>")
     ```
@@ -67,7 +69,7 @@ Use templates for markup you write by hand, and especially for list rows. Use th
     `is_selected.get(key)` is tracked per key and returns `None` when the key is absent. Each row mounts with one clone command, and a selection change sends one command per affected row.
 
 - **Use `Repeat(count, row)` for integer slots.** Growing it mounts only the new slots.
-- **Keep component setup stable.** Place dynamic reads in accessors, holes, or attribute expressions. Components don't rerun for ordinary state updates.
+- **Keep component setup stable.** Place dynamic reads in the markup, memos, or effects. Components don't rerun for ordinary state updates.
 - **Virtualize large collections.** Use [`VirtualFor`][wybthon.virtual.VirtualFor] for large scrollable collections with fixed row heights. Offscreen rows are disposed, so store durable row state outside the row component.
 
 ```python
@@ -101,9 +103,9 @@ print(measured.as_dict())
 print(runtime_stats())
 ```
 
-Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization and kernel time when those operations occur. `template_clones` counts template instances mounted by cloning. For element helpers, `template_recipe_hits` counts mounts that reused a compiled shape, and `template_shape_walks` counts mounts that had to discover a shape first; a helper list whose rows mostly walk instead of hitting a recipe has varying structure worth unifying. `inspect_graph(owner)` reports ownership and dependencies without evaluating values.
+Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization and kernel time when those operations occur. `template_clones` counts template instances mounted by cloning. `inspect_graph(owner)` reports ownership and dependencies without evaluating values.
 
-The repository's `benchmarks/check_work.py` gates command counts in CI: appending 1,000 rows must create 1,000 rows with one clone command each (counting both template clones and compiled helper shapes), and selection and swap must each emit at most two commands. Work counts are deterministic, so they make better regression gates than timings.
+The repository's `benchmarks/check_work.py` gates command counts in CI: appending 1,000 rows must create 1,000 rows with one template clone command each, and selection and swap must each emit at most two commands. Work counts are deterministic, so they make better regression gates than timings.
 
 ## Benchmarks
 
@@ -120,9 +122,9 @@ Run comparisons serially on the same browser, runtime, hardware, and cache condi
 
 `benchmarks/compare_browser.py --baseline /path/to/baseline` alternates identical operations between isolated checkouts, building each one, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use `--mode store` for store comparisons and `--profile` for additional, untimed CPU profiles.
 
-`benchmarks/row_bench.py` times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. Pass `--template` to write the rows as `html` templates instead of element helpers.
+`benchmarks/row_bench.py` times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. With the compiler, its rows are compiled the way an application's modules are, with no hand-written lambdas.
 
-Recorded measurements, with the hardware and versions they were taken on, live in [`benchmarks/results/`](https://github.com/wybthon/wybthon/tree/main/benchmarks/results); [`engine-v3.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md) compares this engine with the previous release.
+Recorded measurements, with the hardware and versions they were taken on, live in [`benchmarks/results/`](https://github.com/wybthon/wybthon/tree/main/benchmarks/results); [`engine-v4.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md) compares this engine with the previous release, and [`engine-v3.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md) the one before it. In Engine v4, a mounted template row keeps about half as many objects tracked by the garbage collector as before, and swapping two rows is two native moves.
 
 A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.
 

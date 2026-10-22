@@ -10,19 +10,18 @@ pages linked in the left column carry the details.
 | Area | Names |
 | --- | --- |
 | [Templates](templates.md) | `html`, `TemplateError` |
-| [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `Prop`, `prop`, `merge`, `omit`, `children`, `ChildrenAccessor` |
-| [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `element`, `is_accessor` |
-| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `create_owner`, `is_disposed`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
+| [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `prop`, `merge`, `omit`, `is_static`, `children`, `flatten`, `ChildrenAccessor` |
+| [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `is_accessor` |
+| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `create_owner`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
 | [Async](reactivity.md) | `NotReadyError`, `ServerError`, `is_pending`, `latest`, `refresh`, `resolve`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Stores](store.md) | `Store`, `StoreList`, `StoreSetter`, `Draft`, `DraftList`, `DraftExpiredError`, `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
 | [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only` |
-| Boundaries | [`Loading`, `Reveal`](loading.md), [`Errored`](error_boundary.md), [`Portal`](portal.md), [`lazy`](lazy.md) |
+| Boundaries | [`Loading`, `Reveal`](loading.md), [`Errored`](error_boundary.md), [`Portal`](portal.md), [`lazy`, `lazy_module`, `LazyModule`](lazy.md) |
 | [Context](context.md) | `Context`, `ContextNotFoundError`, `create_context`, `use_context` |
 | DOM and events | [`Element`, `Ref`](dom.md), [`DomEvent`, `EventHandler`, `event`](events.md) |
-| Rendering | [`render`, `hydrate`, `Root`](reconciler.md), `is_server`, [`is_hydrating`, `NoHydration`, `Hydration`](flow.md) |
+| Rendering | [`render`, `hydrate`, `Root`](reconciler.md), `is_server`, [`is_hydrating`, `on_hydration_end`, `NoHydration`, `Hydration`](flow.md) |
 | [Server requests](request.md) | `RequestEvent`, `ResponseHead`, `get_request_event`, `http_status`, `http_header` |
 | Dev mode | `is_dev_mode`, `set_dev_mode` |
-| [Element helpers](elements.md) | One helper per HTML element (`div`, `p`, `button`, `input_`, ...), plus `element` |
 
 Other modules are imported by name and aren't re-exported:
 
@@ -32,25 +31,26 @@ Other modules are imported by name and aren't re-exported:
 | [`wybthon.forms`](forms.md) | `form_state`, `FormState`, `Field`, the `bind_*` helpers, validators, and ARIA helpers |
 | [`wybthon.server`](server.md) | `render_to_string`, `render_to_stream`, `RenderStream` |
 | [`wybthon.testing`](testing.md) | `render`, `Screen`, `fire`, `cleanup`, and the in-memory DOM |
-| [`wybthon.svg`](svg.md) | SVG element helpers |
+| [`wybthon.compiler`](compiler.md) | The template compiler: `install`, `uninstall`, `compile_source`, `transform` |
 | [`wybthon.virtual`, `wybthon.scheduling`](app-tools.md) | Virtual lists and cooperative scheduling |
-| [`wybthon.reactivity`](reactivity.md) | Everything above plus `Computation` and `Transition` |
+| [`wybthon.reactivity`](reactivity.md) | The reactive core, async, and props names above, plus `Computation` and `Transition` |
 
 ```python
-from wybthon import Prop, Props, button, component, create_signal, div, p, prop, render
+from wybthon import Props, component, create_signal, html, render, untrack
 
 
 class CounterProps(Props):
-    initial: Prop[int] = prop(default=0)
+    initial: int = 0
 
 
 @component
 def Counter(props: CounterProps):
-    count, set_count = create_signal(props.initial.peek())
-    return div(
-        p(t"Count: {count}"),
-        button("+1", on_click=lambda: set_count(lambda n: n + 1)),
-    )
+    count, set_count = create_signal(untrack(lambda: props.initial))
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    return html(t"<div><p>Count: {count()}</p><button onclick={increment}>+1</button></div>")
 
 
 root = render(Counter(initial=5), "#app")
@@ -60,7 +60,7 @@ root = render(Counter(initial=5), "#app")
 !!! note "Browser versus CPython"
     Reactivity (including async memos, actions, and `flush`), stores,
     forms, context, flow control, and VDOM construction (`VNode`, `h`,
-    `Fragment`, the HTML helpers) all run in plain CPython, which is how
+    `Fragment`, templates) all run in plain CPython, which is how
     the unit tests work. Touching a real DOM (`render` into a page,
     `Element` queries, `navigate` with history) needs Pyodide, or the
     in-memory DOM of [`wybthon.testing`](testing.md).

@@ -2,29 +2,32 @@
 
 from typing import TypedDict
 
-from wybthon import For, Prop, Props, VNode, action, component, create_signal, create_store, html, p
+from wybthon import Accessor, For, Props, Show, VNode, action, component, create_signal, create_store, html
 
 
 class StrictProps(Props):
-    name: Prop[str]
+    name: str
 
 
 @component
 def Greeting(props: StrictProps) -> VNode:
     props.name = "x"  # error: assign-prop
-    return p(props.name)
+    return html(t"<p>{props.name}</p>")
 
 
 @component
 def Bare() -> VNode:
-    return p("bare")
+    return html(t"<p>bare</p>")
 
 
+name, _ = create_signal("Ada")
 Greeting()  # error: missing-prop
 Greeting(name=42)  # error: wrong-type
 Greeting(name="Ada", typo=True)  # error: unknown-prop
 Bare(title="x")  # error: no-props
-wrong: str = Greeting(name="Ada").name  # error: accessor-is-not-value
+Greeting(name=name)  # error: accessor-is-not-value
+html(t"<div>{Greeting(name=len(name()))}</div>")  # error: template-call
+wrong: Accessor[str] = Greeting(name="Ada").name  # error: value-is-not-accessor
 
 
 class Person(TypedDict):
@@ -47,5 +50,7 @@ class Todo(TypedDict):
 
 
 todos, _set_todos = create_signal([Todo(title="a")])
-For(todos, lambda todo, i: p(todo["titel"]))  # error: for-row
+current, _set_current = create_signal(Todo(title="b"))
+For(todos, lambda todo, i: html(t"<p>{todo['titel']}</p>"))  # error: for-row
+Show(current, lambda todo: html(t"<p>{todo['title']}</p>"))  # error: show-branch
 html("<p>not a t-string</p>")  # error: html-arg

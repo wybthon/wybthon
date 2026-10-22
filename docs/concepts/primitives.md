@@ -8,21 +8,22 @@ together and when the graph flushes.
 
 ## Reactive holes
 
-A **reactive hole** is a reactive expression (an
-[`Accessor`][wybthon.Accessor] or a zero-arg function) placed in a
-template or VNode tree, as a child or as an attribute value. The
-reconciler runs it inside its own render effect, so the component body
-runs once while the hole patches its region of the DOM whenever its
-dependencies change.
+A **reactive hole** is a reactive expression placed in a template as a
+child, and a **binding** is one placed in an attribute. In a template,
+every dynamic expression (one that calls something, reads an
+attribute, or indexes) is one: the [compiler](compiler.md) turns it
+into a getter. An [`Accessor`][wybthon.Accessor] or a zero-argument
+function placed directly is one too. The renderer runs each inside its
+own render effect, so the component body runs once while the hole
+patches its region of the DOM whenever its dependencies change.
 
 ```python
-from wybthon import component, create_memo, create_signal, hole, html
+from wybthon import component, create_signal, html
 
 
 @component
 def Demo():
     count, set_count = create_signal(0)
-    doubled = create_memo(lambda: count() * 2)
 
     def tripled():
         return f"Tripled: {count() * 3}"
@@ -35,45 +36,39 @@ def Demo():
 
     return html(t"""
       <div>
-        <!-- 1) An accessor as a child. -->
-        <p>Count: <span>{count}</span></p>
-        <!-- 2) A zero-arg function as a child. -->
-        <p>{tripled}</p>
-        <!-- 3) Accessors in text: each one is its own binding. -->
-        <p>Count is {count}, doubled {doubled}</p>
-        <!-- 4) The explicit form, when you need a key. -->
-        <p>{hole(tripled, key="triple")}</p>
+        <!-- 1) A dynamic expression as a child. -->
+        <p>Doubled: <span>{count() * 2}</span></p>
+        <!-- 2) An accessor as a child. -->
+        <p>Count: {count}</p>
+        <!-- 3) A function call: one hole that makes the call. -->
+        <p>{tripled()}</p>
+        <!-- 4) Several expressions in text: each one is its own binding. -->
+        <p>Count is {count()}, doubled {count() * 2}</p>
         <!-- 5) A reactive attribute (any attribute except events and ref). -->
-        <p class={status}>Status</p>
+        <p class={status()}>Status</p>
         <!-- 6) Part of an attribute: one binding for the whole value. -->
-        <p class="badge badge-{status}">Badge</p>
+        <p class="badge badge-{status()}">Badge</p>
         <button onclick={increment}>+1</button>
       </div>
     """)
 ```
 
-Python doesn't allow a bare `lambda` inside a template interpolation,
-so the expressions above are named functions. An inline lambda works
-when it's wrapped in parentheses: `{(lambda: count() * 3)}`. See
-[Templates](templates.md#lambdas-need-parentheses).
-
-With the [element helpers](../api/elements.md), the same rule applies
-to children and prop values (`p(count)`, `p(class_=status)`). A
-[PEP 750](https://peps.python.org/pep-0750/) template string passed to
-a helper is a reactive expression wherever text is accepted, as a child
-or as an attribute value (`p(t"Count is {count}")`,
-`div(class_=t"card card-{variant}")`). Interpolated accessors and
-zero-arg functions are called inside one binding, so the whole string
-updates together; other interpolations are formatted once, and a
-template string with nothing reactive in it is static text.
+Event handlers and refs are never reactive, so `onclick={increment}`
+binds the function itself. In an [`h()`][wybthon.h] tree, which the
+compiler doesn't rewrite, pass an accessor or a zero-argument function
+as a child or prop value (`h("p", None, count)`), and use
+[`hole`][wybthon.hole] to make a hole explicitly when it needs a `key`.
 
 A hole's expression may return a string or number (a text node), a
 template or other `VNode`, a list of either (mounted as a fragment),
 `None` (nothing), or another accessor (nested hole). When it returns a
 template from the same literal as last time, the mounted instance is
-patched slot by slot instead of replaced. A hole that reads nothing
-reactive on its first run is dropped after that run, keeping the DOM
-it produced.
+patched slot by slot instead of replaced. A binding whose expression
+makes no calls (`{props.title}`, `{row["label"]}`) first runs under a
+lightweight probe, and when it reads nothing reactive, its value is
+applied and no computation is allocated. Any other hole that reads
+nothing reactive on its first run is dropped after that run, keeping
+the DOM it produced.
 
 Holes are ownership scopes. Use [`on_cleanup`][wybthon.on_cleanup]
 inside one to register teardown that runs before each re-evaluation and
@@ -93,7 +88,7 @@ def status():
     return subscribe(topic())  # re-subscribes when topic changes
 
 
-html(t"<p>{status}</p>")
+html(t"<p>{status()}</p>")
 ```
 
 ## `create_signal`
@@ -115,7 +110,7 @@ count.peek()  # 5: untracked read of the committed value
 
 - **Writes are staged.** The setter records the value; reads keep returning the committed value until the next flush. See [Staged writes](reactivity.md#staged-writes-and-flush-timing).
 - **Functional updates** receive the latest staged value, so two `set(lambda n: n + 1)` calls in one handler add two. To store a callable as the value, return it from an updater: `set_fn(lambda _: my_callable)`.
-- **`equals`** decides when observers are notified. The default is an identity fast path followed by `==`; `equals=False` always notifies; a callable `(old, new) -> bool` skips notification when it returns `True` (use `lambda a, b: a is b` for identity-only semantics).
+- **`equals`** decides when observers are notified. The default, [`is_equal`][wybthon.is_equal], is an identity fast path followed by `==`; `equals=False` always notifies; a callable `(old, new) -> bool` skips notification when it returns `True` (use `lambda a, b: a is b` for identity-only semantics).
 - **Function form.** `create_signal(lambda: a() + b())` returns a *writable derived signal*: it tracks what the function reads, and the setter overrides the value until the next source change.
 
 Signals created in a component body live for the component's lifetime.
@@ -140,6 +135,33 @@ doubled.peek()  # untracked read
 - **Previous value.** If the body accepts a positional parameter it receives the previous value (`None` on the first run).
 - **`lazy=True`** suspends the memo once it loses its last subscriber; a later read recomputes it; **`unobserved=`** runs a callback at that moment (for resource cleanup).
 - **Async bodies.** An `async def` body (or an async generator) makes the memo an async computation. See [Async and loading](async-loading.md).
+
+## `create_deferred`
+
+[`create_deferred`][wybthon.create_deferred] is an async memo that may
+lag but never holds the rest of the UI, the counterpart of Solid 2.0's
+`createDeferred`. Before its first value, readers suspend to the
+nearest [`Loading`][wybthon.Loading] like any async memo. After it, a
+refetch opens no transition: readers keep the last value until the new
+one lands, and everything else on the screen updates without waiting.
+[`is_pending`][wybthon.is_pending] reports the refetch.
+
+```python
+from wybthon import For, create_deferred, html, is_pending
+
+
+async def load_rows():
+    return await fetch_rows(period())
+
+
+rows = create_deferred(load_rows)
+
+html(t"<section class={'stale' if is_pending(rows) else ''}>{For(rows(), row)}</section>")
+```
+
+It takes the same options as `create_memo`. Use it for independent
+widgets (dashboards, feeds, search results), where the previous answer
+with a "refreshing" hint beats waiting with everything else.
 
 ## `create_effect`
 
@@ -223,7 +245,8 @@ create_effect(lambda: (a(), untrack(b)), lambda pair: print(pair))  # depends on
 count.peek()  # the same idea for one read
 ```
 
-Both silence the dev-mode top-level-read warning, so they're the
+Both silence the dev-mode top-level-read warning. A prop read returns
+the value, not an accessor, so `untrack(lambda: props.initial)` is the
 explicit way to seed local state from a prop.
 
 ## `on_settled`
@@ -233,11 +256,11 @@ mounted the current component has committed, so refs are assigned and
 the DOM is live. It may return a cleanup that runs on unmount.
 
 ```python
-from wybthon import Prop, Props, Ref, component, html, on_settled
+from wybthon import Props, Ref, component, html, on_settled
 
 
 class ChartProps(Props):
-    data: Prop[list[float]]
+    data: list[float]
 
 
 @component
@@ -245,7 +268,7 @@ def Chart(props: ChartProps):
     ref = Ref()
 
     def start():
-        handle = draw(ref.current, props.data.peek())
+        handle = draw(ref.current, props.data)
         return lambda: handle.destroy()
 
     on_settled(start)
@@ -300,19 +323,22 @@ async def later():
 
 ## Typing
 
-Every read goes through [`Accessor[T]`][wybthon.Accessor]: signal
-getters are [`Signal[T]`][wybthon.Signal], memos are `Memo[T]`, and
-reading a [`Prop[T]`][wybthon.Prop] field on a component's props returns
-an `Accessor[T]`. Setters are
-`Setter[T]`. Annotate function parameters as `Accessor[T]` when they
-accept any of these. See the [Typing guide](../guides/typing.md).
+Every reactive read goes through [`Accessor[T]`][wybthon.Accessor]:
+signal getters are [`Signal[T]`][wybthon.Signal], memos are `Memo[T]`,
+and setters are `Setter[T]`. Annotate function parameters as
+`Accessor[T]` when they accept any of these. A props field is a plain
+annotation, so `props.title` is typed as the field's type (`str`), and
+a type checker checks a component call's arguments against it. See the
+[Typing guide](../guides/typing.md).
 
 ## Props helpers
 
-- [`prop(default=...)`][wybthon.prop] declares the default of a `Prop[T]` field on a [`Props`][wybthon.Props] class; use `prop(default_factory=...)` for mutable defaults.
-- [`merge(*sources)`][wybthon.merge] merges props instances, dicts, and zero-arg functions returning dicts into one reactive mapping; later sources win, and `None` is a real value.
+- [`prop(default_factory=...)`][wybthon.prop] declares a mutable default on a [`Props`][wybthon.Props] class (the factory runs once per instance); `prop(default=...)` works too, though an ordinary default (`step: int = 1`) needs no `prop()`.
+- [`merge(*sources)`][wybthon.merge] merges props instances, dicts, and zero-arg functions returning dicts into one reactive view; later sources win, and `None` is a real value.
 - [`omit(source, *keys)`][wybthon.omit] returns a reactive view without the given keys, or without every key a predicate accepts (the replacement for `split_props`).
-- [`children(fn)`][wybthon.children] resolves a children prop into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list.
+- A view reads like props: `view.title` is the tracked value, and item access (`view["title"]`) returns an accessor. Spreading a view onto an element (`<button {attrs}>`) binds each key reactively.
+- [`is_static(props, key)`][wybthon.is_static] reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's `isStatic` does.
+- [`children(fn)`][wybthon.children] resolves a getter for a children prop (`lambda: props.children`) into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list. [`flatten(children)`][wybthon.flatten] is the unmemoized form, matching Solid 2.0's `flatten`.
 
 ```python
 from wybthon import merge, omit
@@ -382,11 +408,7 @@ selected, set_selected = create_signal(1)
 is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
 
 
-def row_class():
-    return "active" if is_selected.get(2) else None
-
-
-html(t"<li class={row_class}>Item 2</li>")
+html(t"<li class={'active' if is_selected.get(2) else None}>Item 2</li>")
 ```
 
 `is_selected.get(key)` is tracked per key and returns `None` when the
@@ -395,7 +417,8 @@ key is absent. See [Stores](stores.md) for projections in general.
 ## Miscellany
 
 - [`create_unique_id`][wybthon.create_unique_id] returns a process-unique string for `id`/`for` pairs.
-- [`is_accessor`][wybthon.is_accessor] reports whether a value is a reactive expression (an `Accessor` or a zero-arg function); it's the rule the framework uses to decide what becomes a hole.
+- [`is_accessor`][wybthon.is_accessor] reports whether a value is a reactive expression (an `Accessor` or a zero-arg function); it's the rule the renderer uses at run time to decide what becomes a hole. The compiler makes its own decision earlier, from the expression's syntax; see [The compiler](compiler.md#the-rule-dynamic-or-static).
+- [`is_equal(a, b)`][wybthon.is_equal] is the default equality of signals, memos, and stores: identity, then `==`.
 - [`flush`][wybthon.flush] settles the graph now. Automatic in the browser; call it in tests.
 
 ## Next steps

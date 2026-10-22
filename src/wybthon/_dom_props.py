@@ -16,11 +16,8 @@ Translates VNode props into batched DOM ops (see `wybthon.kernel`):
   either.
 - **Reactive bindings**: an accessor or zero-arg function as a prop
   value (or as a `class`/`style` dict value) is wrapped in its own render
-  effect so updates re-apply only that prop.
-
-- **Template strings**: a t-string value (`class_=t"btn btn-{kind}"`)
-  is static text when none of its interpolations are reactive, and a
-  reactive binding otherwise.
+  effect so updates re-apply only that prop. An expression that reads
+  nothing reactive is applied once and never becomes a computation.
 
 Nothing here touches the DOM directly; every applier emits ops against
 an integer node id and the kernel applies the batch in one bridge
@@ -30,7 +27,6 @@ crossing at commit time. Application code never imports this module.
 from __future__ import annotations
 
 import re
-from string.templatelib import Template
 from typing import Any
 
 from . import kernel
@@ -38,8 +34,17 @@ from ._warnings import log_error
 from .events import set_handler
 from .kernel import OP_SET_ATTR, OP_SET_PROP, OP_SET_STYLE
 from .reactivity import _core
-from .reactivity._core import _K_RENDER, Computation, _unwrap, is_accessor
-from .vnode import render_template, template_getter
+from .reactivity._core import (
+    _APPLY_METHOD,
+    _ESCAPED,
+    _K_RENDER,
+    Computation,
+    Signal,
+    _Getter,
+    _probe,
+    _unwrap,
+    is_accessor,
+)
 
 __all__: list[str] = []
 
@@ -233,8 +238,6 @@ def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> N
     fresh = old_val is _FRESH
     if fresh:
         old_val = _UNSET
-    if type(new_val) is Template:
-        new_val = render_template(new_val)
 
     if name == "class" or name == "class_":
         text = _class_string(new_val)
@@ -334,8 +337,6 @@ def binding_value(name: str, value: Any) -> Any:
         return None
     if is_accessor(value):
         return value
-    if type(value) is Template:
-        return template_getter(value)
     if (name == "class" or name == "class_" or name == "style") and _reactive_dict(value):
         return _dict_getter(value)
     return None
@@ -429,38 +430,72 @@ def remove_bindings_for(node_id: int) -> None:
             comp.dispose()
 
 
+def _apply_binding(target: tuple[int, str], new_val: Any, old_val: Any) -> None:
+    """A reactive attribute binding's apply stage: re-apply one prop of one node.
+
+    An unchanged plain value writes nothing, as in Solid. `value` and
+    `checked` are always re-asserted: the live property may have diverged
+    from the last value written (user input).
+    """
+    if new_val is _KEEP:
+        return
+    name = target[1]
+    if (
+        type(new_val) in _STATIC_TYPES
+        and type(new_val) is type(old_val)
+        and new_val == old_val
+        and name != "value"
+        and name != "checked"
+    ):
+        return
+    _apply_single_prop(target[0], name, old_val, new_val)
+
+
 def _bind_reactive_prop(
-    node_id: int, name: str, getter: Any, initial: Any = _UNSET, register: bool = True
+    node_id: int, name: str, getter: Any, initial: Any = _UNSET, register: bool = True, probe: bool | None = None
 ) -> Computation | None:
-    """Wrap `getter` in a render effect that re-applies prop `name` on change.
+    """Bind prop `name` to a reactive expression; returns the binding, if it needs one.
 
     Render-phase scheduling means every dirty binding in a flush emits
     its op before the single DOM commit. A getter that isn't ready keeps
     the current DOM value. Errors route to the nearest
     [`Errored`][wybthon.Errored] boundary, or are logged.
 
+    With `probe` (an expression the compiler deferred that makes no
+    calls; by default, a getter marked so), an expression that reads
+    nothing reactive is applied once and needs no computation, and one
+    that returns an accessor without reading anything binds to that
+    accessor (see `_core._probe`).
+
     `initial` is the value the node currently holds (`_FRESH` for a node
     created in this mount). Template mounts pass `register=False`: their
     bindings are recorded on the template root and registered by node
     only if the subtree is ever patched.
     """
-    if type(getter) is _core._PropAccessor:
-        constant = _core._constant_prop(getter)
-        if constant is not _core._MISSING:
-            # A prop that can never change: apply its value, track nothing.
-            _apply_single_prop(node_id, name, initial, constant)
+    if type(getter) is _Getter:
+        if probe is None:
+            probe = getter.probe
+        fn: Any = getter.fn
+    else:
+        fn = getter
+    if probe and _core._session is None:
+        for _ in range(8):
+            value = _probe(fn)
+            if value is _ESCAPED:
+                break
+            if type(value) is Signal:
+                fn = value
+                break
+            if is_accessor(value):
+                fn = value.fn if type(value) is _Getter else value
+                continue
+            _apply_single_prop(node_id, name, initial, value)
             return None
-    last = initial
-
-    def apply(new_val: Any) -> None:
-        nonlocal last
-        if new_val is _KEEP:
-            return
-        old_val = last
-        last = new_val
-        _apply_single_prop(node_id, name, old_val, new_val)
-
-    comp = Computation(getter, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False, keep=True)
+    comp = Computation(
+        fn, kind=_K_RENDER, value=initial, apply_scope=False, apply=_apply_binding, pass_prev=False, keep=True
+    )
+    comp._apply_arity = _APPLY_METHOD
+    comp._apply_data = (node_id, name)
     owner = _core._current_owner
     if owner is not None:
         owner._add_child(comp)
@@ -476,11 +511,6 @@ def _bind_reactive_prop(
         else:
             table[name] = comp
     return comp
-
-
-# ---------------------------------------------------------------------------
-# Class / style / dataset helpers
-# ---------------------------------------------------------------------------
 
 
 def class_names(value: Any) -> list[str]:

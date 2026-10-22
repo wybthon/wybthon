@@ -11,12 +11,10 @@ import pytest
 
 from wybthon.build import build_app, init_app
 
-APP = """
+APP = '''
 import asyncio
 
-from wybthon import (
-    Loading, NoHydration, button, component, create_memo, create_signal, div, footer, h1, input_, is_server, p,
-)
+from wybthon import Loading, NoHydration, component, create_memo, create_signal, html, is_server
 from wybthon.router import Link, Route, Router
 
 
@@ -28,39 +26,46 @@ async def fetch_greeting(name):
 @component
 def Greeting():
     greeting = create_memo(lambda: fetch_greeting("server" if is_server() else "browser"))
-    return p(greeting, id="greeting")
+    return html(t'<p id="greeting">{greeting()}</p>')
 
 
 @component
 def Home():
     count, set_count = create_signal(0)
     text, set_text = create_signal("")
-    return div(
-        h1("Prerendered", id="title"),
-        button(t"Count: {count}", id="count", on_click=lambda: set_count(lambda n: n + 1)),
-        input_(id="name", value=text, on_input=lambda e: set_text(e.target.value)),
-        p(lambda: f"Typed: {text()}", id="typed"),
-        Loading(lambda: Greeting(), fallback=p("Loading greeting")),
-        Link("About", href="/about", id="about-link"),
-        # Kept as the server rendered it: never mounted, so it never updates.
-        NoHydration(
-            footer(
-                p(lambda: f"Static count: {count()}", id="static-count"),
-                button("Static", id="static-button", on_click=lambda: set_count(100)),
-                id="static",
-            )
-        ),
-    )
+
+    def increment():
+        set_count(lambda n: n + 1)
+
+    # Kept as the server rendered it: never mounted, so it never updates.
+    footer = html(t"""
+      <footer id="static">
+        <p id="static-count">Static count: {count()}</p>
+        <button id="static-button" onclick={(lambda: set_count(100))}>Static</button>
+      </footer>
+    """)
+
+    return html(t"""
+      <div>
+        <h1 id="title">Prerendered</h1>
+        <button id="count" onclick={increment}>Count: {count()}</button>
+        <input id="name" value={text()} oninput={(lambda e: set_text(e.target.value))}>
+        <p id="typed">Typed: {text()}</p>
+        {Loading(Greeting(), fallback=html(t"<p>Loading greeting</p>"))}
+        <{Link} href="/about" id="about-link">About</{Link}>
+        {NoHydration(footer)}
+      </div>
+    """)
 
 
 @component
 def About():
-    return p("About page", id="about")
+    return html(t'<p id="about">About page</p>')
 
 
 def app():
     return Router([Route("/", Home), Route("/about", About)])
-"""
+'''
 
 
 @pytest.mark.e2e

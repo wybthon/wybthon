@@ -27,7 +27,7 @@ measuring, third-party widgets) or when you receive a node back from a
 
 A [`Ref`][wybthon.Ref] is a small mutable container that the renderer
 fills with the mounted `Element`. Pass it as the `ref` attribute of any
-host element (`ref=` with the element helpers) and read `ref.current`
+host element (a `ref` prop in [`h`][wybthon.h]) and read `ref.current`
 after mount:
 
 ```python
@@ -77,9 +77,11 @@ def FancyInput(props: FancyInputProps):
 ```
 
 Refs pass through components like any other prop; there's no special
-forwarding API. Declare `ref` as a plain field (not `Prop[...]`) so
-`props.ref` returns the `Ref` or callback the parent passed, untouched.
-A `None` entry in the list is ignored.
+forwarding API. Because the field's annotation includes a `Callable`,
+`props.ref` returns the `Ref` or callback the parent passed, untouched,
+instead of calling it. The compiler never wraps a `ref` attribute, so
+`ref={[local, props.ref]}` is evaluated once, when the element is
+created. A `None` entry in the list is ignored.
 
 ## Ownership and disposal order
 
@@ -128,7 +130,7 @@ work through a ref stays in sync with the framework's bookkeeping.
     focus, selection, scroll position, measurements, and third-party
     widgets that own their subtree.
 
-## Element helpers
+## `Element` methods
 
 The wrapper mirrors familiar DOM names:
 
@@ -146,19 +148,25 @@ The wrapper mirrors familiar DOM names:
 
 ## Styles, classes, and dataset through bindings
 
-You usually don't need `Element` for styling. Templates and element
-helpers share one set of prop appliers, so these work the same in both:
+You usually don't need `Element` for styling. Templates and
+[`h`][wybthon.h] share one set of prop appliers, so these work the same
+in both:
 
 - `style` takes a dict with camelCase or snake_case keys (`background_color`, `fontSize`); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing `None` clears earlier styles. Values may be accessors, and a raw style string is accepted too.
-- `dataset` takes a dict; entries render as `data-*` attributes and missing keys on update are removed. A plain `data-testid="x"` attribute (`data_testid="x"` on a helper) also works.
-- `class` (`class_` on a helper) accepts a string, a list of strings, a `{name: truthy_or_accessor}` dict, or an accessor returning any of those.
+- `dataset` takes a dict; entries render as `data-*` attributes and missing keys on update are removed. A plain `data-testid="x"` attribute (`data_testid` in `h()` props) also works.
+- `class` (`class_` in `h()` props) accepts a string, a list of strings, a `{name: truthy_or_accessor}` dict, or an accessor returning any of those.
 
 ```python
 styles = {"background_color": "white", "fontSize": "14px"}
-classes = {"card": True, "active": is_active}
+classes = {"card": True, "active": is_active}  # is_active is an accessor
 
 html(t'<div class={classes} style={styles} data-testid="card">...</div>')
 ```
+
+`classes` is a name, so the compiler passes the dict as is, and each
+accessor inside it becomes its own binding. An expression that reads
+signals, such as `class={"card active" if is_active() else "card"}`,
+becomes one binding for the whole attribute.
 
 ## Rendering into an existing node
 

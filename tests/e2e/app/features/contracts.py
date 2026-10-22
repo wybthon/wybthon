@@ -2,23 +2,19 @@
 
 import asyncio
 
-from app.testkit import tid
-
 from wybthon import (
     Errored,
     For,
     Loading,
     action,
-    button,
     component,
     create_memo,
     create_optimistic_store,
     create_signal,
     create_store,
-    div,
+    html,
     is_pending,
     on_cleanup,
-    p,
 )
 
 mounted = 0
@@ -66,22 +62,25 @@ def Page():
             removed += 1
 
         on_cleanup(dispose)
-        return div(lambda: f"{index()}:{item.name}", data_row=item.id)
+        return html(t"<div data-row={item.id}>{index()}:{item.name}</div>")
 
-    return div(
-        button("Edit", on_click=lambda e: edit(lambda d: setattr(d[0], "name", "Augusta")), **tid("contract-edit")),
-        button("Reverse", on_click=lambda e: edit(lambda d: d.reverse()), **tid("contract-reverse")),
-        button("Filter", on_click=lambda e: set_query("Augusta"), **tid("contract-filter")),
-        button("Error", on_click=lambda e: set_mode("error"), **tid("contract-error")),
-        button("Recover", on_click=lambda e: set_mode("ok"), **tid("contract-recover")),
-        button("Save", on_click=lambda e: save(), **tid("contract-save")),
-        button("Wait", on_click=waiting, **tid("contract-wait")),
-        p(lambda: str(is_pending(visible)), **tid("contract-pending")),
-        p(lambda: str(optimistic.saved), **tid("contract-saved")),
-        p(lambda: str(save.pending()), **tid("contract-saving")),
-        Errored(
-            lambda: Loading(lambda: For(visible, row), fallback="Waiting"),
-            fallback=lambda err: p(lambda: str(err()), **tid("contract-failure")),
-        ),
-        **tid("page-contracts"),
-    )
+    def failure(err):
+        return html(t'<p data-testid="contract-failure">{str(err())}</p>')
+
+    return html(t"""
+      <div data-testid="page-contracts">
+        <button data-testid="contract-edit" onclick={(lambda e: edit(lambda d: setattr(d[0], "name", "Augusta")))}>
+          Edit
+        </button>
+        <button data-testid="contract-reverse" onclick={(lambda e: edit(lambda d: d.reverse()))}>Reverse</button>
+        <button data-testid="contract-filter" onclick={(lambda e: set_query("Augusta"))}>Filter</button>
+        <button data-testid="contract-error" onclick={(lambda e: set_mode("error"))}>Error</button>
+        <button data-testid="contract-recover" onclick={(lambda e: set_mode("ok"))}>Recover</button>
+        <button data-testid="contract-save" onclick={(lambda e: save())}>Save</button>
+        <button data-testid="contract-wait" onclick={waiting}>Wait</button>
+        <p data-testid="contract-pending">{str(is_pending(visible))}</p>
+        <p data-testid="contract-saved">{str(optimistic.saved)}</p>
+        <p data-testid="contract-saving">{str(save.pending())}</p>
+        {Errored(Loading(For(visible(), row), fallback="Waiting"), fallback=failure)}
+      </div>
+    """)

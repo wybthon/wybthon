@@ -8,12 +8,12 @@ import pytest
 from conftest import StubNode, collect_texts
 
 from wybthon.component import component
-from wybthon.elements import div, p, span
 from wybthon.error_boundary import Errored
 from wybthon.loading import Loading
 from wybthon.reactivity import (
     Memo,
     NotReadyError,
+    Props,
     Setter,
     action,
     affects,
@@ -29,10 +29,22 @@ from wybthon.reactivity import (
     until,
 )
 from wybthon.store import create_optimistic_store, create_projection, create_store, deep
+from wybthon.templates import html
 
 
 def texts(node: StubNode) -> list[str]:
     return [t for t in collect_texts(node) if t]
+
+
+def _find(node: StubNode, tag: str) -> StubNode:
+    """The first element with `tag` under `node`, in document order."""
+    stack = [node]
+    while stack:
+        current = stack.pop()
+        if current.tag == tag:
+            return current
+        stack.extend(reversed(current.childNodes))
+    raise LookupError(tag)
 
 
 async def _tick(n: int = 3) -> None:
@@ -55,11 +67,13 @@ def _user_app(wyb, root_element):
     @component
     def App():
         user = create_memo(load)
-        return div(
-            span(lambda: f"id={uid()}"),
-            Loading(lambda: p(user), fallback=p("wait")),
-            span(lambda: "pending" if is_pending(user) else "idle"),
-        )
+        return html(t"""
+          <div>
+            <span>{f"id={uid()}"}</span>
+            {Loading(html(t"<p>{user()}</p>"), fallback=html(t"<p>wait</p>"))}
+            <span>{"pending" if is_pending(user) else "idle"}</span>
+          </div>
+        """)
 
     wyb["reconciler"].render(App(), root_element)
     return uid, set_uid, gates
@@ -85,6 +99,60 @@ def test_input_change_and_async_result_reveal_together(wyb, root_element):
         gates[2].set()
         await _tick()
         assert texts(root_element.element) == ["id=2", "user2", "idle"]
+
+    asyncio.run(main())
+
+
+class CardProps(Props):
+    title: str
+
+
+@component
+def Card(props: CardProps):
+    return html(t"<p class={'long' if len(props.title) > 5 else 'short'}>{props.title}</p>")
+
+
+def test_compiled_getters_hold_with_the_async_value_they_entangle_with(wyb, root_element):
+    """Holes, attribute bindings, and getter props the compiler made hold and reveal like accessors."""
+
+    async def main() -> None:
+        uid, set_uid = create_signal(1)
+        gates = {1: asyncio.Event(), 2: asyncio.Event()}
+
+        async def load():
+            i = uid()
+            await gates[i].wait()
+            return {"name": "ada" if i == 1 else "grace hopper"}
+
+        @component
+        def App():
+            user = create_memo(load)
+            return html(t"""
+              <div>
+                <span>{uid() * 10}</span>
+                <{Loading} fallback={html(t"<p>wait</p>")}>
+                  <{Card} title={user()["name"]} />
+                </{Loading}>
+              </div>
+            """)
+
+        wyb["reconciler"].render(App(), root_element)
+        flush()
+        assert texts(root_element.element) == ["10", "wait"]
+        gates[1].set()
+        await _tick()
+        assert texts(root_element.element) == ["10", "ada"]
+        card = _find(root_element.element, "p")
+        assert card.attributes["class"] == "short"
+        set_uid(2)
+        await _tick()
+        # The compiled hole, the binding, and the getter prop all hold.
+        assert texts(root_element.element) == ["10", "ada"]
+        assert card.attributes["class"] == "short"
+        gates[2].set()
+        await _tick()
+        assert texts(root_element.element) == ["20", "grace hopper"]
+        assert card.attributes["class"] == "long"
 
     asyncio.run(main())
 
@@ -125,7 +193,9 @@ def test_unrelated_writes_reveal_while_a_transition_is_held(wyb, root_element):
             return f"user{i}"
 
         user = create_root(lambda d: create_memo(load))
-        wyb["reconciler"].render(div(span(text), span(lambda: str(uid())), p(user)), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{text}</span><span>{str(uid())}</span><p>{user}</p></div>"), root_element
+        )
         gates[1].set()
         await _tick()
         set_uid(2)
@@ -182,10 +252,10 @@ def test_first_load_shows_fallback_and_does_not_hold(wyb, root_element):
         @component
         def Panel():
             data = create_memo(load)
-            return Loading(lambda: p(data), fallback=p("wait"))
+            return Loading(html(t"<p>{data()}</p>"), fallback=html(t"<p>wait</p>"))
 
         wyb["reconciler"].render(
-            div(span(lambda: "on" if show() else "off"), lambda: Panel() if show() else None), root_element
+            html(t"<div><span>{'on' if show() else 'off'}</span>{Panel() if show() else None}</div>"), root_element
         )
         flush()
         set_show(True)
@@ -212,7 +282,7 @@ def test_loading_value_never_suspends_or_holds(wyb, root_element):
         tips: Memo[list[str]] = create_root(lambda d: create_memo(load, loading_value=[]))
         assert tips() == []
         assert not is_pending(tips)
-        wyb["reconciler"].render(div(span(lambda: str(uid())), p(lambda: ",".join(tips()))), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{uid()}</span><p>{','.join(tips())}</p></div>"), root_element)
         flush()
         assert texts(root_element.element) == ["1"]
         gates[1].set()
@@ -242,10 +312,11 @@ def test_loading_on_shows_fallback_again_instead_of_holding(wyb, root_element):
         @component
         def Card():
             user = create_memo(load)
-            return p(user)
+            return html(t"<p>{user}</p>")
 
         wyb["reconciler"].render(
-            div(span(lambda: str(uid())), Loading(lambda: Card(), fallback=p("wait"), on=uid)), root_element
+            html(t"<div><span>{uid}</span>{Loading(Card(), fallback=html(t'<p>wait</p>'), on=uid)}</div>"),
+            root_element,
         )
         gates[1].set()
         await _tick()
@@ -271,7 +342,9 @@ def test_quiet_refresh_does_not_open_a_transition(wyb, root_element):
             return len(calls)
 
         n = create_root(lambda d: create_memo(load))
-        wyb["reconciler"].render(div(p(n), span(lambda: "p" if is_pending(n) else "i")), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><p>{n()}</p><span>{'p' if is_pending(n) else 'i'}</span></div>"), root_element
+        )
         await _tick()
         assert texts(root_element.element) == ["1", "i"]
         await refresh(n)
@@ -299,7 +372,7 @@ def test_action_writes_land_together_when_it_settles(wyb, root_element):
             set_count(1)
             set_status("saved")
 
-        wyb["reconciler"].render(div(span(status), span(lambda: str(count()))), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{status}</span><span>{count()}</span></div>"), root_element)
         flush()
         fut = save()
         await _tick()
@@ -334,7 +407,7 @@ def test_optimistic_state_reveals_during_the_action(wyb, root_element):
             set_likes(2)
 
         wyb["reconciler"].render(
-            div(span(lambda: str(shown())), span(lambda: "saving" if saving() else "ready")), root_element
+            html(t"<div><span>{shown()}</span><span>{'saving' if saving() else 'ready'}</span></div>"), root_element
         )
         flush()
         fut = like()
@@ -512,7 +585,8 @@ def test_errored_heals_when_a_failed_input_changes(wyb, root_element):
         return "fine"
 
     wyb["reconciler"].render(
-        Errored(lambda: p(risky), fallback=lambda err, reset: (resets.append(reset), p("oops"))[1]), root_element
+        Errored(html(t"<p>{risky()}</p>"), fallback=lambda err, reset: (resets.append(reset), html(t"<p>oops</p>"))[1]),
+        root_element,
     )
     flush()
     assert texts(root_element.element) == ["oops"]
@@ -539,10 +613,17 @@ def test_errored_heals_when_failed_memo_recovers(wyb, root_element):
         @component
         def Card():
             data = create_memo(load)
-            return p(data)
+            return html(t"<p>{data()}</p>")
 
         wyb["reconciler"].render(
-            Errored(lambda: Loading(lambda: Card(), fallback=p("wait")), fallback=lambda err: p(str(err()))),
+            html(t"""
+              {
+                Errored(
+                    Loading(Card(), fallback=html(t"<p>wait</p>")),
+                    fallback=lambda err: html(t"<p>{str(err())}</p>"),
+                )
+            }
+            """),
             root_element,
         )
         await _tick()
@@ -590,7 +671,7 @@ def test_projection_is_held_with_its_inputs(wyb, root_element):
 
         user = create_root(lambda d: create_memo(load))
         view = create_root(lambda d: create_projection(lambda draft: draft.update({"label": f"#{uid()}"}), {}))
-        wyb["reconciler"].render(div(span(lambda: view.label), p(user)), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{view.label}</span><p>{user}</p></div>"), root_element)
         gates[1].set()
         await _tick()
         assert texts(root_element.element) == ["#1", "user1"]
@@ -619,11 +700,13 @@ def test_optimistic_store_reveals_inside_action_and_reports_pending(wyb, root_el
             set_todos(lambda s: s["items"].append({"title": title}))
 
         wyb["reconciler"].render(
-            div(
-                span(lambda: str(len(shown))),
-                span(lambda: "saving" if is_pending(lambda: len(shown)) else "idle"),
-                span(lambda: str(len(todos["items"]))),
-            ),
+            html(t"""
+              <div>
+                <span>{len(shown)}</span>
+                <span>{"saving" if is_pending(lambda: len(shown)) else "idle"}</span>
+                <span>{str(len(todos["items"]))}</span>
+              </div>
+            """),
             root_element,
         )
         flush()

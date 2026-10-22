@@ -4,11 +4,9 @@ Imported on demand by ``lazy(...)`` in :mod:`app.routes`; renders a marker
 the harness can wait on once the component resolves.
 """
 
-from app.testkit import tid
-
-from wybthon import component, div, h2, span
+from wybthon import component, html
 
 
 @component
 def LoadedPanel():
-    return div(h2("Lazy"), span("lazy-loaded", **tid("lazy-loaded")), **tid("page-lazy"))
+    return html(t'<div data-testid="page-lazy"><h2>Lazy</h2><span data-testid="lazy-loaded">lazy-loaded</span></div>')

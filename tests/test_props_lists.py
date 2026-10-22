@@ -5,7 +5,6 @@ from collections.abc import Callable
 import pytest
 
 from wybthon.reactivity import (
-    Prop,
     Props,
     children,
     create_effect,
@@ -13,6 +12,7 @@ from wybthon.reactivity import (
     create_root,
     create_signal,
     flush,
+    is_static,
     map_array,
     merge,
     omit,
@@ -29,33 +29,31 @@ from wybthon.store import create_projection
 
 
 class NameProps(Props):
-    name: Prop[str]
-    greeting: Prop[str] = prop(default="hello")
-    tags: Prop[list[str]] = prop(default_factory=list)
+    name: str
+    greeting: str = "hello"
+    tags: list[str] = prop(default_factory=list)
     on_click: Callable[..., None] | None = None
     size: int = 1
 
 
-def test_prop_field_reads_return_one_cached_accessor(wyb):
+def test_prop_field_reads_return_the_value(wyb):
     props = NameProps(name="Ada")
-    assert props.name is props.name
-    assert props.name() == "Ada"
-    assert props.name.peek() == "Ada"
-    assert isinstance(NameProps.name, Prop)
-    assert repr(NameProps.name) == "Prop('name')"
+    assert props.name == "Ada"
+    assert props.greeting == "hello"
+    assert repr(NameProps.name) == "<prop 'name'>"
 
 
 def test_prop_fields_unwrap_accessors_and_zero_arg_callables(wyb):
     name, set_name = create_signal("Ada")
     props = NameProps(name=name, greeting=lambda: "hi")
-    assert props.name() == "Ada"
-    assert props.greeting() == "hi"
+    assert props.name == "Ada"
+    assert props.greeting == "hi"
     set_name("Grace")
     flush()
-    assert props.name() == "Grace"
+    assert props.name == "Grace"
 
 
-def test_plain_fields_return_the_value_as_passed(wyb):
+def test_callable_fields_return_the_value_as_passed(wyb):
     handler = lambda e: None  # noqa: E731
     zero_arg = lambda: "never called"  # noqa: E731
     props = NameProps(name="x", on_click=handler)
@@ -68,16 +66,18 @@ def test_plain_fields_return_the_value_as_passed(wyb):
 def test_prop_defaults_and_default_factory(wyb):
     a = NameProps(name="a")
     b = NameProps(name="b")
-    assert a.greeting() == "hello"
-    assert a.tags() == [] and a.tags() is not b.tags()
+    assert a.greeting == "hello"
+    assert a.tags == [] and a.tags is not b.tags
+    # The factory runs once per instance.
+    assert a.tags is a.tags
     assert NameProps._wyb_required == frozenset({"name"})
     assert repr(a) == "NameProps({'name': 'a'})"
 
 
-def test_props_update_pushes_new_values_into_live_accessors(wyb):
+def test_props_update_pushes_new_values_into_tracked_reads(wyb):
     props = NameProps(name="Ada")
     seen: list[str] = []
-    create_root(lambda d: create_effect(props.greeting, lambda v: seen.append(v)))
+    create_root(lambda d: create_effect(lambda: props.greeting, lambda v: seen.append(v)))
     flush()
     props._wyb_update({"name": "Ada", "greeting": "hey"})
     flush()
@@ -90,14 +90,23 @@ def test_props_update_pushes_new_values_into_live_accessors(wyb):
 
 def test_props_tracked_read_subscribes_memo(wyb):
     class N(Props):
-        n: Prop[int]
+        n: int
 
     props = N(n=1)
-    doubled = create_memo(lambda: props.n() * 2)
+    doubled = create_memo(lambda: props.n * 2)
     assert doubled() == 2
     props._wyb_update({"n": 3})
     flush()
     assert doubled() == 6
+
+
+def test_is_static_reports_whether_the_parent_passed_a_plain_value(wyb):
+    name, _ = create_signal("Ada")
+    assert is_static(NameProps(name="Ada"), "name")
+    assert not is_static(NameProps(name=name), "name")
+    # A key the parent didn't pass, and a callback field, are static.
+    assert is_static(NameProps(name="Ada"), "greeting")
+    assert is_static(NameProps(name="Ada", on_click=lambda: None), "on_click")
 
 
 def test_props_instances_reject_item_syntax(wyb):
@@ -111,8 +120,8 @@ def test_props_instances_reject_item_syntax(wyb):
 
 
 class ShapeProps(Props):
-    size: Prop[int] = prop(default=0)
-    color: Prop[str] = prop(default="black")
+    size: int = 0
+    color: str = "black"
 
 
 def test_merge_later_sources_win_and_stay_reactive(wyb):
@@ -125,7 +134,8 @@ def test_merge_later_sources_win_and_stay_reactive(wyb):
     set_color("blue")
     flush()
     assert merged["color"]() == "blue"
-    assert merged.color() == "blue"
+    # Attribute access reads the value, like a component's props.
+    assert merged.color == "blue"
     assert set(merged) == {"size", "shape", "color"}
 
 
@@ -133,6 +143,7 @@ def test_merge_skips_none_sources_but_explicit_none_values_override(wyb):
     merged = merge({"a": 1}, None, lambda: {"b": 2})
     assert merged["a"]() == 1
     assert merged["b"]() == 2
+    assert merged.a == 1
     assert merge({"a": 1}, {"a": None})["a"]() is None
 
 
@@ -148,6 +159,7 @@ def test_omit_hides_keys(wyb):
     rest = omit(props, "size")
     assert set(rest) == {"color"}
     assert rest["color"]() == "green"
+    assert rest.color == "green"
     assert "size" not in rest
     assert {k: rest[k]() for k in rest} == {"color": "green"}
     assert rest["size"]() is None
@@ -173,6 +185,7 @@ def test_omit_stays_reactive(wyb):
     flush()
     assert seen == ["red", "blue"]
     assert rest["color"].peek() == "blue"
+    assert rest.color == "blue"
 
 
 # ---------------------------------------------------------------------------

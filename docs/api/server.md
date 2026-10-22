@@ -4,7 +4,7 @@
 
 #### What's in this module
 
-Server rendering: the same components that run in the browser render to HTML in CPython. A server render expands each `html` template into the same nodes the element helpers would build, so the output and hydration keys don't depend on which style you used. See [Server rendering](../concepts/server-rendering.md) for the full guide.
+Server rendering: the same components that run in the browser render to HTML in CPython. A server render expands each `html` template into the same element nodes `h()` would build, so the output and hydration keys don't depend on which style you used. See [Server rendering](../concepts/server-rendering.md) for the full guide.
 
 | Name | Description |
 | --- | --- |

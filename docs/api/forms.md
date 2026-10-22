@@ -59,7 +59,7 @@ def Signup():
           {bind_text(name, validators=rules["name"])}
           {a11y_control_attrs(name, described_by_id="name-error")}
         >
-        <span {error_message_attrs(id="name-error")}>{name.error}</span>
+        <span {error_message_attrs(id="name-error")}>{name.error()}</span>
         <label><input type="checkbox" {bind_checkbox(fields["agree"])}> I agree</label>
         <button type="submit">Save</button>
       </form>
@@ -67,13 +67,13 @@ def Signup():
 ```
 
 - The binding helpers return prop mappings: spread them onto a template
-  tag (`<input {bind_text(field)}>`) or an element helper
-  (`input_(**bind_text(field))`).
-- A field's `error` accessor is `None` while valid, so embedding it as a
-  child renders nothing until there's a message.
+  tag (`<input {bind_text(field)}>`) or pass them to
+  [`h()`][wybthon.h] (`h("input", bind_text(field))`).
+- A field's `error` accessor returns `None` while the field is valid, so
+  `{name.error()}` renders nothing until there's a message.
 - `touched` becomes `True` on the first input, so you can delay showing
-  errors with a function such as
-  `def name_error(): return name.error() if name.touched() else None`.
+  errors with an expression such as
+  `{name.error() if name.touched() else None}`.
 - `email()` accepts empty values; combine it with `required()`.
 - In CPython tests, drive a form with [`wybthon.testing`](testing.md):
   `fire.input(screen.get_by_label_text("Name"), "Ada")`, then
@@ -82,6 +82,6 @@ def Signup():
 #### See also
 
 - [Events](events.md): the `DomEvent` these handlers receive
-- [Element helpers](elements.md): why `value` and `checked` are DOM properties
+- [VNode: prop names and values](vnode.md#prop-names-and-values): why `value` and `checked` are DOM properties
 - [Concepts: Forms](../concepts/forms.md)
 - [Examples: Forms](../examples/forms.md)

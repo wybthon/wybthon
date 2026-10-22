@@ -28,6 +28,7 @@ from ._primitives import (
     ChildrenAccessor,
     Setter,
     children,
+    create_deferred,
     create_effect,
     create_memo,
     create_owner,
@@ -37,7 +38,9 @@ from ._primitives import (
     create_signal,
     create_tracked_effect,
     create_unique_id,
+    flatten,
     is_disposed,
+    is_equal,
     is_pending,
     is_server,
     latest,
@@ -46,7 +49,7 @@ from ._primitives import (
     refresh,
     resolve,
 )
-from ._props import ParentProps, Prop, Props, merge, omit, prop
+from ._props import ParentProps, Props, is_static, merge, omit, prop
 from ._session import ServerError
 
 __all__ = [
@@ -55,7 +58,6 @@ __all__ = [
     "Setter",
     "Signal",
     "Memo",
-    "Prop",
     "Props",
     "ParentProps",
     "Owner",
@@ -69,6 +71,7 @@ __all__ = [
     # Primitives
     "create_signal",
     "create_memo",
+    "create_deferred",
     "create_effect",
     "create_tracked_effect",
     "create_render_effect",
@@ -96,7 +99,9 @@ __all__ = [
     "prop",
     "merge",
     "omit",
+    "is_static",
     "children",
+    "flatten",
     "ChildrenAccessor",
     "create_reaction",
     # Lists
@@ -105,4 +110,5 @@ __all__ = [
     # Misc
     "create_unique_id",
     "is_accessor",
+    "is_equal",
 ]

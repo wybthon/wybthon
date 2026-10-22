@@ -10,7 +10,7 @@ uv run python benchmarks/browser_bench.py --mode store --json > store.json
 uv run python benchmarks/check_work.py store.json
 ```
 
-`benchmarks/app` is an ordinary Wybthon project: a `wybthon.toml` with the entry `bench.main:app`, the app in `bench/main.py` (the js-framework-benchmark table, written with `html` templates), and an `index.html` whose harness drives the app through the runtime the bootstrap exposes. The benchmark scripts serve it through `serve_checkout` in `benchmarks/_app.py`, which builds a checkout's `benchmarks/app` with that checkout's own `wyb build` into a temporary directory and serves the `dist`. A checkout from before the app became a project has no `benchmarks/app/wybthon.toml`; `serve_checkout` serves it with that checkout's own `benchmarks/_serve.py` instead, so new and old checkouts can still be compared.
+`benchmarks/app` is an ordinary Wybthon project: a `wybthon.toml` with the entry `bench.main:app`, the app in `bench/main.py` (the js-framework-benchmark table, written with `html` templates whose dynamic expressions, such as a row's `{row["label"]}` and its `class`, the compiler turns into bindings), and an `index.html` whose harness drives the app through the runtime the bootstrap exposes. The benchmark scripts serve it through `serve_checkout` in `benchmarks/_app.py`, which builds a checkout's `benchmarks/app` with that checkout's own `wyb build` into a temporary directory and serves the `dist`. A checkout from before the app became a project has no `benchmarks/app/wybthon.toml`; `serve_checkout` serves it with that checkout's own `benchmarks/_serve.py` instead, so new and old checkouts can still be compared.
 
 To use the interactive app, build and preview it, then open `/?mode=store` (or `/?mode=signal`) and click "Run Full Benchmark":
 
@@ -35,7 +35,7 @@ Each browser scenario restores its baseline, performs one warmup, then records t
 
 The JSON includes runtime/browser metadata, individual samples, operation counters, and registry counts. Signal mode uses per-row label signals; store mode uses entity-preserving draft edits. Arbitrary replacement signal arrays still need list matching. Store edit records let the mounted list skip that scan for local updates.
 
-`check_work.py` gates deterministic work in a store-mode report. Selection and swap create no rows, scan no list, and send at most two commands. Appending 1,000 rows sends one command per row in a single commit: every row must be a template clone, counted as `template_clones` for `html` templates or `template_recipe_hits` for compiled helper shapes, with no `template_shape_walks`. Clearing 10,000 rows is at most two commands. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
+`check_work.py` gates deterministic work in a store-mode report. Selection and swap create no rows, scan no list, and send at most two commands. Appending 1,000 rows sends one command per row in a single commit, and every row must be a template clone (`template_clones` is 1,000). Clearing 10,000 rows is at most two commands. CI saves both browser reports. Wall-clock results are observations, not portable pass/fail thresholds or cross-framework rankings. Run comparisons serially with the same browser, runtime, hardware, and cache conditions.
 
 ## Comparing checkouts
 
@@ -57,7 +57,7 @@ For very short selection updates, `--scenarios select_toggle_10k --iterations 31
 
 ## Native benchmark
 
-`row_bench.py` times the js-framework-benchmark table operations in plain CPython against any checkout's sources. The backend JSON-encodes every command batch but applies nothing, so each time is Python's share of the browser work: building rows, reconciling, wiring bindings, and serializing. It also reports the commands each operation sends and the Python memory a mounted row retains.
+`row_bench.py` times the js-framework-benchmark table operations in plain CPython against any checkout's sources. The backend JSON-encodes every command batch but applies nothing, so each time is Python's share of the browser work: building rows, reconciling, wiring bindings, and serializing. It also reports the commands each operation sends; the Python bytes a mounted row retains; the objects per mounted row that the cyclic garbage collector tracks, in total and by type; and the total function calls for creating 1,000 rows, counted in a separate, untimed cProfile pass.
 
 ```bash
 git worktree add --detach /tmp/wybthon-before <baseline-commit>
@@ -65,13 +65,7 @@ uv run python benchmarks/row_bench.py /tmp/wybthon-before/src --reps 5 > rows-be
 uv run python benchmarks/row_bench.py src --reps 5 > rows-after.json
 ```
 
-Rows are written with the element helpers by default. Pass `--template` to write them as `html` t-string templates instead. It needs a checkout with templates (RFC 0003 or later), so comparing template rows against an older baseline's helper rows measures the change in authoring style as well as in the engine:
-
-```bash
-uv run python benchmarks/row_bench.py src --reps 5 --template > rows-template.json
-```
-
-Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare the rendering engines alone. Alternate the two checkouts across several fresh processes and compare minimums when the machine is busy.
+Rows are `html` t-string templates, so the checkout needs templates (v0.38.0 or later). With the compiler (RFC 0004), the row module is compiled the way an application's modules are, and the row is written with plain expressions: `class={"danger" if is_sel(iid) else ""}` and `{d["label"]}`. A checkout without the compiler runs the row in its own idiom, with the selection class wrapped in a lambda, and the report's `compiled` field says which one ran. Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare the rendering engines alone. Alternate the two checkouts across several fresh processes and compare minimums when the machine is busy.
 
 `bench_runner.py` measures the collection operations natively:
 
@@ -79,7 +73,7 @@ Selection uses each checkout's idiomatic primitive; pass `--noselect` to compare
 uv run python benchmarks/bench_runner.py --memory --json
 ```
 
-This uses the Python DOM backend. It includes the nine collection operations plus reactive-hole and whole-tree-diff microbenchmarks. It isolates native Python behavior from WebAssembly and browser rendering; its times aren't browser predictions.
+This uses the Python DOM backend and builds its rows with `h()`. It includes the nine collection operations plus reactive-hole and whole-tree-diff microbenchmarks. It isolates native Python behavior from WebAssembly and browser rendering; its times aren't browser predictions.
 
 Use `--warmup`, `--iterations`, and `--bench` to focus a run. `--cpu --save report.json` records a comparison baseline, and `--cpu --compare report.json --threshold 0.15` compares best iterations. Create an isolated checkout for the baseline so measurement doesn't disturb ongoing changes.
 

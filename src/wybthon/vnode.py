@@ -27,7 +27,7 @@ Example:
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from string.templatelib import Interpolation, Template
+from string.templatelib import Template
 from typing import TYPE_CHECKING, Any
 
 from .reactivity._core import is_accessor
@@ -35,7 +35,7 @@ from .reactivity._core import is_accessor
 if TYPE_CHECKING:
     from .reactivity import Computation
 
-__all__ = ["VNode", "h", "Fragment", "hole", "copy_vnode", "render_template", "template_getter"]
+__all__ = ["VNode", "h", "Fragment", "hole", "copy_vnode"]
 
 PropsDict = dict[str, Any]
 
@@ -65,27 +65,45 @@ class VNode:
             row's scope rather than to the list's re-running effect.
     """
 
-    # The fields every node uses are slots. The rest belong to particular
-    # kinds (holes, components, fragments, list rows, template roots): they
-    # read through the class defaults below and are stored in the node's
-    # dict only when set, so building a tree initializes five fields.
-    __slots__ = ("tag", "props", "children", "key", "el", "__dict__")
+    # Every field is a slot, so a node never allocates an instance dict:
+    # a template row or a hole sets several of the kind-specific fields,
+    # and a dict per node is what the collector would pay for.
+    __slots__ = (
+        "tag",
+        "props",
+        "children",
+        "key",
+        "el",
+        "subtree",
+        "render_effect",
+        "component_ctx",
+        "owner_scope",
+        "scope",
+        "ns",
+        "_frag_end",
+        "_hole_text",
+        "tpl",
+        "dyn",
+        "pk",
+    )
 
-    subtree: VNode | None = None
-    render_effect: Computation | None = None
-    component_ctx: Any = None
-    owner_scope: Any = None
+    subtree: VNode | None
+    render_effect: Computation | None
+    component_ctx: Any
+    owner_scope: Any
     # A hole's stable ownership scope: the subtree it mounts belongs here
     # (not to the re-running render effect), so components kept across
     # re-evaluations stay alive and context lookups resolve.
-    scope: Any = None
-    ns: str | None = None
-    _frag_end: int | None = None
-    _hole_text: str | None = None
-    # Set on the root of a template-mounted subtree: its compiled shape, and
-    # its dynamic children plus binding computations (see ``wybthon._shapes``).
-    tpl: Any = None
-    dyn: tuple[Any, ...] | None = None
+    scope: Any
+    ns: str | None
+    _frag_end: int | None
+    _hole_text: str | None
+    # Set on a mounted template instance: its compiled template, and its
+    # dynamic slots' state (see ``wybthon.templates``). A hole bound to an
+    # expression keeps its parent node id in ``dyn`` instead, so its binding
+    # needs nothing but the hole (see ``reconciler._hole_updater``).
+    tpl: Any
+    dyn: tuple[Any, ...] | None
     # ``pk`` (position key: the node's place in the rendered tree) is left
     # unset except during server rendering and hydration; read it with
     # ``getattr(vnode, "pk", None)``. See ``wybthon.reactivity._session``.
@@ -103,13 +121,24 @@ class VNode:
         self.children: list[Any] = children if children is not None else []
         self.key = key
         self.el: int | None = None
+        self.subtree = None
+        self.render_effect = None
+        self.component_ctx = None
+        self.owner_scope = None
+        self.scope = None
+        self.ns = None
+        self._frag_end = None
+        self._hole_text = None
+        self.tpl = None
+        self.dyn = None
 
     def __getitem__(self, children: Any) -> VNode:
         """Set this node's children with item syntax and return the node.
 
-        `Card(title="Hi")[h2("Body"), p("More")]` passes the children to a
+        `Card(title="Hi")[html(t"<p>Body</p>")]` passes the children to a
         component as its `children` prop; on an element,
-        `div(class_="card")[h2("Body")]` sets its child nodes.
+        `h("div", {"class": "card"})[h("p", None, "Body")]` sets its child
+        nodes.
         """
         kids = flatten_children(children if isinstance(children, tuple) else (children,))
         if callable(self.tag):
@@ -151,92 +180,11 @@ def hole(getter: Callable[[], Any], *, key: str | int | None = None) -> VNode:
 
     Example:
         ```python
-        div(hole(lambda: f"Hello, {name()}!"))
-        div(lambda: f"Hello, {name()}!")   # equivalent
+        h("p", None, hole(lambda: f"Hello, {name()}!", key="greeting"))
+        h("p", None, lambda: f"Hello, {name()}!")   # the same, without a key
         ```
     """
     return VNode(tag="_hole", props={"getter": getter}, children=[], key=key)
-
-
-def _format(item: Interpolation, call: bool) -> str:
-    value = item.value
-    if call and is_accessor(value):
-        value = value()
-    conversion = item.conversion
-    if conversion == "r":
-        value = repr(value)
-    elif conversion == "s":
-        value = str(value)
-    elif conversion == "a":
-        value = ascii(value)
-    if value is None:
-        return ""
-    return format(value, item.format_spec)
-
-
-def render_template(template: Template, call: bool = True) -> str:
-    """Render a t-string to text, calling reactive interpolations when `call` is true."""
-    out: list[str] = []
-    for item in template:
-        if isinstance(item, str):
-            out.append(item)
-        else:
-            out.append(_format(item, call))
-    return "".join(out)
-
-
-def template_getter(template: Template) -> Callable[[], str] | None:
-    """Return a reactive expression rendering `template`, or `None` when it's static.
-
-    A t-string is reactive when at least one interpolation is an accessor
-    or zero-argument function. The expression calls every reactive
-    interpolation, so the whole string updates as one binding.
-    """
-    for value in template.values:
-        if is_accessor(value):
-            return lambda: render_template(template)
-    return None
-
-
-def _interpolation_getter(item: Interpolation) -> Callable[[], str]:
-    def getter() -> str:
-        return _format(item, True)
-
-    return getter
-
-
-def _template_children(template: Template) -> list[Any]:
-    """Expand a t-string child into text and holes.
-
-    Without VNode interpolations it's one text node: static, or a single
-    reactive hole. Interpolated VNodes (and lists of them) are kept as
-    separate children, with the surrounding text around them.
-    """
-    if not any(isinstance(value, (VNode, list, tuple)) for value in template.values):
-        getter = template_getter(template)
-        return [render_template(template, False)] if getter is None else [hole(getter)]
-    out: list[Any] = []
-    text: list[str] = []
-    for item in template:
-        if isinstance(item, str):
-            text.append(item)
-            continue
-        value = item.value
-        if isinstance(value, (VNode, list, tuple)):
-            if text:
-                out.append("".join(text))
-                text = []
-            out.extend(flatten_children([value]))
-        elif is_accessor(value):
-            if text:
-                out.append("".join(text))
-                text = []
-            out.append(hole(_interpolation_getter(item)))
-        else:
-            text.append(_format(item, False))
-    if text:
-        out.append("".join(text))
-    return out
 
 
 def flatten_children(items: Iterable[Any]) -> list[Any]:
@@ -249,7 +197,7 @@ def flatten_children(items: Iterable[Any]) -> list[Any]:
         elif item is None:
             continue
         elif t is Template:
-            out.extend(_template_children(item))
+            raise TypeError('A t-string is only markup when it\'s passed to html(): html(t"...")')
         elif isinstance(item, (list, tuple)):
             out.extend(flatten_children(item))
         else:
@@ -282,7 +230,7 @@ def normalize_children(children: list[Any]) -> list[VNode]:
         elif is_accessor(ch):
             out.append(hole(ch))
         elif t is Template:
-            out.extend(normalize_children(_template_children(ch)))
+            raise TypeError('A t-string is only markup when it\'s passed to html(): html(t"...")')
         else:
             out.append(to_text_vnode(ch))
     return out
@@ -291,8 +239,9 @@ def normalize_children(children: list[Any]) -> list[VNode]:
 def h(tag: str | Callable[..., Any] | None, props: PropsDict | None = None, *children: Any) -> VNode:
     """Create a VNode from a tag, props, and children.
 
-    The low-level constructor behind the helpers in
-    [`wybthon.elements`][wybthon.elements]. Reactive expressions in child
+    The programmatic layer, the counterpart of Solid's `h`: use it for
+    markup built by code. Props use Python names (`class_`, `on_click`,
+    `aria_label`) as well as HTML names. Reactive expressions in child
     positions are wrapped as holes when the parent mounts; components
     receive their children verbatim through the `children` prop.
 
@@ -346,7 +295,7 @@ def Fragment(*args: Any) -> VNode:
 
     Example:
         ```python
-        Fragment(h1("Title"), p("Body text"))
+        Fragment(h("h1", None, "Title"), h("p", None, "Body text"))
         ```
     """
     return VNode(tag="_fragment", props={}, children=flatten_children(args))
@@ -368,3 +317,9 @@ def copy_vnode(value: Any) -> Any:
     if isinstance(nested, list):
         props["children"] = [copy_vnode(child) for child in nested]
     return VNode(value.tag, props, [copy_vnode(child) for child in value.children], value.key)
+
+
+# Called in a compiled template, `Fragment` builds markup and takes getters
+# for its dynamic children (see `wybthon._compiled.call`). This module can't
+# import `wybthon.component.builtin`, which imports it.
+Fragment.__wybthon_component__ = True  # type: ignore[attr-defined]

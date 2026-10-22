@@ -38,7 +38,7 @@ def Modal():
     return html(t"""
       <div>
         <button onclick={toggle}>Open</button>
-        {Show(is_open, dialog)}
+        {Show(is_open(), dialog)}
       </div>
     """)
 ```

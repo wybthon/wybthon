@@ -22,15 +22,21 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Why is there a virtual DOM if this is 'SolidJS for Python'?"
 
-    Every DOM call crosses the Python-to-JavaScript bridge, so Wybthon batches mutations instead of making them one at a time. The VDOM is that batching layer, not a re-render model: each reactive hole diffs only its own subtree, and the reconciler sends the resulting mutations to a JavaScript kernel in one bridge crossing. The static parts of an [`html`][wybthon.html] template never become VNodes at all. Each template literal compiles once to a native `<template>` that's cloned with one command, which is the job Solid's compiler does for JSX. The reactive model is fine-grained; a signal change re-runs the holes that read it, never whole components.
+    Every DOM call crosses the Python-to-JavaScript bridge, so Wybthon batches mutations instead of making them one at a time. The VDOM is that batching layer, not a re-render model: each reactive hole diffs only its own subtree, and the reconciler sends the resulting mutations to a JavaScript kernel in one bridge crossing. The static parts of an [`html`][wybthon.html] template never become VNodes at all. Wybthon's compiler turns each template literal into a native `<template>` that's cloned with one command, and its dynamic expressions into getters, which is the job Solid's compiler does for JSX. The reactive model is fine-grained; a signal change re-runs the holes that read it, never whole components.
 
-??? question "Why do templates and element helpers both exist?"
+??? question "Do I need to wrap expressions in lambdas to keep them reactive?"
 
-    They serve different jobs, like JSX and `h` in Solid. [`html`][wybthon.html] templates are the primary way to write markup: they read like the HTML they produce, and each literal compiles once, so mounting one skips the per-node work. The [element helpers](../api/elements.md) (`div(...)`, `p(...)`) are the programmatic layer, for markup that code builds: generated forms, recursive trees, or a component that computes its tag. The two mix freely and share one set of prop appliers, so a prop means the same thing in both. Only the attribute names differ: templates use HTML names (`class`, `for`, `onclick`), and helpers use Python names (`class_`, `html_for`, `on_click`). See [Templates](../concepts/templates.md#templates-and-the-element-helpers).
+    No. Wybthon's compiler does what Solid's does for JSX: an interpolation that contains a call, an attribute access, or a subscript (`{count() * 2}`, `{props.title}`, `{row["label"]}`, `class={"on" if active() else ""}`) becomes a getter, so it updates when what it reads changes. Names, constants, and lambdas are passed as they are, and event handlers and refs are never wrapped. The compiler runs when a module is imported after `wybthon`, in `wyb build` and `wyb dev`, under pytest, and for scripts run with `wyb run script.py`. See [The compiler](../concepts/compiler.md).
 
-??? question "Why can't I write `{lambda: ...}` in a template?"
+    You still can't write a bare `lambda` in an interpolation: Python's grammar treats its `:` as the start of a format spec. Name an inline event handler, or wrap it in parentheses: `onclick={(lambda: set_open(False))}`.
 
-    Python's grammar doesn't allow a bare `lambda` inside a t-string interpolation, because its `:` would start a format spec, so it's a `SyntaxError` before Wybthon ever sees it. Wrap it in parentheses, `{(lambda: count() * 2)}`, or better, give it a name with `def` or [`create_memo`][wybthon.create_memo]. See the [troubleshooting entry](troubleshooting.md#templates).
+??? question "Why does `html()` say my template wasn't compiled?"
+
+    In dev mode, a template that reaches [`html`][wybthon.html] without passing through the compiler raises [`TemplateError`][wybthon.TemplateError] when one of its dynamic expressions has already been evaluated, because the markup would silently stop updating. This happens in a script run with `python script.py` (use `wyb run script.py`), at a REPL, or in code built with `exec`. See the [troubleshooting entry](troubleshooting.md#templates).
+
+??? question "What happened to the element helpers (`div(...)`, `p(...)`)?"
+
+    [RFC 0004](../rfcs/0004-engine-v4.md) removed them, along with `wybthon.elements` and `wybthon.svg`. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. [`html`][wybthon.html] templates are the way to write markup (including `<svg>`), and [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, like `h` in Solid: use it for markup that code builds, such as generated forms, recursive trees, or a computed tag. `h()` props take Python names (`class_`, `html_for`, `on_click`) as well as HTML names.
 
 ## Pyodide and runtime
 
@@ -83,16 +89,16 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "How do I declare a component's props?"
 
-    Subclass [`Props`][wybthon.Props] and take one parameter annotated with it. `Prop[T]` fields are reactive; anything else is a plain field:
+    Subclass [`Props`][wybthon.Props], annotate its fields as you would a dataclass, and take one parameter annotated with it. Reading `props.label` returns the parent's value, tracked, as in Solid:
 
     ```python
     from collections.abc import Callable
 
-    from wybthon import Prop, Props, component, html, prop
+    from wybthon import Props, component, html
 
 
     class SaveButtonProps(Props):
-        label: Prop[str] = prop(default="Save")
+        label: str = "Save"
         on_save: Callable[[], None] | None = None
 
 
@@ -101,15 +107,15 @@ Quick answers to the questions we get most often. If yours isn't here, check the
         return html(t"<button onclick={props.on_save}>{props.label}</button>")
     ```
 
-    A component with no inputs takes no parameters. See [Authoring patterns](../guides/authoring-patterns.md#declaring-props).
+    In the template, the compiler turns `{props.label}` into a getter, so the text updates when the parent passes an expression that changes. A component with no inputs takes no parameters. See [Authoring patterns](../guides/authoring-patterns.md).
 
 ??? question "How do I pass a callback to a component?"
 
-    Declare it as a plain field, such as `on_save: Callable[[], None] | None = None`. Reading `props.on_save` returns the function exactly as the parent passed it, and nothing calls it for you. Only `Prop[T]` fields are reactive.
+    Annotate the field as a callable, such as `on_save: Callable[[], None] | None = None`. Reading `props.on_save` returns the function exactly as the parent passed it. Fields with other annotations unwrap accessors and zero-argument functions on read, so a callback annotated `Any` would be called by the read itself.
 
 ??? question "Why does my type checker reject `prop(0)`?"
 
-    Defaults must be passed by keyword: `prop(default=0)`, or `prop(default_factory=list)` for a mutable value. Type checkers only recognize a field default given by keyword. Plain fields use ordinary defaults (`= None`).
+    Most fields don't need `prop()`: write an ordinary default (`count: int = 0`). For a mutable value, use `prop(default_factory=list)`, passed by keyword; type checkers only recognize a field specifier's default when it's given by keyword.
 
 ??? question "How do I pass children?"
 
@@ -117,7 +123,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Is the `<{Card}>` tag form type-checked?"
 
-    Not statically. Type checkers can't see inside a template string, so dev mode checks a tag's props when it runs, like any component call. When you want the checker's help, call the component inside an interpolation instead: `{Card(title="Hi")}` is checked like any other call.
+    Not statically. Type checkers can't see inside a template string, so dev mode checks a tag's props when it runs, like any component call. When you want the checker's help, call the component inside an interpolation instead: `{Card(title=user().name)}` is checked against `CardProps` like any other call, and the compiler still passes `title` as a getter, so it stays reactive.
 
 ??? question "Do I need a mypy plugin?"
 
@@ -136,7 +142,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "Why didn't my component re-run after a signal changed?"
 
-    Because components run **once** by design. A read in the component body captures the value at setup time. To stay reactive, place the accessor itself in the template (`<span>{my_signal}</span>`), place a zero-argument function there (`<span>{(lambda: f"{count()} items")}</span>`, or a named `def`), or derive it with [`create_memo`][wybthon.create_memo]. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use `.peek()` when a one-time read is what you want.
+    Because components run **once** by design. A read in the component body captures the value at setup time. To stay reactive, read it in the template, where the compiler turns the expression into a getter (`<span>{count()} items</span>`, `<h2>{props.title}</h2>`), or derive it with [`create_memo`][wybthon.create_memo]. In dev mode Wybthon warns when a signal, memo, or prop is read at the top level of a component body; use [`untrack`][wybthon.untrack] (`untrack(lambda: props.initial)`) when a one-time read is what you want.
 
 ??? question "Why does my signal still show the old value right after I set it?"
 
@@ -171,7 +177,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
     selected, set_selected = create_signal(None)
     is_selected = create_projection(lambda: {} if selected() is None else {selected(): True})
-    # In a row: html(t"<tr class={(lambda: 'active' if is_selected.get(row_id) else '')}>...</tr>")
+    # In a row: html(t"<tr class={'active' if is_selected.get(row_id) else ''}>...</tr>")
     ```
 
 ??? question "Why don't I see dev warnings in production?"

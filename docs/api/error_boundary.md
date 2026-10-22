@@ -20,8 +20,8 @@ taking down the page.
 - `fallback`: a node, a string, or a callable `(err, reset) -> VNode`
   (a one-argument `(err)` or zero-argument form also works). `err` is an
   [`Accessor`][wybthon.Accessor] for the caught exception, as in
-  Solid 2.0, so call `err()` to read it, or place `err` itself in a
-  template as a hole. `reset()` clears the error and
+  Solid 2.0, so read it with `err()`, in a template expression or
+  anywhere else. `reset()` clears the error and
   re-renders the children. Without a fallback the boundary renders
   "Something went wrong."
 - `on_error`: called with the exception (send it to your monitoring).
@@ -37,7 +37,7 @@ from wybthon.router import current_path
 def fallback(err, reset):
     return html(t"""
       <div>
-        <p>Something went wrong: {err}</p>
+        <p>Something went wrong: {err()}</p>
         <button onclick={reset}>Try again</button>
       </div>
     """)

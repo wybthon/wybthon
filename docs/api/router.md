@@ -14,7 +14,7 @@ keeps the same component instance.
 | Name | Description |
 | --- | --- |
 | [`Route`][wybthon.router.Route] | `Route(path, component, children=[], preload=None)`; patterns support `:param` and a `*` wildcard. `preload(params)` warms data before the route shows. |
-| [`RouteProps`][wybthon.router.RouteProps] | `Props` for a routed component: `params: Prop[dict[str, str]]` and `query: Prop[QueryParams]`. Subclass it to add fields. |
+| [`RouteProps`][wybthon.router.RouteProps] | `Props` for a routed component: `params: dict[str, str]` and `query: QueryParams`, read as `props.params` and `props.query` (tracked). Subclass it to add fields. |
 | [`Router`][wybthon.router.Router] | `Router(routes, *, base_path="", not_found=None)`; renders the matched component with `params` and `query` props. |
 | [`Outlet`][wybthon.router.Outlet] | Renders the next matched child route inside a parent route's layout. |
 | [`Link`][wybthon.router.Link] | `Link(*children, href="/", replace=False, active_class="active", end=False, **rest)`; an `<a>` that navigates and marks itself active. |
@@ -45,13 +45,7 @@ def Users():
 
 @component
 def User(props: RouteProps):
-    def user_id():
-        return props.params()["id"]
-
-    def tab():
-        return props.query().get("tab", "info")
-
-    return html(t"<h1>User {user_id} (tab={tab})</h1>")
+    return html(t"<h1>User {props.params['id']} (tab={props.query.get('tab', 'info')})</h1>")
 
 
 @component

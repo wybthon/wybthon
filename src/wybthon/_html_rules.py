@@ -1,11 +1,10 @@
 """The HTML parser's content rules that compiled markup must respect.
 
-Templates (`wybthon.templates`) and compiled helper shapes
-(`wybthon._shapes`) hand their static markup to the browser's HTML parser
-and count on getting back exactly the nodes they serialized. The parser
-rewrites some markup (it closes a `<p>` before a `<div>`, inserts a
-`<tbody>`, moves text out of a table), so both compilers check these
-rules first. Server rendering and the test DOM use the same element sets
+Templates (`wybthon.templates`) hand their static markup to the
+browser's HTML parser and count on getting back exactly the nodes they
+serialized. The parser rewrites some markup (it closes a `<p>` before a
+`<div>`, inserts a `<tbody>`, moves text out of a table), so the
+template compiler checks these rules first. Server rendering and the test DOM use the same element sets
 to serialize and parse.
 """
 

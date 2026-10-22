@@ -9,9 +9,12 @@ pytestmark = pytest.mark.e2e
 def test_text_hole(goto_feature):
     page = goto_feature("holes")
     expect(page.get_by_test_id("hole-text")).to_have_text("0")
+    expect(page.get_by_test_id("hole-times-ten")).to_have_text("0")
     page.get_by_test_id("hole-text-inc").click()
     page.get_by_test_id("hole-text-inc").click()
     expect(page.get_by_test_id("hole-text")).to_have_text("2")
+    # A compiled arithmetic expression is its own reactive hole.
+    expect(page.get_by_test_id("hole-times-ten")).to_have_text("20")
 
 
 def test_derived_expression_hole(goto_feature):

@@ -17,7 +17,7 @@ Example:
     @component
     def Button():
         theme = use_context(Theme)
-        return button("Hi", class_=lambda: f"btn-{theme()}")
+        return html(t'<button class="btn-{theme()}">Hi</button>')
 
     @component
     def App():
@@ -32,7 +32,8 @@ from typing import Any, overload
 
 from .component import component
 from .reactivity import _core
-from .reactivity._props import Prop, Props, prop
+from .reactivity._core import untrack
+from .reactivity._props import Props
 from .vnode import VNode, h
 
 __all__ = ["Context", "ContextNotFoundError", "create_context", "use_context"]
@@ -64,6 +65,8 @@ class Context[T]:
 
     __slots__ = ("default", "name", "_id")
 
+    # Called in a template, a context builds a provider (see `wybthon._compiled.call`).
+    __wybthon_component__ = True
     _counter = 0
 
     def __init__(self, default: Any = _MISSING, name: str | None = None) -> None:
@@ -134,18 +137,24 @@ def use_context[T](ctx: Context[T]) -> T:
 
 class _ProviderProps(Props):
     context: Any = None
-    value: Any = None
-    children: Prop[Any] = prop(default=None)
+    children: Any = None
 
 
 @component
 def _provider(props: _ProviderProps) -> Any:
-    """Internal provider component: stores `value` on its own owner scope."""
+    """Internal provider component: stores `value` on its own owner scope.
+
+    The value is stored as the parent passed it, so an accessor stays an
+    accessor. An expression a compiled template passed
+    (`Theme(theme(), ...)`) is evaluated once, untracked.
+    """
     owner = _core._current_owner
     assert owner is not None
-    owner._set_context(props.context, props.value)
-    kids = props.children
-    return lambda: kids()
+    value = props._wyb_raw("value")
+    if type(value) is _core._Getter:
+        value = value.peek()
+    owner._set_context(untrack(lambda: props.context), value)
+    return lambda: props.children
 
 
 _provider.__name__ = "Provider"

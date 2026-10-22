@@ -46,7 +46,7 @@ def SignupForm():
           {bind_text(name, validators=rules["name"])}
           {a11y_control_attrs(name, described_by_id="name-err")}
         >
-        <span {error_message_attrs(id="name-err")}>{name.error}</span>
+        <span {error_message_attrs(id="name-err")}>{name.error()}</span>
 
         <label for="email">Email</label>
         <input
@@ -55,7 +55,7 @@ def SignupForm():
           {bind_text(email_field, validators=rules["email"])}
           {a11y_control_attrs(email_field, described_by_id="email-err")}
         >
-        <span {error_message_attrs(id="email-err")}>{email_field.error}</span>
+        <span {error_message_attrs(id="email-err")}>{email_field.error()}</span>
 
         <label><input type="checkbox" {bind_checkbox(fields["agree"])}> Agree</label>
 
@@ -72,11 +72,11 @@ def SignupForm():
 ```
 
 The helpers return prop dicts, which a template applies with a spread
-(`<input {attrs}>`). Their keys are the element helpers' Python names
-(`on_input`, `aria_invalid`); spreads use the same prop appliers as the
-helpers, so the dicts work in both styles. With the element helpers,
-spread them as keyword arguments instead:
-`input_(id="name", **bind_text(name))`.
+(`<input {attrs}>`). A spread is evaluated once, when the template is
+created, and each entry that's an accessor (the field's value, the ARIA
+state) becomes its own reactive binding. The keys use Python names
+(`on_input`, `aria_invalid`), the same names [`h`][wybthon.h] props
+take, so the dicts also work as `h("input", {"id": "name", **bind_text(name)})`.
 
 ## Fields
 
@@ -90,19 +90,15 @@ reactive values:
 | `error` / `set_error` | `Accessor[str \| None]` | The latest validation message, or `None`. |
 | `touched` / `set_touched` | `Accessor[bool]` | `True` once the user has interacted with the field. |
 
-Because these are ordinary accessors, you can render them directly as
-children or bindings. `<span>{name.error}</span>` shows the message
-reactively and renders nothing while it's `None`;
-`field.set_value("...")` from code updates the bound input too.
+Because these are ordinary accessors, you can read them anywhere in a
+template. `<span>{name.error()}</span>` shows the message reactively
+and renders nothing while it's `None`; `field.set_value("...")` from
+code updates the bound input too.
 
 Use `touched` to hold error display until the user has typed:
 
 ```python
-def visible_error():
-    return name.error() if name.touched() else None
-
-
-html(t"<span {error_message_attrs(id='name-err')}>{visible_error}</span>")
+html(t"<span {error_message_attrs(id='name-err')}>{name.error() if name.touched() else None}</span>")
 ```
 
 `Field.validate(validators)` runs the rules against the current value,
@@ -164,7 +160,7 @@ than compose.
 - [`on_submit_validated(rules, handler, form)`][wybthon.forms.on_submit_validated] first runs [`validate_form`][wybthon.forms.validate_form], which validates every field in `rules`, marks them touched, stores their errors, and returns `(is_valid, errors)`. The handler runs only when everything passes.
 
 Both return an event handler for the form's `onsubmit` attribute
-(`on_submit` with the helpers). Signal writes inside the handler flush
+(`on_submit` in `h()` props). Signal writes inside the handler flush
 when it returns, so error messages and `aria-invalid` states update in
 one commit.
 
@@ -173,7 +169,7 @@ To validate a single field on blur or on demand, call
 
 ## Accessibility
 
-- Set `for` on a `<label>` to match the control's `id`. With the element helpers, pass `html_for` (or `for_`); the prop applier writes it as the `for` attribute.
+- Set `for` on a `<label>` to match the control's `id`. In `h()` props, pass `html_for` (or `for_`); the prop applier writes it as the `for` attribute.
 - [`a11y_control_attrs(field, described_by_id=...)`][wybthon.forms.a11y_control_attrs] returns reactive `aria_invalid` and `aria_describedby` props: `aria-invalid` is `"true"` while the field has an error, and `aria-describedby` points at the message container only while a message exists, so screen readers don't announce an empty region.
 - [`error_message_attrs(id=...)`][wybthon.forms.error_message_attrs] returns `id`, `role="alert"`, and `aria-live="polite"` for the message container.
 
@@ -196,7 +192,7 @@ def Search():
     def update(e: DomEvent):
         set_query(e.target.value)
 
-    return html(t"<input value={query} oninput={update}>")
+    return html(t"<input value={query()} oninput={update}>")
 ```
 
 `e.target.value` is read from the dispatch payload, not from the DOM,

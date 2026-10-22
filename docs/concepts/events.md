@@ -17,15 +17,16 @@ def Button():
 ```
 
 In a template, `onclick`, `onClick`, and `on:click` all bind a `click`
-handler; use whichever reads best to you. The
-[element helpers](../api/elements.md) spell the same prop with a Python
-name, `on_click`:
+handler; use whichever reads best to you. The compiler never wraps an
+event handler, so `onclick={clicked}` passes the function itself. When
+markup is built by code with [`h`][wybthon.h], the same prop takes a
+Python name, `on_click`:
 
 ```python
-button("Click", on_click=clicked)
+h("button", {"on_click": clicked}, "Click")
 ```
 
-Both styles go through the same prop applier, so a handler behaves
+Both go through the same prop applier, so a handler behaves
 identically in either. Non-callable values are ignored, and passing
 `None` on an update removes the handler.
 
@@ -47,8 +48,7 @@ html(t"<button onclick={increment}>+</button>")
 
 Name your handlers, as above. Python doesn't allow a bare `lambda`
 inside a t-string interpolation, so an inline handler needs parentheses:
-`onclick={(lambda: set_count(0))}`. See
-[Templates](templates.md#lambdas-need-parentheses).
+`onclick={(lambda: set_count(0))}`. See [Templates](templates.md).
 
 ## DomEvent
 
@@ -75,7 +75,7 @@ def update_name(e: DomEvent):
     set_name(e.target.value)
 
 
-html(t"<input value={name} oninput={update_name}>")
+html(t"<input value={name()} oninput={update_name}>")
 ```
 
 A submit handler:
@@ -146,10 +146,10 @@ Every spelling normalizes to a lowercase DOM event name:
 | --- | --- | --- |
 | Template | `onclick`, `onClick`, `on:click` | `"click"` |
 | Template | `ondblclick`, `onDblClick`, `on:dblclick` | `"dblclick"` |
-| Helper | `on_click`, `onClick` | `"click"` |
-| Helper | `on_input`, `onInput` | `"input"` |
+| `h()` props and spreads | `on_click`, `onClick` | `"click"` |
+| `h()` props and spreads | `on_input`, `onInput` | `"input"` |
 
-- A `Capture` suffix listens in the capture phase: `onClickCapture` in a template, `on_click_capture` on a helper.
+- A `Capture` suffix listens in the capture phase: `onClickCapture` in a template, `on_click_capture` in `h()` props.
 - Any attribute or prop starting with `on` (`on_` or `on:` included) is treated as an event handler.
 
 ## Event types that work best with delegation
@@ -230,7 +230,7 @@ def Counter():
     def increment():
         set_count(lambda n: n + 1)
 
-    return html(t"<div><p>Count: {count}</p><button onclick={increment}>+</button></div>")
+    return html(t"<div><p>Count: {count()}</p><button onclick={increment}>+</button></div>")
 
 
 def test_counter():
@@ -260,4 +260,4 @@ from wybthon import event, html
 html(t"<button onclick={event(save, once=True)}>Once</button>")
 ```
 
-`event(callback, capture=False, passive=False, once=False)` configures native listener options. It works the same in any spelling: `on_click=event(save, once=True)` on a helper. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses `composedPath`, sends one route across the bridge, and flushes after its handlers. Custom event `detail`, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.
+`event(callback, capture=False, passive=False, once=False)` configures native listener options. It works the same in any spelling: `{"on_click": event(save, once=True)}` in `h()` props. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses `composedPath`, sends one route across the bridge, and flushes after its handlers. Custom event `detail`, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.

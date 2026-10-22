@@ -1,14 +1,9 @@
 """Small helpers shared across E2E fixture feature pages.
 
-``tid`` emits a stable ``data-testid`` attribute. Wybthon's HTML element
-helpers pass arbitrary keyword props straight through, and CPython permits
-spreading a dict with non-identifier keys into ``**kwargs``. That lets every
-fixture use ``span("x", **tid("rx-value"))`` to attach a hyphenated test id
-without reaching for the low-level ``h`` constructor.
-
-Spread it onto elements only: components declare their props on a
-``Props`` class and reject unknown names, so a component that needs a test
-id declares an explicit field for it.
+``tid`` builds a stable ``data-testid`` attribute as a props mapping, for
+places that compute the id: spread it onto an element or a component tag
+in a template (``<div {tid(f"row-{n}")}>``). A literal id is simpler as a
+plain attribute (``<div data-testid="row">``).
 """
 
 

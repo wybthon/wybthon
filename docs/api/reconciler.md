@@ -15,11 +15,10 @@ What it mounts:
 
 - **Templates.** An [`html`][wybthon.html] template mounts as a `_tpl`
   node: one fused `CLONE` command copies the template's native
-  `<template>`, and a generated mount function fills its slots. No
-  VNodes exist for the static parts.
-- **Element helper trees.** Subtrees built with the
-  [element helpers](elements.md) mount through compiled shapes, also
-  with one `CLONE` per mount.
+  `<template>`, and the mount function the [compiler](compiler.md)
+  emitted fills its slots. No VNodes exist for the static parts.
+- **`h()` trees.** Element VNodes built with [`h`][wybthon.h] mount
+  node by node, with one command per node.
 - **Regions.** `Show`, `For`, `Repeat`, and `Switch` are native regions
   with no component wrapped around them.
 - **Components and holes.** A component body runs once; a hole runs in
@@ -47,7 +46,7 @@ from wybthon import component, create_signal, html, render
 @component
 def App():
     title, set_title = create_signal("Hello")
-    return html(t"<div><h1>{title}</h1><p>Rendered once; the heading is a hole.</p></div>")
+    return html(t"<div><h1>{title()}</h1><p>Rendered once; the heading is a hole.</p></div>")
 
 
 root = render(App(), "#app")
@@ -61,7 +60,8 @@ What happens inside `render`:
 1. The container is resolved to a kernel node id and registered as an
    event-delegation root (`ROOT` op).
 2. The tree mounts under a fresh [`Owner`][wybthon.Owner]; component
-   bodies run once, and holes and reactive props create render effects.
+   bodies run once, and holes and reactive props create render effects (a binding that
+   reads nothing reactive is applied once and creates none).
 3. `flush()` commits staged writes, runs effects, and sends the op
    buffer across the bridge once.
 
@@ -77,7 +77,10 @@ For everything else, patching matches VNodes by type and key: a different tag or
 unmounts and remounts at the same position (so `Leaf(key=user_id())`
 restarts its state when the id changes). Keyed children use an
 identity, key, then type match with a longest-increasing-subsequence
-move pass to keep DOM moves minimal. When a keyed list reuses none of
+move pass to keep DOM moves minimal. `For` matches its rows natively:
+it skips the unchanged prefix and suffix by identity, detects swapped
+ends the way Solid's `reconcileArrays` does, and only then falls back
+to a key table, so swapping two rows is two moves. When a keyed list reuses none of
 its rows, the new rows mount as one splice and the old ones are removed
 with a single `DISPOSE_RANGE`. Errors raised during mount or in a hole
 route to the nearest [`Errored`][wybthon.Errored] boundary.

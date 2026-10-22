@@ -20,20 +20,19 @@ def About():
 
 @component
 def User(props: RouteProps):
-    # ``props.params`` and ``props.query`` are accessors. Navigating from
-    # /users/1 to /users/2 updates them in place; the component isn't remounted.
-    def user_id():
-        return props.params()["user_id"]
-
-    def tab():
-        return props.query().get("tab", "info")
-
-    return html(t"<div><h1>User {user_id}</h1><p>Tab: {tab}</p></div>")
+    # Navigating from /users/1 to /users/2 updates ``params`` in place;
+    # the component isn't remounted, and only these two text nodes change.
+    return html(t"""
+      <div>
+        <h1>User {props.params["user_id"]}</h1>
+        <p>Tab: {props.query.get("tab", "info")}</p>
+      </div>
+    """)
 
 
 @component
 def NotFound():
-    return html(t"<div><h1>Not found</h1><p>No page at {current_path}</p></div>")
+    return html(t"<div><h1>Not found</h1><p>No page at {current_path()}</p></div>")
 
 
 # Loaded on first visit; the import runs inside an async memo.
@@ -47,7 +46,7 @@ routes = [
 
 
 def page_failed(err, reset):
-    return html(t"<p>Page failed to load: {(lambda: str(err()))}</p>")
+    return html(t"<p>Page failed to load: {err()}</p>")
 
 
 @component
@@ -63,13 +62,11 @@ def App():
           </ul>
         </nav>
         <main>
-          {
-        Errored(
-            Loading(Router(routes, not_found=NotFound), fallback=html(t"<p>Loading page...</p>")),
-            fallback=page_failed,
-            reset_on=current_path,
-        )
-    }
+          <{Errored} fallback={page_failed} reset_on={current_path}>
+            <{Loading} fallback={html(t"<p>Loading page...</p>")}>
+              {Router(routes, not_found=NotFound)}
+            </{Loading}>
+          </{Errored}>
         </main>
       </div>
     """)
@@ -81,7 +78,7 @@ render(App(), "#app")
 ## How it works
 
 - [`Router`][wybthon.router.Router] reads [`current_path`][wybthon.router.current_path] and renders the component of the first matching [`Route`][wybthon.router.Route]. Only a change in *which* route matches re-mounts the outlet; param and query changes flow into the mounted component as prop updates.
-- The matched component receives `params` and `query` as props. Declare them by annotating the component's parameter with [`RouteProps`][wybthon.router.RouteProps], or subclass it to add fields of your own. Both are dicts, so `User` reads them inside the `user_id` and `tab` functions, which the template turns into holes. Outside the route component, [`use_params`][wybthon.router.use_params] and [`use_query`][wybthon.router.use_query] return the same accessors.
+- The matched component receives `params` and `query` as props. Declare them by annotating the component's parameter with [`RouteProps`][wybthon.router.RouteProps], or subclass it to add fields of your own. Both are plain props holding dicts: `props.params["user_id"]` is a tracked read, and in the template the compiler turns each expression into a getter, so each is its own hole. Outside the route component, [`use_params`][wybthon.router.use_params] and [`use_query`][wybthon.router.use_query] return accessors for the same values: `params = use_params()`, then `params()["user_id"]`.
 - [`Link`][wybthon.router.Link] renders an `<a>` that navigates with the History API. It adds `active_class` (default `"active"`) while its path matches; `end=True` requires an exact match, which keeps "Home" from being active everywhere. Modifier-key clicks and middle clicks pass through to the browser. `Link` works as a call in an interpolation or as a `<{Link} href="/">...</{Link}>` tag.
 - Nested `Route.children` paths are joined with the parent path, so `Route("team", Team)` under `/about` matches `/about/team`. The parent renders the matched child wherever it places [`Outlet()`][wybthon.router.Outlet].
 - Wrapping the router in [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] with `reset_on=current_path` gives every page a loading state and an error state that clears on navigation. The error fallback reads the error through the `err` accessor. An interpolation can span several lines, as the `Errored(...)` call does here.

@@ -51,7 +51,7 @@ create_effect(lambda: deep(state.user), lambda user: print(user))
 
 ## Identity and reconciliation
 
-Pass a store list straight to [`For`][wybthon.For]: `For(state.todos, row)`. There's no need for `lambda: state.todos`, because a store list is already reactive, and `For` uses the store's edit records directly. Default matching preserves entity identity, so `row` receives each entity's proxy and an index accessor; read fields inside reactive expressions (`todo.title`) to track them. Use `keyed=lambda todo: todo.id` when replacement objects represent the same application entity; with a key function, `row` receives item and index accessors instead (`todo().title`).
+Pass a store list straight to [`For`][wybthon.For]: `For(state.todos, row)`. There's no need for `lambda: state.todos`, because a store list is already reactive, and `For` uses the store's edit records directly. Default matching preserves entity identity, so `row` receives each entity's proxy and an index accessor; read fields in the template (`{todo.title}`) or inside other reactive expressions to track them. Use `keyed=lambda todo: todo.id` when replacement objects represent the same application entity; with a key function, `row` receives item and index accessors instead (`todo().title`).
 
 ```python
 from wybthon import reconcile
@@ -102,13 +102,14 @@ is_selected = create_projection(lambda: {} if selected() is None else {selected(
 
 
 def row(todo, i):
-    def row_class():
-        return "active" if is_selected.get(todo.id) else None
-
     def select():
         set_selected(todo.id)
 
-    return html(t"<tr class={row_class} onclick={select}><td>{(lambda: todo.title)}</td></tr>")
+    return html(t"""
+      <tr class={"active" if is_selected.get(todo.id) else None} onclick={select}>
+        <td>{todo.title}</td>
+      </tr>
+    """)
 
 
 html(t"<table><tbody>{For(state.todos, row)}</tbody></table>")

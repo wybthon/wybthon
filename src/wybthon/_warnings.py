@@ -111,7 +111,7 @@ def warn_each_plain_list(component: Any) -> None:
     warn_once(
         "each_plain_list",
         id(component),
-        f"{name} received a plain list for `each=`. Pass an accessor "
-        f"(e.g. `each=items` where `items, set_items = create_signal([])`) "
+        f"{name} received a plain list. Pass the list's accessor (`For(items, row)`, where "
+        f"`items, set_items = create_signal([])`) or call it in a template (`{{For(items(), row)}}`) "
         f"so the list reacts to updates. A static list only renders once.",
     )

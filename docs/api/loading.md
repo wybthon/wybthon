@@ -28,35 +28,34 @@ at once.
 ```python
 from typing import Any
 
-from wybthon import Loading, Prop, Props, Reveal, component, create_memo, html, is_pending
+from wybthon import Loading, Props, Reveal, component, create_memo, html, is_pending
 
 
 class UserCardProps(Props):
-    user_id: Prop[int]
+    user_id: int
 
 
 @component
 def UserCard(props: UserCardProps):
     async def load_user():
-        uid = props.user_id()  # tracked: refetches when it changes
+        uid = props.user_id  # tracked: refetches when it changes
         return await fetch_json(f"/api/users/{uid}")
 
     user = create_memo(load_user)
 
-    def name():
-        return user()["name"]
-
-    def hint():
-        return "Refreshing..." if is_pending(user) else ""
-
     return Loading(
-        html(t"<div><p>{name}</p><span>{hint}</span></div>"),
+        html(t"""
+          <div>
+            <p>{user()["name"]}</p>
+            <span>{"Refreshing..." if is_pending(user) else ""}</span>
+          </div>
+        """),
         fallback=html(t"<p>Loading...</p>"),
     )
 
 
 class DashboardProps(Props):
-    settings: Prop[dict[str, Any]]
+    settings: dict[str, Any]
 
 
 @component
@@ -64,12 +63,14 @@ def Dashboard(props: DashboardProps):
     return Reveal(
         [
             Loading(UserCard(user_id=1), fallback=html(t"<p>Loading user...</p>")),
-            Loading(Activity(), fallback=html(t"<p>Loading activity...</p>"), on=props.settings),
+            Loading(Activity(), fallback=html(t"<p>Loading activity...</p>"), on=lambda: props.settings),
         ],
         collapsed=True,
     )
 ```
 
+- `on=` takes accessors, so wrap a prop in a function
+  (`on=lambda: props.settings`) to watch it.
 - `on=` makes the boundary wait for specific accessors even if the
   children never read them, and when one of them changes while data
   under the boundary is pending, the fallback shows again instead of

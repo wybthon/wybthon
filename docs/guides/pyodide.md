@@ -5,7 +5,7 @@ Wybthon runs in the browser through [Pyodide](https://pyodide.org/), a CPython d
 ## The basics
 
 - Wybthon requires Python 3.14, so in the browser it needs Pyodide 314 or newer. `wyb init` pins Pyodide 314.0.6, the version the framework's own browser test suite runs on.
-- `wyb build` packages Wybthon and your application into archives that its generated bootstrap loads, so a project doesn't install Wybthon at runtime. See [Deployment](deployment.md).
+- `wyb build` packages Wybthon and your application into archives that its generated bootstrap loads, so a project doesn't install Wybthon at runtime. Templates are compiled at build time, so the browser never parses one. See [Deployment](deployment.md).
 - Use [`micropip`](https://micropip.pyodide.org/) to install other Python packages from PyPI at runtime, or list them under `packages` and `wheels` in `wybthon.toml`.
 - Bridge to the browser with the [`js` module](https://pyodide.org/en/stable/usage/api/python-api/ffi.html#module-js) and [`pyodide.ffi`](https://pyodide.org/en/stable/usage/api/python-api/ffi.html). Wybthon doesn't re-export `js`; import it yourself where you need it.
 
@@ -25,7 +25,7 @@ def App():
     return html(t"""
       <div>
         <h1>My Wybthon app</h1>
-        <button onclick={increment}>Count: {count}</button>
+        <button onclick={increment}>Count: {count()}</button>
       </div>
     """)
 
@@ -34,7 +34,7 @@ def app():
     return App()
 ```
 
-Outside a project (in a Pyodide console, say), install Wybthon with `micropip` and render yourself:
+Outside a project, install Wybthon with `micropip` and render yourself. `import wybthon` installs an import hook that compiles the templates in every module imported after it, so keep components in a module and import them:
 
 ```python
 import micropip
@@ -43,8 +43,12 @@ await micropip.install("wybthon")
 
 from wybthon import render
 
+from app.main import App  # compiled by the import hook as it's imported
+
 render(App(), "#app")
 ```
+
+Code typed straight into a Pyodide console or passed to `runPython` isn't compiled. A template there whose dynamic expressions (`{count() * 2}`) were evaluated only once raises [`TemplateError`][wybthon.TemplateError] in dev mode rather than silently never updating; see [The compiler](../concepts/compiler.md).
 
 ## The Pyodide event loop
 
@@ -97,7 +101,7 @@ def Clock():
         return lambda: (clearInterval(handle), proxy.destroy())
 
     on_settled(start)
-    return html(t"<div>{now}</div>")
+    return html(t"<div>{now()}</div>")
 ```
 
 - For imperative DOM work, [`Ref`][wybthon.Ref] gives you an [`Element`][wybthon.Element] whose `.element` is the raw node. Event handlers receive a [`DomEvent`][wybthon.DomEvent] built from a payload (no bridge crossing to read `e.target.value`); `e.raw` is the native event when you need it.

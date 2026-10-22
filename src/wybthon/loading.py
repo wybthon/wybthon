@@ -26,11 +26,11 @@ Example:
 
     user = create_memo(load_user)
 
-    Loading(
-        lambda: div(lambda: user()["name"]),
-        fallback=lambda: p("Loading..."),
-        on=user_id,
-    )
+    html(t'''
+      <{Loading} fallback={html(t"<p>Loading...</p>")} on={user_id}>
+        <div>{user()["name"]}</div>
+      </{Loading}>
+    ''')
     ```
 
 See Also:
@@ -42,7 +42,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Literal
 
-from .component import component
+from .component import builtin, component
 from .reactivity import _core
 from .reactivity._core import LOADING_CONTEXT_KEY, Computation, NotReadyError, Signal
 from .reactivity._primitives import _create_effect, on_cleanup
@@ -125,6 +125,7 @@ class _LoadingCollector:
         return bool(self._pending)
 
 
+@builtin
 def Loading(
     children: Any = None,
     *,
@@ -189,6 +190,7 @@ def _render_fallback(fb: Any) -> VNode:
 
 
 class _LoadingProps(Props):
+    _wyb_internal = True
     children: Any = None
     fallback: Any = None
     on: Any = None
@@ -369,6 +371,7 @@ class _RevealState:
         return "fallback" if self._getters[idx]() else "content"
 
 
+@builtin
 def Reveal(
     children: Any = None,
     *,
@@ -402,13 +405,12 @@ def Reveal(
 
     Example:
         ```python
-        Reveal(
-            [
-                Loading(PanelA(), fallback=p("Loading A...")),
-                Loading(PanelB(), fallback=p("Loading B...")),
-            ],
-            collapsed=True,
-        )
+        html(t'''
+          <{Reveal} collapsed>
+            {Loading(PanelA(), fallback=html(t"<p>Loading A...</p>"))}
+            {Loading(PanelB(), fallback=html(t"<p>Loading B...</p>"))}
+          </{Reveal}>
+        ''')
         ```
 
     Note:
@@ -424,6 +426,7 @@ def Reveal(
 
 
 class _RevealProps(Props):
+    _wyb_internal = True
     children: Any = None
     order: str = "sequential"
     collapsed: bool = False

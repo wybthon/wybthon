@@ -46,7 +46,6 @@ from __future__ import annotations
 import asyncio
 import gc
 import inspect
-from collections.abc import Awaitable as AbcAwaitable
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType, MethodType, coroutine
@@ -60,6 +59,7 @@ __all__ = [
     "Signal",
     "Computation",
     "Memo",
+    "DeferredMemo",
     "Owner",
     "Transition",
     "NotReadyError",
@@ -101,6 +101,11 @@ _K_EFFECT: Final = 2
 _R_NORMAL: Final = 1
 _R_LATEST: Final = 2
 _R_PROBE: Final = 4
+
+# ``Computation._apply_arity`` for a framework binding whose apply stage is a
+# module function taking ``(data, value, previous)``, with ``data`` from the
+# computation's ``_apply_data``: no closure per binding.
+_APPLY_METHOD: Final = 3
 
 # Exact built-in results cannot implement an async protocol. Most render
 # bindings return one of these, so they needn't invoke the Awaitable ABC.
@@ -331,8 +336,8 @@ def _warn_top_level_read(source: Any) -> None:
         "top_level_read",
         (id(component), label),
         f"{where} read reactive value {label} at the top level of its body. "
-        "That read isn't tracked, so later updates won't reach it. Read it inside the returned tree, a "
-        "create_memo/create_effect, or make the one-time read explicit with .peek() or untrack().",
+        "That read isn't tracked, so later updates won't reach it. Read it inside the returned markup, a "
+        "create_memo/create_effect, or make the one-time read explicit with untrack() (or .peek() on a signal).",
     )
 
 
@@ -1042,15 +1047,17 @@ class Owner:
     )
 
     def __init__(self) -> None:
+        # Computation and list rows assign these directly; keep them in sync.
         self._tasks: set[asyncio.Task[Any]] | None = None
         self._parent: Owner | None = None
         # The nearest preparation ancestor, cached when attaching a child.
         # Ordinary render bindings avoid traversing the ownership tree.
         self._provisional: _Preparation | None = None
-        # Keyed by ``id(child)`` so an individually disposed child detaches
-        # in O(1); a row leaving a 10k-row list would otherwise pay a
-        # linear ``list.remove`` against its parent.
-        self._children: dict[int, Owner] | None = None
+        # The single child itself, or a dict keyed by ``id(child)`` once
+        # there are several: most owners (a list row, a binding's scope)
+        # have one child, and an individually disposed child detaches in
+        # O(1) either way.
+        self._children: Owner | dict[int, Owner] | None = None
         self._cleanups: list[Callable[[], Any]] | None = None
         self._disposed: bool = False
         self._context_map: dict[Any, Any] | None = None
@@ -1064,10 +1071,20 @@ class Owner:
         provisional = self._provisional
         if provisional is not None:
             child._provisional = provisional
-        if self._children is None:
-            self._children = {id(child): child}
+        children = self._children
+        if children is None:
+            self._children = child
+        elif type(children) is dict:
+            children[id(child)] = child
         else:
-            self._children[id(child)] = child
+            self._children = {id(children): children, id(child): child}  # type: ignore[dict-item]
+
+    def _remove_child(self, child: Owner) -> None:
+        children = self._children
+        if children is child:
+            self._children = None
+        elif type(children) is dict:
+            children.pop(id(child), None)
 
     def _add_cleanup(self, fn: Callable[[], Any]) -> None:
         if self._cleanups is None:
@@ -1079,8 +1096,8 @@ class Owner:
         children = self._children
         if not children:
             return
-        items = list(children.values())
-        children.clear()
+        self._children = None
+        items: Any = list(children.values()) if isinstance(children, dict) else (children,)
         for child in items:
             child._parent = None
             child.dispose()
@@ -1140,8 +1157,7 @@ class Owner:
             self._run_cleanups()
         parent = self._parent
         if parent is not None:
-            if parent._children is not None:
-                parent._children.pop(id(self), None)
+            parent._remove_child(self)
             self._parent = None
         if self._provisional is not None:
             self._provisional = None
@@ -1219,9 +1235,8 @@ class Accessor[T]:
     Every reactive read in Wybthon goes through an `Accessor`:
     [`create_signal`][wybthon.create_signal] getters are
     [`Signal`][wybthon.Signal]s, [`create_memo`][wybthon.create_memo]
-    returns a [`Memo`][wybthon.Memo], and component parameters are
-    [`Prop`][wybthon.Prop]s. Embedding an accessor in a VNode tree
-    creates a reactive hole. Type it as `Accessor[T]` in signatures
+    returns a [`Memo`][wybthon.Memo]. Embedding an accessor in a
+    template or VNode tree creates a reactive hole. Type it as `Accessor[T]` in signatures
     when you accept any of them.
     """
 
@@ -1551,40 +1566,103 @@ def _unwrap(value: Any) -> Any:
     return value() if is_accessor(value) else value
 
 
+def _read(value: Any) -> Any:
+    """Read a reactive input through every accessor layer (tracked).
+
+    A compiled expression can evaluate to an accessor (`props.items` when
+    the prop is a signal): a flow control's condition or source reads
+    through it, as a binding of the same expression does.
+    """
+    for _ in range(8):
+        if not is_accessor(value):
+            return value
+        value = value()
+    return value
+
+
 # ---------------------------------------------------------------------------
-# Prop accessors: what reading a component's reactive prop returns
+# Compiler getters and prop fields
 # ---------------------------------------------------------------------------
 
 
-class _PropAccessor[T](Accessor[T]):
-    """Reactive accessor for one `Prop[T]` field of a component's props.
+class _Getter[T](Accessor[T]):
+    """A dynamic template expression the compiler deferred (see `wybthon.compiler`).
 
-    Calling it returns the current value the parent passed; if the parent
-    passed an accessor or a zero-arg function, it's unwrapped
-    transparently (and tracked), so children always read `props.name()`
-    whether the parent wrote `name="Ada"` or `name=lambda: user().name`.
+    `html(t"<p>{count() * 2}</p>")` compiles to a template whose slot holds
+    `_Getter(lambda: count() * 2)`. The renderer runs `fn` as the slot's
+    expression; a component prop holding one is read through it. A
+    getter is the counterpart of the property getters Solid's compiler
+    puts on a props object: it says "this was an expression", which is
+    what [`is_static`][wybthon.is_static] reports.
+    """
+
+    __slots__ = ("fn", "probe")
+
+    def __init__(self, fn: Callable[[], T], probe: bool = False) -> None:
+        self.fn = fn
+        # Set by the compiler when the expression makes no calls (an
+        # attribute or item read: `props.title`, `row["label"]`): such an
+        # expression often reads nothing reactive, so the renderer runs it
+        # once to find out before allocating a computation (see `_probe`).
+        self.probe = probe
+
+    def __call__(self) -> T:
+        return self.fn()
+
+    def peek(self) -> T:
+        return untrack(self.fn)
+
+    def _label(self) -> str:
+        return "an expression"
+
+    def __repr__(self) -> str:
+        return f"getter({self.fn!r})"
+
+
+class _PropField:
+    """Descriptor for one declared field of a [`Props`][wybthon.Props] class.
+
+    Reading `props.title` returns the parent's current value, tracked:
+
+    - a compiler getter is always called, so `<{Card} title={user().name}>`
+      reads `user().name` in whatever scope reads the prop;
+    - an accessor or zero-argument function is called too, unless the
+      field's annotation is callable (`unwrap` is false): a callback is
+      returned as the parent passed it.
 
     A constant is tracked only when the component can receive new props:
     when it was mounted directly in a reactive hole's result (or a root),
     a later re-render patches it, and the read subscribes to the props
-    instance's single signal. Anywhere else a constant can never change,
-    so the read subscribes to nothing and costs nothing.
+    instance's single version signal. Anywhere else a constant can never
+    change, so the read subscribes to nothing and costs nothing.
 
-    Reading it at the top level of the component body freezes the value
-    and warns in dev mode; use `.peek()` when that's intended.
+    Reading a reactive value at the top level of the component body
+    freezes it, and warns in dev mode.
     """
 
-    __slots__ = ("_props", "_field")
+    __slots__ = ("name", "unwrap", "default", "factory", "raw")
 
-    def __init__(self, props: Any, field: Any) -> None:
-        self._props = props
-        self._field = field
+    def __init__(
+        self, name: str, unwrap: bool, default: Any, factory: Callable[[], Any] | None, raw: bool = False
+    ) -> None:
+        self.name = name
+        self.unwrap = unwrap
+        self.default = default
+        self.factory = factory
+        # Built-in components read their inputs as passed and resolve
+        # getters and accessors themselves, where they need them.
+        self.raw = raw
+
+    @property
+    def required(self) -> bool:
+        return self.default is _MISSING and self.factory is None
 
     def _label(self) -> str:
-        return f"prop {self._field.name!r}"
+        return f"prop {self.name!r}"
 
-    def __call__(self) -> T:
-        props = self._props
+    def __get__(self, props: Any, owner: Any = None) -> Any:
+        if props is None:
+            return self
         sig = props._sig
         obs = _current_observer
         if obs is not None:
@@ -1592,51 +1670,42 @@ class _PropAccessor[T](Accessor[T]):
                 sig = props._wyb_signal()
             if sig is not None:
                 obs._add_source(sig)
-        elif _setup_depth and not _untrack_depth:
-            _warn_top_level_read(self)
         if sig is None:
             raw = props._raw
         elif _in_action is not None:
             raw = sig.peek()
         else:
             raw = sig._slow_read() if _slow_reads else sig._value
-        field = self._field
-        value = raw.get(field.name, _MISSING)
+        value = raw.get(self.name, _MISSING)
         if value is _MISSING:
-            value = props._wyb_default(field)
-        return value() if is_accessor(value) else value
+            return props._wyb_default(self)
+        if self.raw:
+            return value
+        if type(value) is _Getter:
+            if obs is None and _setup_depth and not _untrack_depth:
+                # One warning, for the prop: the reads inside the getter are
+                # the same mistake.
+                _warn_top_level_read(self)
+                value = untrack(value.fn)
+            else:
+                value = value.fn()
+            # `title={store.title}` hands over the signal itself; a value
+            # field reads it, as a binding of the same expression would.
+            if self.unwrap and is_accessor(value):
+                return value()
+            return value
+        if self.unwrap and is_accessor(value):
+            if obs is None and _setup_depth and not _untrack_depth:
+                _warn_top_level_read(self)
+                return untrack(value)
+            return value()
+        return value
 
-    def peek(self) -> T:
-        """Return the current (unwrapped) value without subscribing."""
-        props = self._props
-        sig = props._sig
-        raw = props._raw if sig is None else sig.peek()
-        field = self._field
-        value = raw.get(field.name, _MISSING)
-        if value is _MISSING:
-            value = props._wyb_default(field)
-        return untrack(value) if is_accessor(value) else value
+    def __set__(self, props: Any, value: Any) -> None:
+        raise AttributeError("Component props are read-only")
 
     def __repr__(self) -> str:
-        return f"Prop({self._field.name!r})"
-
-
-def _constant_prop(value: Any) -> Any:
-    """The value behind a prop accessor that can never change, else `_MISSING`.
-
-    A component that can't be patched holding a constant: binding it would
-    create a computation with nothing to track, so renderers use the value.
-    """
-    if type(value) is _PropAccessor:
-        props = value._props
-        if not props._patchable:
-            field = value._field
-            raw = props._raw.get(field.name, _MISSING)
-            if raw is _MISSING:
-                raw = props._wyb_default(field)
-            if not is_accessor(raw):
-                return raw
-    return _MISSING
+        return f"<prop {self.name!r}>"
 
 
 # ---------------------------------------------------------------------------
@@ -1721,6 +1790,7 @@ class Computation(Owner):
         "_committed_owner",
         "_readiness_signal",
         "_publication_tx",
+        "_apply_data",
     )
 
     def __init__(
@@ -1742,7 +1812,17 @@ class Computation(Owner):
         data: bool = False,
         keep: bool = False,
     ) -> None:
-        super().__init__()
+        # Owner's fields, assigned here rather than through `Owner.__init__`:
+        # every binding is a computation, and the extra call shows up in
+        # mount profiles. Keep in sync with `Owner.__init__`.
+        self._tasks = None
+        self._parent = None
+        self._provisional = None
+        self._children = None
+        self._cleanups = None
+        self._disposed = False
+        self._context_map = None
+        self._error_handler = None
         self._fn = fn
         # Framework render bindings (holes, reactive props) keep their
         # current DOM state while a source isn't ready, instead of becoming
@@ -1783,6 +1863,10 @@ class Computation(Owner):
         self._committed_owner: _Preparation | None = None
         self._readiness_signal: Signal[int] | None = None
         self._publication_tx: Transition | None = None
+        # What a framework binding's apply stage writes to (its node and
+        # prop, or its hole): bindings are plain computations, so the
+        # interpreter's attribute reads on the hot path stay specialized.
+        self._apply_data: Any = None
 
     def _inert(self) -> bool:
         """Whether this settled computation can never run again or own anything.
@@ -2099,11 +2183,14 @@ class Computation(Owner):
             _layer_working -= 1
             _current_owner = prev_owner
             _current_observer = prev_obs
-        if type(new_value) not in _SYNC_RESULT_TYPES:
-            if isinstance(new_value, AbcAwaitable):
+        result_type = type(new_value)
+        if result_type not in _SYNC_RESULT_TYPES:
+            # `hasattr` on the type is the Awaitable ABC's own test, without
+            # the ABC machinery on every render binding's result.
+            if hasattr(result_type, "__await__"):
                 self._launch(new_value)
                 return
-            if inspect.isasyncgen(new_value):
+            if hasattr(result_type, "__anext__") and inspect.isasyncgen(new_value):
                 self._launch_gen(new_value)
                 return
         if a is not None:
@@ -2208,7 +2295,13 @@ class Computation(Owner):
         try:
             previous = self._applied_value
             self._applied_value = value
-            result = apply(value) if self._apply_arity == 1 else apply(value, previous)
+            arity = self._apply_arity
+            if arity == 1:
+                result = apply(value)
+            elif arity == _APPLY_METHOD:
+                result = apply(self._apply_data, value, previous)
+            else:
+                result = apply(value, previous)
         except Exception as exc:
             if not self._handle_error(exc):
                 raise
@@ -2264,14 +2357,15 @@ class Computation(Owner):
         """Flip the pending flag; observers are notified because pending state is observable."""
         a = self._ensure_async()
         if a.pending == value:
-            if value and a.has_value and _flushing and self._is_data:
+            if value and a.has_value and _flushing and self._is_data and type(self) is not DeferredMemo:
                 _newly_pending.append(self)
             return
         a.pending = value
         self._notify_readiness()
         if value:
-            # Only data (memos) holds a transition; an async effect is a sink.
-            if a.has_value and _flushing and self._is_data:
+            # Only data (memos) holds a transition; an async effect is a sink,
+            # and a deferred memo lags instead of holding anything.
+            if a.has_value and _flushing and self._is_data and type(self) is not DeferredMemo:
                 _newly_pending.append(self)
         else:
             tx = _node_tx.get(self)
@@ -2769,6 +2863,17 @@ class Memo[T](Computation, Accessor[T]):
         return f"Memo({self._label()})"
 
 
+class DeferredMemo[T](Memo[T]):
+    """An async memo that may lag but never holds; what [`create_deferred`][wybthon.create_deferred] returns.
+
+    Before its first value it's an ordinary async memo. After it, a
+    refetch holds nothing: readers keep the last value until the new one
+    lands, and the rest of the UI moves on without it.
+    """
+
+    __slots__ = ()
+
+
 def _function_name(fn: Any) -> str:
     """The name a serialized value is checked against before seeding a memo."""
     return str(getattr(fn, "__qualname__", None) or type(fn).__qualname__)
@@ -2808,6 +2913,91 @@ def _server_error(message: str, type_name: str) -> BaseException:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Static probes
+# ---------------------------------------------------------------------------
+
+
+class _Escape(BaseException):
+    """Ends a static probe at its first reactive read; never leaves `_probe`."""
+
+
+class _ProbeObserver:
+    """Stands in for a computation while a binding's expression is probed.
+
+    Its only job is to notice the first reactive read: every read path
+    subscribes the current observer before it returns a value, so
+    raising there stops the probe before anything depends on it.
+    """
+
+    __slots__ = ()
+
+    # Attributes the write path reads from the current observer.
+    _eager = False
+    _sources = None
+    _apply = None
+
+    def _add_source(self, source: Any) -> None:
+        raise _Escape
+
+
+class _ProbeOwner(Owner):
+    """The owner while probing.
+
+    Context and error handlers resolve through its parent, but anything
+    that needs ownership (a child scope, a cleanup) ends the probe.
+    """
+
+    __slots__ = ()
+
+    def _add_child(self, child: Owner) -> None:
+        raise _Escape
+
+    def _add_cleanup(self, fn: Callable[[], Any]) -> None:
+        raise _Escape
+
+
+_PROBE_OBSERVER: Final = _ProbeObserver()
+_PROBE_OWNER: Final = _ProbeOwner()
+# What `_probe` returns when the expression needs a computation.
+_ESCAPED: Final = object()
+
+
+def _probe(fn: Callable[[], Any]) -> Any:
+    """Run a binding's expression once to see whether it needs a computation.
+
+    Returns the expression's value when it read nothing reactive, created
+    nothing, and returned synchronously: such a binding can never change,
+    so the renderer applies the value and allocates nothing. Returns
+    `_ESCAPED` otherwise, and the binding runs as a computation from the
+    start. The probe stops at the first reactive read, so an expression
+    that does read something has done no work that matters (getters are
+    pure); one that raised runs again so the computation routes the error.
+    """
+    global _current_owner, _current_observer
+    prev_owner = _current_owner
+    prev_obs = _current_observer
+    probe_parent = _PROBE_OWNER._parent
+    _PROBE_OWNER._parent = prev_owner
+    _current_owner = _PROBE_OWNER
+    _current_observer = _PROBE_OBSERVER  # type: ignore[assignment]
+    try:
+        value = fn()
+    except _Escape:
+        return _ESCAPED
+    except Exception:
+        return _ESCAPED
+    finally:
+        _current_owner = prev_owner
+        _current_observer = prev_obs
+        _PROBE_OWNER._parent = probe_parent
+    t = type(value)
+    if t is not Signal and t not in _SYNC_RESULT_TYPES and (hasattr(t, "__await__") or hasattr(t, "__anext__")):
+        _discard_awaitable(value)
+        return _ESCAPED
+    return value
+
+
 def untrack[T](fn: Callable[[], T]) -> T:
     """Run `fn` without tracking any reactive reads.
 
@@ -2841,11 +3031,15 @@ def get_owner() -> Owner | None:
     [`run_with_owner`][wybthon.run_with_owner] when you need to create
     primitives after the boundary.
     """
+    if _current_owner is _PROBE_OWNER:
+        raise _Escape
     return _current_owner
 
 
 def get_observer() -> Computation | None:
     """Return the computation currently tracking reads, or `None`."""
+    if _current_observer is _PROBE_OBSERVER:
+        raise _Escape
     return _current_observer
 
 

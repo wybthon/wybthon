@@ -5,7 +5,6 @@ import asyncio
 from wybthon import (
     Errored,
     Loading,
-    Prop,
     Props,
     RequestEvent,
     ResponseHead,
@@ -13,24 +12,24 @@ from wybthon import (
     component,
     create_memo,
     create_signal,
-    div,
     flush,
     get_request_event,
+    html,
     http_header,
     http_status,
-    p,
+    untrack,
 )
 from wybthon.server import render_to_stream, render_to_string
 
 
 class StatusProps(Props):
-    code: Prop[int]
+    code: int
 
 
 @component
 def Status(props: StatusProps):
-    http_status(props.code.peek())
-    return p("status")
+    http_status(untrack(lambda: props.code))
+    return html(t"<p>status</p>")
 
 
 def test_defaults():
@@ -54,10 +53,10 @@ def test_get_request_event_during_a_server_render():
         current = get_request_event()
         seen.append(current)
         assert current is not None
-        return p("user ", current.locals["user"])
+        return html(t"<p>user {current.locals['user']}</p>")
 
-    html = render_to_string(View(), url="/users/1", event=event)
-    assert "user ada" in html
+    out = render_to_string(View(), url="/users/1", event=event)
+    assert "user ada" in out
     assert seen == [event]
     # An explicit url overrides the event's.
     assert event.url == "/users/1"
@@ -71,7 +70,7 @@ def test_render_without_an_event_creates_one():
     @component
     def View():
         seen.append(get_request_event())
-        return p("x")
+        return html(t"<p>x</p>")
 
     render_to_string(View(), url="/about")
     assert seen[0] is not None and seen[0].url == "/about"
@@ -88,7 +87,7 @@ def test_status_and_headers_are_declared_on_the_response():
         http_header("Content-Language", "en")
         http_header("X-Frame-Options", "DENY")
         http_header("x-frame-options", "SAMEORIGIN")  # replaces, case-insensitively
-        return p("missing")
+        return html(t"<p>missing</p>")
 
     render_to_string(View(), event=event)
     head = event.response
@@ -107,7 +106,7 @@ def test_header_append_keeps_every_value_in_order():
         http_header("set-cookie", "b=2", append=True)
         http_header("set-cookie", "c=3", append=True)
         http_header("x-new", "first", append=True)  # appending to nothing sets
-        return p("x")
+        return html(t"<p>x</p>")
 
     render_to_string(View(), event=event)
     assert event.response.headers == {"set-cookie": ["a=1", "b=2", "c=3"], "x-new": ["first"]}
@@ -125,7 +124,7 @@ def test_the_deepest_live_declaration_wins():
     @component
     def View():
         http_status(201)
-        return div(Status(code=202), Status(code=203))
+        return html(t"<div>{Status(code=202)}{Status(code=203)}</div>")
 
     render_to_string(View(), event=event)
     assert event.response.status == 203
@@ -145,10 +144,10 @@ def test_declarations_are_retracted_when_an_errored_boundary_recovers():
     def View():
         http_status(201)
         http_header("x-kept", "outer")
-        return div(Errored(lambda: Broken(), fallback=lambda err, reset: p(f"error: {err()}")))
+        return html(t"<div>{Errored(Broken(), fallback=lambda err, reset: html(t'<p>{f"error: {err()}"}</p>'))}</div>")
 
-    html = render_to_string(View(), event=event)
-    assert "error: boom" in html
+    out = render_to_string(View(), event=event)
+    assert "error: boom" in out
     head = event.response
     assert head.status == 201
     assert head.headers == {"x-kept": ["outer"]}
@@ -164,7 +163,7 @@ def test_a_fallback_can_declare_its_own_status():
 
     def fallback(err, reset):
         http_status(500, "Internal Server Error")
-        return p("sorry")
+        return html(t"<p>sorry</p>")
 
     render_to_string(Errored(lambda: Broken(), fallback=fallback), event=event)
     assert (event.response.status, event.response.status_text) == (500, "Internal Server Error")
@@ -180,7 +179,7 @@ def test_a_fallback_status_sticks_when_the_failed_child_declared_nothing():
     def fallback(err, reset):
         http_status(500)
         http_header("x-error", type(err()).__name__)
-        return p("sorry")
+        return html(t"<p>sorry</p>")
 
     render_to_string(Errored(lambda: Broken(), fallback=fallback), event=event)
     assert event.response.status == 500
@@ -198,20 +197,20 @@ def test_fallback_declarations_are_retracted_when_content_replaces_them():
     def Pending():
         http_status(503)
         http_header("retry-after", "1")
-        return p("wait")
+        return html(t"<p>wait</p>")
 
     @component
     def Data():
         value = create_memo(load)
-        return p(value)
+        return html(t"<p>{value}</p>")
 
     async def main() -> str:
         # The first pass shows the fallback; its scope is disposed before
         # the final pass renders the content and commits the head.
         return await render_to_stream(Loading(lambda: Data(), fallback=Pending()), event=event)
 
-    html = asyncio.run(main())
-    assert "ready" in html and "wait" not in html
+    out = asyncio.run(main())
+    assert "ready" in out and "wait" not in out
     assert event.response.status == 200
     assert event.response.headers == {}
 
@@ -220,7 +219,9 @@ def test_show_branch_declarations_follow_the_rendered_branch():
     def render(missing: bool) -> RequestEvent:
         event = RequestEvent()
         flag, _set_flag = create_signal(missing)
-        render_to_string(Show(flag, lambda: Status(code=404), fallback=lambda: p("found")), event=event)
+        render_to_string(
+            html(t"<main>{Show(flag(), lambda: Status(code=404), fallback=html(t'<p>found</p>'))}</main>"), event=event
+        )
         return event
 
     assert render(True).response.status == 404
@@ -233,7 +234,7 @@ def test_committed_head_ignores_later_writes():
     assert event.response.committed
     # A second render with the committed event can't change the head,
     # and disposing the first render after the commit didn't retract it.
-    render_to_string(div(Status(code=500)), event=event)
+    render_to_string(html(t"<div>{Status(code=500)}</div>"), event=event)
     assert event.response.status == 404
 
 
@@ -251,9 +252,9 @@ def test_awaited_stream_commits_the_final_passes_head():
         def body():
             text = value()
             http_header("x-data", text)
-            return p(text)
+            return html(t"<p>{text}</p>")
 
-        return div(body)
+        return html(t"<div>{body}</div>")
 
     @component
     def View():
@@ -263,8 +264,8 @@ def test_awaited_stream_commits_the_final_passes_head():
     async def main() -> str:
         return await render_to_stream(View(), event=event)
 
-    html = asyncio.run(main())
-    assert "data" in html
+    out = asyncio.run(main())
+    assert "data" in out
     assert event.response.status == 201
     assert event.response.headers == {"x-data": ["data"]}
     assert event.response.committed
@@ -283,15 +284,15 @@ def _streaming_app(gate_holder: dict[str, asyncio.Event]):
             text = value()  # not ready in the shell
             http_status(418)
             http_header("x-late", text)
-            return p(text)
+            return html(t"<p>{text}</p>")
 
-        return div(body)
+        return html(t"<div>{body}</div>")
 
     @component
     def View():
         http_status(201)
         http_header("x-shell", "yes")
-        return div(Loading(lambda: Data(), fallback="wait"))
+        return html(t"<div>{Loading(Data(), fallback='wait')}</div>")
 
     return View
 
@@ -344,7 +345,7 @@ def test_request_helpers_are_no_ops_in_the_browser(wyb, root_element):
         seen.append(get_request_event())
         http_status(404)
         http_header("x-anything", "1", append=True)
-        return p("client")
+        return html(t"<p>client</p>")
 
     root = wyb["reconciler"].render(View(), root_element)
     assert seen == [None]
@@ -367,15 +368,15 @@ def test_request_helpers_are_no_ops_while_hydrating(wyb):
     @component
     def View():
         http_status(404)
-        return p("x ", lambda: str(get_request_event()))
+        return html(t"<p>x {str(get_request_event())}</p>")
 
     event = RequestEvent()
-    html = render_to_string(View(), event=event)
+    out = render_to_string(View(), event=event)
     assert event.response.status == 404
-    assert "x None" not in html
+    assert "x None" not in out
     container = StubNode(tag="div")
     parser = _StubHTMLParser(container)
-    parser.feed(html)
+    parser.feed(out)
     parser.close()
     root = hydrate(View(), Element(node=container))
     flush()

@@ -1,9 +1,9 @@
 import pytest
 from conftest import collect_texts
 
+from wybthon import html
 from wybthon.component import component
-from wybthon.elements import div, h1, nav, p, span
-from wybthon.reactivity import flush
+from wybthon.reactivity import create_signal, flush, untrack
 from wybthon.router import (
     Link,
     Outlet,
@@ -45,17 +45,17 @@ def reset_path():
 
 @component
 def Home():
-    return h1("Home")
+    return html(t"<h1>Home</h1>")
 
 
 @component
 def User(props: RouteProps):
-    return h1("User ", lambda: props.params()["id"], " tab=", lambda: props.query().get("tab", "-"))
+    return html(t"<h1>User {props.params['id']} tab={props.query.get('tab', '-')}</h1>")
 
 
 @component
 def NotFound():
-    return p("nope")
+    return html(t"<p>nope</p>")
 
 
 def test_router_renders_matched_component(wyb, root_element):
@@ -82,7 +82,7 @@ def test_param_change_updates_props_without_remount(wyb, root_element):
     @component
     def Tracked(props: RouteProps):
         mounted.append(1)
-        return span(lambda: props.params()["id"])
+        return html(t"<span>{props.params['id']}</span>")
 
     root = wyb["reconciler"].render(Router([Route("/users/:id", Tracked)]), root_element)
     navigate("/users/1")
@@ -108,7 +108,7 @@ def test_use_params_and_use_query_accessors(wyb, root_element):
     def Page():
         params = use_params()
         query = use_query()
-        return p(lambda: f"{params().get('slug')}|{query().get('a', '')}|{use_base_path()}")
+        return html(t"<p>{f'{params().get("slug")}|{query().get("a", "")}|{use_base_path()}'}</p>")
 
     root = wyb["reconciler"].render(Router([Route("/posts/:slug", Page)]), root_element)
     navigate("/posts/hello?a=1")
@@ -125,7 +125,7 @@ def test_use_params_and_use_query_outside_router(wyb, root_element):
         seen["params"] = use_params()()
         seen["query"] = use_query()()
         seen["base"] = use_base_path()
-        return p("x")
+        return html(t"<p>x</p>")
 
     root = wyb["reconciler"].render(Lonely(), root_element)
     assert seen == {"params": {}, "query": {}, "base": ""}
@@ -135,11 +135,11 @@ def test_use_params_and_use_query_outside_router(wyb, root_element):
 def test_nested_routes_match_children(wyb, root_element):
     @component
     def About():
-        return div(h1("About"), Outlet())
+        return html(t"<div><h1>About</h1>{Outlet()}</div>")
 
     @component
     def Team(props: RouteProps):
-        return h1("Team ", lambda: props.params().get("name", ""))
+        return html(t"<h1>Team {props.params.get('name', '')}</h1>")
 
     routes = [Route("/about", About, children=[Route("team/:name", Team)])]
     root = wyb["reconciler"].render(Router(routes), root_element)
@@ -169,7 +169,9 @@ def test_not_found_fallback_and_default(wyb, root_element):
 def test_base_path_prefixes_links_and_matching(wyb, root_element):
     @component
     def Shell():
-        return div(Link("Users", href="/users"), Link("Ext", href="https://example.com/x"), span(use_base_path()))
+        return html(t"""<div>
+            {Link("Users", href="/users")}{Link("Ext", href="https://example.com/x")}<span>{use_base_path()}</span>
+        </div>""")
 
     routes = [Route("/", Shell), Route("/users", User)]
     root = wyb["reconciler"].render(Router(routes, base_path="/app"), root_element)
@@ -189,16 +191,14 @@ def test_base_path_prefixes_links_and_matching(wyb, root_element):
 
 
 def test_link_renders_anchor_with_active_class(wyb, root_element):
-    root = wyb["reconciler"].render(
-        nav(
-            Link("Home", href="/", end=True, class_="lnk"),
-            Link("Users", href="/users"),
-            Link("Exact users", href="/users", end=True),
-            Link("Quiet", href="/users", active_class=None),
-            Link("Custom", href="/users", active_class="on"),
-        ),
-        root_element,
-    )
+    view = html(t"""<nav>
+        {Link("Home", href="/", end=True, class_="lnk")}
+        {Link("Users", href="/users")}
+        {Link("Exact users", href="/users", end=True)}
+        {Link("Quiet", href="/users", active_class=None)}
+        {Link("Custom", href="/users", active_class="on")}
+    </nav>""")
+    root = wyb["reconciler"].render(view, root_element)
     anchors = find(root_element.element, "a")
     assert [a.attributes["href"] for a in anchors] == ["/", "/users", "/users", "/users", "/users"]
     assert anchors[0].attributes["class"] == "lnk active"
@@ -258,8 +258,6 @@ def test_link_replace_navigates_without_browser(wyb, root_element):
 
 
 def test_router_accepts_accessor_routes(wyb, root_element):
-    from wybthon.reactivity import create_signal
-
     routes, set_routes = create_signal([Route("/", Home)])
     root = wyb["reconciler"].render(Router(routes, not_found=NotFound), root_element)
     navigate("/users/3")
@@ -277,12 +275,12 @@ def test_nested_layout_persists_and_query_hash_decode(wyb, root_element):
     @component
     def Layout():
         mounted.append("layout")
-        return div(Outlet())
+        return html(t"<div>{Outlet()}</div>")
 
     @component
     def Child():
         params, query, fragment = use_params(), use_query(), use_hash()
-        return p(lambda: f"{params()['id']}:{query().get_all('tag')}:{fragment()}")
+        return html(t"<p>{f'{params()["id"]}:{query().get_all("tag")}:{fragment()}'}</p>")
 
     routes = [Route("/parent", Layout, children=[Route(":id", Child), Route("", Home)])]
     root = wyb["reconciler"].render(Router(routes), root_element)
@@ -369,6 +367,120 @@ def test_async_link_callback_can_prevent_navigation_and_is_owned(wyb, root_eleme
         assert events == ["started", "closed"]
 
     asyncio.run(main())
+
+
+# ---------------------------------------------------------------------------
+# Router, Link, and Outlet in templates
+# ---------------------------------------------------------------------------
+
+
+def test_routed_component_reads_params_and_query_as_plain_values(wyb, root_element):
+    seen: list[tuple[dict, dict]] = []
+
+    @component
+    def Probe(props: RouteProps):
+        seen.append((untrack(lambda: props.params), untrack(lambda: dict(props.query))))
+        return html(t"<p>{props.params['id']}</p>")
+
+    root = wyb["reconciler"].render(html(t"<main>{Router([Route('/items/:id', Probe)])}</main>"), root_element)
+    navigate("/items/5?sort=asc")
+    flush()
+    assert seen == [({"id": "5"}, {"sort": "asc"})]
+    assert texts(root_element.element) == ["5"]
+    navigate("/items/6")
+    flush()
+    assert texts(root_element.element) == ["6"]
+    assert len(seen) == 1
+    root.dispose()
+
+
+def test_router_route_table_in_a_template_is_evaluated_once(wyb, root_element):
+    # The route list is a dynamic expression (it contains calls); the router
+    # evaluates it once, so its `Route`s keep their identity and a matched
+    # route isn't remounted on navigation.
+    mounted: list[str] = []
+
+    @component
+    def Page(props: RouteProps):
+        mounted.append(untrack(lambda: props.params)["id"])
+        return html(t"<p>page {props.params['id']}</p>")
+
+    view = html(t"<main>{Router([Route('/', Home), Route('/p/:id', Page)], not_found=NotFound)}</main>")
+    root = wyb["reconciler"].render(view, root_element)
+    assert texts(root_element.element) == ["Home"]
+    navigate("/p/1")
+    flush()
+    navigate("/p/2")
+    flush()
+    assert texts(root_element.element) == ["page ", "2"]
+    assert mounted == ["1"]
+    navigate("/nowhere")
+    flush()
+    assert texts(root_element.element) == ["nope"]
+    root.dispose()
+
+
+def test_router_base_path_expression_in_a_template(wyb, root_element):
+    prefix, _ = create_signal("/app")
+    routes = [Route("/", Home)]
+    root = wyb["reconciler"].render(html(t"<main>{Router(routes, base_path=prefix())}</main>"), root_element)
+    navigate("/app")
+    flush()
+    assert texts(root_element.element) == ["Home"]
+    navigate("/")
+    flush()
+    assert texts(root_element.element) == ["Not Found"]
+    root.dispose()
+
+
+def test_link_href_expression_in_a_template_updates(wyb, root_element):
+    # `href=f"/users/{uid()}"` is dynamic: the link receives a getter.
+    uid, set_uid = create_signal(1)
+    root = wyb["reconciler"].render(html(t"<nav>{Link('User', href=f'/users/{uid()}')}</nav>"), root_element)
+    anchor = find(root_element.element, "a")[0]
+    assert anchor.attributes["href"] == "/users/1"
+    set_uid(2)
+    flush()
+    assert anchor.attributes["href"] == "/users/2"
+    wyb["kernel"]._backend.dispatch("click", anchor)
+    assert current_path() == "/users/2"
+    root.dispose()
+
+
+def test_link_children_and_attributes_from_a_template(wyb, root_element):
+    count, set_count = create_signal(0)
+    view = html(t"<nav>{Link(html(t'<b>Inbox {count()}</b>'), href='/inbox', aria_label='Inbox')}</nav>")
+    root = wyb["reconciler"].render(view, root_element)
+    anchor = find(root_element.element, "a")[0]
+    assert anchor.attributes["aria-label"] == "Inbox"
+    assert texts(anchor) == ["Inbox ", "0"]
+    set_count(3)
+    flush()
+    assert texts(anchor) == ["Inbox ", "3"]
+    root.dispose()
+
+
+def test_outlet_in_a_template_renders_the_child_route(wyb, root_element):
+    @component
+    def Shell():
+        return html(t"<div><header>top</header>{Outlet()}<footer>bottom</footer></div>")
+
+    @component
+    def Leaf(props: RouteProps):
+        return html(t"<p>leaf {props.params['name']}</p>")
+
+    routes = [Route("/s", Shell, children=[Route(":name", Leaf)])]
+    root = wyb["reconciler"].render(html(t"<main>{Router(routes)}</main>"), root_element)
+    navigate("/s")
+    flush()
+    assert texts(root_element.element) == ["top", "bottom"]
+    navigate("/s/x")
+    flush()
+    assert texts(root_element.element) == ["top", "leaf ", "x", "bottom"]
+    navigate("/s/y")
+    flush()
+    assert texts(root_element.element) == ["top", "leaf ", "y", "bottom"]
+    root.dispose()
 
 
 # ---------------------------------------------------------------------------
