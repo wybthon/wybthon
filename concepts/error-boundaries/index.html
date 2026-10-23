@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1939,8 +1969,6 @@
       
         
       
-        
-      
     
     
     
@@ -2191,34 +2219,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2247,14 +2247,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2744,6 +2744,8 @@
       
         
       
+        
+      
     
     
     
@@ -2899,6 +2901,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3312,7 +3342,7 @@ without crashing the whole app.</p>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">fallback</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s2">      &lt;div class="error"&gt;</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">        &lt;p&gt;Oops: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">        &lt;p&gt;Oops: </span><span class="si">{</span><span class="n">err</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Try again&lt;/button&gt;</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s2">      &lt;/div&gt;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">    """</span><span class="p">)</span>
@@ -3322,14 +3352,15 @@ without crashing the whole app.</p>
 </span></code></pre></div>
 <p><code>children</code> may be a node (a template, a component call, or any other
 VNode), a zero-arg callable, or a list of either. Pass nodes directly:
-component bodies and reactive expressions don't run until the boundary
-mounts them, so their errors are caught. A callable is only needed when
-<em>building</em> the node can raise, for example when a template interpolates
-the result of a function call made eagerly.</p>
+component bodies and a template's dynamic expressions don't run until
+the boundary mounts them, so their errors are caught. A callable is only
+needed when <em>building</em> the node can raise, for example when Python code
+outside a template computes a prop eagerly:
+<code>Errored(lambda: Chart(points=parse(raw)), fallback=...)</code>.</p>
 <p>The fallback receives the error as an <strong>accessor</strong>, as in Solid 2.0:
-call <code>err()</code> to read the exception, or interpolate <code>err</code> in a template,
-as above, to show its message. <code>reset</code> takes no arguments, so it can be
-passed straight to <code>onclick</code>.</p>
+call <code>err()</code> to read the exception. In a template, <code>{err()}</code> shows its
+message. <code>reset</code> takes no arguments, so it can be passed straight to
+<code>onclick</code>.</p>
 <h2 id="what-gets-caught">What gets caught<a class="headerlink" href="#what-gets-caught" title="Permanent link">&para;</a></h2>
 <p>The boundary installs an error handler on its owner scope. Errors from
 any of these route to the nearest enclosing boundary:</p>
@@ -3369,7 +3400,7 @@ the exception by calling <code>err()</code>:</p>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">err</span><span class="p">(),</span> <span class="ne">PermissionError</span><span class="p">):</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;You don't have access to this.&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;</span><span class="si">{</span><span class="n">err</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="resetting">Resetting<a class="headerlink" href="#resetting" title="Permanent link">&para;</a></h2>
 <p>Call the <code>reset</code> argument from the fallback, or pass <code>reset_on=</code>: an
@@ -3427,13 +3458,18 @@ so a rejected fetch inside the loading content still has a fallback:</p>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_failed</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;Could not load: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;Could not load: </span><span class="si">{</span><span class="n">err</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">Errored</span><span class="p">(</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">Loading</span><span class="p">(</span><span class="n">UserCard</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)),</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">load_failed</span><span class="p">,</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s2">  &lt;main&gt;</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s2">    &lt;</span><span class="si">{</span><span class="n">Errored</span><span class="si">}</span><span class="s2"> fallback=</span><span class="si">{</span><span class="n">load_failed</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="s2">      &lt;</span><span class="si">{</span><span class="n">Loading</span><span class="si">}</span><span class="s2"> fallback=</span><span class="si">{</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="s2">        &lt;</span><span class="si">{</span><span class="n">UserCard</span><span class="si">}</span><span class="s2"> user_id=</span><span class="si">{</span><span class="n">user_id</span><span class="p">()</span><span class="si">}</span><span class="s2"> /&gt;</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="s2">      &lt;/</span><span class="si">{</span><span class="n">Loading</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="s2">    &lt;/</span><span class="si">{</span><span class="n">Errored</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="s2">  &lt;/main&gt;</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2039,34 +2067,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2095,14 +2095,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2779,6 +2779,8 @@
       
         
       
+        
+      
     
     
     
@@ -2934,6 +2936,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3717,8 +3747,10 @@ still go to <code>stderr</code>.</p>
   warnings. Call it yourself when you mount outside the production
   bootstrap. Turning dev mode off also disables
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a> for signal and store
-  writes inside tracking scopes, and the run-time <code>TypeError</code> for
-  unknown or missing component props.
+  writes inside tracking scopes, the run-time <code>TypeError</code> for
+  unknown or missing component props, and the
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> for a template that wasn't
+  <a href="../compiler/">compiled</a>.
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_dev_mode&lt;/span&gt;" href="#wybthon._warnings.is_dev_mode"><code>is_dev_mode()</code></a> reports the live
   state. Both functions are re-exported from the top-level <code>wybthon</code>
   package; the module-level <code>DEV_MODE</code> flag is internal, and

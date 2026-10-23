@@ -18,7 +18,7 @@
         <link rel="prev" href="../kernel/">
       
       
-        <link rel="next" href="../elements/">
+        <link rel="next" href="../templates/">
       
       
         
@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2430,34 +2458,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2486,14 +2486,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2983,6 +2983,8 @@
       
         
       
+        
+      
     
     
     
@@ -3138,6 +3140,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -5199,7 +5229,7 @@ component can forward a parent's ref and keep its own:</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">FancyInput</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">FancyInputProps</span><span class="p">):</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">local</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">()</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">local</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">focus</span><span class="p">())</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">input_</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">"text"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">[</span><span class="n">local</span><span class="p">,</span> <span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">])</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Refs are assigned during mount, so read them in
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../wybthon/#wybthon.on_settled"><code>on_settled</code></a> or an effect, not at the top of
@@ -5280,7 +5310,7 @@ node from another API, and <code>Element(node_id=42)</code> wraps a kernel id
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">FancyInputProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># plain field: the parent's Ref, passed through untouched</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ref</span><span class="p">:</span> <span class="n">Ref</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># a ref is returned as the parent passed it</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nd">@component</span>
@@ -5296,8 +5326,8 @@ node from another API, and <code>Element(node_id=42)</code> wraps a kernel id
 </span></code></pre></div>
 <p>Refs are assigned during mount, so read them in
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../wybthon/#wybthon.on_settled"><code>on_settled</code></a>, an effect, or an event handler, not
-at the top of the component body. The <code>ref</code> attribute (or the helpers'
-<code>ref=</code> prop) also accepts a callback that receives the <code>Element</code>, which
+at the top of the component body. The <code>ref</code> attribute (or the <code>ref</code> prop
+of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a>) also accepts a callback that receives the <code>Element</code>, which
 is closer to Solid 2.0's function refs:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">measure</span><span class="p">(</span><span class="n">el</span><span class="p">):</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">offsetWidth</span><span class="p">)</span>
@@ -5311,7 +5341,7 @@ pending batched ops first, so nodes created earlier in the same update
 are visible to the read.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../elements/">Element helpers</a>: the <code>ref=</code> prop and DOM property rules</li>
+<li><a href="../vnode/#prop-names-and-values">VNode: prop names and values</a>: the <code>ref</code> prop and DOM property rules</li>
 <li><a href="../events/">Events</a>: <code>DomEvent.target</code> and <code>current_target</code> are <code>Element</code>-backed</li>
 <li><a href="../../concepts/dom/">Concepts: DOM interop</a></li>
 </ul>

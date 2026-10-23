@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1878,8 +1908,6 @@
       
         
       
-        
-      
     
     
     
@@ -2130,34 +2158,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2186,14 +2186,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2683,6 +2683,8 @@
       
         
       
+        
+      
     
     
     
@@ -2838,6 +2840,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3207,57 +3237,54 @@
 </span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="n">plan</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"plan"</span><span class="p">]</span>
 </span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="n">subscribe</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"subscribe"</span><span class="p">]</span>
 </span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_pro</span><span class="p">():</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="k">return</span> <span class="n">plan</span><span class="o">.</span><span class="n">value</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"pro"</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="s2">      &lt;form onsubmit=</span><span class="si">{</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span><span class="w"> </span><span class="n">save</span><span class="p">,</span><span class="w"> </span><span class="n">fields</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="s2">        &lt;p&gt;</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="s2">          &lt;label for="name"&gt;Name&lt;/label&gt;</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="s2">          &lt;input</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="s2">            id="name"</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="s2">            </span><span class="si">{</span><span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span><span class="si">}</span>
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="s2">            </span><span class="si">{</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="s2">          &gt;</span>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="s2">          &lt;span </span><span class="si">{</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">&lt;/span&gt;</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="s2">        &lt;/p&gt;</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="s2">        &lt;p&gt;</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="s2">          &lt;label for="email"&gt;Email&lt;/label&gt;</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="s2">          &lt;input</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="s2">            id="email"</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="s2">            type="email"</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="s2">            </span><span class="si">{</span><span class="n">bind_text</span><span class="p">(</span><span class="n">mail</span><span class="p">,</span><span class="w"> </span><span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"email"</span><span class="p">])</span><span class="si">}</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="s2">            </span><span class="si">{</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">mail</span><span class="p">,</span><span class="w"> </span><span class="n">described_by_id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="s2">          &gt;</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="s2">          &lt;span </span><span class="si">{</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">mail</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">&lt;/span&gt;</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="s2">        &lt;/p&gt;</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="s2">        &lt;p&gt;</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="s2">          &lt;label for="plan"&gt;Plan&lt;/label&gt;</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="s2">          &lt;select id="plan" </span><span class="si">{</span><span class="n">bind_select</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="s2">            &lt;option value="free"&gt;Free&lt;/option&gt;</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="s2">            &lt;option value="pro"&gt;Pro&lt;/option&gt;</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="s2">          &lt;/select&gt;</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="s2">      &lt;form onsubmit=</span><span class="si">{</span><span class="n">on_submit_validated</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span><span class="w"> </span><span class="n">save</span><span class="p">,</span><span class="w"> </span><span class="n">fields</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="s2">        &lt;p&gt;</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="s2">          &lt;label for="name"&gt;Name&lt;/label&gt;</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="s2">          &lt;input</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="s2">            id="name"</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="s2">            </span><span class="si">{</span><span class="n">bind_text</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span><span class="si">}</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="s2">            </span><span class="si">{</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">described_by_id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="s2">          &gt;</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="s2">          &lt;span </span><span class="si">{</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"name-err"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">name</span><span class="o">.</span><span class="n">error</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/span&gt;</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="s2">        &lt;/p&gt;</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="s2">        &lt;p&gt;</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="s2">          &lt;label for="email"&gt;Email&lt;/label&gt;</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="s2">          &lt;input</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="s2">            id="email"</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="s2">            type="email"</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="s2">            </span><span class="si">{</span><span class="n">bind_text</span><span class="p">(</span><span class="n">mail</span><span class="p">,</span><span class="w"> </span><span class="n">validators</span><span class="o">=</span><span class="n">rules</span><span class="p">[</span><span class="s2">"email"</span><span class="p">])</span><span class="si">}</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="s2">            </span><span class="si">{</span><span class="n">a11y_control_attrs</span><span class="p">(</span><span class="n">mail</span><span class="p">,</span><span class="w"> </span><span class="n">described_by_id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="s2">          &gt;</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="s2">          &lt;span </span><span class="si">{</span><span class="n">error_message_attrs</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"email-err"</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">mail</span><span class="o">.</span><span class="n">error</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/span&gt;</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="s2">        &lt;/p&gt;</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="s2">        &lt;p&gt;</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="s2">          &lt;label for="plan"&gt;Plan&lt;/label&gt;</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="s2">          &lt;select id="plan" </span><span class="si">{</span><span class="n">bind_select</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="s2">            &lt;option value="free"&gt;Free&lt;/option&gt;</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="s2">            &lt;option value="pro"&gt;Pro&lt;/option&gt;</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="s2">          &lt;/select&gt;</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="s2">        &lt;/p&gt;</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="s2">        &lt;p&gt;</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="s2">          &lt;label&gt;&lt;input type="checkbox" </span><span class="si">{</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">subscribe</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt; Subscribe to the newsletter&lt;/label&gt;</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="s2">        &lt;/p&gt;</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="s2">        &lt;p&gt;</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="s2">          &lt;label&gt;&lt;input type="checkbox" </span><span class="si">{</span><span class="n">bind_checkbox</span><span class="p">(</span><span class="n">subscribe</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt; Subscribe to the newsletter&lt;/label&gt;</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="s2">        &lt;/p&gt;</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="s2">        </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">is_pro</span><span class="p">,</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Pro plans are billed monthly.&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="s2">        &lt;button type="submit"&gt;Sign up&lt;/button&gt;</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="s2">      &lt;/form&gt;</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="s2">    """</span><span class="p">)</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a><span class="n">render</span><span class="p">(</span><span class="n">SignupForm</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="s2">        </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"pro"</span><span class="p">,</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Pro plans are billed monthly.&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="s2">        &lt;button type="submit"&gt;Sign up&lt;/button&gt;</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="s2">      &lt;/form&gt;</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="s2">    """</span><span class="p">)</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="n">render</span><span class="p">(</span><span class="n">SignupForm</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_state&lt;/span&gt;" href="../../api/forms/#wybthon.forms.form_state"><code>form_state</code></a> returns a dict of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Field&lt;/span&gt;" href="../../api/forms/#wybthon.forms.Field"><code>Field</code></a> objects. Each field carries <code>value</code>, <code>error</code>, and <code>touched</code> accessors with matching setters, so every piece of form state is a signal.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;bind_text&lt;/span&gt;" href="../../api/forms/#wybthon.forms.bind_text"><code>bind_text</code></a> returns <code>{"value": field.value, "on_input": handler}</code>. The <code>value</code> entry is the accessor itself, so programmatic writes through <code>field.set_value(...)</code> update the input too. Validators run on every <code>input</code> event.</li>
-<li><code>{bind_text(...)}</code> in the <code>&lt;input&gt;</code> tag is a <strong>spread</strong>: the mapping's entries are applied as props, exactly like <code>**bind_text(...)</code> on an element helper. A tag can take several spreads alongside ordinary attributes. Spread keys use the helpers' Python names (<code>on_input</code>, <code>aria_invalid</code>); they mean the same thing in both styles.</li>
-<li><code>&lt;span ...&gt;{name.error}&lt;/span&gt;</code> places the error accessor in the template, so the message appears and disappears as validation runs.</li>
+<li><code>{bind_text(...)}</code> in the <code>&lt;input&gt;</code> tag is a <strong>spread</strong>: the mapping's entries are applied as props. A spread is evaluated once, when the template is created; the accessors inside it (the value, the ARIA state) are what keep the input in sync. A tag can take several spreads alongside ordinary attributes. Spread keys use Python names (<code>on_input</code>, <code>aria_invalid</code>), the same names <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> props take.</li>
+<li><code>&lt;span ...&gt;{name.error()}&lt;/span&gt;</code> reads the error in the template, so the message appears and disappears as validation runs.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;a11y_control_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.a11y_control_attrs"><code>a11y_control_attrs</code></a> produces reactive <code>aria-invalid</code> and <code>aria-describedby</code> props; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;error_message_attrs&lt;/span&gt;" href="../../api/forms/#wybthon.forms.error_message_attrs"><code>error_message_attrs</code></a> marks the message container as a polite live region.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit_validated&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit_validated"><code>on_submit_validated</code></a> calls <code>prevent_default()</code>, validates every field in <code>rules</code> (marking them touched), and only invokes <code>save</code> when all pass. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_submit&lt;/span&gt;" href="../../api/forms/#wybthon.forms.on_submit"><code>on_submit</code></a> when you want to handle validation yourself.</li>
-<li>A <code>Field</code> is a container of accessors, not an accessor itself, so <code>is_pro</code> reads <code>plan.value()</code>. <code>Show</code> mounts the note only while it's true.</li>
+<li>A <code>Field</code> is a container of accessors, not an accessor itself, so the condition reads <code>plan.value()</code>. The compiler passes <code>Show</code> a getter for <code>plan.value() == "pro"</code>, and <code>Show</code> mounts the note only while it's true.</li>
 <li>Static attributes such as <code>for="name"</code> and <code>type="email"</code> are written into the compiled template, so they cost nothing per instance.</li>
 </ul>
 <h2 id="schema-driven-rules">Schema-driven rules<a class="headerlink" href="#schema-driven-rules" title="Permanent link">&para;</a></h2>

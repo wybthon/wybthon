@@ -18,7 +18,7 @@
         <link rel="prev" href="../mental-model/">
       
       
-        <link rel="next" href="../components/">
+        <link rel="next" href="../compiler/">
       
       
         
@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -793,10 +795,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templates-and-the-element-helpers" class="md-nav__link">
+  <a href="#templates-and-reactivity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Templates and the element helpers
+        Templates and reactivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates-and-h" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Templates and h()
       
     </span>
   </a>
@@ -840,6 +853,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1967,8 +2008,6 @@
       
         
       
-        
-      
     
     
     
@@ -2219,34 +2258,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2275,14 +2286,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2772,6 +2783,8 @@
       
         
       
+        
+      
     
     
     
@@ -2927,6 +2940,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3276,10 +3317,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templates-and-the-element-helpers" class="md-nav__link">
+  <a href="#templates-and-reactivity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Templates and the element helpers
+        Templates and reactivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates-and-h" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Templates and h()
       
     </span>
   </a>
@@ -3366,21 +3418,21 @@
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">      &lt;div class="counter"&gt;</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> (doubled: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">)&lt;/p&gt;</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+&lt;/button&gt;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">      &lt;/div&gt;</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The template is ordinary HTML. Each <code>{...}</code> is a Python expression, checked by your type checker like any other code, and placed where it appears in the markup.</p>
+<p>The template is ordinary HTML. Each <code>{...}</code> is a Python expression, checked by your type checker like any other code, and placed where it appears in the markup. Wybthon's <a href="../compiler/">compiler</a> makes each dynamic expression, such as <code>{count() * 2}</code>, a getter, so that text node updates whenever <code>count</code> changes, and nothing else does.</p>
 <h2 id="why-templates">Why templates<a class="headerlink" href="#why-templates" title="Permanent link">&para;</a></h2>
 <p>Templates are Wybthon's counterpart of Solid's JSX, and they're also what makes Wybthon fast.</p>
-<p>A t-string's static strings are a constant of the code that contains it, so every call of the same literal hands Wybthon the <em>same</em> strings object. Wybthon parses and compiles each literal once, keyed by that identity:</p>
+<p>A t-string's static strings are a constant of the code that contains it, so Wybthon can treat each literal as a fixed piece of markup. The compiler parses and validates each literal when its module is compiled and writes the result into the module:</p>
 <ul>
 <li>The static markup becomes a native <code>&lt;template&gt;</code> that the JavaScript kernel clones with a single command per instance.</li>
-<li>Each interpolation becomes a slot at a known node offset.</li>
-<li>Mounting an instance builds no VNode tree for its static parts and checks nothing node by node: the literal guarantees its own structure.</li>
+<li>Each interpolation becomes a slot at a known node offset, and each dynamic expression becomes a getter for that slot.</li>
+<li>Each element gets a mount function, written as ordinary Python, so mounting an instance builds no VNode tree for its static parts and checks nothing node by node: the literal guarantees its own structure.</li>
 </ul>
-<p>That's the job Solid's compiler does for JSX, done by the language with no build step. It's also why Solid's buildless <code>html</code> tagged template looks the way it does.</p>
+<p>That's the job Solid's compiler does for JSX. A production build never parses a template or generates code at run time. A template that reaches <code>html()</code> uncompiled, in a REPL for example, is compiled on its first call and cached; see <a href="../compiler/#templates-that-werent-compiled">Templates that weren't compiled</a>.</p>
 <h2 id="interpolations">Interpolations<a class="headerlink" href="#interpolations" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3394,17 +3446,17 @@
 <tr>
 <td>Child</td>
 <td><code>&lt;p&gt;{value}&lt;/p&gt;</code></td>
-<td>Text, a node, a list, or <code>None</code>. A reactive expression becomes a hole.</td>
+<td>Text, a node, a list, or <code>None</code>. A dynamic expression or an accessor becomes a hole.</td>
 </tr>
 <tr>
 <td>Attribute</td>
-<td><code>&lt;a href={url}&gt;</code></td>
-<td>Applied once, or bound when reactive.</td>
+<td><code>&lt;a href={url()}&gt;</code></td>
+<td>Applied once, or bound when dynamic or an accessor.</td>
 </tr>
 <tr>
 <td>Part of an attribute</td>
-<td><code>&lt;div class="card card-{kind}"&gt;</code></td>
-<td>The parts form one string; reactive parts make it one binding.</td>
+<td><code>&lt;div class="card card-{kind()}"&gt;</code></td>
+<td>The parts form one string; dynamic parts make it one binding.</td>
 </tr>
 <tr>
 <td>Event</td>
@@ -3428,24 +3480,28 @@
 </tr>
 </tbody>
 </table>
-<p>A <strong>reactive expression</strong> is an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor</code></a> or a zero-argument function, exactly as with the <a href="../../api/elements/">element helpers</a>: put a signal in the template and only that text node or attribute updates when it changes. Anything else is applied once.</p>
+<p>An expression is <strong>dynamic</strong> when it contains a call, an attribute access, or a subscript: <code>{count()}</code>, <code>{count() * 2}</code>, <code>{props.title}</code>, <code>{row["label"]}</code>, <code>class={"on" if active() else ""}</code>. The compiler turns it into a getter, so only that text node or attribute updates when what it reads changes. A name or a constant is a value, and an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Accessor&lt;/span&gt;" href="../../api/wybthon/#wybthon.Accessor"><code>Accessor</code></a> or a lambda is still a reactive expression, so <code>{count}</code> and <code>{count()}</code> both update. Event handlers, refs, and spreads are never wrapped. The <a href="../compiler/#the-rule-dynamic-or-static">compiler page</a> has the full rule.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">kind</span><span class="p">,</span> <span class="n">set_kind</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"primary"</span><span class="p">)</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">is_saving</span><span class="p">,</span> <span class="n">set_saving</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button class="btn btn-</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s1">" disabled=</span><span class="si">{</span><span class="n">is_saving</span><span class="si">}</span><span class="s1">&gt;Saved </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1"> times&lt;/button&gt;'</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button class="btn btn-</span><span class="si">{</span><span class="n">kind</span><span class="p">()</span><span class="si">}</span><span class="s1">" disabled=</span><span class="si">{</span><span class="n">is_saving</span><span class="p">()</span><span class="si">}</span><span class="s1">&gt;Saved </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s1"> times&lt;/button&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="lambdas-need-parentheses">Lambdas need parentheses<a class="headerlink" href="#lambdas-need-parentheses" title="Permanent link">&para;</a></h3>
-<p>Python's grammar doesn't allow a bare <code>lambda</code> inside <code>{...}</code>, because the <code>:</code> would start a format spec. Wrap it in parentheses, or, usually more readable, give it a name:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+<p>With the compiler you rarely write a lambda in a template, but you still need one for an inline event handler. Python's grammar doesn't allow a bare <code>lambda</code> inside <code>{...}</code>, because the <code>:</code> would start a format spec. Wrap it in parentheses, or, usually more readable, give it a name:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">set_open</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span><span class="si">}</span><span class="s2">&gt;Close&lt;/button&gt;"</span><span class="p">)</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">doubled</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">():</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">set_open</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">close</span><span class="si">}</span><span class="s2">&gt;Close&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Named handlers and memos read better than inline lambdas anyway, and they're the idiomatic form in these docs.</p>
+<p>Named handlers read better than inline lambdas, and they're the idiomatic form in these docs. A lambda in a child or attribute position (<code>{(lambda: count() * 2)}</code>) is a reactive expression, exactly like the plain <code>{count() * 2}</code>.</p>
 <h3 id="conversions-and-format-specs">Conversions and format specs<a class="headerlink" href="#conversions-and-format-specs" title="Permanent link">&para;</a></h3>
-<p>They work as in any t-string, and they're re-applied when a reactive value changes:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;td&gt;</span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&lt;/td&gt;&lt;td&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">&lt;/td&gt;"</span><span class="p">)</span>
+<p>They work as in any t-string. The compiler folds them into the getter, so they're re-applied when the value changes:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;td&gt;</span><span class="si">{</span><span class="n">price</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&lt;/td&gt;&lt;td&gt;</span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">!r}</span><span class="s2">&lt;/td&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="markup-rules">Markup rules<a class="headerlink" href="#markup-rules" title="Permanent link">&para;</a></h2>
 <p>Templates are HTML, with a few conveniences borrowed from JSX:</p>
@@ -3456,13 +3512,14 @@
 <li>Character references such as <code>&amp;amp;</code> and <code>&amp;nbsp;</code> are decoded.</li>
 <li><code>&lt;!-- comments --&gt;</code> are dropped.</li>
 <li><code>&lt;script&gt;</code>, <code>&lt;style&gt;</code>, and <code>&lt;textarea&gt;</code> take static content only. Give a <code>&lt;textarea&gt;</code> its value with <code>value={...}</code>.</li>
+<li><code>&lt;svg&gt;</code> and <code>&lt;math&gt;</code> work like any other element, and their children get the right namespace.</li>
 </ul>
 <p>A template with several top-level nodes returns a fragment, and a template with no elements is text:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;dt&gt;</span><span class="si">{</span><span class="n">term</span><span class="si">}</span><span class="s2">&lt;/dt&gt;&lt;dd&gt;</span><span class="si">{</span><span class="n">definition</span><span class="si">}</span><span class="s2">&lt;/dd&gt;"</span><span class="p">)</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!"</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="markup-the-parser-would-rewrite-is-an-error">Markup the parser would rewrite is an error<a class="headerlink" href="#markup-the-parser-would-rewrite-is-an-error" title="Permanent link">&para;</a></h3>
-<p>Wybthon hands each template's markup to the browser's HTML parser and relies on getting back exactly the nodes it wrote. Markup the parser would silently rearrange raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> the first time the template is used, with the template's source and the fix:</p>
+<p>Wybthon hands each template's markup to the browser's HTML parser and relies on getting back exactly the nodes it wrote. Markup the parser would silently rearrange is rejected with the template's source and the fix. The compiler reports it as a <code>SyntaxError</code> with the file and line when the module is compiled; a template compiled at run time raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> the first time it's used:</p>
 <table>
 <thead>
 <tr>
@@ -3501,50 +3558,62 @@
 <p>There are two ways to use a component in a template. Calling it inside an interpolation keeps full type checking of its props:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s2">  &lt;main&gt;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s2">    </span><span class="si">{</span><span class="n">Header</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Dashboard"</span><span class="p">,</span><span class="w"> </span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span><span class="si">}</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s2">    </span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">panels</span><span class="p">,</span><span class="w"> </span><span class="n">Panel</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s2">    </span><span class="si">{</span><span class="n">Header</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Dashboard"</span><span class="p">,</span><span class="w"> </span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">())</span><span class="si">}</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s2">    </span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">panels</span><span class="p">(),</span><span class="w"> </span><span class="n">panel_row</span><span class="p">)</span><span class="si">}</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s2">  &lt;/main&gt;</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
+<p>A call in a child position is dispatched when the template is created: a component, or a built-in such as <code>Show</code> or <code>For</code>, is built with a getter for each dynamic argument, so <code>Header</code> reads <code>props.user</code> and sees each new value of <code>user()</code>. Any other call, such as <code>{format_date(created())}</code>, becomes one reactive hole. See <a href="../compiler/#calls-in-a-child-position">Calls in a child position</a>.</p>
 <p>The tag form reads like the rest of the markup and passes nested markup as <code>children</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2"> title="Settings"&gt;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2"> title=</span><span class="si">{</span><span class="n">project</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s2">    &lt;p&gt;Changes apply immediately.&lt;/p&gt;</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s2">    &lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Reset&lt;/button&gt;</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s2">  &lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Attributes become keyword props (a hyphen becomes an underscore, and <code>class</code> and <code>for</code> become <code>class_</code> and <code>html_for</code>), and the content becomes the <code>children</code> prop, one child per top-level node. The built-ins work the same way, called the way their signatures take children:</p>
+<p>Attributes become keyword props (a hyphen becomes an underscore, and <code>class</code> and <code>for</code> become <code>class_</code> and <code>html_for</code>), and the content becomes the <code>children</code> prop, one child per top-level node. A dynamic attribute value, such as <code>title={project().name}</code>, is passed as a getter, the way Solid passes JSX props. Close the tag with <code>&lt;/{Card}&gt;</code>, or self-close it with <code>&lt;{Card} /&gt;</code>. The built-ins work the same way, called the way their signatures take children:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Show</span><span class="si">}</span><span class="s2"> when=</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2"> fallback=</span><span class="si">{</span><span class="n">sign_in</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Show</span><span class="si">}</span><span class="s2"> when=</span><span class="si">{</span><span class="n">user</span><span class="p">()</span><span class="si">}</span><span class="s2"> fallback=</span><span class="si">{</span><span class="n">sign_in</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s2">    &lt;p&gt;Welcome back.&lt;/p&gt;</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s2">  &lt;/</span><span class="si">{</span><span class="n">Show</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Theme</span><span class="si">}</span><span class="s2"> value="dark"&gt;&lt;</span><span class="si">{</span><span class="n">Toolbar</span><span class="si">}</span><span class="s2"> /&gt;&lt;/</span><span class="si">{</span><span class="n">Theme</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s2">  &lt;</span><span class="si">{</span><span class="n">Link</span><span class="si">}</span><span class="s2"> href="/settings" class="nav"&gt;Settings&lt;/</span><span class="si">{</span><span class="n">Link</span><span class="si">}</span><span class="s2">&gt;</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s2">"""</span><span class="p">)</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="err">```</span> <span class="n">Close</span> <span class="n">the</span> <span class="n">tag</span> <span class="k">with</span> <span class="err">`</span><span class="o">&lt;/</span><span class="p">{</span><span class="n">Card</span><span class="p">}</span><span class="o">&gt;</span><span class="err">`</span><span class="p">,</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">-</span><span class="n">close</span> <span class="n">it</span> <span class="k">with</span> <span class="err">`</span><span class="o">&lt;</span><span class="p">{</span><span class="n">Card</span><span class="p">}</span> <span class="o">/&gt;</span><span class="err">`</span><span class="o">.</span> <span class="n">Type</span> <span class="n">checkers</span> <span class="n">can</span><span class="s1">'t see inside the template string, so the tag form'</span><span class="n">s</span> <span class="n">props</span> <span class="n">are</span> <span class="n">checked</span> <span class="n">at</span> <span class="n">run</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">dev</span> <span class="n">mode</span><span class="p">,</span> <span class="n">like</span> <span class="nb">any</span> <span class="n">component</span> <span class="n">call</span><span class="o">.</span> <span class="n">Use</span> <span class="n">the</span> <span class="n">call</span> <span class="n">form</span> <span class="n">when</span> <span class="n">you</span> <span class="n">want</span> <span class="n">the</span> <span class="n">checker</span><span class="s1">'s help.</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1">## Templates and reactivity</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">A</span> <span class="n">component</span> <span class="n">runs</span> <span class="n">once</span><span class="p">,</span> <span class="n">so</span> <span class="n">the</span> <span class="n">template</span> <span class="n">it</span> <span class="n">returns</span> <span class="ow">is</span> <span class="n">mounted</span> <span class="n">once</span><span class="p">;</span> <span class="n">only</span> <span class="n">its</span> <span class="n">reactive</span> <span class="n">slots</span> <span class="n">ever</span> <span class="n">change</span><span class="o">.</span> <span class="n">When</span> <span class="n">a</span> <span class="n">reactive</span> <span class="o">*</span><span class="n">hole</span><span class="o">*</span> <span class="n">returns</span> <span class="n">a</span> <span class="n">template</span><span class="p">,</span> <span class="n">the</span> <span class="n">hole</span> <span class="n">re</span><span class="o">-</span><span class="n">runs</span> <span class="n">when</span> <span class="n">its</span> <span class="n">inputs</span> <span class="n">change</span><span class="o">.</span> <span class="n">If</span> <span class="n">it</span> <span class="n">returns</span> <span class="n">an</span> <span class="n">instance</span> <span class="n">of</span> <span class="n">the</span> <span class="n">same</span> <span class="n">literal</span><span class="p">,</span> <span class="n">Wybthon</span> <span class="n">patches</span> <span class="n">the</span> <span class="n">mounted</span> <span class="n">instance</span> <span class="n">slot</span> <span class="n">by</span> <span class="n">slot</span><span class="p">,</span> <span class="n">comparing</span> <span class="n">each</span> <span class="n">value</span> <span class="k">with</span> <span class="n">the</span> <span class="n">previous</span> <span class="n">one</span><span class="p">,</span> <span class="n">the</span> <span class="n">way</span> <span class="n">lit</span><span class="o">-</span><span class="n">html</span> <span class="n">does</span><span class="p">:</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="err">```</span><span class="n">python</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;b title=</span><span class="si">{</span><span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">role</span><span class="si">}</span><span class="s1">&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&lt;/b&gt;'</span><span class="p">))</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Here a change to <code>user</code> writes only the attribute and text that changed. A template from a different literal replaces the instance.</p>
-<p>You rarely need this: placing the accessors themselves in the template (<code>&lt;b title={role}&gt;{name}&lt;/b&gt;</code>) gives each its own binding and no re-run at all.</p>
-<h2 id="templates-and-the-element-helpers">Templates and the element helpers<a class="headerlink" href="#templates-and-the-element-helpers" title="Permanent link">&para;</a></h2>
-<p>The <a href="../../api/elements/">element helpers</a> (<code>div(...)</code>, <code>p(...)</code>, and the rest) are the programmatic layer, the counterpart of Solid's <code>h</code>. Use them when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="p">[</span><span class="n">li</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">items</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">div</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;"</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"page"</span><span class="p">)</span>
+<p>Type checkers can't see inside the template string, so the tag form's props are checked at run time in dev mode, like any component call. Use the call form when you want the checker's help.</p>
+<h2 id="templates-and-reactivity">Templates and reactivity<a class="headerlink" href="#templates-and-reactivity" title="Permanent link">&para;</a></h2>
+<p>A component runs once, so the template it returns is mounted once; only its slots' bindings ever update. Each dynamic expression is its own binding, so <code>&lt;b title={user().role}&gt;{user().name}&lt;/b&gt;</code> updates the attribute and the text separately, with no re-run of anything else.</p>
+<p>When a reactive <em>hole</em> returns a template, the hole re-runs when its inputs change. If it returns an instance of the same literal as before, Wybthon patches the mounted instance slot by slot instead of replacing it, the way lit-html does:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">():</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="k">if</span> <span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;b&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (admin)&lt;/b&gt;"</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">summary</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Helpers keep Python names for attributes (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>). Templates use the HTML names.</p>
+<p>Here <code>{summary()}</code> is a hole, and it re-runs when <code>user</code> changes. While the user stays an admin, it returns the same literal again and the mounted <code>&lt;b&gt;</code> is patched in place; when that changes, a template from the other literal replaces it.</p>
+<h2 id="templates-and-h">Templates and <code>h()</code><a class="headerlink" href="#templates-and-h" title="Permanent link">&para;</a></h2>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>. Use it when markup is built by code: generated forms, recursive trees, or components that compute their tag. The two mix freely, and they share one set of prop appliers, so a prop means the same thing in both:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">h</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">heading</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="k">return</span> <span class="n">h</span><span class="p">(</span><span class="sa">f</span><span class="s2">"h</span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"title"</span><span class="p">},</span> <span class="n">text</span><span class="p">)</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;section&gt;</span><span class="si">{</span><span class="n">heading</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">())</span><span class="si">}{</span><span class="n">body</span><span class="si">}</span><span class="s2">&lt;/section&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class_"</span><span class="p">:</span> <span class="s2">"page"</span><span class="p">},</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Title&lt;/h1&gt;"</span><span class="p">))</span>
+</span></code></pre></div>
+<p><code>h()</code> props accept Python names (<code>class_</code>, <code>html_for</code>, <code>aria_label</code>, <code>on_click</code>) as well as HTML names. The compiler only rewrites templates, so the arguments of an <code>h()</code> call are evaluated when it runs: pass an accessor or a lambda where a value should stay reactive (<code>h("p", None, count)</code>). A t-string isn't markup outside <code>html()</code>; pass it to <code>html()</code> first.</p>
 <h2 id="server-rendering-hydration-and-svg">Server rendering, hydration, and SVG<a class="headerlink" href="#server-rendering-hydration-and-svg" title="Permanent link">&para;</a></h2>
-<p>A server render, a hydrating client, and SVG or MathML content expand a template into the same VNodes the element helpers would build and mount those, so output and hydration keys are identical whichever style you use. Everything else, which is every browser update after hydration, uses the compiled path.</p>
+<p>A server render, a hydrating client, and SVG or MathML content expand a template into the same VNodes <code>h()</code> would build and mount those, so output and hydration keys are identical whichever style you use. Everything else, which is every browser update after hydration, uses the compiled path.</p>
 <h2 id="editor-support">Editor support<a class="headerlink" href="#editor-support" title="Permanent link">&para;</a></h2>
-<p>Python expressions inside <code>{...}</code> are highlighted and type-checked as code. The surrounding HTML is a string, so editors don't highlight or format it unless you add an extension for HTML in t-strings.</p>
+<p>Python expressions inside <code>{...}</code> are highlighted and type-checked as code. The surrounding HTML is a string, so editors don't highlight or format it unless you add an extension for HTML in t-strings, and type checkers don't check a component tag's attributes.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../compiler/">The compiler</a>: what it rewrites, where it runs, and how to inspect it.</li>
 <li><a href="../components/">Components</a>: props, children, and the run-once model.</li>
 <li><a href="../vdom/">Virtual DOM</a>: how compiled templates mount and update.</li>
 <li><a href="../../api/templates/"><code>html</code> API reference</a>.</li>

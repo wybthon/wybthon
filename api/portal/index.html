@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2039,34 +2067,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2095,14 +2095,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2702,6 +2702,8 @@
       
         
       
+        
+      
     
     
     
@@ -2857,6 +2859,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3385,13 +3415,8 @@ mount in the browser once the page has hydrated.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Show</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">show_modal</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">lambda</span><span class="p">:</span> <span class="n">Portal</span><span class="p">(</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="n">div</span><span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="s2">"Modal content"</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"modal"</span><span class="p">),</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">mount</span><span class="o">=</span><span class="s2">"#modal-root"</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">),</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">modal</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="modal"&gt;&lt;p&gt;Modal content&lt;/p&gt;&lt;/div&gt;'</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;main&gt;</span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">show_modal</span><span class="p">(),</span><span class="w"> </span><span class="n">Portal</span><span class="p">(</span><span class="n">modal</span><span class="p">,</span><span class="w"> </span><span class="n">mount</span><span class="o">=</span><span class="s1">'#modal-root'</span><span class="p">))</span><span class="si">}</span><span class="s2">&lt;/main&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3448,7 +3473,7 @@ tooltips, popovers, and toasts that must escape their parent's layout.</p>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="s2">      &lt;div&gt;</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">toggle</span><span class="si">}</span><span class="s2">&gt;Open&lt;/button&gt;</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="s2">        </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">is_open</span><span class="p">,</span><span class="w"> </span><span class="n">dialog</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="s2">        </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">is_open</span><span class="p">(),</span><span class="w"> </span><span class="n">dialog</span><span class="p">)</span><span class="si">}</span>
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="s2">      &lt;/div&gt;</span>
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>

@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1944,8 +1974,6 @@
       
         
       
-        
-      
     
     
     
@@ -2196,34 +2224,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2252,14 +2252,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2749,6 +2749,8 @@
       
         
       
+        
+      
     
     
     
@@ -2904,6 +2906,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3352,6 +3382,11 @@ disposed and the whole subtree goes with it.</p>
 <td>Cancel timers, detach listeners, close subscriptions.</td>
 </tr>
 <tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_hydration_end&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_hydration_end"><code>on_hydration_end</code></a></td>
+<td>Once, after <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../../api/wybthon/#wybthon.hydrate"><code>hydrate</code></a> has committed the page; on the next tick in a page that wasn't server-rendered.</td>
+<td>Work that must wait until hydration is over.</td>
+</tr>
+<tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_effect"><code>create_effect</code></a></td>
 <td>First on the flush after mount, then on each tracked change, always after the DOM commit.</td>
 <td>Side effects driven by reactive state.</td>
@@ -3482,7 +3517,7 @@ with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbo
 <ul>
 <li><strong>Forgetting cleanups.</strong> If you attach a listener or start an interval, return a cleanup from <code>apply</code> or register one with <code>on_cleanup</code>, so re-runs and unmounts don't leak.</li>
 <li><strong>Touching the DOM in the body.</strong> The body runs before the DOM exists. Use <code>on_settled</code> or an effect.</li>
-<li><strong>Reading props at the top level.</strong> The read is frozen at mount and dev mode warns. Read inside a hole, memo, or effect, or use <code>.peek()</code> deliberately.</li>
+<li><strong>Reading props at the top level.</strong> The read is frozen at mount, and dev mode warns when the parent passed an expression. Read props in the returned markup, a memo, or an effect, or use <code>untrack(lambda: props.initial)</code> deliberately.</li>
 <li><strong>Expecting effects to run at creation.</strong> The first run is deferred to the next flush. In tests, call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.flush"><code>flush</code></a> after <code>render</code> before asserting on effect output.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

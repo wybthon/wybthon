@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -917,10 +947,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#one-generated-mount-function-per-template" class="md-nav__link">
+  <a href="#one-mount-function-per-template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One generated mount function per template
+        One mount function per template
       
     </span>
   </a>
@@ -951,17 +981,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#element-helper-shapes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Element helper shapes
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2083,8 +2102,6 @@
       
         
       
-        
-      
     
     
     
@@ -2335,34 +2352,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2391,14 +2380,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2888,6 +2877,8 @@
       
         
       
+        
+      
     
     
     
@@ -3043,6 +3034,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3348,10 +3367,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#one-generated-mount-function-per-template" class="md-nav__link">
+  <a href="#one-mount-function-per-template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One generated mount function per template
+        One mount function per template
       
     </span>
   </a>
@@ -3382,17 +3401,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#element-helper-shapes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Element helper shapes
-      
-    </span>
-  </a>
   
 </li>
       
@@ -3586,21 +3594,22 @@
 
 <h1 id="virtual-dom">Virtual DOM<a class="headerlink" href="#virtual-dom" title="Permanent link">&para;</a></h1>
 <p>Wybthon keeps a small virtual DOM as a rendering implementation detail.
-This page explains why it exists, how compiled templates and element
-helpers mount through it, how reactive holes, bindings, and native
-regions update, and how DOM operations reach the browser.</p>
+This page explains why it exists, how compiled templates and <code>h()</code> trees
+mount through it, how reactive holes, bindings, and native regions
+update, and how DOM operations reach the browser.</p>
 <h2 id="why-a-vdom-in-a-fine-grained-framework">Why a VDOM in a fine-grained framework?<a class="headerlink" href="#why-a-vdom-in-a-fine-grained-framework" title="Permanent link">&para;</a></h2>
 <p>SolidJS compiles JSX ahead of time, splitting each template into a
-static skeleton and the expressions that change. Wybthon gets that
-split from the language: a t-string literal's static strings are the
-same object every time it runs, so each literal is compiled once, and
-every instance only supplies its interpolated values.</p>
+static skeleton and the expressions that change. Wybthon's
+<a href="../compiler/">compiler</a> makes the same split for t-string templates
+before a module runs: each literal becomes a skeleton and a mount
+function, and each dynamic expression becomes a getter, so every
+instance only supplies its values.</p>
 <p>What the VDOM adds is batching. In Pyodide every DOM call crosses the
 Python-to-JavaScript bridge, which dominates rendering cost. So nothing
 in the renderer touches the DOM directly:</p>
 <ul>
 <li>A component returns its markup once, usually a template instance.</li>
-<li>Reactive expressions inside it become <strong>holes</strong> and <strong>bindings</strong>, each with its own render effect.</li>
+<li>Reactive expressions inside it become <strong>holes</strong> and <strong>bindings</strong>, each updating its own node.</li>
 <li>When a hole re-evaluates, the <strong>reconciler</strong> patches only the hole's region and emits compact operations against integer node ids.</li>
 <li>All operations from one flush are handed to a small <strong>JavaScript kernel</strong> in one bridge crossing.</li>
 </ul>
@@ -3608,51 +3617,53 @@ in the renderer touches the DOM directly:</p>
 only the region under a hole, and static markup never becomes VNodes at
 all when it's written as a template. Removing the batch in favor of
 direct DOM calls would put a bridge crossing behind every node. See
-<a href="../../rfcs/0003-engine-v3/">RFC 0003</a> for the design and benchmarks of
-the current engine.</p>
+<a href="../../rfcs/0004-engine-v4/">RFC 0004</a> for the design of the current
+engine and <a href="../../rfcs/0003-engine-v3/">RFC 0003</a> for compiled templates.</p>
 <h2 id="two-ways-to-write-markup">Two ways to write markup<a class="headerlink" href="#two-ways-to-write-markup" title="Permanent link">&para;</a></h2>
 <p><a href="../templates/">Templates</a> are the primary path:
-<code>html(t"&lt;div class={cls}&gt;{count}&lt;/div&gt;")</code> compiles once per literal and
-mounts with one clone command. The <a href="../../api/elements/">element helpers</a>
-(<code>div(...)</code>, <code>p(...)</code>) and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> are
-the programmatic path, the counterpart of Solid's <code>h</code>, for markup built
-by code: generated forms, recursive trees, or components that compute
-their tag. The two mix freely, and they share one set of prop appliers,
-so a prop means the same thing in both.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">p</span>
+<code>html(t"&lt;div class={cls()}&gt;{count()}&lt;/div&gt;")</code> is compiled ahead of time
+and mounts with one clone command. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a>
+is the programmatic path, the counterpart of Solid's <code>h</code>, for markup
+built by code: generated forms, recursive trees, or components that
+compute their tag. The two mix freely, and they share one set of prop
+appliers, so a prop means the same thing in both.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fragment</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class="app"&gt;&lt;h1&gt;Hello&lt;/h1&gt;&lt;p&gt;Welcome&lt;/p&gt;&lt;/div&gt;'</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">same</span> <span class="o">=</span> <span class="n">div</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Welcome"</span><span class="p">),</span> <span class="n">class_</span><span class="o">=</span><span class="s2">"app"</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">built</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"app"</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Welcome"</span><span class="p">))</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">items</span> <span class="o">=</span> <span class="n">div</span><span class="p">(</span><span class="n">class_</span><span class="o">=</span><span class="s2">"app"</span><span class="p">)[</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Welcome"</span><span class="p">)]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">grouped</span> <span class="o">=</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">),</span> <span class="n">p</span><span class="p">(</span><span class="s2">"Body"</span><span class="p">))</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">built</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="s2">"div"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"app"</span><span class="p">},</span> <span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Hello"</span><span class="p">),</span> <span class="n">h</span><span class="p">(</span><span class="s2">"p"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Welcome"</span><span class="p">))</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">grouped</span> <span class="o">=</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="s2">"h1"</span><span class="p">,</span> <span class="p">{},</span> <span class="s2">"Title"</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Body&lt;/p&gt;"</span><span class="p">))</span>
 </span></code></pre></div>
-<p>For the helpers and <code>h</code>:</p>
+<p>For <code>h</code>:</p>
 <ul>
 <li><code>tag</code> is an HTML tag, an SVG tag, or a component.</li>
 <li>Props are attributes, DOM properties, event handlers, <code>ref</code>, <code>key</code>, or reactive bindings.</li>
-<li>Children are strings, numbers, VNodes (templates included), lists (flattened), <code>None</code> (dropped), template strings, or reactive expressions (holes).</li>
+<li>Children are strings, numbers, VNodes (templates included), lists (flattened), <code>None</code> (dropped), or reactive expressions (holes). A t-string isn't a child; pass it to <code>html()</code> first.</li>
 </ul>
 <p>Template attributes use HTML names (<code>class</code>, <code>for</code>, <code>aria-label</code>).
-Helper props are Pythonic, and the prop applier maps them when it
-writes the attribute: <code>class_</code> becomes <code>class</code>, <code>html_for</code> becomes
-<code>for</code>, and other underscores become hyphens (<code>aria_label</code>,
+<code>h()</code> props accept those and Python names, and the prop applier maps
+them when it writes the attribute: <code>class_</code> becomes <code>class</code>, <code>html_for</code>
+becomes <code>for</code>, and other underscores become hyphens (<code>aria_label</code>,
 <code>data_testid</code>). In both styles, <code>True</code> sets a boolean attribute and
 <code>False</code> or <code>None</code> removes it; <code>value</code> and <code>checked</code> are written as DOM
 properties; <code>class</code> accepts a string, a list, or a <code>{name: bool}</code> dict;
-and <code>style</code> accepts a string or a dict with snake- or kebab-case keys.
-Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;element&lt;/span&gt;" href="../../api/wybthon/#wybthon.element"><code>element("my-tag")</code></a> for custom elements built in
-code.</p>
+and <code>style</code> accepts a string or a dict with snake- or kebab-case keys.</p>
+<p>The compiler only rewrites templates, so an <code>h()</code> call's arguments are
+evaluated when it runs. An <code>h()</code> element mounts node by node: one
+create command per node, all in the same batch as everything else.</p>
 <h2 id="compiled-templates">Compiled templates<a class="headerlink" href="#compiled-templates" title="Permanent link">&para;</a></h2>
-<p>A template is compiled the first time its literal runs. The private
-<code>wybthon.templates</code> module does the work, and caches the result by the
-identity of the t-string's <code>strings</code> tuple (holding a reference, so the
-identity can't be reused). Literals are code, so the cache is bounded
-by the size of the program. A template built by hand, whose strings
-aren't a literal's constant, falls back to a bounded structural cache.</p>
+<p>The compiler parses and validates each template literal when its module
+is compiled, and writes the result into the module: the literal's
+normalized parse tree as constants, and a mount function for each of
+its elements. The first <code>html()</code> call of a literal rebuilds its slot
+plan from that tree and installs the mount functions, with no parsing
+and no code generation. A template that reaches <code>html()</code> uncompiled is
+compiled there instead, once, and cached by the identity of the
+t-string's <code>strings</code> tuple (holding a reference, so the identity can't
+be reused). Literals are code, so that cache is bounded by the size of
+the program; a template built by hand, whose strings aren't a literal's
+constant, falls back to a bounded structural cache.</p>
 <h3 id="what-a-compiled-template-holds">What a compiled template holds<a class="headerlink" href="#what-a-compiled-template-holds" title="Permanent link">&para;</a></h3>
-<p>Compilation parses the markup, validates it, and produces, for each
-top-level element:</p>
+<p>For each top-level element, a compiled template has:</p>
 <ul>
 <li>the <strong>static skeleton</strong>, serialized to HTML with every static attribute and all static text written in, and with a placeholder wherever a child slot sits;</li>
 <li>the <strong>slot plan</strong>: the pre-order node offset and kind of every interpolation (attribute, part of an attribute, event, ref, spread, child, or component tag);</li>
@@ -3661,21 +3672,25 @@ top-level element:</p>
 </ul>
 <p>Validation rejects markup the browser's HTML parser would rewrite,
 such as <code>&lt;tr&gt;</code> directly inside <code>&lt;table&gt;</code> or a <code>&lt;div&gt;</code> inside a <code>&lt;p&gt;</code>,
-by raising <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> with the template's
-source and the fix. That's what lets Python and the kernel agree on
-every node's offset without reading anything back.</p>
-<p><code>html()</code> itself does almost nothing per call: it looks up the compiled
-template by identity and wraps it with the call's values. A template
-with one top-level element is one instance; several top-level nodes
-make a fragment of instances, text, and values.</p>
-<h3 id="one-generated-mount-function-per-template">One generated mount function per template<a class="headerlink" href="#one-generated-mount-function-per-template" title="Permanent link">&para;</a></h3>
-<p>Each compiled template gets a generated Python function that mounts
-an instance in straight-line code, with its offsets and prop names as
-constants. It:</p>
+with the template's source and the fix: a <code>SyntaxError</code> with the file
+and line when the compiler finds it, or a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> for a template compiled at
+run time. That's what lets Python and the kernel agree on every node's
+offset without reading anything back.</p>
+<p><code>html()</code> itself does almost nothing per call: it wraps the compiled
+template with the call's values. A template with one top-level element
+is one instance; several top-level nodes make a fragment of instances,
+text, and values.</p>
+<h3 id="one-mount-function-per-template">One mount function per template<a class="headerlink" href="#one-mount-function-per-template" title="Permanent link">&para;</a></h3>
+<p>Each compiled element has a mount function that mounts an instance in
+straight-line code, with its offsets and prop names as constants. The
+compiler writes it into the module as an ordinary <code>def</code>, so a
+production build turns it into bytecode with the rest of the
+application. It:</p>
 <ol>
 <li>allocates a dense block of node ids, one per node in the skeleton;</li>
 <li>appends one <code>CLONE</code> command, registering the skeleton with the kernel (<code>REGISTER_TPL</code>, in the same batch) the first time it's needed;</li>
-<li>walks the slot plan with the instance's values, applying each attribute, event, ref, and spread through the same appliers the helpers use;</li>
+<li>walks the slot plan with the instance's values, applying each attribute, event, ref, and spread through the same appliers <code>h()</code> uses;</li>
 <li>fills each child slot and mounts each component tag at its placeholder;</li>
 <li>records each slot's state on the instance, for patching and teardown.</li>
 </ol>
@@ -3706,62 +3721,20 @@ lit-html does:</p>
 <li>A child slot's new value is patched into its region, and a component tag's component is patched with its new props, so its state survives.</li>
 </ul>
 <p>A template from a different literal replaces the instance.</p>
-<h2 id="element-helper-shapes">Element helper shapes<a class="headerlink" href="#element-helper-shapes" title="Permanent link">&para;</a></h2>
-<p>Element helpers build ordinary VNodes, and repeated helper subtrees
-mount through compiled <strong>shapes</strong>, the runtime shape compiler from
-<a href="../../rfcs/0002-engine-v2/">RFC 0002</a>, in the private <code>wybthon._shapes</code>
-module. The first mount of a helper subtree walks it once and records
-its shape: the skeleton HTML (validated like a template's), the
-pre-order node count, each text slot's offset, each binding's offset
-and kind, and each dynamic child's offset. Static text is hoisted out
-of the HTML, so subtrees that differ only in text (list rows) share one
-skeleton. Shapes are cached by structure.</p>
-<p>A shape gets a generated mount function too. Unlike a template's, it
-first guards the instance's structure, without allocating, because a
-helper tree carries no guarantee of its own shape; if a guard fails, it
-falls back to the generic path. Then it allocates ids, appends one
-fused <code>CLONE</code>, wires bindings by offset, and mounts dynamic children.
-Every helper instance still builds its whole VNode tree first, which is
-the cost templates avoid.</p>
-<p>A component, fragment, or list child of a helper subtree mounts in
-front of the element that follows it, or appends when it's last. Only
-when text or another dynamic child follows it does it get a comment
-placeholder, which is disposed once the child has mounted in front of
-it.</p>
-<p>Helper subtrees also keep their VNodes, but only the root and the
-dynamic children get node ids at mount. Static descendants get ids the
-first time the reconciler needs them, when a hole patches the subtree.
-List rows and component output are never patched that way, so they
-skip the work entirely.</p>
-<p>Helper subtrees the HTML parser would rewrite, single-node subtrees,
-adjacent or empty text, and raw-text elements such as <code>&lt;script&gt;</code> and
-<code>&lt;textarea&gt;</code> fall back to per-node commands, still batched in the same
-commit. Unlike templates, helpers don't raise for markup the parser
-would rewrite: they mount it node by node.</p>
 <h2 id="reactive-holes-and-bindings">Reactive holes and bindings<a class="headerlink" href="#reactive-holes-and-bindings" title="Permanent link">&para;</a></h2>
-<p>A zero-arg callable or accessor in a child position becomes a hole; in
-an attribute position (other than events and <code>ref</code>), it becomes a
-binding. Each is a render effect, so unrelated attributes on the same
-element update independently. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/wybthon/#wybthon.hole"><code>hole</code></a> to create a
-hole explicitly when you need a <code>key</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">hole</span><span class="p">,</span> <span class="n">html</span>
+<p>A getter, an accessor, or a zero-argument function in a child position
+becomes a hole; in an attribute position (other than events and <code>ref</code>),
+it becomes a binding. In a template, the compiler makes every dynamic
+expression a getter, so <code>{count() * 2}</code> and <code>class={status()}</code> are a
+hole and a binding. Each binding updates on its own, so unrelated
+attributes on the same element update independently. Use
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hole&lt;/span&gt;" href="../../api/wybthon/#wybthon.hole"><code>hole</code></a> to create a hole explicitly in an <code>h()</code> tree
+when you need a <code>key</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">count</span><span class="p">,</span> <span class="n">set_count</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">doubled</span><span class="p">():</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">" (x2=</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">)"</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">bang</span><span class="p">():</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="s2">"!"</span> <span class="o">*</span> <span class="n">count</span><span class="p">()</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">parity</span><span class="p">():</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">return</span> <span class="s2">"odd"</span> <span class="k">if</span> <span class="n">count</span><span class="p">()</span> <span class="o">%</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">"even"</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p class=</span><span class="si">{</span><span class="n">parity</span><span class="si">}</span><span class="s2">&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}{</span><span class="n">doubled</span><span class="si">}{</span><span class="n">hole</span><span class="p">(</span><span class="n">bang</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="o">=</span><span class="s1">'bang'</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p class=</span><span class="si">{</span><span class="s1">'odd'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'even'</span><span class="si">}</span><span class="s2">&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> (x2=</span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">)&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A hole's expression may return a string, a template or other <code>VNode</code>, a
 list (mounted as a fragment), <code>None</code>, or another accessor. Holes are
@@ -3769,9 +3742,24 @@ ownership scopes: components mounted inside one survive its
 re-evaluations while the reconciler can patch them in place, and
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> inside the expression runs before
 each re-run.</p>
-<p><strong>Inert bindings are dropped.</strong> When a hole or binding finishes its
-first run without reading a reactive source, and without creating
-children, cleanups, or async work, it can never run again. The renderer
+<p>Bindings keep their state in slots. Each hole and attribute binding is
+a small computation that holds its node, name, and last value directly,
+and applies its result as a method, not through a closure and its
+cells. A mounted template row therefore keeps about half as many
+objects for the cyclic garbage collector to track as it did in the
+previous engine; see the
+<a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md">engine v4 evaluation</a>.</p>
+<p><strong>A static probe before a computation.</strong> A binding whose expression
+makes no calls (<code>{props.title}</code>, <code>{row["label"]}</code>) first runs under a
+lightweight observer. If it reads nothing reactive, creates nothing,
+and returns synchronously, the value is applied and no computation is
+ever allocated. The probe stops at the first reactive read, and the
+binding then runs as a computation. A probe that returns an accessor
+without reading anything (<code>{row["label"]}</code> returning a signal) binds
+directly to that accessor.</p>
+<p><strong>Inert bindings are dropped.</strong> Any other hole or binding that finishes
+its first run without reading a reactive source, and without creating
+children, cleanups, or async work, can never run again. The renderer
 disposes it immediately and keeps only the DOM it produced. Together
 with constant props that subscribe to nothing (see
 <a href="../components/#what-props-cost">What props cost</a>), a component whose
@@ -3783,8 +3771,12 @@ They return region nodes that the reconciler mounts directly, with no
 component context, props object, or wrapper memo:</p>
 <ul>
 <li><strong><code>Show</code> and <code>Switch</code></strong> are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes, between two comment markers.</li>
-<li><strong><code>For</code> and <code>Repeat</code></strong> are list regions. Each row has its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly.</li>
+<li><strong><code>For</code> and <code>Repeat</code></strong> are list regions. Each row is its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly. A row's index is a plain integer until something reads <code>index()</code> in a tracking scope, which is when the signal behind it is created.</li>
 </ul>
+<p>Matching a keyed list against its mounted rows skips the common prefix
+and suffix by identity without calling into each row, detects swapped
+ends the way Solid's <code>reconcileArrays</code> does, and only then falls back to
+a key table for what's left. Swapping two rows is two native moves.</p>
 <p>When a reactive hole re-renders a region of the same kind, the new
 condition or source is pushed into the mounted region instead of
 remounting it. That's the only part that was ever reactive, so rows and
@@ -3796,7 +3788,7 @@ old result with the new one:</p>
 <li>Same VNode instance (for example a cached <code>For</code> row): skipped.</li>
 <li>Template instances from the same literal: patched slot by slot.</li>
 <li>Regions of the same kind: the new condition or source is pushed in.</li>
-<li>Same component and key: patched in place. New props flow into the existing accessors, and the body doesn't run again.</li>
+<li>Same component and key: patched in place. New props flow into the existing props instance, and the body doesn't run again.</li>
 <li>Same element tag and key: props are diffed, text is updated, and children are reconciled.</li>
 <li>Anything else: the old subtree is unmounted and the new one mounted at the same position.</li>
 </ul>
@@ -3813,7 +3805,7 @@ with fresh state:</p>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">return</span> <span class="n">Editor</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">current_id</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">current_id</span><span class="p">())</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">editor</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">editor</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prefer <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a> for lists: it caches each row's node and
 scope, so rows are moved rather than re-diffed at all.</p>
@@ -3821,11 +3813,11 @@ scope, so rows are moved rather than re-diffed at all.</p>
 <p>Some renderers need ordinary VNodes. Server rendering, hydration, SVG
 and MathML (a template containing <code>&lt;svg&gt;</code> or <code>&lt;math&gt;</code>, or one mounted
 inside an SVG parent), and backends that can't parse HTML <strong>expand</strong> a
-template into the same VNode tree the element helpers would build, and
-mount that. Output and hydration keys are identical whichever style you
-use. A hydrated instance keeps its expanded tree, so a hole that later
-patches it diffs the expanded trees; everything mounted after hydration
-uses the clone path.</p>
+template into the same VNode tree <code>h()</code> would build, and mount that.
+Output and hydration keys are identical whichever style you use. A
+hydrated instance keeps its expanded tree, so a hole that later patches
+it diffs the expanded trees; everything mounted after hydration uses
+the clone path.</p>
 <h2 id="the-batched-rendering-kernel">The batched rendering kernel<a class="headerlink" href="#the-batched-rendering-kernel" title="Permanent link">&para;</a></h2>
 <p>The reconciler, templates, and prop appliers <em>emit</em> operations such as
 clone, insert, set-text, and set-attr against integer node ids into a
@@ -3844,29 +3836,29 @@ the browser sees. See the <a href="../../guides/testing/">Testing guide</a>.</p>
 <p>Template registration lists the delegated event types at each offset.
 Cloning an instance marks those listeners natively, so mounting a row
 with two handlers sends no <code>LISTEN</code> commands. Python stores the handlers
-in one table keyed by node id.</p>
+in one table keyed by node id; a node with a single handler stores it
+directly, without a dictionary of its own.</p>
 <h2 id="teardown">Teardown<a class="headerlink" href="#teardown" title="Permanent link">&para;</a></h2>
 <p>Unmounting doesn't visit every node in Python. <code>DISPOSE_RANGE</code> removes a
 contiguous range of siblings and releases every registered node inside
 it, and <code>DISPOSE</code> does the same for one node's subtree; the kernel walks
 the removed nodes natively. Python-side registrations (handlers,
-reactive bindings, refs) are found through the template's slot plan or
-the shape's binding offsets.</p>
+reactive bindings, refs) are found through the template's slot plan.</p>
 <p>Lists benefit most:</p>
 <ul>
 <li>Clearing a <code>For</code> list emits one <code>DISPOSE_RANGE</code>, plus the disposal of each row's owner.</li>
 <li>When a keyed list reuses no rows (every row replaced), the new rows mount as one splice and the old ones go in one <code>DISPOSE_RANGE</code>, instead of reconciling a thousand unrelated pairs.</li>
 </ul>
 <h2 id="event-delegation">Event delegation<a class="headerlink" href="#event-delegation" title="Permanent link">&para;</a></h2>
-<p>Handlers such as <code>onclick={save}</code> (or <code>on_click=save</code> on a helper)
+<p>Handlers such as <code>onclick={save}</code> (or <code>on_click=save</code> in an <code>h()</code> call)
 don't attach native listeners per element. The kernel installs one
 native listener per event type on each <strong>render root</strong> (the container
-passed to <code>render</code>). Template and shape nodes declare their listener
-types at registration, and handlers on other nodes ride the same buffer
-as a <code>LISTEN</code> command. When an event fires, the kernel walks the
-ancestor chain natively and calls into Python once for the matching
-route, with a small JSON payload. Handlers may take the event or no
-arguments at all. See <a href="../events/">Events</a>.</p>
+passed to <code>render</code>). Template nodes declare their listener types at
+registration, and handlers on other nodes ride the same buffer as a
+<code>LISTEN</code> command. When an event fires, the kernel walks the ancestor
+chain natively and calls into Python once for the matching route, with
+a small JSON payload. Handlers may take the event or no arguments at
+all. See <a href="../events/">Events</a>.</p>
 <h2 id="render-and-root"><code>render</code> and <code>Root</code><a class="headerlink" href="#render-and-root" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render(vnode, container)</code></a> mounts a tree into an
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a>, a CSS selector, or a kernel node id,
@@ -3882,12 +3874,12 @@ again patches the existing tree in place.</p>
 </span></code></pre></div>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><code>templates</code></strong>: <code>html</code> and <code>TemplateError</code>: parsing, validation, the per-literal cache, generated mount functions, slot-wise patching, and expansion.</li>
+<li><strong><code>compiler</code></strong>: the AST transform that defers dynamic expressions and precompiles template literals, and the import hook that runs it.</li>
+<li><strong><code>templates</code></strong>: <code>html</code> and <code>TemplateError</code>: parsing, validation, the runtime fallback and its cache, mount function generation, slot-wise patching, and expansion.</li>
 <li><strong><code>vnode</code></strong>: <code>VNode</code>, <code>h</code>, <code>Fragment</code>, <code>hole</code>, and child normalization (no browser dependency).</li>
-<li><strong><code>elements</code></strong> and <strong><code>svg</code></strong>: the element helpers; SVG elements propagate their namespace to children.</li>
-<li><strong><code>_dom_props</code></strong> (private): attribute, property, class, style, dataset, ref, and reactive-binding application, shared by templates and helpers, all op-based.</li>
-<li><strong><code>_shapes</code></strong> (private): helper shapes, their generated mount functions, lazy id materialization, and offset-based disposal.</li>
-<li><strong><code>_html_rules</code></strong> (private): the HTML parser's content rules, shared by template validation and helper shapes.</li>
+<li><strong><code>_compiled</code></strong> (private): the run-time helpers compiled modules call (getters, call dispatch, format specs, precompiled entries).</li>
+<li><strong><code>_dom_props</code></strong> (private): attribute, property, class, style, dataset, ref, and reactive-binding application, shared by templates and <code>h()</code>, all op-based.</li>
+<li><strong><code>_html_rules</code></strong> (private): the HTML parser's content rules, used by template validation.</li>
 <li><strong><code>_regions</code></strong> (private): the native <code>Show</code>, <code>Switch</code>, <code>For</code>, and <code>Repeat</code> regions.</li>
 <li><strong><code>reconciler</code></strong>: mount, patch, unmount, <code>render</code>, <code>hydrate</code>, and <code>Root</code>.</li>
 <li><strong><code>kernel</code></strong>: the command buffer, the JS kernel (<code>_kernel.js</code>), and the Python reference backend.</li>
@@ -3900,17 +3892,17 @@ full traceback. An <a class="autorefs autorefs-internal" title="&lt;code class=&
 failing subtree catches the error and shows a fallback instead.
 Production builds (<code>wyb build</code>) turn dev mode off before the application
 imports; call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_dev_mode&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_dev_mode"><code>set_dev_mode(False)</code></a> yourself
-when you mount outside the production bootstrap. A
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> isn't a render error: it's
-raised by <code>html()</code> the first time a malformed template runs, in every
-mode.</p>
+when you mount outside the production bootstrap. A malformed template
+isn't a render error: the compiler rejects it when the module is
+compiled, and <code>html()</code> raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a>
+the first time an uncompiled one runs, in every mode.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Read <a href="../templates/">Templates</a> for the template syntax.</li>
+<li>Read <a href="../templates/">Templates</a> for the template syntax, and <a href="../compiler/">The compiler</a> for what it generates.</li>
 <li>See <a href="../primitives/#reactive-holes">Primitives</a> for the hole mental model.</li>
 <li>Read <a href="../lifecycle/">Lifecycle and ownership</a> for mount and unmount semantics.</li>
 <li>Browse the <a href="../../api/reconciler/"><code>reconciler</code></a> and <a href="../../api/kernel/"><code>kernel</code></a> API pages.</li>
-<li>Read <a href="../../rfcs/0003-engine-v3/">RFC 0003</a> for compiled templates and zero-cost components, and <a href="../../rfcs/0002-engine-v2/">RFC 0002</a> for helper shapes.</li>
+<li>Read <a href="../../rfcs/0004-engine-v4/">RFC 0004</a> for the compiler, leaner bindings, and keyed matching, and <a href="../../rfcs/0003-engine-v3/">RFC 0003</a> for compiled templates and zero-cost components.</li>
 </ul>
 
 

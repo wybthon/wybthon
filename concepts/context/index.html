@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1911,8 +1941,6 @@
       
         
       
-        
-      
     
     
     
@@ -2163,34 +2191,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2219,14 +2219,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2716,6 +2716,8 @@
       
         
       
+        
+      
     
     
     
@@ -2871,6 +2873,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3264,9 +3294,10 @@ and read it with <a class="autorefs autorefs-internal" title="&lt;code class=&qu
 <h2 id="providing-a-value">Providing a value<a class="headerlink" href="#providing-a-value" title="Permanent link">&para;</a></h2>
 <p>The context object is callable: <code>Theme(value, *children)</code> returns a
 provider VNode. Children may be templates, component calls, VNodes, or
-lists; anything you'd pass to an element works. Place the provider in a
-template with an interpolation, as above. Item syntax works too, as it
-does on elements and components:</p>
+lists. Place the provider in a template with an interpolation, as
+above; the compiler treats a context like any other component, so the
+children it builds there (<code>Label()</code>) don't run until the provider
+mounts them. Item syntax works too, as it does on components:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">())</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">,</span> <span class="p">[</span><span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">()])</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">Theme</span><span class="p">(</span><span class="s2">"dark"</span><span class="p">)[</span><span class="n">Header</span><span class="p">(),</span> <span class="n">Main</span><span class="p">()]</span>
@@ -3311,7 +3342,7 @@ provider or the subtree re-mounting:</p>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nd">@component</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">ThemedButton</span><span class="p">():</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button class="btn btn-</span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s1">"&gt;Hi&lt;/button&gt;'</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;button class="btn btn-</span><span class="si">{</span><span class="n">theme</span><span class="p">()</span><span class="si">}</span><span class="s1">"&gt;Hi&lt;/button&gt;'</span><span class="p">)</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nd">@component</span>
@@ -3333,11 +3364,18 @@ provider or the subtree re-mounting:</p>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">theme</span><span class="p">,</span> <span class="n">set_theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Passing a plain value is fine when it never changes. Don't pass a
-<code>lambda: theme()</code> unless you mean to; an accessor already is one. The
-<code>class="btn btn-{theme}"</code> attribute above joins its parts into one
-reactive binding that calls the accessor, so the class follows the
-signal.</p>
+<p>Passing a plain value is fine when it never changes. The
+<code>class="btn btn-{theme()}"</code> attribute above joins its parts into one
+reactive binding, so the class follows the signal.</p>
+<div class="admonition warning">
+<p class="admonition-title">Pass the accessor, not its value</p>
+<p>In a template, <code>{Theme(theme(), ThemedButton())}</code> looks reactive,
+but the provider evaluates its value once, untracked, when it
+mounts: consumers get the string <code>"light"</code> and never see a change.
+The value is what the provider stores, not a binding. Pass the
+accessor itself, <code>Theme(theme, ...)</code>, and let consumers call it. A
+<code>lambda: theme()</code> works too, but an accessor already is one.</p>
+</div>
 <h2 id="how-it-works-the-ownership-tree">How it works: the ownership tree<a class="headerlink" href="#how-it-works-the-ownership-tree" title="Permanent link">&para;</a></h2>
 <p>The provider is a tiny component that stores <code>value</code> on its own
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.Owner"><code>Owner</code></a>. <code>use_context</code> walks parent pointers until it

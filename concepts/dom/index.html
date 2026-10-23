@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1090,10 +1120,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#element-helpers" class="md-nav__link">
+  <a href="#element-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Element helpers
+        Element methods
       
     </span>
   </a>
@@ -1928,8 +1958,6 @@
       
         
       
-        
-      
     
     
     
@@ -2180,34 +2208,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2236,14 +2236,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2733,6 +2733,8 @@
       
         
       
+        
+      
     
     
     
@@ -2888,6 +2890,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3198,10 +3228,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#element-helpers" class="md-nav__link">
+  <a href="#element-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Element helpers
+        Element methods
       
     </span>
   </a>
@@ -3297,7 +3327,7 @@ measuring, third-party widgets) or when you receive a node back from a
 <h2 id="refs-holding-onto-an-element">Refs: holding onto an element<a class="headerlink" href="#refs-holding-onto-an-element" title="Permanent link">&para;</a></h2>
 <p>A <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Ref&lt;/span&gt;" href="../../api/wybthon/#wybthon.Ref"><code>Ref</code></a> is a small mutable container that the renderer
 fills with the mounted <code>Element</code>. Pass it as the <code>ref</code> attribute of any
-host element (<code>ref=</code> with the element helpers) and read <code>ref.current</code>
+host element (a <code>ref</code> prop in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a>) and read <code>ref.current</code>
 after mount:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">on_settled</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -3340,9 +3370,11 @@ at the top of the component body during initial render.</p>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;input type="text" ref=</span><span class="si">{</span><span class="p">[</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">ref</span><span class="p">]</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Refs pass through components like any other prop; there's no special
-forwarding API. Declare <code>ref</code> as a plain field (not <code>Prop[...]</code>) so
-<code>props.ref</code> returns the <code>Ref</code> or callback the parent passed, untouched.
-A <code>None</code> entry in the list is ignored.</p>
+forwarding API. Because the field's annotation includes a <code>Callable</code>,
+<code>props.ref</code> returns the <code>Ref</code> or callback the parent passed, untouched,
+instead of calling it. The compiler never wraps a <code>ref</code> attribute, so
+<code>ref={[local, props.ref]}</code> is evaluated once, when the element is
+created. A <code>None</code> entry in the list is ignored.</p>
 <h2 id="ownership-and-disposal-order">Ownership and disposal order<a class="headerlink" href="#ownership-and-disposal-order" title="Permanent link">&para;</a></h2>
 <p>Refs follow the ownership tree. A component's <code>ref.current</code> is set from
 the first commit until the component unmounts. Unmounting queues one
@@ -3385,7 +3417,7 @@ and may leave them in place, or overwrite them unexpectedly. Use <code>Element</
 focus, selection, scroll position, measurements, and third-party
 widgets that own their subtree.</p>
 </div>
-<h2 id="element-helpers">Element helpers<a class="headerlink" href="#element-helpers" title="Permanent link">&para;</a></h2>
+<h2 id="element-methods"><code>Element</code> methods<a class="headerlink" href="#element-methods" title="Permanent link">&para;</a></h2>
 <p>The wrapper mirrors familiar DOM names:</p>
 <table>
 <thead>
@@ -3434,18 +3466,23 @@ widgets that own their subtree.</p>
 </tbody>
 </table>
 <h2 id="styles-classes-and-dataset-through-bindings">Styles, classes, and dataset through bindings<a class="headerlink" href="#styles-classes-and-dataset-through-bindings" title="Permanent link">&para;</a></h2>
-<p>You usually don't need <code>Element</code> for styling. Templates and element
-helpers share one set of prop appliers, so these work the same in both:</p>
+<p>You usually don't need <code>Element</code> for styling. Templates and
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> share one set of prop appliers, so these work the same
+in both:</p>
 <ul>
 <li><code>style</code> takes a dict with camelCase or snake_case keys (<code>background_color</code>, <code>fontSize</code>); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing <code>None</code> clears earlier styles. Values may be accessors, and a raw style string is accepted too.</li>
-<li><code>dataset</code> takes a dict; entries render as <code>data-*</code> attributes and missing keys on update are removed. A plain <code>data-testid="x"</code> attribute (<code>data_testid="x"</code> on a helper) also works.</li>
-<li><code>class</code> (<code>class_</code> on a helper) accepts a string, a list of strings, a <code>{name: truthy_or_accessor}</code> dict, or an accessor returning any of those.</li>
+<li><code>dataset</code> takes a dict; entries render as <code>data-*</code> attributes and missing keys on update are removed. A plain <code>data-testid="x"</code> attribute (<code>data_testid</code> in <code>h()</code> props) also works.</li>
+<li><code>class</code> (<code>class_</code> in <code>h()</code> props) accepts a string, a list of strings, a <code>{name: truthy_or_accessor}</code> dict, or an accessor returning any of those.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">styles</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"background_color"</span><span class="p">:</span> <span class="s2">"white"</span><span class="p">,</span> <span class="s2">"fontSize"</span><span class="p">:</span> <span class="s2">"14px"</span><span class="p">}</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">classes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"card"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="n">is_active</span><span class="p">}</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">classes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"card"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="n">is_active</span><span class="p">}</span>  <span class="c1"># is_active is an accessor</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;div class=</span><span class="si">{</span><span class="n">classes</span><span class="si">}</span><span class="s1"> style=</span><span class="si">{</span><span class="n">styles</span><span class="si">}</span><span class="s1"> data-testid="card"&gt;...&lt;/div&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
+<p><code>classes</code> is a name, so the compiler passes the dict as is, and each
+accessor inside it becomes its own binding. An expression that reads
+signals, such as <code>class={"card active" if is_active() else "card"}</code>,
+becomes one binding for the whole attribute.</p>
 <h2 id="rendering-into-an-existing-node">Rendering into an existing node<a class="headerlink" href="#rendering-into-an-existing-node" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render(vnode, container)</code></a> accepts an <code>Element</code>
 container and returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Root&lt;/span&gt;" href="../../api/wybthon/#wybthon.Root"><code>Root</code></a>. Call <code>root.dispose()</code> to

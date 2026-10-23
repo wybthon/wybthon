@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2039,34 +2067,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2095,14 +2095,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2638,6 +2638,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#wybthon.dev.run_script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;run_script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#wybthon.dev.main" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2764,6 +2775,8 @@
       
         
           
+        
+      
         
       
         
@@ -2929,6 +2942,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3275,6 +3316,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;serve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.dev.run_script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;run_script
       
     </span>
   </a>
@@ -3776,6 +3828,29 @@ binding.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.dev.run_script" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">run_script</span>
+
+
+<a href="#wybthon.dev.run_script" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run_script</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">argv</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Run <code>path</code> as <code>__main__</code> with its templates (and its imports') compiled.</p>
+<p>The script's own <code>html(t"...")</code> calls are compiled before it runs, and
+the import hook compiles every module it imports, so a script behaves
+exactly as it would inside an application.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.dev.main" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">main</span>
 
@@ -3859,7 +3934,13 @@ binding.</p>
 development mode, serves the build, rebuilds when a source file changes,
 and pushes a <code>reload</code> event over Server-Sent Events at <code>/__sse</code> so open
 pages refresh. <code>wyb build</code> writes a production build, which turns dev
-mode off, and <code>wyb preview</code> serves one. Every built page carries its
+mode off, and <code>wyb preview</code> serves one. Both <code>wyb dev</code> and <code>wyb build</code>
+run every application module through the <a href="../compiler/">compiler</a>, so a
+malformed template fails the build with its file and line, and they
+ship the compiled bytecode (when the build's Python matches the Pyodide
+runtime's; see <a href="../../guides/deployment/">Deployment</a>), so the page never
+parses a template at run time. <code>wyb run</code> runs a single script with
+its templates compiled. Every built page carries its
 build manifest inline (<code>&lt;script type="application/json"
 id="wyb-manifest"&gt;</code>) and preloads what boot needs: a
 <code>&lt;link rel="modulepreload"&gt;</code> for Pyodide's <code>pyodide.mjs</code>, and
@@ -3875,11 +3956,15 @@ application archives, so they download in parallel with Pyodide.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a></td>
-<td>CLI entry point (<code>wyb init</code>, <code>wyb dev</code>, <code>wyb build</code>, <code>wyb preview</code>).</td>
+<td>CLI entry point (<code>wyb init</code>, <code>wyb dev</code>, <code>wyb build</code>, <code>wyb preview</code>, <code>wyb run</code>).</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a></td>
 <td><code>serve(directory=".", host="127.0.0.1", port=8000, open_browser=False, open_path=None)</code>: the <code>wyb dev</code> server, callable from Python.</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run_script&lt;/span&gt;" href="#wybthon.dev.run_script"><code>run_script</code></a></td>
+<td><code>run_script(path, argv)</code>: what <code>wyb run</code> does, callable from Python.</td>
 </tr>
 </tbody>
 </table>
@@ -3887,6 +3972,7 @@ application archives, so they download in parallel with Pyodide.</p>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--dir<span class="w"> </span>my-app<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--open
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>wyb<span class="w"> </span>build<span class="w"> </span>--dir<span class="w"> </span>my-app<span class="w"> </span>--base<span class="w"> </span>/app/
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>my-app/dist
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>wyb<span class="w"> </span>run<span class="w"> </span>scripts/seed.py<span class="w"> </span>--verbose
 </span></code></pre></div>
 <table>
 <thead>
@@ -3952,6 +4038,12 @@ application archives, so they download in parallel with Pyodide.</p>
 <td><code>dist</code>, <code>127.0.0.1</code>, <code>8000</code></td>
 <td>Serve a production build.</td>
 </tr>
+<tr>
+<td><code>wyb run</code></td>
+<td><code>script [args ...]</code></td>
+<td>none</td>
+<td>Run a Python script as <code>__main__</code> with its templates compiled; the arguments after it are passed to the script.</td>
+</tr>
 </tbody>
 </table>
 <p>Live reload: <code>wyb dev</code> watches the app directory, <code>public/</code>,
@@ -3961,11 +4053,24 @@ reloads it. The static-directory mode of earlier versions, with its
 <code>/__manifest</code> endpoint and <code>--mount</code> and <code>--watch</code> flags, is gone; every
 served directory is a project. See the
 <a href="../../guides/dev-server/">dev server guide</a>.</p>
+<p><code>wyb run script.py</code> is for code outside a project: a script that
+renders components with <a href="../testing/"><code>wybthon.testing</code></a> or
+<a href="../server/"><code>wybthon.server</code></a>, a benchmark, or a quick experiment.
+<code>python script.py</code> compiles the <code>__main__</code> module before Wybthon is
+imported, so its templates aren't compiled, and dev mode raises
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> when a dynamic expression in
+one of them was evaluated once. <code>wyb run</code> compiles the script itself,
+installs the import hook for the modules it imports, puts the script's
+directory first on <code>sys.path</code>, and sets <code>sys.argv</code>, so the script
+behaves as it would inside an application.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wyb<span class="w"> </span>run<span class="w"> </span>render_page.py<span class="w"> </span>--out<span class="w"> </span>page.html<span class="w">  </span><span class="c1"># sys.argv[1:] == ["--out", "page.html"]</span>
+</span></code></pre></div>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../../getting-started/">Getting started</a></li>
 <li><a href="../../guides/dev-server/">Guides: Dev server</a></li>
 <li><a href="../../guides/deployment/">Guides: Deployment</a></li>
+<li><a href="../compiler/">Compiler</a></li>
 </ul>
 
 

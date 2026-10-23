@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1917,8 +1947,6 @@
       
         
       
-        
-      
     
     
     
@@ -2169,34 +2197,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2225,14 +2225,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2722,6 +2722,8 @@
       
         
       
+        
+      
     
     
     
@@ -2877,6 +2879,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3262,6 +3292,7 @@
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Builds the project with dev mode on, including any routes listed in <code>prerender</code>, so you develop against the same server-rendered pages you'll deploy. Production builds (<code>wyb build</code>) turn dev mode off; see <a href="../deployment/">Deployment</a>.</li>
+<li>Runs application modules through Wybthon's <a href="../../concepts/compiler/">compiler</a>, as <code>wyb build</code> does, so a malformed template fails the rebuild with its file and line instead of failing in the browser.</li>
 <li>Serves the build under the configured <code>base</code> path with client-route fallback to <code>200.html</code>. Requests outside the base path return 404.</li>
 <li>Watches the application directory (<code>app-dir</code>), <code>public/</code>, <code>index.html</code>, and <code>wybthon.toml</code>. A change, including a new or deleted file, triggers a rebuild and then a reload. Change detection polls modification times about every 0.5 seconds.</li>
 <li>Reports a failed build in the terminal and keeps serving the previous output, so a typo doesn't take the page down.</li>
@@ -3289,7 +3320,7 @@
 <p>The dev server is built on Python's <code>http.server</code> and is intended for development only. Use <code>wyb build</code> and a static host for production, and <code>wyb preview</code> to check a production build locally. See the <a href="../deployment/">Deployment guide</a>.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>"has no wybthon.toml."</strong> The dev server only serves projects. Run it from the project directory, pass <code>--dir path/to/project</code>, or create a project with <code>wyb init</code>.</li>
+<li><strong>"has no wybthon.toml."</strong> The dev server only serves projects. Run it from the project directory, pass <code>--dir path/to/project</code>, or create a project with <code>wyb init</code>. To try a single script with its templates compiled, use <code>wyb run script.py</code> instead.</li>
 <li><strong>Auto-reload isn't firing.</strong> Confirm <code>GET /__sse</code> shows an open EventSource connection in the browser's Network panel, and check the terminal for a build error. Only the application directory, <code>public/</code>, <code>index.html</code>, and <code>wybthon.toml</code> are watched. Behind a proxy, pass <code>/__sse</code> through unbuffered (Nginx: <code>proxy_buffering off;</code> and <code>X-Accel-Buffering: no</code>).</li>
 <li><strong>A page shows 404.</strong> Requests must fall under the configured <code>base</code> path. Open the URL the server prints.</li>
 <li><strong>Port is already in use.</strong> The server picks the next free port and prints a notice. If you need the exact port, stop the conflicting process (macOS: <code>lsof -i :8000</code>, then <code>kill &lt;PID&gt;</code>).</li>

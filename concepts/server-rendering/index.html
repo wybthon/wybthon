@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1950,8 +1980,6 @@
       
         
       
-        
-      
     
     
     
@@ -2202,34 +2230,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2258,14 +2258,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2755,6 +2755,8 @@
       
         
       
+        
+      
     
     
     
@@ -2910,6 +2912,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3526,11 +3556,10 @@ bootstrap runs.</p>
 </span></code></pre></div>
 <p>The production bootstrap calls <code>hydrate</code> automatically when the page contains server state. <code>hydrate</code> mounts the tree exactly as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render&lt;/span&gt;" href="../../api/wybthon/#wybthon.render"><code>render</code></a> would, except that each node <em>claims</em> the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.</p>
 <p>Templates need nothing special. A server render and a hydrating client
-expand each template into the same VNodes the element helpers would
-build, so the markup and hydration keys match whichever style a
-component uses. Once hydration has committed, browser updates use the
-compiled path. See
-<a href="../templates/#server-rendering-hydration-and-svg">Templates</a>.</p>
+expand each template into the same VNodes <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> would build,
+so the markup and hydration keys match whether a component uses
+templates or <code>h()</code>. Once hydration has committed, browser updates use
+the compiled path. See <a href="../templates/">Templates</a>.</p>
 <p>Hydration never breaks the page. When a node doesn't match, the kernel creates the expected node in place, removes server nodes nobody claimed, and logs a console warning for the first few mismatches. <code>kernel.stats()["hydration_mismatches"]</code> counts them. A mismatch inside a <code>Loading</code> boundary stops at the boundary's end.</p>
 <p>Mismatches cost extra DOM work, so avoid them. Hydration assumes the browser's first render matches the server's:</p>
 <ul>
@@ -3552,21 +3581,37 @@ compiled path. See
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">initial</span> <span class="o">=</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">is_server</span><span class="p">()</span> <span class="ow">or</span> <span class="n">is_hydrating</span><span class="p">()</span> <span class="k">else</span> <span class="n">local_time</span><span class="p">()</span>
 </span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">time</span><span class="p">,</span> <span class="n">set_time</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">on_settled</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">set_time</span><span class="p">(</span><span class="n">local_time</span><span class="p">()))</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;</span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;</span><span class="si">{</span><span class="n">time</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>In a page that wasn't server-rendered, <code>is_hydrating()</code> is <code>False</code> and the component shows the time on its first render.</p>
-<h3 id="static-regions-with-nohydration">Static regions with <code>NoHydration</code><a class="headerlink" href="#static-regions-with-nohydration" title="Permanent link">&para;</a></h3>
-<p>Some content never changes after the first paint: an article body, a footer, legal text. Wrap it in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> and the browser skips it while hydrating:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">NoHydration</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_hydration_end&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_hydration_end"><code>on_hydration_end(callback)</code></a> runs a callback once hydration is over. Registered while <code>hydrate</code> mounts, it runs after the hydrated page has committed; registered anywhere else (a page that wasn't server-rendered, or after hydration), it runs on the next tick. It reports that hydration has finished, not that it found no mismatches. It's Solid 2.0's <code>onHydrationEnd</code>. Use it for work that should wait until the page is interactive, such as starting analytics or removing a "loading" style the server rendered:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">is_server</span><span class="p">,</span> <span class="n">on_hydration_end</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nd">@component</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Post</span><span class="p">():</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">static</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="s2">      &lt;article&gt;&lt;p&gt;A long, static article body...&lt;/p&gt;&lt;/article&gt;</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="s2">      &lt;footer&gt;&lt;p&gt;Copyright 2026&lt;/p&gt;&lt;/footer&gt;</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="s2">    """</span><span class="p">)</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">LikeButton</span><span class="p">()</span><span class="si">}{</span><span class="n">NoHydration</span><span class="p">(</span><span class="n">static</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Shell</span><span class="p">():</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">ready</span><span class="p">():</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">js</span><span class="w"> </span><span class="kn">import</span> <span class="n">document</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="n">document</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">classList</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">"ssr"</span><span class="p">)</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_server</span><span class="p">():</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>        <span class="n">on_hydration_end</span><span class="p">(</span><span class="n">ready</span><span class="p">)</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;main&gt;...&lt;/main&gt;"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Guard browser-only work with <code>is_server()</code>, since the same component also renders on the server.</p>
+<h3 id="static-regions-with-nohydration">Static regions with <code>NoHydration</code><a class="headerlink" href="#static-regions-with-nohydration" title="Permanent link">&para;</a></h3>
+<p>Some content never changes after the first paint: an article body, a footer, legal text. Wrap it in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> and the browser skips it while hydrating:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">NoHydration</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="nd">@component</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">Post</span><span class="p">():</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="n">static</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="s2">      &lt;article&gt;&lt;p&gt;A long, static article body...&lt;/p&gt;&lt;/article&gt;</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="s2">      &lt;footer&gt;&lt;p&gt;Copyright 2026&lt;/p&gt;&lt;/footer&gt;</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="s2">    """</span><span class="p">)</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">LikeButton</span><span class="p">()</span><span class="si">}{</span><span class="n">NoHydration</span><span class="p">(</span><span class="n">static</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>On the server, <code>NoHydration(*children)</code> renders its children normally, between two marker comments. While hydrating, the kernel claims the whole marked region as is, with one command, and nothing inside it is mounted: no components run, no handlers attach, and it costs no Python work. The region never updates afterward, so don't put reactive content, event handlers, or refs inside it. In a page that wasn't server-rendered, the children render normally.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Hydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.Hydration"><code>Hydration(*children, id=None)</code></a> is provided for parity with Solid 2.0, where it re-enables hydration for an island inside <code>NoHydration</code>. In Wybthon it renders its children unchanged: a <code>NoHydration</code> region stays static as a whole, so put interactive islands beside it rather than inside it.</p>

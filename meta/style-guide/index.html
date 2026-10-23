@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/meta/style-guide/">
       
       
-        <link rel="prev" href="../../rfcs/0003-engine-v3/">
+        <link rel="prev" href="../../rfcs/0004-engine-v4/">
       
       
         <link rel="next" href="../contributing/">
@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1784,8 +1814,6 @@
       
         
       
-        
-      
     
     
     
@@ -2036,34 +2064,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2092,14 +2092,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2589,6 +2589,8 @@
       
         
       
+        
+      
     
     
     
@@ -2744,6 +2746,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3478,7 +3508,7 @@ the standard sections as tables.</p>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">        ```python</span>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">        fields = form_state({"name": ""})</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">        name = fields["name"]</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">        html(t"&lt;input {bind_text(name)}&gt;&lt;span&gt;{name.error}&lt;/span&gt;")</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">        html(t"&lt;input {bind_text(name)}&gt;&lt;span&gt;{name.error()}&lt;/span&gt;")</span>
 </span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">        ```</span>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="sd">    """</span>
 </span></code></pre></div>
@@ -3562,15 +3592,29 @@ typically enough; autorefs picks them up via signature annotations
   <code>```yaml</code>.</li>
 <li>Prefer <strong>runnable</strong> snippets that include the imports needed to
   copy-paste them.</li>
-<li>Write markup as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates. Use the element
-  helpers (<code>div(...)</code>, <code>h(...)</code>) only where the page is about them or
-  the markup is built by code.</li>
-<li>Never put a bare <code>lambda</code> inside a t-string interpolation; it's a
-  <code>SyntaxError</code>. Prefer a named function or memo, and wrap an inline
-  lambda in parentheses when one is clearer: <code>{(lambda: count() * 2)}</code>.</li>
+<li>Write markup as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> templates. Use
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> only where the page is about
+  it or the markup is built by code. The element helpers (<code>div(...)</code>,
+  <code>p(...)</code>, <code>wybthon.elements</code>, <code>wybthon.svg</code>) no longer exist.</li>
+<li>Write reactive expressions directly; the compiler makes each one a
+  getter: <code>{count() * 2}</code>, <code>{props.title}</code>, <code>{row["label"]}</code>,
+  <code>class={"on" if active() else ""}</code>, <code>{Show(count() &gt; 5, ...)}</code>. Don't
+  wrap them in <code>{(lambda: ...)}</code>.</li>
+<li>Prefer <code>{count()}</code> to <code>{count}</code> (both work): it reads like the value
+  and matches Solid. Place the accessor itself only where passing it is
+  the point.</li>
+<li>Declare props with plain annotations (<code>title: str</code>) and read them as
+  values (<code>props.title</code>). Annotate callbacks as <code>Callable[...]</code>. For a
+  one-time read, use <code>untrack(lambda: props.initial)</code>.</li>
+<li>Give event handlers a name. Never put a bare <code>lambda</code> inside a
+  t-string interpolation; it's a <code>SyntaxError</code>. When an inline handler
+  is clearer, wrap it in parentheses: <code>onclick={(lambda: set_open(False))}</code>.</li>
 <li>Check that every template parses: <code>&lt;tr&gt;</code> needs a <code>&lt;tbody&gt;</code>, and a
   <code>&lt;p&gt;</code> can't hold block elements. Malformed markup raises
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a>.</li>
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> (a <code>SyntaxError</code> when the
+  compiler finds it). To check an example's behavior, save it to a file
+  and run it with <code>wyb run example.py</code>, rendering through
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;testing&lt;/span&gt;" href="../../api/testing/#wybthon.testing"><code>wybthon.testing</code></a>.</li>
 <li>For longer multi-step examples, lean on Material's <code>pymdownx.tabbed</code>
   to show the same example in different forms (e.g., "Component" vs.
   "Direct call").</li>

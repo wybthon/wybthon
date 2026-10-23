@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1845,8 +1875,6 @@
       
         
       
-        
-      
     
     
     
@@ -2097,34 +2125,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/templates/" class="md-nav__link">
         
   
@@ -2153,14 +2153,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/svg/" class="md-nav__link">
+      <a href="../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2650,6 +2650,8 @@
       
         
       
+        
+      
     
     
     
@@ -2805,6 +2807,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3109,7 +3139,7 @@
 
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<p>Walk through focused examples of the framework's core features. Every example writes its markup as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../api/wybthon/#wybthon.html"><code>html</code></a> templates (see <a href="../concepts/templates/">Templates</a>). Each page is a complete module you can drop into a <code>wybthon.toml</code> project (or render in a test with <a href="../api/testing/"><code>wybthon.testing</code></a>) and an explanation of the patterns it demonstrates.</p>
+<p>Walk through focused examples of the framework's core features. Every example writes its markup as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../api/wybthon/#wybthon.html"><code>html</code></a> templates, which Wybthon's compiler prepares when the module is imported or built (see <a href="../concepts/templates/">Templates</a>). Each page is a complete module you can drop into a <code>wybthon.toml</code> project (or render in a test with <a href="../api/testing/"><code>wybthon.testing</code></a>) and an explanation of the patterns it demonstrates.</p>
 <table>
 <thead>
 <tr>
@@ -3120,7 +3150,7 @@
 <tbody>
 <tr>
 <td><a href="counter/">Counter</a></td>
-<td>Signals, memos, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../api/wybthon/#wybthon.html"><code>html</code></a> templates with reactive holes, and typed <code>Props</code> with <code>prop</code> defaults.</td>
+<td>Signals, memos, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../api/wybthon/#wybthon.html"><code>html</code></a> templates whose dynamic expressions become reactive holes, and typed <code>Props</code> with defaults.</td>
 </tr>
 <tr>
 <td><a href="fetch/">Async fetch</a></td>

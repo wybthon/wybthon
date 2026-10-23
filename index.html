@@ -670,6 +670,8 @@
       
         
       
+        
+      
     
     
     
@@ -760,6 +762,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1895,8 +1925,6 @@
       
         
       
-        
-      
     
     
     
@@ -2147,34 +2175,6 @@
   
   
     <li class="md-nav__item">
-      <a href="api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="api/templates/" class="md-nav__link">
         
   
@@ -2203,14 +2203,14 @@
   
   
     <li class="md-nav__item">
-      <a href="api/svg/" class="md-nav__link">
+      <a href="api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2700,6 +2700,8 @@
       
         
       
+        
+      
     
     
     
@@ -2855,6 +2857,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3217,16 +3247,17 @@
 <p>Wybthon is SolidJS for Python: a client-side single-page application (SPA) framework with SolidJS 2.0's fine-grained reactive model, a Pythonic API, and a runtime that lives in the browser through <a href="https://pyodide.org/">Pyodide</a>.</p>
 <p>If you can write Python, you can build interactive web apps with Wybthon. There's no JavaScript build pipeline and no JSX: markup is HTML in a Python template string.</p>
 <h2 id="what-is-wybthon">What is Wybthon?<a class="headerlink" href="#what-is-wybthon" title="Permanent link">&para;</a></h2>
-<p>You write function components in Python and return HTML written as Python 3.14 template strings: <code>html(t"&lt;p&gt;Count: {count}&lt;/p&gt;")</code>. Each template literal compiles once to a native <code>&lt;template&gt;</code> that the browser clones per instance, and the signals, memos, and small reactive expressions you interpolate become its only moving parts. Components run <strong>once</strong>. When a signal changes, only the text nodes, attributes, and reactive holes that read it update, and the renderer batches the resulting DOM mutations into a single crossing of the Python-to-JavaScript bridge.</p>
+<p>You write function components in Python and return HTML written as Python 3.14 template strings: <code>html(t"&lt;p&gt;Count: {count()}&lt;/p&gt;")</code>. Like Solid's, Wybthon's compiler turns every dynamic expression in that markup into a getter, and each template literal into a native <code>&lt;template&gt;</code> that the browser clones per instance, so the expressions you interpolate are its only moving parts. Components run <strong>once</strong>. When a signal changes, only the text nodes, attributes, and reactive holes that read it update, and the renderer batches the resulting DOM mutations into a single crossing of the Python-to-JavaScript bridge.</p>
 <p>The framework ships with everything you need to build a real app:</p>
 <ul>
-<li><a href="concepts/templates/">Templates</a>: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="api/wybthon/#wybthon.html"><code>html</code></a> takes a t-string of ordinary HTML, with interpolations for text, attributes, events, refs, spreads, and component tags. The <a href="api/elements/">element helpers</a> (<code>div(...)</code>, <code>p(...)</code>) remain the programmatic layer.</li>
+<li><a href="concepts/templates/">Templates</a>: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="api/wybthon/#wybthon.html"><code>html</code></a> takes a t-string of ordinary HTML, with interpolations for text, attributes, events, refs, spreads, and component tags. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="api/wybthon/#wybthon.h"><code>h</code></a> is the programmatic layer.</li>
+<li><a href="concepts/compiler/">The compiler</a>: <code>{count() * 2}</code> and <code>{props.title}</code> stay reactive without being wrapped, and production builds never parse a template at run time.</li>
 <li>Reactive primitives: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_signal&lt;/span&gt;" href="api/wybthon/#wybthon.create_signal"><code>create_signal</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_memo&lt;/span&gt;" href="api/wybthon/#wybthon.create_memo"><code>create_memo</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_effect&lt;/span&gt;" href="api/wybthon/#wybthon.create_effect"><code>create_effect</code></a>, with automatic batching and typed accessors.</li>
-<li>Async-first data: an <code>async def</code> passed to <code>create_memo</code> is the fetching primitive; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="api/wybthon/#wybthon.Loading"><code>Loading</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundaries handle the pending and failure states.</li>
+<li>Async-first data: an <code>async def</code> passed to <code>create_memo</code> is the fetching primitive, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_deferred&lt;/span&gt;" href="api/wybthon/#wybthon.create_deferred"><code>create_deferred</code></a> is the async memo that never holds the rest of the UI; <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Loading&lt;/span&gt;" href="api/wybthon/#wybthon.Loading"><code>Loading</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundaries handle the pending and failure states.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="api/wybthon/#wybthon.action"><code>action</code></a> with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic&lt;/span&gt;" href="api/wybthon/#wybthon.create_optimistic"><code>create_optimistic</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> for mutations.</li>
 <li>Draft-first stores (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="api/wybthon/#wybthon.create_store"><code>create_store</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reconcile&lt;/span&gt;" href="api/wybthon/#wybthon.reconcile"><code>reconcile</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="api/wybthon/#wybthon.create_projection"><code>create_projection</code></a>).</li>
-<li>Flow control (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="api/wybthon/#wybthon.Show"><code>Show</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="api/wybthon/#wybthon.For"><code>For</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Repeat&lt;/span&gt;" href="api/wybthon/#wybthon.Repeat"><code>Repeat</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="api/wybthon/#wybthon.Switch"><code>Switch</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="api/wybthon/#wybthon.dynamic"><code>dynamic</code></a>), callable <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Context&lt;/span&gt;" href="api/wybthon/#wybthon.Context"><code>Context</code></a> objects, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="api/wybthon/#wybthon.Portal"><code>Portal</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="api/lazy/#wybthon.lazy"><code>lazy</code></a>.</li>
-<li>Typed components: inputs declared on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="api/wybthon/#wybthon.Props"><code>Props</code></a> class that pyright and mypy check without a plugin.</li>
+<li>Flow control (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="api/wybthon/#wybthon.Show"><code>Show</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="api/wybthon/#wybthon.For"><code>For</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Repeat&lt;/span&gt;" href="api/wybthon/#wybthon.Repeat"><code>Repeat</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Switch&lt;/span&gt;" href="api/wybthon/#wybthon.Switch"><code>Switch</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;dynamic&lt;/span&gt;" href="api/wybthon/#wybthon.dynamic"><code>dynamic</code></a>), callable <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Context&lt;/span&gt;" href="api/wybthon/#wybthon.Context"><code>Context</code></a> objects, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Portal&lt;/span&gt;" href="api/wybthon/#wybthon.Portal"><code>Portal</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="api/lazy/#wybthon.lazy"><code>lazy</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;lazy_module&lt;/span&gt;" href="api/wybthon/#wybthon.lazy_module"><code>lazy_module</code></a>.</li>
+<li>Typed components: inputs declared as plain annotations on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="api/wybthon/#wybthon.Props"><code>Props</code></a> class that pyright and mypy check without a plugin.</li>
 <li>A client-side router in <code>wybthon.router</code> with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Router&lt;/span&gt;" href="api/router/#wybthon.router.Router"><code>Router</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
 
 
@@ -3235,8 +3266,8 @@
   &lt;/span&gt;" href="api/router/#wybthon.router.Route"><code>Route</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="api/router/#wybthon.router.Link"><code>Link</code></a>.</li>
 <li><a href="concepts/server-rendering/">Server rendering</a>: prerender routes at build time or render per request in CPython, stream <code>Loading</code> boundaries, set the status and headers with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="api/wybthon/#wybthon.http_status"><code>http_status</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="api/wybthon/#wybthon.http_header"><code>http_header</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="api/wybthon/#wybthon.hydrate"><code>hydrate</code></a> the result in the browser.</li>
 <li>Form state, validators, and accessibility helpers in <code>wybthon.forms</code>.</li>
-<li>A test renderer, <a href="api/testing/"><code>wybthon.testing</code></a>, that mounts components into an in-memory DOM in plain CPython.</li>
-<li>A dev server (<code>wyb dev</code>) with hot reload via Server-Sent Events, and production builds (<code>wyb build</code>) with dev-mode checks turned off, the asset manifest inlined, and the runtime preloaded.</li>
+<li>A test renderer, <a href="api/testing/"><code>wybthon.testing</code></a>, that mounts components into an in-memory DOM in plain CPython, and a pytest plugin that compiles templates in test modules.</li>
+<li>A dev server (<code>wyb dev</code>) with hot reload via Server-Sent Events, production builds (<code>wyb build</code>) with templates compiled ahead of time, dev-mode checks turned off, the asset manifest inlined, and the runtime preloaded, and <code>wyb run</code> for scripts.</li>
 </ul>
 <h2 id="try-it-in-30-seconds">Try it in 30 seconds<a class="headerlink" href="#try-it-in-30-seconds" title="Permanent link">&para;</a></h2>
 <p>The smallest interactive Wybthon component looks like this:</p>
@@ -3252,7 +3283,7 @@
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">      &lt;div&gt;</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;Increment&lt;/button&gt;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">      &lt;/div&gt;</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s2">    """</span><span class="p">)</span>
@@ -3260,7 +3291,7 @@
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">render</span><span class="p">(</span><span class="n">Counter</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>t"..."</code> is a <a href="https://peps.python.org/pep-0750/">PEP 750</a> template string, new in Python 3.14. <code>count</code> is an accessor, so interpolating it creates a reactive binding: only that text node updates when the signal changes. Walk through this example end to end in <a href="getting-started/">Getting started</a>, read the <a href="concepts/templates/">Templates</a> guide, or jump straight into the <a href="concepts/mental-model/">Concepts</a> section.</p>
+<p><code>t"..."</code> is a <a href="https://peps.python.org/pep-0750/">PEP 750</a> template string, new in Python 3.14. <code>{count()}</code> calls something, so the compiler turns it into a getter: a reactive binding, and only that text node updates when the signal changes. Walk through this example end to end in <a href="getting-started/">Getting started</a>, read the <a href="concepts/templates/">Templates</a> guide, or jump straight into the <a href="concepts/mental-model/">Concepts</a> section.</p>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
@@ -3281,20 +3312,21 @@
 </ol>
 <h2 id="why-wybthon">Why Wybthon?<a class="headerlink" href="#why-wybthon" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Run-once components and typed props.</strong> A <code>@component</code> declares its inputs on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="api/wybthon/#wybthon.Props"><code>Props</code></a> class, and each <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Prop&lt;/span&gt;" href="api/wybthon/#wybthon.Prop"><code>Prop[T]</code></a> field reads as an accessor. Place it in the tree to bind it, call it inside a memo or effect to derive from it, or <code>.peek()</code> it for a one-time read. Callbacks are plain fields, passed through untouched.</li>
-<li><strong>Markup compiles once.</strong> A template literal is parsed and compiled the first time it runs; every later call clones its native <code>&lt;template&gt;</code> with one kernel command and fills its slots. It's the job Solid's compiler does for JSX, done by the language with no build step.</li>
-<li><strong>Holes are the unit of update.</strong> A zero-argument callable or accessor anywhere in the markup becomes its own binding. There are no component re-renders to reason about.</li>
-<li><strong>Components cost what their markup costs.</strong> A constant prop subscribes to nothing, a binding that reads nothing reactive is dropped after its first run, and <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions rather than wrapper components.</li>
+<li><strong>Run-once components and typed props.</strong> A <code>@component</code> declares its inputs on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="api/wybthon/#wybthon.Props"><code>Props</code></a> class with plain annotations, and <code>props.title</code> is a tracked read of the parent's value, as in Solid. Use it in the markup to bind it, in a memo or effect to derive from it, or in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="api/wybthon/#wybthon.untrack"><code>untrack</code></a> for a one-time read. Callbacks are fields annotated as callable, passed through untouched.</li>
+<li><strong>A compiler, as in Solid.</strong> The <a href="concepts/compiler/">compiler</a> rewrites each template before its module runs: an expression that calls something, reads an attribute, or indexes becomes a getter, and a component call in the markup receives getters for its props. You write <code>{count() * 2}</code>, not a lambda.</li>
+<li><strong>Markup compiles ahead of time.</strong> Each template literal is parsed, validated, and turned into a mount function when its module is compiled; every instance clones its native <code>&lt;template&gt;</code> with one kernel command and fills its slots. Production builds never parse a template or generate code at run time.</li>
+<li><strong>Holes are the unit of update.</strong> Each dynamic expression in the markup becomes its own binding. There are no component re-renders to reason about.</li>
+<li><strong>Components cost what their markup costs.</strong> A constant prop subscribes to nothing, a binding that reads nothing reactive allocates no computation, and <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions rather than wrapper components.</li>
 <li><strong>Automatic batching.</strong> Signal writes are staged and applied once per microtask (and at the end of every event handler). There's no <code>batch()</code>; call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flush&lt;/span&gt;" href="api/wybthon/#wybthon.flush"><code>flush</code></a> only when you need the settled state synchronously.</li>
 <li><strong>Async is part of the graph.</strong> Reading an async memo before it resolves raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a>, which the nearest <code>Loading</code> boundary turns into fallback UI. Content stays mounted while pending, and a later refetch runs as a transition: the UI that depends on the change holds on the previous state until the new value lands, so nothing tears.</li>
 <li><strong>A virtual DOM where it pays off.</strong> Every DOM call crosses the Pyodide bridge, so Wybthon emits DOM operations into a buffer and ships them to a JavaScript kernel in one batch per flush. Only reactive holes that return new markup are diffed, and a template from the same literal is patched slot by slot.</li>
-<li><strong>Dev-mode diagnostics.</strong> Writing a signal inside a tracking scope raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>; reading a signal or prop at the top level of a component body warns, because that read isn't tracked; an unknown or missing prop raises <code>TypeError</code>. Production builds turn these checks off.</li>
+<li><strong>Dev-mode diagnostics.</strong> Writing a signal inside a tracking scope raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>; reading a signal or prop at the top level of a component body warns, because that read isn't tracked; an unknown or missing prop raises <code>TypeError</code>; a template that reached <code>html()</code> without the compiler raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a>. Production builds turn these checks off.</li>
 <li><strong>Runs anywhere Python runs.</strong> The reactive core and the VDOM are pure Python, so component tests run in CPython with <a href="api/testing/"><code>wybthon.testing</code></a>.</li>
 </ul>
 <h2 id="documentation-map">Documentation map<a class="headerlink" href="#documentation-map" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Get started</strong>: install, write your first component, explore the dev server.</li>
-<li><strong>Concepts</strong>: deep dives into the <a href="concepts/mental-model/">mental model</a>, <a href="concepts/templates/">templates</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
+<li><strong>Concepts</strong>: deep dives into the <a href="concepts/mental-model/">mental model</a>, <a href="concepts/templates/">templates</a>, <a href="concepts/compiler/">the compiler</a>, reactivity, components, lifecycle, VDOM, and DOM interop.</li>
 <li><strong>Guides</strong>: task-oriented recipes for <a href="guides/authoring-patterns/">authoring patterns</a>, <a href="guides/testing/">testing</a>, <a href="guides/performance/">performance</a>, <a href="guides/typing/">typing</a>, <a href="guides/deployment/">deployment</a>, and more.</li>
 <li><strong>Examples</strong>: complete, runnable modules for a counter, async fetch, forms, error handling, and routing.</li>
 <li><strong>API reference</strong>: auto-generated documentation per module via <code>mkdocstrings</code>.</li>

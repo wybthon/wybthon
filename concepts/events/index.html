@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1933,8 +1963,6 @@
       
         
       
-        
-      
     
     
     
@@ -2185,34 +2213,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2241,14 +2241,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2738,6 +2738,8 @@
       
         
       
+        
+      
     
     
     
@@ -2893,6 +2895,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3299,12 +3329,13 @@ single Python call per handler that matches.</p>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">clicked</span><span class="si">}</span><span class="s2">&gt;Click&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>In a template, <code>onclick</code>, <code>onClick</code>, and <code>on:click</code> all bind a <code>click</code>
-handler; use whichever reads best to you. The
-<a href="../../api/elements/">element helpers</a> spell the same prop with a Python
-name, <code>on_click</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">button</span><span class="p">(</span><span class="s2">"Click"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">clicked</span><span class="p">)</span>
+handler; use whichever reads best to you. The compiler never wraps an
+event handler, so <code>onclick={clicked}</code> passes the function itself. When
+markup is built by code with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a>, the same prop takes a
+Python name, <code>on_click</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">h</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"on_click"</span><span class="p">:</span> <span class="n">clicked</span><span class="p">},</span> <span class="s2">"Click"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Both styles go through the same prop applier, so a handler behaves
+<p>Both go through the same prop applier, so a handler behaves
 identically in either. Non-callable values are ignored, and passing
 <code>None</code> on an update removes the handler.</p>
 <p>A handler may take the event or no arguments at all. Wybthon checks the
@@ -3322,8 +3353,7 @@ event:</p>
 </span></code></pre></div>
 <p>Name your handlers, as above. Python doesn't allow a bare <code>lambda</code>
 inside a t-string interpolation, so an inline handler needs parentheses:
-<code>onclick={(lambda: set_count(0))}</code>. See
-<a href="../templates/#lambdas-need-parentheses">Templates</a>.</p>
+<code>onclick={(lambda: set_count(0))}</code>. See <a href="../templates/">Templates</a>.</p>
 <h2 id="domevent">DomEvent<a class="headerlink" href="#domevent" title="Permanent link">&para;</a></h2>
 <p>Handlers that take an argument receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../../api/wybthon/#wybthon.DomEvent"><code>DomEvent</code></a>
 built from a small payload the kernel assembles natively, so reading the
@@ -3346,7 +3376,7 @@ common fields never crosses the Python-to-JS bridge:</p>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">set_name</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;input value=</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">update_name</span><span class="si">}</span><span class="s2">&gt;"</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;input value=</span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">update_name</span><span class="si">}</span><span class="s2">&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A submit handler:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomEvent</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
@@ -3424,19 +3454,19 @@ aren't routed to an <a class="autorefs autorefs-internal" title="&lt;code class=
 <td><code>"dblclick"</code></td>
 </tr>
 <tr>
-<td>Helper</td>
+<td><code>h()</code> props and spreads</td>
 <td><code>on_click</code>, <code>onClick</code></td>
 <td><code>"click"</code></td>
 </tr>
 <tr>
-<td>Helper</td>
+<td><code>h()</code> props and spreads</td>
 <td><code>on_input</code>, <code>onInput</code></td>
 <td><code>"input"</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>A <code>Capture</code> suffix listens in the capture phase: <code>onClickCapture</code> in a template, <code>on_click_capture</code> on a helper.</li>
+<li>A <code>Capture</code> suffix listens in the capture phase: <code>onClickCapture</code> in a template, <code>on_click_capture</code> in <code>h()</code> props.</li>
 <li>Any attribute or prop starting with <code>on</code> (<code>on_</code> or <code>on:</code> included) is treated as an event handler.</li>
 </ul>
 <h2 id="event-types-that-work-best-with-delegation">Event types that work best with delegation<a class="headerlink" href="#event-types-that-work-best-with-delegation" title="Permanent link">&para;</a></h2>
@@ -3512,7 +3542,7 @@ handlers return, just as in the browser:</p>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">():</span>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="n">set_count</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
 </span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
 </span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_counter</span><span class="p">():</span>
@@ -3536,7 +3566,7 @@ other type.</p>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button onclick=</span><span class="si">{</span><span class="n">event</span><span class="p">(</span><span class="n">save</span><span class="p">,</span><span class="w"> </span><span class="n">once</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;Once&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>event(callback, capture=False, passive=False, once=False)</code> configures native listener options. It works the same in any spelling: <code>on_click=event(save, once=True)</code> on a helper. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses <code>composedPath</code>, sends one route across the bridge, and flushes after its handlers. Custom event <code>detail</code>, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.</p>
+<p><code>event(callback, capture=False, passive=False, once=False)</code> configures native listener options. It works the same in any spelling: <code>{"on_click": event(save, once=True)}</code> in <code>h()</code> props. Focus, blur, and other non-bubbling events work through direct listeners. Ordinary bubbling uses <code>composedPath</code>, sends one route across the bridge, and flushes after its handlers. Custom event <code>detail</code>, composition state, selected option values, and scroll position are included in the payload. A passive handler can't prevent the default action.</p>
 
 
 

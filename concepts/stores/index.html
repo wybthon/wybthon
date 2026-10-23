@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1878,8 +1908,6 @@
       
         
       
-        
-      
     
     
     
@@ -2130,34 +2158,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2186,14 +2186,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2683,6 +2683,8 @@
       
         
       
+        
+      
     
     
     
@@ -2838,6 +2840,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3211,7 +3241,7 @@
 </span></code></pre></div>
 <p><code>snapshot(value)</code> returns detached plain data without tracking. Changing the snapshot can't change the store. <code>deep(value)</code> returns detached plain data and subscribes to that subtree. Neither exposes mutable backing data.</p>
 <h2 id="identity-and-reconciliation">Identity and reconciliation<a class="headerlink" href="#identity-and-reconciliation" title="Permanent link">&para;</a></h2>
-<p>Pass a store list straight to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>: <code>For(state.todos, row)</code>. There's no need for <code>lambda: state.todos</code>, because a store list is already reactive, and <code>For</code> uses the store's edit records directly. Default matching preserves entity identity, so <code>row</code> receives each entity's proxy and an index accessor; read fields inside reactive expressions (<code>todo.title</code>) to track them. Use <code>keyed=lambda todo: todo.id</code> when replacement objects represent the same application entity; with a key function, <code>row</code> receives item and index accessors instead (<code>todo().title</code>).</p>
+<p>Pass a store list straight to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;For&lt;/span&gt;" href="../../api/wybthon/#wybthon.For"><code>For</code></a>: <code>For(state.todos, row)</code>. There's no need for <code>lambda: state.todos</code>, because a store list is already reactive, and <code>For</code> uses the store's edit records directly. Default matching preserves entity identity, so <code>row</code> receives each entity's proxy and an index accessor; read fields in the template (<code>{todo.title}</code>) or inside other reactive expressions to track them. Use <code>keyed=lambda todo: todo.id</code> when replacement objects represent the same application entity; with a key function, <code>row</code> receives item and index accessors instead (<code>todo().title</code>).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">reconcile</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">write</span><span class="p">(</span>
@@ -3251,16 +3281,17 @@
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">row_class</span><span class="p">():</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="k">return</span> <span class="s2">"active"</span> <span class="k">if</span> <span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">():</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="n">set_selected</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">():</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">set_selected</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;tr class=</span><span class="si">{</span><span class="n">row_class</span><span class="si">}</span><span class="s2"> onclick=</span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2">&gt;&lt;td&gt;</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">todo</span><span class="o">.</span><span class="n">title</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/td&gt;&lt;/tr&gt;"</span><span class="p">)</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="s2">      &lt;tr class=</span><span class="si">{</span><span class="s2">"active"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="kc">None</span><span class="si">}</span><span class="s2"> onclick=</span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="s2">        &lt;td&gt;</span><span class="si">{</span><span class="n">todo</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/td&gt;</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="s2">      &lt;/tr&gt;</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="s2">    """</span><span class="p">)</span>
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;table&gt;&lt;tbody&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/tbody&gt;&lt;/table&gt;"</span><span class="p">)</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;table&gt;&lt;tbody&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/tbody&gt;&lt;/table&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>create_optimistic_store(source, seed)</code> returns a store and an optimistic draft setter. Active edits replay over new authoritative data, and each action's edits disappear when its dependency group settles. Keep draft callbacks deterministic. See <a href="../runtime-contracts/">Runtime contracts</a> for concurrent action, acknowledgment, and cancellation semantics.</p>
 

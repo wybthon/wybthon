@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -652,6 +654,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1978,8 +2008,6 @@
       
         
       
-        
-      
     
     
     
@@ -2230,34 +2258,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2286,14 +2286,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2783,6 +2783,8 @@
       
         
       
+        
+      
     
     
     
@@ -2938,6 +2940,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3400,7 +3430,7 @@ write batches.</p>
 <li><strong>Writes are staged, not applied.</strong> <code>set_count(1)</code> records a pending value. <code>count()</code> keeps returning the committed value until the graph flushes. Functional updates (<code>set_count(lambda n: n + 1)</code>) receive the latest <em>staged</em> value, so consecutive updates compose.</li>
 <li><strong>When the flush happens.</strong> In the browser, the first write schedules a flush on a microtask, and event handlers dispatched through Wybthon flush when they return. In plain Python, call <code>flush()</code>.</li>
 <li><strong>Writes coalesce.</strong> Any number of writes before a flush produce one run per affected effect and one DOM commit.</li>
-<li><strong>Equality short-circuits.</strong> A write equal to the committed value (under the signal's <code>equals</code>) is dropped at commit time and notifies nothing.</li>
+<li><strong>Equality short-circuits.</strong> A write equal to the committed value (under the signal's <code>equals</code>, by default <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_equal&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_equal"><code>is_equal</code></a>: identity, then <code>==</code>) is dropped at commit time and notifies nothing.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">flush</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -3439,11 +3469,14 @@ mounted DOM on its first run, and refs are already assigned. Render
 effects, by contrast, run immediately at creation.</p>
 <h2 id="reading-without-tracking">Reading without tracking<a class="headerlink" href="#reading-without-tracking" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;untrack&lt;/span&gt;" href="../../api/wybthon/#wybthon.untrack"><code>untrack</code></a> runs a function with tracking suppressed;
-every accessor's <code>.peek()</code> does the same for a single read:</p>
+every accessor's <code>.peek()</code> does the same for a single read. Props have
+no <code>.peek()</code>, because <code>props.initial</code> is already the value: wrap the
+read in <code>untrack</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">untrack</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">create_effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">a</span><span class="p">(),</span> <span class="n">untrack</span><span class="p">(</span><span class="n">b</span><span class="p">)),</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"a changed:"</span><span class="p">,</span> <span class="n">pair</span><span class="p">))</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">untrack</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">props</span><span class="o">.</span><span class="n">initial</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">count</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
 </span></code></pre></div>
 <p>For explicit dependencies prefer the <strong>split effect</strong>: the compute stage
 tracks, and the apply stage runs untracked with the computed value (and
@@ -3461,7 +3494,7 @@ and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol
 enforces two rules:</p>
 <ul>
 <li><strong>No writes inside tracking scopes.</strong> Writing a signal or store from a memo body, a tracked effect (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_tracked_effect&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_tracked_effect"><code>create_tracked_effect</code></a>), or a hole raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;WriteInScopeError&lt;/span&gt;" href="../../api/wybthon/#wybthon.WriteInScopeError"><code>WriteInScopeError</code></a>. Derive the value with a memo, or move the write into the <code>apply</code> stage of a split effect, an event handler, or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a>.</li>
-<li><strong>No untracked reads at the top level of a component body.</strong> Calling a signal, memo, or prop there freezes the value and warns once per component and value. Read it in a hole, memo, or effect, or make the one-time read explicit with <code>.peek()</code> or <code>untrack</code>.</li>
+<li><strong>No untracked reads at the top level of a component body.</strong> Reading a signal, a memo, or a prop the parent passed as an expression there freezes the value and warns once per component and value. Read it in the returned markup, a memo, or an effect, or make the one-time read explicit with <code>untrack</code> (or <code>.peek()</code> on a signal).</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_memo</span><span class="p">,</span> <span class="n">create_signal</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
@@ -3541,11 +3574,11 @@ after the <code>await</code> are tracked exactly like reads before it.</p>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_effect</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TimerProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">interval</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nd">@component</span>
@@ -3556,13 +3589,17 @@ after the <code>await</code> are tracked exactly like reads before it.</p>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">create_effect</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">"count is"</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
 </span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
 </span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="c1"># Binding: re-runs only when count changes.</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Elapsed: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>A binding or hole whose first run reads nothing reactive, and creates
 no children, cleanups, or async work, can never run again. The renderer
-disposes it right away and keeps only the DOM it produced. A hole such
-as <code>{(lambda: props.label().upper())}</code> over a constant prop therefore
-costs nothing after its first run.</p>
+disposes it right away and keeps only the DOM it produced. A binding
+whose expression makes no calls goes further: <code>{props.label}</code> first
+runs under a lightweight probe, and when it reads nothing reactive
+(the parent passed a constant), the value is applied and no
+computation is allocated at all. So <code>{props.label}</code> over a constant
+prop costs no computation, and <code>{props.label.upper()}</code> costs nothing
+after its first run.</p>
 <h2 id="disposal">Disposal<a class="headerlink" href="#disposal" title="Permanent link">&para;</a></h2>
 <p>Calling <code>.dispose()</code> on a computation unsubscribes it from every source
 and drops it as a source for its own observers; a disposed effect
@@ -3592,6 +3629,7 @@ in the graph:</p>
 <li><strong>Transitions.</strong> When a change makes an async memo that already has a value recompute, the flush holds that change and everything derived from it: the UI keeps the old state and updates all at once when the new value lands. Writes an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;action&lt;/span&gt;" href="../../api/wybthon/#wybthon.action"><code>action</code></a> makes are held the same way until the action settles.</li>
 <li><strong><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_pending&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_pending"><code>is_pending</code></a></strong> is a tracked probe that's <code>True</code> while what it reads is held or recomputing; <strong><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;latest&lt;/span&gt;" href="../../api/wybthon/#wybthon.latest"><code>latest</code></a></strong> reads the newest state without ever raising; <strong><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve"><code>resolve</code></a></strong> awaits the next settled value; <strong><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;refresh&lt;/span&gt;" href="../../api/wybthon/#wybthon.refresh"><code>refresh</code></a></strong> recomputes quietly.</li>
 <li><strong>Errors are stored and re-raised on read</strong>, so a failed fetch reaches the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../../api/wybthon/#wybthon.Errored"><code>Errored</code></a> boundary.</li>
+<li><strong><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_deferred&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_deferred"><code>create_deferred</code></a></strong> is an async memo that, after its first value, never holds the rest of the UI: a refetch opens no transition, and readers keep the last value until the new one lands. Use it for independent widgets such as feeds and search results.</li>
 </ul>
 <p>See <a href="../async-loading/">Async and loading</a> for boundaries, actions, and
 optimistic state.</p>

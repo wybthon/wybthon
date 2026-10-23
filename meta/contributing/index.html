@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1784,8 +1814,6 @@
       
         
       
-        
-      
     
     
     
@@ -2036,34 +2064,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2092,14 +2092,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2589,6 +2589,8 @@
       
         
       
+        
+      
     
     
     
@@ -2744,6 +2746,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3270,6 +3300,7 @@
 <li>Author new pages under <code>docs/</code> and add them to <code>mkdocs.yml</code>.</li>
 <li>Build the site locally with <code>mkdocs serve</code> (or <code>mkdocs build --strict</code> to fail on warnings the way CI does).</li>
 <li>Cross-reference Python symbols with <code>[label][wybthon.symbol]</code> syntax; see the <a href="../style-guide/">style guide</a> for details.</li>
+<li>Write examples in the current style (templates, plain-annotation props) and check them by running them with <code>uv run wyb run example.py</code>, which compiles their templates the way an application's are.</li>
 </ul>
 <h2 id="filing-a-pull-request">Filing a pull request<a class="headerlink" href="#filing-a-pull-request" title="Permanent link">&para;</a></h2>
 <ol>

@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1425,10 +1455,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templates-and-element-helpers" class="md-nav__link">
+  <a href="#templates-and-h" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Templates and element helpers
+        Templates and h()
       
     </span>
   </a>
@@ -1911,8 +1941,6 @@
       
         
       
-        
-      
     
     
     
@@ -2163,34 +2191,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2219,14 +2219,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2716,6 +2716,8 @@
       
         
       
+        
+      
     
     
     
@@ -2871,6 +2873,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3153,10 +3183,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templates-and-element-helpers" class="md-nav__link">
+  <a href="#templates-and-h" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Templates and element helpers
+        Templates and h()
       
     </span>
   </a>
@@ -3254,26 +3284,29 @@
 <h2 id="what-the-engine-does-for-you">What the engine does for you<a class="headerlink" href="#what-the-engine-does-for-you" title="Permanent link">&para;</a></h2>
 <p>Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so the engine's fast paths target the Python side.</p>
 <ul>
-<li><strong>Templates compile once per literal.</strong> A t-string literal hands <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> the same static strings on every call, so Wybthon parses and compiles each literal once. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. No VNode tree is built for static parts, and nothing is checked node by node: the literal guarantees its own structure. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
-<li><strong>Components cost what their markup costs.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing; a prop passed as an accessor subscribes the reader directly.</li>
-<li><strong>Inert bindings are dropped.</strong> A hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) can never run again, so Wybthon disposes it immediately and keeps only the DOM it produced.</li>
+<li><strong>Templates are compiled ahead of time.</strong> Wybthon's <a href="../../concepts/compiler/">compiler</a> parses and validates each <code>html(t"...")</code> literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. <code>wyb build</code> turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. No VNode tree is built for static parts. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
+<li><strong>Bindings that read nothing cost nothing.</strong> The compiler's rule is syntactic, so <code>{item["label"]}</code> or <code>{props.title}</code> becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.</li>
+<li><strong>Bindings keep their state in slots.</strong> A hole or attribute binding is a small computation that holds its node, name, and last value in slots and applies changes with a method, instead of a closure with its cells. A node with one delegated handler stores it directly in the handler table. Fewer objects per row means less work for the garbage collector, which matters most in Pyodide.</li>
+<li><strong>Components cost what their markup costs.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.</li>
 <li><strong>Native control flow.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.</li>
+<li><strong>Rows are cheap.</strong> A list row is its own owner and its own index accessor. Its index is a plain integer until something reads <code>index()</code> in a tracking scope; only then is a signal created for it, so a row that never reads its index allocates nothing for it.</li>
+<li><strong>Keyed matching skips what didn't change.</strong> Matching a new list against the mounted rows first skips the common prefix and suffix by identity, without calling into each row. A replacement that only swapped two rows is detected the way Solid's <code>reconcileArrays</code> detects it, and becomes two native moves. Only what's left goes through a key table.</li>
 <li><strong>Native disposal.</strong> Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python releases its own registrations (handlers, reactive bindings, refs) without visiting every node. Clearing a <code>For</code> list is one range removal plus disposal of each row's owner.</li>
 <li><strong>Bulk replacement.</strong> When a keyed list reuses none of its rows, the old rows go in one <code>DISPOSE_RANGE</code> command and the new rows mount as one splice, instead of reconciling every unrelated pair.</li>
 <li><strong>Text placeholders.</strong> A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain <code>nodeValue</code> write rather than a node replacement.</li>
 <li><strong>Lighter computations.</strong> Async state lives outside each computation until a computation actually runs async work, so an ordinary render binding doesn't allocate it.</li>
 </ul>
-<h2 id="templates-and-element-helpers">Templates and element helpers<a class="headerlink" href="#templates-and-element-helpers" title="Permanent link">&para;</a></h2>
-<p>Both styles share one set of prop appliers, so they behave the same; they differ in what happens before mounting.</p>
+<h2 id="templates-and-h">Templates and <code>h()</code><a class="headerlink" href="#templates-and-h" title="Permanent link">&para;</a></h2>
+<p>Templates and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> share one set of prop appliers, so they behave the same; they differ in what happens before mounting.</p>
 <ul>
-<li>A <strong>template</strong> costs one cached lookup per call, then one clone. Its structure is fixed by the literal.</li>
-<li>An <strong>element helper</strong> tree is built as VNodes on every call. Wybthon compiles each repeated helper shape at run time, so a repeated row still mounts with one clone command, but every instance pays for building its VNodes and for matching them against the compiled shape. A helper subtree whose structure varies (a conditional element in one branch, for example) mounts on the generic path.</li>
+<li>A <strong>template</strong> is prepared by the compiler. Each call costs a cached lookup and one clone, and its structure is fixed by the literal.</li>
+<li>An <strong><code>h()</code> tree</strong> is built as VNodes on every call and mounts on the generic path, with no template to clone.</li>
 </ul>
-<p>Use templates for markup you write by hand, and especially for list rows. Use the helpers where markup is built by code. In a helper tree, keep row structure consistent and put any variation inside a hole.</p>
+<p>Use templates for markup you write by hand, and especially for list rows. Use <code>h()</code> where markup is built by code.</p>
 <h2 id="use-the-incremental-paths">Use the incremental paths<a class="headerlink" href="#use-the-incremental-paths" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Pass accessors instead of re-rendering holes.</strong> Put a signal straight into the markup (<code>&lt;b title={role}&gt;{name}&lt;/b&gt;</code>) and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. Pass accessors to components too: a hole that rebuilds <code>Card(title=title())</code> patches the component on every change, while <code>Card(title=title)</code> placed once never re-runs.</li>
-<li><strong>Keep holes small.</strong> A function hole around a single text node patches one node.</li>
+<li><strong>Bind values where they're shown.</strong> Write the read where it's used (<code>&lt;b title={role()}&gt;{name()}&lt;/b&gt;</code>), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (<code>{user_card(user())}</code>) is such a hole, so make it a component instead: <code>{UserCard(name=user().name)}</code> mounts once and receives a getter, so a change updates only the text that reads <code>props.name</code>.</li>
+<li><strong>Keep holes small.</strong> A hole around a single text node patches one node.</li>
 <li><strong>Pass a store list directly through a <code>For</code> accessor.</strong> Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.</li>
 <li>
 <p><strong>Select rows with a projection.</strong> Each row reads its own key, so a selection change notifies only the old and new rows, not every row:</p>
@@ -3287,22 +3320,21 @@
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">is_selected</span> <span class="o">=</span> <span class="n">create_projection</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">selected</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">selected</span><span class="p">():</span> <span class="kc">True</span><span class="p">})</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">row</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">row_class</span><span class="p">():</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="k">return</span> <span class="s2">"danger"</span> <span class="k">if</span> <span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">():</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="n">set_selected</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">():</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">set_selected</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li class=</span><span class="si">{</span><span class="n">row_class</span><span class="si">}</span><span class="s2"> onclick=</span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">          &lt;li class=</span><span class="si">{</span><span class="s2">"danger"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">""</span><span class="si">}</span><span class="s2"> onclick=</span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/li&gt;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s2">        """</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>is_selected.get(key)</code> is tracked per key and returns <code>None</code> when the key is absent. Each row mounts with one clone command, and a selection change sends one command per affected row.</p>
 </li>
 <li>
 <p><strong>Use <code>Repeat(count, row)</code> for integer slots.</strong> Growing it mounts only the new slots.</p>
 </li>
-<li><strong>Keep component setup stable.</strong> Place dynamic reads in accessors, holes, or attribute expressions. Components don't rerun for ordinary state updates.</li>
+<li><strong>Keep component setup stable.</strong> Place dynamic reads in the markup, memos, or effects. Components don't rerun for ordinary state updates.</li>
 <li><strong>Virtualize large collections.</strong> Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;VirtualFor&lt;/span&gt;" href="../../api/app-tools/#wybthon.virtual.VirtualFor"><code>VirtualFor</code></a> for large scrollable collections with fixed row heights. Offscreen rows are disposed, so store durable row state outside the row component.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
@@ -3330,8 +3362,8 @@
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">measured</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">runtime_stats</span><span class="p">())</span>
 </span></code></pre></div>
-<p>Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization and kernel time when those operations occur. <code>template_clones</code> counts template instances mounted by cloning. For element helpers, <code>template_recipe_hits</code> counts mounts that reused a compiled shape, and <code>template_shape_walks</code> counts mounts that had to discover a shape first; a helper list whose rows mostly walk instead of hitting a recipe has varying structure worth unifying. <code>inspect_graph(owner)</code> reports ownership and dependencies without evaluating values.</p>
-<p>The repository's <code>benchmarks/check_work.py</code> gates command counts in CI: appending 1,000 rows must create 1,000 rows with one clone command each (counting both template clones and compiled helper shapes), and selection and swap must each emit at most two commands. Work counts are deterministic, so they make better regression gates than timings.</p>
+<p>Profiling is opt-in. Reports include computation runs, rows created, list entries scanned, edit records, commits, DOM commands, serialized bytes, and serialization and kernel time when those operations occur. <code>template_clones</code> counts template instances mounted by cloning. <code>inspect_graph(owner)</code> reports ownership and dependencies without evaluating values.</p>
+<p>The repository's <code>benchmarks/check_work.py</code> gates command counts in CI: appending 1,000 rows must create 1,000 rows with one template clone command each, and selection and swap must each emit at most two commands. Work counts are deterministic, so they make better regression gates than timings.</p>
 <h2 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--locked<span class="w"> </span>--group<span class="w"> </span>dev
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
@@ -3341,8 +3373,8 @@
 <p>The browser benchmark builds the benchmark app (an ordinary project in <code>benchmarks/app</code>) with <code>wyb build</code>, serves it, and drives ordinary delegated button events. Each scenario restores its own baseline, warms up, checks that the DOM actually changed, and reports separate synchronous commit and input-to-frame samples. Append starts from 10,000 rows and verifies 11,000 afterward. Selection toggles between distinct rows.</p>
 <p>Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.</p>
 <p><code>benchmarks/compare_browser.py --baseline /path/to/baseline</code> alternates identical operations between isolated checkouts, building each one, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use <code>--mode store</code> for store comparisons and <code>--profile</code> for additional, untimed CPU profiles.</p>
-<p><code>benchmarks/row_bench.py</code> times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. Pass <code>--template</code> to write the rows as <code>html</code> templates instead of element helpers.</p>
-<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> compares this engine with the previous release.</p>
+<p><code>benchmarks/row_bench.py</code> times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. With the compiler, its rows are compiled the way an application's modules are, with no hand-written lambdas.</p>
+<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md"><code>engine-v4.md</code></a> compares this engine with the previous release, and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> the one before it. In Engine v4, a mounted template row keeps about half as many objects tracked by the garbage collector as before, and swapping two rows is two native moves.</p>
 <p>A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.</p>
 <h2 id="diagnose-pending-publication">Diagnose pending publication<a class="headerlink" href="#diagnose-pending-publication" title="Permanent link">&para;</a></h2>
 <p>Use <code>diagnostics.inspect_transitions()</code> to see which computations and actions hold each dependency group. <code>diagnostics.inspect_graph(owner)</code> includes read modes, group IDs, and provisional owners. An ordinary consumer of two pending results joins their groups; a separate <code>latest()</code> or <code>is_pending()</code> binding can publish during the hold. See <a href="../../concepts/runtime-contracts/">Runtime contracts</a> for the read and ownership rules.</p>

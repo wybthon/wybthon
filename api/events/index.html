@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/events/">
       
       
-        <link rel="prev" href="../svg/">
+        <link rel="prev" href="../compiler/">
       
       
         <link rel="next" href="../forms/">
@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2039,34 +2067,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2095,14 +2095,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2267,6 +2267,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;event
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.handlers_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;handlers_of
       
     </span>
   </a>
@@ -2829,6 +2840,8 @@
       
         
       
+        
+      
     
     
     
@@ -2984,6 +2997,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3330,6 +3371,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;event
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.handlers_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;handlers_of
       
     </span>
   </a>
@@ -4030,6 +4082,26 @@ fire.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="wybthon.events.handlers_of" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">handlers_of</span>
+
+
+<a href="#wybthon.events.handlers_of" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">handlers_of</span><span class="p">(</span><span class="n">entry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><span title="wybthon.events._Handler">_Handler</span></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The handlers in one table entry (internal).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="wybthon.events.bind_delegated" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">bind_delegated</span>
 
@@ -4330,18 +4402,20 @@ entry points used by the renderer and the kernel.</p>
 <li>In a template, an attribute named <code>on&lt;type&gt;</code> is a handler:
   <code>onclick={save}</code>, <code>oninput={edit}</code>. <code>onClick</code> and <code>on:click</code> work
   too. The DOM event type is the rest of the name, lower-cased.</li>
-<li>With the element helpers, a prop named <code>on_&lt;type&gt;</code> (or <code>on&lt;Type&gt;</code>) is
-  a handler: <code>on_click</code>, <code>on_input</code>, <code>on_keydown</code>, <code>onChange</code>. Spreads
-  such as <code>&lt;input {bind_text(field)}&gt;</code> use these names.</li>
+<li>In a spread (<code>&lt;input {bind_text(field)}&gt;</code>) or an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h()</code></a>
+  props dict, a key named <code>on_&lt;type&gt;</code> (or <code>on&lt;Type&gt;</code>) is a handler:
+  <code>on_click</code>, <code>on_input</code>, <code>on_keydown</code>, <code>onChange</code>.</li>
 <li>A capture suffix listens in the capture phase: <code>onClickCapture</code> in a
-  template, <code>on_click_capture</code> on a helper.</li>
+  template, <code>on_click_capture</code> in a spread or <code>h()</code> props.</li>
 <li>A handler takes the <code>DomEvent</code> or no arguments at all; the arity is
   checked once, at registration. Signal writes made inside a handler
   are flushed automatically when it returns, so the DOM updates before
   the browser paints.</li>
-<li>Python doesn't allow a bare <code>lambda</code> inside a template interpolation.
-  Name the handler, or wrap an inline one in parentheses:
-  <code>onclick={(lambda: set_open(False))}</code>.</li>
+<li>The compiler never wraps a handler: <code>onclick={save}</code> passes <code>save</code>
+  itself, and <code>onclick={make_handler(id)}</code> calls <code>make_handler</code> once,
+  when the template is created. Python doesn't allow a bare <code>lambda</code> as
+  a whole interpolation, so name the handler, or wrap an inline one in
+  parentheses: <code>onclick={(lambda: set_open(False))}</code>.</li>
 <li><code>evt.raw</code> is the native event and is valid only synchronously during
   dispatch.</li>
 </ul>
@@ -4370,19 +4444,15 @@ entry points used by the renderer and the kernel.</p>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">set_items</span><span class="p">([])</span>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="k">def</span><span class="w"> </span><span class="nf">rows</span><span class="p">():</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">items</span><span class="p">()]</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">ignore_touch</span> <span class="o">=</span> <span class="n">event</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">passive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># direct native listener</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="s2">  &lt;form onsubmit=</span><span class="si">{</span><span class="n">submit</span><span class="si">}</span><span class="s2"> ontouchstart=</span><span class="si">{</span><span class="n">ignore_touch</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="s2">    &lt;input value=</span><span class="si">{</span><span class="n">draft</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">edit</span><span class="si">}</span><span class="s2"> onkeydown=</span><span class="si">{</span><span class="n">keydown</span><span class="si">}</span><span class="s2">&gt;</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="s2">    &lt;button type="button" onclick=</span><span class="si">{</span><span class="n">clear</span><span class="si">}</span><span class="s2">&gt;Clear&lt;/button&gt;</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">rows</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="s2">  &lt;/form&gt;</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="s2">"""</span><span class="p">)</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">ignore_touch</span> <span class="o">=</span> <span class="n">event</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">passive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># direct native listener</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">view</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="s2">  &lt;form onsubmit=</span><span class="si">{</span><span class="n">submit</span><span class="si">}</span><span class="s2"> ontouchstart=</span><span class="si">{</span><span class="n">ignore_touch</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="s2">    &lt;input value=</span><span class="si">{</span><span class="n">draft</span><span class="p">()</span><span class="si">}</span><span class="s2"> oninput=</span><span class="si">{</span><span class="n">edit</span><span class="si">}</span><span class="s2"> onkeydown=</span><span class="si">{</span><span class="n">keydown</span><span class="si">}</span><span class="s2">&gt;</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="s2">    &lt;button type="button" onclick=</span><span class="si">{</span><span class="n">clear</span><span class="si">}</span><span class="s2">&gt;Clear&lt;/button&gt;</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="p">[</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">items</span><span class="p">()]</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="s2">  &lt;/form&gt;</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="delegation-notes">Delegation notes<a class="headerlink" href="#delegation-notes" title="Permanent link">&para;</a></h4>
 <ul>
@@ -4406,7 +4476,7 @@ entry points used by the renderer and the kernel.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../../concepts/templates/#interpolations">Templates</a>: event attributes in templates</li>
-<li><a href="../elements/">Element helpers</a>: how handler props are recognized</li>
+<li><a href="../vnode/#prop-names-and-values">VNode: prop names and values</a>: handler names in spreads and <code>h()</code> props</li>
 <li><a href="../kernel/">Kernel</a>: <code>REGISTER_TPL</code>, <code>LISTEN</code>, <code>UNLISTEN</code>, <code>ROOT</code>, and the dispatch payload</li>
 <li><a href="../../concepts/events/">Concepts: Events</a></li>
 <li><a href="../../concepts/forms/">Concepts: Forms</a></li>

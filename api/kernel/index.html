@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2590,34 +2618,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2646,14 +2646,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -3143,6 +3143,8 @@
       
         
       
+        
+      
     
     
     
@@ -3298,6 +3300,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -5344,8 +5374,7 @@ protocol. For component tests, use <a href="../testing/"><code>wybthon.testing</
 </table>
 <p>Two more module-level hooks matter to tests. <code>register_template(shape)</code>
 registers the static skeleton of a compiled <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../wybthon/#wybthon.html"><code>html</code></a>
-template, or of an element helper's compiled shape, in the same batch
-as its first clone. <code>html_templates</code> (<code>True</code>, <code>False</code>, or <code>None</code> for
+template in the same batch as its first clone. <code>html_templates</code> (<code>True</code>, <code>False</code>, or <code>None</code> for
 "ask the backend") gates template mounting; set it to <code>False</code> to force
 per-node commands.</p>
 <h4 id="wire-protocol">Wire protocol<a class="headerlink" href="#wire-protocol" title="Permanent link">&para;</a></h4>
@@ -5494,13 +5523,13 @@ hot path; <code>None</code> anchors mean "append".</p>
 </tbody>
 </table>
 <p>A row of the js-framework-benchmark table costs one command, a <code>CLONE</code>
-that carries the row's text and its label's first value, whether it's
-written as an <code>html</code> template or with element helpers. Clearing a list
+that carries the row's text and its label's first value, when it's
+written as an <code>html</code> template. Clearing a list
 is one <code>DISPOSE_RANGE</code>. Unmounting never sends lists of every node id: the
 kernel releases the removed nodes itself. See
 <a href="../../concepts/vdom/#compiled-templates">Virtual DOM</a> for how compiled
-templates, helper shapes, generated mount functions, and lazy node ids
-fit together.</p>
+templates, precompiled mount functions, and lazy node ids fit
+together.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../wybthon/#wybthon.hydrate"><code>hydrate</code></a> emits the claim ops; see <a href="../../concepts/server-rendering/">Server rendering</a>. <code>stats()</code> reports node, template, listener, and root counts plus <code>hydration_mismatches</code>, and <code>take_state()</code> and <code>replay_events()</code> read the server state and replay input recorded before hydration.</p>
 <p>Events travel the other way: the JS kernel installs one native listener
 per event type on each render root, walks the ancestor chain natively,

@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2232,34 +2260,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../templates/" class="md-nav__link">
         
   
@@ -2288,14 +2288,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2785,6 +2785,8 @@
       
         
       
+        
+      
     
     
     
@@ -2940,6 +2942,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3412,12 +3442,12 @@ phase of every flush).</p>
 <li><strong>Templates mount from compiled literals.</strong> An <code>html(t"...")</code> instance
   (a <code>_tpl</code> node) clones its literal's native template with one command
   and fills its slots (see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;templates&lt;/span&gt;" href="../templates/#wybthon.templates"><code>wybthon.templates</code></a>).
-  Element helper trees mount from runtime shapes (<code>wybthon._shapes</code>).</li>
+  Trees built with <code>h()</code> mount node by node.</li>
 <li><strong>Constant props are free.</strong> Only a tree a reactive hole returns (or
   one passed to <code>render</code>) is ever patched, so a component mounted
   anywhere else reads constant props without subscribing to anything,
-  and a binding that reads nothing reactive is dropped after its first
-  run.</li>
+  and a binding whose expression reads nothing reactive never becomes a
+  computation (see <code>_core._probe</code>).</li>
 <li><strong>Reactive holes</strong> are <code>_hole</code> VNodes whose expression runs inside a
   render effect; when its dependencies change, only that region is
   patched. Holes are created for every reactive expression in a child
@@ -3782,10 +3812,9 @@ an existing DOM node, or a kernel node id.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">render</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.elements</span><span class="w"> </span><span class="kn">import</span> <span class="n">h1</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">h1</span><span class="p">(</span><span class="s2">"Hello, world!"</span><span class="p">),</span> <span class="s2">"#app"</span><span class="p">)</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">html</span><span class="p">,</span> <span class="n">render</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;h1&gt;Hello, world!&lt;/h1&gt;"</span><span class="p">),</span> <span class="s2">"#app"</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -4085,11 +4114,10 @@ region.</p>
 <ul>
 <li><strong>Templates.</strong> An <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../wybthon/#wybthon.html"><code>html</code></a> template mounts as a <code>_tpl</code>
   node: one fused <code>CLONE</code> command copies the template's native
-  <code>&lt;template&gt;</code>, and a generated mount function fills its slots. No
-  VNodes exist for the static parts.</li>
-<li><strong>Element helper trees.</strong> Subtrees built with the
-  <a href="../elements/">element helpers</a> mount through compiled shapes, also
-  with one <code>CLONE</code> per mount.</li>
+  <code>&lt;template&gt;</code>, and the mount function the <a href="../compiler/">compiler</a>
+  emitted fills its slots. No VNodes exist for the static parts.</li>
+<li><strong><code>h()</code> trees.</strong> Element VNodes built with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../wybthon/#wybthon.h"><code>h</code></a> mount
+  node by node, with one command per node.</li>
 <li><strong>Regions.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> are native regions
   with no component wrapped around them.</li>
 <li><strong>Components and holes.</strong> A component body runs once; a hole runs in
@@ -4139,7 +4167,7 @@ and <code>unmount</code> are for control-flow primitives and tests.</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@component</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">title</span><span class="p">,</span> <span class="n">set_title</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"Hello"</span><span class="p">)</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h1&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/h1&gt;&lt;p&gt;Rendered once; the heading is a hole.&lt;/p&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;h1&gt;</span><span class="si">{</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/h1&gt;&lt;p&gt;Rendered once; the heading is a hole.&lt;/p&gt;&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">root</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">App</span><span class="p">(),</span> <span class="s2">"#app"</span><span class="p">)</span>
@@ -4152,7 +4180,8 @@ and <code>unmount</code> are for control-flow primitives and tests.</p>
 <li>The container is resolved to a kernel node id and registered as an
    event-delegation root (<code>ROOT</code> op).</li>
 <li>The tree mounts under a fresh <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Owner&lt;/span&gt;" href="../wybthon/#wybthon.Owner"><code>Owner</code></a>; component
-   bodies run once, and holes and reactive props create render effects.</li>
+   bodies run once, and holes and reactive props create render effects (a binding that
+   reads nothing reactive is applied once and creates none).</li>
 <li><code>flush()</code> commits staged writes, runs effects, and sends the op
    buffer across the bridge once.</li>
 </ol>
@@ -4167,7 +4196,10 @@ can't change, which is why a constant prop costs nothing.</p>
 unmounts and remounts at the same position (so <code>Leaf(key=user_id())</code>
 restarts its state when the id changes). Keyed children use an
 identity, key, then type match with a longest-increasing-subsequence
-move pass to keep DOM moves minimal. When a keyed list reuses none of
+move pass to keep DOM moves minimal. <code>For</code> matches its rows natively:
+it skips the unchanged prefix and suffix by identity, detects swapped
+ends the way Solid's <code>reconcileArrays</code> does, and only then falls back
+to a key table, so swapping two rows is two moves. When a keyed list reuses none of
 its rows, the new rows mount as one splice and the old ones are removed
 with a single <code>DISPOSE_RANGE</code>. Errors raised during mount or in a hole
 route to the nearest <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Errored&lt;/span&gt;" href="../wybthon/#wybthon.Errored"><code>Errored</code></a> boundary.</p>

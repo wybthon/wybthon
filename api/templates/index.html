@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://wybthon.com/api/templates/">
       
       
-        <link rel="prev" href="../elements/">
+        <link rel="prev" href="../dom/">
       
       
-        <link rel="next" href="../svg/">
+        <link rel="next" href="../compiler/">
       
       
         
@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1786,8 +1816,6 @@
       
         
       
-        
-      
     
     
     
@@ -2036,34 +2064,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -2216,14 +2216,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../svg/" class="md-nav__link">
+      <a href="../compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2713,6 +2713,8 @@
       
         
       
+        
+      
     
     
     
@@ -2868,6 +2870,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3268,19 +3298,19 @@ template string into a node:</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">      &lt;div class="counter"&gt;</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&lt;/p&gt;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s2">        &lt;p&gt;Count: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> (doubled: </span><span class="si">{</span><span class="n">count</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">)&lt;/p&gt;</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s2">        &lt;button onclick=</span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">&gt;+&lt;/button&gt;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s2">      &lt;/div&gt;</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s2">    """</span><span class="p">)</span>
 </span></code></pre></div>
-<p>A t-string literal's static strings are a constant of the code that
-contains it: every evaluation of the same literal yields the <em>same</em>
-<code>strings</code> tuple. Wybthon keys a compiled template on that identity, so a
-literal is parsed, validated, and compiled once, and every later call
-only supplies the interpolated values. (Python doesn't allow a bare
-<code>lambda</code> inside an interpolation; wrap it in parentheses or give it a
-name.) This is the runtime counterpart of
-Solid's JSX compiler (and of its buildless <code>html</code> tagged template):</p>
+<p>Wybthon's compiler (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;compiler&lt;/span&gt;" href="../compiler/#wybthon.compiler"><code>wybthon.compiler</code></a>) prepares each
+<code>html(t"...")</code> call when its module is compiled: dynamic interpolations
+(<code>{count() * 2}</code>) become getters, and the literal is parsed, validated,
+and turned into a mount function ahead of time. A template that reaches
+<code>html()</code> uncompiled (a REPL, <code>exec</code>) is compiled here on its first call
+and cached by the identity of its static strings, which a t-string
+literal shares across evaluations. Either way, this is the counterpart
+of Solid's JSX compiler:</p>
 <ul>
 <li>the static markup becomes one native <code>&lt;template&gt;</code> the kernel clones
   with a single command per instance, with no VNode tree for its static
@@ -3291,11 +3321,10 @@ Solid's JSX compiler (and of its buildless <code>html</code> tagged template):</
 <li>when a reactive hole returns a template from the same literal again,
   the mounted instance is patched slot by slot.</li>
 </ul>
-<p>Interpolations behave exactly like the element helpers'
-(<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;elements&lt;/span&gt;" href="../elements/#wybthon.elements"><code>wybthon.elements</code></a>) children and props: an
-accessor or zero-argument function becomes a reactive binding, anything
-else is applied once. Server rendering, hydration, and SVG expand the
-template into ordinary VNodes, so their output matches the helpers'.</p>
+<p>At run time an interpolation that's an accessor, a getter, or a
+zero-argument function becomes a reactive binding; anything else is
+applied once. Server rendering, hydration, and SVG expand the template
+into ordinary VNodes and mount those.</p>
 <p>See the <a href="https://wybthon.com/concepts/templates/">templates guide</a>.</p>
 
 
@@ -3409,7 +3438,7 @@ template into ordinary VNodes, so their output matches the helpers'.</p>
 
 
 <a href="#wybthon.templates.html" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">html</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;string.templatelib.Template&lt;/code&gt;" href="https://docs.python.org/3/library/string.templatelib.html#string.templatelib.Template">Template</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">html</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;string.templatelib.Template&lt;/code&gt;" href="https://docs.python.org/3/library/string.templatelib.html#string.templatelib.Template">Template</a></span><span class="p">,</span> <span class="n">compiled</span><span class="p">:</span> <span class="n"><span title="wybthon.templates.Precompiled">Precompiled</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3467,6 +3496,24 @@ newline is dropped. Several top-level nodes make a fragment.</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>compiled</code>
+            </td>
+            <td>
+                  <code><span title="wybthon.templates.Precompiled">Precompiled</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The literal's precompiled entry; the compiler passes it
+(see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;compiler&lt;/span&gt;" href="../compiler/#wybthon.compiler"><code>wybthon.compiler</code></a>). Don't pass it
+yourself.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3520,7 +3567,7 @@ rewrite it (for example <code>&lt;tr&gt;</code> directly inside <code>&lt;table&
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;li class=</span><span class="si">{</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="s2">"done"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">done</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="si">}</span><span class="s1">&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s1">&lt;/li&gt;'</span><span class="p">)</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;li class=</span><span class="si">{</span><span class="s2">"done"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">done</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">""</span><span class="si">}</span><span class="s1">&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s1">&lt;/li&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3535,7 +3582,7 @@ rewrite it (for example <code>&lt;tr&gt;</code> directly inside <code>&lt;table&
     </div>
 
 </div><h4 id="whats-in-this-module">What's in this module<a class="headerlink" href="#whats-in-this-module" title="Permanent link">&para;</a></h4>
-<p><code>templates</code> compiles t-string HTML templates. Each literal is parsed and compiled once, keyed by the identity of its static strings; every later call only supplies the interpolated values. See <a href="../../concepts/templates/">Templates</a> for the full guide.</p>
+<p><code>templates</code> turns t-string HTML templates into nodes. The <a href="../compiler/">compiler</a> parses and validates each literal when its module is compiled, turns its dynamic interpolations into getters, and emits its mount functions as ordinary module code, so <code>html()</code> only rebuilds the slot plan from the precompiled tree on first use. A template that reaches <code>html()</code> uncompiled (a REPL, <code>exec</code>) is parsed and compiled on its first call instead, keyed by the identity of its static strings. See <a href="../../concepts/templates/">Templates</a> for the full guide.</p>
 <table>
 <thead>
 <tr>
@@ -3550,14 +3597,14 @@ rewrite it (for example <code>&lt;tr&gt;</code> directly inside <code>&lt;table&
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../wybthon/#wybthon.TemplateError"><code>TemplateError</code></a></td>
-<td>Raised for malformed markup, or markup the HTML parser would rewrite.</td>
+<td>Raised for malformed markup, markup the HTML parser would rewrite, or, in dev mode, an uncompiled template whose dynamic expression was evaluated once.</td>
 </tr>
 </tbody>
 </table>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../elements/">Element helpers</a>: the programmatic layer for building nodes.</li>
-<li><a href="../vnode/">VNode</a>: the node type templates and helpers produce.</li>
+<li><a href="../compiler/">Compiler</a>: what happens to each interpolation, and where templates are compiled.</li>
+<li><a href="../vnode/">VNode</a>: the node type templates produce, and <code>h()</code>, the programmatic layer.</li>
 </ul>
 
 

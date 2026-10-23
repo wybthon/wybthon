@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -649,6 +651,34 @@
     
   
     Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/compiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiler
   
 
     
@@ -1977,8 +2007,6 @@
       
         
       
-        
-      
     
     
     
@@ -2229,34 +2257,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/elements/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Element helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/templates/" class="md-nav__link">
         
   
@@ -2285,14 +2285,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/svg/" class="md-nav__link">
+      <a href="../../api/compiler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    SVG helpers
+    Compiler
   
 
     
@@ -2782,6 +2782,8 @@
       
         
       
+        
+      
     
     
     
@@ -2937,6 +2939,34 @@
     
   
     0003: Engine v3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0004-engine-v4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004: Engine v4
   
 
     
@@ -3373,11 +3403,11 @@
 
 
 <h1 id="migrating-from-solid">Migrating from Solid<a class="headerlink" href="#migrating-from-solid" title="Permanent link">&para;</a></h1>
-<p>Wybthon is SolidJS for Python, and it tracks <strong>SolidJS 2.0</strong> semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the <code>For</code> plus <code>Repeat</code> flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.</p>
-<p>Solid 2.0 hasn't had a stable release yet. Release candidate 14 (RC.14) is the latest, and it's the version Wybthon targets.</p>
+<p>Wybthon is SolidJS for Python, and it tracks <strong>SolidJS 2.0</strong> semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the <code>For</code> plus <code>Repeat</code> flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, the ownership tree manages cleanup, and a compiler turns the dynamic expressions in your markup into getters.</p>
+<p>Solid 2.0 hasn't had a stable release yet. Release candidate 17 (RC.17) is the latest, and it's the version Wybthon targets.</p>
 <p>The differences are mostly surface: Python instead of JavaScript, t-string templates instead of JSX, a <code>Props</code> class instead of a props interface, snake_case names, and a small number of deliberate semantic choices listed at the end.</p>
 <h2 id="api-mapping">API mapping<a class="headerlink" href="#api-mapping" title="Permanent link">&para;</a></h2>
-<p>The table follows <strong>Solid 2.0 RC.14</strong>.</p>
+<p>The table follows <strong>Solid 2.0 RC.17</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -3401,6 +3431,14 @@
 <tr>
 <td><code>createMemo(async () =&gt; ...)</code></td>
 <td><code>create_memo(async_fn)</code>: an <code>async def</code> body makes an async memo</td>
+</tr>
+<tr>
+<td><code>createDeferred(fn)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_deferred&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_deferred"><code>create_deferred(fn)</code></a>: an async memo whose refetches never hold the rest of the UI</td>
+</tr>
+<tr>
+<td><code>isEqual(a, b)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_equal&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_equal"><code>is_equal(a, b)</code></a>: the default equality</td>
 </tr>
 <tr>
 <td><code>createEffect(compute, apply)</code></td>
@@ -3587,6 +3625,10 @@
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy(loader)</code></a></td>
 </tr>
 <tr>
+<td><code>lazyModule(() =&gt; import(...))</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;lazy_module&lt;/span&gt;" href="../../api/wybthon/#wybthon.lazy_module"><code>lazy_module(loader)</code></a>: a cached async import with <code>preload()</code> and <code>peek()</code></td>
+</tr>
+<tr>
 <td><code>createContext(default)</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_context&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_context"><code>create_context(default)</code></a></td>
 </tr>
@@ -3604,7 +3646,11 @@
 </tr>
 <tr>
 <td><code>props.title</code> (getter)</td>
-<td><code>props.title</code> returns an accessor: place it in the tree or call <code>props.title()</code> in a scope</td>
+<td><code>props.title</code>: returns the value, tracked</td>
+</tr>
+<tr>
+<td><code>isStatic(props, key)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(props, "key")</code></a></td>
 </tr>
 <tr>
 <td><code>ParentProps&lt;T&gt;</code></td>
@@ -3624,11 +3670,15 @@
 </tr>
 <tr>
 <td><code>children(() =&gt; props.children)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../../api/wybthon/#wybthon.children"><code>children(props.children)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;children&lt;/span&gt;" href="../../api/wybthon/#wybthon.children"><code>children(lambda: props.children)</code></a></td>
 </tr>
 <tr>
 <td><code>children(...).toArray()</code></td>
-<td><code>children(props.children).to_array()</code></td>
+<td><code>children(lambda: props.children).to_array()</code></td>
+</tr>
+<tr>
+<td><code>flatten(children)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;flatten&lt;/span&gt;" href="../../api/wybthon/#wybthon.flatten"><code>flatten(children)</code></a>: the unmemoized form of <code>children</code></td>
 </tr>
 <tr>
 <td><code>createUniqueId()</code></td>
@@ -3657,6 +3707,10 @@
 <tr>
 <td><code>isHydrating()</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_hydrating&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_hydrating"><code>is_hydrating()</code></a></td>
+</tr>
+<tr>
+<td><code>onHydrationEnd(fn)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_hydration_end&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_hydration_end"><code>on_hydration_end(fn)</code></a></td>
 </tr>
 <tr>
 <td><code>&lt;NoHydration&gt;</code></td>
@@ -3696,15 +3750,15 @@
 </tr>
 <tr>
 <td>JSX, or <code>html</code> from <code>solid-js/html</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html(t"...")</code></a> templates (below)</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html(t"...")</code></a> templates, compiled like JSX (below)</td>
 </tr>
 <tr>
 <td><code>{expr}</code></td>
-<td><code>{expr}</code>: an accessor stays live; wrap other reactive expressions in a function</td>
+<td><code>{expr}</code>: the compiler makes it a getter when it contains a call, attribute access, or subscript</td>
 </tr>
 <tr>
-<td><code>&lt;Card title="Hi"&gt;...&lt;/Card&gt;</code></td>
-<td><code>&lt;{Card} title="Hi"&gt;...&lt;/{Card}&gt;</code>, or <code>{Card(title="Hi")[...]}</code></td>
+<td><code>&lt;Card title={user().name}&gt;...&lt;/Card&gt;</code></td>
+<td><code>&lt;{Card} title={user().name}&gt;...&lt;/{Card}&gt;</code>, or <code>{Card(title=user().name, children=...)}</code></td>
 </tr>
 <tr>
 <td><code>&lt;div {...attrs}&gt;</code></td>
@@ -3712,44 +3766,44 @@
 </tr>
 <tr>
 <td><code>h(tag, props, ...children)</code></td>
-<td>The element helpers (<code>div(...)</code>) or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a></td>
 </tr>
 </tbody>
 </table>
-<p>Solid 1.x primitives that 2.0 removed (<code>createResource</code>, <code>on</code>, <code>createComputed</code>, <code>createDeferred</code>, <code>createSelector</code>, <code>produce</code>, <code>createMutable</code>, <code>splitProps</code>, <code>mergeProps</code>, <code>Index</code>, path-based store writes, <code>useTransition</code>, <code>renderToStringAsync</code>) don't exist here either. The table above covers their 2.0 replacements.</p>
+<p>Solid 1.x primitives that 2.0 removed (<code>createResource</code>, <code>on</code>, <code>createComputed</code>, <code>createSelector</code>, <code>produce</code>, <code>createMutable</code>, <code>splitProps</code>, <code>mergeProps</code>, <code>Index</code>, path-based store writes, <code>useTransition</code>, <code>renderToStringAsync</code>) don't exist here either. The table above covers their 2.0 replacements. Solid 2.0's <code>createDeferred</code> isn't 1.x's idle-time deferral: it's the async memo in the table, and that's what <code>create_deferred</code> mirrors.</p>
 <p><code>createAsync</code> was never part of Solid 2.0's core API: it came from <code>@solidjs/router</code> 0.x and was removed in router 2.0. In Solid 2.0 you read async data with <code>createMemo</code>, and that's what <code>create_memo</code> with an <code>async def</code> mirrors.</p>
 <h2 id="jsx-becomes-templates">JSX becomes templates<a class="headerlink" href="#jsx-becomes-templates" title="Permanent link">&para;</a></h2>
 <div class="language-jsx highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kd">function</span><span class="w"> </span><span class="nx">Greeting</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">&lt;</span><span class="nt">p</span><span class="w"> </span><span class="na">class</span><span class="o">=</span><span class="s">"greeting"</span><span class="p">&gt;</span><span class="nx">Hello</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">props</span><span class="p">.</span><span class="nx">name</span><span class="p">}{</span><span class="nx">props</span><span class="p">.</span><span class="nx">excited</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s2">"!"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s2">"."</span><span class="p">}&lt;/</span><span class="nt">p</span><span class="p">&gt;;</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">}</span>
 </span></code></pre></div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Props</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">GreetingProps</span><span class="p">(</span><span class="n">Props</span><span class="p">):</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">excited</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">excited</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nd">@component</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">Greeting</span><span class="p">(</span><span class="n">props</span><span class="p">:</span> <span class="n">GreetingProps</span><span class="p">):</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">punctuation</span><span class="p">():</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="k">return</span> <span class="s2">"!"</span> <span class="k">if</span> <span class="n">props</span><span class="o">.</span><span class="n">excited</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"."</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;p class="greeting"&gt;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="n">punctuation</span><span class="si">}</span><span class="s1">&lt;/p&gt;'</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;p class="greeting"&gt;Hello, </span><span class="si">{</span><span class="n">props</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="s2">"!"</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">props</span><span class="o">.</span><span class="n">excited</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">"."</span><span class="si">}</span><span class="s1">&lt;/p&gt;'</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> takes a Python 3.14 <a href="https://peps.python.org/pep-0750/">template string</a>. It's closest to Solid's buildless <code>html</code> tagged template from <code>solid-js/html</code>: a t-string literal's static strings are the same object on every call, like a tagged template's strings array, so Wybthon compiles each literal once into a native <code>&lt;template&gt;</code> and clones it for every instance. That's the job Solid's JSX compiler does, with no build step. See <a href="../../concepts/templates/">Templates</a>.</li>
-<li><code>{expr}</code> in JSX becomes a <code>{expr}</code> interpolation. An accessor (<code>props.name</code>, or a signal getter) goes in directly and becomes a <strong>hole</strong> that updates only its text node or attribute. Solid's compiler wraps other expressions in effects for you; Python can't, so make them a function, as with <code>${() =&gt; ...}</code> in Solid's <code>html</code>. Python forbids a bare <code>lambda</code> in an interpolation, so write <code>{(lambda: count() * 2)}</code> with parentheses, or, usually better, a named function or memo like <code>punctuation</code> above. Anything else is applied once.</li>
-<li>Attributes are HTML names (<code>class</code>, <code>for</code>, <code>aria-label</code>) and take interpolations the same way: <code>class={row_class}</code>, <code>href="/users/{user_id}"</code> (one binding for the whole value), <code>disabled={add.pending}</code>.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;html&lt;/span&gt;" href="../../api/wybthon/#wybthon.html"><code>html</code></a> takes a Python 3.14 <a href="https://peps.python.org/pep-0750/">template string</a>, and Wybthon's <a href="../../concepts/compiler/">compiler</a> does the two jobs Solid's JSX compiler does. It turns each literal's static markup into a native <code>&lt;template&gt;</code> that the kernel clones for every instance, and it turns every dynamic expression into a getter. It runs when <code>wyb build</code> and <code>wyb dev</code> build your app, in an import hook that <code>import wybthon</code> installs, under pytest, and for scripts run with <code>wyb run script.py</code>. See <a href="../../concepts/templates/">Templates</a>.</li>
+<li>The rule is Solid's: an interpolation that contains a call, an attribute access, or a subscript is <strong>dynamic</strong>, so <code>{props.name}</code>, <code>{count() * 2}</code>, <code>{row["label"]}</code>, and <code>class={"on" if active() else ""}</code> become getters, and each updates only its own text node or attribute. A name, a constant, or a lambda is a value. A signal placed directly (<code>{count}</code>) is still bound reactively, so <code>{count}</code> and <code>{count()}</code> both work.</li>
+<li>Event handlers, refs, spreads, and nested <code>html(t"...")</code> templates are never wrapped. Prefer a named handler (<code>onclick={increment}</code>); Python forbids a bare <code>lambda</code> in an interpolation, so an inline one needs parentheses: <code>onclick={(lambda: set_open(False))}</code>.</li>
+<li>A call in a child position is decided when the template is created. A component (<code>{Card(title=user().name)}</code>, <code>{Show(...)}</code>, <code>{For(...)}</code>) is built with a getter for each dynamic argument, exactly like <code>&lt;Card title={user().name} /&gt;</code>. Any other call (<code>{badge(user())}</code>, <code>{str(total())}</code>) becomes one reactive hole, as a function call in JSX does.</li>
+<li>Attributes are HTML names (<code>class</code>, <code>for</code>, <code>aria-label</code>) and take interpolations the same way: <code>class={row_class(id)}</code>, <code>href="/users/{user_id()}"</code> (one binding for the whole value), <code>disabled={add.pending()}</code>.</li>
 <li>Event handlers are <code>onclick={handler}</code>; <code>onClick</code> and <code>on:click</code> work too. A handler may take no arguments or receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../../api/wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> with <code>e.target</code>, <code>e.key</code>, <code>e.prevent_default()</code>, and friends.</li>
-<li>A component tag is written <code>&lt;{Card} title="Hi"&gt;...&lt;/{Card}&gt;</code> (like <code>&lt;${Card}&gt;</code> in Solid's <code>html</code>), or self-closed as <code>&lt;{Card} /&gt;</code>. Attributes become keyword props and the content becomes <code>children</code>. Type checkers can't see inside the template, so tag props are checked at run time in dev mode; call the component in an interpolation (<code>{Card(title="Hi")}</code>) when you want static checking.</li>
-<li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, <code>Link</code>, and context providers work as calls in an interpolation (<code>{Show(ready, panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
-<li>Markup the browser's parser would rewrite raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> instead of silently changing: put <code>&lt;tr&gt;</code> in a <code>&lt;tbody&gt;</code>, and don't nest a <code>&lt;div&gt;</code> in a <code>&lt;p&gt;</code>.</li>
-<li>The element helpers (<code>div(...)</code>, <code>p(...)</code>, from <code>wybthon</code>, and SVG elements from <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;svg&lt;/span&gt;" href="../../api/svg/#wybthon.svg"><code>wybthon.svg</code></a>) are the programmatic layer, the counterpart of Solid's <code>h</code>. They use Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>). For custom elements, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h("my-element", {...}, *children)</code></a>.</li>
+<li>A component tag is written <code>&lt;{Card} title={user().name}&gt;...&lt;/{Card}&gt;</code> (like <code>&lt;${Card}&gt;</code> in Solid's <code>html</code>), or self-closed as <code>&lt;{Card} /&gt;</code>. Attributes become keyword props and the content becomes <code>children</code>. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (<code>{Card(title=user().name)}</code>) is checked statically, and the compiler still passes getters.</li>
+<li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, <code>Link</code>, and context providers work as calls in an interpolation (<code>{Show(ready(), panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready()}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
+<li>Markup the browser's parser would rewrite is an error instead of a silent change: put <code>&lt;tr&gt;</code> in a <code>&lt;tbody&gt;</code>, and don't nest a <code>&lt;div&gt;</code> in a <code>&lt;p&gt;</code>. The compiler reports it as a <code>SyntaxError</code> with the file and line.</li>
+<li>A template that reaches <code>html()</code> without being compiled (a REPL, <code>exec</code>) has already evaluated its dynamic expressions once, so dev mode raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> instead of rendering markup that would never update.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>, for markup built by code. Its props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) or HTML names. SVG works in a template.</li>
 </ul>
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
-<p>Solid types props with an interface (<code>props: CardProps</code>); Wybthon declares them on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class, and the component takes one parameter annotated with it. Pyright and mypy check every call against the class with no plugin.</p>
+<p>Solid types props with an interface (<code>props: CardProps</code>); Wybthon declares them on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> class with plain annotations, and the component takes one parameter annotated with it. Pyright and mypy check every call against the class with no plugin.</p>
 <div class="language-tsx highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kd">interface</span><span class="w"> </span><span class="nx">CardProps</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">ParentProps</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nx">body?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
@@ -3767,16 +3821,16 @@
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span><span class="p">);</span>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">}</span>
 </span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">&lt;</span><span class="nt">Card</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="s">"Hello"</span><span class="w"> </span><span class="na">onClose</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setOpen</span><span class="p">(</span><span class="kc">false</span><span class="p">)}&gt;&lt;</span><span class="nt">p</span><span class="p">&gt;</span><span class="nx">Body</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;&lt;/</span><span class="nt">Card</span><span class="p">&gt;</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">&lt;</span><span class="nt">Card</span><span class="w"> </span><span class="na">title</span><span class="o">=</span><span class="p">{</span><span class="nx">user</span><span class="p">().</span><span class="nx">name</span><span class="p">}</span><span class="w"> </span><span class="na">onClose</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setOpen</span><span class="p">(</span><span class="kc">false</span><span class="p">)}&gt;&lt;</span><span class="nt">p</span><span class="p">&gt;</span><span class="nx">Body</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;&lt;/</span><span class="nt">Card</span><span class="p">&gt;</span>
 </span></code></pre></div>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">Prop</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">prop</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParentProps</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">CardProps</span><span class="p">(</span><span class="n">ParentProps</span><span class="p">):</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">title</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">body</span><span class="p">:</span> <span class="n">Prop</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">body</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">on_close</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
@@ -3798,20 +3852,23 @@
 </span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>
 </span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="nd">@component</span>
 </span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>    <span class="n">open_</span><span class="p">,</span> <span class="n">set_open</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
-</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">():</span>
-</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>        <span class="n">set_open</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
-</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1"> title="Hello" on_close=</span><span class="si">{</span><span class="n">close</span><span class="si">}</span><span class="s1">&gt;&lt;p&gt;Body&lt;/p&gt;&lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s1">&gt;'</span><span class="p">)</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>    <span class="n">user</span><span class="p">,</span> <span class="n">set_user</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">})</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>    <span class="n">open_</span><span class="p">,</span> <span class="n">set_open</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">():</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>        <span class="n">set_open</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2"> title=</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> on_close=</span><span class="si">{</span><span class="n">close</span><span class="si">}</span><span class="s2">&gt;&lt;p&gt;Body&lt;/p&gt;&lt;/</span><span class="si">{</span><span class="n">Card</span><span class="si">}</span><span class="s2">&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li>A <code>Prop[T]</code> field is the counterpart of a getter on Solid's props proxy: reading <code>props.title</code> returns an accessor. Pass it straight into the tree to create a hole, or call it inside a memo, effect, or hole. The parent may pass a value, an accessor, or a zero-argument function.</li>
-<li>Fields annotated with anything else are plain data, returned exactly as the parent passed them. Declare callbacks this way; reading <code>props.on_close</code> never calls it.</li>
-<li>Optional props get defaults with <code>prop(default=...)</code>; plain fields use ordinary defaults.</li>
-<li>Assigning <code>value = props.title()</code> at the top of the body destructures and freezes, as in Solid; dev mode warns. Use <code>props.title.peek()</code> when you mean it.</li>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> match Solid 2.0's helpers and return mappings you can spread onto elements: <code>attrs = omit(props, "title", "children")</code>, then <code>&lt;div {attrs}&gt;</code>. There's no <code>**rest</code>; a component reads only what it declares.</li>
-<li>Children arrive as the <code>children</code> prop. Pass them as nested markup in the tag form, with item syntax (<code>Card(title="Hi")[...]</code>), or with the <code>children=</code> keyword.</li>
+<li>Props work as they do in Solid: reading <code>props.title</code> returns the value and tracks it, like reading a getter on Solid's props object. In markup, <code>{props.title}</code> is dynamic, so the compiler makes it a getter and the text updates when the parent's value changes. <code>{props.body or "No details."}</code> is one expression and one binding.</li>
+<li>The parent may pass a value, a compiler getter (what <code>title={user()["name"]}</code> becomes), or an accessor such as a signal. Getters and accessors are unwrapped when the prop is read, unless the field is annotated as callable (<code>Callable[...]</code> or <code>Accessor[...]</code>, alone or in a union with <code>None</code>): then the value is returned exactly as passed, which is how callbacks work.</li>
+<li>Passing a prop through stays reactive: <code>&lt;{Child} title={props.title}&gt;</code> hands the child a getter, as in Solid.</li>
+<li>Optional props take ordinary defaults (<code>body: str = ""</code>). Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;prop&lt;/span&gt;" href="../../api/wybthon/#wybthon.prop"><code>prop(default_factory=list)</code></a> for a mutable default.</li>
+<li>Assigning <code>title = props.title</code> at the top of the body reads once and freezes, as destructuring does in Solid; dev mode warns when the value is reactive. Use <code>untrack(lambda: props.title)</code> when a one-time read is what you mean.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static(props, "title")</code></a> says whether the parent passed a plain value, as Solid 2.0's <code>isStatic</code> does.</li>
+<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> match Solid 2.0's helpers. Their views read like props (<code>view.title</code> is the tracked value), and you can spread them onto elements: <code>attrs = omit(props, "title", "children")</code>, then <code>&lt;div {attrs}&gt;</code>. There's no <code>**rest</code>; a component reads only what it declares.</li>
+<li>Children arrive as the <code>children</code> prop. Pass them as nested markup in the tag form, with the <code>children=</code> keyword, or with item syntax in Python code (<code>Card(title="Hi")[...]</code>). Inside a template, <code>{Card(...)[...]}</code> is a subscript rather than a call, so it becomes one reactive hole instead of a component built with getters.</li>
 <li>Every component accepts <code>key=</code>. A component with no props takes no parameters.</li>
 </ul>
 <h2 id="signals-and-effects">Signals and effects<a class="headerlink" href="#signals-and-effects" title="Permanent link">&para;</a></h2>
@@ -3837,46 +3894,34 @@
 <li><strong>Async-first.</strong> An <code>async def</code> passed to <code>create_memo</code> is an async computation. Reading it before the first value raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;NotReadyError&lt;/span&gt;" href="../../api/wybthon/#wybthon.NotReadyError"><code>NotReadyError</code></a> (which <code>Loading</code> catches); later recomputes run as transitions that hold the dependent UI on the previous state until the new value lands.</li>
 </ul>
 <h2 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">Match</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">html</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">Match</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span> <span class="n">Switch</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">html</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">greeting</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">():</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="k">return</span> <span class="n">u</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">user</span><span class="p">,</span> <span class="n">set_user</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">status</span><span class="p">,</span> <span class="n">set_status</span> <span class="o">=</span> <span class="n">create_signal</span><span class="p">(</span><span class="s2">"loading"</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">store</span><span class="p">,</span> <span class="n">set_store</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"todos"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Write docs"</span><span class="p">}]})</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">greeting</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">u</span><span class="p">()[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">todo_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">title</span><span class="p">():</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="k">return</span> <span class="n">todo</span><span class="p">()[</span><span class="s2">"title"</span><span class="p">]</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">todo_row</span><span class="p">(</span><span class="n">todo</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">todo</span><span class="p">()[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>
 </span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span><span class="p">)</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_loading</span><span class="p">():</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="k">return</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"loading"</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_ready</span><span class="p">():</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    <span class="k">return</span> <span class="n">status</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"ready"</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>
-</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
-</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="s2">  &lt;main&gt;</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="s2">    </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">greeting</span><span class="p">,</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Sign in&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
-</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span><span class="w"> </span><span class="n">todo_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
-</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="s2">    </span><span class="si">{</span>
-</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="w">    </span><span class="n">Switch</span><span class="p">(</span>
-</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="w">        </span><span class="n">Match</span><span class="p">(</span><span class="n">is_loading</span><span class="p">,</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)),</span>
-</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="w">        </span><span class="n">Match</span><span class="p">(</span><span class="n">is_ready</span><span class="p">,</span><span class="w"> </span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Ready&lt;/p&gt;"</span><span class="p">)),</span>
-</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="w">        </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Unknown&lt;/p&gt;"</span><span class="p">),</span>
-</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="w">    </span><span class="p">)</span>
-</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="si">}</span>
-</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="s2">  &lt;/main&gt;</span>
-</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a><span class="s2">"""</span><span class="p">)</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">loading</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">ready</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Ready&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="n">unknown</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Unknown&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="s2">  &lt;main&gt;</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="s2">    </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">greeting</span><span class="p">,</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Sign in&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span><span class="w"> </span><span class="n">todo_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="s2">    </span><span class="si">{</span><span class="n">Switch</span><span class="p">(</span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"loading"</span><span class="p">,</span><span class="w"> </span><span class="n">loading</span><span class="p">),</span><span class="w"> </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ready"</span><span class="p">,</span><span class="w"> </span><span class="n">ready</span><span class="p">),</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="s2">  &lt;/main&gt;</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>Show</code> passes the truthy value to a one-argument callback as an accessor, like Solid's <code>&lt;Show&gt;</code> with a function child; with <code>keyed=True</code> it passes the value itself. <code>For</code> mirrors Solid's unified <code>For</code>: with <code>keyed=True</code> (the default) rows match by identity and the callback receives <code>(item, index_accessor)</code>; with <code>keyed=False</code> it receives <code>(item_accessor, index)</code>; with a key function it receives <code>(item_accessor, index_accessor)</code>. Type checkers infer these from the call (see <a href="../typing/#control-flow">Typing</a>). Pass an accessor or a store list for <code>each</code>, not a plain list. <code>Repeat(count, lambda i: ...)</code> matches Solid 2.0's <code>Repeat</code>.</p>
+<p>These are calls in a child position, so the compiler builds them like JSX components: <code>status() == "loading"</code> and <code>store.todos</code> arrive as getters, and <code>Match</code> inside <code>Switch</code> is prepared the same way. <code>Show</code> passes the truthy value to a one-argument callback as an accessor, like Solid's <code>&lt;Show&gt;</code> with a function child; with <code>keyed=True</code> it passes the value itself. <code>For</code> mirrors Solid's unified <code>For</code>: with <code>keyed=True</code> (the default) rows match by identity and the callback receives <code>(item, index_accessor)</code>; with <code>keyed=False</code> it receives <code>(item_accessor, index)</code>; with a key function it receives <code>(item_accessor, index_accessor)</code>. Type checkers infer these from the call (see <a href="../typing/#control-flow">Typing</a>). In a template, <code>{For(todos(), row)}</code> passes a getter; in Python code, pass the accessor (<code>For(todos, row)</code>) or a store list, because a plain list renders once. <code>Repeat(count, lambda i: ...)</code> matches Solid 2.0's <code>Repeat</code>.</p>
 <p>These are native regions, not wrapper components: <code>Show</code> and <code>Switch</code> are one branch computation each, and when a hole re-renders a tree containing one, the new condition or source is pushed into the mounted region instead of remounting it.</p>
 <h2 id="boundaries">Boundaries<a class="headerlink" href="#boundaries" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">html</span>
@@ -3884,17 +3929,14 @@
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">failed</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">reset</span><span class="p">):</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">message</span><span class="p">():</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">())</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">())</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;&lt;p&gt;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&lt;/p&gt;&lt;button onclick=</span><span class="si">{</span><span class="n">reset</span><span class="si">}</span><span class="s2">&gt;Retry&lt;/button&gt;&lt;/div&gt;"</span><span class="p">)</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">Errored</span><span class="p">(</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">Loading</span><span class="p">(</span><span class="n">Dashboard</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)),</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">failed</span><span class="p">,</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">,</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="p">)</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">Errored</span><span class="p">(</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">Loading</span><span class="p">(</span><span class="n">Dashboard</span><span class="p">(),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">)),</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">failed</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">reset_on</span><span class="o">=</span><span class="n">current_path</span><span class="p">,</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
 </span></code></pre></div>
 <p><code>Loading</code> and <code>Errored</code> match their Solid 2.0 namesakes. The error fallback receives <code>(err, reset)</code>, where <code>err</code> is an accessor for the caught error, as in Solid 2.0; <code>reset_on</code> re-mounts when the given accessor changes. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates multiple boundaries like <code>SuspenseList</code>.</p>
 <h2 id="stores">Stores<a class="headerlink" href="#stores" title="Permanent link">&para;</a></h2>
@@ -3928,7 +3970,7 @@
 </span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="nd">@component</span>
 </span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">Page</span><span class="p">():</span>
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="n">theme</span> <span class="o">=</span> <span class="n">use_context</span><span class="p">(</span><span class="n">Theme</span><span class="p">)</span>
-</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Theme: </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Theme: </span><span class="si">{</span><span class="n">theme</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>There's no <code>.Provider</code>: calling the <code>Context</code> object with a value and children returns the provider node. <code>use_context</code> returns the value exactly as provided, so an accessor stays an accessor.</p>
 <h2 id="async-actions-and-optimistic-state">Async, actions, and optimistic state<a class="headerlink" href="#async-actions-and-optimistic-state" title="Permanent link">&para;</a></h2>
@@ -3944,27 +3986,21 @@
 </span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
 </span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">user</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">fetch_user</span><span class="p">)</span>
 </span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">():</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="k">return</span> <span class="n">user</span><span class="p">()[</span><span class="s2">"name"</span><span class="p">]</span>
-</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">Loading</span><span class="p">(</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">user</span><span class="p">()[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;span&gt;</span><span class="si">{</span><span class="s1">' (refreshing)'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_pending</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;"</span><span class="p">),</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">),</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="p">)</span>
 </span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
-</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">refreshing</span><span class="p">():</span>
-</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>    <span class="k">return</span> <span class="s2">" (refreshing)"</span> <span class="k">if</span> <span class="n">is_pending</span><span class="p">(</span><span class="n">user</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>
 </span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>
-</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>
-</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="n">Loading</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;span&gt;</span><span class="si">{</span><span class="n">refreshing</span><span class="si">}</span><span class="s2">&lt;/span&gt;&lt;/p&gt;"</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">))</span>
-</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>
-</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="n">shown</span><span class="p">,</span> <span class="n">set_shown</span> <span class="o">=</span> <span class="n">create_optimistic</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>
-</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>
-</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>
-</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="nd">@action</span>
-</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">like</span><span class="p">():</span>
-</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>    <span class="k">await</span> <span class="n">post_like</span><span class="p">()</span>
-</span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>    <span class="k">await</span> <span class="n">refresh</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="nd">@action</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">like</span><span class="p">():</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>    <span class="n">set_shown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>    <span class="k">await</span> <span class="n">post_like</span><span class="p">()</span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>    <span class="k">await</span> <span class="n">refresh</span><span class="p">(</span><span class="n">likes</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Everything here has the same name and shape as Solid 2.0, with <code>await</code> in place of promise chaining. <code>action.pending()</code> is tracked, so it works directly as <code>disabled={like.pending}</code>.</p>
+<p>Everything here has the same name and shape as Solid 2.0, with <code>await</code> in place of promise chaining. <code>like.pending()</code> is tracked, so it works directly as <code>disabled={like.pending()}</code>.</p>
 <p>The transition model is Solid 2.0's too. A change that makes an async memo recompute holds the UI that depends on it until the new value lands, so a header reading <code>user_id</code> and a body reading <code>user</code> never disagree; <code>is_pending</code> reports the hold and <code>latest</code> reads ahead of it. An action's writes are staged into the same transaction and reveal together when it settles, while optimistic writes reveal now and revert on settle. <code>Loading(on=...)</code> names the inputs whose change should show the fallback again instead of holding, and <code>Errored</code> heals when the failing computation's inputs change.</p>
 <h2 id="server-rendering">Server rendering<a class="headerlink" href="#server-rendering" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
@@ -3986,7 +4022,7 @@
 </span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>        <span class="k">return</span> <span class="s2">"Ada"</span>
 </span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>
 </span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="n">load</span><span class="p">)</span>
-</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="n">greeting</span> <span class="o">=</span> <span class="n">Loading</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">))</span>
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="n">greeting</span> <span class="o">=</span> <span class="n">Loading</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Hello, </span><span class="si">{</span><span class="n">name</span><span class="p">()</span><span class="si">}</span><span class="s2">&lt;/p&gt;"</span><span class="p">),</span> <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">))</span>
 </span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>    <span class="n">footer</span> <span class="o">=</span> <span class="n">NoHydration</span><span class="p">(</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;footer&gt;Static footer&lt;/footer&gt;"</span><span class="p">))</span>
 </span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;div&gt;</span><span class="si">{</span><span class="n">greeting</span><span class="si">}{</span><span class="n">footer</span><span class="si">}</span><span class="s2">&lt;/div&gt;"</span><span class="p">)</span>
 </span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>
@@ -4003,30 +4039,33 @@
 </span><span id="__span-10-34"><a id="__codelineno-10-34" name="__codelineno-10-34" href="#__codelineno-10-34"></a>
 </span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </span></code></pre></div>
-<p>As in RC.14, awaiting <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="../../api/server/#wybthon.server.render_to_stream"><code>render_to_stream</code></a> replaces <code>renderToStringAsync</code>: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each <code>Loading</code> boundary as its data arrives. A stream is single use: iterate it or await it, once. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_status"><code>http_status</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_header"><code>http_header</code></a> are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> keeps a region as static server HTML that the browser adopts without mounting.</p>
+<p>As in Solid 2.0, awaiting <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="../../api/server/#wybthon.server.render_to_stream"><code>render_to_stream</code></a> replaces <code>renderToStringAsync</code>: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each <code>Loading</code> boundary as its data arrives. A stream is single use: iterate it or await it, once. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_status"><code>http_status</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_header"><code>http_header</code></a> are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> keeps a region as static server HTML that the browser adopts without mounting.</p>
 <h2 id="whats-intentionally-different">What's intentionally different<a class="headerlink" href="#whats-intentionally-different" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Naming.</strong> snake_case across the API; component names stay PascalCase; <code>_</code> suffix on element helpers that collide with Python keywords or builtins (<code>input_</code>, <code>del_</code>).</li>
-<li><strong>A virtual DOM under the reactive graph.</strong> Solid compiles JSX to direct DOM operations. Wybthon applies changes in batches through a small JS kernel, so every update crosses from Python to JavaScript once. You still get fine-grained holes as the unit of update. Instead of compiling JSX ahead of time, Wybthon compiles each template literal the first time it runs into a native <code>&lt;template&gt;</code> that the kernel clones with one command; element helper trees compile by shape at run time.</li>
+<li><strong>Naming.</strong> snake_case across the API; component names stay PascalCase.</li>
+<li><strong>Component calls are recognized at run time.</strong> In JSX, <code>&lt;Card /&gt;</code> and <code>badge()</code> look different; in a template, <code>{Card(title=...)}</code> and <code>{badge(...)}</code> are both calls. The compiler checks the callee when the template is created: a component gets getters for its props, and anything else becomes one reactive hole. A naming convention can't tell <code>Card(...)</code> from <code>Decimal(...)</code>, so Wybthon doesn't use one.</li>
+<li><strong>Callable props are declared.</strong> Solid's props getters return whatever the parent passed. Wybthon unwraps accessors the parent passes, unless the field's annotation is callable (<code>Callable[...]</code> or <code>Accessor[...]</code>), so a callback or an accessor you mean to keep must be annotated as one.</li>
+<li><strong>A virtual DOM under the reactive graph.</strong> Solid compiles JSX to direct DOM operations. Wybthon's compiler also emits each template's parse tree and mount code ahead of time, but changes are applied in batches through a small JS kernel, so every update crosses from Python to JavaScript once. You still get fine-grained holes as the unit of update, and each template instance mounts with one native clone.</li>
 <li><strong>Callback refs receive a wrapper.</strong> A function ref gets an <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Element&lt;/span&gt;" href="../../api/wybthon/#wybthon.Element"><code>Element</code></a>; its <code>.element</code> is the raw DOM node.</li>
 <li><strong>Staged writes.</strong> After <code>set_x(1)</code>, <code>x()</code> returns the old value until the flush (end of the handler, or <code>flush()</code>). Solid 2.0 leans the same way; Wybthon makes it strict. Use functional updates (<code>set_x(lambda v: v + 1)</code>) to compose writes, and <code>create_signal</code>'s returned setter gives back the staged value if you need it.</li>
 <li><strong>Writes are forbidden inside tracking scopes.</strong> Writing a signal from a memo body, a hole, or a single-function effect raises <code>WriteInScopeError</code> in dev mode. Write from handlers, actions, <code>on_settled</code>, or the <code>apply</code> stage.</li>
-<li><strong>Equality.</strong> The default <code>equals</code> is Python <code>==</code> with an identity fast path, not <code>===</code>. Pass <code>equals=lambda a, b: a is b</code> for identity-only, <code>equals=False</code> to always notify.</li>
+<li><strong>Equality.</strong> The default <code>equals</code> (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_equal&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_equal"><code>is_equal</code></a>) is Python <code>==</code> with an identity fast path, not <code>===</code>. Pass <code>equals=lambda a, b: a is b</code> for identity-only, <code>equals=False</code> to always notify.</li>
 <li><strong><code>.peek()</code>.</strong> Every accessor has <code>.peek()</code>, a one-read <code>untrack</code>.</li>
 <li><strong><code>on_settled</code> instead of <code>onMount</code>.</strong> The name reflects when it runs: after the flush that mounted the component committed to the DOM. It may return a cleanup.</li>
-<li><strong>Python 3.14.</strong> Template strings (PEP 750) stand in for JSX, and the framework's own generics (<code>Accessor[T]</code>, <code>Prop[T]</code>) are meant to be written in your code.</li>
+<li><strong>Python 3.14.</strong> Template strings (PEP 750) stand in for JSX, and the framework's own generics (<code>Accessor[T]</code>, <code>Memo[T]</code>) are meant to be written in your code.</li>
 <li><strong>JS interop through Pyodide.</strong> <code>from js import fetch</code>, <code>pyodide.ffi.create_proxy</code> for callbacks, <code>.to_py()</code> for JS objects. See the <a href="../pyodide/">Pyodide guide</a>.</li>
 </ul>
 <h2 id="what-carries-over-directly">What carries over directly<a class="headerlink" href="#what-carries-over-directly" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The mental model: components run once, reactivity is fine-grained, ownership handles cleanup.</li>
-<li>The 2.0 async story: async memos, transitions, <code>Loading</code>, <code>Reveal</code>, <code>is_pending</code>, <code>latest</code>, <code>resolve</code>, <code>refresh</code>, actions as transactions, optimistic state, <code>affects</code>, <code>until</code>, error boundary healing.</li>
+<li>The compiler's contract: calls and member accesses in markup become getters, and props are values read through getters.</li>
+<li>The 2.0 async story: async memos, deferred memos, transitions, <code>Loading</code>, <code>Reveal</code>, <code>is_pending</code>, <code>latest</code>, <code>resolve</code>, <code>refresh</code>, actions as transactions, optimistic state, <code>affects</code>, <code>until</code>, error boundary healing.</li>
 <li>Draft-first stores, <code>reconcile</code>, projections.</li>
-<li>Flow components, boundaries, context, lazy, portals.</li>
+<li>Flow components, boundaries, context, lazy components and modules, portals.</li>
 </ul>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Read <a href="../../concepts/mental-model/">Mental model</a> to see the formal definitions of holes and scopes.</li>
+<li>Read <a href="../../concepts/mental-model/">Mental model</a> to see the formal definitions of holes and scopes, and <a href="../../concepts/compiler/">The compiler</a> for exactly what it rewrites.</li>
 <li>Explore <a href="../authoring-patterns/">Authoring patterns</a>; most should look familiar.</li>
 <li>Browse the <a href="../../api/wybthon/">API reference</a> for the full set of primitives.</li>
 </ul>
