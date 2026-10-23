@@ -34,4 +34,4 @@ The command gate in `benchmarks/check_work.py` verifies selection, swap, and app
 
 Virtualization bounds mounted work for large fixed-height lists. Arbitrary replacement lists still require matching, and general sequence splices can rebuild their persistent sequence.
 
-See [the recorded samples and counters](runtime-overhaul.json) and [benchmark instructions](../README.md). Startup has separate loader timings and production browser tests; it isn't represented by these warmed updates.
+The recorded samples and counters aren't kept in the repository; they were recorded with [#34](https://github.com/wybthon/wybthon/pull/34) (`git show 8136737:benchmarks/results/runtime-overhaul.json`). See the [benchmark instructions](../README.md). Startup has separate loader timings and production browser tests; it isn't represented by these warmed updates.

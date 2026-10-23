@@ -113,4 +113,4 @@ uv run python benchmarks/row_bench.py src --reps 9 --noselect > helpers.json
 uv run python benchmarks/row_bench.py src --reps 9 --noselect --template > templates.json
 ```
 
-Alternate the checkouts across several fresh processes and compare minimums. Raw reports: [native rows and dashboard](engine-v3-native.json).
+Alternate the checkouts across several fresh processes and compare minimums. The raw report (native rows and the dashboard) isn't kept in the repository; it was recorded with [#40](https://github.com/wybthon/wybthon/pull/40) (`git show 30928df:benchmarks/results/engine-v3-native.json`).
