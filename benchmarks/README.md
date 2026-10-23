@@ -100,9 +100,15 @@ uv run python benchmarks/compare_startup.py --baseline /tmp/wybthon-before > sta
 
 This builds both applications in temporary directories and alternates fresh page boots in the same browser context. A warmup for each checkout populates the shared HTTP cache. Every navigation creates a new Pyodide runtime; these are startup measurements with warmed transfers, not cold-network download measurements. Each sample also verifies that the counter responds to an event. The report includes every phase, individual samples, and both build manifests.
 
+## Recorded results
+
+Each page in `results/` is a summary of one evaluation: its tables are the record, and its reproduction section says how to measure again. Raw reports aren't committed, and `benchmarks/results/*.json` is ignored so a local run's output stays local. Keep the raw data with the pull request that made the measurement; CI uploads fresh reports as workflow artifacts on every run.
+
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v4 evaluation](results/engine-v4.md) records the compiler, Solid-style props, the static probe, and leaner bindings and rows against v0.38.0.
 
 The [engine v3 evaluation](results/engine-v3.md) records compiled t-string templates, zero-cost components, and native control-flow regions against v0.37.0.
 

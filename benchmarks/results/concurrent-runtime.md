@@ -16,7 +16,7 @@ The executable behavioral contract is described in [Runtime contracts](../../doc
 
 ## Synchronous browser comparison
 
-Baseline: `0c9752b29fca52b82617a199c65329f9c173ea75`. The comparison uses an isolated baseline checkout, identical store workloads, one warmup, five measured samples per side, and alternating execution order. Each sample restores its starting list. The changed source digest matches the final tested Python source. Source digests and raw samples are included in [the comparison report](concurrent-runtime-browser.json).
+Baseline: `0c9752b29fca52b82617a199c65329f9c173ea75`. The comparison uses an isolated baseline checkout, identical store workloads, one warmup, five measured samples per side, and alternating execution order. Each sample restores its starting list. The changed source digest matches the final tested Python source. The source digests and raw samples aren't kept in the repository; they were recorded with [#37](https://github.com/wybthon/wybthon/pull/37) (`git show d88727b:benchmarks/results/concurrent-runtime-browser.json`).
 
 The measurements include Python work, serialization, and kernel application. Frame measurements are rendering opportunities, not proof of completed paint. Machine load, garbage collection, and browser scheduling affect durations; these are local measurements, not cross-framework rankings.
 
@@ -40,7 +40,7 @@ python benchmarks/async_bench.py --widths 10 100 1000
 
 The benchmark starts independent gated requests under split effects, releases one request, and then releases the rest. It asserts visible values at each step and verifies that no tasks, held nodes, or held applications remain after disposal. CI runs the same assertions and uploads the report.
 
-In the [native report](concurrent-runtime-async.json), starting N requests performs 2N computations and creates N groups. Releasing one performs one computation and publishes one group while the others remain held. Releasing the rest performs N-1 computations and publishes N-1 groups. These counts hold at widths of 10, 100, and 1,000.
+In the native report (recorded with [#37](https://github.com/wybthon/wybthon/pull/37): `git show d88727b:benchmarks/results/concurrent-runtime-async.json`), starting N requests performs 2N computations and creates N groups. Releasing one performs one computation and publishes one group while the others remain held. Releasing the rest performs N-1 computations and publishes N-1 groups. These counts hold at widths of 10, 100, and 1,000.
 
 At width 1,000, this run measured about 55 ms to start the work, 12 ms to publish the first result, and 23 ms to publish the remainder. Timing includes the benchmark's explicit settle ticks. Group readiness bookkeeping still scales with the number of open groups, even though only one consumer recomputes when one request completes. This native benchmark excludes the DOM and network.
 

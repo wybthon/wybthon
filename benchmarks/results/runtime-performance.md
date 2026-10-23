@@ -75,4 +75,4 @@ This separate comparison uses the original pre-overhaul release as its baseline.
 
 Large unvirtualized mounts still allocate a VNode tree and reactive bindings for every row. Arbitrary replacement arrays still need linear identity checks, and removing a row shifts later indices. The improvements reduce that work's overhead; virtualization remains useful when the application doesn't need all rows mounted at once.
 
-See the [raw measurements](runtime-performance.json) and [reproduction instructions](../README.md). CHANGELOG.md remains managed by the release pipeline.
+The raw measurements aren't kept in the repository; they were recorded with [#34](https://github.com/wybthon/wybthon/pull/34) (`git show 8136737:benchmarks/results/runtime-performance.json`). See the [reproduction instructions](../README.md). CHANGELOG.md remains managed by the release pipeline.

@@ -85,7 +85,7 @@ uv run --group dev python benchmarks/compare_browser.py --baseline /tmp/wybthon-
 uv run --group dev python benchmarks/compare_startup.py --baseline /tmp/wybthon-before > startup.json
 ```
 
-Raw reports: [native](engine-v2-native.json), [browser, signal mode](engine-v2-browser-signal.json), [browser, store mode](engine-v2-browser-store.json), and [startup](engine-v2-startup.json).
+The raw reports (native, browser in both modes, and startup) aren't kept in the repository; they were recorded with [#39](https://github.com/wybthon/wybthon/pull/39) (`git show ebb0540:benchmarks/results/engine-v2-native.json`, and likewise for `engine-v2-browser-signal.json`, `engine-v2-browser-store.json`, and `engine-v2-startup.json`).
 
 ## What's left
 
