@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.39.0 (2026-10-23)
+
+### Features
+
+- **compiler**: Add the compiler and Solid-style props
+  ([#41](https://github.com/wybthon/wybthon/pull/41),
+  [`490a383`](https://github.com/wybthon/wybthon/commit/490a383fbe6b233897f2540b07170925f9ea5224))
+
+Implement RFC 0004 (Engine v4).
+
+- Compiler: `wybthon.compiler` rewrites `html(t"...")` calls. Dynamic interpolations (calls,
+  attribute access, subscripts) become getters; calls with arguments in a child position are
+  dispatched at run time, so components receive getter props and other calls become reactive holes;
+  names that can change are captured by value; each literal's parse tree and mount functions are
+  emitted into the module. It runs in `wyb build` and `wyb dev`, an import hook installed by `import
+  wybthon`, a pytest plugin, and the new `wyb run`. Dev mode rejects uncompiled templates whose
+  dynamic expressions were evaluated once. - Props: plain annotations; `props.x` is a tracked read
+  of the value. Getters and accessors are unwrapped unless the field is callable. Adds `is_static`.
+  - Bindings: a static probe applies call-free expressions that read nothing reactive without a
+  computation; bindings are plain computations with module-level apply stages; list rows are their
+  own owner with a lazy index; single handlers and VNodes allocate no dicts; keyed matching skips
+  unchanged runs and detects swaps. - Solid 2.0 RC.17: `create_deferred`, `is_equal`, `flatten`,
+  `lazy_module`, `on_hydration_end`.
+
+BREAKING CHANGE: `Prop[T]` and `Prop` are removed; fields are plain annotations and `props.x`
+  returns the value. The element helpers (`div(...)` and the rest, `element()`), `wybthon.elements`,
+  `wybthon.svg`, and the runtime shape compiler are removed; write markup with `html(t"...")` or
+  `h()`. t-strings are only markup when passed to `html()`. Dynamic template expressions are now
+  reactive, and a plain function call in a child position is a reactive hole.
+
+### Breaking Changes
+
+- **compiler**: `prop[t]` and `Prop` are removed; fields are plain annotations and `props.x` returns
+  the value. The element helpers (`div(...)` and the rest, `element()`), `wybthon.elements`,
+  `wybthon.svg`, and the runtime shape compiler are removed; write markup with `html(t"...")` or
+  `h()`. t-strings are only markup when passed to `html()`. Dynamic template expressions are now
+  reactive, and a plain function call in a child position is a reactive hole.
+
+
 ## v0.38.0 (2026-10-19)
 
 ### Features
