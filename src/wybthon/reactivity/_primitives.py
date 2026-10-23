@@ -38,6 +38,8 @@ __all__ = [
     "is_server",
     "create_signal",
     "create_memo",
+    "create_deferred",
+    "is_equal",
     "create_effect",
     "create_tracked_effect",
     "create_render_effect",
@@ -50,6 +52,7 @@ __all__ = [
     "latest",
     "create_unique_id",
     "children",
+    "flatten",
     "ChildrenAccessor",
     "create_reaction",
 ]
@@ -343,6 +346,54 @@ def create_memo(
     return memo
 
 
+def create_deferred[T](
+    fn: Callable[..., Any],
+    *,
+    equals: Any = _DEFAULT_EQUALS,
+    name: str | None = None,
+    loading_value: Any = _core._MISSING,
+    ssr_source: SsrSource = "server",
+) -> Memo[T]:
+    """Create an async memo that may lag, but never holds the rest of the UI.
+
+    Before its first value it's an ordinary async memo: readers suspend
+    to the nearest [`Loading`][wybthon.Loading]. After it, a refetch opens
+    no transition: readers keep the last value until the new one lands,
+    and everything else on the screen updates without waiting for it.
+    [`is_pending`][wybthon.is_pending] reports the refetch. Use it for
+    independent widgets (dashboards, feeds, search results), where the
+    previous answer with a "refreshing" hint beats waiting with
+    everything else. Matches Solid 2.0's `createDeferred`.
+
+    Takes the same options as [`create_memo`][wybthon.create_memo];
+    combine it with `loading_value` for a widget that never suspends.
+
+    Example:
+        ```python
+        async def load_rows():
+            return await fetch_rows(period())
+
+        rows = create_deferred(load_rows)
+
+        html(t'<section class={"stale" if is_pending(rows) else ""}>{For(rows, row)}</section>')
+        ```
+    """
+    if ssr_source not in ("server", "hybrid", "client"):
+        raise ValueError('ssr_source must be "server", "hybrid", or "client"')
+    memo: Memo[T] = _core.DeferredMemo(fn, equals=equals, name=name, loading_value=loading_value, ssr_source=ssr_source)
+    memo._update_if_necessary()
+    return memo
+
+
+def is_equal(a: Any, b: Any) -> bool:
+    """Wybthon's default equality: identity, then `==` (a raising `==` counts as different).
+
+    The policy signals, memos, and stores use unless given `equals=`.
+    Matches Solid 2.0's `isEqual`, with Python equality in place of `===`.
+    """
+    return not _core._changed(_DEFAULT_EQUALS, a, b)
+
+
 # ---------------------------------------------------------------------------
 # Effects
 # ---------------------------------------------------------------------------
@@ -509,7 +560,7 @@ def on_settled(fn: Callable[[], Any]) -> None:
     Example:
         ```python
         class ChartProps(Props):
-            data: Prop[list[float]]
+            data: list[float]
 
 
         @component
@@ -517,16 +568,18 @@ def on_settled(fn: Callable[[], Any]) -> None:
             canvas = Ref()
 
             def start():
-                handle = draw(canvas.current, props.data.peek())
+                handle = draw(canvas.current, props.data)
                 return lambda: handle.destroy()
 
             on_settled(start)
-            return canvas_(ref=canvas)
+            return html(t"<canvas ref={canvas}></canvas>")
         ```
     """
     owner = _core._current_owner
     if owner is None:
         raise RuntimeError("on_settled() must be called inside a component or reactive scope")
+    if owner is _core._PROBE_OWNER:
+        raise _core._Escape
     if _core._server_depth:
         return
 
@@ -649,8 +702,8 @@ def is_pending(fn: Callable[[], Any]) -> bool:
     the transition: an indicator has to show *during* the hold.
 
     ```python
-    span(lambda: "Refreshing..." if is_pending(user) else "")
-    button("Save", disabled=lambda: is_pending(lambda: store.items))
+    html(t"<span>{'Refreshing...' if is_pending(user) else ''}</span>")
+    html(t"<button disabled={is_pending(lambda: store.items)}>Save</button>")
     ```
     """
     saved = _core._probe_hit
@@ -879,6 +932,19 @@ def _resolve_children(value: Any, out: list[Any]) -> None:
     out.append(value)
 
 
+def flatten(children: Any) -> list[Any]:
+    """Resolve a children value to the list it renders.
+
+    Nested lists are flattened, accessors and zero-argument functions are
+    called (tracked) and their results resolved, and `None` and booleans
+    are dropped. The unmemoized form of [`children`][wybthon.children];
+    matches Solid 2.0's `flatten`.
+    """
+    out: list[Any] = []
+    _resolve_children(children, out)
+    return out
+
+
 def children(fn: Callable[[], Any]) -> ChildrenAccessor:
     """Resolve a component's children once, so it can inspect or reuse them.
 
@@ -894,8 +960,8 @@ def children(fn: Callable[[], Any]) -> ChildrenAccessor:
 
     @component
     def Tabs(props: ParentProps):
-        tabs = resolve_children(props.children)
-        return nav(lambda: [li(tab) for tab in tabs.to_array()])
+        tabs = resolve_children(lambda: props.children)
+        return html(t"<nav>{[html(t'<li>{tab}</li>') for tab in tabs.to_array()]}</nav>")
     ```
     """
 

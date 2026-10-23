@@ -6,7 +6,7 @@
 
 `wybthon.reactivity` is the pure-Python reactive graph: signals, memos,
 effects, ownership, the scheduler, async computations, actions, and the
-props utilities that components are built on. Nothing here touches the
+props that components are built on. Nothing here touches the
 DOM, so everything works in CPython as well as Pyodide. Import from
 `wybthon` in application code; the `_core`, `_primitives`, `_actions`,
 `_list`, and `_props` submodules are implementation detail.
@@ -29,15 +29,15 @@ holds on the old state until the new value lands, and an
 | [`Setter`][wybthon.Setter] | Protocol for the write half of a signal; accepts a value or an updater. |
 | [`Signal`][wybthon.Signal] | Mutable container behind `create_signal`; the getter is a `Signal`. |
 | [`Memo`][wybthon.Memo] | Read-only derived value returned by `create_memo`. |
-| [`Props`][wybthon.Props] | Base class for a component's typed inputs (PEP 681 `dataclass_transform`, so pyright and mypy check calls without a plugin). |
+| [`Props`][wybthon.Props] | Base class for a component's typed inputs: plain annotations, read as `props.title` (the value, tracked). A PEP 681 `dataclass_transform` base, so pyright and mypy check calls without a plugin. |
 | [`ParentProps`][wybthon.ParentProps] | `Props` with a `children` field. |
-| [`Prop`][wybthon.Prop] | Field annotation `Prop[T]` marking a reactive input; reading it returns an `Accessor[T]` that unwraps whatever the parent passed. |
 | [`ChildrenAccessor`][wybthon.ChildrenAccessor] | What `children()` returns: call it for one child or a list, or `.to_array()` for a list. |
 | [`Owner`][wybthon.Owner] | Ownership scope; disposing it disposes children and runs cleanups. |
 | [`Computation`][wybthon.reactivity.Computation] | Tracked function node behind memos and effects; `.dispose()` stops it. Import from `wybthon.reactivity`. |
 | [`Action`][wybthon.Action] | Wrapped mutation returned by `action`; `.pending` is a tracked accessor. |
 | [`Transition`][wybthon.reactivity.Transition] | The open transaction holding in-flight changes (exposed for tooling; no public methods). Import from `wybthon.reactivity`. |
 | [`NotReadyError`][wybthon.NotReadyError] | Raised when reading an async computation that has no value yet. |
+| [`ServerError`][wybthon.ServerError] | An async memo failed on the server; raised again on the client while hydrating. |
 | [`WriteInScopeError`][wybthon.WriteInScopeError] | Raised in dev mode when a signal or store is written inside a tracking scope. |
 
 #### Primitives
@@ -46,6 +46,7 @@ holds on the old state until the new value lands, and an
 | --- | --- |
 | [`create_signal`][wybthon.create_signal] | `(getter, setter)` pair; `equals=` policy; function form makes a writable derived signal. |
 | [`create_memo`][wybthon.create_memo] | Glitch-free derived value, eager initially unless `lazy=True`; `async def` bodies become async computations; `loading_value=` serves a value before the first run lands. |
+| [`create_deferred`][wybthon.create_deferred] | An async memo that, after its first value, never holds the rest of the UI: readers keep the last value while a refetch runs. Same options as `create_memo`. |
 | [`create_effect`][wybthon.create_effect] | Side effect after DOM commit; requires tracked `compute` and untracked `apply`. |
 | [`create_tracked_effect`][wybthon.create_tracked_effect] | Explicit combined tracking and side-effect callback. |
 | [`create_render_effect`][wybthon.create_render_effect] | `create_render_effect(compute, apply)`: effect in the render phase, before the DOM commit; first run is immediate. `apply` is required. |
@@ -53,6 +54,7 @@ holds on the old state until the new value lands, and an
 | [`on_settled`][wybthon.on_settled] | Run once after the flush that mounted the component; may return a cleanup. |
 | [`on_cleanup`][wybthon.on_cleanup] | Register a cleanup on the active scope. |
 | [`create_root`][wybthon.create_root] | Owned root; `fn(dispose)`, with explicit `detached=True` for independence. |
+| [`create_owner`][wybthon.create_owner], [`is_disposed`][wybthon.is_disposed] | Create a child ownership scope to run code under with `run_with_owner`; check whether one has been disposed. |
 | [`flush`][wybthon.flush] | Apply staged writes, run dirty effects, commit the DOM now. |
 | [`untrack`][wybthon.untrack] | Run a function without tracking its reads. |
 | [`get_owner`][wybthon.get_owner], [`run_with_owner`][wybthon.run_with_owner] | Capture the owner before an `await` and restore it after. |
@@ -65,13 +67,17 @@ holds on the old state until the new value lands, and an
 | [`create_optimistic`][wybthon.create_optimistic] | Value override that reveals now and reverts when the action settles. |
 | [`affects`][wybthon.affects] | Inside an action, mark values as pending before they're written. |
 | [`until`][wybthon.until] | Awaitable for a predicate to become truthy on the authoritative (non-optimistic) view; `timeout=` raises the built-in `TimeoutError`. |
-| [`prop`][wybthon.prop] | `prop(default=...)` or `prop(default_factory=...)`: declare a `Prop[T]` field's default. |
-| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive mapping views over props instances or dicts (later sources win; drop keys, or keys matching a predicate), ready to spread onto elements. |
-| [`children`][wybthon.children] | `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
+| [`prop`][wybthon.prop] | `prop(default=...)` or `prop(default_factory=...)`: declare a field's default, like `dataclasses.field`. An ordinary default (`step: int = 1`) needs no `prop()`. |
+| [`merge`][wybthon.merge], [`omit`][wybthon.omit] | Reactive views over props instances or dicts (later sources win; drop keys, or keys matching a predicate). `view.title` reads the tracked value; spread a view onto an element to bind every key. |
+| [`is_static`][wybthon.is_static] | `is_static(props, key)`: whether the parent passed a plain value rather than an expression, so a component can take a cheaper path. Reads nothing. |
+| [`children`][wybthon.children] | `children(lambda: props.children)`: a memoized `ChildrenAccessor` that resolves nested accessors, flattens lists, and drops `None` and booleans. |
+| [`flatten`][wybthon.flatten] | The unmemoized form of `children`: resolve a children value to the list it renders. |
 | [`map_array`][wybthon.map_array] | Reactive value mapping with per-row scopes and an optional `fallback`; DOM lists use `For`'s native regions. |
 | [`repeat`][wybthon.repeat] | `repeat(count, fn, *, start=0, fallback=None)`: reactive mapping over a range of indices. |
 | [`create_unique_id`][wybthon.create_unique_id] | Process-unique id string for `id`/`for` pairs. |
 | [`is_accessor`][wybthon.is_accessor] | `True` for an `Accessor` or a zero-arg function. |
+| [`is_equal`][wybthon.is_equal] | The default equality of signals, memos, and stores: identity, then `==`. |
+| [`is_server`][wybthon.is_server] | `True` while a server render is in progress. |
 
 #### Idioms
 
@@ -114,15 +120,16 @@ async def like():
     await refresh(likes)
 
 
-def hint():
-    return "Refreshing..." if is_pending(likes) else ""
-
-
 def on_like():
     like()
 
 
-view = html(t"<p>{shown} likes <span>{hint}</span> <button onclick={on_like}>Like</button></p>")
+view = html(t"""
+  <p>
+    {shown()} likes <span>{"Refreshing..." if is_pending(likes) else ""}</span>
+    <button onclick={on_like}>Like</button>
+  </p>
+""")
 ```
 
 Internally, two module globals (the active owner and the active

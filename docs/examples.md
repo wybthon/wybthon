@@ -1,10 +1,10 @@
 # Examples
 
-Walk through focused examples of the framework's core features. Every example writes its markup as [`html`][wybthon.html] templates (see [Templates](concepts/templates.md)). Each page is a complete module you can drop into a `wybthon.toml` project (or render in a test with [`wybthon.testing`](api/testing.md)) and an explanation of the patterns it demonstrates.
+Walk through focused examples of the framework's core features. Every example writes its markup as [`html`][wybthon.html] templates, which Wybthon's compiler prepares when the module is imported or built (see [Templates](concepts/templates.md)). Each page is a complete module you can drop into a `wybthon.toml` project (or render in a test with [`wybthon.testing`](api/testing.md)) and an explanation of the patterns it demonstrates.
 
 | Example | What it shows |
 | --- | --- |
-| [Counter](examples/counter.md) | Signals, memos, [`html`][wybthon.html] templates with reactive holes, and typed `Props` with `prop` defaults. |
+| [Counter](examples/counter.md) | Signals, memos, [`html`][wybthon.html] templates whose dynamic expressions become reactive holes, and typed `Props` with defaults. |
 | [Async fetch](examples/fetch.md) | Async [`create_memo`][wybthon.create_memo] with a [`Loading`][wybthon.Loading] boundary, refetching, and [`is_pending`][wybthon.is_pending]. |
 | [Forms](examples/forms.md) | [`form_state`][wybthon.forms.form_state], bindings, validation, and accessibility helpers from `wybthon.forms`. |
 | [Error handling](examples/errors.md) | Recovering from render and async errors with [`Errored`][wybthon.Errored] and its `err` accessor. |

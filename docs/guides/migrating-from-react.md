@@ -21,16 +21,16 @@ This guide maps common React idioms to Wybthon equivalents and calls out the pit
 | `lazy(() => import('./X'))` | [`lazy(loader)`][wybthon.lazy] |
 | `createPortal(children, node)` | [`Portal(children, mount=...)`][wybthon.Portal] |
 | `useReducer` | `create_signal` plus plain functions, or a [`create_store`][wybthon.create_store] with draft mutations |
-| `{cond && <A/>}` / ternaries | `{Show(cond, A(), fallback=B())}` with [`Show`][wybthon.Show], or [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
-| `items.map(item => <Row key={item.id}/>)` | `{For(items, row, keyed=...)}` with [`For`][wybthon.For] |
+| `{cond && <A/>}` / ternaries | `{Show(cond(), A(), fallback=B())}` with [`Show`][wybthon.Show], or [`Switch`][wybthon.Switch] / [`Match`][wybthon.Match] |
+| `items.map(item => <Row key={item.id}/>)` | `{For(items(), row, keyed=...)}` with [`For`][wybthon.For] |
 | `function Card({ title }: CardProps)` | A [`Props`][wybthon.Props] class and `def Card(props: CardProps)` |
 | `props.children` | [`ParentProps`][wybthon.ParentProps] and `props.children` |
 | JSX | An [`html`][wybthon.html] template: `html(t'<div class="card"><p>{message}</p></div>')` |
-| `{expression}` in JSX | `{expression}` in the template; an accessor or zero-argument function stays live |
+| `{expression}` in JSX | `{expression}` in the template; the compiler keeps calls, attribute reads, and subscripts live, as Solid's does |
 | `className`, `htmlFor`, `onClick` | `class`, `for`, `onclick` (`onClick` works too) |
 | `<Card title="Hi">...</Card>` | `<{Card} title="Hi">...</{Card}>`, or `{Card(title="Hi")[...]}` for full type checking |
 | `<input {...attrs} />` | `<input {attrs}>` |
-| `` {`Count: ${count}`} `` | `Count: {count}` inside the template |
+| `` {`Count: ${count}`} `` | `Count: {count()}` inside the template |
 
 ## Components run once
 
@@ -48,22 +48,22 @@ def Counter():
     def increment():
         set_count(lambda n: n + 1)
 
-    return html(t"<button onclick={increment}>count: {count}</button>")
+    return html(t"<button onclick={increment}>count: {count()}</button>")
 ```
 
-You'll see `"Counter body running"` exactly once, no matter how many clicks. The `count` accessor in the template becomes a *reactive hole*, so only that text node updates. Handlers may take the event or, as here, no arguments. Read [Mental model](../concepts/mental-model.md) for the formal definition.
+You'll see `"Counter body running"` exactly once, no matter how many clicks. `{count()}` in the template becomes a *reactive hole*, so only that text node updates. Handlers may take the event or, as here, no arguments. Read [Mental model](../concepts/mental-model.md) for the formal definition.
 
 ## JSX becomes templates
 
-Markup is an HTML template written as a Python 3.14 [template string](https://peps.python.org/pep-0750/): `html(t"...")`. It's the counterpart of JSX, with no build step. Each literal is parsed once and cloned for every instance, so a template costs about what the markup inside it costs. See [Templates](../concepts/templates.md) for the full syntax.
+Markup is an HTML template written as a Python 3.14 [template string](https://peps.python.org/pep-0750/): `html(t"...")`. It's the counterpart of JSX, and Wybthon's [compiler](../concepts/compiler.md) plays the role of the JSX transform: it turns every dynamic expression in the markup into a getter, and turns each literal into a native template ahead of time. Each instance is a clone of that template, so a template costs about what the markup inside it costs. You don't run the compiler yourself: it runs in `wyb dev` and `wyb build`, in an import hook that `import wybthon` installs, and under pytest. See [Templates](../concepts/templates.md) for the full syntax.
 
 - Attribute names are HTML names: `class`, `for`, `aria-label`, `tabindex`. Handlers are `onclick={save}`; `onClick` and `on:click` work too.
-- `{expression}` works in a child, an attribute, part of an attribute (`class="btn btn-{kind}"`), an event, a `ref`, and a spread (`<input {attrs}>`).
-- Python doesn't allow a bare `lambda` inside `{...}`. Write `{(lambda: count() * 2)}` with parentheses, or, usually more readable, give the function or memo a name.
-- Use a component with a tag, `<{Card} title="Hi">...</{Card}>`, or call it in an interpolation, `{Card(title="Hi")}`. The call form is fully type-checked; the tag form's props are checked at run time in dev mode.
+- `{expression}` works in a child, an attribute, part of an attribute (`class="btn btn-{kind()}"`), an event, a `ref`, and a spread (`<input {attrs}>`).
+- Write expressions as you would in JSX: `{count() * 2}`, `{user().name}`, `class={"on" if active() else ""}`. An expression with a call, an attribute access, or a subscript stays live; a name or a constant is a value. Event handlers are never wrapped.
+- Use a component with a tag, `<{Card} title={user().name}>...</{Card}>`, or call it in an interpolation, `{Card(title=user().name)}`. Either way the component receives a getter for each dynamic prop. The call form is fully type-checked; the tag form's props are checked at run time in dev mode.
 - Markup the browser would silently fix is an error instead: put `<tr>` inside a `<tbody>`, and don't nest a `<div>` in a `<p>`.
 
-If you prefer building markup in code, the element helpers (`div(...)`, `p(...)`) are the programmatic layer, like `React.createElement`.
+If you need to build markup in code, [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, like `React.createElement`.
 
 ### Implications
 
@@ -104,7 +104,7 @@ Signal writes are **staged**: after `set_count(1)`, `count()` still returns the 
 
 ## Props
 
-In React, props are a frozen object per render, typed with an interface. In Wybthon, props are declared on a [`Props`][wybthon.Props] class, and the component takes one parameter annotated with it. Reading a [`Prop[T]`][wybthon.Prop] field returns an accessor: place it in the tree, or call it inside a reactive scope.
+In React, props are a frozen object per render, typed with an interface. In Wybthon, props are declared on a [`Props`][wybthon.Props] class with plain annotations, and the component takes one parameter annotated with it. Reading `props.name` returns the parent's current value and tracks it, as in Solid: place it in the markup, or read it inside a memo or effect.
 
 ```tsx
 type GreetProps = { name: string; excited?: boolean; onWave?: () => void };
@@ -119,29 +119,26 @@ becomes
 ```python
 from collections.abc import Callable
 
-from wybthon import Prop, Props, component, html, prop
+from wybthon import Props, component, html
 
 
 class GreetProps(Props):
-    name: Prop[str]
-    excited: Prop[bool] = prop(default=False)
+    name: str
+    excited: bool = False
     on_wave: Callable[[], None] | None = None
 
 
 @component
 def Greet(props: GreetProps):
-    def punctuation():
-        return "!" if props.excited() else "."
-
-    return html(t"<p onclick={props.on_wave}>Hello, {props.name}{punctuation}</p>")
+    return html(t"<p onclick={props.on_wave}>Hello, {props.name}{'!' if props.excited else '.'}</p>")
 ```
 
-- `Prop[T]` fields are reactive. The parent can pass a plain value or an accessor, and the child stays live either way, without re-running.
-- Other fields are plain data. Callbacks like `on_wave` go here; reading the field returns the function the parent passed.
-- Defaults use `prop(default=...)` for `Prop[T]` fields and ordinary `= value` defaults for plain fields.
+- Every field is reactive. When the parent writes `<{Greet} name={user().name}>`, the child gets a getter and `{props.name}` follows it, without re-running the body.
+- A field annotated `Callable[...]` is returned exactly as the parent passed it, so `on_wave` is the function itself.
+- Defaults are ordinary `= value` defaults; use `prop(default_factory=list)` for mutable ones.
 - Pyright and mypy check every call against the class, the way TypeScript checks JSX props.
 
-Destructuring a prop into a local (`value = props.name()`) at the top of the body freezes it at mount and loses reactivity; dev mode warns about it. When you really want a one-time read (to seed local state, for example), write `props.name.peek()`.
+Destructuring a prop into a local (`name = props.name`) at the top of the body freezes it at mount and loses reactivity; dev mode warns about it when the parent passed something reactive. When you really want a one-time read (to seed local state, for example), write `untrack(lambda: props.name)`.
 
 There's no `{...rest}` catch-all: a component reads only what it declares. To forward attributes, declare them and spread the remainder with [`omit`][wybthon.omit] (`attrs = omit(props, "title")`, then `<div {attrs}>`); [`merge`][wybthon.merge] covers `{...defaults, ...props}`.
 
@@ -150,11 +147,11 @@ There's no `{...rest}` catch-all: a component reads only what it declares. To fo
 Subclass [`ParentProps`][wybthon.ParentProps] to accept children, and place `props.children` in the markup. Callers pass children as nested markup in the tag form, with item syntax, or with the `children` keyword:
 
 ```python
-from wybthon import ParentProps, Prop, component, html, prop
+from wybthon import ParentProps, component, html
 
 
 class CardProps(ParentProps):
-    title: Prop[str] = prop(default="")
+    title: str = ""
 
 
 @component
@@ -167,7 +164,7 @@ Card(title="Hello")[html(t"<p>Body text</p>")]
 Card(title="Hello", children=html(t"<p>Body text</p>"))
 ```
 
-To inspect or reorder children, resolve them with [`children`][wybthon.children]: `kids = children(props.children)`, then `kids.to_array()`.
+To inspect or reorder children, resolve them with [`children`][wybthon.children]: `kids = children(lambda: props.children)`, then `kids.to_array()`.
 
 ## Context
 
@@ -188,7 +185,7 @@ Theme = create_context("light")
 @component
 def Consumer():
     theme = use_context(Theme)  # the accessor, exactly as provided
-    return html(t"<p>Theme: {theme}</p>")
+    return html(t"<p>Theme: {theme()}</p>")
 
 
 @component
@@ -215,12 +212,12 @@ def row(item, index):
     return Row(item=item)
 
 
-html(t"<ul>{For(items, row, keyed=lambda i: i['id'])}</ul>")
+html(t"<ul>{For(items(), row, keyed=lambda i: i['id'])}</ul>")
 ```
 
-With a key function, `item` is an accessor, so `Row` declares `item` as a `Prop[...]` field and stays live as the row's data changes.
+With a key function, `item` is an accessor. `Row` declares an ordinary field (`item: dict[str, Any]`), which unwraps the accessor on read, so the row stays live as its data changes.
 
-[`For`][wybthon.For] runs the callback once per row and caches the result; reorders move DOM nodes instead of re-rendering. With a key function, the callback receives accessors for the item and the index; with the default `keyed=True`, rows match by identity and the callback gets the raw item and an index accessor. Always pass an accessor (or a store path) for the list, not a plain Python list.
+[`For`][wybthon.For] runs the callback once per row and caches the result; reorders move DOM nodes instead of re-rendering. With a key function, the callback receives accessors for the item and the index; with the default `keyed=True`, rows match by identity and the callback gets the raw item and an index accessor. In a template, `{For(items(), row)}` hands `For` a getter for the list. In Python code, pass the accessor itself (`For(items, row)`), not a plain Python list.
 
 ## Conditional rendering
 
@@ -233,10 +230,10 @@ becomes
 ```python
 from wybthon import Show, html
 
-html(t"<main>{Show(is_loaded, Profile(), fallback=Spinner())}</main>")
+html(t"<main>{Show(is_loaded(), Profile(), fallback=Spinner())}</main>")
 ```
 
-`Show` tracks only the truthiness of `when`, so the branch re-renders when the condition flips, not on every value change. For several branches, use `Switch(Match(cond, children), ..., fallback=...)`. The built-ins work as calls in an interpolation (`{Show(ready, panel)}`) or with the tag form (`<{Show} when={ready}>...</{Show}>`).
+`Show` tracks only the truthiness of `when`, so the branch re-renders when the condition flips, not on every value change. For several branches, use `Switch(Match(cond, children), ..., fallback=...)`. The built-ins work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`).
 
 ## Refs and DOM access
 
@@ -259,7 +256,7 @@ def AutoFocus():
     return html(t"<input ref={ref}>")
 ```
 
-[`on_settled`][wybthon.on_settled] is the "after mount" hook: it runs once after the flush that mounted the component, and it may return a cleanup. `ref.current` is an [`Element`][wybthon.Element]; `.element` is the raw DOM node. A callback ref (`ref={remember}`) receives the `Element` instead, like React's `ref={el => ...}`. To forward a ref, declare it as a plain field (`ref: Ref | None = None`) and pass it down (`<input ref={props.ref}>`); there's no `forwardRef`.
+[`on_settled`][wybthon.on_settled] is the "after mount" hook: it runs once after the flush that mounted the component, and it may return a cleanup. `ref.current` is an [`Element`][wybthon.Element]; `.element` is the raw DOM node. A callback ref (`ref={remember}`) receives the `Element` instead, like React's `ref={el => ...}`. To forward a ref, declare it as a field (`ref: Ref | None = None`) and pass it down (`<input ref={props.ref}>`); there's no `forwardRef`.
 
 ## Async data
 
@@ -279,10 +276,7 @@ def Title():
 
     data = create_memo(fetch_data)
 
-    def title():
-        return data()["title"]
-
-    return Loading(html(t"<span>{title}</span>"), fallback=html(t"<p>Loading</p>"))
+    return Loading(html(t"<span>{data()['title']}</span>"), fallback=html(t"<p>Loading</p>"))
 ```
 
 Later recomputes run as transitions, holding the dependent UI on the previous state until the new value lands, so the boundary doesn't flash and nothing tears; [`is_pending`][wybthon.is_pending] tells you when that's happening. For mutations, [`action`][wybthon.action] and [`create_optimistic`][wybthon.create_optimistic] cover what `useTransition` and `useOptimistic` do in React:
@@ -310,10 +304,7 @@ from wybthon.router import current_path
 
 
 def failed(err, reset):
-    def message():
-        return str(err())
-
-    return html(t"<div><p>{message}</p><button onclick={reset}>Retry</button></div>")
+    return html(t"<div><p>{str(err())}</p><button onclick={reset}>Retry</button></div>")
 
 
 Errored(Dashboard(), fallback=failed, reset_on=current_path)
@@ -331,11 +322,12 @@ The fallback receives `err`, an accessor for the caught error, and `reset`, whic
 
 ## Things to watch out for
 
-- **Don't read props or signals at the top level of the body.** `props.name()` there freezes the value (and warns). Place the accessor in the tree or read inside a memo, effect, or hole.
+- **Don't read props or signals at the top level of the body.** `props.name` there freezes the value (and warns). Read it in the markup, or inside a memo or effect.
 - **Don't expect a write to be visible immediately.** `set_x(1); x()` returns the old value until the flush. Use functional updates to compose writes.
 - **Don't write signals inside a memo or a hole.** Dev mode raises `WriteInScopeError`. Write from event handlers, actions, or the `apply` stage of an effect.
-- **Declare callbacks as plain fields.** A `Prop[...]` field is for values that can change. A callback goes in a plain field (`on_save: Callable[[], None] | None = None`), so reading it returns the function.
-- **Parenthesize lambdas in templates.** `{lambda: x()}` is a `SyntaxError`; write `{(lambda: x())}`, or pass the accessor itself (`{x}`).
+- **Annotate callbacks as callables.** A callback field (`on_save: Callable[[], None] | None = None`) returns the function the parent passed; any other field unwraps an accessor or getter to its value.
+- **Parenthesize inline handlers.** Python doesn't allow a bare `lambda` in a t-string interpolation, so `onclick={lambda: save()}` is a `SyntaxError`; write `onclick={(lambda: save())}`, or name the handler.
+- **Keep templates in compiled modules.** A template in a module imported after `wybthon` is compiled automatically. A script you run directly with `python` isn't, and dev mode raises `TemplateError` when one of its dynamic expressions was evaluated only once; run it with `wyb run script.py`.
 - **Define components at module scope.** Creating one inside a body doesn't cause re-renders, but it does create a new component identity on every hole re-run, which forces a remount.
 
 ## Cheat sheet
@@ -348,7 +340,6 @@ from wybthon import (
     Match,
     ParentProps,
     Portal,
-    Prop,
     Props,
     Ref,
     Repeat,
@@ -370,6 +361,7 @@ from wybthon import (
     on_cleanup,
     on_settled,
     prop,
+    untrack,
     use_context,
 )
 from wybthon.router import Link, Route, Router, navigate

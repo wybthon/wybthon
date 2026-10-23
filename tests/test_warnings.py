@@ -139,10 +139,10 @@ def test_component_name_of_decorated_component():
 def test_prop_checks_follow_dev_mode():
     import pytest
 
-    from wybthon import Prop, Props, component
+    from wybthon import Props, component
 
     class CardProps(Props):
-        title: Prop[str]
+        title: str
 
     @component
     def Card(props: CardProps):
@@ -165,3 +165,34 @@ def test_prop_checks_follow_dev_mode():
         Bare(title="x")
     finally:
         set_dev_mode(original)
+
+
+def test_top_level_prop_read_warns_only_for_reactive_values(capsys):
+    from wybthon import Props, component, create_signal, html
+    from wybthon._warnings import _reset_warning_dedupe
+    from wybthon.testing import cleanup, render
+
+    class CardProps(Props):
+        title: str
+
+    @component
+    def Card(props: CardProps):
+        title = props.title
+        return html(t"<p>{title}</p>")
+
+    title, _ = create_signal("signal")
+    _reset_warning_dedupe()
+    try:
+        # A constant can't change, so reading it once is fine.
+        render(Card(title="constant"))
+        assert capsys.readouterr().err == ""
+        # An accessor from the parent is reactive: the top-level read freezes it.
+        render(Card(title=title))
+        assert "read reactive value prop 'title' at the top level" in capsys.readouterr().err
+        # So is a getter the compiler made of a dynamic template expression.
+        _reset_warning_dedupe()
+        render(html(t"<{Card} title={title()} />"))
+        assert "read reactive value prop 'title' at the top level" in capsys.readouterr().err
+    finally:
+        cleanup()
+        _reset_warning_dedupe()

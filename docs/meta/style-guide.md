@@ -102,7 +102,7 @@ class Field[T]:
         ```python
         fields = form_state({"name": ""})
         name = fields["name"]
-        html(t"<input {bind_text(name)}><span>{name.error}</span>")
+        html(t"<input {bind_text(name)}><span>{name.error()}</span>")
         ```
     """
 ```
@@ -205,15 +205,29 @@ typically enough; autorefs picks them up via signature annotations
   ` ```yaml `.
 - Prefer **runnable** snippets that include the imports needed to
   copy-paste them.
-- Write markup as [`html`][wybthon.html] templates. Use the element
-  helpers (`div(...)`, `h(...)`) only where the page is about them or
-  the markup is built by code.
-- Never put a bare `lambda` inside a t-string interpolation; it's a
-  `SyntaxError`. Prefer a named function or memo, and wrap an inline
-  lambda in parentheses when one is clearer: `{(lambda: count() * 2)}`.
+- Write markup as [`html`][wybthon.html] templates. Use
+  [`h(tag, props, *children)`][wybthon.h] only where the page is about
+  it or the markup is built by code. The element helpers (`div(...)`,
+  `p(...)`, `wybthon.elements`, `wybthon.svg`) no longer exist.
+- Write reactive expressions directly; the compiler makes each one a
+  getter: `{count() * 2}`, `{props.title}`, `{row["label"]}`,
+  `class={"on" if active() else ""}`, `{Show(count() > 5, ...)}`. Don't
+  wrap them in `{(lambda: ...)}`.
+- Prefer `{count()}` to `{count}` (both work): it reads like the value
+  and matches Solid. Place the accessor itself only where passing it is
+  the point.
+- Declare props with plain annotations (`title: str`) and read them as
+  values (`props.title`). Annotate callbacks as `Callable[...]`. For a
+  one-time read, use `untrack(lambda: props.initial)`.
+- Give event handlers a name. Never put a bare `lambda` inside a
+  t-string interpolation; it's a `SyntaxError`. When an inline handler
+  is clearer, wrap it in parentheses: `onclick={(lambda: set_open(False))}`.
 - Check that every template parses: `<tr>` needs a `<tbody>`, and a
   `<p>` can't hold block elements. Malformed markup raises
-  [`TemplateError`][wybthon.TemplateError].
+  [`TemplateError`][wybthon.TemplateError] (a `SyntaxError` when the
+  compiler finds it). To check an example's behavior, save it to a file
+  and run it with `wyb run example.py`, rendering through
+  [`wybthon.testing`][wybthon.testing].
 - For longer multi-step examples, lean on Material's `pymdownx.tabbed`
   to show the same example in different forms (e.g., "Component" vs.
   "Direct call").

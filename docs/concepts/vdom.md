@@ -1,24 +1,25 @@
 # Virtual DOM
 
 Wybthon keeps a small virtual DOM as a rendering implementation detail.
-This page explains why it exists, how compiled templates and element
-helpers mount through it, how reactive holes, bindings, and native
-regions update, and how DOM operations reach the browser.
+This page explains why it exists, how compiled templates and `h()` trees
+mount through it, how reactive holes, bindings, and native regions
+update, and how DOM operations reach the browser.
 
 ## Why a VDOM in a fine-grained framework?
 
 SolidJS compiles JSX ahead of time, splitting each template into a
-static skeleton and the expressions that change. Wybthon gets that
-split from the language: a t-string literal's static strings are the
-same object every time it runs, so each literal is compiled once, and
-every instance only supplies its interpolated values.
+static skeleton and the expressions that change. Wybthon's
+[compiler](compiler.md) makes the same split for t-string templates
+before a module runs: each literal becomes a skeleton and a mount
+function, and each dynamic expression becomes a getter, so every
+instance only supplies its values.
 
 What the VDOM adds is batching. In Pyodide every DOM call crosses the
 Python-to-JavaScript bridge, which dominates rendering cost. So nothing
 in the renderer touches the DOM directly:
 
 - A component returns its markup once, usually a template instance.
-- Reactive expressions inside it become **holes** and **bindings**, each with its own render effect.
+- Reactive expressions inside it become **holes** and **bindings**, each updating its own node.
 - When a hole re-evaluates, the **reconciler** patches only the hole's region and emits compact operations against integer node ids.
 - All operations from one flush are handed to a small **JavaScript kernel** in one bridge crossing.
 
@@ -26,60 +27,63 @@ The reactive model is Solid's. The VDOM never diffs whole components,
 only the region under a hole, and static markup never becomes VNodes at
 all when it's written as a template. Removing the batch in favor of
 direct DOM calls would put a bridge crossing behind every node. See
-[RFC 0003](../rfcs/0003-engine-v3.md) for the design and benchmarks of
-the current engine.
+[RFC 0004](../rfcs/0004-engine-v4.md) for the design of the current
+engine and [RFC 0003](../rfcs/0003-engine-v3.md) for compiled templates.
 
 ## Two ways to write markup
 
 [Templates](templates.md) are the primary path:
-`html(t"<div class={cls}>{count}</div>")` compiles once per literal and
-mounts with one clone command. The [element helpers](../api/elements.md)
-(`div(...)`, `p(...)`) and [`h(tag, props, *children)`][wybthon.h] are
-the programmatic path, the counterpart of Solid's `h`, for markup built
-by code: generated forms, recursive trees, or components that compute
-their tag. The two mix freely, and they share one set of prop appliers,
-so a prop means the same thing in both.
+`html(t"<div class={cls()}>{count()}</div>")` is compiled ahead of time
+and mounts with one clone command. [`h(tag, props, *children)`][wybthon.h]
+is the programmatic path, the counterpart of Solid's `h`, for markup
+built by code: generated forms, recursive trees, or components that
+compute their tag. The two mix freely, and they share one set of prop
+appliers, so a prop means the same thing in both.
 
 ```python
-from wybthon import Fragment, div, h, h1, html, p
+from wybthon import Fragment, h, html
 
 view = html(t'<div class="app"><h1>Hello</h1><p>Welcome</p></div>')
-same = div(h1("Hello"), p("Welcome"), class_="app")
 built = h("div", {"class": "app"}, h("h1", {}, "Hello"), h("p", {}, "Welcome"))
-items = div(class_="app")[h1("Hello"), p("Welcome")]
-grouped = Fragment(h1("Title"), p("Body"))
+grouped = Fragment(h("h1", {}, "Title"), html(t"<p>Body</p>"))
 ```
 
-For the helpers and `h`:
+For `h`:
 
 - `tag` is an HTML tag, an SVG tag, or a component.
 - Props are attributes, DOM properties, event handlers, `ref`, `key`, or reactive bindings.
-- Children are strings, numbers, VNodes (templates included), lists (flattened), `None` (dropped), template strings, or reactive expressions (holes).
+- Children are strings, numbers, VNodes (templates included), lists (flattened), `None` (dropped), or reactive expressions (holes). A t-string isn't a child; pass it to `html()` first.
 
 Template attributes use HTML names (`class`, `for`, `aria-label`).
-Helper props are Pythonic, and the prop applier maps them when it
-writes the attribute: `class_` becomes `class`, `html_for` becomes
-`for`, and other underscores become hyphens (`aria_label`,
+`h()` props accept those and Python names, and the prop applier maps
+them when it writes the attribute: `class_` becomes `class`, `html_for`
+becomes `for`, and other underscores become hyphens (`aria_label`,
 `data_testid`). In both styles, `True` sets a boolean attribute and
 `False` or `None` removes it; `value` and `checked` are written as DOM
 properties; `class` accepts a string, a list, or a `{name: bool}` dict;
 and `style` accepts a string or a dict with snake- or kebab-case keys.
-Use [`element("my-tag")`][wybthon.element] for custom elements built in
-code.
+
+The compiler only rewrites templates, so an `h()` call's arguments are
+evaluated when it runs. An `h()` element mounts node by node: one
+create command per node, all in the same batch as everything else.
 
 ## Compiled templates
 
-A template is compiled the first time its literal runs. The private
-`wybthon.templates` module does the work, and caches the result by the
-identity of the t-string's `strings` tuple (holding a reference, so the
-identity can't be reused). Literals are code, so the cache is bounded
-by the size of the program. A template built by hand, whose strings
-aren't a literal's constant, falls back to a bounded structural cache.
+The compiler parses and validates each template literal when its module
+is compiled, and writes the result into the module: the literal's
+normalized parse tree as constants, and a mount function for each of
+its elements. The first `html()` call of a literal rebuilds its slot
+plan from that tree and installs the mount functions, with no parsing
+and no code generation. A template that reaches `html()` uncompiled is
+compiled there instead, once, and cached by the identity of the
+t-string's `strings` tuple (holding a reference, so the identity can't
+be reused). Literals are code, so that cache is bounded by the size of
+the program; a template built by hand, whose strings aren't a literal's
+constant, falls back to a bounded structural cache.
 
 ### What a compiled template holds
 
-Compilation parses the markup, validates it, and produces, for each
-top-level element:
+For each top-level element, a compiled template has:
 
 - the **static skeleton**, serialized to HTML with every static attribute and all static text written in, and with a placeholder wherever a child slot sits;
 - the **slot plan**: the pre-order node offset and kind of every interpolation (attribute, part of an attribute, event, ref, spread, child, or component tag);
@@ -88,24 +92,28 @@ top-level element:
 
 Validation rejects markup the browser's HTML parser would rewrite,
 such as `<tr>` directly inside `<table>` or a `<div>` inside a `<p>`,
-by raising [`TemplateError`][wybthon.TemplateError] with the template's
-source and the fix. That's what lets Python and the kernel agree on
-every node's offset without reading anything back.
+with the template's source and the fix: a `SyntaxError` with the file
+and line when the compiler finds it, or a
+[`TemplateError`][wybthon.TemplateError] for a template compiled at
+run time. That's what lets Python and the kernel agree on every node's
+offset without reading anything back.
 
-`html()` itself does almost nothing per call: it looks up the compiled
-template by identity and wraps it with the call's values. A template
-with one top-level element is one instance; several top-level nodes
-make a fragment of instances, text, and values.
+`html()` itself does almost nothing per call: it wraps the compiled
+template with the call's values. A template with one top-level element
+is one instance; several top-level nodes make a fragment of instances,
+text, and values.
 
-### One generated mount function per template
+### One mount function per template
 
-Each compiled template gets a generated Python function that mounts
-an instance in straight-line code, with its offsets and prop names as
-constants. It:
+Each compiled element has a mount function that mounts an instance in
+straight-line code, with its offsets and prop names as constants. The
+compiler writes it into the module as an ordinary `def`, so a
+production build turns it into bytecode with the rest of the
+application. It:
 
 1. allocates a dense block of node ids, one per node in the skeleton;
 2. appends one `CLONE` command, registering the skeleton with the kernel (`REGISTER_TPL`, in the same batch) the first time it's needed;
-3. walks the slot plan with the instance's values, applying each attribute, event, ref, and spread through the same appliers the helpers use;
+3. walks the slot plan with the instance's values, applying each attribute, event, ref, and spread through the same appliers `h()` uses;
 4. fills each child slot and mounts each component tag at its placeholder;
 5. records each slot's state on the instance, for patching and teardown.
 
@@ -142,71 +150,23 @@ lit-html does:
 
 A template from a different literal replaces the instance.
 
-## Element helper shapes
-
-Element helpers build ordinary VNodes, and repeated helper subtrees
-mount through compiled **shapes**, the runtime shape compiler from
-[RFC 0002](../rfcs/0002-engine-v2.md), in the private `wybthon._shapes`
-module. The first mount of a helper subtree walks it once and records
-its shape: the skeleton HTML (validated like a template's), the
-pre-order node count, each text slot's offset, each binding's offset
-and kind, and each dynamic child's offset. Static text is hoisted out
-of the HTML, so subtrees that differ only in text (list rows) share one
-skeleton. Shapes are cached by structure.
-
-A shape gets a generated mount function too. Unlike a template's, it
-first guards the instance's structure, without allocating, because a
-helper tree carries no guarantee of its own shape; if a guard fails, it
-falls back to the generic path. Then it allocates ids, appends one
-fused `CLONE`, wires bindings by offset, and mounts dynamic children.
-Every helper instance still builds its whole VNode tree first, which is
-the cost templates avoid.
-
-A component, fragment, or list child of a helper subtree mounts in
-front of the element that follows it, or appends when it's last. Only
-when text or another dynamic child follows it does it get a comment
-placeholder, which is disposed once the child has mounted in front of
-it.
-
-Helper subtrees also keep their VNodes, but only the root and the
-dynamic children get node ids at mount. Static descendants get ids the
-first time the reconciler needs them, when a hole patches the subtree.
-List rows and component output are never patched that way, so they
-skip the work entirely.
-
-Helper subtrees the HTML parser would rewrite, single-node subtrees,
-adjacent or empty text, and raw-text elements such as `<script>` and
-`<textarea>` fall back to per-node commands, still batched in the same
-commit. Unlike templates, helpers don't raise for markup the parser
-would rewrite: they mount it node by node.
-
 ## Reactive holes and bindings
 
-A zero-arg callable or accessor in a child position becomes a hole; in
-an attribute position (other than events and `ref`), it becomes a
-binding. Each is a render effect, so unrelated attributes on the same
-element update independently. Use [`hole`][wybthon.hole] to create a
-hole explicitly when you need a `key`.
+A getter, an accessor, or a zero-argument function in a child position
+becomes a hole; in an attribute position (other than events and `ref`),
+it becomes a binding. In a template, the compiler makes every dynamic
+expression a getter, so `{count() * 2}` and `class={status()}` are a
+hole and a binding. Each binding updates on its own, so unrelated
+attributes on the same element update independently. Use
+[`hole`][wybthon.hole] to create a hole explicitly in an `h()` tree
+when you need a `key`.
 
 ```python
-from wybthon import create_signal, hole, html
+from wybthon import create_signal, html
 
 count, set_count = create_signal(0)
 
-
-def doubled():
-    return f" (x2={count() * 2})"
-
-
-def bang():
-    return "!" * count()
-
-
-def parity():
-    return "odd" if count() % 2 else "even"
-
-
-view = html(t"<p class={parity}>Count: {count}{doubled}{hole(bang, key='bang')}</p>")
+view = html(t"<p class={'odd' if count() % 2 else 'even'}>Count: {count()} (x2={count() * 2})</p>")
 ```
 
 A hole's expression may return a string, a template or other `VNode`, a
@@ -216,9 +176,26 @@ re-evaluations while the reconciler can patch them in place, and
 [`on_cleanup`][wybthon.on_cleanup] inside the expression runs before
 each re-run.
 
-**Inert bindings are dropped.** When a hole or binding finishes its
-first run without reading a reactive source, and without creating
-children, cleanups, or async work, it can never run again. The renderer
+Bindings keep their state in slots. Each hole and attribute binding is
+a small computation that holds its node, name, and last value directly,
+and applies its result as a method, not through a closure and its
+cells. A mounted template row therefore keeps about half as many
+objects for the cyclic garbage collector to track as it did in the
+previous engine; see the
+[engine v4 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md).
+
+**A static probe before a computation.** A binding whose expression
+makes no calls (`{props.title}`, `{row["label"]}`) first runs under a
+lightweight observer. If it reads nothing reactive, creates nothing,
+and returns synchronously, the value is applied and no computation is
+ever allocated. The probe stops at the first reactive read, and the
+binding then runs as a computation. A probe that returns an accessor
+without reading anything (`{row["label"]}` returning a signal) binds
+directly to that accessor.
+
+**Inert bindings are dropped.** Any other hole or binding that finishes
+its first run without reading a reactive source, and without creating
+children, cleanups, or async work, can never run again. The renderer
 disposes it immediately and keeps only the DOM it produced. Together
 with constant props that subscribe to nothing (see
 [What props cost](components.md#what-props-cost)), a component whose
@@ -232,7 +209,12 @@ They return region nodes that the reconciler mounts directly, with no
 component context, props object, or wrapper memo:
 
 - **`Show` and `Switch`** are one branch computation. It selects a branch from the condition and re-mounts the content only when the selected branch changes, between two comment markers.
-- **`For` and `Repeat`** are list regions. Each row has its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly.
+- **`For` and `Repeat`** are list regions. Each row is its own owner, rows are moved rather than re-diffed, and a store list's edit records apply directly. A row's index is a plain integer until something reads `index()` in a tracking scope, which is when the signal behind it is created.
+
+Matching a keyed list against its mounted rows skips the common prefix
+and suffix by identity without calling into each row, detects swapped
+ends the way Solid's `reconcileArrays` does, and only then falls back to
+a key table for what's left. Swapping two rows is two native moves.
 
 When a reactive hole re-renders a region of the same kind, the new
 condition or source is pushed into the mounted region instead of
@@ -247,7 +229,7 @@ old result with the new one:
 - Same VNode instance (for example a cached `For` row): skipped.
 - Template instances from the same literal: patched slot by slot.
 - Regions of the same kind: the new condition or source is pushed in.
-- Same component and key: patched in place. New props flow into the existing accessors, and the body doesn't run again.
+- Same component and key: patched in place. New props flow into the existing props instance, and the body doesn't run again.
 - Same element tag and key: props are diffed, text is updated, and children are reconciled.
 - Anything else: the old subtree is unmounted and the new one mounted at the same position.
 
@@ -268,7 +250,7 @@ def editor():
     return Editor(user_id=current_id(), key=current_id())
 
 
-html(t"<div>{editor}</div>")
+html(t"<div>{editor()}</div>")
 ```
 
 Prefer [`For`][wybthon.For] for lists: it caches each row's node and
@@ -279,11 +261,11 @@ scope, so rows are moved rather than re-diffed at all.
 Some renderers need ordinary VNodes. Server rendering, hydration, SVG
 and MathML (a template containing `<svg>` or `<math>`, or one mounted
 inside an SVG parent), and backends that can't parse HTML **expand** a
-template into the same VNode tree the element helpers would build, and
-mount that. Output and hydration keys are identical whichever style you
-use. A hydrated instance keeps its expanded tree, so a hole that later
-patches it diffs the expanded trees; everything mounted after hydration
-uses the clone path.
+template into the same VNode tree `h()` would build, and mount that.
+Output and hydration keys are identical whichever style you use. A
+hydrated instance keeps its expanded tree, so a hole that later patches
+it diffs the expanded trees; everything mounted after hydration uses
+the clone path.
 
 ## The batched rendering kernel
 
@@ -307,7 +289,8 @@ the browser sees. See the [Testing guide](../guides/testing.md).
 Template registration lists the delegated event types at each offset.
 Cloning an instance marks those listeners natively, so mounting a row
 with two handlers sends no `LISTEN` commands. Python stores the handlers
-in one table keyed by node id.
+in one table keyed by node id; a node with a single handler stores it
+directly, without a dictionary of its own.
 
 ## Teardown
 
@@ -315,8 +298,7 @@ Unmounting doesn't visit every node in Python. `DISPOSE_RANGE` removes a
 contiguous range of siblings and releases every registered node inside
 it, and `DISPOSE` does the same for one node's subtree; the kernel walks
 the removed nodes natively. Python-side registrations (handlers,
-reactive bindings, refs) are found through the template's slot plan or
-the shape's binding offsets.
+reactive bindings, refs) are found through the template's slot plan.
 
 Lists benefit most:
 
@@ -325,15 +307,15 @@ Lists benefit most:
 
 ## Event delegation
 
-Handlers such as `onclick={save}` (or `on_click=save` on a helper)
+Handlers such as `onclick={save}` (or `on_click=save` in an `h()` call)
 don't attach native listeners per element. The kernel installs one
 native listener per event type on each **render root** (the container
-passed to `render`). Template and shape nodes declare their listener
-types at registration, and handlers on other nodes ride the same buffer
-as a `LISTEN` command. When an event fires, the kernel walks the
-ancestor chain natively and calls into Python once for the matching
-route, with a small JSON payload. Handlers may take the event or no
-arguments at all. See [Events](events.md).
+passed to `render`). Template nodes declare their listener types at
+registration, and handlers on other nodes ride the same buffer as a
+`LISTEN` command. When an event fires, the kernel walks the ancestor
+chain natively and calls into Python once for the matching route, with
+a small JSON payload. Handlers may take the event or no arguments at
+all. See [Events](events.md).
 
 ## `render` and `Root`
 
@@ -354,12 +336,12 @@ root.dispose()  # unmount, dispose every scope, unregister the event root
 
 ## Architecture
 
-- **`templates`**: `html` and `TemplateError`: parsing, validation, the per-literal cache, generated mount functions, slot-wise patching, and expansion.
+- **`compiler`**: the AST transform that defers dynamic expressions and precompiles template literals, and the import hook that runs it.
+- **`templates`**: `html` and `TemplateError`: parsing, validation, the runtime fallback and its cache, mount function generation, slot-wise patching, and expansion.
 - **`vnode`**: `VNode`, `h`, `Fragment`, `hole`, and child normalization (no browser dependency).
-- **`elements`** and **`svg`**: the element helpers; SVG elements propagate their namespace to children.
-- **`_dom_props`** (private): attribute, property, class, style, dataset, ref, and reactive-binding application, shared by templates and helpers, all op-based.
-- **`_shapes`** (private): helper shapes, their generated mount functions, lazy id materialization, and offset-based disposal.
-- **`_html_rules`** (private): the HTML parser's content rules, shared by template validation and helper shapes.
+- **`_compiled`** (private): the run-time helpers compiled modules call (getters, call dispatch, format specs, precompiled entries).
+- **`_dom_props`** (private): attribute, property, class, style, dataset, ref, and reactive-binding application, shared by templates and `h()`, all op-based.
+- **`_html_rules`** (private): the HTML parser's content rules, used by template validation.
 - **`_regions`** (private): the native `Show`, `Switch`, `For`, and `Repeat` regions.
 - **`reconciler`**: mount, patch, unmount, `render`, `hydrate`, and `Root`.
 - **`kernel`**: the command buffer, the JS kernel (`_kernel.js`), and the Python reference backend.
@@ -374,15 +356,15 @@ full traceback. An [`Errored`][wybthon.Errored] boundary above the
 failing subtree catches the error and shows a fallback instead.
 Production builds (`wyb build`) turn dev mode off before the application
 imports; call [`set_dev_mode(False)`][wybthon.set_dev_mode] yourself
-when you mount outside the production bootstrap. A
-[`TemplateError`][wybthon.TemplateError] isn't a render error: it's
-raised by `html()` the first time a malformed template runs, in every
-mode.
+when you mount outside the production bootstrap. A malformed template
+isn't a render error: the compiler rejects it when the module is
+compiled, and `html()` raises [`TemplateError`][wybthon.TemplateError]
+the first time an uncompiled one runs, in every mode.
 
 ## Next steps
 
-- Read [Templates](templates.md) for the template syntax.
+- Read [Templates](templates.md) for the template syntax, and [The compiler](compiler.md) for what it generates.
 - See [Primitives](primitives.md#reactive-holes) for the hole mental model.
 - Read [Lifecycle and ownership](lifecycle.md) for mount and unmount semantics.
 - Browse the [`reconciler`](../api/reconciler.md) and [`kernel`](../api/kernel.md) API pages.
-- Read [RFC 0003](../rfcs/0003-engine-v3.md) for compiled templates and zero-cost components, and [RFC 0002](../rfcs/0002-engine-v2.md) for helper shapes.
+- Read [RFC 0004](../rfcs/0004-engine-v4.md) for the compiler, leaner bindings, and keyed matching, and [RFC 0003](../rfcs/0003-engine-v3.md) for compiled templates and zero-cost components.

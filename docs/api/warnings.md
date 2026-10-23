@@ -20,8 +20,10 @@ Three things live here:
   warnings. Call it yourself when you mount outside the production
   bootstrap. Turning dev mode off also disables
   [`WriteInScopeError`][wybthon.WriteInScopeError] for signal and store
-  writes inside tracking scopes, and the run-time `TypeError` for
-  unknown or missing component props.
+  writes inside tracking scopes, the run-time `TypeError` for
+  unknown or missing component props, and the
+  [`TemplateError`][wybthon.TemplateError] for a template that wasn't
+  [compiled](compiler.md).
   [`is_dev_mode()`][wybthon._warnings.is_dev_mode] reports the live
   state. Both functions are re-exported from the top-level `wybthon`
   package; the module-level `DEV_MODE` flag is internal, and

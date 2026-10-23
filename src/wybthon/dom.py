@@ -334,7 +334,7 @@ class Ref:
     def FancyInput(props: FancyInputProps):
         local = Ref()
         on_settled(lambda: local.current.element.focus())
-        return input_(type="text", ref=[local, props.ref])
+        return html(t'<input type="text" ref={[local, props.ref]}>')
     ```
 
     Refs are assigned during mount, so read them in

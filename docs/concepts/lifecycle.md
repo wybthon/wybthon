@@ -36,6 +36,7 @@ flowchart TD
 | --- | --- | --- |
 | [`on_settled`][wybthon.on_settled] | Once, after the flush that mounted the component has committed. May return a cleanup. | Imperative DOM access, focus, third-party widgets. |
 | [`on_cleanup`][wybthon.on_cleanup] | When the owning scope (component, effect run, hole, or row) is disposed. | Cancel timers, detach listeners, close subscriptions. |
+| [`on_hydration_end`][wybthon.on_hydration_end] | Once, after [`hydrate`][wybthon.hydrate] has committed the page; on the next tick in a page that wasn't server-rendered. | Work that must wait until hydration is over. |
 | [`create_effect`][wybthon.create_effect] | First on the flush after mount, then on each tracked change, always after the DOM commit. | Side effects driven by reactive state. |
 | [`create_memo`][wybthon.create_memo] | At creation unless `lazy=True`; later reads bring changed inputs current. | Derived values. |
 | [`create_memo`][wybthon.create_memo] with `async def` | Starts at creation unless `lazy=True`; revalidates when tracked sources change. | Data fetching with [`Loading`][wybthon.Loading]. |
@@ -180,7 +181,7 @@ Async memos and async effects do this for you: every resume after an
 
 - **Forgetting cleanups.** If you attach a listener or start an interval, return a cleanup from `apply` or register one with `on_cleanup`, so re-runs and unmounts don't leak.
 - **Touching the DOM in the body.** The body runs before the DOM exists. Use `on_settled` or an effect.
-- **Reading props at the top level.** The read is frozen at mount and dev mode warns. Read inside a hole, memo, or effect, or use `.peek()` deliberately.
+- **Reading props at the top level.** The read is frozen at mount, and dev mode warns when the parent passed an expression. Read props in the returned markup, a memo, or an effect, or use `untrack(lambda: props.initial)` deliberately.
 - **Expecting effects to run at creation.** The first run is deferred to the next flush. In tests, call [`flush`][wybthon.flush] after `render` before asserting on effect output.
 
 ## Next steps

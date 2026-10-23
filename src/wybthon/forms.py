@@ -31,12 +31,13 @@ Example:
     def save(fields):
         print({k: f.value() for k, f in fields.items()})
 
-    form(
-        input_(**bind_text(form["name"], validators=rules["name"])),
-        span(form["name"].error, **error_message_attrs(id="name-error")),
-        button("Save", type="submit"),
-        on_submit=on_submit_validated(rules, save, form),
-    )
+    html(t'''
+      <form onsubmit={on_submit_validated(rules, save, form)}>
+        <input {bind_text(form["name"], validators=rules["name"])}>
+        <span {error_message_attrs(id="name-error")}>{form["name"].error()}</span>
+        <button type="submit">Save</button>
+      </form>
+    ''')
     ```
 
 See Also:

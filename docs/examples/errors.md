@@ -3,32 +3,29 @@
 Catch errors raised while rendering with [`Errored`][wybthon.Errored], show a fallback, and recover with a reset callback or automatically when a route changes.
 
 ```python
-from wybthon import Errored, Prop, Props, component, create_signal, html, prop, render
+from wybthon import Errored, Props, component, create_signal, html, render
 from wybthon.router import current_path
 
 
 class RiskyPanelProps(Props):
-    should_fail: Prop[bool] = prop(default=False)
+    should_fail: bool = False
 
 
 @component
 def RiskyPanel(props: RiskyPanelProps):
     # A hole that raises routes the error to the nearest Errored boundary.
     def body():
-        if props.should_fail():
+        if props.should_fail:
             raise RuntimeError("the panel exploded")
         return "Everything is fine."
 
-    return html(t"<p>{body}</p>")
+    return html(t"<p>{body()}</p>")
 
 
 def fallback(err, reset):
-    def message():
-        return f"Caught: {err()}"
-
     return html(t"""
       <div style="color: crimson">
-        <p>{message}</p>
+        <p>Caught: {err()}</p>
         <button onclick={reset}>Retry</button>
       </div>
     """)
@@ -48,7 +45,7 @@ def App():
     return html(t"""
       <div>
         <button onclick={toggle}>Toggle failure</button>
-        {Errored(RiskyPanel(should_fail=fail), fallback=fallback, on_error=log_error, reset_on=current_path)}
+        {Errored(RiskyPanel(should_fail=fail()), fallback=fallback, on_error=log_error, reset_on=current_path)}
       </div>
     """)
 
@@ -59,8 +56,9 @@ render(App(), "#app")
 ## How it works
 
 - `Errored` installs an error handler on its owner scope. Errors raised in a descendant hole, component body, effect, or async memo route to the nearest boundary; sibling trees are untouched.
-- Its children can be a node, as here: `RiskyPanel(...)` doesn't run until the boundary mounts it, so there's no need to wrap it in a lambda.
-- `fallback` may be a node, a string, or a callable. A callable receives `(err, reset)` (or just `(err)`). `err` is an accessor for the caught exception, as in Solid 2.0, so read it inside a hole: `message` is a function placed in the template. Calling `reset()` clears the error and re-renders the children; it takes no arguments, so it works directly as a click handler.
+- Its children can be a node, as here: `RiskyPanel(...)` doesn't run until the boundary mounts it, so there's no need to wrap it in a lambda. Because the call sits in a template, the compiler passes `should_fail` as a getter, so the panel reads the current value of `fail()` each time `body()` runs.
+- `body()` is a plain function call in the template, so the whole call is one reactive hole: it reruns when `props.should_fail` changes, and when it raises, the error goes to the boundary.
+- `fallback` may be a node, a string, or a callable. A callable receives `(err, reset)` (or just `(err)`). `err` is an accessor for the caught exception, as in Solid 2.0, so `{err()}` in the fallback's template shows the message. Calling `reset()` clears the error and re-renders the children; it takes no arguments, so it works directly as a click handler.
 - `on_error` is a plain callback for logging or reporting. It receives the exception itself.
 - `reset_on` is an accessor whose change clears the error automatically. Passing [`current_path`][wybthon.router.current_path] from `wybthon.router` resets the boundary on every navigation, which is the usual behavior for a page-level boundary.
 - Boundaries also heal on their own: the boundary remembers which reactive inputs the failing computation read, so toggling the failure off re-renders `RiskyPanel` without a click on "Retry."
@@ -83,7 +81,7 @@ async def load_profile():
 def profile_failed(err, reset):
     return html(t"""
       <div>
-        <p>{(lambda: str(err()))}</p>
+        <p>{err()}</p>
         <button onclick={reset}>Try again</button>
       </div>
     """)
@@ -93,11 +91,8 @@ def profile_failed(err, reset):
 def Profile():
     profile = create_memo(load_profile)
 
-    def name():
-        return profile()["name"]
-
     return Errored(
-        Loading(html(t"<p>{name}</p>"), fallback=html(t"<p>Loading...</p>")),
+        Loading(html(t"<p>{profile()['name']}</p>"), fallback=html(t"<p>Loading...</p>")),
         fallback=profile_failed,
     )
 ```

@@ -12,6 +12,7 @@ wyb dev --open
 ## Behavior
 
 - Builds the project with dev mode on, including any routes listed in `prerender`, so you develop against the same server-rendered pages you'll deploy. Production builds (`wyb build`) turn dev mode off; see [Deployment](deployment.md).
+- Runs application modules through Wybthon's [compiler](../concepts/compiler.md), as `wyb build` does, so a malformed template fails the rebuild with its file and line instead of failing in the browser.
 - Serves the build under the configured `base` path with client-route fallback to `200.html`. Requests outside the base path return 404.
 - Watches the application directory (`app-dir`), `public/`, `index.html`, and `wybthon.toml`. A change, including a new or deleted file, triggers a rebuild and then a reload. Change detection polls modification times about every 0.5 seconds.
 - Reports a failed build in the terminal and keeps serving the previous output, so a typo doesn't take the page down.
@@ -49,7 +50,7 @@ The dev server is built on Python's `http.server` and is intended for developmen
 
 ## Troubleshooting
 
-- **"has no wybthon.toml."** The dev server only serves projects. Run it from the project directory, pass `--dir path/to/project`, or create a project with `wyb init`.
+- **"has no wybthon.toml."** The dev server only serves projects. Run it from the project directory, pass `--dir path/to/project`, or create a project with `wyb init`. To try a single script with its templates compiled, use `wyb run script.py` instead.
 - **Auto-reload isn't firing.** Confirm `GET /__sse` shows an open EventSource connection in the browser's Network panel, and check the terminal for a build error. Only the application directory, `public/`, `index.html`, and `wybthon.toml` are watched. Behind a proxy, pass `/__sse` through unbuffered (Nginx: `proxy_buffering off;` and `X-Accel-Buffering: no`).
 - **A page shows 404.** Requests must fall under the configured `base` path. Open the URL the server prints.
 - **Port is already in use.** The server picks the next free port and prints a notice. If you need the exact port, stop the conflicting process (macOS: `lsof -i :8000`, then `kill <PID>`).

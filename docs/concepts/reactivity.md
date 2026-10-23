@@ -30,7 +30,7 @@ write batches.
 - **Writes are staged, not applied.** `set_count(1)` records a pending value. `count()` keeps returning the committed value until the graph flushes. Functional updates (`set_count(lambda n: n + 1)`) receive the latest *staged* value, so consecutive updates compose.
 - **When the flush happens.** In the browser, the first write schedules a flush on a microtask, and event handlers dispatched through Wybthon flush when they return. In plain Python, call `flush()`.
 - **Writes coalesce.** Any number of writes before a flush produce one run per affected effect and one DOM commit.
-- **Equality short-circuits.** A write equal to the committed value (under the signal's `equals`) is dropped at commit time and notifies nothing.
+- **Equality short-circuits.** A write equal to the committed value (under the signal's `equals`, by default [`is_equal`][wybthon.is_equal]: identity, then `==`) is dropped at commit time and notifies nothing.
 
 ```python
 from wybthon import create_effect, create_signal, flush
@@ -77,13 +77,16 @@ effects, by contrast, run immediately at creation.
 ## Reading without tracking
 
 [`untrack`][wybthon.untrack] runs a function with tracking suppressed;
-every accessor's `.peek()` does the same for a single read:
+every accessor's `.peek()` does the same for a single read. Props have
+no `.peek()`, because `props.initial` is already the value: wrap the
+read in `untrack`:
 
 ```python
 from wybthon import create_effect, untrack
 
 create_effect(lambda: (a(), untrack(b)), lambda pair: print("a changed:", pair))
-seed = props.initial.peek()
+seed = untrack(lambda: props.initial)
+count.peek()
 ```
 
 For explicit dependencies prefer the **split effect**: the compute stage
@@ -107,7 +110,7 @@ and [`set_dev_mode`][wybthon.set_dev_mode]). With it on, the graph
 enforces two rules:
 
 - **No writes inside tracking scopes.** Writing a signal or store from a memo body, a tracked effect ([`create_tracked_effect`][wybthon.create_tracked_effect]), or a hole raises [`WriteInScopeError`][wybthon.WriteInScopeError]. Derive the value with a memo, or move the write into the `apply` stage of a split effect, an event handler, or an [`action`][wybthon.action].
-- **No untracked reads at the top level of a component body.** Calling a signal, memo, or prop there freezes the value and warns once per component and value. Read it in a hole, memo, or effect, or make the one-time read explicit with `.peek()` or `untrack`.
+- **No untracked reads at the top level of a component body.** Reading a signal, a memo, or a prop the parent passed as an expression there freezes the value and warns once per component and value. Read it in the returned markup, a memo, or an effect, or make the one-time read explicit with `untrack` (or `.peek()` on a signal).
 
 ```python
 from wybthon import create_effect, create_memo, create_signal
@@ -179,11 +182,11 @@ after the `await` are tracked exactly like reads before it.
 | A `For` row | the row's owner | the row leaves the list |
 
 ```python
-from wybthon import Prop, Props, component, create_effect, create_signal, html, prop
+from wybthon import Props, component, create_effect, create_signal, html
 
 
 class TimerProps(Props):
-    interval: Prop[int] = prop(default=1000)
+    interval: int = 1000
 
 
 @component
@@ -194,14 +197,18 @@ def Timer(props: TimerProps):
     create_effect(count, lambda n: print("count is", n))
 
     # Binding: re-runs only when count changes.
-    return html(t"<p>Elapsed: {count}</p>")
+    return html(t"<p>Elapsed: {count()}</p>")
 ```
 
 A binding or hole whose first run reads nothing reactive, and creates
 no children, cleanups, or async work, can never run again. The renderer
-disposes it right away and keeps only the DOM it produced. A hole such
-as `{(lambda: props.label().upper())}` over a constant prop therefore
-costs nothing after its first run.
+disposes it right away and keeps only the DOM it produced. A binding
+whose expression makes no calls goes further: `{props.label}` first
+runs under a lightweight probe, and when it reads nothing reactive
+(the parent passed a constant), the value is applied and no
+computation is allocated at all. So `{props.label}` over a constant
+prop costs no computation, and `{props.label.upper()}` costs nothing
+after its first run.
 
 ## Disposal
 
@@ -237,6 +244,7 @@ user = create_memo(load_user)
 - **Transitions.** When a change makes an async memo that already has a value recompute, the flush holds that change and everything derived from it: the UI keeps the old state and updates all at once when the new value lands. Writes an [`action`][wybthon.action] makes are held the same way until the action settles.
 - **[`is_pending`][wybthon.is_pending]** is a tracked probe that's `True` while what it reads is held or recomputing; **[`latest`][wybthon.latest]** reads the newest state without ever raising; **[`resolve`][wybthon.resolve]** awaits the next settled value; **[`refresh`][wybthon.refresh]** recomputes quietly.
 - **Errors are stored and re-raised on read**, so a failed fetch reaches the nearest [`Errored`][wybthon.Errored] boundary.
+- **[`create_deferred`][wybthon.create_deferred]** is an async memo that, after its first value, never holds the rest of the UI: a refetch opens no transition, and readers keep the last value until the new one lands. Use it for independent widgets such as feeds and search results.
 
 See [Async and loading](async-loading.md) for boundaries, actions, and
 optimistic state.

@@ -1,28 +1,29 @@
-"""Compiled t-string templates (`html`, RFC 0003)."""
+"""Compiled t-string templates (`html`, RFC 0003 and RFC 0004)."""
 
+from string.templatelib import Interpolation, Template
 from typing import Any
 
 import pytest
 
+import wybthon
 from wybthon import (
     Errored,
     For,
     Loading,
     ParentProps,
-    Prop,
     Props,
     Show,
     TemplateError,
+    compiler,
     component,
     create_memo,
     create_signal,
     diagnostics,
-    div,
     event,
     flush,
+    h,
     html,
     kernel,
-    span,
     templates,
 )
 from wybthon.testing import cleanup, fire, render
@@ -47,6 +48,18 @@ CLONE = f"op_{kernel.OP_CLONE}"
 DISPOSE = f"op_{kernel.OP_DISPOSE}"
 
 
+def uncompiled(source: str, **names: Any) -> Any:
+    """Evaluate Python source the compiler never sees: its templates compile at run time."""
+    return eval(source, {"html": html, **names})
+
+
+def load_module(source: str, filename: str = "mod.py") -> dict[str, Any]:
+    """Compile a module's source with `wybthon.compiler` and run it; returns its namespace."""
+    namespace: dict[str, Any] = {"__name__": filename.removesuffix(".py")}
+    exec(compiler.compile_source(source, filename), namespace)
+    return namespace
+
+
 # ---------------------------------------------------------------------------
 # Compilation and caching
 # ---------------------------------------------------------------------------
@@ -59,6 +72,18 @@ def test_a_literal_compiles_once():
     a, b = row("a"), row("b")
     assert a.props is b.props
     assert a.children == ("a",) and b.children == ("b",)
+
+
+def test_an_uncompiled_literal_compiles_once_and_is_cached_by_identity():
+    namespace: dict[str, Any] = {}
+    exec("from wybthon import html\ndef row(label):\n    return html(t'<li>{label}</li>')\n", namespace)
+    before = set(templates._by_identity)
+    a, b = namespace["row"]("a"), namespace["row"]("b")
+    added = [templates._by_identity[k] for k in set(templates._by_identity) - before]
+    assert [entry.strings for entry in added] == [("<li>", "</li>")]
+    assert a.props is b.props
+    assert a.children == ("a",) and b.children == ("b",)
+    assert render(a).html() == "<li>a</li>"
 
 
 def test_requires_a_t_string():
@@ -93,30 +118,38 @@ def test_comments_are_dropped():
     assert screen.html() == "<p>ab</p>"
 
 
+# Malformed templates are compile-time errors in a compiled module, so these
+# are evaluated without the compiler, where `html()` raises at run time.
 @pytest.mark.parametrize(
-    ("make", "message"),
+    ("source", "message"),
     [
-        (lambda: html(t"<div><span></div>"), "doesn't match"),
-        (lambda: html(t"<div>"), "Unclosed tag"),
-        (lambda: html(t"</div>"), "Unexpected closing tag"),
-        (lambda: html(t"<table><tr><td>x</td></tr></table>"), "add a <tbody>"),
-        (lambda: html(t"<p><div>x</div></p>"), "inside <p>"),
-        (lambda: html(t"<a><span><a>x</a></span></a>"), "nested inside another <a>"),
-        (lambda: html(t"<ul><li><li>x</li></li></ul>"), "direct child"),
-        (lambda: html(t"<style>{'x'}</style>"), "static text only"),
-        (lambda: html(t"<tbody>text</tbody>"), "can't contain text"),
-        (lambda: html(t"<!doctype html>"), "Doctypes"),
-        (lambda: html(t"<div onclick='a{'b'}'></div>"), "single interpolation"),
+        ("""html(t"<div><span></div>")""", "doesn't match"),
+        ("""html(t"<div>")""", "Unclosed tag"),
+        ("""html(t"</div>")""", "Unexpected closing tag"),
+        ("""html(t"<table><tr><td>x</td></tr></table>")""", "add a <tbody>"),
+        ("""html(t"<p><div>x</div></p>")""", "inside <p>"),
+        ("""html(t"<a><span><a>x</a></span></a>")""", "nested inside another <a>"),
+        ("""html(t"<ul><li><li>x</li></li></ul>")""", "direct child"),
+        ("""html(t"<style>{'x'}</style>")""", "static text only"),
+        ("""html(t"<tbody>text</tbody>")""", "can't contain text"),
+        ("""html(t"<!doctype html>")""", "Doctypes"),
+        ("""html(t"<div onclick='a{'b'}'></div>")""", "single interpolation"),
     ],
 )
-def test_malformed_or_rewritten_markup_is_rejected(make, message):
+def test_malformed_or_rewritten_markup_is_rejected(source, message):
     with pytest.raises(TemplateError, match=message):
-        make()
+        uncompiled(source)
 
 
 def test_errors_name_the_template():
     with pytest.raises(TemplateError, match=r"in template: t'<b>\{\.\.\.\}</i>'"):
-        html(t"<b>{1}</i>")
+        html(Template("<b>", Interpolation(1, "1"), "</i>"))
+
+
+def test_the_compiler_reports_a_malformed_template_with_its_file_and_line():
+    with pytest.raises(SyntaxError, match="doesn't match") as info:
+        load_module('from wybthon import html\n\nview = html(t"<div><span></div>")\n', "broken.py")
+    assert (info.value.filename, info.value.lineno) == ("broken.py", 3)
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +158,9 @@ def test_errors_name_the_template():
 
 
 def test_child_slots_take_text_nodes_lists_and_none():
-    screen = render(html(t"<div>{'text'}|{span('node')}|{[span('a'), 'b']}|{None}|{42}</div>"))
+    screen = render(
+        html(t"<div>{'text'}|{html(t'<span>node</span>')}|{[html(t'<span>a</span>'), 'b']}|{None}|{42}</div>")
+    )
     assert screen.html() == "<div>text|<span>node</span>|<span>a</span>b||42</div>"
 
 
@@ -138,6 +173,54 @@ def test_reactive_child_and_attribute_slots_update():
     set_cls("b")
     flush()
     assert screen.html() == '<p class="b">n=2</p>'
+
+
+def test_dynamic_expressions_are_reactive_in_every_position():
+    count, set_count = create_signal(1)
+    active, set_active = create_signal(False)
+    price, set_price = create_signal(1.5)
+    screen = render(
+        html(
+            t"""<div class={"on" if active() else "off"} data-n="n{count() + 1}">
+                  <p>{count() * 2}</p><b>{price():.2f}</b><{Card} title={str(count())} /><i>{str(count() + 10)}</i>
+                </div>"""
+        )
+    )
+    assert screen.html() == (
+        '<div class="off" data-n="n2"><p>2</p><b>1.50</b>'
+        '<section class="card plain"><h2>1</h2></section><i>11</i></div>'
+    )
+    set_count(3)
+    set_active(True)
+    set_price(2.25)
+    flush()
+    assert screen.html() == (
+        '<div class="on" data-n="n4"><p>6</p><b>2.25</b><section class="card plain"><h2>3</h2></section><i>13</i></div>'
+    )
+
+
+def test_a_template_in_a_hole_updates_its_bindings_without_re_running():
+    n, set_n = create_signal(1)
+    runs: list[int] = []
+
+    def view() -> Any:
+        runs.append(1)
+        return html(t"<p title={n()}>{n() * 10}</p>")
+
+    screen = render(html(t"<div>{view}</div>"))
+    set_n(2)
+    flush()
+    assert screen.html() == '<div><p title="2">20</p></div>'
+    assert runs == [1]
+
+
+def test_a_template_made_in_a_loop_sees_that_iterations_values():
+    labels = ["a", "b", "c"]
+    views = []
+    for i in range(3):
+        views.append(html(t"<i>{labels[i].upper()}</i>"))
+    screen = render(html(t"<p>{views}</p>"))
+    assert screen.text() == "ABC"
 
 
 def test_a_text_hole_fills_its_slot_in_the_clone_command():
@@ -194,20 +277,148 @@ def test_refs_and_spreads():
 
 def test_conversion_and_format_specs_apply():
     price, set_price = create_signal(3.14159)
-    screen = render(html(t"<p>{price:.2f} {'x'!r}</p>"))
-    assert screen.text() == "3.14 'x'"
+    screen = render(html(t"<p>{price:.2f} {'x'!r} {price()!r}</p>"))
+    assert screen.text() == "3.14 'x' 3.14159"
     set_price(2.5)
     flush()
-    assert screen.text() == "2.50 'x'"
+    assert screen.text() == "2.50 'x' 2.5"
 
 
 def test_multiple_roots_and_text_only_templates_make_fragments():
     name, set_name = create_signal("Ada")
-    screen = render(div(html(t"<b>a</b><i>b</i>"), html(t"Hello, {name}!")))
+    screen = render(html(t"<div>{html(t'<b>a</b><i>b</i>')}{html(t'Hello, {name}!')}</div>"))
     assert screen.html() == "<div><b>a</b><i>b</i>Hello, Ada!</div>"
     set_name("Grace")
     flush()
     assert screen.text() == "abHello, Grace!"
+
+
+# ---------------------------------------------------------------------------
+# The dev-mode check of uncompiled templates
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        """html(t"<p>{count() * 2}</p>")""",
+        """html(t"<p class={'on' if count() else 'off'}>x</p>")""",
+        """html(t"<p class='n-{count()}'>x</p>")""",
+        """html(t"<p>{count():>3}</p>")""",
+    ],
+)
+def test_an_uncompiled_dynamic_expression_evaluated_once_is_an_error(source):
+    count, _ = create_signal(1)
+    with pytest.raises(TemplateError, match=r"was evaluated once instead of becoming reactive"):
+        uncompiled(source, count=count)
+
+
+def test_the_uncompiled_error_names_the_expression():
+    count, _ = create_signal(1)
+    with pytest.raises(TemplateError, match=r"\{count\(\) \* 2\}"):
+        uncompiled("""html(t"<p>{count() * 2}</p>")""", count=count)
+
+
+def test_an_uncompiled_dynamic_expression_that_returns_a_callable_is_accepted():
+    count, set_count = create_signal(1)
+    accessors = {"count": count}
+    screen = render(uncompiled("""html(t"<p>{accessors['count']}</p>")""", accessors=accessors))
+    set_count(2)
+    flush()
+    assert screen.text() == "2"
+
+
+def test_uncompiled_handlers_refs_spreads_and_tags_are_not_checked():
+    hits: list[str] = []
+    handlers: dict[str, Any] = {"click": None}
+    refs: dict[str, Any] = {}
+    cards = [Card]
+
+    def attrs() -> dict[str, str]:
+        return {"id": "b"}
+
+    view = uncompiled(
+        """html(t"<div><button onclick={handlers.get('click')} ref={refs.get('button')} {attrs()}>x</button>"""
+        """<{cards[0]} title='t' /></div>")""",
+        handlers=handlers,
+        refs=refs,
+        attrs=attrs,
+        cards=cards,
+    )
+    screen = render(view)
+    fire.click(screen.get_by_text("x"))
+    assert hits == []
+    assert screen.get_by_text("x").attributes["id"] == "b"
+    assert screen.text() == "xt"
+
+
+def test_the_uncompiled_check_is_skipped_outside_dev_mode():
+    count, set_count = create_signal(1)
+    wybthon.set_dev_mode(False)
+    try:
+        view = uncompiled("""html(t"<p>{count() * 2}</p>")""", count=count)
+    finally:
+        wybthon.set_dev_mode(True)
+    screen = render(view)
+    set_count(5)
+    flush()
+    # Evaluated once: an uncompiled template doesn't defer its expressions.
+    assert screen.text() == "2"
+
+
+# ---------------------------------------------------------------------------
+# Precompiled entries
+# ---------------------------------------------------------------------------
+
+PRECOMPILED_MODULE = """
+from wybthon import create_signal, html
+
+count, set_count = create_signal(1)
+
+
+def row(label):
+    return html(t"<li class={label}>{label}: {count() * 2}</li>")
+"""
+
+
+def test_precompiled_templates_mount_with_one_clone_each_and_never_parse():
+    namespace = load_module(PRECOMPILED_MODULE)
+    entry = namespace["__wybthon_t0__"]
+    assert isinstance(entry, templates.Precompiled)
+    identities = set(templates._by_identity)
+    screens: list[Any] = []
+    for label in ("a", "b", "c"):
+        counts = ops_during(lambda label=label: screens.append(render(namespace["row"](label))))
+        assert counts[CLONE] == 1
+    assert set(templates._by_identity) == identities
+    assert entry.strings not in templates._by_value
+    assert entry.entry is not None and entry.entry.eager == ()
+    assert [s.html() for s in screens] == [f'<li class="{x}">{x}: 2</li>' for x in "abc"]
+    namespace["set_count"](5)
+    flush()
+    assert [s.text() for s in screens] == ["a: 10", "b: 10", "c: 10"]
+
+
+def test_a_precompiled_entry_whose_strings_changed_compiles_at_run_time_in_dev_mode():
+    stale = load_module(PRECOMPILED_MODULE)["__wybthon_t0__"]
+    changed = Template("<b data-x='1'>", Interpolation("x", "label"), "</b>")
+    entry = stale.load(changed)
+    assert entry.strings == changed.strings
+    assert templates._by_value[changed.strings] is entry
+    assert stale.entry is None
+    assert render(html(changed, stale)).html() == '<b data-x="1">x</b>'
+
+
+def test_a_precompiled_entry_trusts_its_strings_outside_dev_mode():
+    stale = load_module(PRECOMPILED_MODULE)["__wybthon_t0__"]
+    fresh = templates.Precompiled(stale.strings, stale.data, stale.factories, tuple(stale.probes))
+    wybthon.set_dev_mode(False)
+    try:
+        entry = fresh.load(Template("<b data-x='1'>", Interpolation("x", "label"), "</b>"))
+    finally:
+        wybthon.set_dev_mode(True)
+    assert entry.strings is stale.strings
+    assert fresh.entry is entry
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +427,7 @@ def test_multiple_roots_and_text_only_templates_make_fragments():
 
 
 class CardProps(ParentProps):
-    title: Prop[str]
+    title: str
     tone: str = "plain"
 
 
@@ -251,7 +462,7 @@ def test_component_tag_content_is_one_child_per_top_level_node():
 
     @component
     def Counted(props: ParentProps):
-        resolved = children(lambda: props.children())
+        resolved = children(lambda: props.children)
         seen.append(len(resolved.to_array()))
         return html(t"<div>{props.children}</div>")
 
@@ -268,6 +479,22 @@ def test_component_tags_validate_props_in_dev_mode():
 def test_interpolated_component_calls_mount_in_place():
     screen = render(html(t"<div>{Card(title='a')}<hr>{Card(title='b')}</div>"))
     assert screen.text() == "ab"
+
+
+def test_interpolated_component_calls_receive_getters_for_dynamic_arguments():
+    name, set_name = create_signal("a")
+    mounts: list[int] = []
+
+    @component
+    def Leaf(props: CardProps):
+        mounts.append(1)
+        return html(t"<b>{props.title}</b>")
+
+    screen = render(html(t"<div>{Leaf(title=name().upper())}</div>"))
+    set_name("b")
+    flush()
+    assert screen.text() == "B"
+    assert mounts == [1]
 
 
 def test_a_non_component_tag_is_an_error():
@@ -301,11 +528,20 @@ def test_show_switches_between_templates():
     assert screen.html() == "<div><b>yes</b></div>"
 
 
+def test_show_takes_a_dynamic_condition():
+    count, set_count = create_signal(1)
+    screen = render(html(t"<div>{Show(count() > 2, html(t'<b>big</b>'), html(t'<i>small</i>'))}</div>"))
+    assert screen.html() == "<div><i>small</i></div>"
+    set_count(3)
+    flush()
+    assert screen.html() == "<div><b>big</b></div>"
+
+
 def test_errored_catches_a_failing_slot():
     def boom() -> str:
         raise ValueError("nope")
 
-    screen = render(Errored(html(t"<p>{boom}</p>"), fallback=lambda err: html(t"<em>{(lambda: str(err()))}</em>")))
+    screen = render(Errored(html(t"<p>{boom}</p>"), fallback=lambda err: html(t"<em>{str(err())}</em>")))
     assert screen.text() == "nope"
 
 
@@ -338,13 +574,22 @@ def test_loading_holds_a_template_until_data_arrives():
 
 # ---------------------------------------------------------------------------
 # Re-rendering: slot-wise patching
+#
+# A hole re-renders a template when the hole itself reads a signal; the
+# template's own interpolations are static here, so each re-render brings
+# new values for the same literal.
 # ---------------------------------------------------------------------------
 
 
 def test_a_re_rendered_template_patches_only_changed_slots():
     n, set_n = create_signal(1)
-    static = span("static")
-    screen = render(div(lambda: html(t"<p title={n()}>{n() * 10}{static}</p>")))
+    static = html(t"<span>static</span>")
+
+    def view() -> Any:
+        value = n()
+        return html(t"<p title={value}>{value * 10}{static}</p>")
+
+    screen = render(html(t"<div>{view}</div>"))
     p = screen.container.childNodes[0].childNodes[0]
     counts = ops_during(lambda: set_n(2))
     assert screen.container.childNodes[0].childNodes[0] is p
@@ -356,7 +601,8 @@ def test_a_re_rendered_template_patches_only_changed_slots():
 
 def test_a_different_literal_replaces_the_instance():
     on, set_on = create_signal(True)
-    screen = render(div(lambda: html(t"<b>a</b>") if on() else html(t"<i>b</i>")))
+    screen = render(html(t"<div>{html(t'<b>a</b>') if on() else html(t'<i>b</i>')}</div>"))
+    assert screen.html() == "<div><b>a</b></div>"
     set_on(False)
     flush()
     assert screen.html() == "<div><i>b</i></div>"
@@ -367,25 +613,42 @@ def test_patching_a_component_slot_keeps_its_state():
     mounts: list[int] = []
 
     class LeafProps(Props):
-        label: Prop[str]
+        label: str
 
     @component
     def Leaf(props: LeafProps):
         mounts.append(1)
         return html(t"<b>{props.label}</b>")
 
-    screen = render(div(lambda: html(t"<p><{Leaf} label={n()} /></p>")))
+    def view() -> Any:
+        label = n()
+        return html(t"<p><{Leaf} label={label} /></p>")
+
+    screen = render(html(t"<div>{view}</div>"))
     set_n("b")
     flush()
     assert screen.text() == "b"
     assert mounts == [1]
 
 
+SWITCHED = [
+    "<div><p>text</p></div>",
+    "<div><p><span>node</span></p></div>",
+    "<div><p>1</p></div>",
+    "<div><p></p></div>",
+]
+
+
 def test_child_slot_switches_between_text_nodes_and_holes():
     mode, set_mode = create_signal(0)
     count, set_count = create_signal(1)
-    values = ["text", span("node"), count, None]
-    screen = render(div(lambda: html(t"<p>{values[mode()]}</p>")))
+    values = ["text", html(t"<span>node</span>"), count, None]
+
+    def view() -> Any:
+        value = values[mode()]
+        return html(t"<p>{value}</p>")
+
+    screen = render(html(t"<div>{view}</div>"))
     seen = []
     for m in range(4):
         set_mode(m)
@@ -395,12 +658,25 @@ def test_child_slot_switches_between_text_nodes_and_holes():
     flush()
     set_count(5)
     flush()
-    assert seen == [
-        "<div><p>text</p></div>",
-        "<div><p><span>node</span></p></div>",
-        "<div><p>1</p></div>",
-        "<div><p></p></div>",
-    ]
+    assert seen == SWITCHED
+    assert screen.text() == "5"
+
+
+def test_a_reactive_child_switches_between_text_nodes_and_holes():
+    mode, set_mode = create_signal(0)
+    count, set_count = create_signal(1)
+    values = ["text", html(t"<span>node</span>"), count, None]
+    screen = render(html(t"<div><p>{values[mode()]}</p></div>"))
+    seen = []
+    for m in range(4):
+        set_mode(m)
+        flush()
+        seen.append(screen.html())
+    set_mode(2)
+    flush()
+    set_count(5)
+    flush()
+    assert seen == SWITCHED
     assert screen.text() == "5"
 
 
@@ -412,6 +688,9 @@ def test_child_slot_switches_between_text_nodes_and_holes():
 def test_unmount_releases_handlers_refs_and_bindings():
     from wybthon import _dom_props, events
 
+    def handler_count() -> int:
+        return sum(len(tuple(events.handlers_of(entry))) for entry in events._handlers.values())
+
     cls, _ = create_signal("x")
     rows, set_rows = create_signal(list(range(20)))
     refs: list[Any] = []
@@ -420,22 +699,24 @@ def test_unmount_releases_handlers_refs_and_bindings():
         return html(t"<li class={cls} onclick={(lambda: None)} ref={refs.append}>{r}</li>")
 
     view = html(t"<ul>{For(rows, row)}</ul>")
-    handlers_before = len(events._handlers)
+    handlers_before = handler_count()
     bindings_before = len(_dom_props._bindings)
     refs_before = len(_dom_props._ref_cleanups)
     render(view)
-    assert len(events._handlers) == handlers_before + 20
+    assert handler_count() == handlers_before + 20
     set_rows([])
     flush()
-    assert len(events._handlers) == handlers_before
+    assert handler_count() == handlers_before
     assert len(_dom_props._bindings) == bindings_before
     assert len(_dom_props._ref_cleanups) == refs_before
 
 
 def test_generated_mount_functions_are_inspectable():
+    # Precompiled templates carry their mount functions in the module, so the
+    # template is compiled at run time here.
     templates._debug_sources = []
     try:
-        render(html(t"<p class={(lambda: 'x')}>{'a'}</p>"))
+        render(uncompiled("""html(t"<p class={(lambda: 'x')}>{'a'}</p>")"""))
         assert templates._debug_sources
         assert "prop_slot" in templates._debug_sources[-1]
     finally:
@@ -457,15 +738,25 @@ def Counter():
     return html(t'<div class="counter"><p>Count: {count}!</p><button onclick={increment}>+</button></div>')
 
 
-def test_server_rendering_matches_the_element_helpers(wyb):
+def test_server_rendering_matches_h(wyb):
     from test_ssr import strip_state
 
     from wybthon.server import render_to_string
 
     from_template = strip_state(render_to_string(html(t'<div class="a"><{Card} title="T">x</{Card}>{[1, 2]}</div>')))
-    from_helpers = strip_state(render_to_string(div(Card(title="T")["x"], [1, 2], class_="a")))
-    assert from_template == from_helpers
+    from_h = strip_state(render_to_string(h("div", {"class_": "a"}, Card(title="T")["x"], [1, 2])))
+    assert from_template == from_h
     assert from_template.startswith('<div class="a"><section class="card plain"><h2>T</h2>')
+
+
+def test_server_rendering_evaluates_dynamic_expressions(wyb):
+    from test_ssr import strip_state
+
+    from wybthon.server import render_to_string
+
+    count, _ = create_signal(2)
+    out = strip_state(render_to_string(html(t"<p class={'n' + str(count())}>{count() * 2}</p>")))
+    assert out.startswith('<p class="n2">4')
 
 
 def test_hydration_adopts_template_markup(wyb):
@@ -490,7 +781,7 @@ def test_svg_templates_expand_into_namespaced_nodes():
 
 
 def test_built_in_factories_work_as_component_tags():
-    from wybthon import Errored, create_context, use_context
+    from wybthon import create_context, use_context
     from wybthon.router import Link
 
     on, set_on = create_signal(True)
@@ -543,6 +834,9 @@ def test_an_action_is_a_handler_with_or_without_the_event():
 
 # ---------------------------------------------------------------------------
 # Review regressions (PR #40)
+#
+# Handlers are never deferred, so a hole that reads the mode re-renders the
+# template with a new handler each time.
 # ---------------------------------------------------------------------------
 
 
@@ -550,7 +844,11 @@ def test_an_event_handler_restored_after_none_fires_again():
     hits: list[str] = []
     handlers = [lambda: hits.append("first"), None, lambda: hits.append("restored")]
     mode, set_mode = create_signal(0)
-    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+
+    def view() -> Any:
+        return html(t"<button onclick={handlers[mode()]}>go</button>")
+
+    screen = render(html(t"<div>{view}</div>"))
     for m in range(3):
         set_mode(m)
         flush()
@@ -562,7 +860,11 @@ def test_a_spent_once_handler_can_be_replaced_by_a_plain_one():
     hits: list[str] = []
     handlers = [event(lambda: hits.append("once"), once=True), lambda: hits.append("plain")]
     mode, set_mode = create_signal(0)
-    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+
+    def view() -> Any:
+        return html(t"<button onclick={handlers[mode()]}>go</button>")
+
+    screen = render(html(t"<div>{view}</div>"))
     fire.click(screen.get_by_text("go"))
     set_mode(1)
     flush()
@@ -572,12 +874,14 @@ def test_a_spent_once_handler_can_be_replaced_by_a_plain_one():
 
 
 def test_a_plain_handler_can_become_a_capture_handler_and_back():
-    from wybthon import kernel
-
     hits: list[str] = []
     handlers = [lambda: hits.append("plain"), event(lambda: hits.append("capture"), capture=True)]
     mode, set_mode = create_signal(0)
-    screen = render(div(lambda: html(t"<button onclick={handlers[mode()]}>go</button>")))
+
+    def view() -> Any:
+        return html(t"<button onclick={handlers[mode()]}>go</button>")
+
+    screen = render(html(t"<div>{view}</div>"))
     button = screen.get_by_text("go")
     fire.click(button)
     set_mode(1)
@@ -611,23 +915,23 @@ def test_literals_sharing_one_strings_tuple_keep_their_own_formats():
 
 
 @pytest.mark.parametrize(
-    "make",
+    "source",
     [
-        lambda: html(t"<p><span><div>{42}</div></span></p>"),
-        lambda: html(t"<p><em><b><ul><li>x</li></ul></b></em></p>"),
-        lambda: html(t"<p><span><table><tbody></tbody></table></span></p>"),
+        """html(t"<p><span><div>{42}</div></span></p>")""",
+        """html(t"<p><em><b><ul><li>x</li></ul></b></em></p>")""",
+        """html(t"<p><span><table><tbody></tbody></table></span></p>")""",
     ],
 )
-def test_a_block_anywhere_inside_a_p_is_rejected(make):
+def test_a_block_anywhere_inside_a_p_is_rejected(source):
     with pytest.raises(TemplateError, match="inside <p>"):
-        make()
+        uncompiled(source)
 
 
 def test_list_items_and_definitions_close_through_inline_and_div_elements():
     with pytest.raises(TemplateError, match="another <li>"):
-        html(t"<ul><li><div><li>x</li></div></li></ul>")
+        uncompiled("""html(t"<ul><li><div><li>x</li></div></li></ul>")""")
     with pytest.raises(TemplateError, match="unless a <dl>"):
-        html(t"<dl><dd><span><dt>x</dt></span></dd></dl>")
+        uncompiled("""html(t"<dl><dd><span><dt>x</dt></span></dd></dl>")""")
 
 
 def test_scope_boundaries_and_nested_lists_are_accepted():
@@ -643,17 +947,18 @@ def test_scope_boundaries_and_nested_lists_are_accepted():
     assert screen.text() == "in buttonnestedinner"
 
 
-def test_helper_markup_the_parser_would_rearrange_mounts_per_node():
-    from wybthon import diagnostics, kernel
-    from wybthon.elements import a as a_
-    from wybthon.elements import p as p_
-    from wybthon.elements import span as span_
-
-    # The outer <p> and <a> mount node by node; their inner subtrees are valid
-    # standalone templates, so they may still be cloned and inserted by DOM
-    # operations, which the parser never sees.
+def test_h_markup_the_parser_would_rearrange_mounts_per_node():
+    # `h()` builds DOM nodes directly, so markup a template would reject
+    # (block content in a <p>, nested <a>) mounts node by node.
     with diagnostics.profile() as prof:
-        screen = render(div(p_(span_(div("block"))), a_(span_(a_("inner", href="#i")), href="#o")))
+        screen = render(
+            h(
+                "div",
+                None,
+                h("p", None, h("span", None, h("div", None, "block"))),
+                h("a", {"href": "#o"}, h("span", None, h("a", {"href": "#i"}, "inner"))),
+            )
+        )
         kernel.commit()
     assert prof.counts[f"op_{kernel.OP_CREATE_ELEMENT}"] >= 2
     assert (

@@ -88,7 +88,11 @@ def reload_wybthon_modules(doc=None):
     pointing to the freshly reloaded module objects.
     """
     mods = {}
-    for name in ("kernel", "dom", "events", "reconciler", "_shapes"):
+    # Reloading ``kernel`` replaces its template registry without telling the
+    # compiled templates registered with the old one (including precompiled
+    # entries that outlive the reload), so release them first.
+    importlib.import_module("wybthon.kernel")._forget_templates()
+    for name in ("kernel", "dom", "events", "reconciler"):
         mod = importlib.import_module(f"wybthon.{name}")
         importlib.reload(mod)
         mods[name] = mod
@@ -106,9 +110,7 @@ def reload_wybthon_modules(doc=None):
         "lazy",
         "router",
         "forms",
-        "elements",
         "templates",
-        "svg",
     ):
         mods[name] = importlib.import_module(f"wybthon.{name}")
     # Reloading ``kernel`` empties its template registry, so compiled

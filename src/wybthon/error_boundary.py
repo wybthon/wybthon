@@ -17,13 +17,11 @@ The fallback receives the error as an accessor, as in Solid 2.0: call
 
 Example:
     ```python
-    Errored(
-        lambda: Dashboard(),
-        fallback=lambda err, reset: div(
-            p("Something went wrong: ", lambda: str(err())),
-            button("Retry", on_click=reset),
-        ),
-    )
+    def failed(err, reset):
+        return html(t"<div><p>Something went wrong: {str(err())}</p><button onclick={reset}>Retry</button></div>")
+
+
+    html(t"<{Errored} fallback={failed}><{Dashboard} /></{Errored}>")
     ```
 
 See Also:
@@ -35,15 +33,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from .component import component
+from .component import builtin, component
 from .reactivity import _core
-from .reactivity._core import Accessor, Computation, Signal, _positional_count
-from .reactivity._props import Prop, Props, prop
+from .reactivity._core import Accessor, Computation, Signal, _positional_count, _unwrap
+from .reactivity._props import Props
 from .vnode import Fragment, VNode, h, to_text_vnode
 
 __all__ = ["Errored"]
 
 
+@builtin
 def Errored(
     children: Any = None,
     *,
@@ -133,10 +132,11 @@ def _render_fallback(fb: Any, err: Accessor[BaseException], reset: Callable[[], 
 
 
 class _ErroredProps(Props):
+    _wyb_internal = True
     children: Any = None
     fallback: Any = None
     on_error: Any = None
-    reset_on: Prop[Any] = prop(default=None)
+    reset_on: Any = None
 
 
 @component
@@ -160,7 +160,6 @@ def _Errored(props: _ErroredProps) -> Any:
     children = props.children
     fallback = props.fallback
     on_error = props.on_error
-    reset_on = props.reset_on
     last_token: list[Any] = [_UNSET]
     # Sources the failing computation had read when it raised. The
     # boundary heals (re-renders its children) when any of them changes,
@@ -186,7 +185,7 @@ def _Errored(props: _ErroredProps) -> Any:
 
     def render() -> VNode:
         err = error()
-        token = reset_on()
+        token = _unwrap(props.reset_on)
         if last_token[0] is _UNSET:
             last_token[0] = token
         elif token != last_token[0]:

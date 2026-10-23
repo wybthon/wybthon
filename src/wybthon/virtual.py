@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from math import ceil
 from typing import Any
 
-from .component import component
-from .elements import div
+from .component import builtin, component
 from .flow import For
 from .reactivity import Accessor, create_memo, create_signal
-from .reactivity._props import Prop, Props
+from .reactivity._core import _unwrap
+from .reactivity._props import Props
 from .vnode import VNode, h
 
 
@@ -49,6 +49,7 @@ def create_virtualizer(
     return Virtualizer(start, stop, create_memo(lambda: start() * item_size), create_memo(lambda: n() * item_size))
 
 
+@builtin
 def VirtualFor(
     each: Any, children: Any, *, height: float, row_height: float, overscan: int = 3, keyed: Any = True, **props: Any
 ) -> VNode:
@@ -75,7 +76,8 @@ def VirtualFor(
 
 class _VirtualForProps(Props):
     _wyb_open = True
-    each: Prop[Any]
+    _wyb_internal = True
+    each: Any = None
     children: Any = None
     height: float = 0.0
     row_height: float = 0.0
@@ -90,7 +92,9 @@ _OWN = frozenset({"each", "children", "height", "row_height", "overscan", "keyed
 
 @component
 def _VirtualFor(props: _VirtualForProps) -> Any:
-    each = props.each
+    def each() -> Any:
+        return _unwrap(props.each)
+
     scroll, set_scroll = create_signal(0.0)
     row_height = float(props.row_height)
     height = float(props.height)
@@ -107,12 +111,15 @@ def _VirtualFor(props: _VirtualForProps) -> Any:
 
     def row(item: Any, index: Any) -> Any:
         absolute = create_memo(lambda: virtualizer.start() + (index() if callable(index) else index))
-        return div(
+        return h(
+            "div",
+            {
+                "style": {"height": f"{row_height}px"},
+                "role": "listitem",
+                "aria-posinset": lambda: absolute() + 1,
+                "aria-setsize": lambda: len(each()),
+            },
             children(item, absolute),
-            style={"height": f"{row_height}px"},
-            role="listitem",
-            aria_posinset=lambda: absolute() + 1,
-            aria_setsize=lambda: len(each()),
         )
 
     user_scroll = props.on_scroll
@@ -123,16 +130,10 @@ def _VirtualFor(props: _VirtualForProps) -> Any:
 
     styles = dict(props.style or {})
     styles.update({"height": f"{height}px", "overflow_y": "auto", "position": "relative"})
-    return div(
-        div(
-            div(
-                For(lambda: each()[virtualizer.start() : virtualizer.stop()], row, keyed=keyed),
-                style={"transform": lambda: f"translateY({virtualizer.offset()}px)"},
-            ),
-            style={"height": lambda: f"{virtualizer.total()}px"},
-        ),
-        style=styles,
-        role="list",
-        on_scroll=changed,
-        **forwarded,
+    window = h(
+        "div",
+        {"style": {"transform": lambda: f"translateY({virtualizer.offset()}px)"}},
+        For(lambda: each()[virtualizer.start() : virtualizer.stop()], row, keyed=keyed),
     )
+    track = h("div", {"style": {"height": lambda: f"{virtualizer.total()}px"}}, window)
+    return h("div", {"style": styles, "role": "list", "on_scroll": changed, **forwarded}, track)

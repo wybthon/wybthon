@@ -27,7 +27,7 @@ from wybthon import Props, Ref, component, html, on_settled
 
 
 class FancyInputProps(Props):
-    ref: Ref | None = None  # plain field: the parent's Ref, passed through untouched
+    ref: Ref | None = None  # a ref is returned as the parent passed it
 
 
 @component
@@ -44,8 +44,8 @@ def FancyInput(props: FancyInputProps):
 
 Refs are assigned during mount, so read them in
 [`on_settled`][wybthon.on_settled], an effect, or an event handler, not
-at the top of the component body. The `ref` attribute (or the helpers'
-`ref=` prop) also accepts a callback that receives the `Element`, which
+at the top of the component body. The `ref` attribute (or the `ref` prop
+of [`h()`][wybthon.h]) also accepts a callback that receives the `Element`, which
 is closer to Solid 2.0's function refs:
 
 ```python
@@ -63,6 +63,6 @@ are visible to the read.
 
 #### See also
 
-- [Element helpers](elements.md): the `ref=` prop and DOM property rules
+- [VNode: prop names and values](vnode.md#prop-names-and-values): the `ref` prop and DOM property rules
 - [Events](events.md): `DomEvent.target` and `current_target` are `Element`-backed
 - [Concepts: DOM interop](../concepts/dom.md)

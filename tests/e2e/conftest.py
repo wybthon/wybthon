@@ -12,6 +12,10 @@ Design goals:
   (``tests/e2e/wybthon.toml``) served by ``wyb dev``. The production
   bootstrap records its status on ``window.__WYB``; the readiness wait
   surfaces a boot error as a test error instead of timing out.
+- **Compiled like an application.** ``wyb dev`` builds the project the way
+  ``wyb build`` does: the app's templates go through Wybthon's compiler
+  and ship as bytecode, so the pages exercise compiled expressions,
+  precompiled templates, and getter props for real.
 """
 
 from __future__ import annotations

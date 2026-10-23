@@ -330,6 +330,10 @@ class _Node:
         return self.state.peek().data
 
     def read(self, key: Any, default: Any = _RAISE) -> Any:
+        if _core._current_observer is _core._PROBE_OBSERVER:
+            # A store field is reactive: a binding's static probe ends here,
+            # before doing the read it would repeat.
+            raise _core._Escape
         self.root.ready()
         if _core._probe_depth:
             self._probe_pending()

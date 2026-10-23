@@ -44,13 +44,17 @@ Builds sort files and normalize archive timestamps, so identical inputs produce 
 
 ## Prerendering
 
-`prerender` lists routes to render to HTML at build time, and `crawl = true` adds every in-app link those pages contain. Each route is written to `<route>/index.html` with the markup placed between the `<!-- wyb:app -->` and `<!-- /wyb:app -->` markers in `index.html`. The browser shows the page immediately and [hydrates](../concepts/server-rendering.md) it once Pyodide is ready. Prerendering imports the application in a separate CPython process, so browser-only imports must be guarded; the build reports the failing import otherwise. `wyb dev` prerenders the same routes on every rebuild.
+`prerender` lists routes to render to HTML at build time, and `crawl = true` adds every in-app link those pages contain. Each route is written to `<route>/index.html` with the markup placed between the `<!-- wyb:app -->` and `<!-- /wyb:app -->` markers in `index.html`. The browser shows the page immediately and [hydrates](../concepts/server-rendering.md) it once Pyodide is ready. Prerendering imports the application in a separate CPython process, after Wybthon, so the import hook compiles its templates; browser-only imports must be guarded there, and the build reports the failing import otherwise. `wyb dev` prerenders the same routes on every rebuild.
 
 The client-only shell is also written to `200.html`. Serve it for routes that weren't prerendered.
 
+## Compiled templates
+
+`wyb build` runs every application module through Wybthon's [compiler](../concepts/compiler.md) before packaging it. A malformed template fails the build with its file and line. Each `html(t"...")` call gets its dynamic expressions wrapped in getters and its parse tree and mount function emitted as ordinary module code, so a production page never parses a template or generates code at run time.
+
 ## Bytecode
 
-When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. The manifest's `bytecode` field records whether it was included. Set `bytecode = false` to ship source only.
+When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. Application bytecode is the compiler's output, and the import hook that `import wybthon` installs uses it as is. The manifest's `bytecode` field records whether it was included. Set `bytecode = false` to ship source only; the import hook then compiles each application module's templates in the browser as it's imported.
 
 ## Runtime and dependencies
 

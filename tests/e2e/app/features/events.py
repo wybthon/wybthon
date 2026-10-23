@@ -1,8 +1,6 @@
 """Event delegation: bubbling, stopPropagation, and target value/checked reads."""
 
-from app.testkit import tid
-
-from wybthon import button, component, create_signal, div, h2, input_, p, span
+from wybthon import component, create_signal, html
 
 
 @component
@@ -22,21 +20,20 @@ def Page():
     def on_inner_bubble(_e):
         set_inner(lambda n: n + 1)
 
-    return div(
-        h2("Events"),
-        div(
-            p("outer clicks: ", span(outer, **tid("ev-outer-count"))),
-            p("inner clicks: ", span(inner, **tid("ev-inner-count"))),
-            button("inner (stop)", on_click=on_inner_stop, **tid("ev-inner-stop")),
-            button("inner (bubble)", on_click=on_inner_bubble, **tid("ev-inner-bubble")),
-            on_click=on_outer,
-            **tid("ev-outer"),
-        ),
-        div(
-            input_(on_input=lambda e: set_text(e.target.value), **tid("ev-input")),
-            span(text, **tid("ev-input-echo")),
-            input_(type="checkbox", on_change=lambda e: set_checked(e.target.checked), **tid("ev-check")),
-            span(lambda: "on" if checked() else "off", **tid("ev-check-echo")),
-        ),
-        **tid("page-events"),
-    )
+    return html(t"""
+      <div data-testid="page-events">
+        <h2>Events</h2>
+        <div data-testid="ev-outer" onclick={on_outer}>
+          <p>outer clicks: <span data-testid="ev-outer-count">{outer()}</span></p>
+          <p>inner clicks: <span data-testid="ev-inner-count">{inner()}</span></p>
+          <button data-testid="ev-inner-stop" onclick={on_inner_stop}>inner (stop)</button>
+          <button data-testid="ev-inner-bubble" onclick={on_inner_bubble}>inner (bubble)</button>
+        </div>
+        <div>
+          <input data-testid="ev-input" oninput={(lambda e: set_text(e.target.value))}>
+          <span data-testid="ev-input-echo">{text()}</span>
+          <input type="checkbox" data-testid="ev-check" onchange={(lambda e: set_checked(e.target.checked))}>
+          <span data-testid="ev-check-echo">{"on" if checked() else "off"}</span>
+        </div>
+      </div>
+    """)

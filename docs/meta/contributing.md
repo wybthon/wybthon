@@ -35,6 +35,7 @@ uv sync --group dev --group docs
 - Author new pages under `docs/` and add them to `mkdocs.yml`.
 - Build the site locally with `mkdocs serve` (or `mkdocs build --strict` to fail on warnings the way CI does).
 - Cross-reference Python symbols with `[label][wybthon.symbol]` syntax; see the [style guide](style-guide.md) for details.
+- Write examples in the current style (templates, plain-annotation props) and check them by running them with `uv run wyb run example.py`, which compiles their templates the way an application's are.
 
 ## Filing a pull request
 

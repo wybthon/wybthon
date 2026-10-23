@@ -207,11 +207,10 @@ hydrate(App(), "#app")
 The production bootstrap calls `hydrate` automatically when the page contains server state. `hydrate` mounts the tree exactly as [`render`][wybthon.render] would, except that each node *claims* the node the server already rendered instead of creating one. Event handlers, refs, and reactive bindings attach to the existing nodes, and the whole mount is still a single call into JavaScript.
 
 Templates need nothing special. A server render and a hydrating client
-expand each template into the same VNodes the element helpers would
-build, so the markup and hydration keys match whichever style a
-component uses. Once hydration has committed, browser updates use the
-compiled path. See
-[Templates](templates.md#server-rendering-hydration-and-svg).
+expand each template into the same VNodes [`h`][wybthon.h] would build,
+so the markup and hydration keys match whether a component uses
+templates or `h()`. Once hydration has committed, browser updates use
+the compiled path. See [Templates](templates.md).
 
 Hydration never breaks the page. When a node doesn't match, the kernel creates the expected node in place, removes server nodes nobody claimed, and logs a console warning for the first few mismatches. `kernel.stats()["hydration_mismatches"]` counts them. A mismatch inside a `Loading` boundary stops at the boundary's end.
 
@@ -240,10 +239,30 @@ def LocalTime():
     initial = "" if is_server() or is_hydrating() else local_time()
     time, set_time = create_signal(initial)
     on_settled(lambda: set_time(local_time()))
-    return html(t"<span>{time}</span>")
+    return html(t"<span>{time()}</span>")
 ```
 
 In a page that wasn't server-rendered, `is_hydrating()` is `False` and the component shows the time on its first render.
+
+[`on_hydration_end(callback)`][wybthon.on_hydration_end] runs a callback once hydration is over. Registered while `hydrate` mounts, it runs after the hydrated page has committed; registered anywhere else (a page that wasn't server-rendered, or after hydration), it runs on the next tick. It reports that hydration has finished, not that it found no mismatches. It's Solid 2.0's `onHydrationEnd`. Use it for work that should wait until the page is interactive, such as starting analytics or removing a "loading" style the server rendered:
+
+```python
+from wybthon import component, html, is_server, on_hydration_end
+
+
+@component
+def Shell():
+    def ready():
+        from js import document
+
+        document.body.classList.remove("ssr")
+
+    if not is_server():
+        on_hydration_end(ready)
+    return html(t"<main>...</main>")
+```
+
+Guard browser-only work with `is_server()`, since the same component also renders on the server.
 
 ### Static regions with `NoHydration`
 

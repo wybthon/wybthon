@@ -27,9 +27,10 @@ def App():
 
 The context object is callable: `Theme(value, *children)` returns a
 provider VNode. Children may be templates, component calls, VNodes, or
-lists; anything you'd pass to an element works. Place the provider in a
-template with an interpolation, as above. Item syntax works too, as it
-does on elements and components:
+lists. Place the provider in a template with an interpolation, as
+above; the compiler treats a context like any other component, so the
+children it builds there (`Label()`) don't run until the provider
+mounts them. Item syntax works too, as it does on components:
 
 ```python
 Theme("dark", Header(), Main())
@@ -90,7 +91,7 @@ Theme: Context[Accessor[str]] = create_context()
 @component
 def ThemedButton():
     theme = use_context(Theme)
-    return html(t'<button class="btn btn-{theme}">Hi</button>')
+    return html(t'<button class="btn btn-{theme()}">Hi</button>')
 
 
 @component
@@ -116,11 +117,17 @@ Theme((theme, set_theme), App())
 theme, set_theme = use_context(Theme)
 ```
 
-Passing a plain value is fine when it never changes. Don't pass a
-`lambda: theme()` unless you mean to; an accessor already is one. The
-`class="btn btn-{theme}"` attribute above joins its parts into one
-reactive binding that calls the accessor, so the class follows the
-signal.
+Passing a plain value is fine when it never changes. The
+`class="btn btn-{theme()}"` attribute above joins its parts into one
+reactive binding, so the class follows the signal.
+
+!!! warning "Pass the accessor, not its value"
+    In a template, `{Theme(theme(), ThemedButton())}` looks reactive,
+    but the provider evaluates its value once, untracked, when it
+    mounts: consumers get the string `"light"` and never see a change.
+    The value is what the provider stores, not a binding. Pass the
+    accessor itself, `Theme(theme, ...)`, and let consumers call it. A
+    `lambda: theme()` works too, but an accessor already is one.
 
 ## How it works: the ownership tree
 

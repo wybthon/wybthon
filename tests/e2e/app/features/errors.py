@@ -1,8 +1,6 @@
 """Errored: catch a child render error, show fallback, and reset to recover."""
 
-from app.testkit import tid
-
-from wybthon import Errored, button, component, create_signal, div, h2, span
+from wybthon import Errored, component, create_signal, html
 
 
 @component
@@ -15,21 +13,24 @@ def Page():
         # A one-time read: the boundary remounts this component on reset.
         if should_throw.peek():
             raise RuntimeError("boom")
-        return span("recovered", **tid("err-ok"))
+        return html(t'<span data-testid="err-ok">recovered</span>')
 
     def fallback(err, reset):
-        return div(
-            span(lambda: f"caught: {err()}", **tid("err-fallback")),
-            button("retry", on_click=reset, **tid("err-retry")),
-        )
+        return html(t"""
+          <div>
+            <span data-testid="err-fallback">caught: {err()}</span>
+            <button data-testid="err-retry" onclick={reset}>retry</button>
+          </div>
+        """)
 
     def fix_and_reset():
         set_should_throw(False)
         set_reset_key(lambda n: n + 1)
 
-    return div(
-        h2("Errors"),
-        Errored(lambda: div(Bug()), fallback=fallback, reset_on=reset_key),
-        button("fix + reset", on_click=fix_and_reset, **tid("err-fix")),
-        **tid("page-errors"),
-    )
+    return html(t"""
+      <div data-testid="page-errors">
+        <h2>Errors</h2>
+        {Errored(html(t"<div><{Bug} /></div>"), fallback=fallback, reset_on=reset_key())}
+        <button data-testid="err-fix" onclick={fix_and_reset}>fix + reset</button>
+      </div>
+    """)

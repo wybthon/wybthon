@@ -2,14 +2,19 @@
 
 Wybthon brings SolidJS 2.0's signals-first reactive model to Python.
 Component bodies run **once** at mount and return markup written as a
-t-string template, [`html(t"...")`][wybthon.html], which compiles once
-per literal into a native template the kernel clones. Reactivity flows
-through *reactive holes*: accessors placed in the markup that update
-only the DOM nodes that depend on them. A virtual DOM batches every
-mutation into a single crossing of the Python-to-JavaScript bridge.
+t-string template, [`html(t"...")`][wybthon.html]. Wybthon's compiler
+does what Solid's does for JSX: every dynamic expression in the markup
+(`{count() * 2}`, `{props.title}`) becomes a getter that updates only
+the text node or attribute that reads it, and each literal's static
+markup becomes a native template the kernel clones. A virtual DOM
+batches every mutation into a single crossing of the Python-to-JavaScript
+bridge.
 
 Highlights of the reactive model:
 
+- **Compiled templates.** The compiler runs when a module is imported
+  (`import wybthon` installs it), in `wyb build` and `wyb dev`, and under
+  pytest; see [`wybthon.compiler`][wybthon.compiler].
 - **Automatic batching.** Signal writes are staged and applied on the
   next flush (a microtask, and after each event handler). There is no
   `batch()`; everything batches. Call [`flush`][wybthon.flush] to
@@ -18,7 +23,8 @@ Highlights of the reactive model:
   `(Accessor[T], Setter[T])`; call the accessor to read (tracked),
   `.peek()` to read without subscribing.
 - **Typed props.** Components declare inputs on a
-  [`Props`][wybthon.Props] class; pyright and mypy check every call
+  [`Props`][wybthon.Props] class with plain annotations; `props.title`
+  is a tracked read, as in Solid, and pyright and mypy check every call
   without a plugin.
 - **Async-first, with transitions.** A memo whose body is `async def`
   (or an async generator) is an async computation:
@@ -43,8 +49,8 @@ Highlights of the reactive model:
   out-of-order streaming; [`hydrate`][wybthon.hydrate] adopts that HTML
   in the browser instead of rebuilding it.
 - **Dev diagnostics.** Writes inside a tracking scope raise
-  [`WriteInScopeError`][wybthon.WriteInScopeError]; reading a signal
-  at the top level of a component body warns.
+  [`WriteInScopeError`][wybthon.WriteInScopeError]; reading a reactive
+  value at the top level of a component body warns.
 
 Everything is importable outside a browser (CPython), so unit tests
 and tooling run anywhere; the DOM is only touched when rendering.
@@ -53,21 +59,21 @@ Example:
     A minimal counter component:
 
     ```python
-    from wybthon import Prop, Props, component, create_signal, html, prop, render
+    from wybthon import Props, component, create_signal, html, render, untrack
 
 
     class CounterProps(Props):
-        initial: Prop[int] = prop(default=0)
+        initial: int = 0
 
 
     @component
     def Counter(props: CounterProps):
-        count, set_count = create_signal(props.initial.peek())
+        count, set_count = create_signal(untrack(lambda: props.initial))
 
         def increment():
             set_count(lambda n: n + 1)
 
-        return html(t"<div><p>Count: {count}</p><button onclick={increment}>+1</button></div>")
+        return html(t"<div><p>Count: {count()}</p><button onclick={increment}>+1</button></div>")
 
 
     render(Counter(initial=5), "#app")
@@ -82,119 +88,27 @@ See Also:
 
 from typing import TYPE_CHECKING, Any
 
+from . import _hook
 from ._warnings import is_dev_mode, set_dev_mode
 from .component import Component, component
 from .context import Context, ContextNotFoundError, create_context, use_context
 from .dom import Element, Ref
-from .elements import (
-    a,
-    abbr,
-    address,
-    area,
-    article,
-    aside,
-    audio,
-    b,
-    bdi,
-    bdo,
-    blockquote,
-    br,
-    button,
-    canvas,
-    caption,
-    cite,
-    code,
-    col,
-    colgroup,
-    data,
-    datalist,
-    dd,
-    del_,
-    details,
-    dfn,
-    dialog,
-    div,
-    dl,
-    dt,
-    element,
-    em,
-    embed,
-    fieldset,
-    figcaption,
-    figure,
-    footer,
-    form,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    header,
-    hgroup,
-    hr,
-    i,
-    iframe,
-    img,
-    input_,
-    ins,
-    kbd,
-    label,
-    legend,
-    li,
-    main_,
-    map_,
-    mark,
-    menu,
-    meter,
-    nav,
-    object_,
-    ol,
-    optgroup,
-    option,
-    output,
-    p,
-    picture,
-    pre,
-    progress,
-    q,
-    rp,
-    rt,
-    ruby,
-    s,
-    samp,
-    search,
-    section,
-    select,
-    slot,
-    small,
-    source,
-    span,
-    strong,
-    sub,
-    summary,
-    sup,
-    table,
-    tbody,
-    td,
-    template,
-    textarea,
-    tfoot,
-    th,
-    thead,
-    time,
-    tr,
-    track,
-    u,
-    ul,
-    var,
-    video,
-    wbr,
-)
 from .error_boundary import Errored
 from .events import DomEvent, EventHandler, event
-from .flow import For, Hydration, Match, NoHydration, Repeat, Show, Switch, client_only, dynamic, is_hydrating
-from .lazy import lazy
+from .flow import (
+    For,
+    Hydration,
+    Match,
+    NoHydration,
+    Repeat,
+    Show,
+    Switch,
+    client_only,
+    dynamic,
+    is_hydrating,
+    on_hydration_end,
+)
+from .lazy import LazyModule, lazy, lazy_module
 from .loading import Loading, Reveal
 from .portal import Portal
 from .reactivity import (
@@ -205,7 +119,6 @@ from .reactivity import (
     NotReadyError,
     Owner,
     ParentProps,
-    Prop,
     Props,
     ServerError,
     Setter,
@@ -214,6 +127,7 @@ from .reactivity import (
     action,
     affects,
     children,
+    create_deferred,
     create_effect,
     create_memo,
     create_optimistic,
@@ -224,13 +138,16 @@ from .reactivity import (
     create_signal,
     create_tracked_effect,
     create_unique_id,
+    flatten,
     flush,
     get_observer,
     get_owner,
     is_accessor,
     is_disposed,
+    is_equal,
     is_pending,
     is_server,
+    is_static,
     latest,
     map_array,
     merge,
@@ -265,6 +182,9 @@ if TYPE_CHECKING:
         reconcile,
         snapshot,
     )
+
+# Templates in modules imported from now on are compiled (see `wybthon.compiler`).
+_hook.install()
 
 # Stores load on first use: they're a sizable part of startup and many
 # pages never use them.
@@ -306,11 +226,12 @@ __all__ = [
     "Component",
     "Props",
     "ParentProps",
-    "Prop",
     "prop",
     "merge",
     "omit",
+    "is_static",
     "children",
+    "flatten",
     "ChildrenAccessor",
     # Templates and nodes
     "html",
@@ -319,7 +240,6 @@ __all__ = [
     "h",
     "hole",
     "Fragment",
-    "element",
     "is_accessor",
     # Reactivity
     "Accessor",
@@ -329,6 +249,7 @@ __all__ = [
     "Owner",
     "create_signal",
     "create_memo",
+    "create_deferred",
     "create_effect",
     "create_tracked_effect",
     "create_render_effect",
@@ -336,6 +257,7 @@ __all__ = [
     "create_root",
     "create_owner",
     "is_disposed",
+    "is_equal",
     "create_unique_id",
     "flush",
     "on_settled",
@@ -392,6 +314,8 @@ __all__ = [
     # Portal and code splitting
     "Portal",
     "lazy",
+    "lazy_module",
+    "LazyModule",
     # DOM
     "Element",
     "Ref",
@@ -404,6 +328,7 @@ __all__ = [
     "Root",
     "is_server",
     "is_hydrating",
+    "on_hydration_end",
     "NoHydration",
     "Hydration",
     "RequestEvent",
@@ -414,107 +339,4 @@ __all__ = [
     # Dev mode
     "is_dev_mode",
     "set_dev_mode",
-    # HTML elements
-    "a",
-    "abbr",
-    "address",
-    "area",
-    "article",
-    "aside",
-    "audio",
-    "b",
-    "bdi",
-    "bdo",
-    "blockquote",
-    "br",
-    "button",
-    "canvas",
-    "caption",
-    "cite",
-    "code",
-    "col",
-    "colgroup",
-    "data",
-    "datalist",
-    "dd",
-    "del_",
-    "details",
-    "dfn",
-    "dialog",
-    "div",
-    "dl",
-    "dt",
-    "em",
-    "embed",
-    "fieldset",
-    "figcaption",
-    "figure",
-    "footer",
-    "form",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "header",
-    "hgroup",
-    "hr",
-    "i",
-    "iframe",
-    "img",
-    "input_",
-    "ins",
-    "kbd",
-    "label",
-    "legend",
-    "li",
-    "main_",
-    "map_",
-    "mark",
-    "menu",
-    "meter",
-    "nav",
-    "object_",
-    "ol",
-    "optgroup",
-    "option",
-    "output",
-    "p",
-    "picture",
-    "pre",
-    "progress",
-    "q",
-    "rp",
-    "rt",
-    "ruby",
-    "s",
-    "samp",
-    "search",
-    "section",
-    "select",
-    "slot",
-    "small",
-    "source",
-    "span",
-    "strong",
-    "sub",
-    "summary",
-    "sup",
-    "table",
-    "tbody",
-    "td",
-    "template",
-    "textarea",
-    "tfoot",
-    "th",
-    "thead",
-    "time",
-    "tr",
-    "track",
-    "u",
-    "ul",
-    "var",
-    "video",
-    "wbr",
 ]

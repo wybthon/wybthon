@@ -32,7 +32,7 @@ Example:
     Chart = lazy(load_chart)
     Chart.preload()  # warm the cache on hover/intent
 
-    Loading(lambda: About(), fallback=p("Loading..."))
+    html(t"<main>{Loading(About(), fallback=html(t'<p>Loading...</p>'))}</main>")
     ```
 
 See Also:
@@ -53,7 +53,7 @@ from .reactivity._primitives import latest
 from .reactivity._props import Props
 from .vnode import VNode, flatten_children, h
 
-__all__ = ["lazy"]
+__all__ = ["lazy", "lazy_module", "LazyModule"]
 
 
 def _resolve_attr(mod: Any, attr: str | None) -> Any:
@@ -101,6 +101,7 @@ class _LazyProps(Props):
     """Whatever the loaded component is called with, forwarded unchecked."""
 
     _wyb_open = True
+    _wyb_internal = True
 
 
 class LazyComponent(Component):
@@ -237,3 +238,72 @@ def lazy(loader: Callable[[], Any], *, chunk: str | None = None) -> LazyComponen
 
         return LazyComponent(load)
     return LazyComponent(loader)
+
+
+class LazyModule:
+    """A cached import that starts on demand; returned by [`lazy_module`][wybthon.lazy_module].
+
+    Call it (or [`preload`][wybthon.LazyModule.preload]) to start the
+    import; both return the same awaitable. [`peek`][wybthon.LazyModule.peek]
+    returns the module once it has loaded, else `None`.
+    """
+
+    __slots__ = ("_loader", "_chunk", "_future", "_module")
+
+    def __init__(self, loader: Callable[[], Any], chunk: str | None) -> None:
+        self._loader = loader
+        self._chunk = chunk
+        self._future: Any = None
+        self._module: Any = None
+
+    async def _load(self) -> Any:
+        if self._chunk is not None and not _core._server_depth:
+            from .assets import load_chunk
+
+            await load_chunk(self._chunk)
+        value = self._loader()
+        if isinstance(value, AbcAwaitable):
+            value = await value
+        if isinstance(value, str):
+            value = importlib.import_module(value)
+        self._module = value
+        return value
+
+    def __call__(self) -> Any:
+        """Start the import (once) and return an awaitable for the module."""
+        if self._future is None:
+            self._future = _core._event_loop().create_task(self._load())
+        return self._future
+
+    def preload(self) -> Any:
+        """Start the import now; the same awaitable as calling the loader."""
+        return self()
+
+    def peek(self) -> Any:
+        """The loaded module, or `None` while it hasn't landed."""
+        return self._module
+
+
+def lazy_module(loader: Callable[[], Any], *, chunk: str | None = None) -> LazyModule:
+    """A cached, on-demand import of a module that isn't a component.
+
+    The counterpart of Solid 2.0's `lazyModule`; [`lazy`][wybthon.lazy]
+    is the component-shaped sibling. The loader returns a module, a
+    module path, or an awaitable of either, and runs once.
+
+    Args:
+        loader: Zero-arg callable, sync or async.
+        chunk: Optional named build chunk to fetch before invoking the loader.
+
+    Example:
+        ```python
+        admin = lazy_module(lambda: "app.admin.routes", chunk="admin")
+
+        async def open_admin():
+            routes = await admin()
+            ...
+
+        admin.peek()  # the module, or None until it has loaded
+        ```
+    """
+    return LazyModule(loader, chunk)

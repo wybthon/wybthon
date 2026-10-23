@@ -6,10 +6,13 @@
 
 Control-flow primitives that create isolated reactive scopes, so only
 the relevant subtree updates when a condition or list changes.
-Conditions and sources are accessors (or plain values), and `children`
-and `fallback` slots are nodes or callables evaluated inside the
-primitive's own scope. All arguments are positional except the
-keyword-only options noted below.
+Conditions and sources are accessors, getters, or plain values, and
+`children` and `fallback` slots are nodes or callables evaluated inside
+the primitive's own scope. All arguments are positional except the
+keyword-only options noted below. In a compiled template, a call such as
+`{Show(count() > 5, ...)}` or `{For(todos(), row)}` receives each
+dynamic argument as a getter, exactly as a component does, so the
+condition or source stays reactive without a lambda.
 
 `Show`, `For`, `Repeat`, and `Switch` mount as native **regions**, not
 wrapper components: each is one computation that selects what to
@@ -30,6 +33,7 @@ selected survive.
 | [`NoHydration`][wybthon.NoHydration] | `NoHydration(*children)`: server-rendered HTML the browser keeps as static DOM instead of hydrating. |
 | [`Hydration`][wybthon.Hydration] | `Hydration(*children, id=None)`: a passthrough kept for parity with Solid 2.0. |
 | [`is_hydrating`][wybthon.is_hydrating] | `True` only during the synchronous mount of [`hydrate`][wybthon.hydrate]. |
+| [`on_hydration_end`][wybthon.on_hydration_end] | `on_hydration_end(callback)`: run `callback` once the page has finished hydrating (on the next tick when nothing is hydrating; never during a server render). |
 
 #### `For` keying shapes
 
@@ -43,9 +47,13 @@ callback shape:
 | `key(item)` callable | The key; a new object with the same key updates the row in place | `Accessor[T]`, `Accessor[int]` |
 
 The row callback runs once per row inside the row's owner scope and
-untracked; anything reactive inside a row must read an accessor within
-a hole, memo, or effect. Passing a plain list for `each` renders once
-and warns in dev mode. A store list can be passed as is.
+untracked; anything reactive inside a row belongs in a template
+expression, memo, or effect. With the default keying, the index
+accessor is the row itself, and the signal behind it is only created
+when something reads `i()` in a tracking scope. Passing a plain list for
+`each` (a name bound to a list, not an accessor or a compiled
+expression) renders once and warns in dev mode. A store
+list can be passed as is.
 
 #### Typed callbacks
 
@@ -55,15 +63,17 @@ taking an `int`):
 
 | Call | Inferred parameters |
 | --- | --- |
-| `For(todos, lambda todo, i: ...)` | `todo: Todo`, `i: Accessor[int]` |
-| `For(todos, lambda todo, i: ..., keyed=False)` | `todo: Accessor[Todo]`, `i: int` |
-| `For(todos, lambda todo, i: ..., keyed=lambda t: t.id)` | `todo: Accessor[Todo]`, `i: Accessor[int]` |
+| `For(todos(), lambda todo, i: ...)` | `todo: Todo`, `i: Accessor[int]` |
+| `For(todos(), lambda todo, i: ..., keyed=False)` | `todo: Accessor[Todo]`, `i: int` |
+| `For(todos(), lambda todo, i: ..., keyed=lambda t: t.id)` | `todo: Accessor[Todo]`, `i: Accessor[int]` |
 | `Show(user, lambda u: ...)` | `u: Accessor[User]` |
 | `Show(user, lambda u: ..., keyed=True)` | `u: User` |
 
-The callbacks here are arguments to `For` and `Show`, not template
-interpolations, so they may be bare lambdas. Inside a t-string, wrap a
-lambda in parentheses or give it a name.
+`For` accepts the list or an accessor for it, and both infer the same
+row type. A callback inside a call (`{For(todos(), lambda todo, i: ...)}`)
+may be a bare lambda; only a lambda that is the whole interpolation
+needs parentheses. Pass the accessor to `Show` (`Show(user, ...)`) when
+its callback takes the value.
 
 ```python
 from wybthon import For, Match, Repeat, Show, Switch, create_signal, html
@@ -75,38 +85,28 @@ user, set_user = create_signal(None)
 
 
 def greeting(u):
-    return html(t"<li>Hello, {(lambda: u()['name'])}</li>")
+    return html(t"<li>Hello, {u()['name']}</li>")
 
 
 def numbered(todo, i):
-    return html(t"<li>{(lambda: i() + 1)}. {todo['title']}</li>")
+    return html(t"<li>{i() + 1}. {todo['title']}</li>")
 
 
 def live_title(todo, i):
-    return html(t"<li>{(lambda: todo()['title'])}</li>")
+    return html(t"<li>{todo()['title']}</li>")
 
 
-def is_loading():
-    return status() == "loading"
-
-
-def is_ready():
-    return status() == "ready"
-
+loading = html(t"<li>Loading...</li>")
+ready = html(t"<li>Ready</li>")
+unknown = html(t"<li>Unknown</li>")
 
 view = html(t"""
   <ul>
     {Show(user, greeting, fallback=html(t"<li>Sign in</li>"))}
-    {For(todos, numbered)}
-    {For(todos, live_title, keyed=lambda t: t["id"])}
-    <li>{Repeat(rating, lambda i: html(t"<span>*</span>"), start=1)}</li>
-    {
-    Switch(
-        Match(is_loading, html(t"<li>Loading...</li>")),
-        Match(is_ready, html(t"<li>Ready</li>")),
-        fallback=html(t"<li>Unknown</li>"),
-    )
-}
+    {For(todos(), numbered)}
+    {For(todos(), live_title, keyed=lambda t: t["id"])}
+    <li>{Repeat(rating(), lambda i: html(t"<span>*</span>"), start=1)}</li>
+    {Switch(Match(status() == "loading", loading), Match(status() == "ready", ready), fallback=unknown)}
   </ul>
 """)
 ```
@@ -126,7 +126,9 @@ view = html(t"""
   component changes.
 - `client_only` renders its fallback during a server render and while
   hydrating, then its children; see
-  [Server rendering](../concepts/server-rendering.md).
+  [Server rendering](../concepts/server-rendering.md). For one-off work
+  after hydration (starting a widget that measures the DOM, say), register
+  it with `on_hydration_end`.
 - `NoHydration` costs no Python work while hydrating: the kernel keeps
   the region's server DOM as is (`CLAIM_STATIC`) and nothing inside it
   mounts or updates. In a page that wasn't server-rendered, its

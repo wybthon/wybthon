@@ -148,8 +148,8 @@ class _Pass:
         """Keep `memos` running after the tree is disposed, so it can't re-render meanwhile."""
         for memo in memos:
             parent = memo._parent
-            if parent is not None and parent._children is not None:
-                parent._children.pop(id(memo), None)
+            if parent is not None:
+                parent._remove_child(memo)
             memo._parent = None
             memo._provisional = None
 

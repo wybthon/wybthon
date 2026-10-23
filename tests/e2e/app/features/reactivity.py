@@ -1,19 +1,6 @@
 """Reactivity primitives surfaced to the DOM: signal, memo, effect, automatic batching, untrack."""
 
-from app.testkit import tid
-
-from wybthon import (
-    button,
-    component,
-    create_effect,
-    create_memo,
-    create_signal,
-    div,
-    h2,
-    p,
-    span,
-    untrack,
-)
+from wybthon import component, create_effect, create_memo, create_signal, html, untrack
 
 
 @component
@@ -41,20 +28,24 @@ def Page():
 
     create_effect(track_a_only, lambda _value: set_untracked_runs(lambda n: n + 1))
 
-    return div(
-        h2("Reactivity"),
-        div(
-            p("count: ", span(count, **tid("rx-count"))),
-            p("doubled: ", span(doubled, **tid("rx-doubled"))),
-            button("+1", on_click=lambda e: set_count(lambda n: n + 1), **tid("rx-inc")),
-            button("reset", on_click=lambda e: set_count(0), **tid("rx-reset")),
-            button("batch +2", on_click=do_double_write, **tid("rx-batch")),
-            p("effect runs: ", span(effect_runs, **tid("rx-effect-runs"))),
-        ),
-        div(
-            p("untracked effect runs: ", span(untracked_runs, **tid("rx-untracked-runs"))),
-            button("set a (tracked)", on_click=lambda e: set_a(lambda n: n + 1), **tid("rx-set-a")),
-            button("set b (untracked)", on_click=lambda e: set_b(lambda n: n + 1), **tid("rx-set-b")),
-        ),
-        **tid("page-reactivity"),
-    )
+    # `{count}` passes the signal itself (a name); `{doubled()}` and
+    # `{count() * 2 + 1}` are compiled into getters.
+    return html(t"""
+      <div data-testid="page-reactivity">
+        <h2>Reactivity</h2>
+        <div>
+          <p>count: <span data-testid="rx-count">{count}</span></p>
+          <p>doubled: <span data-testid="rx-doubled">{doubled()}</span></p>
+          <p>inline: <span data-testid="rx-inline">{count() * 2 + 1}</span></p>
+          <button data-testid="rx-inc" onclick={(lambda e: set_count(lambda n: n + 1))}>+1</button>
+          <button data-testid="rx-reset" onclick={(lambda e: set_count(0))}>reset</button>
+          <button data-testid="rx-batch" onclick={do_double_write}>batch +2</button>
+          <p>effect runs: <span data-testid="rx-effect-runs">{effect_runs()}</span></p>
+        </div>
+        <div>
+          <p>untracked effect runs: <span data-testid="rx-untracked-runs">{untracked_runs()}</span></p>
+          <button data-testid="rx-set-a" onclick={(lambda e: set_a(lambda n: n + 1))}>set a (tracked)</button>
+          <button data-testid="rx-set-b" onclick={(lambda e: set_b(lambda n: n + 1))}>set b (untracked)</button>
+        </div>
+      </div>
+    """)

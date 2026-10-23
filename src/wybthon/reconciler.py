@@ -15,12 +15,12 @@ Mental model:
 - **Templates mount from compiled literals.** An `html(t"...")` instance
   (a `_tpl` node) clones its literal's native template with one command
   and fills its slots (see [`wybthon.templates`][wybthon.templates]).
-  Element helper trees mount from runtime shapes (`wybthon._shapes`).
+  Trees built with `h()` mount node by node.
 - **Constant props are free.** Only a tree a reactive hole returns (or
   one passed to `render`) is ever patched, so a component mounted
   anywhere else reads constant props without subscribing to anything,
-  and a binding that reads nothing reactive is dropped after its first
-  run.
+  and a binding whose expression reads nothing reactive never becomes a
+  computation (see `_core._probe`).
 - **Reactive holes** are `_hole` VNodes whose expression runs inside a
   render effect; when its dependencies change, only that region is
   patched. Holes are created for every reactive expression in a child
@@ -42,10 +42,8 @@ and `patch` used by control-flow primitives.
 from __future__ import annotations
 
 from bisect import bisect_left
-from string.templatelib import Template
 from typing import Any
 
-from . import _shapes as template
 from . import kernel, templates
 from ._dom_props import (
     _bindings,
@@ -83,16 +81,21 @@ from .kernel import (
 )
 from .reactivity import _core
 from .reactivity._core import (
+    _APPLY_METHOD,
+    _ESCAPED,
     _K_RENDER,
     Computation,
     Owner,
+    Signal,
     _ComponentContext,
     _enter_component_setup,
     _exit_component_setup,
+    _Getter,
+    _probe,
     flush,
     is_accessor,
 )
-from .vnode import NS_MATHML, NS_SVG, Fragment, VNode, _template_children, hole, normalize_children, to_text_vnode
+from .vnode import NS_MATHML, NS_SVG, Fragment, VNode, hole, normalize_children, to_text_vnode
 
 __all__ = ["render", "hydrate", "Root", "mount", "unmount", "patch"]
 
@@ -199,10 +202,9 @@ def render(vnode: Any, container: Element | str | int) -> Root:
 
     Example:
         ```python
-        from wybthon import render
-        from wybthon.elements import h1
+        from wybthon import html, render
 
-        root = render(h1("Hello, world!"), "#app")
+        root = render(html(t"<h1>Hello, world!</h1>"), "#app")
         ```
     """
     container_el = _container(container)
@@ -518,6 +520,10 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
             and not vnode.props.foreign  # type: ignore[attr-defined]
         ):
             templates.mount(vnode, parent_id, anchor_id)
+            if final:
+                # Never patched (a row, a component's output): the values
+                # were only kept to diff against a re-rendered instance.
+                vnode.children = ()  # type: ignore[assignment]
             return
         # Server rendering, hydration, SVG, and backends without native
         # templates mount the ordinary tree the template stands for.
@@ -550,14 +556,6 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
 
     if callable(tag):
         _mount_component(vnode, parent_id, anchor_id, ns)
-        return
-
-    if (
-        ns is None
-        and not kernel.claiming
-        and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
-        and template.mount(vnode, parent_id, anchor_id, final)
-    ):
         return
 
     _mount_element(vnode, parent_id, anchor_id, ns)
@@ -668,8 +666,6 @@ def _coerce_result(value: Any) -> VNode:
         return to_text_vnode("")
     if is_accessor(value):
         return hole(value)
-    if type(value) is Template:
-        return Fragment(*_template_children(value))
     return to_text_vnode(value)
 
 
@@ -738,7 +734,7 @@ def _region_set(
         _patchable = previous
 
 
-def _replace_hole_getter(vnode: VNode, parent_id: int, value: Any) -> VNode:
+def _replace_hole_getter(vnode: VNode, parent_id: int, value: Any, probe: bool = False) -> VNode:
     """Give a template's child slot a new value: a new reactive expression or static content."""
     if vnode.render_effect is not None:
         vnode.render_effect.dispose()
@@ -746,66 +742,72 @@ def _replace_hole_getter(vnode: VNode, parent_id: int, value: Any) -> VNode:
     end_id = vnode._frag_end
     assert end_id is not None
     if is_accessor(value):
-        vnode.props["getter"] = value
-        vnode.render_effect = _hole_updater(vnode, parent_id, end_id, value)
+        vnode.render_effect = _hole_updater(vnode, parent_id, end_id, value, None, probe or None)
     else:
-        vnode.props.pop("getter", None)
         _region_set(vnode, parent_id, end_id, value)
     return vnode
 
 
-def _hole_updater(
-    vnode: VNode, parent_id: int, end_id: int, getter: Any, claim: list[bool] | None = None
-) -> Computation | None:
-    """Create the render effect that evaluates a hole and patches its region.
+def _hole_apply(
+    vnode: VNode, parent_id: int, end_id: int, claim: list[bool] | None, scope_parent: Owner | None, result: Any
+) -> None:
+    """Put a hole expression's result into its region (the hole's apply stage)."""
+    if result is _KEEP:
+        return
+    rtype = type(result)
+    if claim is not None and claim[0] and kernel.claiming:
+        # Hydrating: a text result claims the server's text node as the
+        # anchor itself; other results claim their content first and the
+        # anchor comment after it, in document order.
+        claim[0] = False
+        if rtype is str or rtype is int or rtype is float:
+            text = result if rtype is str else str(result)
+            _emit((OP_CLAIM_TEXT, end_id, parent_id, text))
+            vnode._hole_text = text
+            return
+        if vnode.scope is None:
+            vnode.scope = Owner()
+            if scope_parent is not None:
+                scope_parent._add_child(vnode.scope)
+        new_node = _coerce_result(result)
+        new_node.pk = f"{getattr(vnode, 'pk', None) or _core._position}.h"
+        vnode.subtree = new_node
+        ns = vnode.ns
 
-    The expression runs tracked in the compute stage (owned by the
-    effect's provisional owner). Superseded preparations are disposed;
-    the published preparation survives until a replacement applies. The tree
-    is mounted in the apply stage under the hole's stable
-    `scope`, so components kept across re-evaluations survive and
-    context lookups from inside them resolve through the tree.
+        def claim_content() -> None:
+            try:
+                mount(new_node, parent_id, end_id, ns)
+            except Exception as exc:
+                if not _dispatch_to_error_boundary(exc):
+                    log_error(f"Reactive hole update failed: {exc}", exc)
+
+        _core._run_owned_untracked(vnode.scope, claim_content)
+        _emit((OP_CLAIM_COMMENT, end_id, parent_id, ""))
+        return
+    if (rtype is str or rtype is int or rtype is float) and vnode.subtree is None:
+        # The common case, inlined: text replacing text.
+        text = result if rtype is str else str(result)
+        if vnode._hole_text != text:
+            slot = _clone_slot
+            if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
+                slot[0][slot[1]] = text
+            else:
+                _emit((OP_HOLE_TEXT, end_id, text))
+            vnode._hole_text = text
+        return
+    _region_set(vnode, parent_id, end_id, result, True, scope_parent)
+
+
+def _apply_hole(target: Any, result: Any, previous: Any) -> None:
+    """A reactive hole's apply stage: put the expression's result into its region.
+
+    `target` is the hole's VNode, or `(vnode, parent id, claim)` while
+    hydrating. A hole's binding is a plain computation with this function
+    as its apply stage (see `_hole_updater`).
     """
-    ns = vnode.ns
-    scope_parent = _core._current_owner
-
-    # The expression runs as a ``keep`` render effect: when an async source
-    # has no value yet, the hole keeps its current content (the read
-    # registered with the nearest Loading boundary and subscribed this hole
-    # to the resolution), and an exception routes to the nearest Errored
-    # boundary through the apply stage.
-    def apply(result: Any) -> None:
-        if result is _KEEP:
-            return
+    if type(target) is VNode:
+        vnode = target
         rtype = type(result)
-        if claim is not None and claim[0] and kernel.claiming:
-            # Hydrating: a text result claims the server's text node as the
-            # anchor itself; other results claim their content first and the
-            # anchor comment after it, in document order.
-            claim[0] = False
-            if rtype is str or rtype is int or rtype is float:
-                text = result if rtype is str else str(result)
-                _emit((OP_CLAIM_TEXT, end_id, parent_id, text))
-                vnode._hole_text = text
-                return
-            if vnode.scope is None:
-                vnode.scope = Owner()
-                if scope_parent is not None:
-                    scope_parent._add_child(vnode.scope)
-            new_node = _coerce_result(result)
-            new_node.pk = f"{getattr(vnode, 'pk', None) or _core._position}.h"
-            vnode.subtree = new_node
-
-            def claim_content() -> None:
-                try:
-                    mount(new_node, parent_id, end_id, ns)
-                except Exception as exc:
-                    if not _dispatch_to_error_boundary(exc):
-                        log_error(f"Reactive hole update failed: {exc}", exc)
-
-            _core._run_owned_untracked(vnode.scope, claim_content)
-            _emit((OP_CLAIM_COMMENT, end_id, parent_id, ""))
-            return
         if (rtype is str or rtype is int or rtype is float) and vnode.subtree is None:
             # The common case, inlined: text replacing text.
             text = result if rtype is str else str(result)
@@ -814,12 +816,41 @@ def _hole_updater(
                 if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
                     slot[0][slot[1]] = text
                 else:
-                    _emit((OP_HOLE_TEXT, end_id, text))
+                    _emit((OP_HOLE_TEXT, vnode._frag_end, text))
                 vnode._hole_text = text
             return
-        _region_set(vnode, parent_id, end_id, result, True, scope_parent)
+        binding = vnode.render_effect
+        _hole_apply(vnode, vnode.dyn, vnode._frag_end, None, binding._parent if binding else None, result)  # type: ignore[arg-type]
+        return
+    vnode, parent_id, claim = target
+    binding = vnode.render_effect
+    _hole_apply(vnode, parent_id, vnode._frag_end, claim, binding._parent if binding else None, result)
 
-    fn: Any = getter
+
+def _hole_updater(
+    vnode: VNode,
+    parent_id: int,
+    end_id: int,
+    getter: Any,
+    claim: list[bool] | None = None,
+    probe: bool | None = None,
+) -> Computation | None:
+    """Evaluate a hole and keep its region up to date; returns its render effect, if it needs one.
+
+    With `probe` (an expression the compiler deferred that makes no
+    calls; by default, a getter marked so), the expression first runs as
+    a static probe: one that reads nothing reactive is applied once and
+    needs no computation at all, and one that returns an accessor without
+    reading anything (a signal kept in a data structure) binds the hole
+    to that accessor instead (see `_core._probe`).
+    """
+    scope_parent = _core._current_owner
+    if type(getter) is _Getter:
+        if probe is None:
+            probe = getter.probe
+        fn: Any = getter.fn
+    else:
+        fn = getter
     if _core._session is not None:
         # Server rendering and hydration: memos created by the expression
         # are keyed by the hole's position (checked per run, since the
@@ -837,9 +868,32 @@ def _hole_updater(
             finally:
                 _core._restore_position(previous)
 
-    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=apply, pass_prev=False, keep=True)
+    elif claim is None and probe:
+        for _ in range(8):
+            value = _probe(fn)
+            if value is _ESCAPED:
+                break
+            if type(value) is Signal:
+                fn = value
+                break
+            if is_accessor(value):
+                fn = value.fn if type(value) is _Getter else value
+                continue
+            _hole_apply(vnode, parent_id, end_id, None, scope_parent, value)
+            return None
+
+    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=_apply_hole, pass_prev=False, keep=True)
+    comp._apply_arity = _APPLY_METHOD
+    if claim is None:
+        # The hole's parent id rides in its unused `dyn` field, so the
+        # binding needs nothing but the hole itself.
+        vnode.dyn = parent_id  # type: ignore[assignment]
+        comp._apply_data = vnode
+    else:
+        comp._apply_data = (vnode, parent_id, claim)
     if scope_parent is not None:
         scope_parent._add_child(comp)
+    vnode.render_effect = comp
     comp._update_if_necessary()
     if not comp._sources and comp._inert():
         # It read nothing reactive, so it can never run again: keep the
@@ -866,6 +920,8 @@ def _mount_hole(
     text: bool = False,
     clone: list[Any] | None = None,
     slot: int = 0,
+    getter: Any = None,
+    probe: bool = False,
 ) -> None:
     """Mount a reactive hole: an end anchor plus a render effect.
 
@@ -874,6 +930,9 @@ def _mount_hole(
     that's a one-space text node rather than a comment: a text result is
     then written straight into it. `clone` and `slot` name the template's
     clone command and the text slot the hole's first text result fills.
+    `getter` is the expression when it isn't in `vnode.props` (a
+    template's child slot), and `probe` says the compiler deferred it
+    without a call (see `_hole_updater`).
     """
     claim: list[bool] | None = None
     if end_id is None:
@@ -892,28 +951,17 @@ def _mount_hole(
     vnode.el = end_id
     vnode._frag_end = end_id
 
-    getter = vnode.props.get("getter")
-    if claim is None and type(getter) is _core._PropAccessor:
-        constant = _core._constant_prop(getter)
-        if constant is not _core._MISSING:
-            # A prop that can never change: render its value, track nothing.
-            global _clone_slot
-            previous = _clone_slot
-            if clone is not None:
-                _clone_slot = (clone, slot, vnode, kernel.generation)
-            try:
-                _region_set(vnode, parent_id, end_id, constant)
-            finally:
-                _clone_slot = previous
-            return
+    if getter is None:
+        getter = vnode.props.get("getter")
     if callable(getter):
         if clone is None:
-            vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+            vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim, probe or None)
         else:
+            global _clone_slot
             previous = _clone_slot
             _clone_slot = (clone, slot, vnode, kernel.generation)
             try:
-                vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
+                vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim, probe or None)
             finally:
                 _clone_slot = previous
     if claim is not None and claim[0]:
@@ -936,7 +984,11 @@ def _patch_hole(old: VNode, new: VNode, parent_id: int) -> None:
     new_getter = new.props.get("getter")
 
     if old_getter is new_getter:
-        new.render_effect = old.render_effect
+        comp = new.render_effect = old.render_effect
+        if comp is not None and comp._apply_data is old:
+            # The binding keeps running; its writes go to the new node now.
+            comp._apply_data = new
+            new.dyn = old.dyn
         return
 
     if old.render_effect is not None:
@@ -1106,10 +1158,6 @@ def _dispose_tree(vnode: VNode) -> None:
             templates.dispose(vnode)
         return
 
-    if vnode.tpl is not None:
-        template.dispose(vnode, _dispose_tree)
-        return
-
     if callable(tag):
         if vnode.component_ctx is not None:
             try:
@@ -1229,8 +1277,6 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
         _patch_component(old, new, parent_id)
         return
 
-    if old.tpl is not None:
-        template.materialize(old)
     assert old.el is not None
     new.el = old.el
     apply_props(new.el, old.props, new.props)

@@ -8,13 +8,13 @@ In the browser all three are harmless: there's no request, and the
 response head was sent long ago.
 
 ```python
-from wybthon import component, h1, http_status
+from wybthon import component, html, http_status
 
 
 @component
 def NotFound():
     http_status(404)
-    return h1("Not found")
+    return html(t"<h1>Not found</h1>")
 ```
 
 On the server, pass a [`RequestEvent`][wybthon.RequestEvent] to the

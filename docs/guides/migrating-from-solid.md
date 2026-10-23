@@ -1,14 +1,14 @@
 # Migrating from Solid
 
-Wybthon is SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the `For` plus `Repeat` flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, and the ownership tree manages cleanup.
+Wybthon is SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the `For` plus `Repeat` flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, the ownership tree manages cleanup, and a compiler turns the dynamic expressions in your markup into getters.
 
-Solid 2.0 hasn't had a stable release yet. Release candidate 14 (RC.14) is the latest, and it's the version Wybthon targets.
+Solid 2.0 hasn't had a stable release yet. Release candidate 17 (RC.17) is the latest, and it's the version Wybthon targets.
 
 The differences are mostly surface: Python instead of JavaScript, t-string templates instead of JSX, a `Props` class instead of a props interface, snake_case names, and a small number of deliberate semantic choices listed at the end.
 
 ## API mapping
 
-The table follows **Solid 2.0 RC.14**.
+The table follows **Solid 2.0 RC.17**.
 
 | SolidJS 2.0 | Wybthon |
 | --- | --- |
@@ -16,6 +16,8 @@ The table follows **Solid 2.0 RC.14**.
 | `createSignal(() => derived)` (function form) | `create_signal(lambda: derived())` |
 | `createMemo(fn, { equals })` | [`create_memo(fn, equals=...)`][wybthon.create_memo] |
 | `createMemo(async () => ...)` | `create_memo(async_fn)`: an `async def` body makes an async memo |
+| `createDeferred(fn)` | [`create_deferred(fn)`][wybthon.create_deferred]: an async memo whose refetches never hold the rest of the UI |
+| `isEqual(a, b)` | [`is_equal(a, b)`][wybthon.is_equal]: the default equality |
 | `createEffect(compute, apply)` | [`create_effect(compute, apply)`][wybthon.create_effect] |
 | `createEffect(fn)` | `create_tracked_effect(fn)` (single function, tracked) |
 | `createRenderEffect(compute, apply)` | [`create_render_effect(compute, apply)`][wybthon.create_render_effect] |
@@ -62,17 +64,20 @@ The table follows **Solid 2.0 RC.14**.
 | `dynamic(source)` | [`dynamic(source)`][wybthon.dynamic], called like a component |
 | `<Portal mount>` | [`Portal(children, mount=...)`][wybthon.Portal] |
 | `lazy(() => import(...))` | [`lazy(loader)`][wybthon.lazy] |
+| `lazyModule(() => import(...))` | [`lazy_module(loader)`][wybthon.lazy_module]: a cached async import with `preload()` and `peek()` |
 | `createContext(default)` | [`create_context(default)`][wybthon.create_context] |
 | `<Ctx value>` | `Ctx(value, *children)`: the context object is the provider |
 | `useContext(Ctx)` | [`use_context(Ctx)`][wybthon.use_context] |
 | `interface CardProps` / `props: CardProps` | A [`Props`][wybthon.Props] subclass: `class CardProps(Props)` and `def Card(props: CardProps)` |
-| `props.title` (getter) | `props.title` returns an accessor: place it in the tree or call `props.title()` in a scope |
+| `props.title` (getter) | `props.title`: returns the value, tracked |
+| `isStatic(props, key)` | [`is_static(props, "key")`][wybthon.is_static] |
 | `ParentProps<T>` | [`ParentProps`][wybthon.ParentProps] |
 | `merge(a, b)` | [`merge(a, b)`][wybthon.merge] |
 | `omit(props, ...keys)` | [`omit(props, *keys)`][wybthon.omit] |
 | `omit(props, predicate)` | `omit(props, lambda key: ...)` |
-| `children(() => props.children)` | [`children(props.children)`][wybthon.children] |
-| `children(...).toArray()` | `children(props.children).to_array()` |
+| `children(() => props.children)` | [`children(lambda: props.children)`][wybthon.children] |
+| `children(...).toArray()` | `children(lambda: props.children).to_array()` |
+| `flatten(children)` | [`flatten(children)`][wybthon.flatten]: the unmemoized form of `children` |
 | `createUniqueId()` | [`create_unique_id()`][wybthon.create_unique_id] |
 | `renderToString(fn)` | [`render_to_string(view)`][wybthon.server.render_to_string] |
 | `renderToStream(fn)` | [`render_to_stream(view)`][wybthon.server.render_to_stream]: iterate it for chunks |
@@ -80,6 +85,7 @@ The table follows **Solid 2.0 RC.14**.
 | `hydrate(fn, el)` | [`hydrate(view, container)`][wybthon.hydrate] |
 | `isServer` | [`is_server()`][wybthon.is_server] |
 | `isHydrating()` | [`is_hydrating()`][wybthon.is_hydrating] |
+| `onHydrationEnd(fn)` | [`on_hydration_end(fn)`][wybthon.on_hydration_end] |
 | `<NoHydration>` | [`NoHydration(*children)`][wybthon.NoHydration] |
 | `<Hydration>` | [`Hydration(*children)`][wybthon.Hydration] (a passthrough; a `NoHydration` region stays static as a whole) |
 | `getRequestEvent()` | [`get_request_event()`][wybthon.get_request_event] |
@@ -89,13 +95,13 @@ The table follows **Solid 2.0 RC.14**.
 | `createMemo(fn, { ssrSource })` | `create_memo(fn, ssr_source="server" \| "hybrid" \| "client")` |
 | `ref={el => ...}` | A callback ref: `ref={remember}` (or `ref={(lambda el: ...)}`), which receives an [`Element`][wybthon.Element] |
 | `let el; <input ref={el} />` | `ref = Ref()` and `ref={ref}`; read `ref.current.element` in `on_settled` |
-| JSX, or `html` from `solid-js/html` | [`html(t"...")`][wybthon.html] templates (below) |
-| `{expr}` | `{expr}`: an accessor stays live; wrap other reactive expressions in a function |
-| `<Card title="Hi">...</Card>` | `<{Card} title="Hi">...</{Card}>`, or `{Card(title="Hi")[...]}` |
+| JSX, or `html` from `solid-js/html` | [`html(t"...")`][wybthon.html] templates, compiled like JSX (below) |
+| `{expr}` | `{expr}`: the compiler makes it a getter when it contains a call, attribute access, or subscript |
+| `<Card title={user().name}>...</Card>` | `<{Card} title={user().name}>...</{Card}>`, or `{Card(title=user().name, children=...)}` |
 | `<div {...attrs}>` | `<div {attrs}>` |
-| `h(tag, props, ...children)` | The element helpers (`div(...)`) or [`h(tag, props, *children)`][wybthon.h] |
+| `h(tag, props, ...children)` | [`h(tag, props, *children)`][wybthon.h] |
 
-Solid 1.x primitives that 2.0 removed (`createResource`, `on`, `createComputed`, `createDeferred`, `createSelector`, `produce`, `createMutable`, `splitProps`, `mergeProps`, `Index`, path-based store writes, `useTransition`, `renderToStringAsync`) don't exist here either. The table above covers their 2.0 replacements.
+Solid 1.x primitives that 2.0 removed (`createResource`, `on`, `createComputed`, `createSelector`, `produce`, `createMutable`, `splitProps`, `mergeProps`, `Index`, path-based store writes, `useTransition`, `renderToStringAsync`) don't exist here either. The table above covers their 2.0 replacements. Solid 2.0's `createDeferred` isn't 1.x's idle-time deferral: it's the async memo in the table, and that's what `create_deferred` mirrors.
 
 `createAsync` was never part of Solid 2.0's core API: it came from `@solidjs/router` 0.x and was removed in router 2.0. In Solid 2.0 you read async data with `createMemo`, and that's what `create_memo` with an `async def` mirrors.
 
@@ -108,34 +114,34 @@ function Greeting(props) {
 ```
 
 ```python
-from wybthon import Prop, Props, component, html, prop
+from wybthon import Props, component, html
 
 
 class GreetingProps(Props):
-    name: Prop[str]
-    excited: Prop[bool] = prop(default=False)
+    name: str
+    excited: bool = False
 
 
 @component
 def Greeting(props: GreetingProps):
-    def punctuation():
-        return "!" if props.excited() else "."
-
-    return html(t'<p class="greeting">Hello, {props.name}{punctuation}</p>')
+    return html(t'<p class="greeting">Hello, {props.name}{"!" if props.excited else "."}</p>')
 ```
 
-- [`html`][wybthon.html] takes a Python 3.14 [template string](https://peps.python.org/pep-0750/). It's closest to Solid's buildless `html` tagged template from `solid-js/html`: a t-string literal's static strings are the same object on every call, like a tagged template's strings array, so Wybthon compiles each literal once into a native `<template>` and clones it for every instance. That's the job Solid's JSX compiler does, with no build step. See [Templates](../concepts/templates.md).
-- `{expr}` in JSX becomes a `{expr}` interpolation. An accessor (`props.name`, or a signal getter) goes in directly and becomes a **hole** that updates only its text node or attribute. Solid's compiler wraps other expressions in effects for you; Python can't, so make them a function, as with `${() => ...}` in Solid's `html`. Python forbids a bare `lambda` in an interpolation, so write `{(lambda: count() * 2)}` with parentheses, or, usually better, a named function or memo like `punctuation` above. Anything else is applied once.
-- Attributes are HTML names (`class`, `for`, `aria-label`) and take interpolations the same way: `class={row_class}`, `href="/users/{user_id}"` (one binding for the whole value), `disabled={add.pending}`.
+- [`html`][wybthon.html] takes a Python 3.14 [template string](https://peps.python.org/pep-0750/), and Wybthon's [compiler](../concepts/compiler.md) does the two jobs Solid's JSX compiler does. It turns each literal's static markup into a native `<template>` that the kernel clones for every instance, and it turns every dynamic expression into a getter. It runs when `wyb build` and `wyb dev` build your app, in an import hook that `import wybthon` installs, under pytest, and for scripts run with `wyb run script.py`. See [Templates](../concepts/templates.md).
+- The rule is Solid's: an interpolation that contains a call, an attribute access, or a subscript is **dynamic**, so `{props.name}`, `{count() * 2}`, `{row["label"]}`, and `class={"on" if active() else ""}` become getters, and each updates only its own text node or attribute. A name, a constant, or a lambda is a value. A signal placed directly (`{count}`) is still bound reactively, so `{count}` and `{count()}` both work.
+- Event handlers, refs, spreads, and nested `html(t"...")` templates are never wrapped. Prefer a named handler (`onclick={increment}`); Python forbids a bare `lambda` in an interpolation, so an inline one needs parentheses: `onclick={(lambda: set_open(False))}`.
+- A call in a child position is decided when the template is created. A component (`{Card(title=user().name)}`, `{Show(...)}`, `{For(...)}`) is built with a getter for each dynamic argument, exactly like `<Card title={user().name} />`. Any other call (`{badge(user())}`, `{str(total())}`) becomes one reactive hole, as a function call in JSX does.
+- Attributes are HTML names (`class`, `for`, `aria-label`) and take interpolations the same way: `class={row_class(id)}`, `href="/users/{user_id()}"` (one binding for the whole value), `disabled={add.pending()}`.
 - Event handlers are `onclick={handler}`; `onClick` and `on:click` work too. A handler may take no arguments or receive a [`DomEvent`][wybthon.DomEvent] with `e.target`, `e.key`, `e.prevent_default()`, and friends.
-- A component tag is written `<{Card} title="Hi">...</{Card}>` (like `<${Card}>` in Solid's `html`), or self-closed as `<{Card} />`. Attributes become keyword props and the content becomes `children`. Type checkers can't see inside the template, so tag props are checked at run time in dev mode; call the component in an interpolation (`{Card(title="Hi")}`) when you want static checking.
-- `Show`, `Loading`, `Errored`, `Link`, and context providers work as calls in an interpolation (`{Show(ready, panel)}`) or with the tag form (`<{Show} when={ready}>...</{Show}>`), which calls each the way its signature takes children.
-- Markup the browser's parser would rewrite raises [`TemplateError`][wybthon.TemplateError] instead of silently changing: put `<tr>` in a `<tbody>`, and don't nest a `<div>` in a `<p>`.
-- The element helpers (`div(...)`, `p(...)`, from `wybthon`, and SVG elements from [`wybthon.svg`][wybthon.svg]) are the programmatic layer, the counterpart of Solid's `h`. They use Python names (`class_`, `html_for`, `on_click`). For custom elements, use [`h("my-element", {...}, *children)`][wybthon.h].
+- A component tag is written `<{Card} title={user().name}>...</{Card}>` (like `<${Card}>` in Solid's `html`), or self-closed as `<{Card} />`. Attributes become keyword props and the content becomes `children`. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (`{Card(title=user().name)}`) is checked statically, and the compiler still passes getters.
+- `Show`, `Loading`, `Errored`, `Link`, and context providers work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`), which calls each the way its signature takes children.
+- Markup the browser's parser would rewrite is an error instead of a silent change: put `<tr>` in a `<tbody>`, and don't nest a `<div>` in a `<p>`. The compiler reports it as a `SyntaxError` with the file and line.
+- A template that reaches `html()` without being compiled (a REPL, `exec`) has already evaluated its dynamic expressions once, so dev mode raises [`TemplateError`][wybthon.TemplateError] instead of rendering markup that would never update.
+- [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, the counterpart of Solid's `h`, for markup built by code. Its props take Python names (`class_`, `html_for`, `on_click`) or HTML names. SVG works in a template.
 
 ## Components and props
 
-Solid types props with an interface (`props: CardProps`); Wybthon declares them on a [`Props`][wybthon.Props] class, and the component takes one parameter annotated with it. Pyright and mypy check every call against the class with no plugin.
+Solid types props with an interface (`props: CardProps`); Wybthon declares them on a [`Props`][wybthon.Props] class with plain annotations, and the component takes one parameter annotated with it. Pyright and mypy check every call against the class with no plugin.
 
 ```tsx
 interface CardProps extends ParentProps {
@@ -155,18 +161,18 @@ function Card(props: CardProps) {
   );
 }
 
-<Card title="Hello" onClose={() => setOpen(false)}><p>Body</p></Card>
+<Card title={user().name} onClose={() => setOpen(false)}><p>Body</p></Card>
 ```
 
 ```python
 from collections.abc import Callable
 
-from wybthon import ParentProps, Prop, component, create_signal, html, prop
+from wybthon import ParentProps, component, create_signal, html
 
 
 class CardProps(ParentProps):
-    title: Prop[str]
-    body: Prop[str] = prop(default="")
+    title: str
+    body: str = ""
     on_close: Callable[[], None] | None = None
 
 
@@ -188,20 +194,23 @@ def Card(props: CardProps):
 
 @component
 def App():
+    user, set_user = create_signal({"name": "Ada"})
     open_, set_open = create_signal(True)
 
     def close():
         set_open(False)
 
-    return html(t'<{Card} title="Hello" on_close={close}><p>Body</p></{Card}>')
+    return html(t"<{Card} title={user()['name']} on_close={close}><p>Body</p></{Card}>")
 ```
 
-- A `Prop[T]` field is the counterpart of a getter on Solid's props proxy: reading `props.title` returns an accessor. Pass it straight into the tree to create a hole, or call it inside a memo, effect, or hole. The parent may pass a value, an accessor, or a zero-argument function.
-- Fields annotated with anything else are plain data, returned exactly as the parent passed them. Declare callbacks this way; reading `props.on_close` never calls it.
-- Optional props get defaults with `prop(default=...)`; plain fields use ordinary defaults.
-- Assigning `value = props.title()` at the top of the body destructures and freezes, as in Solid; dev mode warns. Use `props.title.peek()` when you mean it.
-- [`merge`][wybthon.merge] and [`omit`][wybthon.omit] match Solid 2.0's helpers and return mappings you can spread onto elements: `attrs = omit(props, "title", "children")`, then `<div {attrs}>`. There's no `**rest`; a component reads only what it declares.
-- Children arrive as the `children` prop. Pass them as nested markup in the tag form, with item syntax (`Card(title="Hi")[...]`), or with the `children=` keyword.
+- Props work as they do in Solid: reading `props.title` returns the value and tracks it, like reading a getter on Solid's props object. In markup, `{props.title}` is dynamic, so the compiler makes it a getter and the text updates when the parent's value changes. `{props.body or "No details."}` is one expression and one binding.
+- The parent may pass a value, a compiler getter (what `title={user()["name"]}` becomes), or an accessor such as a signal. Getters and accessors are unwrapped when the prop is read, unless the field is annotated as callable (`Callable[...]` or `Accessor[...]`, alone or in a union with `None`): then the value is returned exactly as passed, which is how callbacks work.
+- Passing a prop through stays reactive: `<{Child} title={props.title}>` hands the child a getter, as in Solid.
+- Optional props take ordinary defaults (`body: str = ""`). Use [`prop(default_factory=list)`][wybthon.prop] for a mutable default.
+- Assigning `title = props.title` at the top of the body reads once and freezes, as destructuring does in Solid; dev mode warns when the value is reactive. Use `untrack(lambda: props.title)` when a one-time read is what you mean.
+- [`is_static(props, "title")`][wybthon.is_static] says whether the parent passed a plain value, as Solid 2.0's `isStatic` does.
+- [`merge`][wybthon.merge] and [`omit`][wybthon.omit] match Solid 2.0's helpers. Their views read like props (`view.title` is the tracked value), and you can spread them onto elements: `attrs = omit(props, "title", "children")`, then `<div {attrs}>`. There's no `**rest`; a component reads only what it declares.
+- Children arrive as the `children` prop. Pass them as nested markup in the tag form, with the `children=` keyword, or with item syntax in Python code (`Card(title="Hi")[...]`). Inside a template, `{Card(...)[...]}` is a subscript rather than a call, so it becomes one reactive hole instead of a component built with getters.
 - Every component accepts `key=`. A component with no props takes no parameters.
 
 ## Signals and effects
@@ -233,47 +242,35 @@ Signal semantics that carry over:
 ## Flow
 
 ```python
-from wybthon import For, Match, Show, Switch, html
+from wybthon import For, Match, Show, Switch, create_signal, create_store, html
+
+user, set_user = create_signal(None)
+status, set_status = create_signal("loading")
+store, set_store = create_store({"todos": [{"id": 1, "title": "Write docs"}]})
 
 
 def greeting(u):
-    def name():
-        return u()["name"]
-
-    return html(t"<p>Hello, {name}</p>")
+    return html(t"<p>Hello, {u()['name']}</p>")
 
 
 def todo_row(todo, i):
-    def title():
-        return todo()["title"]
-
-    return html(t"<li>{title}</li>")
+    return html(t"<li>{todo()['title']}</li>")
 
 
-def is_loading():
-    return status() == "loading"
-
-
-def is_ready():
-    return status() == "ready"
-
+loading = html(t"<p>Loading...</p>")
+ready = html(t"<p>Ready</p>")
+unknown = html(t"<p>Unknown</p>")
 
 html(t"""
   <main>
     {Show(user, greeting, fallback=html(t"<p>Sign in</p>"))}
     <ul>{For(store.todos, todo_row, keyed=lambda t: t["id"])}</ul>
-    {
-    Switch(
-        Match(is_loading, html(t"<p>Loading...</p>")),
-        Match(is_ready, html(t"<p>Ready</p>")),
-        fallback=html(t"<p>Unknown</p>"),
-    )
-}
+    {Switch(Match(status() == "loading", loading), Match(status() == "ready", ready), fallback=unknown)}
   </main>
 """)
 ```
 
-`Show` passes the truthy value to a one-argument callback as an accessor, like Solid's `<Show>` with a function child; with `keyed=True` it passes the value itself. `For` mirrors Solid's unified `For`: with `keyed=True` (the default) rows match by identity and the callback receives `(item, index_accessor)`; with `keyed=False` it receives `(item_accessor, index)`; with a key function it receives `(item_accessor, index_accessor)`. Type checkers infer these from the call (see [Typing](typing.md#control-flow)). Pass an accessor or a store list for `each`, not a plain list. `Repeat(count, lambda i: ...)` matches Solid 2.0's `Repeat`.
+These are calls in a child position, so the compiler builds them like JSX components: `status() == "loading"` and `store.todos` arrive as getters, and `Match` inside `Switch` is prepared the same way. `Show` passes the truthy value to a one-argument callback as an accessor, like Solid's `<Show>` with a function child; with `keyed=True` it passes the value itself. `For` mirrors Solid's unified `For`: with `keyed=True` (the default) rows match by identity and the callback receives `(item, index_accessor)`; with `keyed=False` it receives `(item_accessor, index)`; with a key function it receives `(item_accessor, index_accessor)`. Type checkers infer these from the call (see [Typing](typing.md#control-flow)). In a template, `{For(todos(), row)}` passes a getter; in Python code, pass the accessor (`For(todos, row)`) or a store list, because a plain list renders once. `Repeat(count, lambda i: ...)` matches Solid 2.0's `Repeat`.
 
 These are native regions, not wrapper components: `Show` and `Switch` are one branch computation each, and when a hole re-renders a tree containing one, the new condition or source is pushed into the mounted region instead of remounting it.
 
@@ -285,10 +282,7 @@ from wybthon.router import current_path
 
 
 def failed(err, reset):
-    def message():
-        return str(err())
-
-    return html(t"<div><p>{message}</p><button onclick={reset}>Retry</button></div>")
+    return html(t"<div><p>{str(err())}</p><button onclick={reset}>Retry</button></div>")
 
 
 Errored(
@@ -337,7 +331,7 @@ def Root():
 @component
 def Page():
     theme = use_context(Theme)
-    return html(t"<p>Theme: {theme}</p>")
+    return html(t"<p>Theme: {theme()}</p>")
 ```
 
 There's no `.Provider`: calling the `Context` object with a value and children returns the provider node. `use_context` returns the value exactly as provided, so an accessor stays an accessor.
@@ -357,16 +351,10 @@ async def fetch_user():
 
 user = create_memo(fetch_user)
 
-
-def name():
-    return user()["name"]
-
-
-def refreshing():
-    return " (refreshing)" if is_pending(user) else ""
-
-
-Loading(html(t"<p>{name}<span>{refreshing}</span></p>"), fallback=html(t"<p>Loading...</p>"))
+Loading(
+    html(t"<p>{user()['name']}<span>{' (refreshing)' if is_pending(user) else ''}</span></p>"),
+    fallback=html(t"<p>Loading...</p>"),
+)
 
 shown, set_shown = create_optimistic(likes)
 
@@ -378,7 +366,7 @@ async def like():
     await refresh(likes)
 ```
 
-Everything here has the same name and shape as Solid 2.0, with `await` in place of promise chaining. `action.pending()` is tracked, so it works directly as `disabled={like.pending}`.
+Everything here has the same name and shape as Solid 2.0, with `await` in place of promise chaining. `like.pending()` is tracked, so it works directly as `disabled={like.pending()}`.
 
 The transition model is Solid 2.0's too. A change that makes an async memo recompute holds the UI that depends on it until the new value lands, so a header reading `user_id` and a body reading `user` never disagree; `is_pending` reports the hold and `latest` reads ahead of it. An action's writes are staged into the same transaction and reveal together when it settles, while optimistic writes reveal now and revert on settle. `Loading(on=...)` names the inputs whose change should show the fallback again instead of holding, and `Errored` heals when the failing computation's inputs change.
 
@@ -404,7 +392,7 @@ def Page():
         return "Ada"
 
     name = create_memo(load)
-    greeting = Loading(html(t"<p>Hello, {name}</p>"), fallback=html(t"<p>Loading...</p>"))
+    greeting = Loading(html(t"<p>Hello, {name()}</p>"), fallback=html(t"<p>Loading...</p>"))
     footer = NoHydration(html(t"<footer>Static footer</footer>"))
     return html(t"<div>{greeting}{footer}</div>")
 
@@ -422,30 +410,33 @@ async def main():
 asyncio.run(main())
 ```
 
-As in RC.14, awaiting [`render_to_stream`][wybthon.server.render_to_stream] replaces `renderToStringAsync`: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each `Loading` boundary as its data arrives. A stream is single use: iterate it or await it, once. [`http_status`][wybthon.http_status] and [`http_header`][wybthon.http_header] are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. [`NoHydration`][wybthon.NoHydration] keeps a region as static server HTML that the browser adopts without mounting.
+As in Solid 2.0, awaiting [`render_to_stream`][wybthon.server.render_to_stream] replaces `renderToStringAsync`: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each `Loading` boundary as its data arrives. A stream is single use: iterate it or await it, once. [`http_status`][wybthon.http_status] and [`http_header`][wybthon.http_header] are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. [`NoHydration`][wybthon.NoHydration] keeps a region as static server HTML that the browser adopts without mounting.
 
 ## What's intentionally different
 
-- **Naming.** snake_case across the API; component names stay PascalCase; `_` suffix on element helpers that collide with Python keywords or builtins (`input_`, `del_`).
-- **A virtual DOM under the reactive graph.** Solid compiles JSX to direct DOM operations. Wybthon applies changes in batches through a small JS kernel, so every update crosses from Python to JavaScript once. You still get fine-grained holes as the unit of update. Instead of compiling JSX ahead of time, Wybthon compiles each template literal the first time it runs into a native `<template>` that the kernel clones with one command; element helper trees compile by shape at run time.
+- **Naming.** snake_case across the API; component names stay PascalCase.
+- **Component calls are recognized at run time.** In JSX, `<Card />` and `badge()` look different; in a template, `{Card(title=...)}` and `{badge(...)}` are both calls. The compiler checks the callee when the template is created: a component gets getters for its props, and anything else becomes one reactive hole. A naming convention can't tell `Card(...)` from `Decimal(...)`, so Wybthon doesn't use one.
+- **Callable props are declared.** Solid's props getters return whatever the parent passed. Wybthon unwraps accessors the parent passes, unless the field's annotation is callable (`Callable[...]` or `Accessor[...]`), so a callback or an accessor you mean to keep must be annotated as one.
+- **A virtual DOM under the reactive graph.** Solid compiles JSX to direct DOM operations. Wybthon's compiler also emits each template's parse tree and mount code ahead of time, but changes are applied in batches through a small JS kernel, so every update crosses from Python to JavaScript once. You still get fine-grained holes as the unit of update, and each template instance mounts with one native clone.
 - **Callback refs receive a wrapper.** A function ref gets an [`Element`][wybthon.Element]; its `.element` is the raw DOM node.
 - **Staged writes.** After `set_x(1)`, `x()` returns the old value until the flush (end of the handler, or `flush()`). Solid 2.0 leans the same way; Wybthon makes it strict. Use functional updates (`set_x(lambda v: v + 1)`) to compose writes, and `create_signal`'s returned setter gives back the staged value if you need it.
 - **Writes are forbidden inside tracking scopes.** Writing a signal from a memo body, a hole, or a single-function effect raises `WriteInScopeError` in dev mode. Write from handlers, actions, `on_settled`, or the `apply` stage.
-- **Equality.** The default `equals` is Python `==` with an identity fast path, not `===`. Pass `equals=lambda a, b: a is b` for identity-only, `equals=False` to always notify.
+- **Equality.** The default `equals` ([`is_equal`][wybthon.is_equal]) is Python `==` with an identity fast path, not `===`. Pass `equals=lambda a, b: a is b` for identity-only, `equals=False` to always notify.
 - **`.peek()`.** Every accessor has `.peek()`, a one-read `untrack`.
 - **`on_settled` instead of `onMount`.** The name reflects when it runs: after the flush that mounted the component committed to the DOM. It may return a cleanup.
-- **Python 3.14.** Template strings (PEP 750) stand in for JSX, and the framework's own generics (`Accessor[T]`, `Prop[T]`) are meant to be written in your code.
+- **Python 3.14.** Template strings (PEP 750) stand in for JSX, and the framework's own generics (`Accessor[T]`, `Memo[T]`) are meant to be written in your code.
 - **JS interop through Pyodide.** `from js import fetch`, `pyodide.ffi.create_proxy` for callbacks, `.to_py()` for JS objects. See the [Pyodide guide](pyodide.md).
 
 ## What carries over directly
 
 - The mental model: components run once, reactivity is fine-grained, ownership handles cleanup.
-- The 2.0 async story: async memos, transitions, `Loading`, `Reveal`, `is_pending`, `latest`, `resolve`, `refresh`, actions as transactions, optimistic state, `affects`, `until`, error boundary healing.
+- The compiler's contract: calls and member accesses in markup become getters, and props are values read through getters.
+- The 2.0 async story: async memos, deferred memos, transitions, `Loading`, `Reveal`, `is_pending`, `latest`, `resolve`, `refresh`, actions as transactions, optimistic state, `affects`, `until`, error boundary healing.
 - Draft-first stores, `reconcile`, projections.
-- Flow components, boundaries, context, lazy, portals.
+- Flow components, boundaries, context, lazy components and modules, portals.
 
 ## Next steps
 
-- Read [Mental model](../concepts/mental-model.md) to see the formal definitions of holes and scopes.
+- Read [Mental model](../concepts/mental-model.md) to see the formal definitions of holes and scopes, and [The compiler](../concepts/compiler.md) for exactly what it rewrites.
 - Explore [Authoring patterns](authoring-patterns.md); most should look familiar.
 - Browse the [API reference](../api/wybthon.md) for the full set of primitives.

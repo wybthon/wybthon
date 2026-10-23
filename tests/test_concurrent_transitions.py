@@ -17,14 +17,12 @@ from wybthon import (
     create_signal,
     create_store,
     deep,
-    div,
     flush,
+    html,
     is_pending,
     latest,
-    p,
     refresh,
     resolve,
-    span,
     until,
 )
 from wybthon.reactivity import _core
@@ -60,7 +58,10 @@ def test_independent_requests_publish_independently(wyb, root_element, same_batc
     async def main():
         left, set_left, left_data, left_gates = loader()
         right, set_right, right_data, right_gates = loader()
-        wyb["reconciler"].render(div(span(left), p(left_data), span(right), p(right_data)), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{left}</span><p>{left_data}</p><span>{right()}</span><p>{right_data()}</p></div>"),
+            root_element,
+        )
         await tick()
         set_left(1)
         if not same_batch:
@@ -85,7 +86,9 @@ def test_shared_consumer_entangles_requests(wyb, root_element):
     async def main():
         left, set_left, left_data, lg = loader()
         right, set_right, right_data, rg = loader()
-        wyb["reconciler"].render(div(span(left), span(right), p(lambda: left_data() + right_data())), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{left}</span><span>{right}</span><p>{left_data() + right_data()}</p></div>"), root_element
+        )
         await tick()
         set_left(1)
         set_right(1)
@@ -106,7 +109,15 @@ def test_latest_render_edge_escapes_hold_but_ordinary_edge_wins(wyb, root_elemen
         query, write, data, gates = loader()
         eager = create_root(lambda dispose: create_memo(lambda: latest(query)))
         wyb["reconciler"].render(
-            div(span(query), span(lambda: latest(query)), span(eager), p(lambda: (latest(query), query())), p(data)),
+            html(t"""
+              <div>
+                <span>{query}</span>
+                <span>{latest(query)}</span>
+                <span>{eager}</span>
+                <p>{(latest(query), query())}</p>
+                <p>{data}</p>
+              </div>
+            """),
             root_element,
         )
         await tick()
@@ -124,7 +135,7 @@ def test_unrendered_async_and_same_batch_typing_do_not_hold(wyb, root_element):
     async def main():
         query, write, data, gates = loader()
         typed, type_text = create_signal("a")
-        wyb["reconciler"].render(div(span(query), span(typed)), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{query()}</span><span>{typed()}</span></div>"), root_element)
         await tick()
         write(1)
         type_text("b")
@@ -142,7 +153,9 @@ def test_same_batch_unrelated_write_does_not_join_visible_request(wyb, root_elem
     async def main():
         query, write, data, gates = loader()
         typed, type_text = create_signal("a")
-        wyb["reconciler"].render(div(span(query), span(typed), p(data)), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{query}</span><span>{typed()}</span><p>{data()}</p></div>"), root_element
+        )
         await tick()
         write(1)
         type_text("b")
@@ -216,7 +229,7 @@ def test_actions_join_only_when_they_share_writes(wyb, root_element, shared):
             setter(value)
             await gate.wait()
 
-        wyb["reconciler"].render(div(span(left), span(right)), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{left()}</span><span>{right()}</span></div>"), root_element)
         a, b = edit(sl, lg, 1), edit(sr, rg, 2)
         await tick()
         rg.set()
@@ -311,7 +324,7 @@ def test_affects_store_subtree_is_precise(wyb):
 def test_superseded_request_cannot_publish_stale_result(wyb, root_element):
     async def main():
         query, write, data, gates = loader()
-        wyb["reconciler"].render(div(span(query), p(data)), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{query()}</span><p>{data()}</p></div>"), root_element)
         await tick()
         write(1)
         await tick()
@@ -340,9 +353,9 @@ def test_compute_resources_survive_until_publication_and_abandoned_resources_dis
             value = query()
             owners[value] = create_memo(lambda: value)
             on_cleanup(lambda: cleaned.append(value))
-            return span(owners[value])
+            return html(t"<span>{owners[value]}</span>")
 
-        root = wyb["reconciler"].render(div(content, p(data)), root_element)
+        root = wyb["reconciler"].render(html(t"<div>{content}<p>{data}</p></div>"), root_element)
         await tick()
         write(1)
         await tick()
@@ -369,7 +382,9 @@ def test_removing_async_consumer_releases_held_input(wyb, root_element):
     async def main():
         query, write, data, gates = loader()
         show, set_show = create_signal(True)
-        wyb["reconciler"].render(div(span(query), lambda: p(data) if show() else None), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{query}</span>{html(t'<p>{data()}</p>') if show() else None}</div>"), root_element
+        )
         await tick()
         write(1)
         await tick()
@@ -398,7 +413,7 @@ def test_async_projection_holds_with_its_visible_fields(wyb, root_element):
             return {"name": str(value)}
 
         projection = create_projection(load, {})
-        wyb["reconciler"].render(div(span(query), p(lambda: projection.name)), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{query}</span><p>{projection.name}</p></div>"), root_element)
         await tick()
         write(1)
         await tick()
@@ -423,7 +438,7 @@ def test_affects_updates_an_already_mounted_indicator(wyb, root_element, store_t
             affects(affected)
             await gate.wait()
 
-        wyb["reconciler"].render(span(lambda: str(is_pending(read))), root_element)
+        wyb["reconciler"].render(html(t"<span>{str(is_pending(read))}</span>"), root_element)
         await tick()
         assert texts(root_element) == ["False"]
         future = edit()
@@ -441,7 +456,10 @@ def test_new_consumer_during_hold_reads_published_version(wyb, root_element):
     async def main():
         query, write, data, gates = loader()
         show, set_show = create_signal(False)
-        wyb["reconciler"].render(div(span(query), p(data), lambda: span(query) if show() else None), root_element)
+        wyb["reconciler"].render(
+            html(t"<div><span>{query}</span><p>{data}</p>{html(t'<span>{query()}</span>') if show() else None}</div>"),
+            root_element,
+        )
         await tick()
         write(1)
         await tick()
@@ -461,7 +479,9 @@ def test_diagnostics_identify_independent_blockers_without_joining_them(wyb, roo
     async def main():
         left, write_left, dl, gl = loader()
         right, write_right, dr, gr = loader()
-        root = wyb["reconciler"].render(div(span(left), p(dl), span(right), p(dr)), root_element)
+        root = wyb["reconciler"].render(
+            html(t"<div><span>{left}</span><p>{dl}</p><span>{right}</span><p>{dr}</p></div>"), root_element
+        )
         await tick()
         write_left(1)
         write_right(1)
@@ -561,7 +581,13 @@ def test_speculative_error_does_not_replace_visible_boundary(wyb, root_element):
             return str(query())
 
         wyb["reconciler"].render(
-            div(Errored(lambda: span(value), fallback=lambda error: p("error")), p(data)), root_element
+            html(t"""
+              <div>
+                {Errored(html(t"<span>{value()}</span>"), fallback=lambda error: html(t"<p>error</p>"))}
+                <p>{data()}</p>
+              </div>
+            """),
+            root_element,
         )
         await tick()
         write(1)
@@ -637,7 +663,7 @@ def test_optimistic_noop_still_updates_pending_indicator(wyb, root_element):
             edit(lambda draft: draft.update(n=0))
             await gate.wait()
 
-        wyb["reconciler"].render(span(lambda: str(is_pending(lambda: shown.n))), root_element)
+        wyb["reconciler"].render(html(t"<span>{str(is_pending(lambda: shown.n))}</span>"), root_element)
         await tick()
         future = save()
         await tick()
@@ -661,9 +687,9 @@ def test_lifecycle_callbacks_and_nested_effects_wait_for_preparation_publication
             value = query()
             on_settled(lambda: settled.append(value))
             create_effect(lambda: value, effects.append)
-            return span(str(value))
+            return html(t"<span>{value}</span>")
 
-        root = wyb["reconciler"].render(div(content, p(data)), root_element)
+        root = wyb["reconciler"].render(html(t"<div>{content}<p>{data()}</p></div>"), root_element)
         await tick()
         assert settled == effects == [0]
         write(1)
@@ -683,7 +709,7 @@ def test_lifecycle_callbacks_and_nested_effects_wait_for_preparation_publication
 def test_unmount_releases_publication_without_an_explicit_flush(wyb, root_element):
     async def main():
         query, write, data, gates = loader()
-        root = wyb["reconciler"].render(div(span(query), p(data)), root_element)
+        root = wyb["reconciler"].render(html(t"<div><span>{query}</span><p>{data}</p></div>"), root_element)
         await tick()
         write(1)
         await tick()
@@ -752,7 +778,7 @@ def test_projection_refresh_lands_with_its_action(wyb, root_element):
             return {"n": server[0]}
 
         view = create_projection(load, {})
-        wyb["reconciler"].render(span(lambda: str(view.n)), root_element)
+        wyb["reconciler"].render(html(t"<span>{view.n}</span>"), root_element)
         await tick()
 
         @action

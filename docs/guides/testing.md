@@ -2,22 +2,23 @@
 
 Wybthon's reactive core, VDOM, reconciler, and event delegation are plain Python, so components can be tested in CPython with `pytest`, no browser required. [`wybthon.testing`][wybthon.testing] renders a view into an in-memory DOM through the real reconciler, kernel protocol, scheduler, and delegated events, then lets you query and interact with it the way a user would. Browser-specific behavior (real layout, Pyodide itself) is covered by a Playwright suite.
 
-Two rules cover most of what's different about testing reactive code:
+Three rules cover most of what's different about testing reactive code:
 
 1. **Writes are staged.** After `set_count(1)`, `count()` still returns the old value until the graph flushes. In the browser that happens on a microtask; in a test, [`fire`][wybthon.testing.fire] flushes for you, and [`flush`][wybthon.flush] does it explicitly.
 2. **Effects run after commit.** `create_effect`'s first run is deferred to the next flush, so assert after a flush.
+3. **Templates are compiled.** Wybthon's compiler turns each dynamic interpolation into a getter before a module runs. The pytest plugin compiles your test modules, so templates written in a test behave exactly as they do in an application (see [Compiling templates in tests](#compiling-templates-in-tests)).
 
 ## Rendering components
 
 [`render`][wybthon.testing.render] mounts a view into a fresh container, flushes it, and returns a [`Screen`][wybthon.testing.Screen]:
 
 ```python
-from wybthon import Prop, Props, component, create_signal, html
+from wybthon import Props, component, create_signal, html
 from wybthon.testing import fire, render
 
 
 class CounterProps(Props):
-    label: Prop[str]
+    label: str
 
 
 @component
@@ -29,7 +30,7 @@ def Counter(props: CounterProps):
 
     return html(t"""
       <div>
-        <p>{props.label}: {count}</p>
+        <p>{props.label}: {count()}</p>
         <button onclick={increment}>+</button>
       </div>
     """)
@@ -42,7 +43,7 @@ def test_counter_increments():
         assert screen.get_by_text("Clicks: 1")
 ```
 
-`render` accepts any node: a component call, an [`html`][wybthon.html] template, or a tree built with the element helpers. A template whose markup the browser would rewrite raises [`TemplateError`][wybthon.TemplateError] the first time it's used, so rendering a component in a test also checks its markup.
+`render` accepts any node: a component call, an [`html`][wybthon.html] template, or a tree built with [`h`][wybthon.h]. The compiler checks each template's markup when it compiles the module, so a template the browser would rewrite fails the test module with a `SyntaxError` that names its file and line.
 
 Use `render` as a context manager to unmount when the block ends, or call `screen.unmount()` yourself. `screen.html()` returns the container's inner HTML without Wybthon's comment markers, and `screen.text()` returns its text with whitespace collapsed:
 
@@ -86,7 +87,7 @@ Queries come in three forms, as in Testing Library:
 | `get_by_text(text, exact=True)`, `query_by_text`, `get_all_by_text` | The deepest elements whose text matches. With `exact=False` the match is a case-insensitive substring; pass a compiled regular expression to search. |
 | `get_by_role(role, name=None)`, `query_by_role`, `get_all_by_role` | Elements with an explicit `role` or an implicit one (`button`, `link`, `textbox`, `checkbox`, `heading`, `list`, ...). `name` matches the accessible name: `aria-label`, then the text content (or placeholder for inputs). |
 | `get_by_label_text(text)`, `query_by_label_text` | The form control a `<label>` names (through `for` or by nesting), or the element with that `aria-label`. |
-| `get_by_test_id(id)`, `query_by_test_id`, `get_all_by_test_id` | Elements whose `data-testid` matches. Write `data-testid="save"` in a template, or `data_testid="save"` with an element helper. |
+| `get_by_test_id(id)`, `query_by_test_id`, `get_all_by_test_id` | Elements whose `data-testid` matches. Write `data-testid="save"` in a template, or `data_testid="save"` in `h()` props. |
 
 Queries return [`TestNode`][wybthon.testing.TestNode]s. Read `.text_content`, `.attributes` (a dict of strings), `.value`, `.checked`, and `.tag`, or use `.classList.contains(name)`:
 
@@ -141,8 +142,8 @@ def Mirror():
 
     return html(t"""
       <div>
-        <input aria-label="Name" value={text} oninput={update}>
-        <p>Hello, {text}</p>
+        <input aria-label="Name" value={text()} oninput={update}>
+        <p>Hello, {text()}</p>
       </div>
     """)
 
@@ -155,15 +156,15 @@ def test_input_updates_text():
 
 ## Props and parents
 
-Pass an accessor to drive a prop from the test, then [`flush`][wybthon.flush] after writing it. The component body runs once; only the bound text updates:
+To drive a prop from the test, render the component from a template that reads a signal, then [`flush`][wybthon.flush] after writing it. The compiler passes `name={name()}` to the component as a getter, so the component body runs once and only the bound text updates:
 
 ```python
-from wybthon import Prop, Props, component, create_signal, flush, html
+from wybthon import Props, component, create_signal, flush, html
 from wybthon.testing import render
 
 
 class GreetingProps(Props):
-    name: Prop[str]
+    name: str
 
 
 runs: list[int] = []
@@ -177,14 +178,14 @@ def Greeting(props: GreetingProps):
 
 def test_prop_updates_without_rerunning_body():
     name, set_name = create_signal("Ada")
-    with render(Greeting(name=name)) as screen:
+    with render(html(t"<{Greeting} name={name()} />")) as screen:
         set_name("Grace")
         flush()
         assert screen.text() == "Hello, Grace"
         assert runs == [1]
 ```
 
-Callbacks are plain fields, so a test can pass a recording function and assert on its calls after firing events.
+`{Greeting(name=name())}` works the same way and is type-checked. Passing the signal itself in Python, `Greeting(name=name)`, works at run time too, but type checkers reject it when the field is annotated `name: str`. Callback fields (annotated `Callable[...]`) are returned as passed, so a test can pass a recording function and assert on its calls after firing events.
 
 ## Async components
 
@@ -204,11 +205,7 @@ def UserCard():
         return {"name": "Ada"}
 
     user = create_memo(load)
-
-    def name():
-        return user()["name"]
-
-    return Loading(html(t"<p>User: {name}</p>"), fallback=html(t"<p>Loading...</p>"))
+    return Loading(html(t"<p>User: {user()['name']}</p>"), fallback=html(t"<p>Loading...</p>"))
 
 
 def test_loading_shows_fallback_then_content():
@@ -259,9 +256,43 @@ def test_memo_and_effect():
 
 Dev-mode warnings print to `stderr`; capture them with pytest's `capsys`. Warnings are deduplicated per process, so call `wybthon._warnings._reset_warning_dedupe()` at the start of a test that asserts on one. A write inside a memo raises `WriteInScopeError` when the memo is read (`pytest.raises(WriteInScopeError)` around the read); a write inside a single-function effect surfaces through the effect's `error=` handler on the next flush. Calling a component with an unknown or missing prop raises `TypeError` at the call.
 
+## Compiling templates in tests
+
+Installing Wybthon registers a pytest plugin (through the `pytest11` entry point) that adds the compiler to pytest's assertion rewriting, so every test module and `conftest.py` is compiled before it runs. Its cached bytecode gets a tag of its own, so a test module cached without the compiler is never reused. Helper modules that your tests import are compiled by the import hook that `import wybthon` installs. There's nothing to configure; disable the plugin with `-p no:wybthon`.
+
+Two cases need a step of your own:
+
+- **Scripts.** A template in a script run with `python script.py` isn't compiled, and in dev mode `html()` raises [`TemplateError`][wybthon.TemplateError] when one of its dynamic expressions has already been evaluated once. Run the script with `wyb run script.py` instead; it compiles the script and everything it imports.
+- **Templates built at run time.** A test that builds a module's source as a string (to check compiler output, for example) compiles it with [`compile_source`][wybthon.compiler.compile_source] before running it:
+
+```python
+from typing import Any
+
+from wybthon import create_signal, flush
+from wybthon.compiler import compile_source
+from wybthon.testing import render
+
+SOURCE = """
+from wybthon import html
+
+def view(count):
+    return html(t"<p>{count() * 2}</p>")
+"""
+
+
+def test_generated_template():
+    namespace: dict[str, Any] = {}
+    exec(compile_source(SOURCE, "<generated>"), namespace)
+    count, set_count = create_signal(1)
+    with render(namespace["view"](count)) as screen:
+        set_count(2)
+        flush()
+        assert screen.text() == "4"
+```
+
 ## Framework tests
 
-Wybthon's own unit tests under `tests/` also use a lower-level `wyb` fixture from `tests/conftest.py`. It installs stub `js` and `pyodide` modules, reloads the browser-facing modules (`kernel`, `dom`, `events`, `reconciler`, `_shapes`), and installs a `kernel.PythonBackend` over the same in-memory document `wybthon.testing` uses; `root_element` provides a fresh container. Use it when a test needs to inspect kernel commands or reconciler internals. For component behavior, prefer `wybthon.testing`.
+Wybthon's own unit tests under `tests/` also use a lower-level `wyb` fixture from `tests/conftest.py`. It installs stub `js` and `pyodide` modules, reloads the browser-facing modules (`kernel`, `dom`, `events`, and `reconciler`), and installs a `kernel.PythonBackend` over the same in-memory document `wybthon.testing` uses; `root_element` provides a fresh container. Use it when a test needs to inspect kernel commands or reconciler internals. For component behavior, prefer `wybthon.testing`.
 
 Run the unit suite with:
 

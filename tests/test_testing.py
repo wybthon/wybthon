@@ -14,28 +14,15 @@ import pytest
 from wybthon import (
     For,
     ParentProps,
-    Prop,
     Props,
     Show,
-    a,
-    button,
     component,
     create_effect,
     create_signal,
-    div,
     flush,
-    form,
-    h1,
-    h2,
-    input_,
-    label,
-    li,
+    html,
     on_cleanup,
-    p,
-    prop,
-    span,
-    textarea,
-    ul,
+    untrack,
 )
 from wybthon.testing import Screen, TestDocument, TestNode, cleanup, fire, reactive_scope, render, tick, wait_for
 
@@ -47,25 +34,30 @@ def _cleanup():
 
 
 class CounterProps(Props):
-    label: Prop[str]
-    initial: Prop[int] = prop(default=0)
+    label: str
+    initial: int = 0
     on_change: Callable[[int], None] | None = None
 
 
 @component
 def Counter(props: CounterProps):
-    count, set_count = create_signal(props.initial.peek())
+    count, set_count = create_signal(untrack(lambda: props.initial))
 
     def increment():
         set_count(lambda n: n + 1)
         if props.on_change is not None:
             props.on_change(count.peek() + 1)
 
-    return div(
-        p(props.label, ": ", count),
-        button("+", on_click=increment, aria_label="increment"),
-        button("reset", on_click=lambda: set_count(0)),
-    )
+    def reset():
+        set_count(0)
+
+    return html(t"""
+      <div>
+        <p>{props.label}: {count}</p>
+        <button onclick={increment} aria-label="increment">+</button>
+        <button onclick={reset}>reset</button>
+      </div>
+    """)
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +90,7 @@ def test_counter_example_from_the_rfc():
 
 def test_render_accepts_elements_lists_and_reactive_expressions():
     value, set_value = create_signal("a")
-    screen = render([p("one"), p(lambda: f"two {value()}")])
+    screen = render([html(t"<p>one</p>"), html(t"<p>two {value()}</p>")])
     assert screen.text() == "onetwo a"
     set_value("b")
     flush()
@@ -106,7 +98,8 @@ def test_render_accepts_elements_lists_and_reactive_expressions():
 
 
 def test_html_escapes_text_and_attributes():
-    screen = render(div(span("<b>&</b>"), title='say "hi"'))
+    title = 'say "hi"'
+    screen = render(html(t"<div title={title}><span>{'<b>&</b>'}</span></div>"))
     assert screen.html() == '<div title="say &quot;hi&quot;"><span>&lt;b&gt;&amp;&lt;/b&gt;</span></div>'
 
 
@@ -117,21 +110,23 @@ def test_html_escapes_text_and_attributes():
 
 @component
 def Page():
-    return div(
-        h1("Title"),
-        h2("Section"),
-        ul(li("apple"), li("banana"), li("Apple pie")),
-        a("Docs", href="/docs"),
-        a("No href"),
-        label("Name", html_for="name"),
-        input_(id="name"),
-        label("Agree", input_(type="checkbox")),
-        textarea(aria_label="Notes"),
-        input_(placeholder="Search", data_testid="search"),
-        span("x", data_testid="item"),
-        span("y", data_testid="item"),
-        div("custom", role="alert"),
-    )
+    return html(t"""
+      <div>
+        <h1>Title</h1>
+        <h2>Section</h2>
+        <ul><li>apple</li><li>banana</li><li>Apple pie</li></ul>
+        <a href="/docs">Docs</a>
+        <a>No href</a>
+        <label for="name">Name</label>
+        <input id="name">
+        <label>Agree<input type="checkbox"></label>
+        <textarea aria-label="Notes"></textarea>
+        <input placeholder="Search" data-testid="search">
+        <span data-testid="item">x</span>
+        <span data-testid="item">y</span>
+        <div role="alert">custom</div>
+      </div>
+    """)
 
 
 def test_text_queries_get_query_and_get_all():
@@ -202,7 +197,7 @@ def test_test_id_queries():
 
 def test_queries_see_reactive_updates():
     items, set_items = create_signal(["a"])
-    screen = render(ul(For(items, lambda item, index: li(item, data_testid="row"))))
+    screen = render(html(t"<ul>{For(items(), lambda item, index: html(t'<li data-testid="row">{item}</li>'))}</ul>"))
     assert len(screen.get_all_by_test_id("row")) == 1
     set_items(["a", "b", "c"])
     flush()
@@ -223,12 +218,24 @@ def test_fire_input_and_change():
         text, set_text = create_signal("")
         agreed, set_agreed = create_signal(False)
         choice, set_choice = create_signal("")
-        return div(
-            input_(aria_label="name", on_input=lambda e: set_text(e.target.value)),
-            input_(type="checkbox", aria_label="agree", on_change=lambda e: set_agreed(e.target.checked)),
-            input_(aria_label="choice", on_change=lambda e: set_choice(e.target.value)),
-            p(lambda: f"{text()}|{agreed()}|{choice()}", data_testid="out"),
-        )
+
+        def on_name(e):
+            set_text(e.target.value)
+
+        def on_agree(e):
+            set_agreed(e.target.checked)
+
+        def on_choice(e):
+            set_choice(e.target.value)
+
+        return html(t"""
+          <div>
+            <input aria-label="name" oninput={on_name}>
+            <input type="checkbox" aria-label="agree" onchange={on_agree}>
+            <input aria-label="choice" onchange={on_choice}>
+            <p data-testid="out">{f"{text()}|{agreed()}|{choice()}"}</p>
+          </div>
+        """)
 
     screen = render(Form())
     fire.input(screen.get_by_label_text("name"), "Ada")
@@ -246,18 +253,24 @@ def test_fire_submit_key_down_focus_blur_and_custom_events():
         event.prevent_default()
         log.append(f"submit:{event._default_prevented}")
 
+    def key_down(e):
+        log.append(f"key:{e.key}:{e.shift_key}")
+
+    def focus():
+        log.append("focus")
+
+    def blur():
+        log.append("blur")
+
+    def double_click(e):
+        log.append(f"dbl:{e.client_x}")
+
     screen = render(
-        form(
-            input_(
-                aria_label="field",
-                on_keydown=lambda e: log.append(f"key:{e.key}:{e.shift_key}"),
-                on_focus=lambda: log.append("focus"),
-                on_blur=lambda: log.append("blur"),
-                on_dblclick=lambda e: log.append(f"dbl:{e.client_x}"),
-            ),
-            on_submit=submitted,
-            aria_label="form",
-        )
+        html(t"""
+          <form onsubmit={submitted} aria-label="form">
+            <input aria-label="field" onkeydown={key_down} onfocus={focus} onblur={blur} ondblclick={double_click}>
+          </form>
+        """)
     )
     field = screen.get_by_label_text("field")
     fire.focus(field)
@@ -270,9 +283,14 @@ def test_fire_submit_key_down_focus_blur_and_custom_events():
 
 def test_events_bubble_to_ancestor_handlers():
     log: list[str] = []
-    screen = render(
-        div(button(span("inner"), on_click=lambda: log.append("button")), on_click=lambda e: log.append("div"))
-    )
+
+    def on_button():
+        log.append("button")
+
+    def on_div(e):
+        log.append("div")
+
+    screen = render(html(t"<div onclick={on_div}><button onclick={on_button}><span>inner</span></button></div>"))
     fire.click(screen.get_by_text("inner"))
     assert log == ["button", "div"]
 
@@ -281,10 +299,11 @@ def test_zero_argument_handlers_and_flushed_updates():
     @component
     def Toggle():
         open_, set_open = create_signal(False)
-        return div(
-            button("toggle", on_click=lambda: set_open(lambda v: not v)),
-            Show(open_, lambda: p("panel")),
-        )
+
+        def toggle():
+            set_open(lambda v: not v)
+
+        return html(t"<div><button onclick={toggle}>toggle</button>{Show(open_(), html(t'<p>panel</p>'))}</div>")
 
     screen = render(Toggle())
     assert screen.query_by_text("panel") is None
@@ -296,14 +315,18 @@ def test_zero_argument_handlers_and_flushed_updates():
 
 def test_fire_with_children_props_component():
     class CardProps(ParentProps):
-        title: Prop[str]
+        title: str
 
     @component
     def Card(props: CardProps):
-        return div(h2(props.title), props.children)
+        return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
 
     clicks: list[int] = []
-    screen = render(Card(title="Hi")[p("body"), button("go", on_click=lambda: clicks.append(1))])
+
+    def go():
+        clicks.append(1)
+
+    screen = render(html(t'<{Card} title="Hi"><p>body</p><button onclick={go}>go</button></{Card}>'))
     fire.click(screen.get_by_role("button", name="go"))
     assert clicks == [1]
     assert screen.get_by_role("heading").text_content == "Hi"
@@ -320,7 +343,7 @@ def test_context_manager_unmounts_and_runs_cleanups():
     @component
     def Tracked():
         on_cleanup(lambda: events.append("cleanup"))
-        return p("tracked")
+        return html(t"<p>tracked</p>")
 
     with render(Tracked()) as screen:
         assert screen.text() == "tracked"
@@ -341,7 +364,7 @@ def test_cleanup_unmounts_every_screen():
     def Watcher():
         create_effect(value, lambda v: events.append(f"effect {v}"))
         on_cleanup(lambda: events.append("cleanup"))
-        return p("w")
+        return html(t"<p>w</p>")
 
     first, second = render(Watcher()), render(Watcher())
     assert events == ["effect 0", "effect 0"]
@@ -355,7 +378,7 @@ def test_cleanup_unmounts_every_screen():
 
 
 def test_renders_share_one_in_memory_document():
-    first, second = render(p("a")), render(p("b"))
+    first, second = render(html(t"<p>a</p>")), render(html(t"<p>b</p>"))
     document = first.container.parentNode
     assert document is second.container.parentNode
     assert document.tag == "body"
@@ -409,32 +432,50 @@ def test_reactive_scope_tick_and_wait_for():
 # ---------------------------------------------------------------------------
 
 
-def test_works_in_a_fresh_cpython_process():
+def test_works_in_a_fresh_cpython_process(tmp_path):
+    # The import hook `import wybthon` installs compiles the app module's templates.
+    (tmp_path / "counter_app.py").write_text(
+        textwrap.dedent(
+            """
+            from wybthon import Props, component, create_signal, html, untrack
+
+
+            class CounterProps(Props):
+                label: str
+                initial: int = 0
+
+
+            @component
+            def Counter(props: CounterProps):
+                count, set_count = create_signal(untrack(lambda: props.initial))
+
+                def increment():
+                    set_count(lambda n: n + 1)
+
+                return html(t"<div><p>{props.label}: {count()}</p><button onclick={increment}>+</button></div>")
+
+
+            def second():
+                return html(t"<p>second</p>")
+            """
+        )
+    )
     script = textwrap.dedent(
         """
         import sys
         assert "js" not in sys.modules and "conftest" not in sys.modules
 
-        from wybthon import Prop, Props, button, component, create_signal, div, p, prop
         from wybthon.testing import cleanup, fire, render
+        import counter_app
+        from counter_app import Counter, second
 
-
-        class CounterProps(Props):
-            label: Prop[str]
-            initial: Prop[int] = prop(default=0)
-
-
-        @component
-        def Counter(props: CounterProps):
-            count, set_count = create_signal(props.initial.peek())
-            return div(p(props.label, ": ", count), button("+", on_click=lambda: set_count(lambda n: n + 1)))
-
+        assert "__wybthon_t0__" in vars(counter_app)  # compiled by the import hook
 
         screen = render(Counter(label="Clicks"))
         fire.click(screen.get_by_role("button", name="+"))
         fire.click(screen.get_by_text("+"))
         assert screen.get_by_text("Clicks: 2"), screen.html()
-        with render(p("second")) as other:
+        with render(second()) as other:
             assert other.text() == "second"
         cleanup()
         assert screen.root._disposed
@@ -443,7 +484,7 @@ def test_works_in_a_fresh_cpython_process():
         """
     )
     src = Path(__file__).resolve().parents[1] / "src"
-    env = {**os.environ, "PYTHONPATH": str(src)}
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(src), str(tmp_path)])}
     result = subprocess.run(
         [sys.executable, "-c", script], capture_output=True, text=True, env=env, timeout=60, check=False
     )

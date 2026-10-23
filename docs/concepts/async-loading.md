@@ -5,6 +5,7 @@ resource primitive: a memo whose body is `async def` *is* the async
 primitive, and everything else builds on it.
 
 - [`create_memo`][wybthon.create_memo] with an `async def` body creates an **async memo**: a derived value the graph knows may not be ready yet.
+- [`create_deferred`][wybthon.create_deferred] creates an async memo that never holds the rest of the UI while it refetches.
 - **Transitions** keep the screen consistent while async work is in flight: when a change makes an async memo recompute, the UI that depends on that change waits for the new value and then updates all at once.
 - [`Loading`][wybthon.Loading] shows a fallback while async reads under it haven't produced a first value. Its content stays mounted the whole time.
 - [`Reveal`][wybthon.Reveal] coordinates several boundaries.
@@ -17,12 +18,14 @@ primitive, and everything else builds on it.
 | --- | --- |
 | Fetching data with a loading state | `create_memo(async_fn)` inside `Loading` |
 | Inline "refreshing" hints without tearing content down | [`is_pending`][wybthon.is_pending] |
+| An independent widget that shouldn't hold the page while it refetches | `create_deferred(async_fn)` |
 | Showing the new input while the rest of the page waits | [`latest`][wybthon.latest] |
 | Nice-to-have data that shouldn't gate anything | `create_memo(fn, loading_value=...)` |
 | Waiting for a value in imperative code | [`resolve`][wybthon.resolve] |
 | Re-asking the server after a write | [`refresh`][wybthon.refresh] |
 | Streams and subscriptions | an async generator memo |
 | Code-splitting a heavy route or panel | `lazy(loader)` |
+| Loading a module that isn't a component on demand | `lazy_module(loader)` |
 | Coordinating several boundaries | `Reveal` |
 | Async mutations (create, update, delete) | `@action` and optimistic state |
 | Marking data as "changing" before a write lands | [`affects`][wybthon.affects] |
@@ -99,14 +102,10 @@ Consider a header that shows the selected user's id and a body that
 shows the fetched user:
 
 ```python
-def user_name():
-    return user()["name"]
-
-
 html(t"""
   <div>
-    <h1>User #{user_id}</h1>
-    <p>{user_name}</p>
+    <h1>User #{user_id()}</h1>
+    <p>{user()["name"]}</p>
   </div>
 """)
 ```
@@ -142,22 +141,57 @@ Three helpers work with in-flight state without making you catch
 ```python
 from wybthon import html, is_pending, latest
 
-
-def newest_id():
-    return latest(user_id)  # moves ahead
-
-
-def status():
-    return "Loading..." if is_pending(user) else ""  # shows during the hold
-
-
-html(t"<h1>User #{newest_id}</h1><span>{status}</span>")
+html(t"""
+  <h1>User #{latest(user_id)}</h1>
+  <span>{"Loading..." if is_pending(user) else ""}</span>
+""")
 ```
+
+`latest(user_id)` moves ahead of the hold; the `is_pending` expression
+shows during it.
 
 A quiet **`await refresh(memo)`** recomputes without opening a
 transition: `is_pending` stays `False` and readers keep the previous
 value while the run is in flight. Use it after a server write to re-ask
 for data.
+
+### Deferred memos
+
+A transition is the right default when the screen has to agree with
+itself, but not every async value deserves to hold the page. A
+dashboard tile, a feed, or a list of search results is better shown
+slightly stale, with a hint, than waited on with everything else.
+[`create_deferred`][wybthon.create_deferred] makes that kind of async
+memo. It takes an async function and the same options as `create_memo`:
+
+```python
+from wybthon import For, create_deferred, html, is_pending
+
+
+async def load_rows():
+    return await fetch_rows(period())
+
+
+rows = create_deferred(load_rows)
+
+
+def row(label, i):
+    return html(t"<li>{label}</li>")
+
+
+html(t"""
+  <section class={"stale" if is_pending(rows) else ""}>
+    <ul>{For(rows(), row)}</ul>
+  </section>
+""")
+```
+
+- **Before its first value** it's an ordinary async memo: reading it raises `NotReadyError`, and the nearest `Loading` boundary shows its fallback.
+- **After its first value**, a refetch holds nothing. Changing `period` updates everything else that reads it right away; `rows()` keeps returning the last value until the new one lands.
+- **`is_pending(rows)`** is `True` while the refetch is in flight, so the widget can mark itself stale.
+
+Combine it with `loading_value` for a widget that never suspends at all.
+It's Solid 2.0's `createDeferred`.
 
 ## Loading
 
@@ -166,39 +200,33 @@ any registered computation has no value yet it shows `fallback`; once
 everything has a first value it reveals the content.
 
 ```python
-from wybthon import Loading, Prop, Props, component, create_memo, html
+from wybthon import Loading, Props, component, create_memo, html
 
 
 class ProfileProps(Props):
-    user_id: Prop[int]
+    user_id: int
 
 
 @component
 def Profile(props: ProfileProps):
     async def load_user():
-        return await fetch_json(f"/api/users/{props.user_id()}")  # tracked: refetches on change
+        return await fetch_json(f"/api/users/{props.user_id}")  # tracked: refetches on change
 
     user = create_memo(load_user)
-
-    def name():
-        return user()["name"]
-
-    def email():
-        return user()["email"]
 
     return Loading(
         html(t"""
           <div>
-            <p>Name: <span>{name}</span></p>
-            <p>Email: <span>{email}</span></p>
+            <p>Name: <span>{user()["name"]}</span></p>
+            <p>Email: <span>{user()["email"]}</span></p>
           </div>
         """),
         fallback=html(t"<p>Loading...</p>"),
     )
 ```
 
-- `children` may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass nodes directly: the reads inside `{name}` and `{email}` don't run until the boundary mounts them, so there's no need for a `lambda:` wrapper. `fallback` may be a node, a string, or a callable.
-- Reading a `Prop[T]` field such as `props.user_id()` inside the memo tracks it like any signal, so the parent passing a new id refetches without remounting `Profile`.
+- `children` may be a node (a template, a component call, or any other VNode), a zero-arg callable, or a list of either. Pass nodes directly: the compiler turns `{user()["name"]}` into a getter, so the read doesn't run until the boundary mounts it. `fallback` may be a node, a string, or a callable.
+- Reading `props.user_id` inside the memo tracks it like any signal, so the parent passing a new id (`<{Profile} user_id={selected()} />`) refetches without remounting `Profile`.
 - Any read that raises `NotReadyError` under the boundary registers its computation automatically; there's no manual wiring.
 - **Content stays mounted.** The children mount immediately and keep running while the fallback shows; their DOM nodes are parked off-document and moved back into place once everything resolves. Async memos created inside the content therefore start loading right away, and signal updates inside the parked content still apply.
 - **Refreshes don't re-trigger the boundary.** Once the content has shown, a recompute is a transition (the old content stays put), not a return to the fallback.
@@ -261,11 +289,11 @@ from wybthon import Errored, Loading, html
 
 
 def failed(err, reset):
-    return html(t"<p>Something went wrong: {err}</p>")
+    return html(t"<p>Something went wrong: {err()}</p>")
 
 
 Errored(
-    Loading(html(t"<p>{user_name}</p>"), fallback=html(t"<p>Loading...</p>")),
+    Loading(html(t"<p>{user()['name']}</p>"), fallback=html(t"<p>Loading...</p>")),
     fallback=failed,
 )
 ```
@@ -377,6 +405,24 @@ def Dashboard():
 - Async loaders can `await` work first, for example `micropip.install(...)` in Pyodide.
 - A loader failure raises into the nearest `Errored` boundary.
 - Call `.preload()` (for example on hover) to warm the cache before navigation.
+
+For a module that isn't a component (a parser, a chart library, a set of
+routes), [`lazy_module`][wybthon.lazy_module] is the counterpart of
+Solid 2.0's `lazyModule`: a cached import that starts on demand.
+
+```python
+from wybthon import lazy_module
+
+markdown = lazy_module(lambda: "app.markdown")
+
+
+async def render_preview(text):
+    module = await markdown()  # starts the import once; later calls share it
+    return module.render(text)
+```
+
+`markdown.preload()` starts the import without waiting, and
+`markdown.peek()` returns the module once it has loaded, or `None`.
 
 ### Lazy routes
 

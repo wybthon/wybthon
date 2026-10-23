@@ -15,34 +15,25 @@ from wybthon import (
     Match,
     NoHydration,
     Portal,
-    Prop,
     Props,
     Reveal,
     ServerError,
     Show,
     Switch,
-    button,
     client_only,
     component,
     create_effect,
     create_memo,
     create_signal,
     create_unique_id,
-    div,
     flush,
-    h1,
+    html,
     hydrate,
-    input_,
     is_pending,
     is_server,
-    label,
     lazy,
-    li,
     on_settled,
-    p,
-    prop,
-    span,
-    ul,
+    untrack,
 )
 from wybthon.dom import Element
 from wybthon.router import Route, RouteProps, Router
@@ -157,29 +148,29 @@ async def settle(rounds: int = 5) -> None:
 
 
 class CounterProps(Props):
-    start: Prop[int] = prop(default=0)
+    start: int = 0
 
 
 @component
 def Counter(props: CounterProps):
-    count, set_count = create_signal(props.start.peek())
-    return div(
-        p("Count: ", count, "!"),
-        button("+", on_click=lambda e: set_count(lambda n: n + 1)),
-        class_="counter",
-    )
+    count, set_count = create_signal(untrack(lambda: props.start))
+
+    def increment(event: Any) -> None:
+        set_count(lambda n: n + 1)
+
+    return html(t'<div class="counter"><p>Count: {count}!</p><button onclick={increment}>+</button></div>')
 
 
 def test_render_to_string_serializes_markup(wyb):
-    html = render_to_string(div(h1("Hi & <bye>"), input_(value="x", disabled=True), class_="a"))
-    assert strip_state(html) == '<div class="a"><h1>Hi &amp; &lt;bye&gt;</h1><input disabled value="x"></div>'
-    assert state_of(html) == {"v": {}}
+    out = render_to_string(html(t'<div class="a"><h1>{"Hi & <bye>"}</h1><input disabled value="x"></div>'))
+    assert strip_state(out) == '<div class="a"><h1>Hi &amp; &lt;bye&gt;</h1><input disabled value="x"></div>'
+    assert state_of(out) == {"v": {}}
 
 
 def test_hydration_adopts_server_nodes_and_becomes_interactive(wyb):
-    html = render_to_string(Counter(start=3))
-    assert "<p>Count: 3!</p>" in html
-    result = hydrate_from(wyb, html, Counter(start=3))
+    out = render_to_string(Counter(start=3))
+    assert "<p>Count: 3!</p>" in out
+    result = hydrate_from(wyb, out, Counter(start=3))
     assert result.mismatches == 0
     assert result.created_elements == []
     assert visible(result.container) == "Count: 3!+"
@@ -192,36 +183,45 @@ def test_hydration_splits_merged_text_and_restores_empty_text(wyb):
     @component
     def View():
         name, _ = create_signal("Ada")
-        return p("Hello, ", name, "", lambda: None, "!")
+        return html(t"<p>Hello, {name}{''}{(lambda: None)}!</p>")
 
-    html = render_to_string(View())
-    result = hydrate_from(wyb, html, View())
+    out = render_to_string(View())
+    result = hydrate_from(wyb, out, View())
     assert result.mismatches == 0
     assert visible(result.container) == "Hello, Ada!"
 
 
 def test_holes_fragments_and_nested_components_round_trip(wyb):
     class LeafProps(Props):
-        text: Prop[str]
+        text: str
 
     @component
     def Leaf(props: LeafProps):
-        return span(props.text)
+        return html(t"<span>{props.text}</span>")
 
     @component
     def View():
         items, set_items = create_signal(["a", "b"])
         on, set_on = create_signal(True)
-        return div(
-            lambda: [Leaf(text=x) for x in items()],
-            lambda: Leaf(text="yes") if on() else None,
-            lambda: "text hole",
-            button("toggle", on_click=lambda e: set_on(lambda v: not v)),
-            button("add", on_click=lambda e: set_items(lambda xs: [*xs, "c"])),
-        )
 
-    html = render_to_string(View())
-    result = hydrate_from(wyb, html, View())
+        def toggle(event: Any) -> None:
+            set_on(lambda v: not v)
+
+        def add(event: Any) -> None:
+            set_items(lambda xs: [*xs, "c"])
+
+        return html(t"""
+          <div>
+            {[Leaf(text=x) for x in items()]}
+            {Leaf(text="yes") if on() else None}
+            {(lambda: "text hole")}
+            <button onclick={toggle}>toggle</button>
+            <button onclick={add}>add</button>
+          </div>
+        """)
+
+    out = render_to_string(View())
+    result = hydrate_from(wyb, out, View())
     assert result.mismatches == 0
     assert result.created_elements == []
     assert texts(result.container) == ["a", "b", "yes", "text hole", "toggle", "add"]
@@ -237,16 +237,25 @@ def test_for_show_and_switch_round_trip(wyb):
     def View():
         items, set_items = create_signal([1, 2, 3])
         mode, set_mode = create_signal("a")
-        return div(
-            ul(For(items, lambda item, index: li(str(item), class_="row"))),
-            Show(lambda: len(items()) > 2, lambda: p("many"), fallback=lambda: p("few")),
-            Switch(Match(lambda: mode() == "a", lambda: p("A")), fallback=lambda: p("other")),
-            button("less", on_click=lambda e: set_items(lambda xs: xs[:1])),
-            button("clear", on_click=lambda e: set_items([])),
-        )
 
-    html = render_to_string(View())
-    result = hydrate_from(wyb, html, View())
+        def less(event: Any) -> None:
+            set_items(lambda xs: xs[:1])
+
+        def clear(event: Any) -> None:
+            set_items([])
+
+        return html(t"""
+          <div>
+            <ul>{For(items(), lambda item, index: html(t'<li class="row">{item}</li>'))}</ul>
+            {Show(len(items()) > 2, html(t"<p>many</p>"), fallback=html(t"<p>few</p>"))}
+            {Switch(Match(mode() == "a", html(t"<p>A</p>")), fallback=html(t"<p>other</p>"))}
+            <button onclick={less}>less</button>
+            <button onclick={clear}>clear</button>
+          </div>
+        """)
+
+    out = render_to_string(View())
+    result = hydrate_from(wyb, out, View())
     assert result.mismatches == 0
     assert result.created_elements == []
     assert texts(result.container) == ["1", "2", "3", "many", "A", "less", "clear"]
@@ -263,14 +272,107 @@ def test_unique_ids_match_between_server_and_client(wyb):
     @component
     def Field():
         field_id = create_unique_id()
-        return div(label("Name", html_for=field_id), input_(id=field_id))
+        return html(t"<div><label for={field_id}>Name</label><input id={field_id}></div>")
 
-    html = render_to_string(div(Field(), Field()))
-    server_ids = re.findall(r'id="([^"]+)"', html)
+    out = render_to_string(html(t"<div>{Field()}{Field()}</div>"))
+    server_ids = re.findall(r'id="([^"]+)"', out)
     assert len(set(server_ids)) == 2
-    result = hydrate_from(wyb, html, div(Field(), Field()))
+    result = hydrate_from(wyb, out, html(t"<div>{Field()}{Field()}</div>"))
     client_ids = [n.attributes["id"] for n in nodes(result.container) if n.tag == "input"]
     assert client_ids == server_ids
+
+
+# ---------------------------------------------------------------------------
+# Compiled dynamic expressions
+# ---------------------------------------------------------------------------
+
+
+class BadgeProps(Props):
+    title: str
+    count: int = 0
+
+
+@component
+def Badge(props: BadgeProps):
+    return html(t"<span class={'many' if props.count > 2 else 'few'}>{props.title}: {props.count * 2}</span>")
+
+
+def test_compiled_expressions_render_and_hydrate(wyb):
+    label = "plain"
+
+    @component
+    def View():
+        count, set_count = create_signal(2)
+        user, set_user = create_signal({"name": "Ada"})
+
+        def bump(event: Any) -> None:
+            set_count(lambda n: n + 1)
+            set_user({"name": "Grace"})
+
+        return html(t"""
+          <div class={"on" if count() > 2 else "off"}>
+            <p>{count() * 2}</p>
+            <p>{count() / 4:.2f}</p>
+            <p>{label.upper()}</p>
+            <{Badge} title={user()["name"]} count={count()} />
+            <button onclick={bump}>bump</button>
+          </div>
+        """)
+
+    out = render_to_string(View())
+    assert strip_state(out) == (
+        '<div class="off"><p>4</p><p>0.50</p><p>PLAIN</p><span class="few">Ada: 4</span><button>bump</button></div>'
+    )
+    result = hydrate_from(wyb, out, View())
+    assert result.mismatches == 0
+    assert result.created_elements == []
+    root = next(n for n in nodes(result.container)[1:] if n.tag == "div")
+    badge = find(result.container, "span")
+    assert visible(result.container) == "40.50PLAINAda: 4bump"
+    result.backend.dispatch("click", find(result.container, "button"))
+    flush()
+    assert visible(result.container) == "60.75PLAINGrace: 6bump"
+    assert root.attributes["class"] == "on"
+    assert badge.attributes["class"] == "many"
+
+
+def test_compiled_expressions_stream_and_hydrate_inside_boundaries(wyb):
+    gate = asyncio.Event()
+
+    async def fetch_user() -> dict[str, Any]:
+        await gate.wait()
+        return {"name": "Ada", "posts": 3}
+
+    @component
+    def Profile():
+        user = create_memo(lambda: fetch_user())
+        return html(t"""
+          <div class={"busy" if user()["posts"] > 2 else "idle"}>
+            <{Badge} title={user()["name"]} count={user()["posts"]} />
+            <p>{user()["posts"] * 10}</p>
+          </div>
+        """)
+
+    def view():
+        return html(t"<main><h1>{'header'.title()}</h1>{Loading(Profile(), fallback=html(t'<p>loading</p>'))}</main>")
+
+    async def main() -> tuple[list[str], str]:
+        chunks: list[str] = []
+        async for chunk in render_to_stream(view):
+            chunks.append(chunk)
+            if len(chunks) == 1:
+                gate.set()
+        full = await render_to_stream(view)
+        return chunks, full
+
+    chunks, full = asyncio.run(main())
+    assert "loading" in chunks[0] and "<h1>Header</h1>" in chunks[0] and "Ada" not in chunks[0]
+    assert '<div class="busy"><span class="many">Ada: 6</span><p>30</p></div>' in chunks[1]
+    assert apply_swaps(chunks[:-1]) == strip_state(full)
+    result = hydrate_from(wyb, full, view())
+    assert result.mismatches == 0
+    assert result.created_elements == []
+    assert visible(result.container) == "HeaderAda: 630"
 
 
 # ---------------------------------------------------------------------------
@@ -287,7 +389,7 @@ def test_effects_and_on_settled_do_not_run_on_the_server(wyb):
         seen.append(is_server())
         create_effect(lambda: 1, lambda value: ran.append("effect"))
         on_settled(lambda: ran.append("settled"))
-        return p("x")
+        return html(t"<p>x</p>")
 
     render_to_string(View())
     assert ran == []
@@ -299,13 +401,13 @@ def test_portal_renders_nothing_on_the_server_and_mounts_after_hydration(wyb):
     target = StubNode(tag="aside")
 
     def view():
-        return div(p("main"), Portal(p("in portal"), mount=Element(node=target)))
+        return html(t"<div><p>main</p>{Portal(html(t'<p>in portal</p>'), mount=Element(node=target))}</div>")
 
-    html = render_to_string(view)
-    assert "in portal" not in html
-    result = Hydrated(wyb, html, view)
+    out = render_to_string(view)
+    assert "in portal" not in out
+    result = Hydrated(wyb, out, view)
     target_el = Element(node=target)
-    result.run(div(p("main"), Portal(p("in portal"), mount=target_el)))
+    result.run(html(t"<div><p>main</p>{Portal(html(t'<p>in portal</p>'), mount=target_el)}</div>"))
     assert result.mismatches == 0
     assert texts(target) == ["in portal"]
     assert texts(result.container) == ["main"]
@@ -313,11 +415,11 @@ def test_portal_renders_nothing_on_the_server_and_mounts_after_hydration(wyb):
 
 def test_client_only_renders_fallback_until_hydrated(wyb):
     def view():
-        return div(client_only(lambda: p("browser"), fallback=p("server")))
+        return html(t"<div>{client_only(lambda: html(t'<p>browser</p>'), fallback=html(t'<p>server</p>'))}</div>")
 
-    html = render_to_string(view)
-    assert "server" in html and "browser" not in html
-    result = hydrate_from(wyb, html, view())
+    out = render_to_string(view)
+    assert "server" in out and "browser" not in out
+    result = hydrate_from(wyb, out, view())
     assert result.mismatches == 0
     assert texts(result.container) == ["browser"]
 
@@ -325,11 +427,11 @@ def test_client_only_renders_fallback_until_hydrated(wyb):
 def test_router_renders_the_request_url(wyb):
     @component
     def Home():
-        return p("home")
+        return html(t"<p>home</p>")
 
     @component
     def User(props: RouteProps):
-        return p(lambda: f"user {props.params()['id']}")
+        return html(t"<p>user {props.params['id']}</p>")
 
     def view():
         return Router([Route("/", Home), Route("/users/:id", User)])
@@ -340,7 +442,7 @@ def test_router_renders_the_request_url(wyb):
 
 def test_render_rejects_view_mutation_between_passes(wyb):
     """A VNode view is copied for every pass, so it can be rendered repeatedly."""
-    view = div(p("one"), Counter(start=1))
+    view = html(t"<div><p>one</p>{Counter(start=1)}</div>")
     first = render_to_string(view)
     second = render_to_string(view)
     assert first == second
@@ -363,28 +465,38 @@ def make_app(calls: list[str], *, source: Literal["server", "hybrid", "client"] 
         return [f"post {uid}.{i}" for i in range(2)]
 
     class UserProps(Props):
-        uid: Prop[int]
+        uid: int
 
     @component
     def Posts(props: UserProps):
-        posts = create_memo(lambda: fetch_posts(props.uid()), ssr_source=source)
-        return ul(For(posts, lambda post, i: li(post)))
+        posts = create_memo(lambda: fetch_posts(props.uid), ssr_source=source)
+        return html(t"<ul>{For(posts, lambda post, i: html(t'<li>{post}</li>'))}</ul>")
 
     @component
     def Profile(props: UserProps):
-        user = create_memo(lambda: fetch_user(props.uid()), ssr_source=source)
-        return div(
-            h1(lambda: user()["name"]),
-            Loading(lambda: Posts(uid=props.uid), fallback=p("Loading posts")),
-        )
+        user = create_memo(lambda: fetch_user(props.uid), ssr_source=source)
+        return html(t"""
+          <div>
+            <h1>{user()["name"]}</h1>
+            <{Loading} fallback={html(t"<p>Loading posts</p>")}>
+              <{Posts} uid={props.uid} />
+            </{Loading}>
+          </div>
+        """)
 
     @component
     def App():
         uid, set_uid = create_signal(7)
-        return div(
-            button("next", on_click=lambda e: set_uid(lambda n: n + 1)),
-            Loading(lambda: Profile(uid=uid), fallback=p("Loading profile")),
-        )
+
+        def next_user(event: Any) -> None:
+            set_uid(lambda n: n + 1)
+
+        return html(t"""
+          <div>
+            <button onclick={next_user}>next</button>
+            {Loading(Profile(uid=uid()), fallback=html(t"<p>Loading profile</p>"))}
+          </div>
+        """)
 
     return App
 
@@ -392,22 +504,22 @@ def make_app(calls: list[str], *, source: Literal["server", "hybrid", "client"] 
 def test_sync_render_shows_fallbacks_without_starting_async_work(wyb):
     calls: list[str] = []
     App = make_app(calls)
-    html = render_to_string(App())
-    assert "Loading profile" in html
+    out = render_to_string(App())
+    assert "Loading profile" in out
     assert calls == []
 
 
 def test_async_render_resolves_data_and_hydration_reuses_it(wyb):
     calls: list[str] = []
     App = make_app(calls)
-    html = render_async(App())
-    assert "User 7" in html and "post 7.1" in html and "Loading" not in strip_state(html)
+    out = render_async(App())
+    assert "User 7" in out and "post 7.1" in out and "Loading" not in strip_state(out)
     assert sorted(calls) == ["posts 7", "user 7"]
-    assert len(state_of(html)["v"]) == 2
+    assert len(state_of(out)["v"]) == 2
 
     async def main() -> None:
         calls.clear()
-        result = hydrate_from(wyb, html, App())
+        result = hydrate_from(wyb, out, App())
         assert result.mismatches == 0
         assert result.created_elements == []
         await settle()
@@ -439,20 +551,20 @@ def test_waterfalls_resolve_across_passes(wyb):
         return f"value {n}"
 
     class InnerProps(Props):
-        n: Prop[int]
+        n: int
 
     @component
     def Inner(props: InnerProps):
-        text = create_memo(lambda: second(props.n()))
-        return p(text)
+        text = create_memo(lambda: second(props.n))
+        return html(t"<p>{text}</p>")
 
     @component
     def Outer():
         n = create_memo(first)
-        return div(lambda: Inner(n=n()))
+        return html(t"<div>{Inner(n=n())}</div>")
 
-    html = render_async(Loading(lambda: Outer(), fallback="wait"))
-    assert "value 2" in html
+    out = render_async(Loading(Outer(), fallback="wait"))
+    assert "value 2" in out
     assert order.count("first") == 1 and order.count("second") == 1
 
 
@@ -463,25 +575,23 @@ def test_async_errors_are_serialized_and_raised_on_the_client(wyb):
     @component
     def Data():
         value = create_memo(lambda: fail())
-        return p(value)
+        return html(t"<p>{value()}</p>")
 
     def view():
-        return Errored(
-            lambda: Loading(lambda: Data(), fallback="wait"), fallback=lambda err, reset: p(f"error: {err()}")
-        )
+        return Errored(Loading(Data(), fallback="wait"), fallback=lambda err, reset: html(t"<p>error: {err()}</p>"))
 
-    html = render_async(view)
-    assert "error: backend down" in html
-    assert "ValueError" in json.dumps(state_of(html))
+    out = render_async(view)
+    assert "error: backend down" in out
+    assert "ValueError" in json.dumps(state_of(out))
     seen: list[BaseException] = []
 
     def client_view():
         return Errored(
-            lambda: Loading(lambda: Data(), fallback="wait"),
-            fallback=lambda err, reset: (seen.append(err()), p(f"error: {err()}"))[1],
+            Loading(Data(), fallback="wait"),
+            fallback=lambda err, reset: (seen.append(err()), html(t"<p>error: {err()}</p>"))[1],
         )
 
-    result = hydrate_from(wyb, html, client_view())
+    result = hydrate_from(wyb, out, client_view())
     assert result.mismatches == 0
     assert isinstance(seen[0], ServerError)
     assert seen[0].type_name == "ValueError"
@@ -490,12 +600,12 @@ def test_async_errors_are_serialized_and_raised_on_the_client(wyb):
 def test_client_source_loads_after_hydration(wyb):
     calls: list[str] = []
     App = make_app(calls, source="client")
-    html = render_async(App())
+    out = render_async(App())
     assert calls == []
-    assert "Loading profile" in html
+    assert "Loading profile" in out
 
     async def main() -> None:
-        result = hydrate_from(wyb, html, App())
+        result = hydrate_from(wyb, out, App())
         await settle(20)
         assert "User 7" in texts(result.container)
         assert "user 7" in calls
@@ -506,11 +616,11 @@ def test_client_source_loads_after_hydration(wyb):
 def test_hybrid_source_keeps_the_server_value_while_it_refreshes(wyb):
     calls: list[str] = []
     App = make_app(calls, source="hybrid")
-    html = render_async(App())
+    out = render_async(App())
 
     async def main() -> None:
         calls.clear()
-        result = hydrate_from(wyb, html, App())
+        result = hydrate_from(wyb, out, App())
         assert result.mismatches == 0
         assert "User 7" in texts(result.container)
         await settle(20)
@@ -531,16 +641,16 @@ def test_async_def_memos_rerun_quietly_after_hydration(wyb):
             return "loaded"
 
         value = create_memo(load)
-        return p(value, lambda: " (refreshing)" if is_pending(value) else "")
+        return html(t"<p>{value}{' (refreshing)' if is_pending(value) else ''}</p>")
 
     def view():
-        return Loading(lambda: Data(), fallback="wait")
+        return Loading(Data(), fallback="wait")
 
-    html = render_async(view)
+    out = render_async(view)
 
     async def main() -> None:
         calls.clear()
-        result = hydrate_from(wyb, html, view())
+        result = hydrate_from(wyb, out, view())
         assert result.mismatches == 0
         assert visible(result.container) == "loaded"
         await settle(10)
@@ -561,21 +671,21 @@ def test_non_json_values_are_skipped_with_a_warning(wyb, capsys):
     @component
     def Data():
         value = create_memo(lambda: load())
-        return p(lambda: str(value()))
+        return html(t"<p>{str(value())}</p>")
 
-    html = render_async(Loading(lambda: Data(), fallback="wait"))
-    assert "opaque" in html
-    assert state_of(html) == {"v": {}}
+    out = render_async(Loading(Data(), fallback="wait"))
+    assert "opaque" in out
+    assert state_of(out) == {"v": {}}
     assert "isn't JSON-compatible" in capsys.readouterr().err
 
 
 def test_sync_render_with_async_data_heals_during_hydration(wyb):
     calls: list[str] = []
     App = make_app(calls)
-    html = render_to_string(App())
+    out = render_to_string(App())
 
     async def main() -> None:
-        result = hydrate_from(wyb, html, App())
+        result = hydrate_from(wyb, out, App())
         await settle(30)
         assert texts(result.container) == ["next", "User 7", "post 7.0", "post 7.1"]
 
@@ -590,25 +700,25 @@ def test_timeout_renders_fallbacks_for_slow_data(wyb):
     @component
     def Data():
         value = create_memo(lambda: slow())
-        return p(value)
+        return html(t"<p>{value}</p>")
 
-    html = render_async(Loading(lambda: Data(), fallback="waiting"), timeout=0.05)
-    assert "waiting" in html and "late" not in html
+    out = render_async(Loading(Data(), fallback="waiting"), timeout=0.05)
+    assert "waiting" in out and "late" not in out
 
 
 def test_lazy_components_render_on_the_server(wyb):
     @component
     def Page():
-        return p("lazy page")
+        return html(t"<p>lazy page</p>")
 
     Lazy = lazy(lambda: Page)
 
     def view():
-        return div(Loading(lambda: Lazy(), fallback="wait"), Counter(start=5))
+        return html(t"<div>{Loading(Lazy(), fallback='wait')}{Counter(start=5)}</div>")
 
-    html = render_async(view)
-    assert "lazy page" in html and "Count: 5!" in html
-    result = hydrate_from(wyb, html, view())
+    out = render_async(view)
+    assert "lazy page" in out and "Count: 5!" in out
+    result = hydrate_from(wyb, out, view())
     assert result.mismatches == 0
     assert texts(result.container) == ["lazy page", "Count: ", "5", "!", "+"]
 
@@ -645,15 +755,15 @@ def test_stream_sends_shell_then_boundaries_then_state(wyb):
         @component
         def Posts():
             posts = create_memo(lambda: fetch_posts())
-            return ul(For(posts, lambda post, i: li(post)))
+            return html(t"<ul>{For(posts(), lambda post, i: html(t'<li>{post}</li>'))}</ul>")
 
         @component
         def Profile():
             user = create_memo(lambda: fetch_user())
-            return div(h1(user), Loading(lambda: Posts(), fallback=p("posts...")))
+            return html(t"<div><h1>{user}</h1>{Loading(Posts(), fallback=html(t'<p>posts...</p>'))}</div>")
 
         def view():
-            return div(p("header"), Loading(lambda: Profile(), fallback=p("profile...")))
+            return html(t"<div><p>header</p>{Loading(Profile(), fallback=html(t'<p>profile...</p>'))}</div>")
 
         chunks: list[str] = []
         async for chunk in render_to_stream(view):
@@ -700,17 +810,19 @@ def test_reveal_orders_streamed_boundaries(wyb):
             @component
             def Panel():
                 value = create_memo(lambda: load())
-                return p(value)
+                return html(t"<p>{value()}</p>")
 
             return Panel
 
         first, second = panel(0), panel(1)
 
         def view():
-            return Reveal(
-                [Loading(lambda: first(), fallback="wait 0"), Loading(lambda: second(), fallback="wait 1")],
-                order="sequential",
-            )
+            return html(t"""
+              <{Reveal} order="sequential">
+                {Loading(first(), fallback="wait 0")}
+                {Loading(second(), fallback="wait 1")}
+              </{Reveal}>
+            """)
 
         chunks: list[str] = []
         async for chunk in render_to_stream(view):
@@ -732,8 +844,8 @@ def test_reveal_orders_streamed_boundaries(wyb):
 
 
 def test_mismatched_html_is_repaired(wyb):
-    html = '<div><span>stale</span><p>extra</p></div><script type="application/json" data-wyb-state>{"v":{}}</script>'
-    result = hydrate_from(wyb, html, div(p("fresh"), button("b")))
+    out = '<div><span>stale</span><p>extra</p></div><script type="application/json" data-wyb-state>{"v":{}}</script>'
+    result = hydrate_from(wyb, out, html(t"<div><p>fresh</p><button>b</button></div>"))
     assert result.mismatches > 0
     assert [n.tag for n in nodes(result.container)[1:] if n.tag] == ["div", "p", "button"]
     assert texts(result.container) == ["fresh", "b"]
@@ -742,9 +854,9 @@ def test_mismatched_html_is_repaired(wyb):
 def test_loading_end_marker_resynchronizes(wyb):
     calls: list[str] = []
     App = make_app(calls)
-    html = render_async(App())
+    out = render_async(App())
     # Corrupt the boundary's content: the end marker must stop the damage.
-    broken = html.replace("<h1>User 7</h1>", "<h2>Wrong</h2><h3>More</h3>")
+    broken = out.replace("<h1>User 7</h1>", "<h2>Wrong</h2><h3>More</h3>")
 
     async def main() -> None:
         result = hydrate_from(wyb, broken, App())
@@ -756,10 +868,10 @@ def test_loading_end_marker_resynchronizes(wyb):
 
 
 def test_input_before_hydration_is_replayed(wyb):
-    html = render_to_string(Counter(start=0))
-    container_html = parse(html)
+    out = render_to_string(Counter(start=0))
+    container_html = parse(out)
     button_node = find(container_html, "button")
-    result = Hydrated(wyb, html, Counter())
+    result = Hydrated(wyb, out, Counter())
     result.container = container_html
     result.before = nodes(container_html)
     result.queue = [("click", button_node, None), ("click", button_node, None)]
@@ -768,8 +880,8 @@ def test_input_before_hydration_is_replayed(wyb):
 
 
 def test_state_script_is_consumed(wyb):
-    html = render_to_string(p("x"))
-    result = hydrate_from(wyb, html, p("x"))
+    out = render_to_string(html(t"<p>x</p>"))
+    result = hydrate_from(wyb, out, html(t"<p>x</p>"))
     assert not any(n.tag == "script" for n in nodes(result.container))
 
 
@@ -777,14 +889,14 @@ def test_state_script_is_consumed(wyb):
 def test_render_to_string_accepts_factories(wyb, route):
     @component
     def Home():
-        return p("home")
+        return html(t"<p>home</p>")
 
     @component
     def About():
-        return p("about")
+        return html(t"<p>about</p>")
 
-    html = render_to_string(lambda: Router([Route("/", Home), Route("/about", About)]), url=route)
-    assert ("about" if route == "/about" else "home") in html
+    out = render_to_string(lambda: Router([Route("/", Home), Route("/about", About)]), url=route)
+    assert ("about" if route == "/about" else "home") in out
 
 
 # ---------------------------------------------------------------------------
@@ -799,9 +911,9 @@ def test_render_to_stream_returns_a_single_use_stream(wyb):
     async def main() -> None:
         stream = render_to_stream(App())
         assert isinstance(stream, RenderStream)
-        html = await stream
-        assert "User 7" in html and "post 7.1" in html
-        assert html.endswith("</script>") and "data-wyb-state" in html
+        full = await stream
+        assert "User 7" in full and "post 7.1" in full
+        assert full.endswith("</script>") and "data-wyb-state" in full
         with pytest.raises(RuntimeError, match="only once"):
             await stream
         with pytest.raises(RuntimeError, match="only once"):
@@ -813,7 +925,7 @@ def test_render_to_stream_returns_a_single_use_stream(wyb):
         assert chunks[-1].startswith('<script type="application/json" data-wyb-state>')
         with pytest.raises(RuntimeError, match="only once"):
             await iterated
-        assert apply_swaps(chunks[:-1]) == strip_state(html)
+        assert apply_swaps(chunks[:-1]) == strip_state(full)
 
     asyncio.run(main())
 
@@ -843,8 +955,10 @@ def test_server_exports():
 
 
 def test_no_hydration_renders_static_markup_inside_markers(wyb):
-    html = render_to_string(div(NoHydration(p("legal"), span("text")), p("after")))
-    assert strip_state(html) == "<div><!--wyb:nh--><p>legal</p><span>text</span><!--/wyb:nh--><p>after</p></div>"
+    out = render_to_string(
+        html(t"<div>{NoHydration(html(t'<p>legal</p>'), html(t'<span>text</span>'))}<p>after</p></div>")
+    )
+    assert strip_state(out) == "<div><!--wyb:nh--><p>legal</p><span>text</span><!--/wyb:nh--><p>after</p></div>"
 
 
 def test_no_hydration_keeps_server_dom_static_while_hydrating(wyb):
@@ -854,21 +968,25 @@ def test_no_hydration_keeps_server_dom_static_while_hydrating(wyb):
     def Static():
         mounted.append("static")
         count, set_count = create_signal(0)
-        return div(p("static ", count), button("inc", on_click=lambda: set_count(lambda n: n + 1)))
+
+        def inc() -> None:
+            set_count(lambda n: n + 1)
+
+        return html(t"<div><p>static {count}</p><button onclick={inc}>inc</button></div>")
 
     @component
     def View():
         count, set_count = create_signal(0)
-        return div(
-            NoHydration(Static()),
-            p("live ", count),
-            button("live", on_click=lambda: set_count(lambda n: n + 1)),
-        )
 
-    html = render_to_string(View())
+        def inc() -> None:
+            set_count(lambda n: n + 1)
+
+        return html(t"<div>{NoHydration(Static())}<p>live {count()}</p><button onclick={inc}>live</button></div>")
+
+    out = render_to_string(View())
     assert mounted == ["static"]
     mounted.clear()
-    result = hydrate_from(wyb, html, View())
+    result = hydrate_from(wyb, out, View())
     assert result.mismatches == 0
     assert result.created_elements == []
     # Nothing inside the region was mounted in the browser: its server
@@ -894,9 +1012,9 @@ def test_no_hydration_renders_children_in_a_client_only_page(wyb, root_element):
     @component
     def Inside():
         seen.append(is_hydrating())
-        return p("client")
+        return html(t"<p>client</p>")
 
-    root = wyb["reconciler"].render(div(NoHydration(Inside())), root_element)
+    root = wyb["reconciler"].render(html(t"<div>{NoHydration(Inside())}</div>"), root_element)
     assert texts(root_element.element) == ["client"]
     assert seen == [False]
     root.dispose()
@@ -911,13 +1029,13 @@ def test_is_hydrating_is_true_only_during_the_hydrating_mount(wyb):
     def View():
         seen.append(("body", is_hydrating()))
         on_settled(lambda: seen.append(("settled", is_hydrating())))
-        return div(Hydration(p("x"), id="island"))
+        return html(t"""<div>{Hydration(html(t"<p>x</p>"), id="island")}</div>""")
 
-    html = render_to_string(View())
+    out = render_to_string(View())
     assert seen == [("body", False)]
-    assert "<p>x</p>" in html
+    assert "<p>x</p>" in out
     seen.clear()
-    result = hydrate_from(wyb, html, View())
+    result = hydrate_from(wyb, out, View())
     flush()
     assert result.mismatches == 0
     assert seen == [("body", True), ("settled", False)]

@@ -53,13 +53,25 @@ def test_a_re_rendered_template_patches_in_place(goto_feature):
 
 def test_component_tags_and_show(goto_feature):
     page = goto_feature("templates")
-    expect(page.get_by_test_id("tpl-card")).to_contain_text("Card")
+    expect(page.get_by_test_id("tpl-card").first).to_contain_text("Card")
     expect(page.get_by_test_id("tpl-card-child")).to_have_text("child 0")
     page.get_by_test_id("tpl-inc").click()
     expect(page.get_by_test_id("tpl-card-child")).to_have_text("child 1")
     expect(page.get_by_test_id("tpl-hidden")).to_be_visible()
     page.get_by_test_id("tpl-show").click()
     expect(page.get_by_test_id("tpl-shown")).to_be_visible()
+
+
+def test_component_tag_prop_is_a_compiled_getter(goto_feature):
+    page = goto_feature("templates")
+    heading = page.locator("[data-testid=tpl-named] h3")
+    expect(heading).to_have_text("ADA")
+    handle = heading.element_handle()
+    # `<{Card} title={name().upper()}>`: Card reads the getter through its
+    # props, so the mounted heading updates in place.
+    page.get_by_test_id("tpl-name").fill("Grace")
+    expect(heading).to_have_text("GRACE")
+    assert handle.evaluate("node => node.isConnected")
 
 
 def test_event_spellings(goto_feature):
@@ -120,19 +132,19 @@ json.dumps([verdict(m) for m in %r] + [verdict(m) for m in %r])
     assert verdicts == '["rejected", "rejected", "rejected", "rejected", "accepted", "accepted", "accepted"]'
 
 
-def test_helper_markup_the_parser_would_rearrange_mounts_in_the_real_kernel(goto_feature):
+def test_h_markup_the_parser_would_rearrange_mounts_in_the_real_kernel(goto_feature):
     page = goto_feature("templates")
     markup = page.evaluate(
         "code => window.__WYB.pyodide.runPython(code)",
         """
 from js import document
-from wybthon import render
+from wybthon import h, render
 from wybthon.dom import Element
-from wybthon.elements import div, p, span
 
 host = document.createElement("div")
 document.body.appendChild(host)
-root = render(div(p(span(div("block"))), p(span(div("again")))), Element(node=host))
+tree = h("div", {}, *(h("p", {}, h("span", {}, h("div", {}, text))) for text in ("block", "again")))
+root = render(tree, Element(node=host))
 html_out = host.innerHTML
 root.dispose()
 host.remove()
@@ -149,9 +161,8 @@ def test_a_restored_event_handler_fires_in_the_real_kernel(goto_feature):
         run,
         """
 from js import document
-from wybthon import create_signal, event, flush, html, render
+from wybthon import create_signal, event, flush, h, html, render
 from wybthon.dom import Element
-from wybthon.elements import div
 
 _hits = []
 _handlers = [
@@ -167,7 +178,7 @@ document.body.appendChild(_host)
 def _view():
     return html(t'<button id="restore-btn" onclick={_handlers[_mode()]}>go</button>')
 
-_root = render(div(_view), Element(node=_host))
+_root = render(h("div", {}, _view), Element(node=_host))
 """,
     )
     for mode, clicks in ((0, 1), (1, 1), (2, 1), (3, 2), (4, 2)):

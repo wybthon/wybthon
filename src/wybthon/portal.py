@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .component import component
+from .component import builtin, component
 from .kernel import OP_ROOT, OP_UNROOT
 from .reactivity import _core
 from .reactivity._primitives import on_cleanup
@@ -31,6 +31,7 @@ def _resolve_container_id(container: Any) -> int:
 
 
 class _PortalProps(Props):
+    _wyb_internal = True
     children: Any = None
     mount: Any = "body"
 
@@ -43,7 +44,10 @@ def _Portal(props: _PortalProps) -> Any:
         # Portal targets live outside the rendered container; the content
         # mounts in the browser once the page has hydrated.
         return None
-    container_id = _resolve_container_id(props.mount)
+    target = props.mount
+    if type(target) is _core._Getter:
+        target = target.peek()
+    container_id = _resolve_container_id(target)
     children = props.children
     tree: VNode
     if isinstance(children, VNode):
@@ -80,6 +84,7 @@ def _Portal(props: _PortalProps) -> Any:
 _Portal.__name__ = "Portal"
 
 
+@builtin
 def Portal(children: Any = None, *, mount: Any = "body") -> VNode:
     """Render children into a different DOM container.
 
@@ -105,13 +110,8 @@ def Portal(children: Any = None, *, mount: Any = "body") -> VNode:
 
     Example:
         ```python
-        Show(
-            show_modal,
-            lambda: Portal(
-                div(p("Modal content"), class_="modal"),
-                mount="#modal-root",
-            ),
-        )
+        modal = html(t'<div class="modal"><p>Modal content</p></div>')
+        html(t"<main>{Show(show_modal(), Portal(modal, mount='#modal-root'))}</main>")
         ```
     """
     return h(_Portal, {"children": children, "mount": mount})

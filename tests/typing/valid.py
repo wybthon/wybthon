@@ -7,7 +7,6 @@ from wybthon import (
     Accessor,
     For,
     ParentProps,
-    Prop,
     Props,
     Show,
     VNode,
@@ -16,70 +15,90 @@ from wybthon import (
     create_memo,
     create_signal,
     create_store,
-    div,
-    h2,
+    h,
     html,
-    p,
+    is_static,
     prop,
+    untrack,
 )
 from wybthon.router import QueryParams, RouteProps
 
 
 class GreetingProps(Props):
-    name: Prop[str]
-    count: Prop[int] = prop(default=1)
-    tags: Prop[list[str]] = prop(default_factory=list)
+    name: str
+    count: int = prop(default=1)
+    tags: list[str] = prop(default_factory=list)
     on_wave: Callable[[], None] | None = None
 
 
 @component
 def Greeting(props: GreetingProps) -> VNode:
     if TYPE_CHECKING:
-        assert_type(props.name, Accessor[str])
-        assert_type(props.count(), int)
-        assert_type(props.tags.peek(), list[str])
+        assert_type(props.name, str)
+        assert_type(props.count, int)
+        assert_type(untrack(lambda: props.tags), list[str])
         assert_type(props.on_wave, Callable[[], None] | None)
-    return p(lambda: props.name() * props.count())
+        assert_type(is_static(props, "name"), bool)
+    return html(t"<p>{props.name * props.count}</p>")
 
 
 name, _ = create_signal("Ada")
 count = create_memo(lambda: len(name()))
 Greeting(name="Ada")
-Greeting(name=name, count=2)
-Greeting(name=lambda: "Ada", count=count, tags=["a"])
+Greeting(name="Ada", count=2, tags=["a"])
 Greeting(name="Ada", key="greeting", on_wave=lambda: None)
 Greeting(name="Ada", key=3)
+# Inside a template, reactive values are checked against the field types;
+# the compiler passes getters.
+reactive_greeting: VNode = html(t"<div>{Greeting(name=name(), count=count())}</div>")
+
+
+class SourceProps(Props):
+    source: Accessor[int]
+    format: Callable[[int], str] = str
+
+
+@component
+def Source(props: SourceProps) -> VNode:
+    if TYPE_CHECKING:
+        assert_type(props.source, Accessor[int])
+        assert_type(props.format, Callable[[int], str])
+    return html(t"<p>{props.format(props.source())}</p>")
+
+
+Source(source=count)
+Source(source=create_memo(lambda: 3), format=hex)
 
 
 @component
 def App() -> VNode:
-    return div(Greeting(name="Ada"), Greeting(name="Grace", count=2))
+    return html(t'<div><{Greeting} name="Ada" />{Greeting(name="Grace", count=2)}</div>')
 
 
 App()
 
 
 class CardProps(ParentProps):
-    title: Prop[str]
+    title: str
 
 
 @component
 def Card(props: CardProps) -> VNode:
-    return div(h2(props.title), props.children)
+    return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
 
 
-Card(title="Hi", children=[p("a"), p("b")])
-Card(title="Hi")[p("a"), p("b")]
-div(Card(title="Nested"), class_="wrapper")
-div(class_="x")[p("item syntax on elements")]
+Card(title="Hi", children=[html(t"<p>a</p>"), html(t"<p>b</p>")])
+Card(title="Hi")[html(t"<p>a</p>"), html(t"<p>b</p>")]
+h("div", {"class_": "wrapper"}, Card(title="Nested"))
+h("div", {"class": "x"})[h("p", None, "item syntax on elements")]
 
 
 @component
 def User(props: RouteProps) -> VNode:
     if TYPE_CHECKING:
-        assert_type(props.params(), dict[str, str])
-        assert_type(props.query(), QueryParams)
-    return p(lambda: props.params()["id"])
+        assert_type(props.params, dict[str, str])
+        assert_type(props.query, QueryParams)
+    return html(t"<p>{props.params['id']}</p>")
 
 
 User()
@@ -129,15 +148,15 @@ current: Accessor[Todo | None] = create_signal(Todo(title="b", done=True))[0]
 
 
 def todo_row(todo: Todo, index: Accessor[int]) -> VNode:
-    return p(todo["title"], lambda: index() + 1)
+    return html(t"<p>{todo['title']}{index() + 1}</p>")
 
 
 For(todos, todo_row)
-For(todos, lambda todo, i: p(todo["title"]))
-For(todos, lambda todo, i: p(lambda: todo()["title"], i), keyed=False)
-For(todos, lambda todo, i: p(lambda: todo()["title"], i), keyed=lambda t: t["title"])
-Show(current, lambda todo: p(lambda: todo()["title"]))
-Show(current, lambda todo: p(todo["title"]), keyed=True)
-Show(current, lambda: p("shown"), fallback=p("hidden"))
-Show(True, p("always"))
+For(todos, lambda todo, i: html(t"<p>{todo['title']}</p>"))
+For(todos, lambda todo, i: html(t"<p>{todo()['title']}{i}</p>"), keyed=False)
+For(todos, lambda todo, i: html(t"<p>{todo()['title']}{i()}</p>"), keyed=lambda row: row["title"])
+Show(current, lambda todo: html(t"<p>{todo()['title']}</p>"))
+Show(current, lambda todo: html(t"<p>{todo['title']}</p>"), keyed=True)
+Show(current, lambda: html(t"<p>shown</p>"), fallback=html(t"<p>hidden</p>"))
+Show(True, html(t"<p>always</p>"))
 template_node: VNode = html(t"<p class={current}>{todos}</p>")

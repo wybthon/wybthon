@@ -14,9 +14,9 @@ Import it from `wybthon.router`:
 - [`use_params`][wybthon.router.use_params] / [`use_query`][wybthon.router.use_query]:
   accessors for the matched route's params and the parsed query string.
 
-The matched component receives `params` and `query` as reactive props
-(declare them by subclassing [`RouteProps`][wybthon.router.RouteProps]),
-so navigating between `/users/1` and `/users/2` updates the mounted
+The matched component receives `params` and `query` as props (declare
+them by subclassing [`RouteProps`][wybthon.router.RouteProps]); reading
+`props.params` is tracked, so navigating between `/users/1` and `/users/2` updates the mounted
 component's props instead of remounting it. Path matching
 ([`resolve`][wybthon.router.resolve]) has no browser dependency, so it
 also runs in tests, tools, and on the server.
@@ -28,7 +28,7 @@ Example:
 
     @component
     def User(props: RouteProps):
-        return h1("User ", lambda: props.params()["id"])
+        return html(t"<h1>User {props.params['id']}</h1>")
 
 
     Router(
@@ -54,13 +54,12 @@ from typing import Any
 from urllib.parse import parse_qsl, unquote, urljoin, urlsplit
 
 from ._dom_props import class_names
-from .component import component
+from .component import builtin, component
 from .context import Context, create_context, use_context
-from .elements import a
 from .reactivity import _core
-from .reactivity._core import Accessor, Signal
+from .reactivity._core import Accessor, Signal, _unwrap, untrack
 from .reactivity._primitives import create_memo
-from .reactivity._props import Prop, Props, prop
+from .reactivity._props import Props, prop
 from .vnode import VNode, h
 
 __all__ = [
@@ -439,8 +438,8 @@ class RouteProps(Props):
     changes but the same route still matches.
     """
 
-    params: Prop[dict[str, str]] = prop(default_factory=dict)
-    query: Prop[QueryParams] = prop(default_factory=lambda: QueryParams())
+    params: dict[str, str] = prop(default_factory=dict)
+    query: QueryParams = prop(default_factory=lambda: QueryParams())
 
 
 @dataclass
@@ -450,8 +449,8 @@ class Route:
     Attributes:
         path: Route pattern (e.g., `"/users/:id"`, `"/docs/*"`).
         component: The component to render when the path matches. It
-            receives `params` and `query` props, accessors yielding the
-            path parameters and query string as dicts.
+            receives the path parameters and query string as its
+            `params` and `query` props (see `RouteProps`).
         children: Optional nested routes whose paths are joined with
             this route's `path`.
     """
@@ -498,6 +497,7 @@ def use_base_path() -> str:
     return state.base_path if state is not None else ""
 
 
+@builtin
 def Router(routes: Any, *, base_path: Any = "", not_found: Any = None) -> VNode:
     """Render the component of the route matching [`current_path`][wybthon.router.current_path].
 
@@ -519,14 +519,29 @@ def Router(routes: Any, *, base_path: Any = "", not_found: Any = None) -> VNode:
 
 
 class _RouterProps(Props):
-    routes: Prop[Any] = prop(default=None)
-    base_path: Prop[Any] = prop(default="")
-    not_found: Prop[Any] = prop(default=None)
+    _wyb_internal = True
+    routes: Any = None
+    base_path: Any = ""
+    not_found: Any = None
 
 
 @component
 def _Router(props: _RouterProps) -> Any:
-    routes, base_path, not_found = props.routes, props.base_path, props.not_found
+    table = props.routes
+    if type(table) is _core._Getter:
+        # A route table written in a compiled template is configuration:
+        # evaluate it once, so its `Route`s keep their identity.
+        table = table.peek()
+
+    def routes() -> Any:
+        return _unwrap(table)
+
+    def base_path() -> Any:
+        return _unwrap(props.base_path)
+
+    def not_found() -> Any:
+        value = props.not_found
+        return value.fn() if type(value) is _core._Getter else value
 
     def location() -> tuple[str, str]:
         return _split_path(current_path())
@@ -541,7 +556,7 @@ def _Router(props: _RouterProps) -> Any:
     match = create_memo(resolved)
     matches = create_memo(lambda: match()["matches"])
     params = create_memo(lambda: match()["params"])
-    state = _RouteState(params, query, base_path.peek() or "")
+    state = _RouteState(params, query, untrack(base_path) or "")
     warmed: dict[tuple[int, str], Any] = {}
 
     def preload_path(path: str) -> Any:
@@ -633,11 +648,12 @@ def _Router(props: _RouterProps) -> Any:
 
 
 class _RouteEntryProps(Props):
+    _wyb_internal = True
     route: Any = None
     router_state: Any = None
-    params: Prop[Any] = prop(default=None)
-    query: Prop[Any] = prop(default=None)
-    matches: Prop[Any] = prop(default=None)
+    params: Any = None
+    query: Any = None
+    matches: Any = None
 
 
 @component
@@ -646,8 +662,12 @@ def _RouteEntry(props: _RouteEntryProps) -> Any:
     parent = props.router_state
     # A departing route keeps its last inputs until unmount. Preparing the
     # destination mustn't give its still-mounted predecessor missing params.
-    params = create_memo(lambda previous: props.params() if route in props.matches() else (previous or {}))
-    query = create_memo(lambda previous: props.query() if route in props.matches() else (previous or QueryParams()))
+    params = create_memo(
+        lambda previous: _unwrap(props.params) if route in _unwrap(props.matches) else (previous or {})
+    )
+    query = create_memo(
+        lambda previous: _unwrap(props.query) if route in _unwrap(props.matches) else (previous or QueryParams())
+    )
     state = _RouteState(params, query, parent.base_path)
     state.preload = parent.preload
     return RouteContext(state, lambda: h(route.component, {"params": params, "query": query}))
@@ -659,6 +679,7 @@ _Router.__name__ = "Router"
 OutletContext: Context[Any] = create_context(None, name="Outlet")
 
 
+@builtin
 def Outlet() -> VNode:
     """Render the next matched child route inside a persistent parent layout."""
     return h(_Outlet)
@@ -697,6 +718,7 @@ def _with_base(target: str, base_path: str) -> str:
     return (base_path.rstrip("/") or "") + "/" + target.strip("/")
 
 
+@builtin
 def Link(
     *children: Any,
     href: Any = "/",
@@ -743,10 +765,11 @@ def Link(
 
 class _LinkProps(Props):
     _wyb_open = True
-    href: Prop[Any] = prop(default="/")
-    replace: Prop[bool] = prop(default=False)
-    active_class: Prop[str | None] = prop(default="active")
-    end: Prop[bool] = prop(default=False)
+    _wyb_internal = True
+    href: Any = "/"
+    replace: Any = False
+    active_class: Any = "active"
+    end: Any = False
     class_: Any = None
     children: Any = None
     on_click: Any = None
@@ -757,10 +780,19 @@ def _Link(props: _LinkProps) -> Any:
     from .events import DomEvent
 
     base_path = use_base_path()
-    href = props.href
-    replace = props.replace
-    active_class = props.active_class
-    end = props.end
+
+    def href() -> Any:
+        return _unwrap(props.href)
+
+    def replace() -> Any:
+        return _unwrap(props.replace)
+
+    def active_class() -> Any:
+        return _unwrap(props.active_class)
+
+    def end() -> Any:
+        return _unwrap(props.end)
+
     user_class = props.class_
     children = props.children or []
     forwarded = {k: v for k, v in props._raw.items() if k not in _LINK_OWN}
@@ -819,7 +851,7 @@ def _Link(props: _LinkProps) -> Any:
 
     forwarded.setdefault("on_mouseenter", warm)
     forwarded.setdefault("on_focus", warm)
-    return a(*children, href=full_href, class_=classes, on_click=handle_click, **forwarded)
+    return h("a", {"href": full_href, "class": classes, "on_click": handle_click, **forwarded}, *children)
 
 
 _Link.__name__ = "Link"

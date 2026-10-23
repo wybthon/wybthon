@@ -40,9 +40,9 @@ from collections.abc import Callable, Sequence
 from typing import Any, Literal, overload
 
 from ._warnings import warn_each_plain_list
-from .component import component
-from .reactivity._core import Accessor, Signal, _positional_count, _unwrap, is_accessor
-from .reactivity._props import Prop, Props
+from .component import builtin, component
+from .reactivity._core import Accessor, Signal, _Getter, _positional_count, _read, _unwrap, is_accessor
+from .reactivity._props import Props
 from .vnode import Fragment, VNode, h
 
 __all__ = [
@@ -56,6 +56,7 @@ __all__ = [
     "NoHydration",
     "Hydration",
     "is_hydrating",
+    "on_hydration_end",
 ]
 
 
@@ -68,6 +69,11 @@ def _render_slot(slot: Any, *args: Any) -> Any:
     """
     if slot is None or isinstance(slot, VNode):
         return slot
+    if type(slot) is _Getter:
+        # An expression a compiled template passed: its value is the slot.
+        slot = slot.fn()
+        if slot is None or isinstance(slot, VNode):
+            return slot
     if isinstance(slot, list) and len(slot) == 1 and callable(slot[0]) and not isinstance(slot[0], VNode):
         slot = slot[0]
     if callable(slot):
@@ -78,15 +84,31 @@ def _render_slot(slot: Any, *args: Any) -> Any:
 
 
 def _callback(value: Any) -> Any:
-    """Unwrap the single-callable `children` list `h()` produces."""
+    """The callback a flow control was given.
+
+    Unwraps the single-callable `children` list `h()` produces, and an
+    expression a compiled template passed (`For(rows(), make_row(kind))`),
+    which is evaluated once, untracked.
+    """
+    if type(value) is _Getter:
+        value = value.peek()
     if isinstance(value, list) and len(value) == 1 and callable(value[0]):
         return value[0]
     return value
 
 
+def _option(value: Any) -> Any:
+    """A non-reactive option (`keyed`): an expression a compiled template passed is evaluated once."""
+    return value.peek() if type(value) is _Getter else value
+
+
 def _unwrap_when(when: Any) -> Any:
-    """A `Match` condition's value: called when it's a zero-argument callable."""
-    return when() if callable(when) and _positional_count(when) == 0 else when
+    """A `Match` condition's value: read through accessors and zero-argument callables."""
+    for _ in range(8):
+        if not (callable(when) and (is_accessor(when) or _positional_count(when) == 0)):
+            return when
+        when = when()
+    return when
 
 
 # A branch region's `select(inputs, current)` picks `(token, slot, args)` from
@@ -102,14 +124,14 @@ def _unwrap_when(when: Any) -> Any:
 
 def _show(inputs: tuple[Any, Any, Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
     when, children, fallback = inputs
-    if when() if is_accessor(when) else when:
-        return (True,), children, (lambda: _unwrap(current()[0]),)
+    if _read(when):
+        return (True,), children, (lambda: _read(current()[0]),)
     return (False,), fallback, ()
 
 
 def _show_keyed(inputs: tuple[Any, Any, Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
     when, children, fallback = inputs
-    value = when() if is_accessor(when) else when
+    value = _read(when)
     if value:
         return (True, value), children, (value,)
     return (False,), fallback, ()
@@ -132,13 +154,30 @@ def Show[T](
     keyed: Literal[True],
 ) -> VNode: ...
 @overload
+def Show[T](
+    when: T | None,
+    children: Callable[[Accessor[T]], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[False] = False,
+) -> VNode: ...
+@overload
+def Show[T](
+    when: T | None,
+    children: Callable[[T], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[True],
+) -> VNode: ...
+@overload
 def Show(
     when: object,
-    children: Callable[[], object] | VNode | str | list[Any] | None = None,
+    children: Callable[[], object] | VNode | Props | str | list[Any] | None = None,
     fallback: Any = None,
     *,
     keyed: bool = False,
 ) -> VNode: ...
+@builtin
 def Show(when: Any, children: Any = None, fallback: Any = None, *, keyed: bool = False) -> VNode:
     """Render `children` while `when` is truthy, else `fallback`.
 
@@ -162,6 +201,7 @@ def Show(when: Any, children: Any = None, fallback: Any = None, *, keyed: bool =
         Show(user, lambda u: html(t"<p>Hello, {u().name}</p>"), fallback=html(t"<p>Sign in</p>"))
         ```
     """
+    keyed = _option(keyed)
     return VNode(
         "_branch", {"select": _show_keyed if keyed else _show, "inputs": (when, _callback(children), fallback)}
     )
@@ -198,6 +238,7 @@ def For[T](
     *,
     keyed: Callable[[T], object],
 ) -> VNode: ...
+@builtin
 def For(each: Any, children: Any, fallback: Any = None, *, keyed: Any = True) -> VNode:
     """Render a list with a stable subtree per row.
 
@@ -226,12 +267,14 @@ def For(each: Any, children: Any, fallback: Any = None, *, keyed: Any = True) ->
     Example:
         ```python
         # With a key function both arguments are accessors.
-        For(todos, lambda todo, i: html(t"<li>{(lambda: todo()['title'])}</li>"), keyed=lambda t: t["id"])
+        For(todos, lambda todo, i: html(t"<li>{todo()['title']}</li>"), keyed=lambda t: t["id"])
         ```
     """
     if isinstance(each, (list, tuple)):
         warn_each_plain_list(For)
-    return VNode("_list", {"source": each, "children": _callback(children), "keyed": keyed, "fallback": fallback})
+    return VNode(
+        "_list", {"source": each, "children": _callback(children), "keyed": _option(keyed), "fallback": fallback}
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +282,7 @@ def For(each: Any, children: Any, fallback: Any = None, *, keyed: Any = True) ->
 # ---------------------------------------------------------------------------
 
 
+@builtin
 def Repeat(
     count: int | Callable[[], int],
     children: Callable[[int], object],
@@ -286,10 +330,13 @@ class Match:
 
     __slots__ = ("when", "children", "keyed")
 
+    # A `Match(...)` call in a compiled template receives getters (see `wybthon._compiled.call`).
+    __wybthon_component__ = True
+
     def __init__(self, when: Any, children: Any = None, *, keyed: bool = False) -> None:
         self.when = when
         self.children = _callback(children)
-        self.keyed = keyed
+        self.keyed = _option(keyed)
 
 
 def _switch(inputs: tuple[tuple[Match, ...], Any], current: Callable[[], Any]) -> tuple[Any, Any, tuple[Any, ...]]:
@@ -303,6 +350,7 @@ def _switch(inputs: tuple[tuple[Match, ...], Any], current: Callable[[], Any]) -
     return (-1,), fallback, ()
 
 
+@builtin
 def Switch(*matches: Match, fallback: Any = None) -> VNode:
     """Render the first [`Match`][wybthon.Match] whose condition is truthy.
 
@@ -330,15 +378,14 @@ def Switch(*matches: Match, fallback: Any = None) -> VNode:
 
 class _DynamicProps(Props):
     _wyb_open = True
-    component: Prop[Any]
+    _wyb_internal = True
+    component: Any = None
 
 
 @component
 def _Dynamic(props: _DynamicProps) -> Any:
-    source = props.component
-
     def render() -> Any:
-        comp = source()
+        comp = _unwrap(props.component)
         if comp is None:
             return None
         inner = {k: v for k, v in props._raw.items() if k != "component"}
@@ -359,6 +406,8 @@ class _DynamicComponent:
     """A component whose implementation is chosen reactively; see [`dynamic`][wybthon.dynamic]."""
 
     __slots__ = ("_source", "__name__")
+
+    __wybthon_component__ = True
 
     def __init__(self, source: Any) -> None:
         self._source = source
@@ -407,6 +456,7 @@ def dynamic(source: Any) -> Callable[..., VNode]:
 
 
 class _ClientOnlyProps(Props):
+    _wyb_internal = True
     children: Any = None
     fallback: Any = None
 
@@ -432,6 +482,7 @@ def _ClientOnly(props: _ClientOnlyProps) -> Any:
 _ClientOnly.__name__ = "client_only"
 
 
+@builtin
 def client_only(children: Any, *, fallback: Any = None) -> VNode:
     """Render `children` only in the browser, after hydration.
 
@@ -475,7 +526,31 @@ def is_hydrating() -> bool:
     return bool(kernel.claiming)
 
 
+def on_hydration_end(callback: Callable[[], Any]) -> None:
+    """Run `callback` once the browser has finished hydrating the page.
+
+    Registered while [`hydrate`][wybthon.hydrate] mounts, it runs after
+    the hydrated page has committed. Registered anywhere else (a page
+    that wasn't server-rendered, or after hydration), it runs on the
+    next tick. It doesn't say hydration succeeded, only that it's over.
+    During a server render it does nothing. Matches Solid 2.0's
+    `onHydrationEnd`.
+    """
+    from .reactivity import _core
+
+    if _core._server_depth:
+        # A server render never hydrates; the browser runs the callback.
+        return
+    session = _core._session
+    if session is not None and session.mode == "hydrate":
+        session.after_hydration.append(callback)
+        return
+    if not _core._schedule_microtask(callback):
+        callback()
+
+
 class _NoHydrationProps(Props):
+    _wyb_internal = True
     children: Any = None
 
 
@@ -491,6 +566,7 @@ def _NoHydration(props: _NoHydrationProps) -> Any:
 _NoHydration.__name__ = "NoHydration"
 
 
+@builtin
 def NoHydration(*children: Any) -> VNode:
     """Render `children` on the server as static HTML the browser won't hydrate.
 
@@ -505,6 +581,7 @@ def NoHydration(*children: Any) -> VNode:
     return h(_NoHydration, {"children": list(children)})
 
 
+@builtin
 def Hydration(*children: Any, id: str | None = None) -> VNode:
     """Mark a subtree for hydration; a passthrough in Wybthon.
 

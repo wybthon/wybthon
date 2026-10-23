@@ -18,13 +18,10 @@ from wybthon import (
     create_owner,
     create_signal,
     diagnostics,
-    div,
     flush,
+    html,
     is_disposed,
-    li,
-    p,
     run_with_owner,
-    ul,
 )
 from wybthon.build import build_app, init_app
 from wybthon.kernel import OP_DISPOSE_RANGE
@@ -75,13 +72,13 @@ def test_top_level_reads_in_control_flow_callbacks_warn(wyb, root_element, capsy
 
     def row(item, index):
         index()
-        return li(str(item))
+        return html(t"<li>{item}</li>")
 
     def branch(value):
         value()
-        return p("yes")
+        return html(t"<p>yes</p>")
 
-    wyb["reconciler"].render(div(ul(For(items, row)), Show(flag, branch)), root_element)
+    wyb["reconciler"].render(html(t"<div><ul>{For(items, row)}</ul>{Show(flag, branch)}</div>"), root_element)
     err = capsys.readouterr().err
     assert "A For callback read reactive value" in err
     assert "A Show or Match callback read reactive value" in err
@@ -89,7 +86,11 @@ def test_top_level_reads_in_control_flow_callbacks_warn(wyb, root_element, capsy
 
 def test_reads_inside_holes_in_callbacks_do_not_warn(wyb, root_element, capsys):
     items, _ = create_signal([1, 2])
-    wyb["reconciler"].render(ul(For(items, lambda item, index: li(lambda: f"{index()}: {item}"))), root_element)
+
+    def row(item, index):
+        return html(t"<li>{f'{index()}: {item}'}</li>")
+
+    wyb["reconciler"].render(html(t"<ul>{For(items, row)}</ul>"), root_element)
     assert "callback read reactive value" not in capsys.readouterr().err
     assert [t for t in collect_texts(root_element.element) if t] == ["0: 1", "1: 2"]
 
@@ -107,9 +108,9 @@ def test_clearing_a_list_emits_one_range_removal(wyb, root_element):
         from wybthon import on_cleanup
 
         on_cleanup(lambda: cleanups.append(item))
-        return li(str(item))
+        return html(t"<li>{item}</li>")
 
-    wyb["reconciler"].render(ul(For(items, row)), root_element)
+    wyb["reconciler"].render(html(t"<ul>{For(items, row)}</ul>"), root_element)
     with diagnostics.profile() as measured:
         set_items([])
         flush()
@@ -130,9 +131,9 @@ def test_clearing_a_store_list_keeps_reverse_cleanup_order(wyb, root_element):
 
     def row(item, index):
         on_cleanup(lambda: order.append(item))
-        return li(str(item))
+        return html(t"<li>{item}</li>")
 
-    wyb["reconciler"].render(ul(For(lambda: store["items"], row)), root_element)
+    wyb["reconciler"].render(html(t"<ul>{For(store['items'], row)}</ul>"), root_element)
     set_store(lambda draft: draft["items"].clear())
     flush()
     assert order == [3, 2, 1]
@@ -149,24 +150,23 @@ def _write_app(project, body: str) -> None:
 
 
 ROUTED_APP = """
-from wybthon import component, create_memo, div, p
+from wybthon import component, html
 from wybthon.router import Link, Route, RouteProps, Router
 
 
 @component
 def Home():
-    return div(p("home page"), Link("About", href="/about"), Link("Docs", href="/docs/intro"))
+    return html(t'<div><p>home page</p>{Link("About", href="/about")}{Link("Docs", href="/docs/intro")}</div>')
 
 
 @component
 def About():
-    return p("about page")
+    return html(t"<p>about page</p>")
 
 
 @component
 def Docs(props: RouteProps):
-    page = create_memo(lambda: props.params()["page"])
-    return p(t"docs {page}")
+    return html(t"<p>docs {props.params['page']}</p>")
 
 
 def app():

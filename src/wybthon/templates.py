@@ -16,20 +16,20 @@ def Counter():
 
     return html(t\"\"\"
       <div class="counter">
-        <p>Count: {count}</p>
+        <p>Count: {count()} (doubled: {count() * 2})</p>
         <button onclick={increment}>+</button>
       </div>
     \"\"\")
 ```
 
-A t-string literal's static strings are a constant of the code that
-contains it: every evaluation of the same literal yields the *same*
-`strings` tuple. Wybthon keys a compiled template on that identity, so a
-literal is parsed, validated, and compiled once, and every later call
-only supplies the interpolated values. (Python doesn't allow a bare
-`lambda` inside an interpolation; wrap it in parentheses or give it a
-name.) This is the runtime counterpart of
-Solid's JSX compiler (and of its buildless `html` tagged template):
+Wybthon's compiler ([`wybthon.compiler`][wybthon.compiler]) prepares each
+`html(t"...")` call when its module is compiled: dynamic interpolations
+(`{count() * 2}`) become getters, and the literal is parsed, validated,
+and turned into a mount function ahead of time. A template that reaches
+`html()` uncompiled (a REPL, `exec`) is compiled here on its first call
+and cached by the identity of its static strings, which a t-string
+literal shares across evaluations. Either way, this is the counterpart
+of Solid's JSX compiler:
 
 - the static markup becomes one native `<template>` the kernel clones
   with a single command per instance, with no VNode tree for its static
@@ -40,11 +40,10 @@ Solid's JSX compiler (and of its buildless `html` tagged template):
 - when a reactive hole returns a template from the same literal again,
   the mounted instance is patched slot by slot.
 
-Interpolations behave exactly like the element helpers'
-([`wybthon.elements`][wybthon.elements]) children and props: an
-accessor or zero-argument function becomes a reactive binding, anything
-else is applied once. Server rendering, hydration, and SVG expand the
-template into ordinary VNodes, so their output matches the helpers'.
+At run time an interpolation that's an accessor, a getter, or a
+zero-argument function becomes a reactive binding; anything else is
+applied once. Server rendering, hydration, and SVG expand the template
+into ordinary VNodes and mount those.
 
 See the [templates guide](https://wybthon.com/concepts/templates/).
 """
@@ -55,9 +54,10 @@ import html as _html_entities
 import re
 from collections.abc import Callable
 from string.templatelib import Interpolation, Template
+from types import MappingProxyType
 from typing import Any
 
-from . import diagnostics, kernel
+from . import _warnings, diagnostics, kernel
 from . import events as _events
 from ._dom_props import (
     _FRESH,
@@ -86,7 +86,7 @@ from ._html_rules import (
     scope_conflict,
 )
 from .reactivity._core import is_accessor
-from .vnode import VNode, flatten_children, render_template, to_text_vnode
+from .vnode import VNode, flatten_children, to_text_vnode
 
 __all__ = ["html", "TemplateError"]
 
@@ -271,7 +271,7 @@ class _Parser:
                 raise self.error("A '<' must start a tag; write &lt; for a literal less-than sign")
             node = _Element(tm.group(0), [])
             if node.tag.lower() in _UNSUPPORTED:
-                raise self.error(f"<{node.tag}> isn't supported in templates; create it with element()")
+                raise self.error(f"<{node.tag}> isn't supported in templates; create it with h()")
             self.pos = tm.end()
         self_closing = self.attributes(node)
         if isinstance(node, _Element):
@@ -503,6 +503,7 @@ class _Compiled:
         "spreads",
         "foreign",
         "strings",
+        "probes",
         "mount",
     )
 
@@ -519,6 +520,9 @@ class _Compiled:
         self.refs: tuple[int, ...] = ()
         self.spreads: tuple[int, ...] = ()
         self.foreign = False
+        # Indices of values the compiler deferred without a call, whose
+        # bindings run a static probe before becoming computations.
+        self.probes: frozenset[int] = frozenset()
         # Generated on first mount (see ``_generate``).
         self.mount: Callable[[VNode, int, int | None], None] = _generate_and_mount
 
@@ -683,13 +687,18 @@ class _Entry:
     equal strings can differ in them (`{price}` and `{price:.2f}`), and
     CPython may even give such literals one shared strings tuple, so
     `html()` reads them from each template it's called with.
+
+    `eager` lists, for a template compiled at run time, the interpolations
+    the compiler would have deferred, with their positions (checked in dev
+    mode; see `_check_uncompiled`). `None` until computed.
     """
 
-    __slots__ = ("strings", "program")
+    __slots__ = ("strings", "program", "eager")
 
     def __init__(self, strings: tuple[str, ...], program: _Program) -> None:
         self.strings = strings
         self.program = program
+        self.eager: tuple[int, ...] | None = None
 
 
 # Keyed by ``id(strings)``; the entry holds the tuple, so the id can't be reused
@@ -700,25 +709,128 @@ _by_value: dict[tuple[str, ...], _Entry] = {}
 _VALUE_CACHE_MAX = 1024
 
 
+def parse(strings: tuple[str, ...]) -> list[Any]:
+    """Parse, normalize, and validate a template's static strings (raises `TemplateError`)."""
+    parser = _Parser(strings)
+    return _normalize(parser.parse(), None, parser, frozenset())
+
+
+def _program(nodes: list[Any], strings: tuple[str, ...]) -> _Program:
+    """Compile a normalized parse tree into slot plans and skeletons."""
+    parser = _Parser.__new__(_Parser)
+    parser.strings = strings
+    program = _compile_nodes(nodes, parser)
+    if program[0] == "element":
+        _walk_components(program[1].root, parser)
+    else:
+        for part in program[1]:
+            if isinstance(part, _Compiled):
+                _walk_components(part.root, parser)
+    return program
+
+
 def _compile(template: Template) -> _Entry:
     strings = template.strings
     entry = _by_value.get(strings)
     if entry is None:
-        parser = _Parser(strings)
-        nodes = _normalize(parser.parse(), None, parser, frozenset())
-        program = _compile_nodes(nodes, parser)
-        if program[0] == "element":
-            _walk_components(program[1].root, parser)
-        else:
-            for part in program[1]:
-                if isinstance(part, _Compiled):
-                    _walk_components(part.root, parser)
-        entry = _Entry(strings, program)
+        entry = _Entry(strings, _program(parse(strings), strings))
         if len(_by_value) >= _VALUE_CACHE_MAX:
             _by_value.pop(next(iter(_by_value)))
         _by_value[strings] = entry
     _by_identity[id(strings)] = entry
     return entry
+
+
+def compiled_elements(program: _Program) -> list[_Compiled]:
+    """Every compiled element in a program, in a fixed order (the compiler numbers mount functions by it)."""
+    out: list[_Compiled] = []
+
+    def visit_program(program: _Program) -> None:
+        kind, data = program
+        for part in (data,) if kind == "element" else data:
+            if type(part) is _Compiled:
+                out.append(part)
+                visit_tree(part.root)
+            elif type(part) is _Component:
+                for child in part.children:
+                    visit_program(child)
+
+    def visit_tree(node: _Element) -> None:
+        for child in node.children:
+            if type(child) is _Element:
+                visit_tree(child)
+            elif type(child) is _Component:
+                for program in child.children:
+                    visit_program(program)
+
+    visit_program(program)
+    return out
+
+
+def dump(nodes: list[Any]) -> tuple[Any, ...]:
+    """Encode a normalized parse tree as nested tuples of constants (for the compiler)."""
+    out: list[Any] = []
+    for node in nodes:
+        if type(node) is str:
+            out.append(node)
+        elif type(node) is _Element:
+            out.append((0, node.tag, tuple(node.attrs), dump(node.children)))
+        elif type(node) is _Component:
+            out.append((1, node.index, tuple(node.attrs), dump(node.children)))
+        else:
+            out.append((2, node.index))
+    return tuple(out)
+
+
+def _undump(data: tuple[Any, ...]) -> list[Any]:
+    out: list[Any] = []
+    for item in data:
+        if type(item) is str:
+            out.append(item)
+        elif item[0] == 0:
+            element = _Element(item[1], list(item[2]))
+            element.children = _undump(item[3])
+            out.append(element)
+        elif item[0] == 1:
+            component = _Component(item[1], list(item[2]))
+            component.children = _undump(item[3])
+            out.append(component)
+        else:
+            out.append(_Slot(item[1]))
+    return out
+
+
+class Precompiled:
+    """A template literal the compiler parsed ahead of time (see `wybthon.compiler`).
+
+    Holds the literal's normalized parse tree as constants and the mount
+    function generated for each of its elements. The first `html()` call
+    rebuilds the slot plans from the tree and installs the mount
+    functions; nothing is parsed, validated, or generated at run time.
+    """
+
+    __slots__ = ("strings", "data", "factories", "probes", "entry")
+
+    def __init__(
+        self, strings: tuple[str, ...], data: tuple[Any, ...], factories: tuple[Any, ...], probes: tuple[int, ...] = ()
+    ) -> None:
+        self.strings = strings
+        self.data = data
+        self.factories = factories
+        self.probes = frozenset(probes)
+        self.entry: _Entry | None = None
+
+    def load(self, template: Template) -> _Entry:
+        if _warnings.DEV_MODE and template.strings != self.strings:
+            # The source changed after this module was compiled.
+            return _compile(template)
+        program = _program(_undump(self.data), self.strings)
+        for compiled, factory in zip(compiled_elements(program), self.factories, strict=True):
+            compiled.probes = self.probes
+            compiled.mount = factory(*_cells(compiled))
+        entry = self.entry = _Entry(self.strings, program)
+        entry.eager = ()
+        return entry
 
 
 def _format_value(item: Interpolation) -> Any:
@@ -738,7 +850,87 @@ def _format_value(item: Interpolation) -> Any:
     return text(value)
 
 
-def html(template: Template) -> VNode:
+def slot_positions(nodes: list[Any]) -> dict[int, str]:
+    """Map each interpolation index to where it appears in the markup.
+
+    Positions: `"child"`, `"attr"` (an element attribute or part of one),
+    `"event"`, `"ref"`, `"spread"`, `"tag"` (a component tag itself),
+    `"prop"` (a component tag attribute), and `"prop_event"` (a
+    component tag attribute named like a handler or `ref`).
+    """
+    out: dict[int, str] = {}
+
+    def attrs(items: list[tuple[Any, ...]], component: bool) -> None:
+        for attr in items:
+            kind = attr[0]
+            if kind == _A_SPREAD:
+                out[attr[1]] = "spread"
+            elif kind == _A_VALUE or kind == _A_PARTS:
+                name = attr[1]
+                indices = (attr[2],) if kind == _A_VALUE else tuple(p for p in attr[2] if type(p) is int)
+                handler = _event_prop(name) is not None or name == "ref"
+                if component:
+                    position = "prop_event" if handler else "prop"
+                else:
+                    position = "event" if _event_prop(name) is not None else "ref" if name == "ref" else "attr"
+                for index in indices:
+                    out[index] = position
+
+    def visit(items: list[Any]) -> None:
+        for node in items:
+            if type(node) is _Slot:
+                out[node.index] = "child"
+            elif type(node) is _Element:
+                attrs(node.attrs, False)
+                visit(node.children)
+            elif type(node) is _Component:
+                out[node.index] = "tag"
+                attrs(node.attrs, True)
+                visit(node.children)
+
+    visit(nodes)
+    return out
+
+
+# Dev-mode checks of templates compiled at run time: the interpolations
+# whose meaning depends on the compiler, per literal and expression text.
+_eager_checks: dict[tuple[tuple[str, ...], tuple[str, ...]], tuple[int, ...]] = {}
+
+
+def _check_uncompiled(entry: _Entry, template: Template) -> None:
+    """Reject an uncompiled template whose dynamic expressions were evaluated once.
+
+    The compiler turns `{count() * 2}` into a getter. A template that
+    reaches `html()` without being compiled (a `__main__` script, a REPL,
+    `exec`) has already evaluated it, so the markup would silently stop
+    updating; dev mode says so instead.
+    """
+    items = template.interpolations
+    if not items:
+        return
+    key = (entry.strings, tuple(item.expression for item in items))
+    eager = _eager_checks.get(key)
+    if eager is None:
+        from .compiler import defers
+
+        positions = slot_positions(parse(entry.strings))
+        eager = tuple(
+            index for index, item in enumerate(items) if defers(item.expression, positions.get(index, "child"))
+        )
+        if len(_eager_checks) < 4096:
+            _eager_checks[key] = eager
+    for index in eager:
+        item = items[index]
+        if not callable(item.value):
+            raise TemplateError(
+                f"{{{item.expression}}} was evaluated once instead of becoming reactive, because this template "
+                "wasn't compiled. Templates compile automatically in modules imported after wybthon, in wyb build "
+                "and wyb dev, and under pytest; run a script with `wyb run script.py`, or wrap the expression in "
+                f"a lambda.\n  in template: t{_source(entry.strings)!r}"
+            )
+
+
+def html(template: Template, compiled: Precompiled | None = None, /) -> VNode:
     """Render a t-string template to a node.
 
     The template is HTML with interpolations. Each literal is compiled
@@ -768,6 +960,9 @@ def html(template: Template) -> VNode:
 
     Args:
         template: A t-string.
+        compiled: The literal's precompiled entry; the compiler passes it
+            (see [`wybthon.compiler`][wybthon.compiler]). Don't pass it
+            yourself.
 
     Returns:
         A node to place in the tree or return from a component.
@@ -778,15 +973,20 @@ def html(template: Template) -> VNode:
 
     Example:
         ```python
-        html(t'<li class={(lambda: "done" if done() else "")}>{title}</li>')
+        html(t'<li class={"done" if done() else ""}>{title}</li>')
         ```
     """
     if type(template) is not Template:
         raise TypeError(f"html() takes a t-string, got {type(template).__name__}")
-    strings = template.strings
-    entry = _by_identity.get(id(strings))
-    if entry is None or entry.strings is not strings:
-        entry = _compile(template)
+    if compiled is not None:
+        entry = compiled.entry or compiled.load(template)
+    else:
+        strings = template.strings
+        entry = _by_identity.get(id(strings))
+        if entry is None or entry.strings is not strings:
+            entry = _compile(template)
+        if _warnings.DEV_MODE:
+            _check_uncompiled(entry, template)
     items = template.interpolations
     for item in items:
         if item.conversion or item.format_spec:
@@ -846,8 +1046,6 @@ def _parts_value(parts: tuple[Any, ...], values: tuple[Any, ...]) -> Any:
                 value = values[part]
                 if is_accessor(value):
                     value = value()
-                elif type(value) is Template:
-                    value = render_template(value)
                 out.append("" if value is None or value is False else str(value))
         return "".join(out)
 
@@ -858,8 +1056,8 @@ def _parts_value(parts: tuple[Any, ...], values: tuple[Any, ...]) -> Any:
 _KEYWORD_PROPS = {"class": "class_", "for": "html_for"}
 
 # How a component tag calls a callable that isn't an `@component`, per callable.
-_CALL_KEYWORDS = 0  # f(children=[...], **props): flow controls, boundaries
-_CALL_POSITIONAL = 1  # f(*children, **props): `Link`, context providers
+_CALL_KEYWORDS = 0  # f(children=[...], **props): flow controls, boundaries, `Link` (it takes `**rest`)
+_CALL_POSITIONAL = 1  # f(*children, **props): context providers, `NoHydration`
 _CALL_DICT = 2  # h(f, props): a plain function tag that takes the props dict
 _call_styles: dict[Any, tuple[int, tuple[str, ...]]] = {}
 
@@ -1028,9 +1226,14 @@ def _bind_reconciler() -> None:
     _replace_hole_getter = reconciler._replace_hole_getter
 
 
+# A template child slot's hole region keeps its expression in its binding,
+# not in its props, so every slot shares these (never written).
+_SLOT_PROPS: Any = MappingProxyType({})
+
+
 def _text_hole(nid: int, text: str) -> VNode:
     """Turn a child slot holding text in its placeholder into a hole region."""
-    hole = VNode("_hole", {}, [])
+    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     hole.el = nid
     hole._frag_end = nid
     hole._hole_text = text
@@ -1057,17 +1260,16 @@ def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None) -> 
     compiled.mount(vnode, parent_id, anchor_id)
 
 
-def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int) -> Any:
+def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool = False) -> Any:
     """Mount a child slot's value that isn't text in a text placeholder."""
     if _region_set is None:
         _bind_reconciler()
-    hole = VNode("_hole", {}, [])
+    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     if is_accessor(value):
-        hole.props["getter"] = value
         if op is not None:
-            _mount_hole(hole, parent_id, None, nid, None, True, op, slot)
+            _mount_hole(hole, parent_id, None, nid, None, True, op, slot, value, probe)
         else:
-            _mount_hole(hole, parent_id, None, nid, None, False)
+            _mount_hole(hole, parent_id, None, nid, None, False, None, 0, value, probe)
         return hole
     hole.el = nid
     hole._frag_end = nid
@@ -1080,25 +1282,25 @@ def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot
 def _component_slot(node: _Component, values: tuple[Any, ...], parent_id: int, nid: int) -> VNode:
     if _region_set is None:
         _bind_reconciler()
-    hole = VNode("_hole", {}, [])
+    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     hole.el = nid
     hole._frag_end = nid
     _region_set(hole, parent_id, nid, _component(node, values))
     return hole
 
 
-def _prop_slot(nid: int, name: str, value: Any) -> Any:
+def _prop_slot(nid: int, name: str, value: Any, probe: bool = False) -> Any:
     getter = binding_value(name, value)
     if getter is not None:
-        return _bind_reactive_prop(nid, name, getter, _FRESH, False)
+        return _bind_reactive_prop(nid, name, getter, _FRESH, False, probe)
     _apply_single_prop(nid, name, _FRESH, value)
     return None
 
 
-def _parts_slot(nid: int, name: str, parts: tuple[Any, ...], values: tuple[Any, ...]) -> Any:
+def _parts_slot(nid: int, name: str, parts: tuple[Any, ...], values: tuple[Any, ...], probe: bool = False) -> Any:
     value = _parts_value(parts, values)
     if callable(value):
-        return _bind_reactive_prop(nid, name, value, _FRESH, False)
+        return _bind_reactive_prop(nid, name, value, _FRESH, False, probe)
     if value:
         _apply_single_prop(nid, name, _FRESH, value)
     return None
@@ -1140,11 +1342,17 @@ _CELLS = (
 _debug_sources: list[str] | None = None
 
 
-def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
-    """Generate the straight-line mount function for one compiled template."""
+def mount_source(compiled: _Compiled, name: str) -> str:
+    """The source of a factory returning `compiled`'s straight-line mount function.
+
+    The factory takes the framework names in `_CELLS` and returns
+    `mount(vnode, parent, anchor)`. `html()` executes this source the
+    first time a template compiled at run time mounts; the compiler
+    writes it into the module instead (see `wybthon.compiler`).
+    """
     texts = len(compiled.texts)
     lines = [
-        "def factory(" + ", ".join(_CELLS) + "):",
+        f"def {name}(" + ", ".join(_CELLS) + "):",
         "    def mount(vnode, parent, anchor):",
         "        values = vnode.children",
         "        first = alloc(" + str(compiled.count) + ")",
@@ -1160,9 +1368,11 @@ def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
         d = f"d{k}"
         out.append(d)
         if kind == _S_PROP:
-            lines.append(f"        {d} = prop_slot({nid}, {slot[3]!r}, values[{slot[2]}])")
+            probe = slot[2] in compiled.probes
+            lines.append(f"        {d} = prop_slot({nid}, {slot[3]!r}, values[{slot[2]}], {probe})")
         elif kind == _S_PARTS:
-            lines.append(f"        {d} = parts_slot({nid}, {slot[3]!r}, PLAN[{k}][2], values)")
+            probe = all(type(p) is str or p in compiled.probes for p in slot[2])
+            lines.append(f"        {d} = parts_slot({nid}, {slot[3]!r}, PLAN[{k}][2], values, {probe})")
         elif kind == _S_EVENT:
             lines.append(f"        v = values[{slot[2]}]")
             if slot[5]:
@@ -1182,6 +1392,7 @@ def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
             parent = f"first + {slot[3]}" if slot[3] else "first"
             text_slot = slot[4]
             lines.append(f"        v = values[{slot[2]}]")
+            probe = slot[2] in compiled.probes
             if text_slot >= 0:
                 index = 5 + text_slot
                 lines.append("        tv = type(v)")
@@ -1190,36 +1401,45 @@ def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
                 lines.append("        elif tv is int or tv is float:")
                 lines.append(f"            op[{index}] = {d} = str(v)")
                 lines.append("        else:")
-                lines.append(f"            {d} = child_slot(v, {parent}, {nid}, op, {index})")
+                lines.append(f"            {d} = child_slot(v, {parent}, {nid}, op, {index}, {probe})")
             else:
-                lines.append(f"        {d} = child_slot(v, {parent}, {nid}, None, -1)")
+                lines.append(f"        {d} = child_slot(v, {parent}, {nid}, None, -1, {probe})")
         else:  # _S_COMPONENT
             parent = f"first + {slot[3]}" if slot[3] else "first"
             lines.append(f"        {d} = component_slot(PLAN[{k}][2], values, {parent}, {nid})")
     lines.append("        vnode.dyn = (" + "".join(f"{d}, " for d in out) + ")")
     lines.append("    return mount")
-    source = "\n".join(lines)
+    return "\n".join(lines) + "\n"
+
+
+def _cells(compiled: _Compiled) -> tuple[Any, ...]:
+    """The arguments a mount factory takes, in `_CELLS` order."""
+    return (
+        compiled,
+        compiled.plan,
+        kernel.register_template,
+        kernel.alloc_ids,
+        kernel.emit,
+        kernel.OP_CLONE,
+        _events,
+        _bind_event,
+        _prop_slot,
+        _parts_slot,
+        _spread_slot,
+        _ref_slot,
+        _child_slot,
+        _component_slot,
+    )
+
+
+def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
+    """Generate the mount function for a template compiled at run time."""
+    source = mount_source(compiled, "factory")
     if _debug_sources is not None:
         _debug_sources.append(source)
     namespace: dict[str, Any] = {}
     exec(compile(source, f"<wybthon html {compiled.root.tag}>", "exec"), namespace)
-    cells = {
-        "C": compiled,
-        "PLAN": compiled.plan,
-        "register": kernel.register_template,
-        "alloc": kernel.alloc_ids,
-        "emit": kernel.emit,
-        "OP_CLONE": kernel.OP_CLONE,
-        "events": _events,
-        "bind_event": _bind_event,
-        "prop_slot": _prop_slot,
-        "parts_slot": _parts_slot,
-        "spread_slot": _spread_slot,
-        "ref_slot": _ref_slot,
-        "child_slot": _child_slot,
-        "component_slot": _component_slot,
-    }
-    mount_fn: Callable[[VNode, int, int | None], None] = namespace["factory"](*(cells[name] for name in _CELLS))
+    mount_fn: Callable[[VNode, int, int | None], None] = namespace["factory"](*_cells(compiled))
     return mount_fn
 
 
@@ -1271,7 +1491,8 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                 dyn[k] = None
             value = _parts_value(parts, values)
             if callable(value):
-                dyn[k] = _bind_reactive_prop(nid, slot[3], value, _FRESH, False)
+                probe = all(type(p) is str or p in compiled.probes for p in parts)
+                dyn[k] = _bind_reactive_prop(nid, slot[3], value, _FRESH, False, probe)
             else:
                 _apply_single_prop(nid, slot[3], _FRESH, value)
             continue
@@ -1287,7 +1508,7 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                 dyn[k] = None
             getter = binding_value(slot[3], value)
             if getter is not None:
-                dyn[k] = _bind_reactive_prop(nid, slot[3], getter, _FRESH, False)
+                dyn[k] = _bind_reactive_prop(nid, slot[3], getter, _FRESH, False, index in compiled.probes)
             elif not (type(value) is type(previous) and value == previous):
                 _apply_single_prop(nid, slot[3], _FRESH, value)
         elif kind == _S_EVENT:
@@ -1320,7 +1541,7 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                     continue
                 hole = dyn[k] = _text_hole(nid, hole)
             if is_accessor(value) or hole.render_effect is not None:
-                dyn[k] = _replace_hole_getter(hole, first + slot[3], value)
+                dyn[k] = _replace_hole_getter(hole, first + slot[3], value, index in compiled.probes)
             else:
                 _region_set(hole, first + slot[3], nid, value)
     new.dyn = tuple(dyn)
@@ -1343,23 +1564,20 @@ def dispose(vnode: VNode, owned: bool = False) -> None:
     if compiled is None or first is None:
         return
     handlers = _events._handlers
+    handlers_of = _events.handlers_of
     for offset in compiled.handlers:
-        mapping = handlers.pop(first + offset, None)
-        if mapping:
-            for handler in mapping.values():
-                if handler.task_owner is not None:
-                    handler.task_owner.dispose()
+        for handler in handlers_of(handlers.pop(first + offset, None)):
+            if handler.task_owner is not None:
+                handler.task_owner.dispose()
     for offset in compiled.refs:
         detach_ref(first + offset)
     for offset in compiled.spreads:
         nid = first + offset
         detach_ref(nid)
         remove_bindings_for(nid)
-        mapping = handlers.pop(nid, None)
-        if mapping:
-            for handler in mapping.values():
-                if handler.task_owner is not None:
-                    handler.task_owner.dispose()
+        for handler in handlers_of(handlers.pop(nid, None)):
+            if handler.task_owner is not None:
+                handler.task_owner.dispose()
     dyn = vnode.dyn
     if dyn:
         for k, slot in enumerate(compiled.plan):

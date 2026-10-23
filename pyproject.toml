@@ -50,6 +50,9 @@ default-groups = []
 [project.scripts]
 wyb = "wybthon.dev:main"
 
+[project.entry-points.pytest11]
+wybthon = "wybthon_pytest"
+
 [project.urls]
 Homepage = "https://github.com/wybthon/wybthon"
 Repository = "https://github.com/wybthon/wybthon"
@@ -66,6 +69,7 @@ wybthon = ["py.typed", "_bootstrap.js", "_kernel.js"]
 
 [tool.setuptools]
 license-files = ["LICENSE*"]
+py-modules = ["wybthon_pytest"]
 
 [tool.ruff]
 target-version = "py314"

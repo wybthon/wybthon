@@ -1,25 +1,26 @@
-"""Engine v2 surface: zero-argument handlers, t-strings, and typed components.
+"""Engine surface: zero-argument handlers, compiled expressions, and typed components.
 
 - Handlers may take no arguments (sync or async); the event is optional.
-- A t-string with reactive interpolations is one binding that updates the
-  whole string; one with only plain values renders as static text.
-- ``Badge`` declares its inputs on a ``Props`` class: reactive ``Prop``
-  fields the parent feeds with a signal, a derived function, and a plain
-  value, plus plain fields for a callback and its test id.
+- Dynamic expressions in a template (``{count() * 2}``, ``{price():.2f}``,
+  ``title="count is {count()}"``) are compiled into getters, so each one
+  updates its own text node or attribute; names and constants render
+  as they are.
+- ``Badge`` declares its inputs on a ``Props`` class with plain
+  annotations. The parent feeds them with a compiled expression, a
+  signal, a derived expression, and plain values, plus a callback field
+  that's handed through untouched.
 """
 
 import asyncio
 from collections.abc import Callable
 
-from app.testkit import tid
-
-from wybthon import Prop, Props, button, component, create_memo, create_signal, div, h2, p, prop, span
+from wybthon import Props, component, create_memo, create_signal, html
 
 
 class BadgeProps(Props):
-    label: Prop[str]
-    count: Prop[int] = prop(default=0)
-    tone: Prop[str] = prop(default="plain")
+    label: str
+    count: int = 0
+    tone: str = "plain"
     on_ping: Callable[[int], None] | None = None
     test_id: str = "eng-badge"
 
@@ -38,13 +39,16 @@ def Badge(props: BadgeProps):
         if props.on_ping is not None:
             props.on_ping(pings.peek() + 1)
 
-    return div(
-        span(props.label, **tid(f"{props.test_id}-label")),
-        span(props.count, **tid(f"{props.test_id}-count")),
-        span(t"{props.label}={props.count} ({props.tone})", class_=t"tone-{props.tone}", **tid(f"{props.test_id}-t")),
-        button("ping", on_click=ping, **tid(f"{props.test_id}-ping")),
-        **tid(props.test_id),
-    )
+    return html(t"""
+      <div data-testid={props.test_id}>
+        <span data-testid="{props.test_id}-label">{props.label}</span>
+        <span data-testid="{props.test_id}-count">{props.count}</span>
+        <span data-testid="{props.test_id}-t" class="tone-{props.tone}">
+          {props.label}={props.count} ({props.tone})
+        </span>
+        <button data-testid="{props.test_id}-ping" onclick={ping}>ping</button>
+      </div>
+    """)
 
 
 @component
@@ -65,33 +69,37 @@ def Page():
         await asyncio.sleep(0)
         set_async_taps(lambda n: n + 1)
 
-    return div(
-        h2("Engine"),
-        div(
-            button("tap", on_click=tap, **tid("eng-tap")),
-            button("tap (lambda)", on_click=lambda: set_taps(lambda n: n + 10), **tid("eng-tap-lambda")),
-            button("tap (async)", on_click=tap_later, **tid("eng-tap-async")),
-            span(taps, **tid("eng-taps")),
-            span(async_taps, **tid("eng-async-taps")),
-        ),
-        div(
-            p(t"Count: {count} (doubled: {doubled})", **tid("eng-t-count")),
-            p(t"Price: {price:.2f}", **tid("eng-t-price")),
-            p(t"Hello, {static_name}!", **tid("eng-t-static")),
-            span("attr", title=t"count is {count}", class_=t"item item-{count}", **tid("eng-t-attr")),
-            button("+1", on_click=lambda: set_count(lambda n: n + 1), **tid("eng-inc")),
-            button("price", on_click=lambda: set_price(lambda v: v + 1.25), **tid("eng-price")),
-        ),
-        div(
-            Badge(
-                label=label,
-                count=count,
-                tone=lambda: "hot" if count() > 2 else "cold",
-                on_ping=lambda n: set_received(f"ping {n}"),
-            ),
-            Badge(label="fixed", test_id="eng-badge-static"),
-            span(received, **tid("eng-received")),
-            button("rename", on_click=lambda: set_label("taps"), **tid("eng-rename")),
-        ),
-        **tid("page-engine"),
-    )
+    return html(t"""
+      <div data-testid="page-engine">
+        <h2>Engine</h2>
+        <div>
+          <button data-testid="eng-tap" onclick={tap}>tap</button>
+          <button data-testid="eng-tap-lambda" onclick={(lambda: set_taps(lambda n: n + 10))}>tap (lambda)</button>
+          <button data-testid="eng-tap-async" onclick={tap_later}>tap (async)</button>
+          <span data-testid="eng-taps">{taps()}</span>
+          <span data-testid="eng-async-taps">{async_taps()}</span>
+        </div>
+        <div>
+          <p data-testid="eng-t-count">Count: {count()} (doubled: {count() * 2})</p>
+          <p data-testid="eng-t-memo">Memo: {doubled}</p>
+          <p data-testid="eng-t-price">Price: {price():.2f}</p>
+          <p data-testid="eng-t-static">Hello, {static_name}!</p>
+          <span data-testid="eng-t-attr" title="count is {count()}" class="item item-{count()}">attr</span>
+          <button data-testid="eng-inc" onclick={(lambda: set_count(lambda n: n + 1))}>+1</button>
+          <button data-testid="eng-price" onclick={(lambda: set_price(lambda v: v + 1.25))}>price</button>
+        </div>
+        <div>
+          {
+        Badge(
+            label=label(),
+            count=count,
+            tone="hot" if count() > 2 else "cold",
+            on_ping=lambda n: set_received(f"ping {n}"),
+        )
+    }
+          <{Badge} label="fixed" test-id="eng-badge-static" />
+          <span data-testid="eng-received">{received()}</span>
+          <button data-testid="eng-rename" onclick={(lambda: set_label("taps"))}>rename</button>
+        </div>
+      </div>
+    """)

@@ -13,7 +13,7 @@ from the router's context.
 from app.featuremeta import FEATURES
 from app.testkit import tid
 
-from wybthon import ParentProps, Prop, component, div, nav, prop
+from wybthon import ParentProps, component, html
 from wybthon.router import Link
 
 
@@ -23,31 +23,33 @@ def _join(base_path: str, to: str) -> str:
     return base_path.rstrip("/") + to
 
 
-def _nav_link(base_path: str, to: str, label: str, slug: str):
-    return Link(
-        label,
-        href=_join(base_path, to),
-        class_="nav-link",
-        active_class="active",
-        end=True,
-        **tid(f"nav-{slug}"),
-    )
-
-
 class ShellProps(ParentProps):
-    base_path: Prop[str] = prop(default="")
+    base_path: str = ""
 
 
 @component
 def Shell(props: ShellProps):
-    bp = props.base_path.peek() or ""
-    links = [_nav_link(bp, "/", "Home", "home")]
-    links += [_nav_link(bp, f"/{slug}", label, slug) for slug, label in FEATURES]
-    links.append(_nav_link(bp, "/blank", "Blank", "blank"))
+    # A constant prop: reading it once in the body is fine.
+    bp = props.base_path or ""
+    pages = [
+        ("/", "Home", "home"),
+        *((f"/{slug}", label, slug) for slug, label in FEATURES),
+        ("/blank", "Blank", "blank"),
+    ]
+    # The comprehension variables are captured by value in each link's getters.
+    links = [
+        html(t"""
+          <{Link} href={_join(bp, to)} class="nav-link" active-class="active" end={True} {tid(f"nav-{slug}")}>
+            {label}
+          </{Link}>
+        """)
+        for to, label, slug in pages
+    ]
 
-    return div(
-        nav(*links, **tid("nav")),
-        div(props.children, **tid("outlet")),
-        div("ready", **tid("app-ready")),
-        **tid("shell"),
-    )
+    return html(t"""
+      <div data-testid="shell">
+        <nav data-testid="nav">{links}</nav>
+        <div data-testid="outlet">{props.children}</div>
+        <div data-testid="app-ready">ready</div>
+      </div>
+    """)

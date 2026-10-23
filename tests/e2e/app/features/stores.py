@@ -1,8 +1,6 @@
 """Reactive stores: per-path tracking and draft-first mutations."""
 
-from app.testkit import tid
-
-from wybthon import button, component, create_store, div, h2, p, span
+from wybthon import component, create_store, html
 
 
 @component
@@ -27,15 +25,18 @@ def Page():
     def add_todo(s):
         s.todos.append({"text": "next", "done": False})
 
-    return div(
-        h2("Stores"),
-        p("count: ", span(lambda: str(store.count), **tid("store-count"))),
-        p("name: ", span(lambda: store.user.name, **tid("store-name"))),
-        p("todo0 done: ", span(lambda: str(store.todos[0].done), **tid("store-todo"))),
-        p("todos len: ", span(lambda: str(len(store.todos)), **tid("store-len"))),
-        button("inc count", on_click=lambda e: set_store(inc), **tid("store-inc")),
-        button("rename", on_click=lambda e: set_store(rename), **tid("store-rename")),
-        button("toggle todo", on_click=lambda e: set_store(toggle), **tid("store-toggle")),
-        button("add todo", on_click=lambda e: set_store(add_todo), **tid("store-add")),
-        **tid("page-stores"),
-    )
+    # Store reads in a template are attribute and item accesses, so each
+    # one compiles into a getter that tracks exactly that path.
+    return html(t"""
+      <div data-testid="page-stores">
+        <h2>Stores</h2>
+        <p>count: <span data-testid="store-count">{store.count}</span></p>
+        <p>name: <span data-testid="store-name">{store.user.name}</span></p>
+        <p>todo0 done: <span data-testid="store-todo">{str(store.todos[0].done)}</span></p>
+        <p>todos len: <span data-testid="store-len">{len(store.todos)}</span></p>
+        <button data-testid="store-inc" onclick={(lambda e: set_store(inc))}>inc count</button>
+        <button data-testid="store-rename" onclick={(lambda e: set_store(rename))}>rename</button>
+        <button data-testid="store-toggle" onclick={(lambda e: set_store(toggle))}>toggle todo</button>
+        <button data-testid="store-add" onclick={(lambda e: set_store(add_todo))}>add todo</button>
+      </div>
+    """)

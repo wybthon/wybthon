@@ -221,6 +221,27 @@ def serve(
         httpd.server_close()
 
 
+def run_script(path: str, argv: list[str]) -> int:
+    """Run `path` as `__main__` with its templates (and its imports') compiled.
+
+    The script's own `html(t"...")` calls are compiled before it runs, and
+    the import hook compiles every module it imports, so a script behaves
+    exactly as it would inside an application.
+    """
+    import sys
+
+    from .compiler import compile_source, install
+
+    install()
+    script = Path(path).resolve()
+    code = compile_source(script.read_bytes(), str(script))
+    sys.argv = [str(script), *argv]
+    sys.path.insert(0, str(script.parent))
+    namespace = {"__name__": "__main__", "__file__": str(script), "__builtins__": __builtins__}
+    exec(code, namespace)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point for `wyb`.
 
@@ -256,11 +277,16 @@ def main(argv: list[str] | None = None) -> int:
     ppreview.add_argument("--dir", default="dist", help="Build directory")
     ppreview.add_argument("--host", default="127.0.0.1", help="Bind address")
     ppreview.add_argument("--port", type=int, default=8000, help="Port to bind")
+    prun = sub.add_parser("run", help="Run a Python script with its templates compiled")
+    prun.add_argument("script", help="Path to the script")
+    prun.add_argument("args", nargs=argparse.REMAINDER, help="Arguments passed to the script")
 
     args = parser.parse_args(argv)
     if args.cmd is None:
         parser.print_help()
         return 1
+    if args.cmd == "run":
+        return run_script(args.script, args.args)
     from .build import build_app, init_app, preview
 
     try:

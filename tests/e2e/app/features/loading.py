@@ -8,9 +8,7 @@ serves its stale value so content stays visible (no fallback).
 
 import asyncio
 
-from app.testkit import tid
-
-from wybthon import Loading, button, component, create_memo, create_signal, div, h2, span
+from wybthon import Loading, component, create_memo, create_signal, html
 
 
 @component
@@ -34,13 +32,18 @@ def Page():
         gate.clear()
         set_version(lambda v: v + 1)
 
-    return div(
-        h2("Loading"),
+    # The content's `{res() or ""}` hole reads the async memo inside the
+    # boundary, which shows the fallback until it first resolves.
+    return html(t"""
+      <div data-testid="page-loading">
+        <h2>Loading</h2>
+        {
         Loading(
-            lambda: span(lambda: res() or "", **tid("load-content")),
-            fallback=lambda: span("loading", **tid("load-fallback")),
-        ),
-        button("resolve", on_click=resolve, **tid("load-resolve")),
-        button("reload", on_click=reload, **tid("load-reload")),
-        **tid("page-loading"),
-    )
+            html(t'<span data-testid="load-content">{res() or ""}</span>'),
+            fallback=html(t'<span data-testid="load-fallback">loading</span>'),
+        )
+    }
+        <button data-testid="load-resolve" onclick={resolve}>resolve</button>
+        <button data-testid="load-reload" onclick={reload}>reload</button>
+      </div>
+    """)

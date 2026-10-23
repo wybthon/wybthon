@@ -10,7 +10,7 @@ Wybthon's demo applications live in standalone repositories under the [wybthon G
 | [photo-lab](https://github.com/wybthon/photo-lab) | Resize, compress, convert, and strip image metadata privately in the browser. Demonstrates file handling and JS interop. |
 
 !!! note "Versions"
-    The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. A demo written before templates builds its markup with the element helpers, which still work; one that imports them from the `wybthon.html` module needs `wybthon.elements` (or a plain `from wybthon import div`) on the current release, because `wybthon.html` is now the template function. Use `wyb init` for a starter that matches the installed version's API.
+    The demos are separate repositories with their own release cadence, so they may target an earlier Wybthon API than the one these docs describe. A demo that builds markup with element helpers (`div(...)`, `p(...)`) or declares `Prop[T]` fields predates Engine v4, which removed both: on the current release, markup is written as [`html`][wybthon.html] templates and props are plain annotations. Use `wyb init` for a starter that matches the installed version's API.
 
 ## Running a demo locally
 
@@ -30,7 +30,7 @@ wyb dev --open
 Wybthon projects follow the same pattern:
 
 - `wybthon.toml` names the entry function (`entry = "app.main:app"`), the mount selector, and the routes to prerender.
-- `wyb build` packages Wybthon and the `app/` package into archives and writes a bootstrap that loads Pyodide and the archives concurrently, then imports the entry.
+- `wyb build` runs the `app/` package through Wybthon's [compiler](../concepts/compiler.md), packages it with Wybthon into archives, and writes a bootstrap that loads Pyodide and the archives concurrently, then imports the entry.
 - `app/main.py` returns the root view from its entry function, typically wrapping the tree in [`Errored`][wybthon.Errored] and [`Loading`][wybthon.Loading] boundaries around a [`Router`][wybthon.router.Router] from `wybthon.router`. The bootstrap renders it, or hydrates the prerendered HTML.
 - Folders under `app/` mirror routes and components, and route pages are often loaded with [`lazy`][wybthon.lazy] so the initial import stays small.
 

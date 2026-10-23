@@ -1,15 +1,21 @@
 """Compiled t-string templates (`html`) in the real browser parser and kernel."""
 
-from wybthon import For, ParentProps, Prop, Show, component, create_memo, create_signal, html
+from wybthon import For, ParentProps, Show, component, create_memo, create_signal, html
 
 
 class CardProps(ParentProps):
-    title: Prop[str]
+    title: str
 
 
 @component
 def Card(props: CardProps):
     return html(t'<section class="tpl-card" data-testid="tpl-card"><h3>{props.title}</h3>{props.children}</section>')
+
+
+def badge(n):
+    # Plain values: the hole that calls `badge(count())` re-runs on each
+    # change and patches the new instance into the mounted one.
+    return html(t'<b data-testid="tpl-badge" title="n={n}">{n * 10}</b>')
 
 
 @component
@@ -38,36 +44,36 @@ def Page():
         return lambda: set_spellings(lambda s: s + which)
 
     def row(item, index):
+        # `item["label"][0]` returns the label's signal; the binding
+        # re-targets at it, so a relabel updates just that cell.
         return html(t'<tr data-testid="tpl-row"><td>{item["id"]}</td><td>{item["label"][0]}</td></tr>')
-
-    def badge():
-        return html(t'<b data-testid="tpl-badge" title={f"n={count()}"}>{count() * 10}</b>')
 
     return html(t"""
       <div data-testid="page-templates">
         <h2>Templates</h2>
         <p data-testid="tpl-count">Count: {count} (doubled: {doubled})</p>
         <button data-testid="tpl-inc" onclick={increment}>+1</button>
-        <button data-testid="tpl-kind" class="btn btn-{kind}" onclick={toggle_kind}>kind</button>
+        <button data-testid="tpl-kind" class="btn btn-{kind()}" onclick={toggle_kind}>kind</button>
         <p data-testid="tpl-whitespace">
           one
           two   three
         </p>
-        <input data-testid="tpl-name" value={name} oninput={(lambda e: set_name(e.target.value))}>
-        <p data-testid="tpl-greeting">Hello, {name}!</p>
+        <input data-testid="tpl-name" value={name()} oninput={(lambda e: set_name(e.target.value))}>
+        <p data-testid="tpl-greeting">Hello, {name()}!</p>
         <table>
-          <tbody data-testid="tpl-body">{For(rows, row)}</tbody>
+          <tbody data-testid="tpl-body">{For(rows(), row)}</tbody>
         </table>
         <button data-testid="tpl-add" onclick={add_row}>add</button>
         <button data-testid="tpl-relabel" onclick={relabel_first}>relabel</button>
-        <div data-testid="tpl-patched">{badge}</div>
-        <{Card} title="Card"><em data-testid="tpl-card-child">child {count}</em></{Card}>
+        <div data-testid="tpl-patched">{badge(count())}</div>
+        <{Card} title="Card"><em data-testid="tpl-card-child">child {count()}</em></{Card}>
+        <div data-testid="tpl-named"><{Card} title={name().upper()}>named</{Card}></div>
         <button data-testid="tpl-show" onclick={(lambda: set_shown(lambda v: not v))}>show</button>
-        {Show(shown, html(t'<i data-testid="tpl-shown">shown</i>'), html(t'<i data-testid="tpl-hidden">hidden</i>'))}
+        {Show(shown(), html(t'<i data-testid="tpl-shown">shown</i>'), html(t'<i data-testid="tpl-hidden">hidden</i>'))}
         <button data-testid="tpl-lower" onclick={heard("a")}>a</button>
         <button data-testid="tpl-camel" onClick={heard("b")}>b</button>
         <button data-testid="tpl-colon" on:click={heard("c")}>c</button>
-        <span data-testid="tpl-heard">{spellings}</span>
-        <svg data-testid="tpl-svg" viewBox="0 0 10 10"><circle r={count} cx="5" cy="5" /></svg>
+        <span data-testid="tpl-heard">{spellings()}</span>
+        <svg data-testid="tpl-svg" viewBox="0 0 10 10"><circle r={count()} cx="5" cy="5" /></svg>
       </div>
     """)
