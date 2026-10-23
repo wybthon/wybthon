@@ -131,4 +131,4 @@ uv run python benchmarks/row_bench.py /tmp/wybthon-before/src --reps 5 > before.
 uv run python benchmarks/compare_browser.py --baseline /tmp/wybthon-before > signal-comparison.json
 ```
 
-Alternate the checkouts across several fresh processes and compare per-round ratios. Raw reports: [native rows](engine-v4-native.json), [browser, signal mode](engine-v4-browser-signal.json), and [browser, store mode](engine-v4-browser-store.json).
+Alternate the checkouts across several fresh processes and compare per-round ratios. The raw reports aren't committed: the tables above are the record of this evaluation, and the benchmark workflow uploads fresh reports as artifacts on every run.
