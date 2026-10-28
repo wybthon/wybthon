@@ -14,10 +14,22 @@ from typing import Any
 from . import diagnostics, kernel, reconciler, templates
 from .kernel import OP_DISPOSE_RANGE
 from .reactivity import _core
-from .reactivity._core import Accessor, Computation, Owner, Signal, _CallbackScope, _read, _run_callback_body
+from .reactivity._core import (
+    Accessor,
+    Computation,
+    Owner,
+    Signal,
+    _bind,
+    _CallbackScope,
+    _Getter,
+    _positional_count,
+    _read,
+    _run_callback_body,
+)
 from .vnode import VNode
 
 _SCALARS = (str, int, float, bool, bytes, type(None), tuple, frozenset)
+_SCALAR_TYPES = frozenset(_SCALARS)
 
 # Store list support, registered by ``wybthon.store`` when it's imported. A
 # page that never imports stores can't produce a store list, so list regions
@@ -36,19 +48,46 @@ def register_store(store_list: type, wrap: Any) -> None:
     _wrap = wrap
 
 
+def _render_slot(slot: Any, *args: Any) -> Any:
+    """Evaluate a `children`/`fallback` slot.
+
+    A callable slot is invoked with `args` when it declares positional
+    parameters and with none otherwise. Anything else (a VNode, string,
+    list, or `None`) is returned as is for the region to coerce.
+    """
+    if slot is None or isinstance(slot, VNode):
+        return slot
+    if type(slot) is _Getter:
+        # An expression a compiled template passed: its value is the slot.
+        slot = slot.fn()
+        if slot is None or isinstance(slot, VNode):
+            return slot
+    if isinstance(slot, list) and len(slot) == 1 and callable(slot[0]) and not isinstance(slot[0], VNode):
+        slot = slot[0]
+    if callable(slot):
+        if args and _positional_count(slot) != 0:
+            return slot(*args)
+        return slot()
+    return slot
+
+
 _FOR_SCOPE = _CallbackScope("For")
 _REPEAT_SCOPE = _CallbackScope("Repeat")
 _BRANCH_SCOPE = _CallbackScope("Show or Match")
 
 
 def _identity(value: Any) -> Any:
+    """A row's identity key: `(0, value)` for a hashable scalar, else the object's `id`.
+
+    An `id` is an int, so it never equals a scalar's tuple key.
+    """
     if isinstance(value, _SCALARS):
         try:
             hash(value)
             return (0, value)
         except TypeError:
             pass
-    return (1, id(value))
+    return id(value)
 
 
 @dataclass(slots=True)
@@ -103,6 +142,11 @@ class _Row(Owner, Accessor[int]):
 
     def _label(self) -> str:
         return "the row index"
+
+    def dispose(self) -> None:
+        """Dispose the row's scope, and let go of its node (which refers back to the row)."""
+        Owner.dispose(self)
+        self.vnode = None
 
 
 def _update_index(row: _Row, index: int) -> None:
@@ -171,7 +215,14 @@ class _ListRegion:
         return _Input(value, () if value is None else value)
 
     def key(self, item: Any) -> Any:
-        return self.keyed(item) if callable(self.keyed) else _identity(item)
+        keyed = self.keyed
+        if keyed is True:
+            # Identity: most rows are entities (dicts, objects), which
+            # match by `id`; scalars match by value.
+            if type(item) not in _SCALAR_TYPES:
+                return id(item)
+            return _identity(item)
+        return keyed(item) if callable(keyed) else _identity(item)
 
     def new_row(self, item: Any, index: int, key: Any) -> _Row:
         if diagnostics._active is not None:
@@ -195,13 +246,13 @@ class _ListRegion:
                 position = f"{getattr(self.vnode, 'pk', None) or _core._position}.{index}"
                 previous = _core._enter_position(position)
                 try:
-                    result = _run_callback_body(owner, scope, lambda: self.callback(*args))
+                    result = _run_callback_body(owner, scope, self.callback, *args)
                 finally:
                     _core._restore_position(previous)
                 node = reconciler._coerce_result(result)
                 node.pk = position
             else:
-                node = reconciler._coerce_result(_run_callback_body(owner, scope, lambda: self.callback(*args)))
+                node = reconciler._coerce_result(_run_callback_body(owner, scope, self.callback, *args))
             node.owner_scope = owner
             owner.vnode = node
             return owner
@@ -226,27 +277,22 @@ class _ListRegion:
 
     def drop_fallback(self) -> None:
         if self.fallback is not None:
-            from .reconciler import _unmount
-
-            _unmount(self.fallback)
+            reconciler._unmount(self.fallback)
             if self.fallback.owner_scope is not None:
                 self.fallback.owner_scope.dispose()
             self.fallback = None
             self.vnode.children.clear()
 
     def show_fallback(self) -> None:
-        from .flow import _render_slot
-        from .reconciler import _coerce_result, mount
-
         fallback = self.vnode.props.get("fallback")
         if fallback is None or self.fallback is not None:
             return
         owner = Owner()
         self.scope._add_child(owner)
         try:
-            self.fallback = _core._run_owned_untracked(owner, lambda: _coerce_result(_render_slot(fallback)))
+            self.fallback = reconciler._coerce_result(_core._run_owned_untracked(owner, _render_slot, fallback))
             self.fallback.owner_scope = owner
-            mount(self.fallback, self.parent, self.vnode._frag_end, self.vnode.ns)
+            reconciler.mount(self.fallback, self.parent, self.vnode._frag_end, self.vnode.ns)
             self.vnode.children[:] = [self.fallback]
         except BaseException:
             owner.dispose()
@@ -426,6 +472,9 @@ class _ListRegion:
         if first is not None and last is not None:
             kernel.emit((OP_DISPOSE_RANGE, first, last))
         dispose_template = templates.dispose
+        if len(rows) > 64:
+            # Their nodes and bindings are freed when the browser is idle.
+            _core._release_later([row.vnode for row in rows])
         for row in reversed(rows) if reverse else rows:
             vnode = row.vnode
             # The row's owner disposes its computations and scopes.
@@ -572,9 +621,7 @@ class _ListRegion:
 
 def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
     """Mount a list region and its phased input subscription."""
-    from .reconciler import _close_fragment, _open_fragment
-
-    claim_end = _open_fragment(vnode, parent, anchor)
+    claim_end = reconciler._open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()
     if _core._current_owner is not None:
         _core._current_owner._add_child(scope)
@@ -585,79 +632,93 @@ def mount_list(vnode: VNode, parent: int, anchor: int | None) -> None:
     vnode.render_effect = comp
     comp._update_if_necessary()
     if claim_end:
-        _close_fragment(vnode, parent)
+        reconciler._close_fragment(vnode, parent)
 
 
-def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
-    """Mount a selected branch, retaining its committed scope until replacement.
+class _BranchRegion:
+    """A mounted `Show`, `Switch`, or other selected branch.
 
     The branch's `select(inputs, current)` returns `(token, slot, args)`;
     the content re-mounts only when the token changes. `current` reads the
-    latest inputs (a signal when the region can be patched).
+    latest inputs: a signal (`cell`) when a re-rendering hole can push new
+    inputs into the region, otherwise the inputs it mounted with.
     """
-    from .flow import _render_slot
-    from .reconciler import _close_fragment, _coerce_result, _open_fragment, _unmount
 
-    select = vnode.props["select"]
-    inputs = vnode.props["inputs"]
-    if reconciler._patchable:
-        cell: Signal[Any] = Signal(inputs)
-        vnode.props["_cell"] = cell
+    __slots__ = ("vnode", "parent", "select", "inputs", "cell", "token", "owner")
 
-        def choose() -> Any:
-            return select(cell(), cell)
+    def __init__(self, vnode: VNode, parent: int) -> None:
+        self.vnode = vnode
+        self.parent = parent
+        self.select = vnode.props["select"]
+        self.inputs = vnode.props["inputs"]
+        self.cell: Signal[Any] | None = Signal(self.inputs) if reconciler._patchable else None
+        self.token: Any = _core._MISSING
+        self.owner: Owner | None = None
 
-    else:
+    def current(self) -> Any:
+        cell = self.cell
+        return cell() if cell is not None else self.inputs
 
-        def current() -> Any:
-            return inputs
+    def choose(self) -> Any:
+        cell = self.cell
+        if cell is not None:
+            return self.select(cell(), cell)
+        return self.select(self.inputs, self.current)
 
-        def choose() -> Any:
-            return select(inputs, current)
 
-    claim_end = _open_fragment(vnode, parent, anchor)
+def _apply_branch(region: _BranchRegion, selection: Any, previous: Any) -> None:
+    """A branch region's apply stage: mount the selected branch when its token changed."""
+    token, slot, args = selection
+    if region.token is not _core._MISSING and not _core._changed(_core._DEFAULT_EQUALS, region.token, token):
+        return
+    vnode = region.vnode
+    for child in vnode.children:
+        reconciler._unmount(child)
+    if region.owner is not None:
+        region.owner.dispose()
+        region.owner = None
+    if slot is None:
+        # Nothing to show (a `Show` without a fallback): no scope, no node.
+        vnode.children.clear()
+        region.token = token
+        return
+    owner = region.owner = Owner()
+    vnode.scope._add_child(owner)
+    try:
+        session = _core._session
+        if session is not None and session.keying:
+            position = f"{getattr(vnode, 'pk', None) or _core._position}.{token[0]}"
+            outer_position = _core._enter_position(position)
+            try:
+                node = reconciler._coerce_result(_run_callback_body(owner, _BRANCH_SCOPE, _render_slot, slot, *args))
+            finally:
+                _core._restore_position(outer_position)
+            node.pk = position
+        else:
+            node = reconciler._coerce_result(_run_callback_body(owner, _BRANCH_SCOPE, _render_slot, slot, *args))
+        node.owner_scope = owner
+        reconciler.mount(node, region.parent, vnode._frag_end, vnode.ns)
+        vnode.children[:] = [node]
+        region.token = token
+    except BaseException:
+        owner.dispose()
+        region.owner = None
+        raise
+
+
+def mount_branch(vnode: VNode, parent: int, anchor: int | None) -> None:
+    """Mount a selected branch, retaining its committed scope until replacement."""
+    region = _BranchRegion(vnode, parent)
+    vnode.props["_region"] = region
+    claim_end = reconciler._open_fragment(vnode, parent, anchor)
     scope = vnode.scope = Owner()
     if _core._current_owner is not None:
         _core._current_owner._add_child(scope)
-    previous: list[Any] = [_core._MISSING]
-    branch_owner: list[Owner | None] = [None]
-
-    def apply(selection: Any) -> None:
-        token, slot, args = selection
-        if previous[0] is not _core._MISSING and not _core._changed(_core._DEFAULT_EQUALS, previous[0], token):
-            return
-        for child in vnode.children:
-            _unmount(child)
-        if branch_owner[0] is not None:
-            branch_owner[0].dispose()
-        owner = branch_owner[0] = Owner()
-        scope._add_child(owner)
-        try:
-            session = _core._session
-            if session is not None and session.keying:
-                position = f"{getattr(vnode, 'pk', None) or _core._position}.{token[0]}"
-                outer_position = _core._enter_position(position)
-                try:
-                    node = _run_callback_body(owner, _BRANCH_SCOPE, lambda: _coerce_result(_render_slot(slot, *args)))
-                finally:
-                    _core._restore_position(outer_position)
-                node.pk = position
-            else:
-                node = _run_callback_body(owner, _BRANCH_SCOPE, lambda: _coerce_result(_render_slot(slot, *args)))
-            node.owner_scope = owner
-            reconciler.mount(node, parent, vnode._frag_end, vnode.ns)
-            vnode.children[:] = [node]
-            previous[0] = token
-        except BaseException:
-            owner.dispose()
-            raise
-
-    comp = Computation(choose, kind=_core._K_RENDER, apply_scope=False, apply=apply, pass_prev=False)
-    scope._add_child(comp)
-    vnode.render_effect = comp
-    comp._update_if_necessary()
+    comp = _bind(region.choose, _apply_branch, region, None, False, scope)
+    if not comp._disposed:
+        vnode.render_effect = comp
     if claim_end:
-        _close_fragment(vnode, parent)
+        reconciler._close_fragment(vnode, parent)
 
 
 def patch_region(old: VNode, new: VNode) -> bool:
@@ -679,18 +740,16 @@ def patch_region(old: VNode, new: VNode) -> bool:
         region.cell._set(new.props["source"])
         new.props["_region"] = region
     else:
-        cell = old.props.get("_cell")
-        if cell is None or old.props["select"] is not new.props["select"]:
+        branch = old.props.get("_region")
+        if branch is None or branch.cell is None or old.props["select"] is not new.props["select"]:
             return False
-        cell._set(new.props["inputs"])
-        new.props["_cell"] = cell
+        branch.cell._set(new.props["inputs"])
+        new.props["_region"] = branch
     new.el = old.el
     new._frag_end = old._frag_end
     new.scope = old.scope
     new.render_effect = old.render_effect
     new.children = old.children
     new.ns = old.ns
-    region = new.props.get("_region")
-    if region is not None:
-        region.vnode = new
+    new.props["_region"].vnode = new
     return True

@@ -32,7 +32,7 @@ class _Row:
 
 
 def _run_row[T](owner: Owner, fn: Callable[..., T], *args: Any) -> T:
-    return _core._run_owned_untracked(owner, lambda: fn(*args))
+    return _core._run_owned_untracked(owner, fn, *args)
 
 
 def map_array[T, U](

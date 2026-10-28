@@ -365,8 +365,8 @@ def affects(*targets: Any) -> None:
         node = _affect_node(target)
         tx.root().affected.add(node)
         if isinstance(node, (Signal, Computation)):
-            for observer in node._observers or ():
-                if (observer._sources or {}).get(node, 0) & _core._R_PROBE:
+            for observer in _core._edges(node._observers):
+                if _core._mode(observer._sources, node) & _core._R_PROBE:
                     observer._stale(_core._DIRTY)
         else:
             node._notify()

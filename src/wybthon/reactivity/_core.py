@@ -350,8 +350,8 @@ class _CallbackScope:
         self.name = name
 
 
-def _run_callback_body[T](owner: Owner | None, scope: _CallbackScope, fn: Callable[[], T]) -> T:
-    """Run a control-flow callback owned by `owner`, untracked, warning on top-level reads.
+def _run_callback_body[T](owner: Owner | None, scope: _CallbackScope, fn: Callable[..., T], *args: Any) -> T:
+    """Run a control-flow callback `fn(*args)` owned by `owner`, untracked, warning on top-level reads.
 
     Like a component body, a `For`, `Repeat`, `Show`, or `Match`
     callback is an owner but not a tracking scope, so a read at its
@@ -364,7 +364,7 @@ def _run_callback_body[T](owner: Owner | None, scope: _CallbackScope, fn: Callab
     _setup_depth += 1
     _setup_component = scope
     try:
-        return fn()
+        return fn(*args)
     finally:
         _current_owner, _current_observer, _setup_component = saved
         _setup_depth -= 1
@@ -503,13 +503,10 @@ def _join(left: Transition | None, right: Transition | None) -> Transition | Non
 
 def _source_transition(sources: Any) -> Transition | None:
     tx = None
-    if sources:
-        for src in sources:
-            # Edges carry escape-read metadata. A normal read wins when the
-            # same computation also probes or reads latest from this source.
-            if isinstance(sources, dict) and not sources[src] & _R_NORMAL:
-                continue
-            tx = _join(tx, _node_tx.get(src))
+    # Edges carry escape-read metadata. A normal read wins when the same
+    # computation also probes or reads latest from this source.
+    for src in _normal_sources(sources):
+        tx = _join(tx, _node_tx.get(src))
     return tx
 
 
@@ -559,7 +556,7 @@ def _record_derived(node: Any, old: Any, sources: Any) -> None:
     if tx is not None:
         _hold(node, old, tx)
     elif _flushing:
-        parents = tuple(src for src in sources or () if not isinstance(sources, dict) or sources[src] & _R_NORMAL)
+        parents = tuple(_normal_sources(sources))
         if parents:
             _tentative.setdefault(node, old)
             _causes[node] = parents
@@ -599,10 +596,12 @@ def _has_demand(node: Computation) -> bool:
         if source in seen:
             continue
         seen.add(source)
-        if isinstance(source, Computation) and source._readiness_signal is not None:
-            queue.append(source._readiness_signal)
-        for observer in source._observers or ():
-            if observer._disposed or not (observer._sources or {}).get(source, 0) & _R_NORMAL:
+        if isinstance(source, Computation):
+            x = source._ext
+            if x is not None and x.readiness is not None:
+                queue.append(x.readiness)
+        for observer in _edges(source._observers):
+            if observer._disposed or not _mode(observer._sources, source) & _R_NORMAL:
                 continue
             if observer._apply is not None and not observer._eager:
                 return True
@@ -616,7 +615,7 @@ def _is_unsettled(node: Any, seen: set[Any]) -> bool:
     seen.add(node)
     if node._async is not None and (node._async.awaiting or node._async.pending):
         return True
-    return any(_is_unsettled(src, seen) for src in node._sources or ())
+    return any(_is_unsettled(src, seen) for src in _edges(node._sources))
 
 
 def _track_source(node: Any) -> None:
@@ -624,6 +623,49 @@ def _track_source(node: Any) -> None:
     obs = _current_observer
     if obs is not None:
         obs._add_source(node)
+
+
+# ---------------------------------------------------------------------------
+# Edges
+#
+# A computation's ``_sources`` is ``None``, the one source it read with an
+# ordinary tracked read, or a dict mapping each source to its read modes. A
+# source's ``_observers`` is ``None``, its one observer, or a dict of them.
+# Most bindings read one source and most row-level signals have one
+# observer, so a single link costs no dictionary. Sources and observers
+# are signals and computations, which are never falsy.
+# ---------------------------------------------------------------------------
+
+
+def _edges(links: Any) -> Any:
+    """The peers in an edge set, in any of its representations (a copy, safe to mutate under)."""
+    if links is None:
+        return ()
+    if type(links) is dict:
+        return list(links)
+    return (links,)
+
+
+def _mode(sources: Any, source: Any) -> int:
+    """The read modes `source` has in a computation's sources (0 when it isn't one)."""
+    if sources is None:
+        return 0
+    if type(sources) is dict:
+        mode: int = sources.get(source, 0)
+        return mode
+    return _R_NORMAL if sources is source else 0
+
+
+def _normal_sources(sources: Any) -> Any:
+    """The sources read with an ordinary tracked read (also accepts a tuple of causes)."""
+    if sources is None:
+        return ()
+    t = type(sources)
+    if t is dict:
+        return [src for src, mode in sources.items() if mode & _R_NORMAL]
+    if t is tuple:
+        return sources
+    return (sources,)
 
 
 # ---------------------------------------------------------------------------
@@ -727,37 +769,100 @@ def _drain(queue: list[Computation]) -> None:
         queue.clear()
 
 
-# Depth of nested commit windows (flushes and initial mounts) that have
-# paused the cyclic garbage collector, and whether it was enabled before.
+# Depth of nested commit windows (flushes and initial mounts), and whether
+# Wybthon has disabled the cyclic garbage collector (paused for a window,
+# or waiting for the browser to be idle before enabling it again).
 _gc_pause_depth: int = 0
-_gc_was_enabled: bool = False
+_gc_held: bool = False
+# Disposed structures whose release waits for the browser to be idle.
+_graveyard: list[Any] = []
+# Whether the idle callback is scheduled.
+_idle_scheduled: bool = False
+# `(requestIdleCallback, create_once_callable, options)` in the browser,
+# `False` elsewhere, `None` until probed.
+_js_idle: Any = None
 
 
 def _gc_pause() -> None:
     """Pause the cyclic GC for the duration of a commit window.
 
     A flush (or an initial mount) allocates in bursts: VNodes,
-    computations, prop maps, and DOM ops that almost all outlive the
-    window. CPython's generational collector counts those allocations and
-    runs collections in the middle of the work, each of which traverses a
-    heap that grows with the app; on a 10k-row mount that roughly doubles
-    the wall time without freeing anything. Pausing the collector until
-    the window closes lets the garbage that a window does produce be
-    collected in one pass afterwards. Reference counting is unaffected.
+    computations, and DOM ops that almost all outlive the window.
+    CPython's collector counts those allocations and would run collections
+    in the middle of the work, each traversing a heap that grows with the
+    app, without freeing anything. Disposal leaves no reference cycles
+    (see `Computation.dispose`), so the garbage a window makes is freed by
+    reference counting, and the pause costs no memory.
     """
-    global _gc_pause_depth, _gc_was_enabled
-    if _gc_pause_depth == 0:
-        _gc_was_enabled = gc.isenabled()
-        if _gc_was_enabled:
-            gc.disable()
+    global _gc_pause_depth, _gc_held
+    if _gc_pause_depth == 0 and not _gc_held and gc.isenabled():
+        gc.disable()
+        _gc_held = True
     _gc_pause_depth += 1
 
 
 def _gc_resume() -> None:
+    """End a commit window: in the browser, collect when idle; elsewhere, enable the collector now.
+
+    The first collection after a large mount traverses everything the
+    mount created (tens of milliseconds for thousands of rows in
+    Pyodide). In the browser it runs once the page is idle, after the
+    committed DOM has painted, instead of inside the event handler that
+    caused it.
+    """
     global _gc_pause_depth
     _gc_pause_depth -= 1
-    if _gc_pause_depth == 0 and _gc_was_enabled:
+    if _gc_pause_depth or not _gc_held:
+        return
+    if not _schedule_idle():
+        _idle_work()
+
+
+def _release_later(garbage: Any) -> None:
+    """Keep disposed structures alive until the browser is idle (in CPython, release them now).
+
+    Freeing thousands of rows (their nodes, bindings, and owners) is real
+    work; a clear shouldn't pay for it before the browser can paint.
+    """
+    if _schedule_idle():
+        _graveyard.append(garbage)
+
+
+def _idle_work() -> None:
+    """Release deferred garbage, then enable the collector and run the collection a commit deferred."""
+    global _idle_scheduled, _gc_held
+    _idle_scheduled = False
+    _graveyard.clear()
+    if _gc_pause_depth == 0 and _gc_held:
+        _gc_held = False
         gc.enable()
+        if _js_idle and gc.get_count()[0] > gc.get_threshold()[0]:
+            gc.collect(0)
+
+
+def _schedule_idle() -> bool:
+    """Schedule `_idle_work` for when the browser is idle (within a second); False outside a browser."""
+    global _js_idle, _idle_scheduled
+    if _idle_scheduled:
+        return True
+    if _js_idle is None:
+        try:
+            import js as _js
+            from pyodide.ffi import create_once_callable, to_js
+
+            options = to_js({"timeout": 1000}, dict_converter=_js.Object.fromEntries)
+            _js_idle = (_js.requestIdleCallback, create_once_callable, options)
+        except Exception:
+            _js_idle = False
+    if not _js_idle:
+        return False
+    try:
+        idle, once, options = _js_idle
+        idle(once(lambda _deadline=None: _idle_work()), options)
+    except Exception:
+        return False
+    _idle_scheduled = True
+    return True
 
 
 def _decide_round() -> None:
@@ -778,8 +883,8 @@ def _decide_round() -> None:
                 continue
             ancestors.add(node)
             tx = _join(tx, _node_tx.get(node))
-            sources = node._sources if isinstance(node, Computation) else None
-            queue.extend(src for src in sources or () if sources[src] & _R_NORMAL)
+            if isinstance(node, Computation):
+                queue.extend(_normal_sources(node._sources))
             queue.extend(_causes.get(node, ()))
         tx = tx or _new_transition()
         tx.pending.add(comp)
@@ -807,7 +912,7 @@ def _decide_round() -> None:
     _causes.clear()
     for comp in _probed_tentative:
         joined = False
-        for source in comp._sources or ():
+        for source in _edges(comp._sources):
             tx = _node_tx.get(source)
             if tx is not None:
                 tx.root().probers.add(comp)
@@ -825,11 +930,12 @@ def _partition_applies() -> None:
             continue
         tx = _source_transition(comp._sources) if _held else None
         # A re-run may switch dependencies away from an older held result.
-        previous = comp._publication_tx
+        x = comp._ext
+        previous = x.publication_tx if x is not None else None
         if previous is not None:
             previous.root().held_applies.pop(comp, None)
         if tx is not None or previous is not None:
-            comp._publication_tx = tx
+            comp._x().publication_tx = tx
         if tx is not None:
             tx.held_applies[comp] = (value, prev)
         else:
@@ -857,7 +963,8 @@ def _reveal(tx: Transition) -> None:
             log_error(f"Optimistic revert raised: {exc}", exc)
     applies, tx.held_applies = tx.held_applies, {}
     for comp, (value, prev) in applies.items():
-        comp._publication_tx = None
+        if comp._ext is not None:
+            comp._ext.publication_tx = None
         if comp._disposed:
             continue
         if comp._state != _CLEAN:
@@ -1211,12 +1318,20 @@ def _pending_preparation(owner: Owner | None) -> _Preparation | None:
 class _ComponentContext(Owner):
     """Ownership scope for one mounted component instance."""
 
-    __slots__ = ("_props", "_vnode", "_component")
+    __slots__ = ("_props", "_component")
 
     def __init__(self, component: Any) -> None:
-        super().__init__()
+        # Owner's fields, assigned directly (one context per component
+        # instance); keep in sync with `Owner.__init__`.
+        self._tasks = None
+        self._parent = None
+        self._provisional = None
+        self._children = None
+        self._cleanups = None
+        self._disposed = False
+        self._context_map = None
+        self._error_handler = None
         self._props: Any = None
-        self._vnode: Any = None
         self._component = component
 
 
@@ -1311,7 +1426,8 @@ class Signal[T](Accessor[T]):
         self._origin: int = _O_NORMAL
         self._write_tx: Transition | None = None
         self._version_source: Signal | None = None
-        self._observers: dict[Computation, None] | None = None
+        # ``None``, the one observer, or a dict of observers (see "Edges").
+        self._observers: Any = None
         self._equals = equals
         self._unobserved = unobserved
         self._name = name
@@ -1324,17 +1440,27 @@ class Signal[T](Accessor[T]):
     def _add_observer(self, comp: Computation) -> None:
         obs = self._observers
         if obs is None:
-            self._observers = {comp: None}
-        else:
+            self._observers = comp
+        elif type(obs) is dict:
             obs[comp] = None
+        elif obs is not comp:
+            self._observers = {obs: None, comp: None}
 
     def _remove_observer(self, comp: Computation) -> None:
         obs = self._observers
-        if obs is not None:
+        if obs is None:
+            return
+        if obs is comp:
+            self._observers = None
+        elif type(obs) is dict:
             obs.pop(comp, None)
-            if not obs and self._unobserved is not None:
-                _unobserved_check.add(self)
-                _schedule_flush()
+            if obs:
+                return
+        else:
+            return
+        if self._unobserved is not None:
+            _unobserved_check.add(self)
+            _schedule_flush()
 
     def _check_unobserved(self) -> None:
         if not self._observers and self._unobserved is not None:
@@ -1348,9 +1474,12 @@ class Signal[T](Accessor[T]):
 
     def _notify(self) -> None:
         obs = self._observers
-        if obs:
-            for o in list(obs):
-                o._stale(_DIRTY)
+        if obs is not None:
+            if type(obs) is dict:
+                for o in list(obs):
+                    o._stale(_DIRTY)
+            else:
+                obs._stale(_DIRTY)
 
     # -- reads ----------------------------------------------------------------
 
@@ -1483,9 +1612,12 @@ class Signal[T](Accessor[T]):
         if _track:
             _record(self, old, origin, tx)
         obs = self._observers
-        if obs:
-            for o in list(obs):
-                o._stale(_DIRTY)
+        if obs is not None:
+            if type(obs) is dict:
+                for o in list(obs):
+                    o._stale(_DIRTY)
+            else:
+                obs._stale(_DIRTY)
 
     def _commit_now(self, value: Any, origin: int = _O_NORMAL) -> None:
         """Commit `value` immediately (framework internal, for derived state).
@@ -1517,9 +1649,12 @@ class Signal[T](Accessor[T]):
                 obs = _current_observer or _applying
                 _record_derived(self, old, obs._sources if obs is not None else None)
         obs2 = self._observers
-        if obs2:
-            for o in list(obs2):
-                o._stale(_DIRTY)
+        if obs2 is not None:
+            if type(obs2) is dict:
+                for o in list(obs2):
+                    o._stale(_DIRTY)
+            else:
+                obs2._stale(_DIRTY)
 
     def __repr__(self) -> str:
         return f"Signal({self._value!r})"
@@ -1736,6 +1871,48 @@ class _AsyncState:
 # ---------------------------------------------------------------------------
 
 
+class _CompExt:
+    """A computation's rarely set fields, allocated the first time one is written.
+
+    Render bindings and most memos never set any of them, so a computation
+    keeps one `_ext` slot instead of a slot per field. Every hot-path read
+    of one of these fields used to be a slot read and an `is None` test;
+    it's now a read of `_ext` and the same test, so a computation that
+    never sets them pays nothing for having them.
+    """
+
+    __slots__ = (
+        "error_fn",
+        "lazy",
+        "unobserved",
+        "name",
+        "land_held",
+        "readiness",
+        "publication_tx",
+        "prepared",
+        "committed",
+        "apply_cleanup",
+        "apply_owner",
+        "defer",
+    )
+
+    def __init__(self) -> None:
+        self.error_fn: Callable[[BaseException], Any] | None = None
+        self.lazy = False
+        self.unobserved: Callable[[], Any] | None = None
+        self.name: str | None = None
+        # Set by ``refresh`` inside an action: the run's landing is truth
+        # that belongs to the open transaction and reveals with it.
+        self.land_held: Transition | None = None
+        self.readiness: Signal[int] | None = None
+        self.publication_tx: Transition | None = None
+        self.prepared: _Preparation | None = None
+        self.committed: _Preparation | None = None
+        self.apply_cleanup: Callable[[], Any] | None = None
+        self.apply_owner: Owner | None = None
+        self.defer = False
+
+
 class Computation(Owner):
     """A tracked function: the node type behind memos and effects.
 
@@ -1776,21 +1953,10 @@ class Computation(Owner):
         "_applied_value",
         "_keep",
         "_prev_sources",
-        "_defer",
         "_eager",
-        "_land_held",
-        "_apply_cleanup",
-        "_apply_owner",
         "_uses_apply_scope",
-        "_error_fn",
-        "_lazy",
-        "_unobserved",
-        "_name",
-        "_prepared_owner",
-        "_committed_owner",
-        "_readiness_signal",
-        "_publication_tx",
         "_apply_data",
+        "_ext",
     )
 
     def __init__(
@@ -1814,7 +1980,7 @@ class Computation(Owner):
     ) -> None:
         # Owner's fields, assigned here rather than through `Owner.__init__`:
         # every binding is a computation, and the extra call shows up in
-        # mount profiles. Keep in sync with `Owner.__init__`.
+        # mount profiles. Keep in sync with `Owner.__init__` and `bind`.
         self._tasks = None
         self._parent = None
         self._provisional = None
@@ -1830,14 +1996,17 @@ class Computation(Owner):
         self._keep = keep
         # The previous run's sources while the function re-runs: edges it
         # reads again are kept rather than unsubscribed and re-added.
-        self._prev_sources: dict[Any, int] | None = None
+        self._prev_sources: Any = None
         self._pass_prev = _accepts_positional(fn) if pass_prev is None else pass_prev
-        self._sources: dict[Any, int] | None = None
+        # ``None``, the one source read with an ordinary tracked read, or a
+        # dict of sources to read modes (see "Edges").
+        self._sources: Any = None
         self._state: int = _DIRTY
         self._kind = kind
         self._is_data = data or kind == _K_MEMO
         self._value: Any = value
-        self._observers: dict[Computation, None] | None = None
+        # ``None``, the one observer, or a dict of observers.
+        self._observers: Any = None
         self._equals = equals
         self._error: BaseException | None = None
         self._async: _AsyncState | None = None
@@ -1848,25 +2017,31 @@ class Computation(Owner):
         # Effects run their apply stage under a fresh owner per run;
         # framework render bindings apply under the computation itself.
         self._uses_apply_scope = apply is not None and apply_scope
-        self._defer = defer
         self._eager = eager
-        # Set by ``refresh`` inside an action: the run's landing is truth
-        # that belongs to the open transaction and reveals with it.
-        self._land_held: Transition | None = None
-        self._apply_cleanup: Callable[[], Any] | None = None
-        self._apply_owner: Owner | None = None
-        self._error_fn = error
-        self._lazy = lazy
-        self._unobserved = unobserved
-        self._name = name
-        self._prepared_owner: _Preparation | None = None
-        self._committed_owner: _Preparation | None = None
-        self._readiness_signal: Signal[int] | None = None
-        self._publication_tx: Transition | None = None
-        # What a framework binding's apply stage writes to (its node and
-        # prop, or its hole): bindings are plain computations, so the
-        # interpreter's attribute reads on the hot path stay specialized.
+        # What a framework binding's apply stage writes to (its node, or
+        # its slot): bindings are plain computations, so the interpreter's
+        # attribute reads on the hot path stay specialized.
         self._apply_data: Any = None
+        self._ext: _CompExt | None = None
+        if defer or error is not None or lazy or unobserved is not None or name is not None:
+            x = self._ext = _CompExt()
+            x.defer = defer
+            x.error_fn = error
+            x.lazy = lazy
+            x.unobserved = unobserved
+            x.name = name
+
+    def _x(self) -> _CompExt:
+        """The extension record, created on first write."""
+        x = self._ext
+        if x is None:
+            x = self._ext = _CompExt()
+        return x
+
+    @property
+    def _name(self) -> str | None:
+        x = self._ext
+        return x.name if x is not None else None
 
     def _inert(self) -> bool:
         """Whether this settled computation can never run again or own anything.
@@ -1876,32 +2051,29 @@ class Computation(Owner):
         renderer disposes such bindings right away and keeps only the DOM
         they produced.
         """
-        return (
-            not self._sources
-            and self._state == _CLEAN
-            and self._async is None
-            and not self._children
-            and not self._cleanups
-            and self._prepared_owner is None
-            and self._committed_owner is None
-            and self._apply_cleanup is None
-            and not self._disposed
-        )
+        if self._sources is not None or self._state != _CLEAN or self._async is not None:
+            return False
+        if self._children or self._cleanups or self._disposed:
+            return False
+        x = self._ext
+        return x is None or (x.prepared is None and x.committed is None and x.apply_cleanup is None)
 
     def _track_readiness(self) -> None:
-        if self._readiness_signal is None:
-            self._readiness_signal = Signal(0)
-        self._readiness_signal()
+        x = self._x()
+        if x.readiness is None:
+            x.readiness = Signal(0)
+        x.readiness()
 
     def _notify_readiness(self) -> None:
-        signal = self._readiness_signal
-        if signal is not None:
-            signal._notify()
+        x = self._ext
+        if x is not None and x.readiness is not None:
+            x.readiness._notify()
 
     def _preparation(self) -> _Preparation:
-        owner = self._prepared_owner
+        x = self._x()
+        owner = x.prepared
         if owner is None:
-            owner = self._prepared_owner = _Preparation()
+            owner = x.prepared = _Preparation()
             super()._add_child(owner)
         return owner
 
@@ -1918,24 +2090,27 @@ class Computation(Owner):
             super()._add_cleanup(fn)
 
     def _discard_preparation(self) -> None:
-        owner = self._prepared_owner
-        if owner is not None:
-            self._prepared_owner = None
-            owner.dispose()
+        x = self._ext
+        if x is not None:
+            owner = x.prepared
+            if owner is not None:
+                x.prepared = None
+                owner.dispose()
 
     def _publish_preparation(self) -> None:
-        previous = self._committed_owner
-        self._committed_owner = self._prepared_owner
-        if self._prepared_owner is not None:
-            self._prepared_owner = None
+        x = self._x()
+        previous = x.committed
+        x.committed = x.prepared
+        x.prepared = None
         if previous is not None:
             previous.dispose()
-        if self._committed_owner is not None:
-            self._committed_owner.publish()
+        if x.committed is not None:
+            x.committed.publish()
 
     def _label(self) -> str:
-        if self._name:
-            return f"memo {self._name!r}"
+        name = self._name
+        if name:
+            return f"memo {name!r}"
         return f"memo {getattr(self._fn, '__name__', '<fn>')!r}"
 
     # -- source side (memos are sources for other computations) ---------------
@@ -1943,29 +2118,45 @@ class Computation(Owner):
     def _add_observer(self, comp: Computation) -> None:
         obs = self._observers
         if obs is None:
-            self._observers = {comp: None}
-        else:
+            self._observers = comp
+        elif type(obs) is dict:
             obs[comp] = None
+        elif obs is not comp:
+            self._observers = {obs: None, comp: None}
 
     def _remove_observer(self, comp: Computation) -> None:
         obs = self._observers
-        if obs is not None:
+        if obs is None:
+            return
+        if obs is comp:
+            self._observers = None
+        elif type(obs) is dict:
             obs.pop(comp, None)
-            if _transitions:
-                _schedule_flush()
-            if not obs and (self._unobserved is not None or self._lazy):
-                _unobserved_check.add(self)
-                _schedule_flush()
+            if obs:
+                if _transitions:
+                    _schedule_flush()
+                return
+        else:
+            return
+        if _transitions:
+            _schedule_flush()
+        x = self._ext
+        if x is not None and (x.unobserved is not None or x.lazy):
+            _unobserved_check.add(self)
+            _schedule_flush()
 
     def _check_unobserved(self) -> None:
         if self._disposed or self._observers:
             return
-        if self._unobserved is not None:
+        x = self._ext
+        if x is None:
+            return
+        if x.unobserved is not None:
             try:
-                self._unobserved()
+                x.unobserved()
             except Exception as exc:
                 log_error(f"unobserved callback raised: {exc}", exc)
-        if self._lazy:
+        if x.lazy:
             self._suspend()
 
     def _cancel_async(self) -> None:
@@ -1999,47 +2190,76 @@ class Computation(Owner):
 
     def _notify(self, skip: Computation | None = None) -> None:
         obs = self._observers
-        if obs:
-            for o in list(obs):
-                if o is not skip:
-                    o._stale(_DIRTY)
+        if obs is not None:
+            if type(obs) is dict:
+                for o in list(obs):
+                    if o is not skip:
+                        o._stale(_DIRTY)
+            elif obs is not skip:
+                obs._stale(_DIRTY)
 
     # -- observer side ---------------------------------------------------------
 
     def _add_source(self, source: Any) -> None:
-        mode = _R_PROBE if _probe_depth else _R_LATEST if _latest_depth else _R_NORMAL
         srcs = self._sources
-        if srcs is None:
-            self._sources = {source: mode}
-        elif source not in srcs:
-            srcs[source] = mode
-        else:
-            srcs[source] |= mode
+        if _probe_depth or _latest_depth:
+            mode = _R_PROBE if _probe_depth else _R_LATEST
+            if srcs is None:
+                self._sources = {source: mode}
+            elif type(srcs) is dict:
+                if source in srcs:
+                    srcs[source] |= mode
+                    return
+                srcs[source] = mode
+            elif srcs is source:
+                self._sources = {source: _R_NORMAL | mode}
+                return
+            else:
+                self._sources = {srcs: _R_NORMAL, source: mode}
+        elif srcs is None:
+            self._sources = source
+        elif srcs is source:
             return
+        elif type(srcs) is dict:
+            if source in srcs:
+                srcs[source] |= _R_NORMAL
+                return
+            srcs[source] = _R_NORMAL
+        else:
+            self._sources = {srcs: _R_NORMAL, source: _R_NORMAL}
         prev = self._prev_sources
-        if prev is None or source not in prev:
+        if prev is None or (prev is not source and (type(prev) is not dict or source not in prev)):
             source._add_observer(self)
 
-    def _prune_sources(self, prev: dict[Any, int]) -> None:
+    def _prune_sources(self, prev: Any) -> None:
         """Unsubscribe from the previous run's sources this run didn't read again."""
         self._prev_sources = None
         current = self._sources
-        for src in prev:
-            if current is None or src not in current:
-                src._remove_observer(self)
+        if type(prev) is dict:
+            for src in prev:
+                if current is not src and (type(current) is not dict or src not in current):
+                    src._remove_observer(self)
+        elif current is not prev and (type(current) is not dict or prev not in current):
+            prev._remove_observer(self)
 
     def _clear_sources(self) -> None:
         srcs = self._sources
-        if srcs:
-            for src in srcs:
-                src._remove_observer(self)
-            srcs.clear()
+        if srcs is not None:
+            self._sources = None
+            if type(srcs) is dict:
+                for src in srcs:
+                    src._remove_observer(self)
+            else:
+                srcs._remove_observer(self)
         prev = self._prev_sources
         if prev is not None:
             # Disposed during its own run: release the previous run's edges.
             self._prev_sources = None
-            for src in prev:
-                src._remove_observer(self)
+            if type(prev) is dict:
+                for src in prev:
+                    src._remove_observer(self)
+            else:
+                prev._remove_observer(self)
 
     # -- scheduling -------------------------------------------------------------
 
@@ -2062,9 +2282,12 @@ class Computation(Owner):
                     _effect_queue.append(self)
                     _schedule_flush()
                 obs = self._observers
-                if obs:
-                    for o in list(obs):
-                        o._stale(_CHECK)
+                if obs is not None:
+                    if type(obs) is dict:
+                        for o in list(obs):
+                            o._stale(_CHECK)
+                    else:
+                        obs._stale(_CHECK)
 
     def _update_if_necessary(self) -> None:
         """Bring this node up to date by pulling its sources (glitch-free)."""
@@ -2072,11 +2295,14 @@ class Computation(Owner):
             return
         if self._state == _CHECK:
             srcs = self._sources
-            if srcs:
-                for src in list(srcs):
-                    src._update_if_necessary()
-                    if self._state == _DIRTY:
-                        break
+            if srcs is not None:
+                if type(srcs) is dict:
+                    for src in list(srcs):
+                        src._update_if_necessary()
+                        if self._state == _DIRTY:
+                            break
+                else:
+                    srcs._update_if_necessary()
         if self._state == _DIRTY:
             # CLEAN first so a write to one of our own sources made during
             # the run re-dirties us instead of being swallowed.
@@ -2089,9 +2315,10 @@ class Computation(Owner):
 
     def _handle_error(self, exc: BaseException) -> bool:
         """Route `exc` to `error=` or the nearest owner error handler."""
-        if self._error_fn is not None:
+        x = self._ext
+        if x is not None and x.error_fn is not None:
             try:
-                self._error_fn(exc)
+                x.error_fn(exc)
             except Exception as inner:
                 log_error(f"Effect error handler raised: {inner}", inner)
             return True
@@ -2123,7 +2350,8 @@ class Computation(Owner):
         else:
             # Preparation can be superseded without touching resources still
             # used by the published DOM. Allocate an owner only if needed.
-            if self._prepared_owner is not None:
+            x = self._ext
+            if x is not None and x.prepared is not None:
                 self._discard_preparation()
         fn = self._fn
         if (
@@ -2137,16 +2365,17 @@ class Computation(Owner):
             # A direct signal read has a fixed dependency and can't execute
             # user code. Keep that edge instead of unsubscribing/re-subscribing
             # it, and avoid entering a tracking scope just to read the value.
-            if not self._sources:
-                self._sources = {fn: _R_NORMAL}
+            srcs = self._sources
+            if srcs is None:
+                self._sources = fn
                 fn._add_observer(self)
-            else:
-                self._sources[fn] = _R_NORMAL
+            elif type(srcs) is dict:
+                srcs[fn] = _R_NORMAL
             self._error = None
             self._settle(fn._value)
             return
         prev_sources = self._sources
-        if prev_sources:
+        if prev_sources is not None:
             self._sources = None
             self._prev_sources = prev_sources
         a = self._async
@@ -2167,7 +2396,7 @@ class Computation(Owner):
             try:
                 new_value = self._fn(self._value) if self._pass_prev else self._fn()
             finally:
-                if prev_sources:
+                if prev_sources is not None:
                     self._prune_sources(prev_sources)
         except NotReadyError:
             if not self._keep:
@@ -2203,12 +2432,15 @@ class Computation(Owner):
 
     def _settle(self, value: Any) -> None:
         """Accept a new value: notify memo observers or schedule an effect's apply stage."""
-        landing = self._land_held
-        if landing is not None:
-            self._land_held = None
-            landing = landing.root()
-            if landing not in _transitions:
-                landing = None
+        x = self._ext
+        landing = None
+        if x is not None:
+            landing = x.land_held
+            if landing is not None:
+                x.land_held = None
+                landing = landing.root()
+                if landing not in _transitions:
+                    landing = None
         if self._kind == _K_MEMO:
             if self._first or _changed(self._equals, self._value, value):
                 first = self._first
@@ -2221,9 +2453,12 @@ class Computation(Owner):
                     else:
                         _record_derived(self, old, self._sources)
                 obs = self._observers
-                if obs:
-                    for o in list(obs):
-                        o._stale(_DIRTY)
+                if obs is not None:
+                    if type(obs) is dict:
+                        for o in list(obs):
+                            o._stale(_DIRTY)
+                    else:
+                        obs._stale(_DIRTY)
             return
         prev = self._value
         self._value = value
@@ -2239,7 +2474,7 @@ class Computation(Owner):
             return
         first = self._first
         self._first = False
-        if first and self._defer:
+        if first and x is not None and x.defer:
             self._discard_preparation()
             return
         # The first run of a fresh effect and eager effects apply at once.
@@ -2271,15 +2506,17 @@ class Computation(Owner):
             if not self._handle_error(value.error):
                 log_error(f"Reactive apply failed: {value.error}", value.error)
             return
-        if self._prepared_owner is not None or self._committed_owner is not None:
-            self._publish_preparation()
-        if self._apply_cleanup is not None:
-            self._run_apply_cleanup()
-        apply_owner = self._apply_owner
-        if apply_owner is not None:
-            apply_owner.dispose()
+        x = self._ext
+        if x is not None:
+            if x.prepared is not None or x.committed is not None:
+                self._publish_preparation()
+            if x.apply_cleanup is not None:
+                self._run_apply_cleanup()
+            if x.apply_owner is not None:
+                x.apply_owner.dispose()
         if self._uses_apply_scope:
-            apply_owner = self._apply_owner = Owner()
+            apply_owner = Owner()
+            self._x().apply_owner = apply_owner
             apply_owner._parent = self
             if self._provisional is not None:
                 apply_owner._provisional = self._provisional
@@ -2311,14 +2548,15 @@ class Computation(Owner):
             _current_owner = prev_owner
             _applying = prev_applying
         if callable(result):
-            self._apply_cleanup = result
+            self._x().apply_cleanup = result
 
     def _run_apply_cleanup(self) -> None:
-        cleanup = self._apply_cleanup
+        x = self._ext
+        cleanup = x.apply_cleanup if x is not None else None
         if cleanup is not None:
-            self._apply_cleanup = None
+            x.apply_cleanup = None
             try:
-                _run_owned_untracked(self._apply_owner or self, cleanup)
+                _run_owned_untracked(x.apply_owner or self, cleanup)
             except Exception as exc:
                 log_error(f"Effect cleanup raised: {exc}", exc)
 
@@ -2330,10 +2568,7 @@ class Computation(Owner):
                 _record_derived(self, self._value, self._sources)
             if self._async is not None:
                 self._set_pending(False)
-            obs = self._observers
-            if obs:
-                for o in list(obs):
-                    o._stale(_DIRTY)
+            self._notify()
             return
         if self._async is not None:
             self._set_pending(False)
@@ -2553,7 +2788,8 @@ class Computation(Owner):
             return
         self._ensure_async().quiet = True
         if _in_action is not None:
-            self._land_held = _join(self._land_held, _in_action)
+            x = self._x()
+            x.land_held = _join(x.land_held, _in_action)
         self._state = _DIRTY
         self._update_if_necessary()
 
@@ -2599,24 +2835,65 @@ class Computation(Owner):
         """Permanently dispose a computation and its committed resources."""
         if self._disposed:
             return
+        if (
+            self._ext is None
+            and self._async is None
+            and self._children is None
+            and self._cleanups is None
+            and self._observers is None
+            and self._tasks is None
+            and self._prev_sources is None
+            and not _transitions
+        ):
+            # A plain binding: it owns nothing and nothing reads it.
+            self._disposed = True
+            # Drop what it writes to and runs: a hole's binding and the hole
+            # refer to each other, and garbage that forms no cycle is freed
+            # at once by reference counting, with no work for the collector.
+            self._apply_data = None
+            self._apply = None
+            self._fn = None
+            srcs = self._sources
+            if srcs is not None:
+                self._sources = None
+                if type(srcs) is dict:
+                    for src in srcs:
+                        src._remove_observer(self)
+                else:
+                    srcs._remove_observer(self)
+            parent = self._parent
+            if parent is not None:
+                parent._remove_child(self)
+                self._parent = None
+            self._provisional = None
+            return
         if _transitions:
             _schedule_flush()
         if self._async is not None:
             self._cancel_async()
             global _async_live
             _async_live -= 1
-        if self._apply_cleanup is not None:
-            self._run_apply_cleanup()
-        if self._apply_owner is not None:
-            self._apply_owner.dispose()
-            self._apply_owner = None
+        x = self._ext
+        if x is not None:
+            if x.apply_cleanup is not None:
+                self._run_apply_cleanup()
+            if x.apply_owner is not None:
+                x.apply_owner.dispose()
+                x.apply_owner = None
         self._clear_sources()
-        if self._observers:
-            for observer in list(self._observers):
-                if observer._sources is not None:
-                    observer._sources.pop(self, None)
-            self._observers.clear()
+        obs = self._observers
+        if obs is not None:
+            self._observers = None
+            for observer in list(obs) if type(obs) is dict else (obs,):
+                osrcs = observer._sources
+                if osrcs is self:
+                    observer._sources = None
+                elif type(osrcs) is dict:
+                    osrcs.pop(self, None)
         super().dispose()
+        self._apply_data = None
+        self._apply = None
+        self._fn = None
 
 
 def _discard_awaitable(awaitable: Any) -> None:
@@ -2998,6 +3275,207 @@ def _probe(fn: Callable[[], Any]) -> Any:
     return value
 
 
+def _probe_target(fn: Any) -> Any:
+    """Probe a binding's expression: what the binding should track, or `_ESCAPED`'s counterpart.
+
+    Returns the accessor to bind to (the expression itself, or the signal
+    or accessor it returned without reading anything), or `_STATIC` with
+    the expression's value in `_probed_value` when it read nothing
+    reactive and can never change.
+    """
+    global _probed_value
+    if _session is not None:
+        return fn
+    for _ in range(8):
+        value = _probe(fn)
+        if value is _ESCAPED:
+            return fn
+        if type(value) is Signal:
+            return value
+        if is_accessor(value):
+            fn = value.fn if type(value) is _Getter else value
+            continue
+        _probed_value = value
+        return _STATIC
+    return fn
+
+
+# What `_probe_target` returns for an expression that reads nothing reactive,
+# and that expression's value.
+_STATIC: Final = object()
+_probed_value: Any = None
+
+
+def _bind(
+    fn: Callable[[], Any],
+    apply: Callable[[Any, Any, Any], Any],
+    data: Any,
+    initial: Any,
+    keep: bool = True,
+    owner: Owner | None = None,
+) -> Computation:
+    """Create, run, and apply a framework render binding in one step.
+
+    A binding is a render computation whose apply stage is the module
+    function `apply(data, value, previous)`: an attribute, a text slot, or
+    a hole. In an ordinary mount (no observer running, no transition
+    holding nodes, no action, no server or hydration session, and no
+    unpublished preparation above the owner), every check the general
+    path makes on a fresh computation is known to pass, so this builds
+    the computation, runs it, and applies its result in straight-line
+    code. Anything else goes through `_update_if_necessary`.
+
+    A binding that read nothing reactive and left nothing behind can never
+    run again: it's returned detached and marked disposed, with its value
+    in `_value`, and the caller drops it.
+
+    `keep` (the default for DOM bindings) keeps the current output while a
+    source isn't ready; without it the binding becomes pending, as an
+    ordinary render computation does. `owner` defaults to the current
+    owner.
+    """
+    global _current_owner, _current_observer, _layer_working, _applying
+    if owner is None:
+        owner = _current_owner
+    outer = _current_owner
+    comp = _new_computation(Computation)
+    # Owner's and Computation's fields, as `Computation.__init__` sets them
+    # for a keeping render binding with a module apply stage.
+    comp._tasks = None
+    comp._parent = owner
+    comp._provisional = None
+    comp._children = None
+    comp._cleanups = None
+    comp._disposed = False
+    comp._context_map = None
+    comp._error_handler = None
+    comp._fn = fn
+    comp._keep = keep
+    comp._prev_sources = None
+    comp._pass_prev = False
+    comp._sources = None
+    comp._state = _CLEAN
+    comp._kind = _K_RENDER
+    comp._is_data = False
+    comp._value = initial
+    comp._observers = None
+    comp._equals = _DEFAULT_EQUALS
+    comp._error = None
+    comp._async = None
+    comp._apply = apply
+    comp._apply_arity = _APPLY_METHOD
+    comp._first = True
+    comp._applied_value = initial
+    comp._uses_apply_scope = False
+    comp._eager = False
+    comp._apply_data = data
+    comp._ext = None
+    if (
+        _current_observer is not None
+        or _slow_reads
+        or _in_action is not None
+        or _session is not None
+        or (owner is not None and (owner._provisional is not None or owner._disposed or type(owner) is _Preparation))
+    ):
+        comp._parent = None
+        comp._state = _DIRTY
+        if owner is not None:
+            owner._add_child(comp)
+        comp._update_if_necessary()
+        if comp._inert():
+            comp.dispose()
+        return comp
+    if diagnostics._active is not None:
+        diagnostics._active.counts["computations"] += 1
+    failure: Exception | None = None
+    if type(fn) is Signal:
+        # Bound straight to a signal (a hole or text slot whose expression
+        # handed over the signal itself): link it without a tracked call.
+        comp._sources = fn
+        observers = fn._observers
+        if observers is None:
+            fn._observers = comp
+        elif type(observers) is dict:
+            observers[comp] = None
+        else:
+            fn._observers = {observers: None, comp: None}
+        value = fn._value
+    else:
+        _current_owner = comp
+        _current_observer = comp
+        _layer_working += 1
+        try:
+            value = fn()
+        except NotReadyError:
+            value = _SKIP_APPLY
+        except Exception as exc:
+            failure = exc
+        finally:
+            _current_owner = outer
+            _current_observer = None
+            _layer_working -= 1
+    if failure is not None:
+        comp._parent = None
+        if owner is not None:
+            owner._add_child(comp)
+        comp._fail(failure)
+        return comp
+    if value is _SKIP_APPLY and not keep:
+        comp._parent = None
+        if owner is not None:
+            owner._add_child(comp)
+        comp._mark_pending()
+        return comp
+    rtype = type(value)
+    if rtype not in _SYNC_RESULT_TYPES and (
+        hasattr(rtype, "__await__") or (hasattr(rtype, "__anext__") and inspect.isasyncgen(value))
+    ):
+        comp._parent = None
+        if owner is not None:
+            owner._add_child(comp)
+        if hasattr(rtype, "__await__"):
+            comp._launch(value)
+        else:
+            comp._launch_gen(value)
+        return comp
+    if comp._ext is not None:
+        # The expression created something that waits for publication.
+        comp._parent = None
+        if owner is not None:
+            owner._add_child(comp)
+        comp._settle(value)
+        return comp
+    comp._first = False
+    comp._value = value
+    if value is not _SKIP_APPLY:
+        comp._applied_value = value
+        prev_applying = _applying
+        _current_owner = comp
+        _applying = comp
+        try:
+            result = apply(data, value, initial)
+        except Exception as exc:
+            if not comp._handle_error(exc):
+                raise
+            result = None
+        finally:
+            _current_owner = outer
+            _applying = prev_applying
+        if result is not None and callable(result):
+            comp._x().apply_cleanup = result
+    comp._parent = None
+    if comp._sources is None and not comp._children and not comp._cleanups and comp._ext is None:
+        # Read nothing, own nothing: it can never run again.
+        comp._disposed = True
+        return comp
+    if owner is not None:
+        owner._add_child(comp)
+    return comp
+
+
+_new_computation = object.__new__
+
+
 def untrack[T](fn: Callable[[], T]) -> T:
     """Run `fn` without tracking any reactive reads.
 
@@ -3054,15 +3532,15 @@ def run_with_owner[T](owner: Owner | None, fn: Callable[[], T]) -> T:
         _current_owner = prev
 
 
-def _run_owned_untracked[T](owner: Owner | None, fn: Callable[[], T]) -> T:
-    """Run `fn` owned by `owner` with tracking suppressed (list-row bodies)."""
+def _run_owned_untracked[T](owner: Owner | None, fn: Callable[..., T], *args: Any) -> T:
+    """Run `fn(*args)` owned by `owner` with tracking suppressed (list-row bodies)."""
     global _current_owner, _current_observer
     prev_owner = _current_owner
     prev_obs = _current_observer
     _current_owner = owner
     _current_observer = None
     try:
-        return fn()
+        return fn(*args)
     finally:
         _current_owner = prev_owner
         _current_observer = prev_obs

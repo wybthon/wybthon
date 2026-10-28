@@ -12,7 +12,7 @@ module actually needs compiling.
   into the archives. The hook uses it as is, so a production page never
   compiles anything.
 - **Cache.** Compiled code is cached next to the normal bytecode under its
-  own optimization tag (`module.cpython-314.opt-wyb1.pyc`), validated
+  own optimization tag (`module.cpython-314.opt-wyb2.pyc`), validated
   against the source's modification time and size. A plain compile cached
   before the hook was installed is never mistaken for a compiled one.
 """
@@ -30,7 +30,7 @@ from typing import Any
 __all__ = ["install", "uninstall", "is_candidate", "COMPILER_TAG"]
 
 # Bump when the compiler's output changes, so cached compiled code is rebuilt.
-COMPILER_TAG = "wyb1"
+COMPILER_TAG = "wyb2"
 
 _STDLIB = os.path.dirname(os.__file__) + os.sep
 # Wybthon's own modules never use the compiler.

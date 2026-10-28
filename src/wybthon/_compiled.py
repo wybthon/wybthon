@@ -12,8 +12,9 @@ from typing import Any
 
 from .reactivity._core import _Getter as getter
 from .templates import Precompiled as template
+from .templates import formatted
 
-__all__ = ["getter", "template", "call", "fmt", "is_component"]
+__all__ = ["getter", "template", "call", "fmt", "formatted", "is_component"]
 
 
 def is_component(fn: Any) -> bool:

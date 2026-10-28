@@ -61,6 +61,8 @@ from . import _warnings, diagnostics, kernel
 from . import events as _events
 from ._dom_props import (
     _FRESH,
+    _applier,
+    _appliers,
     _apply_single_prop,
     _bind_reactive_prop,
     apply_initial_props,
@@ -85,8 +87,9 @@ from ._html_rules import (
     enter_scope,
     scope_conflict,
 )
-from .reactivity._core import is_accessor
-from .vnode import VNode, flatten_children, to_text_vnode
+from .reactivity import _core
+from .reactivity._core import _STATIC, Computation, _bind, _Getter, _probe_target, is_accessor
+from .vnode import Fragment, VNode, flatten_children, h, to_text_vnode
 
 __all__ = ["html", "TemplateError"]
 
@@ -504,6 +507,10 @@ class _Compiled:
         "foreign",
         "strings",
         "probes",
+        "deferred",
+        "regions",
+        "bound",
+        "addressed",
         "mount",
     )
 
@@ -523,6 +530,18 @@ class _Compiled:
         # Indices of values the compiler deferred without a call, whose
         # bindings run a static probe before becoming computations.
         self.probes: frozenset[int] = frozenset()
+        # Indices of values the compiler always makes a getter (a plain
+        # lambda): their slots bind it without classifying the value.
+        self.deferred: frozenset[int] = frozenset()
+        # Plan indices of child and component slots (their state is a
+        # region or a text binding), and of attribute slots (a binding or
+        # None), for disposal.
+        self.regions: tuple[int, ...] = ()
+        self.bound: tuple[int, ...] = ()
+        # The node offsets Python can address: the root, every slot's node
+        # and parent, text slots, and handler nodes. The kernel registers
+        # only these when it clones the template.
+        self.addressed: list[int] = []
         # Generated on first mount (see ``_generate``).
         self.mount: Callable[[VNode, int, int | None], None] = _generate_and_mount
 
@@ -626,7 +645,15 @@ class _Builder:
         c.html = "".join(self.out)
         c.count = self.count
         c.plan = tuple(self.plan)
+        c.regions = tuple(k for k, slot in enumerate(c.plan) if slot[0] == _S_CHILD or slot[0] == _S_COMPONENT)
+        c.bound = tuple(k for k, slot in enumerate(c.plan) if slot[0] == _S_PROP or slot[0] == _S_PARTS)
         c.handlers = tuple(self.handlers)
+        addressed = {0, *c.texts, *(entry[0] for entry in c.listens)}
+        for slot in c.plan:
+            addressed.add(slot[1])
+            if slot[0] == _S_CHILD or slot[0] == _S_COMPONENT:
+                addressed.add(slot[3])
+        c.addressed = sorted(addressed)
         c.refs = tuple(self.refs)
         c.spreads = tuple(self.spreads)
 
@@ -804,50 +831,75 @@ class Precompiled:
     """A template literal the compiler parsed ahead of time (see `wybthon.compiler`).
 
     Holds the literal's normalized parse tree as constants and the mount
-    function generated for each of its elements. The first `html()` call
-    rebuilds the slot plans from the tree and installs the mount
-    functions; nothing is parsed, validated, or generated at run time.
+    function generated for each of its elements. The compiler replaces
+    the literal's `html(t"...")` call with `entry.render((value, ...))`,
+    so no `Template` is built per instance. The first call rebuilds the
+    slot plans from the tree and installs the mount functions; nothing is
+    parsed, validated, or generated at run time.
     """
 
-    __slots__ = ("strings", "data", "factories", "probes", "entry")
+    __slots__ = ("strings", "data", "factories", "probes", "deferred", "entry", "element")
 
     def __init__(
-        self, strings: tuple[str, ...], data: tuple[Any, ...], factories: tuple[Any, ...], probes: tuple[int, ...] = ()
+        self,
+        strings: tuple[str, ...],
+        data: tuple[Any, ...],
+        factories: tuple[Any, ...],
+        probes: tuple[int, ...] = (),
+        deferred: tuple[int, ...] = (),
     ) -> None:
         self.strings = strings
         self.data = data
         self.factories = factories
         self.probes = frozenset(probes)
+        self.deferred = frozenset(deferred)
         self.entry: _Entry | None = None
+        # The compiled element of a single-element literal, once loaded.
+        self.element: _Compiled | None = None
 
-    def load(self, template: Template) -> _Entry:
-        if _warnings.DEV_MODE and template.strings != self.strings:
-            # The source changed after this module was compiled.
-            return _compile(template)
+    def load(self) -> _Entry:
         program = _program(_undump(self.data), self.strings)
         for compiled, factory in zip(compiled_elements(program), self.factories, strict=True):
             compiled.probes = self.probes
+            compiled.deferred = self.deferred
             compiled.mount = factory(*_cells(compiled))
         entry = self.entry = _Entry(self.strings, program)
         entry.eager = ()
+        if program[0] == "element":
+            self.element = program[1]
         return entry
+
+    def render(self, values: tuple[Any, ...]) -> VNode:
+        """An instance of this literal with `values` in its slots (what a compiled `html(t"...")` call does)."""
+        element = self.element
+        if element is not None:
+            return VNode("_tpl", element, values)  # type: ignore[arg-type]
+        entry = self.entry or self.load()
+        if self.element is not None:
+            return VNode("_tpl", self.element, values)  # type: ignore[arg-type]
+        node = _fragment(entry.program[1], values)
+        return node if type(node) is VNode else to_text_vnode(node)
+
+
+def formatted(value: Any, conversion: str | None, spec: str) -> Any:
+    """Apply an interpolation's conversion and format spec to its value (a reactive value stays reactive)."""
+    if is_accessor(value):
+        return lambda: _format(value(), conversion, spec)
+    return _format(value, conversion, spec)
+
+
+def _format(value: Any, conversion: str | None, spec: str) -> str:
+    if conversion == "r":
+        value = repr(value)
+    elif conversion == "s":
+        value = str(value)
+    elif conversion == "a":
+        value = ascii(value)
+    return "" if value is None else format(value, spec)
 
 
 def _format_value(item: Interpolation) -> Any:
-    value = item.value
-
-    def text(v: Any) -> str:
-        if item.conversion == "r":
-            v = repr(v)
-        elif item.conversion == "s":
-            v = str(v)
-        elif item.conversion == "a":
-            v = ascii(v)
-        return "" if v is None else format(v, item.format_spec)
-
-    if is_accessor(value):
-        return lambda: text(value())
-    return text(value)
+    return formatted(item.value, item.conversion, item.format_spec)
 
 
 def slot_positions(nodes: list[Any]) -> dict[int, str]:
@@ -930,7 +982,7 @@ def _check_uncompiled(entry: _Entry, template: Template) -> None:
             )
 
 
-def html(template: Template, compiled: Precompiled | None = None, /) -> VNode:
+def html(template: Template, /) -> VNode:
     """Render a t-string template to a node.
 
     The template is HTML with interpolations. Each literal is compiled
@@ -958,11 +1010,12 @@ def html(template: Template, compiled: Precompiled | None = None, /) -> VNode:
     line and joined with spaces, and whitespace-only text containing a
     newline is dropped. Several top-level nodes make a fragment.
 
+    The compiler replaces every `html(t"...")` call in a compiled module
+    with an instance of the literal's precompiled entry, so this function
+    only runs for templates that weren't compiled (a REPL, `exec`).
+
     Args:
         template: A t-string.
-        compiled: The literal's precompiled entry; the compiler passes it
-            (see [`wybthon.compiler`][wybthon.compiler]). Don't pass it
-            yourself.
 
     Returns:
         A node to place in the tree or return from a component.
@@ -978,15 +1031,12 @@ def html(template: Template, compiled: Precompiled | None = None, /) -> VNode:
     """
     if type(template) is not Template:
         raise TypeError(f"html() takes a t-string, got {type(template).__name__}")
-    if compiled is not None:
-        entry = compiled.entry or compiled.load(template)
-    else:
-        strings = template.strings
-        entry = _by_identity.get(id(strings))
-        if entry is None or entry.strings is not strings:
-            entry = _compile(template)
-        if _warnings.DEV_MODE:
-            _check_uncompiled(entry, template)
+    strings = template.strings
+    entry = _by_identity.get(id(strings))
+    if entry is None or entry.strings is not strings:
+        entry = _compile(template)
+    if _warnings.DEV_MODE:
+        _check_uncompiled(entry, template)
     items = template.interpolations
     for item in items:
         if item.conversion or item.format_spec:
@@ -1005,8 +1055,6 @@ def html(template: Template, compiled: Precompiled | None = None, /) -> VNode:
 
 def _fragment(parts: tuple[Any, ...], values: tuple[Any, ...]) -> Any:
     """Instantiate several top-level parts: one node (or string) stands alone, more make a fragment."""
-    from .vnode import Fragment
-
     children: list[Any] = []
     for part in parts:
         if type(part) is str:
@@ -1094,6 +1142,17 @@ def _prop_name(name: str) -> str:
     return _KEYWORD_PROPS.get(name) or name.replace("-", "_")
 
 
+# `wybthon.component.Component`, bound on first use (it imports this module's dependents).
+_component_type: Any = None
+
+
+def _bind_component() -> None:
+    global _component_type
+    from .component import Component
+
+    _component_type = Component
+
+
 def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
     """Call a component tag's callable with its attributes and content.
 
@@ -1126,9 +1185,9 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
             content = child.children
         else:
             content = [child]
-    from .component import Component
-
-    if isinstance(comp, Component):
+    if _component_type is None:
+        _bind_component()
+    if type(comp) is _component_type:
         if content:
             props["children"] = content
         return comp(**props)
@@ -1142,8 +1201,6 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
             props["children"] = content[0] if len(content) == 1 else content
         result = comp(**props)
     else:
-        from .vnode import h
-
         if content:
             props["children"] = content
         return h(comp, props)
@@ -1210,25 +1267,29 @@ def expand(vnode: VNode) -> VNode:
 # Reconciler functions, bound on first use (the reconciler imports this module).
 # A test reloading the reconciler re-executes it into the same module dict,
 # so functions bound here keep working.
-_mount_hole: Any = None
 _region_set: Any = None
 _dispose_tree: Any = None
 _replace_hole_getter: Any = None
+_hole_updater: Any = None
+_apply_hole: Any = None
 
 
 def _bind_reconciler() -> None:
-    global _mount_hole, _region_set, _dispose_tree, _replace_hole_getter
+    global _region_set, _dispose_tree, _replace_hole_getter, _hole_updater, _apply_hole
     from . import reconciler
 
-    _mount_hole = reconciler._mount_hole
     _region_set = reconciler._region_set
     _dispose_tree = reconciler._dispose_tree
     _replace_hole_getter = reconciler._replace_hole_getter
+    _hole_updater = reconciler._hole_updater
+    _apply_hole = reconciler._apply_hole
 
 
 # A template child slot's hole region keeps its expression in its binding,
 # not in its props, so every slot shares these (never written).
 _SLOT_PROPS: Any = MappingProxyType({})
+
+_KEEP = _core._SKIP_APPLY
 
 
 def _text_hole(nid: int, text: str) -> VNode:
@@ -1260,23 +1321,166 @@ def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None) -> 
     compiled.mount(vnode, parent_id, anchor_id)
 
 
+# Child slots
+#
+# A child slot's state on a mounted instance (its entry in `dyn`) is one of:
+#
+# - a string: static text in the slot's text placeholder;
+# - a computation: a *text binding*, an expression whose results so far
+#   were text, written straight into the placeholder. Its data is the
+#   placeholder's id. The first time the expression returns anything else,
+#   the binding upgrades in place to a hole region: its data becomes that
+#   hole's VNode, and it applies through the hole. The region's nodes go in
+#   front of the placeholder, whose live parent the kernel inserts into, so
+#   it needs no parent id;
+# - a hole VNode: a region holding nodes (or text in a comment
+#   placeholder), with its binding, if any, as `render_effect`.
+
+# While a template mount binds a text slot: `(clone command, index,
+# placeholder id, kernel generation)`. The binding's first text fills that
+# slot of the not-yet-committed clone instead of a separate write.
+_fill: tuple[list[Any], int, int, int] | None = None
+
+
+def _text_of(value: Any) -> str:
+    t = type(value)
+    if t is str:
+        return value
+    if t is int or t is float:
+        return str(value)
+    return ""
+
+
+def _apply_text(nid: int, value: Any, previous: Any) -> None:
+    """A text binding's apply stage: write text into the placeholder, or upgrade to a hole."""
+    t = type(value)
+    if t is str:
+        text = value
+    elif t is int or t is float:
+        text = str(value)
+    elif value is None or value is True or value is False:
+        text = ""
+    else:
+        if value is not _KEEP:
+            _upgrade_text(nid, value, previous)
+        return
+    if text == _text_of(previous):
+        return
+    fill = _fill
+    if fill is not None and fill[2] == nid and fill[3] == kernel.generation:
+        fill[0][fill[1]] = text
+    else:
+        kernel.push((kernel.OP_SET_TEXT, nid, text))
+
+
+def _upgrade_text(nid: int, value: Any, previous: Any) -> None:
+    """Turn the text binding being applied into a hole region, then apply `value` through it."""
+    if _apply_hole is None:
+        _bind_reconciler()
+    binding = _core._applying
+    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+    hole.el = nid
+    hole._frag_end = nid
+    hole._hole_text = _text_of(previous)
+    hole.dyn = 0  # type: ignore[assignment]
+    hole.render_effect = binding
+    binding._apply = _apply_hole
+    binding._apply_data = hole
+    _apply_hole(hole, value, previous)
+
+
+def _slot_hole(item: Any) -> Any:
+    """The hole region a child slot's state stands for, or None for static text or a text binding."""
+    if type(item) is Computation:
+        target = item._apply_data
+        return target if type(target) is VNode else None
+    return item if type(item) is VNode else None
+
+
 def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool = False) -> Any:
-    """Mount a child slot's value that isn't text in a text placeholder."""
+    """Mount a child slot's value that isn't plain text; returns the slot's state for `dyn`.
+
+    `op` and `slot` name the clone command and its text slot when the
+    placeholder is a text node (`op` is None for a comment placeholder).
+    """
     if _region_set is None:
         _bind_reconciler()
-    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     if is_accessor(value):
-        if op is not None:
-            _mount_hole(hole, parent_id, None, nid, None, True, op, slot, value, probe)
+        fn = value
+        if type(value) is _Getter:
+            probe = probe or value.probe
+            fn = value.fn
+        if probe:
+            fn = _probe_target(fn)
+        if fn is _STATIC:
+            value = _core._probed_value
         else:
-            _mount_hole(hole, parent_id, None, nid, None, False, None, 0, value, probe)
-        return hole
+            return _bind_child(fn, parent_id, nid, op, slot)
+    t = type(value)
+    if op is not None and (t is str or t is int or t is float or value is None or value is True or value is False):
+        text = _text_of(value)
+        op[slot] = text
+        return text
+    hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
     hole.el = nid
     hole._frag_end = nid
     if op is not None:
         hole._hole_text = ""
     _region_set(hole, parent_id, nid, value)
     return hole
+
+
+def _child_fn(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool) -> Any:
+    """Mount a child slot whose value is a getter the compiler made (no need to classify it)."""
+    if probe:
+        fn = _probe_target(fn)
+        if fn is _STATIC:
+            value = _core._probed_value
+            t = type(value)
+            if op is not None and (t is str or t is int or t is float):
+                text = value if t is str else str(value)
+                op[slot] = text
+                return text
+            return _child_slot(value, parent_id, nid, op, slot)
+    return _bind_child(fn, parent_id, nid, op, slot)
+
+
+def _bind_child(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int) -> Any:
+    """Bind a child slot to an expression: a text binding in a text placeholder, else a hole."""
+    if _region_set is None:
+        _bind_reconciler()
+    if op is None:
+        hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+        hole.el = nid
+        hole._frag_end = nid
+        hole.render_effect = _hole_updater(hole, parent_id, nid, fn, None, False)
+        return hole
+    global _fill
+    previous = _fill
+    _fill = (op, slot, nid, kernel.generation)
+    try:
+        comp = _bind(fn, _apply_text, nid, "")
+    finally:
+        _fill = previous
+    if not comp._disposed:
+        return comp
+    # Inert: it can never change, so keep what it rendered.
+    target = comp._apply_data
+    if type(target) is VNode:
+        target.render_effect = None
+        return target
+    return _text_of(comp._applied_value)
+
+
+def _prop_fn(nid: int, name: str, fn: Any, probe: bool) -> Any:
+    """Bind an attribute slot whose value is a getter the compiler made."""
+    if probe:
+        fn = _probe_target(fn)
+        if fn is _STATIC:
+            _apply_single_prop(nid, name, _FRESH, _core._probed_value)
+            return None
+    comp = _bind(fn, _appliers.get(name) or _applier(name), nid, _FRESH)
+    return None if comp._disposed else comp
 
 
 def _component_slot(node: _Component, values: tuple[Any, ...], parent_id: int, nid: int) -> VNode:
@@ -1336,6 +1540,8 @@ _CELLS = (
     "ref_slot",
     "child_slot",
     "component_slot",
+    "prop_fn",
+    "child_fn",
 )
 
 # Set to a list to collect generated sources (tests and debugging).
@@ -1369,7 +1575,10 @@ def mount_source(compiled: _Compiled, name: str) -> str:
         out.append(d)
         if kind == _S_PROP:
             probe = slot[2] in compiled.probes
-            lines.append(f"        {d} = prop_slot({nid}, {slot[3]!r}, values[{slot[2]}], {probe})")
+            if slot[2] in compiled.deferred:
+                lines.append(f"        {d} = prop_fn({nid}, {slot[3]!r}, values[{slot[2]}], {probe})")
+            else:
+                lines.append(f"        {d} = prop_slot({nid}, {slot[3]!r}, values[{slot[2]}], {probe})")
         elif kind == _S_PARTS:
             probe = all(type(p) is str or p in compiled.probes for p in slot[2])
             lines.append(f"        {d} = parts_slot({nid}, {slot[3]!r}, PLAN[{k}][2], values, {probe})")
@@ -1391,8 +1600,12 @@ def mount_source(compiled: _Compiled, name: str) -> str:
         elif kind == _S_CHILD:
             parent = f"first + {slot[3]}" if slot[3] else "first"
             text_slot = slot[4]
-            lines.append(f"        v = values[{slot[2]}]")
             probe = slot[2] in compiled.probes
+            if slot[2] in compiled.deferred:
+                op, index = ("op", 5 + text_slot) if text_slot >= 0 else ("None", -1)
+                lines.append(f"        {d} = child_fn(values[{slot[2]}], {parent}, {nid}, {op}, {index}, {probe})")
+                continue
+            lines.append(f"        v = values[{slot[2]}]")
             if text_slot >= 0:
                 index = 5 + text_slot
                 lines.append("        tv = type(v)")
@@ -1419,7 +1632,7 @@ def _cells(compiled: _Compiled) -> tuple[Any, ...]:
         compiled.plan,
         kernel.register_template,
         kernel.alloc_ids,
-        kernel.emit,
+        kernel.push,
         kernel.OP_CLONE,
         _events,
         _bind_event,
@@ -1429,6 +1642,8 @@ def _cells(compiled: _Compiled) -> tuple[Any, ...]:
         _ref_slot,
         _child_slot,
         _component_slot,
+        _prop_fn,
+        _child_fn,
     )
 
 
@@ -1531,6 +1746,15 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
             dyn[k] = spread
         else:  # _S_CHILD
             hole = dyn[k]
+            if type(hole) is Computation:
+                upgraded = _slot_hole(hole)
+                if upgraded is None:
+                    # A text binding becomes a hole showing its current text.
+                    text = _text_of(hole._applied_value)
+                    hole.dispose()
+                    hole = _text_hole(nid, text)
+                else:
+                    hole = upgraded
             if type(hole) is str:
                 vtype = type(value)
                 if vtype is str or vtype is int or vtype is float:
@@ -1539,11 +1763,12 @@ def patch(old: VNode, new: VNode, parent_id: int) -> None:
                         kernel.emit((kernel.OP_SET_TEXT, nid, text))
                         dyn[k] = text
                     continue
-                hole = dyn[k] = _text_hole(nid, hole)
+                hole = _text_hole(nid, hole)
             if is_accessor(value) or hole.render_effect is not None:
                 dyn[k] = _replace_hole_getter(hole, first + slot[3], value, index in compiled.probes)
             else:
                 _region_set(hole, first + slot[3], nid, value)
+                dyn[k] = hole
     new.dyn = tuple(dyn)
     old.dyn = None
     old.tpl = None
@@ -1566,7 +1791,12 @@ def dispose(vnode: VNode, owned: bool = False) -> None:
     handlers = _events._handlers
     handlers_of = _events.handlers_of
     for offset in compiled.handlers:
-        for handler in handlers_of(handlers.pop(first + offset, None)):
+        entry = handlers.pop(first + offset, None)
+        if type(entry) is _events._Handler:
+            if entry.task_owner is not None:
+                entry.task_owner.dispose()
+            continue
+        for handler in handlers_of(entry):
             if handler.task_owner is not None:
                 handler.task_owner.dispose()
     for offset in compiled.refs:
@@ -1580,24 +1810,34 @@ def dispose(vnode: VNode, owned: bool = False) -> None:
                 handler.task_owner.dispose()
     dyn = vnode.dyn
     if dyn:
-        for k, slot in enumerate(compiled.plan):
+        if not owned:
+            # Attribute bindings; with `owned`, the owner disposes them.
+            for k in compiled.bound:
+                item = dyn[k]
+                if item is not None:
+                    item.dispose()
+        for k in compiled.regions:
             item = dyn[k]
             if item is None or type(item) is str:
                 continue
-            kind = slot[0]
-            if kind == _S_CHILD or kind == _S_COMPONENT:
-                if owned:
-                    # The owner disposes the hole's effect and scope; only
-                    # its mounted content has per-node registrations.
-                    sub_tree = item.subtree
-                    if sub_tree is not None:
-                        _dispose_tree(sub_tree)
-                        item.subtree = None
-                    item.el = None
-                else:
-                    _dispose_tree(item)
-            elif (kind == _S_PROP or kind == _S_PARTS) and not owned:
-                item.dispose()
+            if type(item) is Computation:
+                # A child slot's text binding, or the hole it upgraded to.
+                target = item._apply_data
+                if type(target) is not VNode:
+                    if not owned:
+                        item.dispose()
+                    continue
+                item = target
+            if owned:
+                # The owner disposes the hole's effect and scope; only its
+                # mounted content has per-node registrations.
+                sub_tree = item.subtree
+                if sub_tree is not None:
+                    _dispose_tree(sub_tree)
+                    item.subtree = None
+                item.el = None
+            else:
+                _dispose_tree(item)
     vnode.el = None
     vnode.tpl = None
     vnode.dyn = None

@@ -24,13 +24,11 @@ compiles to, roughly:
 @component
 def Counter(props: CounterProps):
     count, set_count = create_signal(0)
-    return html(
-        t"<p>{lambda: count()} doubled is {lambda: count() * 2}, step {lambda: props.step}</p>",
-        __wybthon_t0__,  # the literal's parse tree and mount function, built at compile time
-    )
+    # The literal's parse tree and mount function were built at compile time.
+    return __wybthon_t0__.render((lambda: count(), lambda: count() * 2, lambda: props.step))
 ```
 
-Each deferred expression is a slot's binding: the renderer runs it as its own computation and updates only that text node when what it read changes. The component body still runs once.
+Each deferred expression is a slot's binding: the renderer runs it as its own computation and updates only that text node when what it read changes. The component body still runs once. The compiled call hands the literal's entry a tuple of values, one per interpolation, so no t-string is built when the template is instantiated.
 
 ## The rule: dynamic or static
 
@@ -110,7 +108,7 @@ It then writes three things at the top of the module:
 - one mount function per element (`__wybthon_m0__`, ...), as an ordinary `def`;
 - an entry (`__wybthon_t0__ = __wybthon__.template(...)`) holding both, which does its work on first use.
 
-The call becomes `html(t"...", __wybthon_t0__)`. On first use, the entry rebuilds the template's slot plan from the tree and installs the mount functions. A precompiled template therefore skips everything [`html`][wybthon.html] does for an uncompiled literal: tokenizing the markup, validating it against the HTML parser's rules, and generating each mount function with `compile` and `exec`. When the build's Python version matches the Pyodide runtime's, `wyb build` also ships every compiled module as bytecode, so the browser doesn't compile the Python source either; see [Deployment](../guides/deployment.md#bytecode). With `bytecode = false`, the import hook compiles each module once, as the page imports it. The [engine v4 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md) measures the difference.
+The call becomes `__wybthon_t0__.render((value, ...))`, with each interpolation's value (or getter) in order and any conversion or format spec already applied, so a compiled template never builds a `Template` or calls `html()` at run time. On first use, the entry rebuilds the template's slot plan from the tree and installs the mount functions. A precompiled template therefore skips everything [`html`][wybthon.html] does for an uncompiled literal: tokenizing the markup, validating it against the HTML parser's rules, and generating each mount function with `compile` and `exec`. Each mount function also knows which slots always hold a getter the compiler made, and binds those without first checking what kind of value they hold. When the build's Python version matches the Pyodide runtime's, `wyb build` also ships every compiled module as bytecode, so the browser doesn't compile the Python source either; see [Deployment](../guides/deployment.md#bytecode). With `bytecode = false`, the import hook compiles each module once, as the page imports it. The [engine v4 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md) measures the difference.
 
 The generated names (`__wybthon__`, `__wybthon_t0__`, `__wybthon_m0__`) are dunder names, which Python never mangles inside classes and applications don't define.
 
@@ -119,7 +117,7 @@ The generated names (`__wybthon__`, `__wybthon_t0__`, `__wybthon_m0__`) are dund
 You don't call the compiler yourself. It runs in each place Python code enters a Wybthon application:
 
 - **`wyb build` and `wyb dev`** run every application module through the compiler, which also checks every template, and write the compiled bytecode into the archives when the build's Python version matches the runtime's. The import hook uses that bytecode as is, so such a page never compiles anything.
-- **The import hook.** `import wybthon` installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention `wybthon` and `html` and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (`views.cpython-314.opt-wyb1.pyc`), so a plain compile cached earlier is never mistaken for a compiled one. [`wybthon.compiler.install()`][wybthon.compiler.install] and [`uninstall()`][wybthon.compiler.uninstall] add and remove it explicitly.
+- **The import hook.** `import wybthon` installs it, and it compiles candidate modules imported after that: source files outside the standard library that mention `wybthon` and `html` and contain a t-string. Everything else loads exactly as it would without the hook. Compiled code is cached next to the normal bytecode under its own tag (`views.cpython-314.opt-wyb2.pyc`), so a plain compile cached earlier is never mistaken for a compiled one. [`wybthon.compiler.install()`][wybthon.compiler.install] and [`uninstall()`][wybthon.compiler.uninstall] add and remove it explicitly.
 - **The pytest plugin.** Installing Wybthon registers a `pytest11` plugin that compiles test modules and `conftest.py` files alongside pytest's assertion rewriting, so templates in tests behave exactly as they do in the application. Disable it with `-p no:wybthon`.
 - **`wyb run script.py`** runs a script with its own templates compiled and the hook installed, for scripts and quick experiments. Arguments after the script are passed to it.
 - **Prerendering** imports the application after Wybthon, so the hook compiles it.
@@ -149,7 +147,7 @@ Production builds turn dev mode off, but they compile every module, so the check
 
 ## Inspecting what it did
 
-[`wybthon.compiler.transform`][wybthon.compiler.transform] is the compiler's entry point: it takes a module's syntax tree and rewrites it in place. Print the result to see the generated header and the rewritten calls. `ast.unparse` prints each interpolation as you wrote it, so print the interpolations' new expressions separately:
+[`wybthon.compiler.transform`][wybthon.compiler.transform] is the compiler's entry point: it takes a module's syntax tree and rewrites it in place. Print the result to see the generated header and the rewritten calls. Each `html(t"...")` call becomes a `render` call at the same position, whose tuple holds one value per interpolation, so pairing them with the source shows what each interpolation became:
 
 ```python
 import ast
@@ -164,20 +162,26 @@ def view(count, kind, price, items):
     return html(t"<p class={kind()}>{count()} {count} {price():.2f} {Show(count() > 5, rows)}</p>")
 """
 
+written = {
+    (node.lineno, node.col_offset): [item.str for item in node.args[0].values if isinstance(item, ast.Interpolation)]
+    for node in ast.walk(ast.parse(source))
+    if isinstance(node, ast.Call) and node.args and isinstance(node.args[0], ast.TemplateStr)
+}
 tree = transform(ast.parse(source))
 print(ast.unparse(tree))
 for node in ast.walk(tree):
-    if isinstance(node, ast.Interpolation):
-        print(f"{{{node.str}}}  ->  {ast.unparse(node.value)}")
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "render":
+        for text, value in zip(written[(node.lineno, node.col_offset)], node.args[0].elts):
+            print(f"{{{text}}}  ->  {ast.unparse(value)}")
 ```
 
 The module now starts with `import wybthon._compiled as __wybthon__`, followed by each template's mount functions and its entry:
 
 ```python
-__wybthon_t0__ = __wybthon__.template(("<li>", "</li>"), ((0, "li", (), ((2, 0),)),), (__wybthon_m0__,), (0,))
+__wybthon_t0__ = __wybthon__.template(("<li>", "</li>"), ((0, "li", (), ((2, 0),)),), (__wybthon_m0__,), (0,), (0,))
 ```
 
-The entry's arguments are the literal's static strings, its parse tree, its mount functions, and the slots whose expressions make no calls (the ones the renderer probes before allocating a computation). The interpolations print as:
+The entry's arguments are the literal's static strings, its parse tree, its mount functions, the slots whose expressions make no calls (the ones the renderer probes before allocating a computation), and the slots that always hold a getter the compiler made. The interpolations print as:
 
 ```text
 {kind()}  ->  lambda: kind()

@@ -92,11 +92,11 @@
     if (l === undefined) return;
     if (typeof l === "string") {
       if (l !== type) return;
-      delete node.__wybL;
+      node.__wybL = undefined;
       delegatedNodes--;
     } else {
       if (!l.delete(type)) return;
-      if (l.size === 0) { delete node.__wybL; delegatedNodes--; }
+      if (l.size === 0) { node.__wybL = undefined; delegatedNodes--; }
     }
     dropTypeCount(type);
   }
@@ -104,7 +104,7 @@
   function dropTypes(node) {
     const l = node.__wybL;
     if (l === undefined) return;
-    delete node.__wybL;
+    node.__wybL = undefined;
     delegatedNodes--;
     if (typeof l === "string") dropTypeCount(l);
     else for (const type of l) dropTypeCount(type);
@@ -165,17 +165,21 @@
 
   // -- release ------------------------------------------------------------
 
+  // A released node keeps its `__wybId` expando: `delete` would turn the
+  // node's wrapper into a slow dictionary-mode object, and lookups check
+  // `nodes.get(id) === node` anyway.
   function releaseId(id) {
     const node = nodes.get(id);
     if (node === undefined) return;
-    controlledSelects.delete(id);
-    const entries = directListeners.get(id);
-    if (entries) {
-      for (const entry of entries.values()) node.removeEventListener(entry.type, entry.fn, entry.options);
-      directListeners.delete(id);
+    if (controlledSelects.size) controlledSelects.delete(id);
+    if (directListeners.size) {
+      const entries = directListeners.get(id);
+      if (entries) {
+        for (const entry of entries.values()) node.removeEventListener(entry.type, entry.fn, entry.options);
+        directListeners.delete(id);
+      }
     }
     dropTypes(node);
-    if (node.__wybId === id) delete node.__wybId;
     nodes.delete(id);
   }
 
@@ -207,6 +211,18 @@
       current = next;
     }
     if (first !== last && parent !== null && parent === last.parentNode) {
+      // When the range is all of the parent's content but a few nodes (a
+      // list's own markers and its slot's placeholder), clearing the parent
+      // is the fastest removal there is; the few nodes go back afterwards.
+      const kept = [];
+      for (let n = parent.firstChild; n !== first && kept.length <= 4; n = n.nextSibling) kept.push(n);
+      const head = kept.length;
+      for (let n = after; n !== null && kept.length <= 4; n = n.nextSibling) kept.push(n);
+      if (kept.length <= 4 && (kept.length === head || kept[kept.length - 1].nextSibling === null)) {
+        parent.textContent = "";
+        for (let i = 0; i < kept.length; i++) parent.appendChild(kept[i]);
+        return;
+      }
       // One native range deletion instead of a removal per node.
       const range = doc.createRange();
       range.setStartBefore(first);
@@ -224,31 +240,43 @@
 
   // -- templates ----------------------------------------------------------
 
-  function registerTpl(tplId, html, count, texts, listens) {
+  function registerTpl(tplId, html, count, texts, listens, addressed) {
     const tpl = doc.createElement("template");
     tpl.innerHTML = html;
     const proto = tpl.content.firstChild;
     proto.remove();
-    templates.set(tplId, {proto, count, texts: texts || [], listens: listens || []});
+    templates.set(tplId, {proto, count, texts: texts || [], listens: listens || [], addressed: addressed || null});
   }
 
   // Clone a template, register its nodes as a dense pre-order id block,
   // fill its text slots, mark its delegated listeners, and insert it.
   // The pre-order must match the order the Python shape walk counts nodes
-  // in (element, then children left to right).
+  // in (element, then children left to right). Only the nodes Python can
+  // address (the root, slot nodes and their parents, handler nodes) are
+  // registered; the others keep their ids unused.
   function clone(op) {
     const first = op[1];
     const t = templates.get(op[2]);
     const root = t.proto.cloneNode(true);
     const texts = t.texts;
     const listens = t.listens;
+    const addressed = t.addressed;
     let slot = 0;
     let nextText = texts.length ? texts[0] : -1;
+    let next = 0;
+    let nextAddressed = addressed === null ? 0 : addressed[0];
     let id = first;
     let n = root;
     while (n) {
-      nodes.set(id, n);
-      n.__wybId = id;
+      if (addressed === null) {
+        nodes.set(id, n);
+        n.__wybId = id;
+      } else if (id - first === nextAddressed) {
+        nodes.set(id, n);
+        n.__wybId = id;
+        next++;
+        nextAddressed = next < addressed.length ? addressed[next] : -1;
+      }
       if (id - first === nextText) {
         n.nodeValue = op[5 + slot];
         slot++;
@@ -553,7 +581,7 @@
           break;
         }
         case 14: // REGISTER_TPL
-          registerTpl(op[1], op[2], op[3], op[4], op[5]);
+          registerTpl(op[1], op[2], op[3], op[4], op[5], op[6]);
           break;
         case 15: // CREATE_ELEMENT_NS
           reg(op[1], doc.createElementNS(op[2], op[3]));

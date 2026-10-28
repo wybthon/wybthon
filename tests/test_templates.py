@@ -399,26 +399,23 @@ def test_precompiled_templates_mount_with_one_clone_each_and_never_parse():
     assert [s.text() for s in screens] == ["a: 10", "b: 10", "c: 10"]
 
 
-def test_a_precompiled_entry_whose_strings_changed_compiles_at_run_time_in_dev_mode():
-    stale = load_module(PRECOMPILED_MODULE)["__wybthon_t0__"]
-    changed = Template("<b data-x='1'>", Interpolation("x", "label"), "</b>")
-    entry = stale.load(changed)
-    assert entry.strings == changed.strings
-    assert templates._by_value[changed.strings] is entry
-    assert stale.entry is None
-    assert render(html(changed, stale)).html() == '<b data-x="1">x</b>'
+def test_a_compiled_template_builds_no_t_string_and_never_calls_html():
+    namespace = load_module(PRECOMPILED_MODULE)
+
+    def fail(template: Any) -> Any:
+        raise AssertionError("a compiled template called html()")
+
+    namespace["html"] = fail
+    with render(namespace["row"]("a")) as screen:
+        assert screen.html() == '<li class="a">a: 2</li>'
 
 
-def test_a_precompiled_entry_trusts_its_strings_outside_dev_mode():
-    stale = load_module(PRECOMPILED_MODULE)["__wybthon_t0__"]
-    fresh = templates.Precompiled(stale.strings, stale.data, stale.factories, tuple(stale.probes))
-    wybthon.set_dev_mode(False)
-    try:
-        entry = fresh.load(Template("<b data-x='1'>", Interpolation("x", "label"), "</b>"))
-    finally:
-        wybthon.set_dev_mode(True)
-    assert entry.strings is stale.strings
-    assert fresh.entry is entry
+def test_a_precompiled_entry_loads_once():
+    entry = load_module(PRECOMPILED_MODULE)["__wybthon_t0__"]
+    fresh = templates.Precompiled(entry.strings, entry.data, entry.factories, tuple(entry.probes))
+    first = fresh.render(("a", "a", lambda: 2))
+    assert fresh.entry is not None and fresh.element is first.props
+    assert fresh.render(("b", "b", lambda: 4)).props is first.props
 
 
 # ---------------------------------------------------------------------------

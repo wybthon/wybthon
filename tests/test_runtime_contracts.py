@@ -16,6 +16,7 @@ from wybthon import (
     resolve,
     until,
 )
+from wybthon.reactivity import _core
 
 
 def test_committed_effect_cleanup_waits_for_transition(wyb):
@@ -330,4 +331,4 @@ def test_apply_cleanup_is_untracked_and_failure_doesnt_skip_disposal(wyb, capsys
     assert cleaned == ["scope"]
     assert effect._disposed
     assert "cleanup failed" in capsys.readouterr().err
-    assert value not in (observer._sources or {})
+    assert value not in _core._edges(observer._sources)

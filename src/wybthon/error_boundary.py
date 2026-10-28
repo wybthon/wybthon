@@ -218,7 +218,6 @@ def _leaf_inputs(comp: Any, boundary: Any) -> list[Any]:
         if node is None or id(node) in seen:
             continue
         seen.add(id(node))
-        srcs = getattr(node, "_sources", None)
         if isinstance(node, Computation):
             ancestor: _core.Owner | None = node
             while ancestor is not None and ancestor is not boundary:
@@ -227,8 +226,7 @@ def _leaf_inputs(comp: Any, boundary: Any) -> list[Any]:
                 # External computations survive the fallback. Observe their
                 # recovery too, including a lazy import with no signal inputs.
                 leaves.append(node)
-            if srcs:
-                stack.extend(srcs)
+            stack.extend(_core._edges(node._sources))
         else:
             leaves.append(node)
     return leaves

@@ -68,18 +68,22 @@ def inspect_graph(owner: Any) -> dict[str, Any]:
         if held is not None:
             entry["transition"] = held.root().id
         if isinstance(node, _core.Computation):
-            entry["prepared_owner"] = id(node._prepared_owner) if node._prepared_owner is not None else None
-            entry["committed_owner"] = id(node._committed_owner) if node._committed_owner is not None else None
+            ext = node._ext
+            prepared = ext.prepared if ext is not None else None
+            committed = ext.committed if ext is not None else None
+            entry["prepared_owner"] = id(prepared) if prepared is not None else None
+            entry["committed_owner"] = id(committed) if committed is not None else None
+            sources = [(source, _core._mode(node._sources, source)) for source in _core._edges(node._sources)]
             entry["blocked_by"] = sorted(
                 {
                     _core._node_tx[source].root().id
-                    for source, mode in (node._sources or {}).items()
+                    for source, mode in sources
                     if mode & _core._R_NORMAL and source in _core._node_tx
                 }
             )
             entry["state"] = ("clean", "check", "dirty")[node._state]
             entry["pending"] = bool(node._async and node._async.pending)
-            for source, mode in (node._sources or {}).items():
+            for source, mode in sources:
                 edges.append(
                     {
                         "from": id(source),
@@ -91,9 +95,10 @@ def inspect_graph(owner: Any) -> dict[str, Any]:
                     }
                 )
                 queue.append(source)
-            if node._apply_owner is not None:
-                edges.append({"from": id(node), "to": id(node._apply_owner), "kind": "owns"})
-                queue.append(node._apply_owner)
+            apply_owner = ext.apply_owner if ext is not None else None
+            if apply_owner is not None:
+                edges.append({"from": id(node), "to": id(apply_owner), "kind": "owns"})
+                queue.append(apply_owner)
         if isinstance(node, _core.Owner):
             entry["tasks"] = len(node._tasks or ())
             children = node._children

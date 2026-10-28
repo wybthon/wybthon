@@ -125,11 +125,14 @@ literal guarantees its own structure.
 `CLONE` clones the registered `<template>`, registers its nodes in
 pre-order, fills its text slots, marks its delegated listeners, and
 inserts the clone before an anchor, all in one command:
-`[CLONE, first_id, tpl_id, parent_id, anchor_id, *texts]`.
+`[CLONE, first_id, tpl_id, parent_id, anchor_id, *texts]`. Only the
+nodes Python can address get an id: the root, the nodes that hold slots
+and their parents, and the nodes with handlers. Static nodes in between
+are never registered.
 
 A child slot keeps its placeholder as a permanent anchor:
 
-- When the slot's neighbors aren't text or another child slot, the placeholder is a one-space text node. A text value (a string or number) is written straight into the clone command, so a row's label costs no extra command. A reactive hole whose first result is text fills that slot of the command too, and later text results are a single `nodeValue` write (`HOLE_TEXT`).
+- When the slot's neighbors aren't text or another child slot, the placeholder is a one-space text node. A text value (a string or number) is written straight into the clone command, so a row's label costs no extra command. A reactive expression becomes a text binding: its first text fills that slot of the command too, and later text is a single `nodeValue` write (`SET_TEXT`). Only if the expression returns something other than text does the slot become a hole region, with its nodes in front of the placeholder.
 - Otherwise the placeholder is an empty comment.
 - A node, list, or component is mounted in front of the placeholder, and the placeholder stays. Nothing is created and then thrown away.
 
@@ -176,13 +179,16 @@ re-evaluations while the reconciler can patch them in place, and
 [`on_cleanup`][wybthon.on_cleanup] inside the expression runs before
 each re-run.
 
-Bindings keep their state in slots. Each hole and attribute binding is
-a small computation that holds its node, name, and last value directly,
-and applies its result as a method, not through a closure and its
-cells. A mounted template row therefore keeps about half as many
-objects for the cyclic garbage collector to track as it did in the
-previous engine; see the
-[engine v4 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md).
+Bindings are made in one step. Each hole, text slot, and attribute
+binding is a small computation whose data is its node id and whose apply
+stage is a module function, built, run, and applied by one routine. A
+child slot whose expression returns text writes it into the slot's
+placeholder without a hole node, and becomes a hole only if the
+expression ever returns nodes. Unmounting breaks the reference cycles
+between nodes and their bindings, rows, and regions, so removed DOM is
+freed at once by reference counting rather than by Python's cycle
+collector; see the
+[engine v5 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md).
 
 **A static probe before a computation.** A binding whose expression
 makes no calls (`{props.title}`, `{row["label"]}`) first runs under a
@@ -302,7 +308,7 @@ reactive bindings, refs) are found through the template's slot plan.
 
 Lists benefit most:
 
-- Clearing a `For` list emits one `DISPOSE_RANGE`, plus the disposal of each row's owner.
+- Clearing a `For` list emits one `DISPOSE_RANGE`, plus the disposal of each row's owner. When the list is all its parent holds (but for its markers and placeholder), the kernel empties the parent in one native call.
 - When a keyed list reuses no rows (every row replaced), the new rows mount as one splice and the old ones go in one `DISPOSE_RANGE`, instead of reconciling a thousand unrelated pairs.
 
 ## Event delegation

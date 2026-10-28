@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 # Matches `wybthon._hook.COMPILER_TAG` (a test checks they agree).
-COMPILER_TAG = "wyb1"
+COMPILER_TAG = "wyb2"
 
 
 def _is_candidate(source: bytes) -> bool:
