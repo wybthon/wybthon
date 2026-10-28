@@ -353,3 +353,74 @@ flush()
 host.remove()
 """,
     )
+
+
+def test_clearing_a_list_keeps_focus_on_its_element_siblings(goto_feature):
+    page = goto_feature("contracts")
+    python(
+        page,
+        """
+from js import document
+from wybthon import For, create_signal, flush, h, render
+from wybthon.dom import Element
+
+focus_host = document.createElement("div")
+document.body.appendChild(focus_host)
+focus_rows, set_focus_rows = create_signal([])
+focus_root = render(
+    h("div", {},
+      h("input", {"id": "focus-before"}),
+      For(focus_rows, lambda item, index: h("p", {"data-focus-row": item["id"]}, item["id"])),
+      h("textarea", {"id": "focus-after"})),
+    Element(node=focus_host),
+)
+""",
+    )
+    for field in ("#focus-before", "#focus-after"):
+        python(page, 'set_focus_rows([{"id": i} for i in range(20)])\nflush()')
+        expect(page.locator("[data-focus-row]")).to_have_count(20)
+        page.fill(field, "typed")
+        page.focus(field)
+        page.evaluate("field => document.querySelector(field).setSelectionRange(2, 2)", field)
+        python(page, "set_focus_rows([])\nflush()")
+        expect(page.locator("[data-focus-row]")).to_have_count(0)
+        # The siblings stay in the document untouched: focus, caret, and value.
+        state = page.evaluate(
+            """field => {
+                const node = document.querySelector(field);
+                return [document.activeElement === node, node.selectionStart, node.value];
+            }""",
+            field,
+        )
+        assert state == [True, 2, "typed"], (field, state)
+    python(page, "focus_root.dispose()\nflush()\nfocus_host.remove()")
+
+
+def test_a_list_that_fills_its_parent_clears_and_refills(goto_feature):
+    page = goto_feature("contracts")
+    python(
+        page,
+        """
+from js import document
+from wybthon import For, create_signal, flush, h, render
+from wybthon.dom import Element
+
+fill_host = document.createElement("div")
+document.body.appendChild(fill_host)
+fill_rows, set_fill_rows = create_signal([])
+fill_root = render(
+    h("ul", {"id": "fill-list"}, For(fill_rows, lambda item, index: h("li", {}, item))),
+    Element(node=fill_host),
+)
+""",
+    )
+    for round_ in range(2):
+        python(page, f"set_fill_rows([f'{round_}-{{i}}' for i in range(30)])\nflush()")
+        expect(page.locator("#fill-list li")).to_have_count(30)
+        expect(page.locator("#fill-list li").first).to_have_text(f"{round_}-0")
+        python(page, "set_fill_rows([])\nflush()")
+        expect(page.locator("#fill-list li")).to_have_count(0)
+        # Only the list's own markers survive the parent being emptied.
+        kinds = page.evaluate("() => [...document.getElementById('fill-list').childNodes].map(n => n.nodeType)")
+        assert set(kinds) <= {3, 8}, kinds
+    python(page, "fill_root.dispose()\nflush()\nfill_host.remove()")

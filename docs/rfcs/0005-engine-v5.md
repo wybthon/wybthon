@@ -130,7 +130,7 @@ __wybthon_t0__.render((lambda: "on" if active() else "", label))
 
 - **Addressed nodes only.** `REGISTER_TPL` gains a seventh field, the template's addressed node offsets: the root, every slot's node and its parent, text slots, and handler nodes. A clone registers only those nodes; the others are never looked up. The benchmark row registers 6 of its 10 nodes.
 - **No `delete` on DOM nodes.** Releasing a node used to `delete` its `__wybId` and `__wybL` expandos, which turns the node's wrapper into a slow dictionary-mode object. A released node keeps `__wybId` (lookups already check that the registry maps it back to the node), and `__wybL` is set to `undefined`.
-- **Clearing a parent.** When a disposed range is all of its parent's content but at most four nodes (a list's markers and its slot's placeholder), the kernel empties the parent with `textContent = ""` and puts those nodes back, as Solid clears a list.
+- **Clearing a parent.** When a disposed range is all of its parent's content but at most four comment or text nodes (a list's markers and its slot's placeholder), the kernel empties the parent with `textContent = ""` and puts those nodes back, as Solid clears a list. A surviving element sibling makes the kernel use range deletion instead, since moving an element out and back would drop its focus, selection, scroll position, or media state.
 
 ### What doesn't change
 
@@ -179,7 +179,7 @@ Applications don't change, with one behavior change for derived stores. Internal
 
 ## Testing
 
-- The unit suite (now 933 tests) and the browser suite on Pyodide (84 tests), with tests of removed internals adapted.
+- The unit suite (now 938 tests) and the browser suite on Pyodide (86 tests), with tests of removed internals adapted.
 - `tests/test_engine_v5.py` covers: `_bind`'s fast path and its general path in an action; inert bindings; errors routed to boundaries; async placeholders; the extension record; single links growing into dictionaries and both sides released on disposal; text bindings upgrading to holes, rendering `None`, and being disposed and patched; `Show` without a fallback; the compiler's `render` calls, folded format specs, and binder choice; the cache tag; addressed template nodes; that clearing rows and components leaves no framework objects for the cycle collector; the collector's pause and release; and single-field subscriptions to a settled projection.
 - Work gates in `benchmarks/check_work.py` unchanged.
 - Benchmarks, native and browser, against v0.39.0. Targets:
@@ -195,7 +195,7 @@ The [engine v5 evaluation](https://github.com/wybthon/wybthon/blob/main/benchmar
 
 - **Native CPU time, by the median of per-round ratios:** creating 1,000 rows 2.19 times faster and 10,000 rows 2.06 times; replacing 2.01 times; appending 2.02 times; updating every tenth row 1.36 times; swapping 1.30 times; clearing 1.51 to 1.71 times. Without the selection binding, creating 1,000 rows is 2.66 times faster.
 - **Components:** mounting 1,000 `Card` components 1.97 times faster, and clearing them 1.81 times.
-- **Work:** creating 1,000 rows makes 61,103 function calls instead of 101,100. A row keeps 15 tracked objects instead of 20 (10 instead of 13 without selection) and 2,464 bytes instead of 3,856.
+- **Work:** creating 1,000 rows makes 62,103 function calls instead of 101,100. A row keeps 15 tracked objects instead of 20 (10 instead of 13 without selection) and 2,464 bytes instead of 3,856.
 - **Memory:** clearing rows or components leaves no cyclic garbage, where v0.39.0 left 9 objects per row and 16 per `Card` row. With 10,000 rows mounted after earlier clears, the browser app's collector tracks 264,738 objects instead of 894,609, and a full collection takes 88 ms instead of 1,375 ms.
 - **Browser, signal mode:** creating 1,000 rows 1.75 times faster (58.7 ms to 33.6 ms) and 10,000 rows 2.03 times (536.6 ms to 263.9 ms); clearing 10,000 rows 2.00 times, with the kernel's share halved (129.7 ms to 64.2 ms); appending 1.69 times; updates 1.00 to 1.37 times. Time to the next frame after creating 10,000 rows fell from 691 ms to 265 ms, because the collection the mount owes now runs when the page is idle.
 - **Browser, store mode:** creating rows 1.46 to 1.65 times faster, clearing 1.58 times, updating every tenth row 1.09 times.

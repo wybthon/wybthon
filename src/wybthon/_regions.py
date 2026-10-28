@@ -218,10 +218,11 @@ class _ListRegion:
         keyed = self.keyed
         if keyed is True:
             # Identity: most rows are entities (dicts, objects), which
-            # match by `id`; scalars match by value.
-            if type(item) not in _SCALAR_TYPES:
-                return id(item)
-            return _identity(item)
+            # match by `id`; scalars, including subclasses such as
+            # namedtuples, match by value.
+            if type(item) in _SCALAR_TYPES or isinstance(item, _SCALARS):
+                return _identity(item)
+            return id(item)
         return keyed(item) if callable(keyed) else _identity(item)
 
     def new_row(self, item: Any, index: int, key: Any) -> _Row:

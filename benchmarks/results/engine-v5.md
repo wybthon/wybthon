@@ -20,8 +20,8 @@ An Intel Core i9-9980HK (8 cores, 16 threads) on macOS 15.7, otherwise idle (loa
 
 | Work | v0.39.0 | Engine v5 |
 | --- | ---: | ---: |
-| Function calls, create 1,000 rows with selection | 101,100 | 61,103 |
-| Function calls, create 1,000 rows without selection | 84,100 | 46,103 |
+| Function calls, create 1,000 rows with selection | 101,100 | 62,103 |
+| Function calls, create 1,000 rows without selection | 84,100 | 47,103 |
 | Objects tracked per mounted row, with selection | 20 | 15 |
 | Objects tracked per mounted row, without selection | 13 | 10 |
 | Bytes retained per row, with selection | 3,856 | 2,464 |
@@ -33,7 +33,7 @@ An Intel Core i9-9980HK (8 cores, 16 threads) on macOS 15.7, otherwise idle (loa
 
 What the rows show:
 
-- **A row costs 40% fewer calls.** A binding no longer passes through the general scheduler on its first run, a text slot no longer allocates a hole, and a row no longer runs through per-row lambdas.
+- **A row costs 39% fewer calls.** A binding no longer passes through the general scheduler on its first run, a text slot no longer allocates a hole, and a row no longer runs through per-row lambdas.
 - **A row keeps a quarter fewer objects and a third less memory.** It lost four dictionaries (single links replaced the edge sets, and a settled projection no longer adds a readiness subscription per row) and the text slot's hole. What remains is the row, its node, its two bindings, its two handler records, the selection's field subscription, one dictionary for the row's two children, and the application's own handler functions and their cell.
 - **Clearing leaves nothing for the cycle collector.** v0.39.0's rows and components referred to their nodes and back, so every clear left its rows as cyclic garbage. `tests/test_engine_v5.py` checks that no framework object survives a clear for the collector to find.
 
@@ -155,8 +155,8 @@ Startup is unchanged; it's still almost entirely Pyodide's.
 
 ## Validation
 
-- **Unit tests:** 933 pass on Python 3.14, including 21 new ones in `tests/test_engine_v5.py`; branch coverage is 87%.
-- **Browser tests:** 84 pass in Chromium on Pyodide 314.0.6, with the fixture app built by `wyb build`.
+- **Unit tests:** 938 pass on Python 3.14, including 26 new ones in `tests/test_engine_v5.py`; branch coverage is 87%.
+- **Browser tests:** 86 pass in Chromium on Pyodide 314.0.6, with the fixture app built by `wyb build`.
 - **Static checks:** Ruff (lint and format) and mypy pass.
 - **Benchmarks:** `benchmarks/async_bench.py` passes its publication checks, and `benchmarks/bench_runner.py` runs every scenario.
 

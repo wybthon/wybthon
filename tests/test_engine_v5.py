@@ -3,7 +3,7 @@
 import ast
 import asyncio
 import gc
-from typing import Any
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -274,6 +274,61 @@ def test_a_re_rendered_instance_patches_a_text_binding_into_a_new_getter():
         set_first("ignored")
         flush()
         assert screen.html() == "<p>three</p>"
+
+
+# ---------------------------------------------------------------------------
+# Row identity
+# ---------------------------------------------------------------------------
+
+
+class _Point(NamedTuple):
+    x: int
+
+
+class _Name(str):
+    pass
+
+
+@pytest.mark.parametrize(
+    ("first", "equal", "second"),
+    [
+        (_Point(1), _Point(1), _Point(2)),
+        (_Name("a"), _Name("a"), _Name("b")),
+        ((1, "x"), tuple([1, "x"]), (2, "x")),
+        ("ab", "".join(["a", "b"]), "c"),
+    ],
+    ids=["namedtuple", "str-subclass", "tuple", "str"],
+)
+def test_equal_scalar_rows_keep_their_row_including_subclasses(first: Any, equal: Any, second: Any):
+    rows, set_rows = create_signal([first])
+    created: list[Any] = []
+
+    def row(item: Any, index: Any) -> Any:
+        created.append(item)
+        return html(t"<li>{str(item)}</li>")
+
+    with render(html(t"<ul>{For(rows, row)}</ul>")):
+        created.clear()
+        # An equal value matches the mounted row by value.
+        set_rows([equal, second])
+        flush()
+        assert created == [second]
+
+
+def test_entity_rows_match_by_identity():
+    a, b = {"id": 1}, {"id": 1}
+    rows, set_rows = create_signal([a])
+    created: list[Any] = []
+
+    def row(item: Any, index: Any) -> Any:
+        created.append(item)
+        return html(t"<li>{item['id']}</li>")
+
+    with render(html(t"<ul>{For(rows, row)}</ul>")):
+        created.clear()
+        set_rows([a, b])
+        flush()
+        assert [id(item) for item in created] == [id(b)]
 
 
 # ---------------------------------------------------------------------------

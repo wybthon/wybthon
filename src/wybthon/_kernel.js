@@ -211,14 +211,23 @@
       current = next;
     }
     if (first !== last && parent !== null && parent === last.parentNode) {
-      // When the range is all of the parent's content but a few nodes (a
+      // When the range is all of the parent's content but a few markers (a
       // list's own markers and its slot's placeholder), clearing the parent
-      // is the fastest removal there is; the few nodes go back afterwards.
+      // is the fastest removal there is; the markers go back afterwards.
+      // Only comments and text can go back unchanged: re-inserting an
+      // element would drop its focus, selection, scroll, or media state.
       const kept = [];
-      for (let n = parent.firstChild; n !== first && kept.length <= 4; n = n.nextSibling) kept.push(n);
+      let inert = true;
+      for (let n = parent.firstChild; n !== first && inert && kept.length <= 4; n = n.nextSibling) {
+        inert = n.nodeType === 8 || n.nodeType === 3;
+        kept.push(n);
+      }
       const head = kept.length;
-      for (let n = after; n !== null && kept.length <= 4; n = n.nextSibling) kept.push(n);
-      if (kept.length <= 4 && (kept.length === head || kept[kept.length - 1].nextSibling === null)) {
+      for (let n = after; n !== null && inert && kept.length <= 4; n = n.nextSibling) {
+        inert = n.nodeType === 8 || n.nodeType === 3;
+        kept.push(n);
+      }
+      if (inert && kept.length <= 4 && (kept.length === head || kept[kept.length - 1].nextSibling === null)) {
         parent.textContent = "";
         for (let i = 0; i < kept.length; i++) parent.appendChild(kept[i]);
         return;
