@@ -15,10 +15,8 @@ def Counter(props: CounterProps):
 compiles to (roughly):
 
 ```python
-return html(
-    t"<p>{getter(lambda: count())} doubled is {getter(lambda: count() * 2)}, step {getter(lambda: props.step)}</p>",
-    __wybthon_t0__,  # the literal's parse tree and mount function, built at compile time
-)
+# `__wybthon_t0__` holds the literal's parse tree and mount function, built at compile time.
+return __wybthon_t0__.render((lambda: count(), lambda: count() * 2, lambda: props.step))
 ```
 
 **The rule.** An interpolation is *dynamic* when its expression contains
@@ -43,8 +41,9 @@ in a loop sees that iteration's values.
 **Precompiled templates.** Each literal is parsed and validated here, so
 a malformed template is a `SyntaxError` with its file and line. Its parse
 tree and the mount function for each of its elements are written into
-the module, so `html()` never parses a template or generates code at run
-time.
+the module, and the `html(t"...")` call becomes `entry.render((...))`
+with one value per interpolation, so a compiled template never builds a
+t-string, parses markup, or generates code at run time.
 
 The compiler runs from the import hook that `import wybthon` installs,
 from `wyb build` and `wyb dev`, from the pytest plugin, and from `wyb run`.
@@ -349,6 +348,33 @@ def _runtime(attr: str) -> ast.Attribute:
     return ast.Attribute(value=ast.Name(id=_RUNTIME, ctx=ast.Load()), attr=attr, ctx=ast.Load())
 
 
+def _is_render(node: ast.Call) -> bool:
+    """Whether `node` is a compiled template instance: `__wybthon_tN__.render((...))`."""
+    func = node.func
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr == "render"
+        and isinstance(func.value, ast.Name)
+        and func.value.id.startswith("__wybthon_t")
+    )
+
+
+# What `_Compiler._interpolation` made of a slot's value: nothing, a getter
+# (a lambda the slot binds), or a getter that makes no calls (probed first).
+_DEFERRED = 1
+_PROBED = 2
+
+
+def _value(item: ast.Interpolation) -> ast.expr:
+    """The value a compiled template passes for an interpolation, with any conversion or format spec applied."""
+    if item.conversion == -1 and item.format_spec is None:
+        return item.value
+    conversion = chr(item.conversion) if item.conversion != -1 else None
+    spec: ast.expr = item.format_spec if item.format_spec is not None else ast.Constant(value="")
+    call = ast.Call(func=_runtime("formatted"), args=[item.value, ast.Constant(value=conversion), spec], keywords=[])
+    return ast.copy_location(call, item.value)
+
+
 class _Compiler(ast.NodeTransformer):
     def __init__(self, filename: str, source_lines: list[str]) -> None:
         self.filename = filename
@@ -431,16 +457,12 @@ class _Compiler(ast.NodeTransformer):
     # -- html() calls -----------------------------------------------------------
 
     def _is_html(self, node: ast.AST, compiled: bool = True) -> bool:
-        """Whether `node` is a call of Wybthon's `html` on a t-string literal (or one already compiled)."""
+        """Whether `node` calls Wybthon's `html` on a t-string literal (with `compiled`, or is one already compiled)."""
         if not isinstance(node, ast.Call) or node.keywords or not node.args:
             return False
-        if not isinstance(node.args[0], ast.TemplateStr):
-            return False
-        if len(node.args) == 2:
-            entry = node.args[1]
-            if not (compiled and isinstance(entry, ast.Name) and entry.id.startswith("__wybthon_t")):
-                return False
-        elif len(node.args) != 1:
+        if compiled and _is_render(node):
+            return True
+        if len(node.args) != 1 or not isinstance(node.args[0], ast.TemplateStr):
             return False
         func = node.func
         if isinstance(func, ast.Name):
@@ -468,33 +490,42 @@ class _Compiler(ast.NodeTransformer):
             ) from None
         positions = templates.slot_positions(nodes)
         probes: list[int] = []
+        deferred: list[int] = []
+        values: list[ast.expr] = []
         index = 0
         for value in literal.values:
             if isinstance(value, ast.Interpolation):
                 value.value = self.visit(value.value)
-                if self._interpolation(value, positions.get(index, "child")):
-                    probes.append(index)
+                made = self._interpolation(value, positions.get(index, "child"))
+                if made:
+                    deferred.append(index)
+                    if made == _PROBED:
+                        probes.append(index)
+                values.append(_value(value))
                 index += 1
-        node.args.append(ast.Name(id=self._precompile(strings, nodes, node, frozenset(probes)), ctx=ast.Load()))
-        return node
+        entry = self._precompile(strings, nodes, node, frozenset(probes), frozenset(deferred))
+        render = ast.Attribute(value=ast.Name(id=entry, ctx=ast.Load()), attr="render", ctx=ast.Load())
+        call = ast.Call(func=render, args=[ast.Tuple(elts=values, ctx=ast.Load())], keywords=[])
+        return ast.copy_location(call, node)
 
-    def _interpolation(self, item: ast.Interpolation, position: str) -> bool:
-        """Compile one interpolation; returns whether its binding should be probed first.
+    def _interpolation(self, item: ast.Interpolation, position: str) -> int:
+        """Compile one interpolation; returns whether it made the slot's value a getter, and of which kind.
 
         In an element's child or attribute the deferred expression is a
-        plain lambda: the precompiled template records which slots it
-        made, and which of them make no calls (see `_core._probe`). A
-        component tag attribute gets a getter, which its props read.
+        plain lambda, and the precompiled template records which slots
+        hold one (`_DEFERRED`) and which of those make no calls
+        (`_PROBED`; see `_core._probe_target`). A component tag attribute
+        gets a getter, which its props read.
         """
         expr = item.value
         if position in _VERBATIM or self._is_html(expr) or _unmovable(expr):
-            return False
+            return 0
         formatted = item.conversion != -1 or item.format_spec is not None
         if position == "child" and not formatted and isinstance(expr, ast.Call) and _dispatchable(expr):
             item.value = self._dispatch(expr)
-            return False
+            return 0
         if not is_dynamic(expr):
-            return False
+            return 0
         body = expr
         if formatted:
             conversion = chr(item.conversion) if item.conversion != -1 else None
@@ -504,9 +535,9 @@ class _Compiler(ast.NodeTransformer):
             item.format_spec = None
         if position == "prop":
             item.value = self._getter(body, expr)
-            return False
+            return 0
         item.value = ast.copy_location(self._lambda(body, capture=True), expr)
-        return not _calls(expr)
+        return _DEFERRED if _calls(expr) else _PROBED
 
     def _argument(self, expr: ast.expr) -> ast.expr:
         """Prepare an argument of a component call: dynamic expressions become getters."""
@@ -562,12 +593,20 @@ class _Compiler(ast.NodeTransformer):
 
     # -- precompiled entries ----------------------------------------------------
 
-    def _precompile(self, strings: tuple[str, ...], nodes: list[Any], call: ast.Call, probes: frozenset[int]) -> str:
+    def _precompile(
+        self,
+        strings: tuple[str, ...],
+        nodes: list[Any],
+        call: ast.Call,
+        probes: frozenset[int],
+        deferred: frozenset[int],
+    ) -> str:
         data = templates.dump(nodes)
         program = templates._program(nodes, strings)
         factories: list[ast.expr] = []
         for compiled in templates.compiled_elements(program):
             compiled.probes = probes
+            compiled.deferred = deferred
             name = f"__wybthon_m{self.mounts}__"
             self.mounts += 1
             function = ast.parse(templates.mount_source(compiled, name)).body[0]
@@ -589,6 +628,7 @@ class _Compiler(ast.NodeTransformer):
                     ast.Constant(value=data),  # type: ignore[arg-type]
                     ast.Tuple(elts=factories, ctx=ast.Load()),
                     ast.Constant(value=tuple(sorted(probes))),  # type: ignore[arg-type]
+                    ast.Constant(value=tuple(sorted(deferred))),  # type: ignore[arg-type]
                 ],
                 keywords=[],
             ),

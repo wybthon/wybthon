@@ -87,9 +87,13 @@ class _Root:
         comp = self.derivation
         if comp is not None:
             comp._update_if_necessary()
-            comp._track_readiness()
-            # Ready reads depend on their properties. Pending/error reads also
-            # subscribe to the producer so that an eventual landing retries them.
+            # Ready reads depend on their properties. Reads of an async or
+            # failed derivation also subscribe to its readiness, and
+            # pending/error reads to the producer, so that an eventual
+            # landing retries them. A settled synchronous derivation has
+            # nothing to report.
+            if comp._async is not None or comp._error is not None:
+                comp._track_readiness()
             if comp._error is not None or (comp._async is not None and comp._async.inflight):
                 comp._read()
             elif comp._async is not None or _core._in_action is not None or _core._slow_reads:
@@ -123,7 +127,18 @@ class _PropertySignal(Signal[Any]):
     __slots__ = ("_node", "_key")
 
     def __init__(self, node: _Node, key: Any, value: Any) -> None:
-        super().__init__(value, unobserved=_release_property)
+        # `Signal.__init__`'s fields, assigned directly: a projection or a
+        # store row creates one of these per field it reads.
+        self._value = value
+        self._pending = None
+        self._staged = False
+        self._origin = _core._O_NORMAL
+        self._write_tx = None
+        self._version_source = None
+        self._observers = None
+        self._equals = _core._DEFAULT_EQUALS
+        self._unobserved = _release_property
+        self._name = None
         self._node = node
         self._key = key
 
@@ -330,14 +345,27 @@ class _Node:
         return self.state.peek().data
 
     def read(self, key: Any, default: Any = _RAISE) -> Any:
-        if _core._current_observer is _core._PROBE_OBSERVER:
+        observer = _core._current_observer
+        if observer is _core._PROBE_OBSERVER:
             # A store field is reactive: a binding's static probe ends here,
             # before doing the read it would repeat.
             raise _core._Escape
-        self.root.ready()
-        if _core._probe_depth:
-            self._probe_pending()
-        if _core._current_observer is not None or _core._probe_depth:
+        comp = self.root.derivation
+        if _core._authoritative_depth or _core._probe_depth:
+            self.root.ready()
+            if _core._probe_depth:
+                self._probe_pending()
+        elif comp is not None and (
+            comp._state != _core._CLEAN
+            or comp._async is not None
+            or comp._error is not None
+            or _core._in_action is not None
+            or _core._slow_reads
+        ):
+            # A derived store whose derivation is settled, synchronous, and
+            # not failing has nothing to bring up to date or to surface.
+            self.root.ready()
+        if observer is not None or _core._probe_depth:
             sig = self.properties.get(key)
             if sig is None:
                 sig = self.properties[key] = _PropertySignal(self, key, _lookup(self.state._value.data, key))
@@ -362,7 +390,7 @@ class _Node:
                     if isinstance(self.state._value.data, dict):
                         raise KeyError(key)
                     raise IndexError("list index out of range")
-                return _wrap(value)
+                return value if type(value) is not _Node else _wrap(value)
         # The container's revealed revision also covers properties that weren't
         # observed before a transition began. Read history can't change visibility.
         value = _lookup(self.visible(), key)
@@ -635,6 +663,8 @@ class Store[S](_Proxy, Mapping[str, Any]):
         A tracked read of an absent key subscribes to it, so a computation
         reading `store.get(row_id)` re-runs when that key appears.
         """
+        if self._session is None:
+            return self._node.read(key, default)
         return self._read(key, default)
 
     def __getattr__(self, name: str) -> Any:

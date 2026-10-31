@@ -35,13 +35,11 @@ from .events import set_handler
 from .kernel import OP_SET_ATTR, OP_SET_PROP, OP_SET_STYLE
 from .reactivity import _core
 from .reactivity._core import (
-    _APPLY_METHOD,
-    _ESCAPED,
-    _K_RENDER,
+    _STATIC,
     Computation,
-    Signal,
+    _bind,
     _Getter,
-    _probe,
+    _probe_target,
     _unwrap,
     is_accessor,
 )
@@ -219,68 +217,117 @@ def detach_ref(node_id: int) -> None:
 # Single-prop appliers
 # ---------------------------------------------------------------------------
 
+# Writers by prop name: `writer(node_id, old_val, new_val)` emits the ops
+# that apply one prop. Each is specialized for its name once (the attribute
+# name, whether it's a boolean attribute, which DOM property it sets), so
+# applying a prop costs one dict lookup and one call.
+_writers: dict[str, Any] = {}
+
+_push = kernel.push
+
+
+def _write_nothing(node_id: int, old_val: Any, new_val: Any) -> None:
+    return None
+
+
+def _write_class(node_id: int, old_val: Any, new_val: Any) -> None:
+    text = new_val if type(new_val) is str else _class_string(new_val)
+    if text or old_val is not _FRESH:
+        _push((OP_SET_ATTR, node_id, "class", text or None))
+
+
+def _write_style(node_id: int, old_val: Any, new_val: Any) -> None:
+    _apply_style(node_id, None if old_val is _UNSET or old_val is _FRESH else old_val, new_val)
+
+
+def _write_dataset(node_id: int, old_val: Any, new_val: Any) -> None:
+    _apply_dataset(node_id, None if old_val is _UNSET or old_val is _FRESH else old_val, new_val)
+
+
+def _write_value(node_id: int, old_val: Any, new_val: Any) -> None:
+    if new_val is not None or old_val is not _FRESH:
+        _push((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
+
+
+def _write_selected_values(node_id: int, old_val: Any, new_val: Any) -> None:
+    _push((OP_SET_PROP, node_id, "selectedValues", [str(value) for value in (new_val or [])]))
+
+
+def _write_checked(node_id: int, old_val: Any, new_val: Any) -> None:
+    if new_val or old_val is not _FRESH:
+        _push((OP_SET_PROP, node_id, "checked", bool(new_val)))
+
+
+def _write_inner_html(node_id: int, old_val: Any, new_val: Any) -> None:
+    if new_val is not None or old_val is not _FRESH:
+        _push((OP_SET_PROP, node_id, "innerHTML", "" if new_val is None else str(new_val)))
+
+
+def _event_writer(name: str) -> Any:
+    def write(node_id: int, old_val: Any, new_val: Any) -> None:
+        if old_val is not _UNSET and old_val is not _FRESH and old_val is new_val:
+            return
+        set_handler(node_id, name, new_val if callable(new_val) else None)
+
+    return write
+
+
+def _attribute_writer(name: str) -> Any:
+    attr = attr_name(name)
+    on = "" if attr in _BOOLEAN_ATTRS else "true"
+
+    def write(node_id: int, old_val: Any, new_val: Any) -> None:
+        if new_val is None or new_val is False:
+            if old_val is not _FRESH:
+                _push((OP_SET_ATTR, node_id, attr, None))
+        elif new_val is True:
+            _push((OP_SET_ATTR, node_id, attr, on))
+        else:
+            _push((OP_SET_ATTR, node_id, attr, new_val if type(new_val) is str else str(new_val)))
+
+    return write
+
+
+_SPECIAL_WRITERS = {
+    "class": _write_class,
+    "class_": _write_class,
+    "style": _write_style,
+    "dataset": _write_dataset,
+    "value": _write_value,
+    "selected_values": _write_selected_values,
+    "checked": _write_checked,
+    "inner_html": _write_inner_html,
+    "innerHTML": _write_inner_html,
+}
+
+
+def writer(name: str) -> Any:
+    """The writer for prop `name`: `writer(node_id, old_val, new_val)` (memoized)."""
+    write = _writers.get(name)
+    if write is None:
+        if name in _SKIP:
+            write = _write_nothing
+        elif is_event_prop(name):
+            write = _event_writer(name)
+        else:
+            write = _SPECIAL_WRITERS.get(name) or _attribute_writer(name)
+        if len(_writers) < 4096:
+            _writers[name] = write
+    return write
+
 
 def _apply_single_prop(node_id: int, name: str, old_val: Any, new_val: Any) -> None:
     """Emit ops applying (or diffing) one prop on a DOM node.
 
     `old_val` may be `_UNSET` for an initial application, in which case
-    the prop is written unconditionally.
+    the prop is written unconditionally, or `_FRESH` for a node created
+    in this mount, in which case writes that would only clear a value are
+    skipped.
     """
-    if name in _SKIP:
-        return
-
-    if is_event_prop(name):
-        if old_val is not _UNSET and old_val is not _FRESH and old_val is new_val:
-            return
-        set_handler(node_id, name, new_val if callable(new_val) else None)
-        return
-
-    fresh = old_val is _FRESH
-    if fresh:
-        old_val = _UNSET
-
-    if name == "class" or name == "class_":
-        text = _class_string(new_val)
-        if text or not fresh:
-            kernel.emit((OP_SET_ATTR, node_id, "class", text or None))
-        return
-
-    if name == "style":
-        _apply_style(node_id, None if old_val is _UNSET else old_val, new_val)
-        return
-
-    if name == "dataset":
-        _apply_dataset(node_id, None if old_val is _UNSET else old_val, new_val)
-        return
-
-    if name == "value":
-        if new_val is not None or not fresh:
-            kernel.emit((OP_SET_PROP, node_id, "value", "" if new_val is None else str(new_val)))
-        return
-
-    if name == "selected_values":
-        kernel.emit((OP_SET_PROP, node_id, "selectedValues", [str(value) for value in (new_val or [])]))
-        return
-
-    if name == "checked":
-        if new_val or not fresh:
-            kernel.emit((OP_SET_PROP, node_id, "checked", bool(new_val)))
-        return
-
-    if name == "inner_html" or name == "innerHTML":
-        if new_val is not None or not fresh:
-            kernel.emit((OP_SET_PROP, node_id, "innerHTML", "" if new_val is None else str(new_val)))
-        return
-
-    attr = attr_name(name)
-    if new_val is None or new_val is False:
-        if not fresh:
-            kernel.emit((OP_SET_ATTR, node_id, attr, None))
-        return
-    if new_val is True:
-        kernel.emit((OP_SET_ATTR, node_id, attr, "" if attr in _BOOLEAN_ATTRS else "true"))
-        return
-    kernel.emit((OP_SET_ATTR, node_id, attr, str(new_val)))
+    write = _writers.get(name)
+    if write is None:
+        write = writer(name)
+    write(node_id, old_val, new_val)
 
 
 def _remove_single_prop(node_id: int, name: str, old_val: Any) -> None:
@@ -430,25 +477,41 @@ def remove_bindings_for(node_id: int) -> None:
             comp.dispose()
 
 
-def _apply_binding(target: tuple[int, str], new_val: Any, old_val: Any) -> None:
-    """A reactive attribute binding's apply stage: re-apply one prop of one node.
+# Apply stages of reactive attribute bindings, by prop name. A binding's
+# data is its node id alone; the name lives in its apply function.
+_appliers: dict[str, Any] = {}
+
+
+def _applier(name: str) -> Any:
+    """The apply stage `apply(node_id, new_val, old_val)` of a binding to prop `name` (memoized).
 
     An unchanged plain value writes nothing, as in Solid. `value` and
     `checked` are always re-asserted: the live property may have diverged
     from the last value written (user input).
     """
-    if new_val is _KEEP:
-        return
-    name = target[1]
-    if (
-        type(new_val) in _STATIC_TYPES
-        and type(new_val) is type(old_val)
-        and new_val == old_val
-        and name != "value"
-        and name != "checked"
-    ):
-        return
-    _apply_single_prop(target[0], name, old_val, new_val)
+    apply = _appliers.get(name)
+    if apply is not None:
+        return apply
+    write = writer(name)
+    if name == "value" or name == "checked":
+
+        def apply(node_id: int, new_val: Any, old_val: Any) -> None:
+            if new_val is not _KEEP:
+                write(node_id, old_val, new_val)
+
+    else:
+
+        def apply(node_id: int, new_val: Any, old_val: Any) -> None:
+            if new_val is _KEEP:
+                return
+            t = type(new_val)
+            if t in _STATIC_TYPES and t is type(old_val) and new_val == old_val:
+                return
+            write(node_id, old_val, new_val)
+
+    if len(_appliers) < 4096:
+        _appliers[name] = apply
+    return apply
 
 
 def _bind_reactive_prop(
@@ -465,11 +528,11 @@ def _bind_reactive_prop(
     calls; by default, a getter marked so), an expression that reads
     nothing reactive is applied once and needs no computation, and one
     that returns an accessor without reading anything binds to that
-    accessor (see `_core._probe`).
+    accessor (see `_core._probe_target`).
 
     `initial` is the value the node currently holds (`_FRESH` for a node
     created in this mount). Template mounts pass `register=False`: their
-    bindings are recorded on the template root and registered by node
+    bindings are recorded on the template instance and registered by node
     only if the subtree is ever patched.
     """
     if type(getter) is _Getter:
@@ -478,31 +541,14 @@ def _bind_reactive_prop(
         fn: Any = getter.fn
     else:
         fn = getter
-    if probe and _core._session is None:
-        for _ in range(8):
-            value = _probe(fn)
-            if value is _ESCAPED:
-                break
-            if type(value) is Signal:
-                fn = value
-                break
-            if is_accessor(value):
-                fn = value.fn if type(value) is _Getter else value
-                continue
-            _apply_single_prop(node_id, name, initial, value)
+    if probe:
+        fn = _probe_target(fn)
+        if fn is _STATIC:
+            _apply_single_prop(node_id, name, initial, _core._probed_value)
             return None
-    comp = Computation(
-        fn, kind=_K_RENDER, value=initial, apply_scope=False, apply=_apply_binding, pass_prev=False, keep=True
-    )
-    comp._apply_arity = _APPLY_METHOD
-    comp._apply_data = (node_id, name)
-    owner = _core._current_owner
-    if owner is not None:
-        owner._add_child(comp)
-    comp._update_if_necessary()
-    if not comp._sources and comp._inert():
+    comp = _bind(fn, _appliers.get(name) or _applier(name), node_id, initial)
+    if comp._disposed:
         # Nothing reactive was read: the value can never change again.
-        comp.dispose()
         return None
     if register:
         table = _bindings.get(node_id)

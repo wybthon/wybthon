@@ -42,6 +42,8 @@ def created_during(fn: Any) -> dict[str, int]:
     """How many signals and computations `fn` constructs."""
     counts = {"Signal": 0, "Computation": 0}
     signal_init, comp_init = _core.Signal.__init__, _core.Computation.__init__
+    # Bindings are built by `_core._bind` without calling `__init__`.
+    new_computation = _core._new_computation
 
     def count_signal(self, *a, **k):
         counts["Signal"] += 1
@@ -51,13 +53,19 @@ def created_during(fn: Any) -> dict[str, int]:
         counts["Computation"] += 1
         comp_init(self, *a, **k)
 
+    def count_binding(cls):
+        counts["Computation"] += 1
+        return new_computation(cls)
+
     setattr(_core.Signal, "__init__", count_signal)
     setattr(_core.Computation, "__init__", count_comp)
+    _core._new_computation = count_binding
     try:
         fn()
     finally:
         setattr(_core.Signal, "__init__", signal_init)
         setattr(_core.Computation, "__init__", comp_init)
+        _core._new_computation = new_computation
     return counts
 
 

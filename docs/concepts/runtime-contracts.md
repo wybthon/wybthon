@@ -52,7 +52,7 @@ Supersession, disposal, and cancellation of an action Future cancel suspended wo
 
 `resolve` and `until` inspect readiness through arbitrary expressions and cached memo dependencies. Quiet refreshes are silent to `is_pending` but still block these awaiters. An async generator becomes ready at its first fresh yield; awaiting its value doesn't require the stream to end. Canceling an awaiter removes its temporary subscriptions and timeout.
 
-Derived stores share memo readiness and errors. Their seed determines shape; an unresolved async projection is pending. Structural and field subscriptions preserve fine-grained updates after readiness has settled.
+Derived stores share memo readiness and errors. Their seed determines shape; an unresolved async projection is pending. Structural and field subscriptions preserve fine-grained updates after readiness has settled. A read subscribes to the derivation's readiness only while it's async or has failed: a settled synchronous projection, such as a selection, costs each reader one field subscription and nothing more. Make a derivation that loads data an `async def` from the start; a synchronous one that later returns an awaitable doesn't report pending to readers that read it while it was synchronous.
 
 ## Optimistic edits
 
@@ -99,5 +99,7 @@ At run time, DOM positions keep one rule, in templates and `h()` trees alike: in
 `diagnostics.inspect_transitions()` reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. `inspect_graph(owner)` includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. `runtime_stats()` includes transition and held-node counts.
 
 The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
+
+Disposing an owner, a row, a region, or a mounted node breaks the references the engine keeps between them, so what's removed is freed by reference counting and never waits for Python's cycle collector. Cycles your own code creates (a nested function that calls itself, an object that stores its own bound method) still need the collector. The collector is paused while a flush or mount runs; in the browser, the collection it owes runs when the page is idle, after the committed DOM has painted, and large removals are freed then too.
 
 The native concurrency benchmark, `python benchmarks/async_bench.py`, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.

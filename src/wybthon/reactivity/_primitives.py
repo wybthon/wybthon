@@ -121,10 +121,8 @@ class _WritableMemo[T](Memo[T]):
         self._value = new
         if _core._track:
             _core._record(self, old, origin)
-        obs = self._observers
-        if obs:
-            for o in list(obs):
-                o._stale(_core._DIRTY)
+        for o in _core._edges(self._observers):
+            o._stale(_core._DIRTY)
 
 
 def create_signal[T](

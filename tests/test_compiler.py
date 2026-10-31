@@ -19,12 +19,29 @@ from wybthon.reactivity._core import _Getter
 
 def _tree(source: str) -> ast.Module:
     source = textwrap.dedent(source)
-    return compiler.transform(ast.parse(source), "m.py", source)
+    tree = compiler.transform(ast.parse(source), "m.py", source)
+    tree.original = ast.parse(source)  # type: ignore[attr-defined]
+    return tree
 
 
 def _interpolations(tree: ast.AST) -> dict[str, ast.expr]:
-    """Each interpolation's source text mapped to the expression the compiler left in its place."""
-    return {node.str: node.value for node in ast.walk(tree) if isinstance(node, ast.Interpolation)}
+    """Each interpolation's source text mapped to the value the compiler passes in its place.
+
+    A compiled `html(t"...")` call becomes `__wybthon_tN__.render((value, ...))`
+    at the same position, with one value per interpolation, in order.
+    """
+    texts: dict[tuple[int, int], list[str]] = {}
+    for node in ast.walk(tree.original):  # type: ignore[attr-defined]
+        if isinstance(node, ast.Call) and node.args and isinstance(node.args[0], ast.TemplateStr):
+            items = [value.str for value in node.args[0].values if isinstance(value, ast.Interpolation)]
+            texts[(node.lineno, node.col_offset)] = items
+    found: dict[str, ast.expr] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "render":
+            values = node.args[0]
+            assert isinstance(values, ast.Tuple)
+            found.update(zip(texts[(node.lineno, node.col_offset)], values.elts, strict=True))
+    return found
 
 
 def _run(source: str) -> dict[str, Any]:
@@ -156,9 +173,19 @@ def view(price, name):
     price = found["price()"]
     assert isinstance(price, ast.Lambda)
     assert "__wybthon__.fmt" in ast.unparse(price)
-    nodes = [n for n in ast.walk(_tree(HEADER + "def v(p):\n    return html(t'<p>{p():.2f}</p>')\n"))]
-    interpolation = next(n for n in nodes if isinstance(n, ast.Interpolation))
-    assert interpolation.conversion == -1 and interpolation.format_spec is None
+    # The value passed for the slot is the lambda itself: nothing is left to format at run time.
+    assert "__wybthon__.formatted" not in ast.unparse(price)
+
+
+def test_static_values_with_format_specs_are_formatted_when_the_template_is_created():
+    found = _interpolations(_tree(HEADER + "def v(p, n):\n    return html(t'<p>{p:.2f} {n!r}</p>')\n"))
+    assert _kind(found["p"]) == "formatted"
+    assert _kind(found["n"]) == "formatted"
+    ns = _run(HEADER + "def v(p, n):\n    return html(t'<p>{p:.2f} {n!r}</p>')\n")
+    from wybthon.testing import render
+
+    with render(ns["v"](2.5, "x")) as screen:
+        assert screen.html() == "<p>2.50 'x'</p>"
 
 
 def test_is_dynamic_ignores_lambda_bodies():
@@ -427,7 +454,7 @@ def test_aliases_and_the_package_attribute_resolve():
 def test_modules_with_their_own_html_are_left_alone():
     source = "def html(t):\n    return t\ndef v(n):\n    return html(t'<p>{n()}</p>')\n"
     tree = compiler.transform(ast.parse(source), "m.py", source)
-    assert _kind(_interpolations(tree)["n()"]) == "verbatim"
+    assert ast.unparse(tree) == ast.unparse(ast.parse(source))
     assert not any(isinstance(node, ast.Import) for node in tree.body)
 
 

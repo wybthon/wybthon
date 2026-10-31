@@ -44,7 +44,7 @@ from __future__ import annotations
 from bisect import bisect_left
 from typing import Any
 
-from . import kernel, templates
+from . import diagnostics, kernel, templates
 from ._dom_props import (
     _bindings,
     _ref_cleanups,
@@ -81,17 +81,15 @@ from .kernel import (
 )
 from .reactivity import _core
 from .reactivity._core import (
-    _APPLY_METHOD,
-    _ESCAPED,
-    _K_RENDER,
+    _STATIC,
     Computation,
     Owner,
-    Signal,
+    _bind,
     _ComponentContext,
     _enter_component_setup,
     _exit_component_setup,
     _Getter,
-    _probe,
+    _probe_target,
     flush,
     is_accessor,
 )
@@ -101,6 +99,17 @@ __all__ = ["render", "hydrate", "Root", "mount", "unmount", "patch"]
 
 _emit = kernel.emit
 _alloc_id = kernel.alloc_id
+
+# `wybthon._regions` imports this module; bound on first use.
+_regions: Any = None
+
+
+def _bind_regions() -> None:
+    global _regions
+    from . import _regions as regions
+
+    _regions = regions
+
 
 # Whether a component mounted right now can later receive new props. Only
 # a tree returned by a reactive hole (or passed to `render`) is ever
@@ -484,18 +493,44 @@ def mount(
     """
     if not isinstance(vnode, VNode):
         vnode = to_text_vnode(vnode)
-    scope = vnode.owner_scope
-    if scope is not None:
-        # A list row or branch: never patched, only moved or replaced.
-        global _patchable
-        previous = _patchable
-        _patchable = False
-        try:
-            _core._run_owned_untracked(scope, lambda: _mount_dispatch(vnode, parent_id, anchor_id, ns, True))
-        finally:
-            _patchable = previous
+    if vnode.owner_scope is not None:
+        _mount_owned(vnode, parent_id, anchor_id, ns)
         return
     _mount_dispatch(vnode, parent_id, anchor_id, ns, final)
+
+
+def _mount_owned(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None) -> None:
+    """Mount a list row or branch under its own scope, untracked.
+
+    Rows and branches are never patched, only moved or replaced, so a
+    template row mounts with its compiled mount function directly and
+    releases its values afterwards.
+    """
+    global _patchable
+    previous = _patchable
+    prev_owner = _core._current_owner
+    prev_obs = _core._current_observer
+    _patchable = False
+    _core._current_owner = vnode.owner_scope
+    _core._current_observer = None
+    try:
+        if (
+            vnode.tag == "_tpl"
+            and ns is None
+            and not kernel.claiming
+            and kernel.html_templates
+            and not vnode.props.foreign  # type: ignore[attr-defined]
+        ):
+            if diagnostics._active is not None:
+                diagnostics._active.counts["template_clones"] += 1
+            vnode.props.mount(vnode, parent_id, anchor_id)  # type: ignore[attr-defined]
+            vnode.children = ()  # type: ignore[assignment]
+        else:
+            _mount_dispatch(vnode, parent_id, anchor_id, ns, True)
+    finally:
+        _patchable = previous
+        _core._current_owner = prev_owner
+        _core._current_observer = prev_obs
 
 
 def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None, final: bool = False) -> None:
@@ -540,10 +575,10 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
         _mount_hole(vnode, parent_id, anchor_id)
         return
 
-    if tag in ("_list", "_branch"):
-        from ._regions import mount_branch, mount_list
-
-        (mount_list if tag == "_list" else mount_branch)(vnode, parent_id, anchor_id)
+    if tag == "_branch" or tag == "_list":
+        if _regions is None:
+            _bind_regions()
+        (_regions.mount_list if tag == "_list" else _regions.mount_branch)(vnode, parent_id, anchor_id)
         return
 
     if tag == "_fragment":
@@ -687,39 +722,19 @@ def _region_set(
             _unmount(prev)
             vnode.subtree = None
         if vnode._hole_text != text:
-            slot = _clone_slot
-            if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
-                slot[0][slot[1]] = text
-            else:
-                _emit((OP_HOLE_TEXT, end_id, text))
+            _emit((OP_HOLE_TEXT, end_id, text))
             vnode._hole_text = text
         return
     if vnode._hole_text is not None:
         if vnode._hole_text:
-            slot = _clone_slot
-            if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
-                slot[0][slot[1]] = ""
-            else:
-                _emit((OP_SET_TEXT, end_id, ""))
+            _emit((OP_SET_TEXT, end_id, ""))
         vnode._hole_text = None
     new_node = _coerce_result(result)
     if _core._session is not None:
         new_node.pk = f"{getattr(vnode, 'pk', None) or _core._position}.h"
     vnode.subtree = new_node
-    ns = vnode.ns
-
-    def commit() -> None:
-        try:
-            if prev is None:
-                mount(new_node, parent_id, end_id, ns)
-            else:
-                patch(prev, new_node, parent_id, ns)
-        except Exception as exc:
-            if not _dispatch_to_error_boundary(exc):
-                log_error(f"Reactive hole update failed: {exc}", exc)
-
     if not scoped:
-        commit()
+        _region_commit(prev, new_node, parent_id, end_id, vnode.ns)
         return
     if vnode.scope is None:
         vnode.scope = Owner()
@@ -729,9 +744,21 @@ def _region_set(
     previous = _patchable
     _patchable = True
     try:
-        _core._run_owned_untracked(vnode.scope, commit)
+        _core._run_owned_untracked(vnode.scope, _region_commit, prev, new_node, parent_id, end_id, vnode.ns)
     finally:
         _patchable = previous
+
+
+def _region_commit(prev: VNode | None, new_node: VNode, parent_id: int, end_id: int, ns: str | None) -> None:
+    """Mount a region's new content in front of its anchor, or patch its previous content."""
+    try:
+        if prev is None:
+            mount(new_node, parent_id, end_id, ns)
+        else:
+            patch(prev, new_node, parent_id, ns)
+    except Exception as exc:
+        if not _dispatch_to_error_boundary(exc):
+            log_error(f"Reactive hole update failed: {exc}", exc)
 
 
 def _replace_hole_getter(vnode: VNode, parent_id: int, value: Any, probe: bool = False) -> VNode:
@@ -788,11 +815,7 @@ def _hole_apply(
         # The common case, inlined: text replacing text.
         text = result if rtype is str else str(result)
         if vnode._hole_text != text:
-            slot = _clone_slot
-            if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
-                slot[0][slot[1]] = text
-            else:
-                _emit((OP_HOLE_TEXT, end_id, text))
+            _emit((OP_HOLE_TEXT, end_id, text))
             vnode._hole_text = text
         return
     _region_set(vnode, parent_id, end_id, result, True, scope_parent)
@@ -801,30 +824,31 @@ def _hole_apply(
 def _apply_hole(target: Any, result: Any, previous: Any) -> None:
     """A reactive hole's apply stage: put the expression's result into its region.
 
-    `target` is the hole's VNode, or `(vnode, parent id, claim)` while
-    hydrating. A hole's binding is a plain computation with this function
-    as its apply stage (see `_hole_updater`).
+    `target` is the hole's VNode (its parent id in `dyn`), or `(vnode,
+    parent id, claim)` while hydrating. A hole's binding is a plain
+    computation with this function as its apply stage (see
+    `_hole_updater`); the binding being applied owns the region's scope.
     """
+    binding = _core._applying
+    scope_parent = binding._parent if binding is not None else None
     if type(target) is VNode:
         vnode = target
+        if (result is None or result is True or result is False) and vnode.props is templates._SLOT_PROPS:
+            # A template's child slot renders nothing as empty text in its
+            # placeholder, as its text binding did before it held nodes.
+            result = ""
         rtype = type(result)
         if (rtype is str or rtype is int or rtype is float) and vnode.subtree is None:
             # The common case, inlined: text replacing text.
             text = result if rtype is str else str(result)
             if vnode._hole_text != text:
-                slot = _clone_slot
-                if slot is not None and slot[2] is vnode and slot[3] == kernel.generation:
-                    slot[0][slot[1]] = text
-                else:
-                    _emit((OP_HOLE_TEXT, vnode._frag_end, text))
+                _emit((OP_HOLE_TEXT, vnode._frag_end, text))
                 vnode._hole_text = text
             return
-        binding = vnode.render_effect
-        _hole_apply(vnode, vnode.dyn, vnode._frag_end, None, binding._parent if binding else None, result)  # type: ignore[arg-type]
+        _hole_apply(vnode, vnode.dyn, vnode._frag_end, None, scope_parent, result)  # type: ignore[arg-type]
         return
     vnode, parent_id, claim = target
-    binding = vnode.render_effect
-    _hole_apply(vnode, parent_id, vnode._frag_end, claim, binding._parent if binding else None, result)
+    _hole_apply(vnode, parent_id, vnode._frag_end, claim, scope_parent, result)
 
 
 def _hole_updater(
@@ -842,9 +866,8 @@ def _hole_updater(
     a static probe: one that reads nothing reactive is applied once and
     needs no computation at all, and one that returns an accessor without
     reading anything (a signal kept in a data structure) binds the hole
-    to that accessor instead (see `_core._probe`).
+    to that accessor instead (see `_core._probe_target`).
     """
-    scope_parent = _core._current_owner
     if type(getter) is _Getter:
         if probe is None:
             probe = getter.probe
@@ -869,101 +892,41 @@ def _hole_updater(
                 _core._restore_position(previous)
 
     elif claim is None and probe:
-        for _ in range(8):
-            value = _probe(fn)
-            if value is _ESCAPED:
-                break
-            if type(value) is Signal:
-                fn = value
-                break
-            if is_accessor(value):
-                fn = value.fn if type(value) is _Getter else value
-                continue
-            _hole_apply(vnode, parent_id, end_id, None, scope_parent, value)
+        fn = _probe_target(fn)
+        if fn is _STATIC:
+            _hole_apply(vnode, parent_id, end_id, None, _core._current_owner, _core._probed_value)
             return None
-
-    comp = Computation(fn, kind=_K_RENDER, apply_scope=False, apply=_apply_hole, pass_prev=False, keep=True)
-    comp._apply_arity = _APPLY_METHOD
     if claim is None:
         # The hole's parent id rides in its unused `dyn` field, so the
         # binding needs nothing but the hole itself.
         vnode.dyn = parent_id  # type: ignore[assignment]
-        comp._apply_data = vnode
+        comp = _bind(fn, _apply_hole, vnode, None)
     else:
-        comp._apply_data = (vnode, parent_id, claim)
-    if scope_parent is not None:
-        scope_parent._add_child(comp)
-    vnode.render_effect = comp
-    comp._update_if_necessary()
-    if not comp._sources and comp._inert():
+        comp = _bind(fn, _apply_hole, (vnode, parent_id, claim), None)
+    if comp._disposed:
         # It read nothing reactive, so it can never run again: keep the
         # content it mounted and drop the computation.
-        comp.dispose()
         return None
     return comp
 
 
 _KEEP = _core._SKIP_APPLY
 
-# While a template mount creates a text-anchored hole: `(clone command,
-# slot index, hole VNode, kernel generation)`. The hole's first text result
-# fills that slot of the not-yet-committed clone instead of a separate write.
-_clone_slot: tuple[list[Any], int, VNode, int] | None = None
 
-
-def _mount_hole(
-    vnode: VNode,
-    parent_id: int,
-    anchor_id: int | None = None,
-    end_id: int | None = None,
-    ns: str | None = None,
-    text: bool = False,
-    clone: list[Any] | None = None,
-    slot: int = 0,
-    getter: Any = None,
-    probe: bool = False,
-) -> None:
-    """Mount a reactive hole: an end anchor plus a render effect.
-
-    When `end_id` is provided (template fast path), the existing
-    placeholder is adopted as the end anchor. `text` marks a placeholder
-    that's a one-space text node rather than a comment: a text result is
-    then written straight into it. `clone` and `slot` name the template's
-    clone command and the text slot the hole's first text result fills.
-    `getter` is the expression when it isn't in `vnode.props` (a
-    template's child slot), and `probe` says the compiler deferred it
-    without a call (see `_hole_updater`).
-    """
+def _mount_hole(vnode: VNode, parent_id: int, anchor_id: int | None = None) -> None:
+    """Mount a reactive hole: an end anchor plus a render effect."""
     claim: list[bool] | None = None
-    if end_id is None:
-        end_id = _alloc_id()
-        if kernel.claiming:
-            claim = [True]
-        else:
-            _emit((OP_CREATE_COMMENT, end_id))
-            _emit((OP_INSERT, parent_id, end_id, anchor_id))
+    end_id = _alloc_id()
+    if kernel.claiming:
+        claim = [True]
     else:
-        vnode.ns = ns
-        if text:
-            # The placeholder's current text: what the clone command fills
-            # its slot with (a template's slots start empty).
-            vnode._hole_text = clone[slot] if clone is not None else " "
+        _emit((OP_CREATE_COMMENT, end_id))
+        _emit((OP_INSERT, parent_id, end_id, anchor_id))
     vnode.el = end_id
     vnode._frag_end = end_id
-
-    if getter is None:
-        getter = vnode.props.get("getter")
+    getter = vnode.props.get("getter")
     if callable(getter):
-        if clone is None:
-            vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim, probe or None)
-        else:
-            global _clone_slot
-            previous = _clone_slot
-            _clone_slot = (clone, slot, vnode, kernel.generation)
-            try:
-                vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim, probe or None)
-            finally:
-                _clone_slot = previous
+        vnode.render_effect = _hole_updater(vnode, parent_id, end_id, getter, claim)
     if claim is not None and claim[0]:
         # Nothing claimed the anchor (the expression isn't ready, or its
         # first result applies later): it's the server's empty-hole comment.
@@ -1019,7 +982,6 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     assert callable(comp)
 
     ctx = _ComponentContext(comp)
-    ctx._vnode = vnode
     vnode.component_ctx = ctx
 
     parent_owner = _core._current_owner
@@ -1097,7 +1059,6 @@ def _patch_component(old: VNode, new: VNode, parent_id: int) -> None:
         # A plain function received a dict it can't observe: re-run it.
         _replace(old, new, parent_id, old.ns)
         return
-    ctx._vnode = new
     new.component_ctx = ctx
     new.render_effect = old.render_effect
     new.subtree = old.subtree
@@ -1173,6 +1134,11 @@ def _dispose_tree(vnode: VNode) -> None:
         if vnode.render_effect is not None:
             vnode.render_effect.dispose()
             vnode.render_effect = None
+        if tag == "_list" or tag == "_branch":
+            # The region and its node refer to each other.
+            region = vnode.props.pop("_region", None)
+            if region is not None:
+                region.vnode = None
         if vnode.scope is not None:
             vnode.scope.dispose()
             vnode.scope = None
@@ -1259,9 +1225,9 @@ def patch(old: VNode | None, new: VNode, parent_id: int, ns: str | None = None) 
         return
 
     if tag == "_list" or tag == "_branch":
-        from ._regions import patch_region
-
-        if not patch_region(old, new):
+        if _regions is None:
+            _bind_regions()
+        if not _regions.patch_region(old, new):
             _replace(old, new, parent_id, ns)
         return
 

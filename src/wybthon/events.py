@@ -114,7 +114,9 @@ class _Handler:
         self.key = key
         self.task_owner: _core.Owner | None = None
         self.fired = False
-        self.takes_event = _takes_event(callback)
+        # Whether the callback takes the event, decided on first dispatch
+        # (most handlers are bound and never fire).
+        self.takes_event: bool | None = None
 
 
 # Handlers by node id: the handler itself when the node has one (the common
@@ -457,8 +459,11 @@ def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
             # Removing the native listener prevents later events reaching it.
             kernel.emit((kernel.OP_UNLISTEN, current_id, key))
         try:
-            if handler.takes_event:
-                result = _core._run_owned_untracked(handler.owner, lambda: handler.callback(evt))
+            takes_event = handler.takes_event
+            if takes_event is None:
+                takes_event = handler.takes_event = _takes_event(handler.callback)
+            if takes_event:
+                result = _core._run_owned_untracked(handler.owner, handler.callback, evt)
             else:
                 result = _core._run_owned_untracked(handler.owner, handler.callback)
             if inspect.isawaitable(result):

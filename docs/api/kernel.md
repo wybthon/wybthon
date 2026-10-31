@@ -40,8 +40,8 @@ hot path; `None` anchors mean "append".
 | `CREATE_ELEMENT_NS` | `id, namespace, tag` | `document.createElementNS` (SVG, MathML) |
 | `CREATE_TEXT` | `id, text` | `document.createTextNode` |
 | `CREATE_COMMENT` | `id[, data]` | Comment marker (fragment and hole anchors); `Loading` boundaries carry a key in `data` during server rendering and hydration |
-| `REGISTER_TPL` | `tpl_id, html, count, [text offsets], [[offset, event_type], ...]` | Parse a template's or shape's skeleton once via `<template>`, and record its text slots and delegated listeners |
-| `CLONE` | `first_id, tpl_id, parent_id, anchor_id, *texts` | Clone the prototype, register a dense id block in pre-order, fill the text slots, mark the delegated listeners, and insert before the anchor |
+| `REGISTER_TPL` | `tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets]` | Parse a template's or shape's skeleton once via `<template>`, and record its text slots, delegated listeners, and the node offsets Python addresses (all of them when the list is `null`) |
+| `CLONE` | `first_id, tpl_id, parent_id, anchor_id, *texts` | Clone the prototype, register the addressed nodes of a dense pre-order id block, fill the text slots, mark the delegated listeners, and insert before the anchor |
 | `INSERT` | `parent_id, id, anchor_id` | `insertBefore` (`None` anchor appends) |
 | `REMOVE` | `id` | Detach from the parent; the node stays registered |
 | `MOVE_RANGE` | `parent_id, first_id, last_id, anchor_id` | Move a contiguous mounted range |

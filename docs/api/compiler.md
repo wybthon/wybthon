@@ -27,7 +27,7 @@ and in `wyb run script.py`.
 | [`is_dynamic`][wybthon.compiler.is_dynamic] | Whether an expression node contains a call, attribute access, or subscript (outside the lambdas inside it). |
 | [`is_candidate`][wybthon.compiler.is_candidate] | Whether a module's source bytes might hold `html(t"...")` calls: it mentions `wybthon` and `html` and contains a t-string. |
 | [`defers`][wybthon.compiler.defers] | Whether the compiler would defer an interpolation's source text in a given position; `html()` uses it for the dev-mode check of uncompiled templates. |
-| `COMPILER_TAG` | The optimization tag of cached compiled bytecode (`*.opt-wyb1.pyc`); it changes when the compiler's output does. |
+| `COMPILER_TAG` | The optimization tag of cached compiled bytecode (`*.opt-wyb2.pyc`); it changes when the compiler's output does. |
 
 ```python
 from wybthon.compiler import compile_source

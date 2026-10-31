@@ -72,7 +72,7 @@ OP_SET_STYLE = 10  # [op, id, {prop: value_or_None}]  (kebab-case, None removes)
 OP_LISTEN = 11  # [op, id, event_key, options?]
 OP_UNLISTEN = 12  # [op, id, event_key]
 OP_RELEASE = 13  # [op, [ids...]]  (drop registry entries and listeners of detached nodes)
-OP_REGISTER_TPL = 14  # [op, tpl_id, html, count, [text offsets], [[offset, event_type], ...]]
+OP_REGISTER_TPL = 14  # [op, tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets]]
 OP_CREATE_ELEMENT_NS = 15  # [op, id, namespace, tag]  (SVG / MathML)
 OP_ROOT = 16  # [op, id]  (delegate events from this node instead of document)
 OP_UNROOT = 17  # [op, id]
@@ -92,10 +92,13 @@ OP_CLAIM_STATIC = 28  # [op, parent_id, end_marker]  (keep server nodes before t
 # Module state
 # ---------------------------------------------------------------------------
 
-# The op buffer. Hot paths append tuples directly via ``emit`` or a local
-# alias of this list. ``commit`` drains it with ``clear`` (never rebinds)
-# so aliases held by other modules stay valid across test reloads.
-_ops: List[Any] = []
+# The op buffer. Hot paths append tuples through an alias of its `append`
+# (``push``). It's never rebound: ``commit`` drains it with ``clear``, and
+# reloading this module (as the tests do) clears the same list, so aliases
+# held by other modules stay valid.
+_ops: List[Any] = globals().get("_ops", [])
+_ops.clear()
+push = _ops.append
 
 _next_id: int = 1
 
@@ -164,7 +167,9 @@ def register_template(shape: Any) -> int:
     _next_tpl_id = tid + 1
     shape.tpl = tid
     _templates[tid] = shape
-    _ops.append((OP_REGISTER_TPL, tid, shape.html, shape.count, shape.texts, shape.listens))
+    # `addressed` lists the node offsets to register on each clone (all when absent).
+    addressed = getattr(shape, "addressed", None)
+    _ops.append((OP_REGISTER_TPL, tid, shape.html, shape.count, shape.texts, shape.listens, addressed))
     if len(_templates) > _TEMPLATE_LIMIT:
         retired_id, retired = _templates.popitem(last=False)
         retired.tpl = 0
@@ -618,7 +623,7 @@ class PythonBackend:
             elif code == OP_RELEASE_TPL:
                 self._tpl_protos.pop(op[1], None)
             elif code == OP_REGISTER_TPL:
-                self._register_tpl(op[1], op[2], op[3], op[4], op[5])
+                self._register_tpl(op[1], op[2], op[3], op[4], op[5], op[6] if len(op) > 6 else None)
             elif code == OP_CREATE_ELEMENT_NS:
                 create_ns = getattr(doc, "createElementNS", None)
                 node = create_ns(op[2], op[3]) if create_ns is not None else doc.createElement(op[3])
@@ -829,25 +834,36 @@ class PythonBackend:
         except Exception:
             pass
 
-    def _register_tpl(self, tpl_id: int, html: str, count: int, texts: list[int], listens: list[Any]) -> None:
+    def _register_tpl(
+        self,
+        tpl_id: int,
+        html: str,
+        count: int,
+        texts: list[int],
+        listens: list[Any],
+        addressed: list[int] | None = None,
+    ) -> None:
         tpl = self._tpl
         if tpl is None:
             raise RuntimeError("PythonBackend: document has no template support")
         tpl.innerHTML = html
         root = tpl.content.firstChild
         tpl.content.removeChild(root)
-        self._tpl_protos[tpl_id] = (root, count, tuple(texts), tuple((o, t) for o, t in listens))
+        offsets = frozenset(range(count) if addressed is None else addressed)
+        self._tpl_protos[tpl_id] = (root, count, tuple(texts), tuple((o, t) for o, t in listens), offsets)
 
     def _clone(self, op: Any) -> None:
         first_id = op[1]
-        proto, count, texts, listens = self._tpl_protos[op[2]]
+        proto, count, texts, listens, addressed = self._tpl_protos[op[2]]
         root = self._clone_node(proto)
         slots = {offset: op[5 + i] for i, offset in enumerate(texts)}
         node_id = first_id
         stack = [root]
         while stack:
             node = stack.pop()
-            self._reg(node_id, node)
+            if node_id - first_id in addressed:
+                # Only nodes Python can address are registered (see `_Compiled.addressed`).
+                self._reg(node_id, node)
             text = slots.get(node_id - first_id)
             if text is not None:
                 node.nodeValue = text

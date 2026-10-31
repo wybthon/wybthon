@@ -108,6 +108,8 @@ The [runtime overhaul evaluation](results/runtime-overhaul.md) records local bas
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
 
+The [engine v5 evaluation](results/engine-v5.md) records one-step bindings, text slots without hole nodes, cycle-free disposal, idle-time collection, and the leaner kernel against v0.39.0.
+
 The [engine v4 evaluation](results/engine-v4.md) records the compiler, Solid-style props, the static probe, and leaner bindings and rows against v0.38.0.
 
 The [engine v3 evaluation](results/engine-v3.md) records compiled t-string templates, zero-cost components, and native control-flow regions against v0.37.0.

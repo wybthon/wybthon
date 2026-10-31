@@ -243,12 +243,16 @@ class _Shape:
 
 
 def test_register_template_emits_one_registration(wyb):
-    """REGISTER_TPL carries the skeleton, node count, text offsets, and delegated events."""
+    """REGISTER_TPL carries the skeleton, node count, text offsets, delegated events, and addressed nodes."""
     kernel = wyb["kernel"]
     kernel.commit()
     shape = _Shape("<li><a> </a></li>", 3, texts=[2], listens=[(1, "click")])
     tpl_id = kernel.register_template(shape)
-    assert kernel._ops[-1] == (kernel.OP_REGISTER_TPL, tpl_id, "<li><a> </a></li>", 3, [2], [[1, "click"]])
+    assert kernel._ops[-1] == (kernel.OP_REGISTER_TPL, tpl_id, "<li><a> </a></li>", 3, [2], [[1, "click"]], None)
+    shape.addressed = [0, 1, 2]
+    kernel._forget_templates()
+    tpl_id = kernel.register_template(shape)
+    assert kernel._ops[-1][-1] == [0, 1, 2]
     second = kernel.register_template(_Shape("<p><b></b></p>", 2))
     assert second == tpl_id + 1
     assert not hasattr(kernel, "template_id")

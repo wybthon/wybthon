@@ -60,29 +60,6 @@ __all__ = [
 ]
 
 
-def _render_slot(slot: Any, *args: Any) -> Any:
-    """Evaluate a `children`/`fallback` slot.
-
-    A callable slot is invoked with `args` when it declares positional
-    parameters and with none otherwise. Anything else (a VNode, string,
-    list, or `None`) is returned as is for the region to coerce.
-    """
-    if slot is None or isinstance(slot, VNode):
-        return slot
-    if type(slot) is _Getter:
-        # An expression a compiled template passed: its value is the slot.
-        slot = slot.fn()
-        if slot is None or isinstance(slot, VNode):
-            return slot
-    if isinstance(slot, list) and len(slot) == 1 and callable(slot[0]) and not isinstance(slot[0], VNode):
-        slot = slot[0]
-    if callable(slot):
-        if args and _positional_count(slot) != 0:
-            return slot(*args)
-        return slot()
-    return slot
-
-
 def _callback(value: Any) -> Any:
     """The callback a flow control was given.
 
