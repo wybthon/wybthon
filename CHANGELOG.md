@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.40.0 (2026-10-31)
+
+### Chores
+
+- **benchmarks**: Stop committing raw benchmark reports
+  ([#42](https://github.com/wybthon/wybthon/pull/42),
+  [`7597147`](https://github.com/wybthon/wybthon/commit/7597147dbcb44338555ccdbcb4bb7e8cef0cd643))
+
+### Performance Improvements
+
+- **vdom**: Speed up mounting and disposal ([#43](https://github.com/wybthon/wybthon/pull/43),
+  [`ffed2ab`](https://github.com/wybthon/wybthon/commit/ffed2aba4adcc6b7a5331dcf313e738acbc6db2e))
+
+
 ## v0.39.0 (2026-10-23)
 
 ### Features
