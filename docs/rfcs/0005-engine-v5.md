@@ -130,7 +130,7 @@ __wybthon_t0__.render((lambda: "on" if active() else "", label))
 
 - **Addressed nodes only.** `REGISTER_TPL` gains a seventh field, the template's addressed node offsets: the root, every slot's node and its parent, text slots, and handler nodes. A clone registers only those nodes; the others are never looked up. The benchmark row registers 6 of its 10 nodes.
 - **No `delete` on DOM nodes.** Releasing a node used to `delete` its `__wybId` and `__wybL` expandos, which turns the node's wrapper into a slow dictionary-mode object. A released node keeps `__wybId` (lookups already check that the registry maps it back to the node), and `__wybL` is set to `undefined`.
-- **Clearing a parent.** When a disposed range is all of its parent's content but at most four comment or text nodes (a list's markers and its slot's placeholder), the kernel empties the parent with `textContent = ""` and puts those nodes back, as Solid clears a list. A surviving element sibling makes the kernel use range deletion instead, since moving an element out and back would drop its focus, selection, scroll position, or media state.
+- **Clearing a parent.** When a disposed range is all of its parent's content but at most four comments or empty text nodes (a list's markers and its slot's placeholder), the kernel empties the parent with `textContent = ""` and puts those nodes back, as Solid clears a list. A surviving element or non-empty text sibling makes the kernel use range deletion instead, since moving it out and back would drop its focus, selection, scroll position, or media state.
 
 ### What doesn't change
 
@@ -179,7 +179,7 @@ Applications don't change, with one behavior change for derived stores. Internal
 
 ## Testing
 
-- The unit suite (now 945 tests) and the browser suite on Pyodide (86 tests), with tests of removed internals adapted.
+- The unit suite (now 950 tests) and the browser suite on Pyodide (88 tests), with tests of removed internals adapted.
 - `tests/test_engine_v5.py` covers: `_bind`'s fast path and its general path in an action; inert bindings; errors routed to boundaries; async placeholders; the extension record; single links growing into dictionaries and both sides released on disposal; text bindings upgrading to holes, rendering `None`, and being disposed and patched; `Show` without a fallback; the compiler's `render` calls, folded format specs, and binder choice; the cache tag; addressed template nodes; that clearing rows and components leaves no framework objects for the cycle collector; the collector's pause and release; and single-field subscriptions to a settled projection.
 - Work gates in `benchmarks/check_work.py` unchanged.
 - Benchmarks, native and browser, against v0.39.0. Targets:

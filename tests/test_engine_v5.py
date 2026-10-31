@@ -21,6 +21,7 @@ from wybthon import (
     create_effect,
     create_memo,
     create_projection,
+    create_root,
     create_signal,
     flush,
     h,
@@ -358,6 +359,129 @@ def test_a_re_rendered_instance_patches_a_text_binding_into_a_new_getter():
         set_first("ignored")
         flush()
         assert screen.html() == "<p>three</p>"
+
+
+# A child slot's expression that reads nothing and returns nodes: inert, so
+# its binding is disposed, but the slot must keep the hole holding those nodes.
+
+
+def _node_slot_view() -> tuple[Any, Any, list[str]]:
+    tick, set_tick = create_signal(0)
+    cleanups: list[str] = []
+
+    def ref(element: Any) -> Any:
+        return lambda: cleanups.append("ref")
+
+    def helper() -> Any:
+        return html(t"<b ref={ref}>inner</b>")
+
+    def view() -> Any:
+        tick()
+        return html(t"<div>{helper()}</div>")
+
+    return view, set_tick, cleanups
+
+
+def _mount_in_action(view: Any) -> Any:
+    screens = []
+
+    @action
+    def mount():
+        screens.append(render(view))
+
+    mount()
+    flush()
+    return screens[0]
+
+
+def _mount_in_a_tracking_scope(view: Any) -> Any:
+    screens = []
+
+    def mount():
+        screens.append(render(view))
+        return 1
+
+    create_root(lambda dispose: create_memo(mount))()
+    flush()
+    return screens[0]
+
+
+def test_the_general_path_keeps_an_inert_bindings_data_for_its_caller():
+    owner = _core.Owner()
+    results = []
+
+    @action
+    def bind_now():
+        results.append(
+            _core.run_with_owner(owner, lambda: _core._bind(lambda: "static", lambda d, v, p: None, "hole", None))
+        )
+
+    bind_now()
+    flush()
+    comp = results[0]
+    assert comp._disposed and comp._apply_data == "hole"
+    assert comp._apply is None and comp._fn is None
+    assert owner._children is None
+
+
+def test_a_node_slot_mounted_in_an_action_patches_without_duplicating_its_nodes():
+    view, set_tick, _ = _node_slot_view()
+    screen = _mount_in_action(hole(view))
+    assert screen.html() == "<div><b>inner</b></div>"
+    set_tick(1)
+    flush()
+    assert screen.html() == "<div><b>inner</b></div>"
+
+
+@pytest.mark.parametrize("mount", [_mount_in_action, _mount_in_a_tracking_scope], ids=["action", "tracking-scope"])
+def test_a_node_slot_on_the_general_path_runs_its_ref_cleanup_on_unmount(mount):
+    view, _, cleanups = _node_slot_view()
+    screen = mount(view())
+    screen.unmount()
+    assert cleanups == ["ref"]
+
+
+def test_a_node_slot_mounted_during_a_held_transition_keeps_its_nodes():
+    async def settle():
+        for _ in range(5):
+            await asyncio.sleep(0)
+            flush()
+
+    async def main():
+        view, set_tick, cleanups = _node_slot_view()
+        uid, set_uid = create_signal(1)
+        gates = {1: asyncio.Event(), 2: asyncio.Event()}
+
+        async def load():
+            i = uid()
+            await gates[i].wait()
+            return f"user{i}"
+
+        user = create_root(lambda dispose: create_memo(load))
+        on, set_on = create_signal(False)
+
+        def branch():
+            return hole(view)
+
+        with render(html(t"<section><span>{str(uid())}</span><p>{user}</p>{Show(on, branch)}</section>")) as screen:
+            gates[1].set()
+            await settle()
+            set_uid(2)
+            await settle()
+            assert _core._slow_reads
+            set_on(True)
+            await settle()
+            gates[2].set()
+            await settle()
+            set_tick(1)
+            await settle()
+            assert screen.html().count("<b>inner</b>") == 1
+            set_on(False)
+            await settle()
+            assert screen.html().count("<b>inner</b>") == 0
+            assert "ref" in cleanups
+
+    asyncio.run(main())
 
 
 # ---------------------------------------------------------------------------

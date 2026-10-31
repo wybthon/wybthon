@@ -3383,7 +3383,11 @@ def _bind(
             owner._add_child(comp)
         comp._update_if_necessary()
         if comp._inert():
+            # Disposing drops `_apply_data`; keep it, as the fast path does,
+            # for a child slot to find the hole its binding upgraded to.
+            data = comp._apply_data
             comp.dispose()
+            comp._apply_data = data
         return comp
     if diagnostics._active is not None:
         diagnostics._active.counts["computations"] += 1

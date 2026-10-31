@@ -396,7 +396,7 @@ focus_root = render(
     python(page, "focus_root.dispose()\nflush()\nfocus_host.remove()")
 
 
-def test_a_list_that_fills_its_parent_clears_and_refills(goto_feature):
+def test_clearing_a_list_keeps_a_selection_in_its_text_sibling(goto_feature):
     page = goto_feature("contracts")
     python(
         page,
@@ -405,14 +405,78 @@ from js import document
 from wybthon import For, create_signal, flush, h, render
 from wybthon.dom import Element
 
+select_host = document.createElement("div")
+document.body.appendChild(select_host)
+select_rows, set_select_rows = create_signal([])
+select_root = render(
+    h("div", {"id": "select-parent"},
+      "Total: 42 items",
+      For(select_rows, lambda item, index: h("p", {"data-select-row": item}, item))),
+    Element(node=select_host),
+)
+set_select_rows(["a", "b", "c"])
+flush()
+""",
+    )
+    expect(page.locator("[data-select-row]")).to_have_count(3)
+    selected = page.evaluate(
+        """() => {
+            const label = [...document.getElementById("select-parent").childNodes]
+                .find(node => node.nodeType === 3 && node.nodeValue !== "");
+            const range = document.createRange();
+            range.setStart(label, 0);
+            range.setEnd(label, 5);
+            const selection = getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            return selection.toString();
+        }"""
+    )
+    assert selected == "Total"
+    python(page, "set_select_rows([])\nflush()")
+    expect(page.locator("[data-select-row]")).to_have_count(0)
+    assert page.evaluate("() => getSelection().toString()") == "Total"
+    page.evaluate("() => getSelection().removeAllRanges()")
+    python(page, "select_root.dispose()\nflush()\nselect_host.remove()")
+
+
+@pytest.mark.parametrize(
+    "view",
+    [
+        'h("ul", {"id": "fill-list"}, fill_list)',
+        "html(t'<ul id=\"fill-list\">{fill_list}</ul>')",
+    ],
+    ids=["h", "template"],
+)
+def test_a_list_that_fills_its_parent_clears_with_the_shortcut_and_refills(goto_feature, view):
+    page = goto_feature("contracts")
+    python(
+        page,
+        f"""
+from js import document
+from wybthon import For, create_signal, flush, h, html, render
+from wybthon.dom import Element
+
 fill_host = document.createElement("div")
 document.body.appendChild(fill_host)
 fill_rows, set_fill_rows = create_signal([])
-fill_root = render(
-    h("ul", {"id": "fill-list"}, For(fill_rows, lambda item, index: h("li", {}, item))),
-    Element(node=fill_host),
-)
+fill_list = For(fill_rows, lambda item, index: h("li", {{}}, item))
+fill_root = render({view}, Element(node=fill_host))
 """,
+    )
+    # Count the kernel's `parent.textContent = ""` clears on this list.
+    page.evaluate(
+        """() => {
+            const setter = Object.getOwnPropertyDescriptor(Node.prototype, "textContent").set;
+            window.__fillClears = 0;
+            Object.defineProperty(document.getElementById("fill-list"), "textContent", {
+                configurable: true,
+                set(value) {
+                    window.__fillClears += 1;
+                    setter.call(this, value);
+                },
+            });
+        }"""
     )
     for round_ in range(2):
         python(page, f"set_fill_rows([f'{round_}-{{i}}' for i in range(30)])\nflush()")
@@ -420,7 +484,10 @@ fill_root = render(
         expect(page.locator("#fill-list li").first).to_have_text(f"{round_}-0")
         python(page, "set_fill_rows([])\nflush()")
         expect(page.locator("#fill-list li")).to_have_count(0)
+        assert page.evaluate("() => window.__fillClears") == round_ + 1
         # Only the list's own markers survive the parent being emptied.
-        kinds = page.evaluate("() => [...document.getElementById('fill-list').childNodes].map(n => n.nodeType)")
-        assert set(kinds) <= {3, 8}, kinds
+        survivors = page.evaluate(
+            "() => [...document.getElementById('fill-list').childNodes].map(n => [n.nodeType, n.nodeValue])"
+        )
+        assert all(kind == 8 or (kind == 3 and text == "") for kind, text in survivors), survivors
     python(page, "fill_root.dispose()\nflush()\nfill_host.remove()")
