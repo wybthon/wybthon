@@ -2718,6 +2718,8 @@
       
         
       
+        
+      
     
     
     
@@ -2901,6 +2903,34 @@
     
   
     0004: Engine v4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0005-engine-v5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Engine v5
   
 
     
@@ -3284,14 +3314,17 @@
 <h2 id="what-the-engine-does-for-you">What the engine does for you<a class="headerlink" href="#what-the-engine-does-for-you" title="Permanent link">&para;</a></h2>
 <p>Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so the engine's fast paths target the Python side.</p>
 <ul>
-<li><strong>Templates are compiled ahead of time.</strong> Wybthon's <a href="../../concepts/compiler/">compiler</a> parses and validates each <code>html(t"...")</code> literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. <code>wyb build</code> turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. No VNode tree is built for static parts. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
+<li><strong>Templates are compiled ahead of time.</strong> Wybthon's <a href="../../concepts/compiler/">compiler</a> parses and validates each <code>html(t"...")</code> literal when its module is compiled, and writes the literal's parse tree and mount functions into the module as ordinary Python. It also replaces the call, so an instance is the literal's entry given a tuple of values: no t-string is built and nothing is parsed per instance. <code>wyb build</code> turns that into bytecode with the rest of your app, so a production build never parses a template or generates code at run time. On first use, a template rebuilds its slot plan from the stored tree. The static markup becomes a native <code>&lt;template&gt;</code>, and each instance mounts with one fused <code>CLONE</code> command that clones it, fills its text slots, marks its delegated listeners, and inserts it. The kernel registers only the nodes Python can address (the root, slot nodes, and handler nodes). No VNode tree is built for static parts. See <a href="../../concepts/templates/#why-templates">Templates</a>.</li>
 <li><strong>Bindings that read nothing cost nothing.</strong> The compiler's rule is syntactic, so <code>{item["label"]}</code> or <code>{props.title}</code> becomes a getter even when it reads nothing reactive. Before allocating a computation, the renderer runs such an expression (one that makes no calls) under a lightweight probe. If it reads nothing reactive, the value is applied and no computation exists; if it returns an accessor without reading it, the binding targets that accessor directly. Any other hole or attribute binding that finishes its first run without reading anything reactive (and without creating children, cleanups, or async work) is disposed immediately, keeping only the DOM it produced.</li>
-<li><strong>Bindings keep their state in slots.</strong> A hole or attribute binding is a small computation that holds its node, name, and last value in slots and applies changes with a method, instead of a closure with its cells. A node with one delegated handler stores it directly in the handler table. Fewer objects per row means less work for the garbage collector, which matters most in Pyodide.</li>
+<li><strong>Bindings are made in one step.</strong> A hole, a text slot, or an attribute binding is a small computation whose apply stage is a module function and whose data is its node id. It's built, run, and applied by one straight-line routine; the general scheduler takes over only while a transition, an action, a server render, or an unpublished preparation is involved. Fields only effects and async work use live in a separate record, and a computation that reads one source (or a source with one reader) links to it directly instead of through a dictionary. A node with one delegated handler stores it directly in the handler table.</li>
+<li><strong>Text slots stay text.</strong> A child slot whose expression returns text writes it into the slot's placeholder, filling the clone command on the first run. It becomes a hole region, able to hold nodes, only if the expression ever returns something other than text.</li>
+<li><strong>Disposal frees memory at once.</strong> Unmounting breaks every reference cycle the engine creates (a row and its node, a hole and its binding, a region and its node), so a removed subtree is freed by reference counting immediately instead of waiting for Python's cycle collector. Fewer live objects, and no cyclic garbage, mean less work for the collector, which matters most in Pyodide.</li>
+<li><strong>The collector runs when the page is idle.</strong> A flush or mount pauses Python's cyclic garbage collector, as allocating thousands of long-lived nodes would otherwise trigger collections in the middle of the work. In the browser, the collection that the paused work owes runs from <code>requestIdleCallback</code>, after the committed DOM has painted, and large disposals are freed there too, instead of inside the event handler that caused them.</li>
 <li><strong>Components cost what their markup costs.</strong> A component can only receive new props when a reactive hole re-renders a tree that contains it (or <code>render</code> runs again into the same container). Everywhere else (another component's output, a list row, a <code>Show</code> branch, a template slot), a prop passed as a constant subscribes to nothing, and a prop passed as an expression subscribes the reader to what that expression reads.</li>
 <li><strong>Native control flow.</strong> <code>Show</code>, <code>For</code>, <code>Repeat</code>, and <code>Switch</code> mount as regions the reconciler manages directly, with no component, props object, or wrapper memo. When a hole re-renders one of them, the new condition or source is pushed into the mounted region instead of remounting it.</li>
 <li><strong>Rows are cheap.</strong> A list row is its own owner and its own index accessor. Its index is a plain integer until something reads <code>index()</code> in a tracking scope; only then is a signal created for it, so a row that never reads its index allocates nothing for it.</li>
 <li><strong>Keyed matching skips what didn't change.</strong> Matching a new list against the mounted rows first skips the common prefix and suffix by identity, without calling into each row. A replacement that only swapped two rows is detected the way Solid's <code>reconcileArrays</code> detects it, and becomes two native moves. Only what's left goes through a key table.</li>
-<li><strong>Native disposal.</strong> Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python releases its own registrations (handlers, reactive bindings, refs) without visiting every node. Clearing a <code>For</code> list is one range removal plus disposal of each row's owner.</li>
+<li><strong>Native disposal.</strong> Removing a range or a subtree releases every node inside it in the JavaScript kernel, which walks the removed nodes natively. Python releases its own registrations (handlers, reactive bindings, refs) without visiting every node. Clearing a <code>For</code> list is one range removal plus disposal of each row's owner; when the list is all its parent holds, the kernel empties the parent at once.</li>
 <li><strong>Bulk replacement.</strong> When a keyed list reuses none of its rows, the old rows go in one <code>DISPOSE_RANGE</code> command and the new rows mount as one splice, instead of reconciling every unrelated pair.</li>
 <li><strong>Text placeholders.</strong> A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain <code>nodeValue</code> write rather than a node replacement.</li>
 <li><strong>Lighter computations.</strong> Async state lives outside each computation until a computation actually runs async work, so an ordinary render binding doesn't allocate it.</li>
@@ -3374,7 +3407,7 @@
 <p>Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.</p>
 <p><code>benchmarks/compare_browser.py --baseline /path/to/baseline</code> alternates identical operations between isolated checkouts, building each one, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use <code>--mode store</code> for store comparisons and <code>--profile</code> for additional, untimed CPU profiles.</p>
 <p><code>benchmarks/row_bench.py</code> times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. With the compiler, its rows are compiled the way an application's modules are, with no hand-written lambdas.</p>
-<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md"><code>engine-v4.md</code></a> compares this engine with the previous release, and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> the one before it. In Engine v4, a mounted template row keeps about half as many objects tracked by the garbage collector as before, and swapping two rows is two native moves.</p>
+<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md"><code>engine-v4.md</code></a> and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> cover the engines before it. <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md"><code>engine-v5.md</code></a> measures Engine v5, which made creating rows about twice as fast natively as Engine v4.</p>
 <p>A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.</p>
 <h2 id="diagnose-pending-publication">Diagnose pending publication<a class="headerlink" href="#diagnose-pending-publication" title="Permanent link">&para;</a></h2>
 <p>Use <code>diagnostics.inspect_transitions()</code> to see which computations and actions hold each dependency group. <code>diagnostics.inspect_graph(owner)</code> includes read modes, group IDs, and provisional owners. An ordinary consumer of two pending results joins their groups; a separate <code>latest()</code> or <code>is_pending()</code> binding can publish during the hold. See <a href="../../concepts/runtime-contracts/">Runtime contracts</a> for the read and ownership rules.</p>

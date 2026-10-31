@@ -2715,6 +2715,8 @@
       
         
       
+        
+      
     
     
     
@@ -2898,6 +2900,34 @@
     
   
     0004: Engine v4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0005-engine-v5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Engine v5
   
 
     
@@ -3438,7 +3468,7 @@ into ordinary VNodes and mount those.</p>
 
 
 <a href="#wybthon.templates.html" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">html</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;string.templatelib.Template&lt;/code&gt;" href="https://docs.python.org/3/library/string.templatelib.html#string.templatelib.Template">Template</a></span><span class="p">,</span> <span class="n">compiled</span><span class="p">:</span> <span class="n"><span title="wybthon.templates.Precompiled">Precompiled</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">html</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;string.templatelib.Template&lt;/code&gt;" href="https://docs.python.org/3/library/string.templatelib.html#string.templatelib.Template">Template</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VNode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.VNode&lt;/code&gt;)" href="../vnode/#wybthon.vnode.VNode">VNode</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3467,6 +3497,9 @@ once (see the module docs); later calls only supply values.</p>
 follows JSX's whitespace rules: text spanning lines is trimmed line by
 line and joined with spaces, and whitespace-only text containing a
 newline is dropped. Several top-level nodes make a fragment.</p>
+<p>The compiler replaces every <code>html(t"...")</code> call in a compiled module
+with an instance of the literal's precompiled entry, so this function
+only runs for templates that weren't compiled (a REPL, <code>exec</code>).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3494,24 +3527,6 @@ newline is dropped. Several top-level nodes make a fragment.</p>
             </td>
             <td>
                 <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>compiled</code>
-            </td>
-            <td>
-                  <code><span title="wybthon.templates.Precompiled">Precompiled</span> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The literal's precompiled entry; the compiler passes it
-(see <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;compiler&lt;/span&gt;" href="../compiler/#wybthon.compiler"><code>wybthon.compiler</code></a>). Don't pass it
-yourself.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
             </td>
           </tr>
       </tbody>

@@ -2879,6 +2879,8 @@
       
         
       
+        
+      
     
     
     
@@ -3062,6 +3064,34 @@
     
   
     0004: Engine v4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0005-engine-v5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Engine v5
   
 
     
@@ -3700,10 +3730,13 @@ literal guarantees its own structure.</p>
 <p><code>CLONE</code> clones the registered <code>&lt;template&gt;</code>, registers its nodes in
 pre-order, fills its text slots, marks its delegated listeners, and
 inserts the clone before an anchor, all in one command:
-<code>[CLONE, first_id, tpl_id, parent_id, anchor_id, *texts]</code>.</p>
+<code>[CLONE, first_id, tpl_id, parent_id, anchor_id, *texts]</code>. Only the
+nodes Python can address get an id: the root, the nodes that hold slots
+and their parents, and the nodes with handlers. Static nodes in between
+are never registered.</p>
 <p>A child slot keeps its placeholder as a permanent anchor:</p>
 <ul>
-<li>When the slot's neighbors aren't text or another child slot, the placeholder is a one-space text node. A text value (a string or number) is written straight into the clone command, so a row's label costs no extra command. A reactive hole whose first result is text fills that slot of the command too, and later text results are a single <code>nodeValue</code> write (<code>HOLE_TEXT</code>).</li>
+<li>When the slot's neighbors aren't text or another child slot, the placeholder is a one-space text node. A text value (a string or number) is written straight into the clone command, so a row's label costs no extra command. A reactive expression becomes a text binding: its first text fills that slot of the command too, and later text is a single <code>nodeValue</code> write (<code>SET_TEXT</code>). Only if the expression returns something other than text does the slot become a hole region, with its nodes in front of the placeholder.</li>
 <li>Otherwise the placeholder is an empty comment.</li>
 <li>A node, list, or component is mounted in front of the placeholder, and the placeholder stays. Nothing is created and then thrown away.</li>
 </ul>
@@ -3742,13 +3775,16 @@ ownership scopes: components mounted inside one survive its
 re-evaluations while the reconciler can patch them in place, and
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup</code></a> inside the expression runs before
 each re-run.</p>
-<p>Bindings keep their state in slots. Each hole and attribute binding is
-a small computation that holds its node, name, and last value directly,
-and applies its result as a method, not through a closure and its
-cells. A mounted template row therefore keeps about half as many
-objects for the cyclic garbage collector to track as it did in the
-previous engine; see the
-<a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md">engine v4 evaluation</a>.</p>
+<p>Bindings are made in one step. Each hole, text slot, and attribute
+binding is a small computation whose data is its node id and whose apply
+stage is a module function, built, run, and applied by one routine. A
+child slot whose expression returns text writes it into the slot's
+placeholder without a hole node, and becomes a hole only if the
+expression ever returns nodes. Unmounting breaks the reference cycles
+between nodes and their bindings, rows, and regions, so removed DOM is
+freed at once by reference counting rather than by Python's cycle
+collector; see the
+<a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md">engine v5 evaluation</a>.</p>
 <p><strong>A static probe before a computation.</strong> A binding whose expression
 makes no calls (<code>{props.title}</code>, <code>{row["label"]}</code>) first runs under a
 lightweight observer. If it reads nothing reactive, creates nothing,
@@ -3846,7 +3882,7 @@ the removed nodes natively. Python-side registrations (handlers,
 reactive bindings, refs) are found through the template's slot plan.</p>
 <p>Lists benefit most:</p>
 <ul>
-<li>Clearing a <code>For</code> list emits one <code>DISPOSE_RANGE</code>, plus the disposal of each row's owner.</li>
+<li>Clearing a <code>For</code> list emits one <code>DISPOSE_RANGE</code>, plus the disposal of each row's owner. When the list is all its parent holds (but for its markers and placeholder), the kernel empties the parent in one native call.</li>
 <li>When a keyed list reuses no rows (every row replaced), the new rows mount as one splice and the old ones go in one <code>DISPOSE_RANGE</code>, instead of reconciling a thousand unrelated pairs.</li>
 </ul>
 <h2 id="event-delegation">Event delegation<a class="headerlink" href="#event-delegation" title="Permanent link">&para;</a></h2>

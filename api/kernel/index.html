@@ -3145,6 +3145,8 @@
       
         
       
+        
+      
     
     
     
@@ -3328,6 +3330,34 @@
     
   
     0004: Engine v4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0005-engine-v5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Engine v5
   
 
     
@@ -5412,13 +5442,13 @@ hot path; <code>None</code> anchors mean "append".</p>
 </tr>
 <tr>
 <td><code>REGISTER_TPL</code></td>
-<td><code>tpl_id, html, count, [text offsets], [[offset, event_type], ...]</code></td>
-<td>Parse a template's or shape's skeleton once via <code>&lt;template&gt;</code>, and record its text slots and delegated listeners</td>
+<td><code>tpl_id, html, count, [text offsets], [[offset, event_type], ...], [addressed offsets]</code></td>
+<td>Parse a template's or shape's skeleton once via <code>&lt;template&gt;</code>, and record its text slots, delegated listeners, and the node offsets Python addresses (all of them when the list is <code>null</code>)</td>
 </tr>
 <tr>
 <td><code>CLONE</code></td>
 <td><code>first_id, tpl_id, parent_id, anchor_id, *texts</code></td>
-<td>Clone the prototype, register a dense id block in pre-order, fill the text slots, mark the delegated listeners, and insert before the anchor</td>
+<td>Clone the prototype, register the addressed nodes of a dense pre-order id block, fill the text slots, mark the delegated listeners, and insert before the anchor</td>
 </tr>
 <tr>
 <td><code>INSERT</code></td>
