@@ -3455,9 +3455,14 @@ def _bind(
         try:
             result = apply(data, value, initial)
         except Exception as exc:
+            # It's subscribed by now: its owner must be able to dispose it,
+            # whether or not the error is handled.
+            comp._parent = None
+            if owner is not None:
+                owner._add_child(comp)
             if not comp._handle_error(exc):
                 raise
-            result = None
+            return comp
         finally:
             _current_owner = outer
             _applying = prev_applying

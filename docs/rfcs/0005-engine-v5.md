@@ -179,7 +179,7 @@ Applications don't change, with one behavior change for derived stores. Internal
 
 ## Testing
 
-- The unit suite (now 938 tests) and the browser suite on Pyodide (86 tests), with tests of removed internals adapted.
+- The unit suite (now 945 tests) and the browser suite on Pyodide (86 tests), with tests of removed internals adapted.
 - `tests/test_engine_v5.py` covers: `_bind`'s fast path and its general path in an action; inert bindings; errors routed to boundaries; async placeholders; the extension record; single links growing into dictionaries and both sides released on disposal; text bindings upgrading to holes, rendering `None`, and being disposed and patched; `Show` without a fallback; the compiler's `render` calls, folded format specs, and binder choice; the cache tag; addressed template nodes; that clearing rows and components leaves no framework objects for the cycle collector; the collector's pause and release; and single-field subscriptions to a settled projection.
 - Work gates in `benchmarks/check_work.py` unchanged.
 - Benchmarks, native and browser, against v0.39.0. Targets:

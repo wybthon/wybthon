@@ -11,8 +11,10 @@ from wybthon import (
     Errored,
     For,
     Loading,
+    Match,
     Props,
     Show,
+    Switch,
     action,
     compiler,
     component,
@@ -107,6 +109,88 @@ def test_a_failing_binding_routes_its_error_to_the_nearest_boundary():
 
     with render(Errored(html(t"<p class={boom()}>x</p>"), fallback=fallback)) as screen:
         assert screen.text() == "caught: bad label"
+
+
+def _raising_apply(data: Any, value: Any, previous: Any) -> None:
+    raise ValueError("apply failed")
+
+
+@pytest.mark.parametrize("direct", [True, False], ids=["signal", "expression"])
+def test_a_binding_whose_first_apply_raises_still_joins_its_owner(direct):
+    count, set_count = create_signal(1)
+    runs: list[int] = []
+
+    def read() -> int:
+        runs.append(count())
+        return runs[-1]
+
+    owner = _core.Owner()
+    with pytest.raises(ValueError, match="apply failed"):
+        _core.run_with_owner(owner, lambda: _core._bind(count if direct else read, _raising_apply, 1, None))
+    comp = _owner_children(owner)[0]
+    assert comp._parent is owner and not comp._disposed
+    owner.dispose()
+    assert comp._disposed and count._observers is None
+    runs.clear()
+    set_count(2)
+    flush()
+    assert runs == []
+
+
+def test_a_handled_first_apply_error_joins_the_owner_and_reaches_its_handler():
+    count, set_count = create_signal(1)
+    caught: list[str] = []
+    owner = _core.Owner()
+    owner._error_handler = lambda exc, comp: caught.append(str(exc))
+    comp = _core.run_with_owner(owner, lambda: _core._bind(count, _raising_apply, 1, None))
+    assert caught == ["apply failed"]
+    assert _owner_children(owner) == [comp]
+    owner.dispose()
+    assert comp._disposed and count._observers is None
+
+
+class _Unprintable:
+    def __str__(self) -> str:
+        raise ValueError("unprintable")
+
+
+def _broken_branch(*args: Any) -> Any:
+    raise ValueError("branch failed")
+
+
+@pytest.mark.parametrize(
+    "view",
+    [
+        lambda read: hole(lambda: Show(read, _broken_branch)),
+        lambda read: hole(lambda: Switch(Match(read, _broken_branch))),
+        lambda read: hole(lambda: h("div", {"title": lambda: (read(), _Unprintable())[1]})),
+    ],
+    ids=["show", "switch", "attribute"],
+)
+def test_disposing_a_view_releases_a_binding_whose_first_apply_raised(view):
+    count, set_count = create_signal(1)
+    runs: list[int] = []
+
+    def read() -> int:
+        runs.append(count())
+        return runs[-1]
+
+    with render(view(read)):
+        pass
+    cleanup()
+    assert count._observers is None
+    runs.clear()
+    set_count(2)
+    flush()
+    assert runs == []
+
+
+def test_a_branch_whose_first_mount_raised_still_recovers_while_mounted():
+    on, set_on = create_signal(True)
+    with render(hole(lambda: Show(on, _broken_branch, fallback=lambda: html(t"<p>fallback</p>")))) as screen:
+        set_on(False)
+        flush()
+        assert screen.html() == "<p>fallback</p>"
 
 
 def test_a_binding_waiting_on_async_data_keeps_its_placeholder_until_it_lands():

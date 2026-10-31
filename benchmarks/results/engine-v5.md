@@ -155,7 +155,7 @@ Startup is unchanged; it's still almost entirely Pyodide's.
 
 ## Validation
 
-- **Unit tests:** 938 pass on Python 3.14, including 26 new ones in `tests/test_engine_v5.py`; branch coverage is 87%.
+- **Unit tests:** 945 pass on Python 3.14, including 33 new ones in `tests/test_engine_v5.py`; branch coverage is 87%.
 - **Browser tests:** 86 pass in Chromium on Pyodide 314.0.6, with the fixture app built by `wyb build`.
 - **Static checks:** Ruff (lint and format) and mypy pass.
 - **Benchmarks:** `benchmarks/async_bench.py` passes its publication checks, and `benchmarks/bench_runner.py` runs every scenario.
