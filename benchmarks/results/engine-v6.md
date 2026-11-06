@@ -55,9 +55,9 @@ Unchanged: the client renderer gained one global read per component mount (the h
 
 ## Validation
 
-- **Unit tests:** 1,002 pass on Python 3.14, with 88% branch coverage.
-- **Browser tests:** 91 pass in Chromium on Pyodide 314.0.6, including boot snapshots under `wyb preview` and `wyb dev` and a hot update under `wyb dev`.
-- **Server output:** before the old renderer was removed, it was kept as an oracle. The unit suite's server renders, 46 renders of the browser fixture app's routes, and a 28-render corpus of markup with serialization rules of its own (now `tests/test_ssr_output.py`) all matched it byte for byte.
+- **Unit tests:** 1,008 pass on Python 3.14, with 88% branch coverage.
+- **Browser tests:** 92 pass in Chromium on Pyodide 314.0.6, including boot snapshots under `wyb preview` and `wyb dev` and a hot update under `wyb dev`.
+- **Server output:** before the old renderer was removed, it was kept as an oracle. The unit suite's server renders, 46 renders of the browser fixture app's routes, and a 30-render corpus of markup with serialization rules of its own (now `tests/test_ssr_output.py`) all matched it byte for byte.
 
 ## Reproduction
 

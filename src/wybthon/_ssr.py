@@ -118,9 +118,32 @@ def _join(parts: list[Any], out: list[str], reached: set[Boundary] | None) -> No
         if type(part) is str:
             out.append(part)
         else:
-            if reached is not None:
+            if reached is not None and type(part) is Boundary:
                 reached.add(part)
             _join(part.parts, out, reached)
+
+
+class _ErroredPart:
+    """An `Errored` boundary's output: its content, or its fallback once it has caught an error."""
+
+    __slots__ = ("parts", "error", "fn", "position", "pk", "ns", "select", "owner", "scope", "failed")
+
+    def __init__(self, error: Any, fn: Any, position: str, pk: str | None, ns: str | None, select: Any, owner: Any):
+        self.parts: list[Any] = []
+        self.error = error
+        self.fn = fn
+        self.position = position
+        self.pk = pk
+        self.ns = ns
+        self.select = select
+        self.owner = owner
+        self.scope: Owner | None = None
+        self.failed = False
+
+
+# Rounds of re-rendering `Errored` fallbacks (each can raise again or start
+# boundaries) before a server render stops.
+_MAX_SETTLE_ROUNDS = 8
 
 
 class _TplElement:
@@ -267,11 +290,13 @@ def _attributes(tag: str, props: dict[str, Any], select: _Select | None) -> tupl
 class _Renderer:
     """One server render: walks the tree and appends HTML parts."""
 
-    __slots__ = ("boundaries",)
+    __slots__ = ("boundaries", "errored")
 
     def __init__(self) -> None:
         # Boundaries waiting to be resolved, in creation order.
         self.boundaries: list[Boundary] = []
+        # Every `Errored` boundary rendered, in case one catches an error late.
+        self.errored: list[_ErroredPart] = []
 
     # -- dispatch -------------------------------------------------------------
 
@@ -498,18 +523,48 @@ class _Renderer:
             out.append(text if raw else _escape_text(text))
             return
         error = getattr(fn, "_wyb_error", None)
-        mark = len(out)
-        scope = self.content(result, out, pk, ns, select)
-        if error is not None and error._staged and error._pending is not None:
-            # An `Errored` boundary caught an error while its content
-            # rendered: the browser would re-render it with the fallback.
-            error._commit_now(error._pending, _core._O_REVEAL)
-            del out[mark:]
-            scope.dispose()
-            result = _evaluate(fn, position)
-            if result is not _NOT_READY and result is not _FAILED:
-                self.content(result, out, pk, ns, select)
+        if error is None:
+            self.content(result, out, pk, ns, select)
+            out.append(_MARK)
+            return
+        # An `Errored` boundary: its output is a part of its own, so an error
+        # it catches after its content rendered can still replace it.
+        part = _ErroredPart(error, fn, position, pk, ns, select, _core._current_owner)
+        out.append(part)
         out.append(_MARK)
+        part.scope = self.content(result, part.parts, pk, ns, select)
+        self.errored.append(part)
+        self.heal(part)
+
+    def heal(self, part: _ErroredPart) -> bool:
+        """Re-render an `Errored` boundary with its fallback if it caught an error; True when it did.
+
+        The browser's boundary re-renders when its error signal changes, at
+        the next flush; a server render does it here, once its content (or
+        a later flush, or a boundary resolved afterwards) has raised.
+        """
+        error = part.error
+        if part.failed:
+            return False
+        if error._staged:
+            if error._pending is None:
+                return False
+            error._commit_now(error._pending, _core._O_REVEAL)
+        elif error._value is None:
+            return False
+        part.failed = True
+        if part.scope is not None:
+            part.scope.dispose()
+        part.parts = []
+        prev_owner = _core._current_owner
+        _core._current_owner = part.owner
+        try:
+            result = _evaluate(part.fn, part.position)
+            if result is not _NOT_READY and result is not _FAILED:
+                part.scope = self.content(result, part.parts, part.pk, part.ns, part.select)
+        finally:
+            _core._current_owner = prev_owner
+        return True
 
     def content(self, result: Any, out: list[Any], pk: str | None, ns: str | None, select: Any) -> Owner:
         """Render what a hole's expression returned under the hole's scope."""
@@ -705,6 +760,18 @@ class _Renderer:
             self.boundaries[i].resolve()
             i += 1
 
+    def settle(self) -> None:
+        """Flush, resolve boundaries, and re-render `Errored` boundaries that failed late, until stable."""
+        for _ in range(_MAX_SETTLE_ROUNDS):
+            _core.flush()
+            self.resolve()
+            _core.flush()
+            healed = False
+            for part in list(self.errored):
+                healed |= self.heal(part)
+            if not healed:
+                return
+
 
 # Template element plans, by parsed element (see `_plan`).
 _DYNAMIC = 0
@@ -812,9 +879,7 @@ def render(node: VNode) -> list[Any]:
         out: list[Any] = []
         node.pk = "r"
         renderer.node(node, out, None, False, None)
-        _core.flush()
-        renderer.resolve()
-        _core.flush()
+        renderer.settle()
         return out
     finally:
         reconciler._patchable = patchable

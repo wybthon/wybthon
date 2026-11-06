@@ -181,6 +181,28 @@ def content_props():
     </div>""")
 
 
+@component
+def Raises():
+    raise RuntimeError("fallback broke")
+
+
+def late_errors():
+    # The `Loading` fallback raises while the boundary resolves, after the
+    # `Errored` content rendered: the boundary still shows its fallback.
+    async def slow():
+        return "data"
+
+    value = create_memo(slow)
+
+    def failed(err, reset):
+        return html(t"<p class='late'>{str(err())}</p>")
+
+    return html(t"""<div>
+      {Errored(Loading(html(t"<b>{value()}</b>"), fallback=lambda: Raises()), fallback=failed)}
+      <i>after</i>
+    </div>""")
+
+
 EXPECTED = {
     "select_controlled string": '<select><option value="a">A</option><option value="b" selected>B</option><option>c</option></select><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "select_controlled await": '<select><option value="a">A</option><option value="b" selected>B</option><option>c</option></select><script type="application/json" data-wyb-state>{"v":{}}</script>',
@@ -210,6 +232,8 @@ EXPECTED = {
     "misc await": '<div id="wyb-hcf3241877926"><!--wyb:nh--><p>static</p><!--/wyb:nh--><!----><p>server</p><!----><h2>dyn</h2><!----><!----><!----><!---->01.5<!----><b>a</b>b<!----><!---->text &amp; &lt;esc&gt; more</div><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "content_props string": '<div><section><b>raw</b></section><article class="s"><i>spread</i></article><aside id="p" data-x="1"><p>shown</p></aside><input id="p" data-x="1" value="&lt;b&gt;raw&lt;/b&gt;"></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
     "content_props await": '<div><section><b>raw</b></section><article class="s"><i>spread</i></article><aside id="p" data-x="1"><p>shown</p></aside><input id="p" data-x="1" value="&lt;b&gt;raw&lt;/b&gt;"></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
+    "late_errors string": '<div><p class="late">fallback broke</p><!----><i>after</i></div><script type="application/json" data-wyb-state>{"v":{},"x":{"297f12eeb351":["RuntimeError","fallback broke"]}}</script>',
+    "late_errors await": '<div><!--wyb:ba613e30b4b73--><b>data</b><!----><!----><!--/wyb:ba613e30b4b73--><!----><i>after</i></div><script type="application/json" data-wyb-state>{"v":{}}</script>',
 }
 
 VIEWS = {name.split()[0]: globals()[name.split()[0]] for name in EXPECTED}

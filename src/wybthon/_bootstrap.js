@@ -31,27 +31,55 @@ function stopCapturing() {
 // (RFC 0006). The first visit boots normally, then builds one in a worker
 // when the page is idle; later visits (and every `wyb dev` reload) restore
 // it instead of booting Python and importing the framework again.
-const snapshotCache = "wybthon-snapshot";
-
-function snapshotRequest(key) {
-  return new URL(`/__wyb_snapshot/${key}`, location.href).href;
+// Each app keeps its snapshots in a cache of its own, named by its base
+// path, so apps sharing an origin don't evict each other's.
+function snapshotCache(config) {
+  return `wybthon-snapshot ${config.base || "/"}`;
 }
 
-async function readSnapshot(key) {
-  if (!key || typeof caches === "undefined") return null;
+function snapshotRequest(config) {
+  return new URL(`${config.base || "/"}__wyb_snapshot/${config.snapshot}`, location.href).href;
+}
+
+async function readSnapshot(config) {
+  if (!config.snapshot || typeof caches === "undefined") return null;
   try {
-    const cache = await caches.open(snapshotCache);
-    const response = await cache.match(snapshotRequest(key));
+    const cache = await caches.open(snapshotCache(config));
+    const response = await cache.match(snapshotRequest(config));
     return response ? new Uint8Array(await response.arrayBuffer()) : null;
   } catch (_) {
     return null;
   }
 }
 
-async function forgetSnapshot(key) {
+async function forgetSnapshot(config) {
   try {
-    const cache = await caches.open(snapshotCache);
-    await cache.delete(snapshotRequest(key));
+    const cache = await caches.open(snapshotCache(config));
+    await cache.delete(snapshotRequest(config));
+  } catch (_) {}
+}
+
+// A build that failed (storage full, a private window that can't keep it)
+// isn't retried for a week, so a browser that can't store snapshots doesn't
+// pay for building one on every visit.
+const snapshotRetryMs = 7 * 24 * 60 * 60 * 1000;
+
+function snapshotFailureKey(config) {
+  return `wybthon-snapshot-failed ${config.base || "/"}`;
+}
+
+function snapshotFailedRecently(config) {
+  try {
+    const failed = JSON.parse(localStorage.getItem(snapshotFailureKey(config)) || "null");
+    return failed !== null && failed.key === config.snapshot && Date.now() - failed.at < snapshotRetryMs;
+  } catch (_) {
+    return false;
+  }
+}
+
+function recordSnapshotFailure(config) {
+  try {
+    localStorage.setItem(snapshotFailureKey(config), JSON.stringify({ key: config.snapshot, at: Date.now() }));
   } catch (_) {}
 }
 
@@ -81,7 +109,7 @@ self.onmessage = async (event) => {
 `;
 
 function buildSnapshot(config, runtimeURL) {
-  if (typeof Worker === "undefined" || typeof caches === "undefined") return;
+  if (typeof Worker === "undefined" || typeof caches === "undefined" || snapshotFailedRecently(config)) return;
   const start = () => {
     let worker;
     const url = URL.createObjectURL(new Blob([snapshotWorker], { type: "text/javascript" }));
@@ -92,6 +120,7 @@ function buildSnapshot(config, runtimeURL) {
       return;
     }
     const finish = (result) => {
+      if (result.error) recordSnapshotFailure(config);
       state.snapshot = result;
       worker.terminate();
       URL.revokeObjectURL(url);
@@ -103,8 +132,8 @@ function buildSnapshot(config, runtimeURL) {
     worker.postMessage({
       indexURL: runtimeURL,
       runtimeURL: new URL(config.runtime, manifestURL).href,
-      request: snapshotRequest(config.snapshot),
-      cacheName: snapshotCache,
+      request: snapshotRequest(config),
+      cacheName: snapshotCache(config),
     });
   };
   if (typeof requestIdleCallback === "function") requestIdleCallback(start, { timeout: 5000 });
@@ -136,7 +165,7 @@ state.ready = (async () => {
     state.hydrated = hydrating;
     const runtimeURL = new URL(config.pyodide_url, manifestURL).href;
     const runtimeStart = performance.now();
-    const snapshot = readSnapshot(config.snapshot);
+    const snapshot = readSnapshot(config);
     const runtime = Promise.all([import(runtimeURL + "pyodide.mjs"), snapshot]).then(async ([{ loadPyodide }, saved]) => {
       if (saved !== null) {
         try {
@@ -146,7 +175,7 @@ state.ready = (async () => {
         } catch (error) {
           // A snapshot this runtime can't restore: drop it and boot normally.
           console.warn("Wybthon: discarding a snapshot that couldn't be restored", error);
-          await forgetSnapshot(config.snapshot);
+          await forgetSnapshot(config);
         }
       }
       state.timings.snapshot = false;

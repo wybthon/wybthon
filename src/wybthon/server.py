@@ -99,6 +99,26 @@ def _fresh(view: Any) -> Any:
     return copy_vnode(view)
 
 
+class _DiscardBackend:
+    """The kernel backend while a server pass renders: it drops the commands it's sent.
+
+    A server render writes HTML, not DOM, so there's nothing to apply them
+    to. Reading the DOM isn't possible either; those calls say so.
+    """
+
+    def apply(self, ops: Any) -> None:
+        pass
+
+    def supports_html(self) -> bool:
+        return False
+
+    def __getattr__(self, name: str) -> Any:
+        raise RuntimeError(f"The DOM isn't available during a server render (kernel {name})")
+
+
+_DISCARD = _DiscardBackend()
+
+
 class _Pass:
     """One synchronous render of the whole tree with the data resolved so far."""
 
@@ -117,9 +137,14 @@ class _Pass:
         self.root: Owner | None = Owner()
         with _thread_lock:
             node = reconciler._coerce_result(_fresh(view))
-            # Nothing a server render does reaches a DOM; drop any command a
-            # component emits anyway, so it can't leak into a browser commit.
-            emitted = len(kernel._ops)
+            # Nothing a server render does reaches a DOM. A command a component
+            # emits anyway goes to a backend that discards it (the render's
+            # flushes commit), and commands already waiting for a browser
+            # backend are set aside so they neither reach it early nor get lost.
+            waiting = list(kernel._ops)
+            kernel._ops.clear()
+            backend = kernel._backend
+            kernel._backend = _DISCARD
             _core._gc_pause()
             previous = _core._session
             _core._session = session
@@ -130,7 +155,9 @@ class _Pass:
                 session.keying = False
                 _core._session = previous
                 _core._gc_resume()
-                del kernel._ops[emitted:]
+                kernel._ops.clear()
+                kernel._ops.extend(waiting)
+                kernel._backend = backend
         # The boundaries the page contains: one inside content its boundary
         # didn't show, or that an error replaced, isn't in the output.
         self.reached: set[_ssr.Boundary] = set()

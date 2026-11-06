@@ -80,6 +80,48 @@ def test_the_bootstrap_restores_and_builds_snapshots():
     # Restores a cached snapshot, falls back to a normal boot when it can't,
     # and builds one in a worker only after a boot that didn't use one.
     assert "_loadSnapshot: saved" in source
-    assert "forgetSnapshot(config.snapshot)" in source
+    assert "forgetSnapshot(config)" in source
     assert "if (config.snapshot && !state.timings.snapshot) buildSnapshot(config, runtimeURL);" in source
     assert "_makeSnapshot: true" in source and "wybthon._snapshot.preload()" in source
+    # Each app has its own cache, and a failed build isn't retried on every visit.
+    assert '`wybthon-snapshot ${config.base || "/"}`' in source
+    assert "snapshotFailedRecently(config)) return;" in source and "recordSnapshotFailure(config)" in source
+
+
+def test_the_router_reads_the_page_on_first_use_not_at_import(monkeypatch: pytest.MonkeyPatch):
+    # A snapshot imports the router in a worker with no `window`; a restored
+    # page must read its own URL and install its own back/forward listener.
+    import importlib
+    import sys
+    import types
+
+    accessed: list[str] = []
+
+    class Location:
+        pathname = "/users/7"
+        search = "?tab=a"
+        hash = ""
+
+    class Window:
+        location = Location()
+
+        def addEventListener(self, kind: str, _listener: object) -> None:
+            accessed.append(kind)
+
+    js = types.ModuleType("js")
+    js.window = Window()  # type: ignore[attr-defined]
+    ffi = types.ModuleType("pyodide.ffi")
+    ffi.create_proxy = lambda fn: fn  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "js", js)
+    monkeypatch.setitem(sys.modules, "pyodide", types.ModuleType("pyodide"))
+    monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi)
+    router = importlib.reload(importlib.import_module("wybthon.router"))
+    try:
+        assert accessed == [] and router._located is False
+        assert router.current_path() == "/users/7?tab=a"
+        assert accessed == ["popstate", "hashchange"]
+        router.current_path()
+        assert accessed == ["popstate", "hashchange"]
+    finally:
+        monkeypatch.undo()
+        importlib.reload(router)

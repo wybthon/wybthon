@@ -353,3 +353,61 @@ def test_dev_replaces_an_edited_module_without_reloading(browser, tmp_path):
             assert page.evaluate("() => window.__kept") is None
     finally:
         page.close()
+
+
+ROUTED_APP = """from wybthon import component, html
+from wybthon.router import Link, Route, Router
+
+
+@component
+def Home():
+    return html(t'<p id="page">home</p>')
+
+
+@component
+def User():
+    return html(t'<p id="page">user</p>')
+
+
+@component
+def App():
+    nav = html(t'<nav>{Link("/", children="Home", id="home")}{Link("/users/7", children="User", id="user")}</nav>')
+    routes = [Route(path="/", component=Home), Route(path="/users/:id", component=User)]
+    return html(t"<div>{nav}{Router(routes)}</div>")
+
+
+def app():
+    return App()
+"""
+
+
+@pytest.mark.e2e
+def test_a_restored_snapshot_routes_by_the_pages_own_url(browser, tmp_path):
+    project = tmp_path / "project"
+    init_app(project)
+    (project / "app" / "main.py").write_text(ROUTED_APP)
+    config = project / "wybthon.toml"
+    config.write_text(config.read_text().replace('prerender = ["/"]', "prerender = []"))
+    build_app(project)
+    context = browser.new_context()
+    try:
+        with _serve(project, "preview") as base:
+            first = context.new_page()
+            first.goto(base)
+            _wait_ready(first)
+            first.wait_for_function("() => window.__WYB.snapshot !== undefined", timeout=BOOT_TIMEOUT_MS)
+            assert first.evaluate("() => window.__WYB.snapshot.built") is True
+            first.close()
+            page = context.new_page()
+            page.goto(base + "users/7")
+            _wait_ready(page)
+            assert page.evaluate("() => window.__WYB.timings.snapshot") is True
+            # The router read this page's URL, not the worker's.
+            assert page.locator("#page").inner_text() == "user"
+            page.click("#home")
+            page.wait_for_function("() => document.querySelector('#page')?.textContent === 'home'")
+            # Back navigation reaches the router's popstate listener.
+            page.go_back()
+            page.wait_for_function("() => document.querySelector('#page')?.textContent === 'user'", timeout=10000)
+    finally:
+        context.close()

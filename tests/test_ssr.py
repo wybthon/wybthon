@@ -1040,3 +1040,25 @@ def test_is_hydrating_is_true_only_during_the_hydrating_mount(wyb):
     assert result.mismatches == 0
     assert seen == [("body", True), ("settled", False)]
     assert not is_hydrating()
+
+
+def test_commands_emitted_while_rendering_are_discarded(wyb):
+    from wybthon import kernel
+
+    kernel.reset()
+    waiting = (kernel.OP_CREATE_COMMENT, kernel.alloc_id())
+    kernel.emit(waiting)
+
+    @component
+    def Emitting():
+        # A component that touches the kernel; the server has no DOM.
+        kernel.emit((kernel.OP_CREATE_COMMENT, kernel.alloc_id()))
+        return html(t"<p>ok</p>")
+
+    # No backend is installed (as in a server process): the render's flush
+    # must not try to create one, and the waiting command is kept for later.
+    assert kernel._backend is None
+    assert render_to_string(Emitting) == '<p>ok</p><script type="application/json" data-wyb-state>{"v":{}}</script>'
+    assert kernel._backend is None
+    assert list(kernel._ops) == [waiting]
+    kernel.reset()

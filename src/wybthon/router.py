@@ -260,7 +260,23 @@ def _current_url() -> str:
         return "/"
 
 
-_path: Signal[str] = Signal(_current_url(), name="current_path")
+# The browser's URL. It's read, and the `popstate` listener installed, on
+# first use rather than at import: the boot snapshot (RFC 0006) imports this
+# module in a worker, which has no `window`, and a restored page must not
+# keep the worker's state.
+_path: Signal[str] = Signal("/", name="current_path")
+_located = False
+
+
+def _location() -> Signal[str]:
+    """The URL signal, set from the browser and listening for back/forward on first use."""
+    global _located
+    if not _located:
+        _located = True
+        # Nothing has read it yet, so there are no observers to notify.
+        _path._value = _current_url()
+        _install_popstate()
+    return _path
 
 
 class _CurrentPath(Accessor[str]):
@@ -272,13 +288,13 @@ class _CurrentPath(Accessor[str]):
         session = _core._session
         if session is not None and session.url is not None:
             return str(session.url)
-        return _path()
+        return _location()()
 
     def peek(self) -> str:
         session = _core._session
         if session is not None and session.url is not None:
             return str(session.url)
-        return _path.peek()
+        return _location().peek()
 
     def _label(self) -> str:
         return "current_path"
@@ -323,9 +339,6 @@ def _install_popstate() -> None:
         pass
 
 
-_install_popstate()
-
-
 _scroll_positions: dict[str, tuple[float, float]] = {}
 
 
@@ -348,6 +361,7 @@ def navigate(path: str, *, replace: bool = False, scroll: bool = True) -> None:
     """
     if _core._server_depth:
         return
+    _location()
     target = urlsplit(path)
     external = bool(target.scheme or target.netloc)
     try:

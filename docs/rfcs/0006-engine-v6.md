@@ -37,9 +37,9 @@ Server rendering is what keeps a Wybthon page usable while Pyodide starts, and i
 
 ### 1. Boot snapshots
 
-**Building.** When a boot didn't restore a snapshot and the build has a snapshot key, the bootstrap waits for the page to be idle (`requestIdleCallback`, with a five-second timeout) and starts a module worker from an inline script. The worker loads Pyodide with `_makeSnapshot: true`, fetches and unpacks the runtime archive, imports `wybthon._snapshot` and calls its `preload()`, takes `makeMemorySnapshot()`, and stores the bytes in Cache Storage under a URL derived from the key, deleting older entries. The page records the outcome in `window.__WYB.snapshot` and dispatches `wybthon:snapshot`.
+**Building.** When a boot didn't restore a snapshot and the build has a snapshot key, the bootstrap waits for the page to be idle (`requestIdleCallback`, with a five-second timeout) and starts a module worker from an inline script. The worker loads Pyodide with `_makeSnapshot: true`, fetches and unpacks the runtime archive, imports `wybthon._snapshot` and calls its `preload()`, takes `makeMemorySnapshot()`, and stores the bytes in Cache Storage under a URL derived from the key, deleting older entries. The page records the outcome in `window.__WYB.snapshot` and dispatches `wybthon:snapshot`. Each app's cache is named by its base path, so apps sharing an origin keep separate snapshots, and a failed build is recorded in `localStorage` and not retried for a week, so a browser that can't store snapshots doesn't build one on every visit.
 
-`preload()` imports the framework's browser modules (including the ones `import wybthon` loads on first use, such as `wybthon.store`) and a dozen standard library modules applications commonly import. It doesn't import the application: a module that reads `window` at import time would fail in a worker, and a snapshot can't hold references to JavaScript objects.
+`preload()` imports the framework's browser modules (including the ones `import wybthon` loads on first use, such as `wybthon.store`) and a dozen standard library modules applications commonly import. It doesn't import the application: a module that reads `window` at import time would fail in a worker, and a snapshot can't hold references to JavaScript objects. For the same reason no framework module reads the page when it's imported: the router reads the URL and installs its `popstate` listener the first time it's used, not at import, so a restored page routes by its own URL rather than the worker's.
 
 **Restoring.** The bootstrap reads the cached snapshot while `pyodide.mjs` loads, and passes it to `loadPyodide` as `_loadSnapshot`. A snapshot that fails to restore is deleted and that boot starts Python normally. Pyodide still mounts its standard library archive, and the file system isn't part of a memory snapshot, so the bootstrap unpacks the runtime and application archives as before; lazy chunks and later imports read them from there. `window.__WYB.timings.snapshot` records whether a boot restored one.
 
@@ -56,19 +56,19 @@ Server rendering is what keeps a Wybthon page usable while Pyodide starts, and i
 - **Components.** A component runs once under a component context added to the current owner, with the same position key, so context lookups, `Errored` handlers, and `Loading` registration work exactly as in the browser, and every memo, boundary, and unique id gets the hydration key the browser will ask for.
 - **Evaluation.** Each expression is evaluated once, with no observer. Nothing subscribes, so a server render allocates no computations for its bindings. An expression that isn't ready leaves its placeholder; one that raises is routed to the nearest `Errored` boundary. Event handlers and refs aren't attached.
 - **`Loading`.** A server version of the boundary registers exactly as the browser's does (hydration key, collector, `Reveal` slot, `on` inputs) and renders its content immediately, so async reads under it register. Whether the output keeps the content or shows the fallback is decided once the whole tree has rendered and the render's flush has run, when every boundary under a `Reveal` has registered: a boundary is a deferred part of the output, resolved in creation order.
-- **`Errored`.** The boundary's body is unchanged. When its content raised during the render, its staged error is committed and the boundary's expression is evaluated again, rendering the fallback in place of the discarded content, as the browser's boundary would re-render.
+- **`Errored`.** The boundary's body is unchanged, and its output is a part of its own. When it catches an error (while its content renders, during the render's flush, or while a `Loading` boundary resolves its fallback afterwards), its error is committed and its expression is evaluated again, rendering the fallback in place of the discarded content, as the browser's boundary would re-render at its next flush. A render settles by flushing, resolving boundaries, and re-rendering failed `Errored` boundaries until nothing changes.
 
-`wybthon.server` keeps its API, its multi-pass resolution of async data, its serialized state, and out-of-order streaming. A pass is now a string render under a session; streaming reads each boundary's resolved content from its part of the output instead of from a DOM. Any kernel command a component emits during a server render is dropped.
+`wybthon.server` keeps its API, its multi-pass resolution of async data, its serialized state, and out-of-order streaming. A pass is now a string render under a session; streaming reads each boundary's resolved content from its part of the output instead of from a DOM. While a pass renders, the kernel's backend is one that discards commands, so a command a component emits is dropped when the render's flush commits it, and commands already waiting for a browser backend are set aside and restored afterwards.
 
-**Verification.** During development, the previous server renderer was kept as an oracle. Every server render in the unit suite, all 46 renders of the browser fixture app's routes (each route rendered and awaited), and a corpus of 28 renders covering markup with serialization rules of its own produced byte-identical output. The corpus is now `tests/test_ssr_output.py`, with the oracle's output as its expected HTML.
+**Verification.** During development, the previous server renderer was kept as an oracle. Every server render in the unit suite, all 46 renders of the browser fixture app's routes (each route rendered and awaited), and a corpus of 30 renders covering markup with serialization rules of its own produced byte-identical output. The corpus is now `tests/test_ssr_output.py`, with the oracle's output as its expected HTML.
 
 ### 3. Hot module replacement in `wyb dev`
 
-**The server.** The watcher compares modification times before and after each rebuild. When every changed file is an existing Python module in the application directory, it sends an `hmr` event with each file's path and new source and the dotted module names; anything else (a new or deleted file, markup, assets, configuration) sends `reload`.
+**The server.** The watcher compares modification times before and after each rebuild. When every changed file is an existing Python module in the application directory, outside the `[chunks]` groups, it sends an `hmr` event with each file's path and new source and the dotted module names. Anything else (a new or deleted file, a chunk's module, markup, assets, configuration) sends `reload`: the rebuild gives a changed chunk a new archive, which a page holding the previous manifest couldn't fetch.
 
 **The page.** The script `wyb dev` injects sets `globalThis.__wybHot`, which makes the bootstrap call `wybthon._hmr.enable()` before the application imports: from then on the reconciler records every mounted component with its parent node id. On `hmr`, the script writes the sources into the runtime's file system and calls `wybthon._hmr.apply(modules)`. When it returns False, the page reloads.
 
-**Applying.** For each changed module that's been imported, `apply` deletes the module's cached bytecode, compiles the new source with the compiler, and runs it in the module's existing namespace. Then:
+**Applying.** `apply` first removes the compiled bytecode of every changed file, imported or not: a build's bytecode is used as is, so a module imported after the update would otherwise load its old code. For each changed module that's been imported, it compiles the new source with the compiler and runs it in the module's existing namespace. Then:
 
 - A `Component` that existed before keeps its identity: the old object takes the new function and re-resolves its props class, and the namespace's name is pointed back at it, so modules that imported it render the new code.
 - A plain function defined in the module keeps its identity when the new code has the same free variables: its code object, defaults, and annotations are swapped in place.
@@ -95,6 +95,7 @@ Tracking costs one global read per component mount when it's off, and a cleanup 
 | `session.boundaries` held `(key, fragment, shown signal)` | `(key, _ssr.Boundary)`; a boundary's `mode` and `inner_html()` |
 | The browser `Loading` body registered server boundaries | `loading._server_loading` is the server body |
 | A server render called refs with a server element | Refs aren't called on the server; the browser calls them while hydrating |
+| `wybthon.router` read the URL and installed its `popstate` listener when it was imported | It does both on first use |
 | A write made while a server render ran re-rendered the holes that read it | Each expression is evaluated once; nothing subscribes on the server |
 | `wyb dev` reloaded on every change | An edited application module is replaced in place; other changes reload |
 | The manifest had no `snapshot` field | `snapshot`: the boot snapshot key, or `null` |
@@ -120,8 +121,8 @@ Tracking costs one global read per component mount when it's off, and a cleanup 
 
 ## Testing
 
-- The unit suite (1,002 tests), including `tests/test_ssr_output.py`, `tests/test_rc21.py`, `tests/test_hmr.py`, and `tests/test_boot_snapshot.py`.
-- The browser suite on Pyodide 314.0.6 (91 tests), including a snapshot built and restored under `wyb preview` and `wyb dev` (the restored runtime runs the app and loads a lazy chunk), and a hot update under `wyb dev` that keeps state and handlers, followed by a markup change that reloads.
+- The unit suite (1,008 tests), including `tests/test_ssr_output.py`, `tests/test_rc21.py`, `tests/test_hmr.py`, and `tests/test_boot_snapshot.py`.
+- The browser suite on Pyodide 314.0.6 (92 tests), including a snapshot built and restored under `wyb preview` and `wyb dev` (the restored runtime runs the app and loads a lazy chunk), a restored router app that routes by its deep link and navigates back, and a hot update under `wyb dev` that keeps state and handlers, followed by a markup change that reloads.
 - `benchmarks/ssr_bench.py`, which checks that each page's output matches the baseline checkout's.
 
 ### Results

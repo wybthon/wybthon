@@ -156,3 +156,30 @@ def test_the_dev_server_replaces_only_edited_application_modules(tmp_path: Path)
     assert _hot_update(project, app, before, {**before, app / "new.py": 1}) is None
     assert _hot_update(project, app, before, {main: 1, page: 1, index: 1}) is None
     assert _hot_update(project, app, before, dict(before)) is None
+
+
+def test_an_edited_module_that_was_never_imported_loads_its_new_code(wyb, hotapp: Path):
+    import py_compile
+
+    # `wyb build` ships unchecked-hash bytecode, which imports use as is.
+    late = hotapp / "late.py"
+    late.write_text("VALUE = 'old'\n")
+    py_compile.compile(str(late), invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
+    late.write_text("VALUE = 'new'\n")
+    assert _hmr.apply(["hotapp.late"], [str(late)]) is True
+    importlib.invalidate_caches()
+    assert importlib.import_module("hotapp.late").VALUE == "new"
+
+
+def test_a_change_to_a_chunk_module_reloads_the_page(tmp_path: Path):
+    # The rebuild gives the chunk a new archive, which the page's manifest doesn't name.
+    app = tmp_path / "app"
+    (app / "charts").mkdir(parents=True)
+    main, chart = app / "main.py", app / "charts" / "bar.py"
+    for path in (main, chart):
+        path.write_text("x = 1\n")
+    before = {main: 1, chart: 1}
+    chunks = {"charts": ["app/charts/**"]}
+    assert _hot_update(tmp_path, app, before, {main: 1, chart: 2}, chunks) is None
+    update = _hot_update(tmp_path, app, before, {main: 2, chart: 1}, chunks)
+    assert update is not None and update[1] == ["app.main"]

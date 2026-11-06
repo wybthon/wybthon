@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import sys
 import types
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -148,8 +149,16 @@ def _dependents(names: set[str]) -> set[str]:
     return found
 
 
-def apply(modules: list[str]) -> bool:
-    """Replace `modules` in place and remount what renders them; False when the page should reload."""
+def apply(modules: list[str], files: Sequence[str] = ()) -> bool:
+    """Replace `modules` in place and remount what renders them; False when the page should reload.
+
+    `files` are the changed sources' paths. Their compiled bytecode is
+    removed whether or not their modules have been imported: a build's
+    bytecode is used as is, so a module imported after this update would
+    otherwise load its old code.
+    """
+    for file in files:
+        _drop_bytecode(Path(file))
     try:
         names = {name for name in modules if name in sys.modules}
         if not names:

@@ -14,6 +14,7 @@ Use the [`main`][wybthon.dev.main] function for CLI entry, or call
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import http.server
 import importlib.metadata
 import json
@@ -21,6 +22,7 @@ import os
 import socketserver
 import threading
 import time
+import tomllib
 import webbrowser
 from collections.abc import Iterable
 from pathlib import Path
@@ -46,8 +48,9 @@ _RELOAD_SCRIPT = """<script>(() => {
         fs.mkdirTree(path.slice(0, path.lastIndexOf("/")));
         fs.writeFile(path, file.source);
       }
-      wyb.pyodide.globals.set("_wyb_hot", JSON.stringify(update.modules));
-      const applied = wyb.pyodide.runPython("import json, wybthon._hmr\\nwybthon._hmr.apply(json.loads(_wyb_hot))");
+      const paths = update.files.map((file) => "/wybthon-app/" + file.path);
+      wyb.pyodide.globals.set("_wyb_hot", JSON.stringify([update.modules, paths]));
+      const applied = wyb.pyodide.runPython("import json, wybthon._hmr\\nwybthon._hmr.apply(*json.loads(_wyb_hot))");
       wyb.pyodide.globals.delete("_wyb_hot");
       if (!applied) { location.reload(); return; }
       wyb.hot = (wyb.hot || 0) + 1;
@@ -145,13 +148,19 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def _hot_update(
-    project: Path, app_dir: Path, previous: dict[Path, int], current: dict[Path, int]
+    project: Path,
+    app_dir: Path,
+    previous: dict[Path, int],
+    current: dict[Path, int],
+    chunks: dict[str, list[str]] | None = None,
 ) -> tuple[list[dict[str, str]], list[str]] | None:
     """The sources and modules a change can replace in place, or `None` when pages must reload.
 
     Only edits of existing Python modules in the application directory are
-    replaced in place; a new, removed, or non-Python file (markup, assets,
-    configuration) reloads the page.
+    replaced in place. A new, removed, or non-Python file (markup, assets,
+    configuration) reloads the page, and so does a module in one of the
+    `chunks` groups: the rebuild gives its chunk a new archive, which a page
+    still holding the previous manifest couldn't fetch.
     """
     changed = [path for path, mtime in current.items() if previous.get(path) != mtime]
     if not changed or previous.keys() - current.keys():
@@ -162,6 +171,9 @@ def _hot_update(
         if path not in previous or path.suffix != ".py" or not path.resolve().is_relative_to(app_dir):
             return None
         relative = path.resolve().relative_to(project)
+        name = relative.as_posix()
+        if any(fnmatch.fnmatchcase(name, pattern) for patterns in (chunks or {}).values() for pattern in patterns):
+            return None
         parts = list(relative.with_suffix("").parts)
         if parts[-1] == "__init__":
             parts.pop()
@@ -204,8 +216,6 @@ def serve(
     Raises:
         ValueError: `directory` isn't a Wybthon project.
     """
-    import tomllib
-
     from .build import build_app
 
     project = Path(directory).resolve()
@@ -228,7 +238,10 @@ def serve(
     def hot_update(
         previous: dict[Path, int], current: dict[Path, int]
     ) -> tuple[list[dict[str, str]], list[str]] | None:
-        return _hot_update(project, app_dir, previous, current)
+        # The chunk groups as the rebuild just read them; a `wybthon.toml`
+        # change reloads anyway.
+        chunks = tomllib.loads(config_path.read_text(encoding="utf-8")).get("chunks", {})
+        return _hot_update(project, app_dir, previous, current, chunks)
 
     class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """Threaded TCP server so long-lived SSE clients don't block requests."""
