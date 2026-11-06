@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.41.0 (2026-11-06)
+
+### Features
+
+- **build,server,dev**: Add snapshots, string SSR, and HMR
+  ([#48](https://github.com/wybthon/wybthon/pull/48),
+  [`8ed8a44`](https://github.com/wybthon/wybthon/commit/8ed8a445a958072e85adfa23fe583272ef37397d))
+
+
 ## v0.40.0 (2026-10-31)
 
 ### Chores
