@@ -2704,6 +2704,8 @@
       
         
       
+        
+      
     
     
     
@@ -2915,6 +2917,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3297,7 +3327,7 @@
 <li><a href="concepts/server-rendering/">Server rendering</a>: prerender routes at build time or render per request in CPython, stream <code>Loading</code> boundaries, set the status and headers with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="api/wybthon/#wybthon.http_status"><code>http_status</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="api/wybthon/#wybthon.http_header"><code>http_header</code></a>, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="api/wybthon/#wybthon.hydrate"><code>hydrate</code></a> the result in the browser.</li>
 <li>Form state, validators, and accessibility helpers in <code>wybthon.forms</code>.</li>
 <li>A test renderer, <a href="api/testing/"><code>wybthon.testing</code></a>, that mounts components into an in-memory DOM in plain CPython, and a pytest plugin that compiles templates in test modules.</li>
-<li>A dev server (<code>wyb dev</code>) with hot reload via Server-Sent Events, production builds (<code>wyb build</code>) with templates compiled ahead of time, dev-mode checks turned off, the asset manifest inlined, and the runtime preloaded, and <code>wyb run</code> for scripts.</li>
+<li>A dev server (<code>wyb dev</code>) that replaces edited modules in the open page without reloading it, production builds (<code>wyb build</code>) with templates compiled ahead of time, dev-mode checks turned off, the asset manifest inlined, the runtime preloaded, and boot snapshots that make repeat visits start in about a tenth of the time, and <code>wyb run</code> for scripts.</li>
 </ul>
 <h2 id="try-it-in-30-seconds">Try it in 30 seconds<a class="headerlink" href="#try-it-in-30-seconds" title="Permanent link">&para;</a></h2>
 <p>The smallest interactive Wybthon component looks like this:</p>
@@ -3330,7 +3360,7 @@
 </span></code></pre></div>
 </li>
 <li>
-<p>Create a project and run the dev server with auto-reload:</p>
+<p>Create a project and run the dev server, which updates the page as you edit:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>wyb<span class="w"> </span>init<span class="w"> </span>my-app
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>my-app
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--open

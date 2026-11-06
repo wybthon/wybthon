@@ -2621,6 +2621,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#wybthon.dev.SSEHandler.notify_hot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;notify_hot
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2775,6 +2786,8 @@
       
         
           
+        
+      
         
       
         
@@ -3000,6 +3013,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3336,6 +3377,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#wybthon.dev.SSEHandler.notify_hot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;notify_hot
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3460,9 +3512,10 @@
         <p>The <code>wyb</code> command: develop, build, and preview Wybthon projects.</p>
 <p>A project is a directory with a <code>wybthon.toml</code> (create one with
 <code>wyb init</code>). <code>wyb dev</code> builds it in development mode, serves the build,
-rebuilds when a source changes, and reloads connected pages over
-Server-Sent Events. <code>wyb build</code> writes a production build and
-<code>wyb preview</code> serves one.</p>
+and rebuilds when a source changes. Over Server-Sent Events, it replaces
+an edited application module in place in connected pages (see
+<code>wybthon._hmr</code>) and reloads them for any other change. <code>wyb build</code>
+writes a production build and <code>wyb preview</code> serves one.</p>
 <p>Use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a> function for CLI entry, or call
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a> directly to embed the server.</p>
 
@@ -3603,6 +3656,19 @@ app_base: The application's base path; other paths return 404,
                 </div>
               </td>
             </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;notify_hot&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;wybthon.dev.SSEHandler.notify_hot&lt;/code&gt;)" href="#wybthon.dev.SSEHandler.notify_hot">notify_hot</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Send an <code>hmr</code> SSE event: the changed sources and the modules to replace in place.</p>
+                </div>
+              </td>
+            </tr>
       </tbody>
     </table>
 
@@ -3700,6 +3766,30 @@ app_base: The application's base path; other paths return 404,
     <div class="doc doc-contents ">
 
         <p>Send a <code>reload</code> SSE event to every connected client.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="wybthon.dev.SSEHandler.notify_hot" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">notify_hot</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#wybthon.dev.SSEHandler.notify_hot" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">notify_hot</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]],</span> <span class="n">modules</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Send an <code>hmr</code> SSE event: the changed sources and the modules to replace in place.</p>
 
 
     </div>

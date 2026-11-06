@@ -1287,10 +1287,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-reloads-work" class="md-nav__link">
+  <a href="#hot-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How reloads work
+        Hot updates
       
     </span>
   </a>
@@ -2726,6 +2726,8 @@
       
         
       
+        
+      
     
     
     
@@ -2937,6 +2939,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3219,10 +3249,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-reloads-work" class="md-nav__link">
+  <a href="#hot-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How reloads work
+        Hot updates
       
     </span>
   </a>
@@ -3313,7 +3343,7 @@
 
 
 <h1 id="dev-server">Dev server<a class="headerlink" href="#dev-server" title="Permanent link">&para;</a></h1>
-<p><code>wyb dev</code> builds a Wybthon project in development mode, serves the build, rebuilds when a source file changes, and reloads connected pages over Server-Sent Events (SSE). It serves projects only: a directory with a <code>wybthon.toml</code> (create one with <code>wyb init</code>).</p>
+<p><code>wyb dev</code> builds a Wybthon project in development mode, serves the build, and rebuilds when a source file changes. An edited application module is replaced in place in connected pages, without a reload; any other change reloads them. Both arrive over Server-Sent Events (SSE). It serves projects only: a directory with a <code>wybthon.toml</code> (create one with <code>wyb init</code>).</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>wyb<span class="w"> </span>init<span class="w"> </span>my-app
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">cd</span><span class="w"> </span>my-app
@@ -3324,7 +3354,7 @@
 <li>Builds the project with dev mode on, including any routes listed in <code>prerender</code>, so you develop against the same server-rendered pages you'll deploy. Production builds (<code>wyb build</code>) turn dev mode off; see <a href="../deployment/">Deployment</a>.</li>
 <li>Runs application modules through Wybthon's <a href="../../concepts/compiler/">compiler</a>, as <code>wyb build</code> does, so a malformed template fails the rebuild with its file and line instead of failing in the browser.</li>
 <li>Serves the build under the configured <code>base</code> path with client-route fallback to <code>200.html</code>. Requests outside the base path return 404.</li>
-<li>Watches the application directory (<code>app-dir</code>), <code>public/</code>, <code>index.html</code>, and <code>wybthon.toml</code>. A change, including a new or deleted file, triggers a rebuild and then a reload. Change detection polls modification times about every 0.5 seconds.</li>
+<li>Watches the application directory (<code>app-dir</code>), <code>public/</code>, <code>index.html</code>, and <code>wybthon.toml</code>. A change triggers a rebuild, then a hot update when only existing Python modules in the application directory changed, and a reload otherwise (a new or deleted file, a module in a lazy chunk, markup, assets, or configuration). Change detection polls modification times about every 0.5 seconds.</li>
 <li>Reports a failed build in the terminal and keeps serving the previous output, so a typo doesn't take the page down.</li>
 <li>Binds to the requested port or the next available one, up to 20 ports higher, and prints the project, the watched paths, and the URL it serves.</li>
 <li>Sends <code>Cache-Control: no-store</code> on every response, so the browser never reuses a stale build.</li>
@@ -3337,8 +3367,16 @@
 <li><code>--open-path</code>: open this path instead of the app's base path, for example <code>/about</code>.</li>
 </ul>
 <p>To expose the server on your LAN or from a container, use <code>--host 0.0.0.0</code> and open the page via your machine's IP.</p>
-<h2 id="how-reloads-work">How reloads work<a class="headerlink" href="#how-reloads-work" title="Permanent link">&para;</a></h2>
-<p>Each page the dev build writes includes a small script that subscribes to <code>GET /__sse</code> and reloads on a <code>reload</code> event. After a successful rebuild, the server sends that event to every connected page. A full page reload means Pyodide boots again, so expect a short delay between saving a file and seeing the change.</p>
+<h2 id="hot-updates">Hot updates<a class="headerlink" href="#hot-updates" title="Permanent link">&para;</a></h2>
+<p>Each page the dev build writes includes a small script that subscribes to <code>GET /__sse</code>. When a rebuild changed only Python modules that already existed in the application directory, the server sends an <code>hmr</code> event with their new sources, and the page replaces them in place (<a href="../../rfcs/0006-engine-v6/">RFC 0006</a>):</p>
+<ol>
+<li>The new sources are written into the runtime's file system, and each changed module that's been imported runs its new code in its existing namespace, through the compiler.</li>
+<li>Components keep their identity: the existing <code>@component</code> object takes the new body, so modules that imported it render the new code. A plain function keeps its identity too, when the new code fits its closure.</li>
+<li>Every mounted instance of a component from a changed module, or from a module that imported one, runs its body again in place with the same props. Only the outermost of nested instances remounts.</li>
+</ol>
+<p>State that lives outside the remounted components (stores and signals in modules that didn't change, the router's location, everything else on the page) is kept. The remounted components' own local state starts over, as with Solid's hot reloading.</p>
+<p>A module that hasn't been imported yet just gets its new source, and its build's bytecode is removed so the page imports the new code when it first needs the module. A change to a module in one of the <code>[chunks]</code> groups reloads the page, since the rebuild gives the chunk a new archive. A change that can't be applied in place reloads the page too: one that fails to compile or raises when it runs, a module that calls <code>render</code> when it's imported (return the root view from the entry function instead, as <code>wyb init</code> does), or a changed component that rendered nothing. <code>window.__WYB.hot</code> counts the hot updates a page has applied, and the page dispatches <code>wybthon:hot</code> on <code>window</code> after each one.</p>
+<p>Other changes send a <code>reload</code> event, and pages reload. A reload restores the <a href="../deployment/#boot-snapshots">boot snapshot</a> the first page load built, so it costs a fraction of a cold boot.</p>
 <h2 id="embedding-the-server">Embedding the server<a class="headerlink" href="#embedding-the-server" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="../../api/dev/#wybthon.dev.serve"><code>serve</code></a> is the function behind <code>wyb dev</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.dev</span><span class="w"> </span><span class="kn">import</span> <span class="n">serve</span>

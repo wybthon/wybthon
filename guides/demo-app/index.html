@@ -2676,6 +2676,8 @@
       
         
       
+        
+      
     
     
     
@@ -2887,6 +2889,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3251,7 +3281,7 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>wybthon
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--open
 </span></code></pre></div>
-<p><code>wyb dev</code> builds the project, serves it, and reloads the page when a source file changes; see the <a href="../dev-server/">dev server guide</a>. A demo that ships its own <code>index.html</code> and <code>bootstrap.js</code> without a <code>wybthon.toml</code> is a plain static site, so serve it with any static file server (<code>python -m http.server</code>) and follow its README.</p>
+<p><code>wyb dev</code> builds the project, serves it, and updates the page when a source file changes (in place for an edited module, by reloading otherwise); see the <a href="../dev-server/">dev server guide</a>. A demo that ships its own <code>index.html</code> and <code>bootstrap.js</code> without a <code>wybthon.toml</code> is a plain static site, so serve it with any static file server (<code>python -m http.server</code>) and follow its README.</p>
 <h2 id="how-a-project-boots">How a project boots<a class="headerlink" href="#how-a-project-boots" title="Permanent link">&para;</a></h2>
 <p>Wybthon projects follow the same pattern:</p>
 <ul>

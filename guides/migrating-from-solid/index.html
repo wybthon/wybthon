@@ -2786,6 +2786,8 @@
       
         
       
+        
+      
     
     
     
@@ -2997,6 +2999,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3434,10 +3464,10 @@
 
 <h1 id="migrating-from-solid">Migrating from Solid<a class="headerlink" href="#migrating-from-solid" title="Permanent link">&para;</a></h1>
 <p>Wybthon is SolidJS for Python, and it tracks <strong>SolidJS 2.0</strong> semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the <code>For</code> plus <code>Repeat</code> flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, the ownership tree manages cleanup, and a compiler turns the dynamic expressions in your markup into getters.</p>
-<p>Solid 2.0 hasn't had a stable release yet. Release candidate 17 (RC.17) is the latest, and it's the version Wybthon targets.</p>
+<p>Solid 2.0 hasn't had a stable release yet. Release candidate 21 (RC.21) is the latest, and it's the version Wybthon targets.</p>
 <p>The differences are mostly surface: Python instead of JavaScript, t-string templates instead of JSX, a <code>Props</code> class instead of a props interface, snake_case names, and a small number of deliberate semantic choices listed at the end.</p>
 <h2 id="api-mapping">API mapping<a class="headerlink" href="#api-mapping" title="Permanent link">&para;</a></h2>
-<p>The table follows <strong>Solid 2.0 RC.17</strong>.</p>
+<p>The table follows <strong>Solid 2.0 RC.21</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -3491,6 +3521,10 @@
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_settled&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_settled"><code>on_settled(fn)</code></a></td>
 </tr>
 <tr>
+<td><code>onFlush(fn)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_flush&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_flush"><code>on_flush(fn)</code></a></td>
+</tr>
+<tr>
 <td><code>onCleanup(fn)</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;on_cleanup&lt;/span&gt;" href="../../api/wybthon/#wybthon.on_cleanup"><code>on_cleanup(fn)</code></a></td>
 </tr>
@@ -3503,8 +3537,8 @@
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.get_owner"><code>get_owner()</code></a> / <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run_with_owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.run_with_owner"><code>run_with_owner(owner, fn)</code></a></td>
 </tr>
 <tr>
-<td><code>createOwner()</code> / <code>isDisposed(owner)</code></td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_owner&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_owner"><code>create_owner()</code></a> / <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_disposed&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_disposed"><code>is_disposed(owner)</code></a></td>
+<td><code>isDisposed(owner)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_disposed&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_disposed"><code>is_disposed(owner)</code></a> (Solid 2.0 RC.21 removed <code>createOwner</code>; use <code>create_root</code> and <code>run_with_owner</code>)</td>
 </tr>
 <tr>
 <td><code>getObserver()</code></td>
@@ -3537,6 +3571,10 @@
 <tr>
 <td><code>resolve(fn)</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/wybthon/#wybthon.resolve"><code>await resolve(fn)</code></a></td>
+</tr>
+<tr>
+<td><code>from(source)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;from_source&lt;/span&gt;" href="../../api/wybthon/#wybthon.from_source"><code>from_source(source)</code></a> (<code>from</code> is a Python keyword)</td>
 </tr>
 <tr>
 <td><code>refresh(memo)</code></td>

@@ -2728,6 +2728,8 @@
       
         
       
+        
+      
     
     
     
@@ -2939,6 +2941,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3379,8 +3409,10 @@ the caller writes the surrounding document. Output always ends with a
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../wybthon/#wybthon.http_status"><code>http_status</code></a> and
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="../wybthon/#wybthon.http_header"><code>http_header</code></a>, and read the request with
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_request_event&lt;/span&gt;" href="../wybthon/#wybthon.get_request_event"><code>get_request_event</code></a>.</p>
-<p>Rendering runs the ordinary renderer against an in-memory DOM, so
-server output always matches what the browser's hydration expects.
+<p>Rendering walks the same tree the browser mounts and writes its HTML
+directly (RFC 0006): components run once, each expression is evaluated
+once, and nothing subscribes, so the output is exactly what the
+browser's hydration expects at a fraction of a mounted render's cost.
 Renders may run concurrently on one event loop; don't render from
 several threads at once.</p>
 

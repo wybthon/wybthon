@@ -1443,6 +1443,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#boot-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot snapshots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runtime-and-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2742,6 +2753,8 @@
       
         
       
+        
+      
     
     
     
@@ -2953,6 +2966,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3279,6 +3320,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#boot-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot snapshots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runtime-and-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3382,6 +3434,14 @@
 <p><code>wyb build</code> runs every application module through Wybthon's <a href="../../concepts/compiler/">compiler</a> before packaging it. A malformed template fails the build with its file and line. Each <code>html(t"...")</code> call gets its dynamic expressions wrapped in getters and its parse tree and mount function emitted as ordinary module code, so a production page never parses a template or generates code at run time.</p>
 <h2 id="bytecode">Bytecode<a class="headerlink" href="#bytecode" title="Permanent link">&para;</a></h2>
 <p>When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. Application bytecode is the compiler's output, and the import hook that <code>import wybthon</code> installs uses it as is. The manifest's <code>bytecode</code> field records whether it was included. Set <code>bytecode = false</code> to ship source only; the import hook then compiles each application module's templates in the browser as it's imported.</p>
+<h2 id="boot-snapshots">Boot snapshots<a class="headerlink" href="#boot-snapshots" title="Permanent link">&para;</a></h2>
+<p>Most of a page's startup is Pyodide's: starting Python and importing the framework takes most of a second before the application runs at all. Builds avoid that work on every visit after the first. Once the first boot has finished and the page is idle, the bootstrap starts a Web Worker that boots a second runtime, imports Wybthon and the standard library modules applications commonly use, and takes a memory snapshot of it, which it stores in the browser's Cache Storage. Later visits restore that snapshot instead of starting Python, then unpack the archives and import the application as usual. In Chromium on a recent laptop, a repeat visit to the starter app is ready in about 100 ms instead of about 800 ms.</p>
+<ul>
+<li><strong>What's in it.</strong> The runtime with the framework imported, not the application: application modules may read <code>window</code> when they're imported, which a snapshot can't hold. The snapshot is keyed by the Wybthon version, the runtime archive, and the Pyodide release, so it stays valid across application changes and every <code>wyb dev</code> reload restores it.</li>
+<li><strong>What it costs.</strong> The first visit downloads nothing extra. Building the snapshot takes about a second of a background thread and stores about 30 MB in Cache Storage, replacing the app's older snapshot. Each app keeps its snapshots in a cache named by its base path, so apps sharing an origin don't evict each other's. A snapshot that can't be restored is discarded, and that boot falls back to starting Python normally. A build that fails (for example, because storage is full) isn't retried for a week.</li>
+<li><strong>When it's off.</strong> Builds with Pyodide <code>packages</code> or <code>wheels</code> boot normally, since those live in the virtual file system rather than in memory. So does a page where Cache Storage or module workers aren't available (Cache Storage needs a secure context: HTTPS or <code>localhost</code>). Set <code>snapshot = false</code> in <code>wybthon.toml</code> to turn it off; the manifest's <code>snapshot</code> field is the key, or <code>null</code>.</li>
+</ul>
+<p><code>window.__WYB.timings.snapshot</code> says whether a boot restored a snapshot, and <code>window.__WYB.snapshot</code> reports one the page built (<code>built</code>, <code>bytes</code>, and <code>ms</code>, or an <code>error</code>). The page dispatches <code>wybthon:snapshot</code> on <code>window</code> when it's done.</p>
 <h2 id="runtime-and-dependencies">Runtime and dependencies<a class="headerlink" href="#runtime-and-dependencies" title="Permanent link">&para;</a></h2>
 <p>The bootstrap loads Pyodide and the runtime/application archives concurrently (the preload hints have usually started all three already), then unpacks and imports Python. It doesn't fetch every Python module separately. <code>packages</code> names packages in the pinned Pyodide distribution. <code>wheels</code> accepts exact <code>name==version</code> requirements or explicit wheel URLs compatible with the selected runtime. Set <code>pyodide-url</code> to host that runtime yourself.</p>
 <p>Pin dependencies and keep the runtime version deliberate. Browser Python code is public, including bundled configuration. Keep application secrets on a server.</p>

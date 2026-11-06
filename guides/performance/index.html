@@ -2720,6 +2720,8 @@
       
         
       
+        
+      
     
     
     
@@ -2931,6 +2933,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3303,9 +3333,10 @@
 <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
 <p>Wybthon keeps fine-grained dependency tracking and a Virtual DOM that batches native mutations into one bridge crossing per flush. Python execution, serialization, bridge calls, native DOM work, and browser rendering have different costs. Measure the operation you intend to improve.</p>
 <h2 id="start-with-startup">Start with startup<a class="headerlink" href="#start-with-startup" title="Permanent link">&para;</a></h2>
-<p>Loading and initializing Pyodide takes over a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page.</p>
+<p>On a first visit, loading and initializing Pyodide takes most of a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page.</p>
 <ul>
-<li><strong>Prerender the pages users land on.</strong> <a href="../../concepts/server-rendering/">Server rendering</a> puts their content on screen at first paint, and the page hydrates once Python is ready.</li>
+<li><strong>Repeat visits restore a snapshot.</strong> After the first boot, the bootstrap builds a memory snapshot of a runtime with Wybthon imported and later visits restore it, so they're ready in about a tenth of the time (see <a href="../deployment/#boot-snapshots">Boot snapshots</a>). It's on by default; builds with Pyodide <code>packages</code> or <code>wheels</code> don't use it.</li>
+<li><strong>Prerender the pages users land on.</strong> <a href="../../concepts/server-rendering/">Server rendering</a> puts their content on screen at first paint, and the page hydrates once Python is ready. The server writes HTML directly rather than mounting a DOM, so rendering on request is cheap too: a 1,000-row table renders in about 6 ms in CPython.</li>
 <li><strong>Ship bytecode.</strong> Build with the same Python version as the Pyodide runtime so the archives include precompiled bytecode and the browser doesn't compile Wybthon or your application at startup (see <a href="../deployment/#bytecode">Deployment</a>).</li>
 <li><strong>Let the build start downloads early.</strong> <code>wyb build</code> inlines the manifest into the page and emits preload hints for Pyodide's module and both archives, so the browser starts fetching them while the page parses instead of after the bootstrap runs.</li>
 <li><strong>Keep the first import small.</strong> Load routes and heavy components with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;lazy&lt;/span&gt;" href="../../api/lazy/#wybthon.lazy"><code>lazy</code></a>, and move rarely used code into <a href="../deployment/#explicit-lazy-chunks">explicit chunks</a>.</li>

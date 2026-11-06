@@ -2759,6 +2759,8 @@
       
         
       
+        
+      
     
     
     
@@ -2970,6 +2972,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3379,7 +3409,7 @@
 
 
 <h1 id="server-rendering">Server rendering<a class="headerlink" href="#server-rendering" title="Permanent link">&para;</a></h1>
-<p>A Wybthon page can't do anything until Pyodide has downloaded and started, which takes a second or more even with a warm cache. Server rendering removes that wait from what users see. The same components render to HTML in CPython, the HTML ships with the page, and the browser shows it immediately. When Python is ready, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../../api/wybthon/#wybthon.hydrate"><code>hydrate</code></a> adopts the existing DOM and makes it interactive instead of building it again.</p>
+<p>A Wybthon page can't do anything until Pyodide has downloaded and started. On a first visit that takes about a second even with a warm cache; later visits restore a <a href="../../guides/deployment/#boot-snapshots">boot snapshot</a> in about a tenth of that. Server rendering removes the wait from what users see. The same components render to HTML in CPython, the HTML ships with the page, and the browser shows it immediately. When Python is ready, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;hydrate&lt;/span&gt;" href="../../api/wybthon/#wybthon.hydrate"><code>hydrate</code></a> adopts the existing DOM and makes it interactive instead of building it again.</p>
 <p>Server rendering also makes pages indexable by search engines and usable before Python loads: links work, and input made before hydration is replayed afterward.</p>
 <h2 id="prerendering-at-build-time">Prerendering at build time<a class="headerlink" href="#prerendering-at-build-time" title="Permanent link">&para;</a></h2>
 <p>The quickest way to use it is to prerender routes when you build. List them in <code>wybthon.toml</code>:</p>
@@ -3647,7 +3677,8 @@ the compiled path. See <a href="../templates/">Templates</a>.</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Hydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.Hydration"><code>Hydration(*children, id=None)</code></a> is provided for parity with Solid 2.0, where it re-enables hydration for an island inside <code>NoHydration</code>. In Wybthon it renders its children unchanged: a <code>NoHydration</code> region stays static as a whole, so put interactive islands beside it rather than inside it.</p>
 <h2 id="what-changes-on-the-server">What changes on the server<a class="headerlink" href="#what-changes-on-the-server" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>create_effect</code>, <code>create_tracked_effect</code>, and <code>on_settled</code> don't run. Holes and prop bindings evaluate once as the tree mounts.</li>
+<li>The server writes HTML directly instead of mounting a DOM (see <a href="../../rfcs/0006-engine-v6/">RFC 0006</a>). Components run once, under the same owners as in the browser, so context, <code>Errored</code>, and <code>Loading</code> work as usual, and each expression in the markup is evaluated once. Nothing subscribes, so a write made while the page renders doesn't change markup already written.</li>
+<li><code>create_effect</code>, <code>create_tracked_effect</code>, <code>on_settled</code>, and <code>on_flush</code> don't run, and refs and event handlers aren't attached; the browser attaches them while hydrating.</li>
 <li><a href="../../api/portal/"><code>Portal</code></a> renders nothing. Its children mount in the browser after hydration.</li>
 <li>The router reads the <code>url</code> passed to the render function, and <code>navigate</code> does nothing.</li>
 <li><code>lazy</code> components import their modules directly; chunks are only fetched in the browser.</li>
@@ -3658,9 +3689,8 @@ the compiled path. See <a href="../templates/">Templates</a>.</p>
 <ul>
 <li>Derived and projected stores with async bodies (<code>create_store(fn)</code> and <code>create_projection</code>) aren't serialized yet; they load in the browser after hydration.</li>
 <li><code>lazy</code> components that load a chunk render their <code>Loading</code> fallback while hydrating unless the chunk was preloaded.</li>
-<li>Server rendering runs the ordinary renderer against an in-memory DOM. It's fast enough for prerendering and moderate request rates, but it costs more per request than concatenating strings would.</li>
 </ul>
-<p>See <a href="../../rfcs/0001-server-rendering-and-hydration/">RFC 0001</a> for the design and its tradeoffs.</p>
+<p>See <a href="../../rfcs/0001-server-rendering-and-hydration/">RFC 0001</a> for the design and its tradeoffs, and <a href="../../rfcs/0006-engine-v6/">RFC 0006</a> for the string renderer.</p>
 
 
 

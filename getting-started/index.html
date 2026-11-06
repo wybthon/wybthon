@@ -2695,6 +2695,8 @@
       
         
       
+        
+      
     
     
     
@@ -2906,6 +2908,34 @@
     
   
     0005: Engine v5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/0006-engine-v6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Engine v6
   
 
     
@@ -3262,7 +3292,7 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">cd</span><span class="w"> </span>my-app
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--open
 </span></code></pre></div>
-<p>The generated project has <code>app/main.py</code>, <code>index.html</code>, <code>pyproject.toml</code>, and <code>wybthon.toml</code>. The development server builds the app in dev mode and reloads the browser after source, configuration, or public asset changes. Pyodide requires a network connection on the first load unless you host the runtime locally.</p>
+<p>The generated project has <code>app/main.py</code>, <code>index.html</code>, <code>pyproject.toml</code>, and <code>wybthon.toml</code>. The development server builds the app in dev mode, replaces an edited module in place in the open page (keeping the rest of the page's state), and reloads the browser after other source, configuration, or public asset changes. Pyodide requires a network connection on the first load unless you host the runtime locally.</p>
 <h2 id="write-a-component">Write a component<a class="headerlink" href="#write-a-component" title="Permanent link">&para;</a></h2>
 <p><code>wyb init</code> generates this <code>app/main.py</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">"""A run-once component with a reactive counter."""</span>
