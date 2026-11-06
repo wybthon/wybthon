@@ -1,6 +1,6 @@
 # Dev server
 
-`wyb dev` builds a Wybthon project in development mode, serves the build, rebuilds when a source file changes, and reloads connected pages over Server-Sent Events (SSE). It serves projects only: a directory with a `wybthon.toml` (create one with `wyb init`).
+`wyb dev` builds a Wybthon project in development mode, serves the build, and rebuilds when a source file changes. An edited application module is replaced in place in connected pages, without a reload; any other change reloads them. Both arrive over Server-Sent Events (SSE). It serves projects only: a directory with a `wybthon.toml` (create one with `wyb init`).
 
 ```bash
 pip install wybthon
@@ -14,7 +14,7 @@ wyb dev --open
 - Builds the project with dev mode on, including any routes listed in `prerender`, so you develop against the same server-rendered pages you'll deploy. Production builds (`wyb build`) turn dev mode off; see [Deployment](deployment.md).
 - Runs application modules through Wybthon's [compiler](../concepts/compiler.md), as `wyb build` does, so a malformed template fails the rebuild with its file and line instead of failing in the browser.
 - Serves the build under the configured `base` path with client-route fallback to `200.html`. Requests outside the base path return 404.
-- Watches the application directory (`app-dir`), `public/`, `index.html`, and `wybthon.toml`. A change, including a new or deleted file, triggers a rebuild and then a reload. Change detection polls modification times about every 0.5 seconds.
+- Watches the application directory (`app-dir`), `public/`, `index.html`, and `wybthon.toml`. A change triggers a rebuild, then a hot update when only existing Python modules in the application directory changed, and a reload otherwise (a new or deleted file, markup, assets, or configuration). Change detection polls modification times about every 0.5 seconds.
 - Reports a failed build in the terminal and keeps serving the previous output, so a typo doesn't take the page down.
 - Binds to the requested port or the next available one, up to 20 ports higher, and prints the project, the watched paths, and the URL it serves.
 - Sends `Cache-Control: no-store` on every response, so the browser never reuses a stale build.
@@ -28,9 +28,19 @@ wyb dev --open
 
 To expose the server on your LAN or from a container, use `--host 0.0.0.0` and open the page via your machine's IP.
 
-## How reloads work
+## Hot updates
 
-Each page the dev build writes includes a small script that subscribes to `GET /__sse` and reloads on a `reload` event. After a successful rebuild, the server sends that event to every connected page. A full page reload means Pyodide boots again, so expect a short delay between saving a file and seeing the change.
+Each page the dev build writes includes a small script that subscribes to `GET /__sse`. When a rebuild changed only Python modules that already existed in the application directory, the server sends an `hmr` event with their new sources, and the page replaces them in place ([RFC 0006](../rfcs/0006-engine-v6.md)):
+
+1. The new sources are written into the runtime's file system, and each changed module that's been imported runs its new code in its existing namespace, through the compiler.
+2. Components keep their identity: the existing `@component` object takes the new body, so modules that imported it render the new code. A plain function keeps its identity too, when the new code fits its closure.
+3. Every mounted instance of a component from a changed module, or from a module that imported one, runs its body again in place with the same props. Only the outermost of nested instances remounts.
+
+State that lives outside the remounted components (stores and signals in modules that didn't change, the router's location, everything else on the page) is kept. The remounted components' own local state starts over, as with Solid's hot reloading.
+
+A change that can't be applied in place reloads the page instead: one that fails to compile or raises when it runs, a module that calls `render` when it's imported (return the root view from the entry function instead, as `wyb init` does), or a changed component that rendered nothing. `window.__WYB.hot` counts the hot updates a page has applied, and the page dispatches `wybthon:hot` on `window` after each one.
+
+Other changes send a `reload` event, and pages reload. A reload restores the [boot snapshot](deployment.md#boot-snapshots) the first page load built, so it costs a fraction of a cold boot.
 
 ## Embedding the server
 

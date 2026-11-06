@@ -15,10 +15,11 @@ from wybthon import (
     Show,
     WriteInScopeError,
     create_memo,
-    create_owner,
+    create_root,
     create_signal,
     diagnostics,
     flush,
+    get_owner,
     html,
     is_disposed,
     run_with_owner,
@@ -58,11 +59,12 @@ def test_owned_write_is_exempt_from_the_scope_guard(wyb):
         failing()
 
 
-def test_create_owner_and_is_disposed(wyb):
-    parent = create_owner()
-    child = run_with_owner(parent, create_owner)
+def test_nested_roots_and_is_disposed(wyb):
+    disposers = []
+    parent = create_root(lambda dispose: disposers.append(dispose) or get_owner())
+    child = run_with_owner(parent, lambda: create_root(lambda dispose: get_owner()))
     assert not is_disposed(child)
-    parent.dispose()
+    disposers[0]()
     assert is_disposed(parent) and is_disposed(child)
 
 

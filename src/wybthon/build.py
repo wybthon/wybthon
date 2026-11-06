@@ -41,7 +41,7 @@ _SERVER_ONLY = {
     "build.py",
     "dev.py",
     "server.py",
-    "_server_dom.py",
+    "_ssr.py",
     "_prerender.py",
 }
 _STARTER = '''"""A run-once component with a reactive counter."""
@@ -155,6 +155,8 @@ def build_app(
     if not isinstance(routes, list) or any(not isinstance(r, str) or not r.startswith("/") for r in routes):
         raise ValueError("prerender must be a list of paths starting with /")
     crawl = bool(config.get("crawl", False))
+    if not isinstance(config.get("snapshot", True), bool):
+        raise ValueError("snapshot must be true or false")
     base_path = base if base is not None else config.get("base", "/")
     if (
         not base_path.startswith("/")
@@ -253,6 +255,7 @@ def build_app(
             "application": archive_names.pop("application"),
             "chunks": archive_names,
         }
+        manifest["snapshot"] = _snapshot_key(manifest, config)
         bootstrap = _asset(staging, "bootstrap", (package / "_bootstrap.js").read_bytes(), "js")
         (staging / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         page = template.replace(_MARKER, _boot_tags(manifest, base_path, bootstrap))
@@ -279,6 +282,24 @@ def build_app(
                     backup.rename(destination)
                 raise
     return manifest
+
+
+def _snapshot_key(manifest: dict[str, Any], config: dict[str, Any]) -> str | None:
+    """The key a boot snapshot is cached under, or `None` when the build doesn't use one.
+
+    A snapshot holds the runtime with the framework imported, not the
+    application, so it stays valid across application rebuilds (every
+    `wyb dev` reload restores it) and changes only with the runtime
+    archive or the Pyodide release. Builds that load Pyodide packages or
+    wheels boot normally: those live in the virtual file system, which a
+    memory snapshot doesn't hold.
+    """
+    if not config.get("snapshot", True) or manifest["packages"] or manifest["wheels"]:
+        return None
+    from . import __version__
+
+    material = json.dumps([1, __version__, manifest["pyodide_url"], manifest["runtime"]], separators=(",", ":"))
+    return hashlib.sha256(material.encode()).hexdigest()[:20]
 
 
 def _boot_tags(manifest: dict[str, Any], base_path: str, bootstrap: str) -> str:

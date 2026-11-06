@@ -22,7 +22,7 @@ The framework ships with everything you need to build a real app:
 - [Server rendering](concepts/server-rendering.md): prerender routes at build time or render per request in CPython, stream `Loading` boundaries, set the status and headers with [`http_status`][wybthon.http_status] and [`http_header`][wybthon.http_header], and [`hydrate`][wybthon.hydrate] the result in the browser.
 - Form state, validators, and accessibility helpers in `wybthon.forms`.
 - A test renderer, [`wybthon.testing`](api/testing.md), that mounts components into an in-memory DOM in plain CPython, and a pytest plugin that compiles templates in test modules.
-- A dev server (`wyb dev`) with hot reload via Server-Sent Events, production builds (`wyb build`) with templates compiled ahead of time, dev-mode checks turned off, the asset manifest inlined, and the runtime preloaded, and `wyb run` for scripts.
+- A dev server (`wyb dev`) that replaces edited modules in the open page without reloading it, production builds (`wyb build`) with templates compiled ahead of time, dev-mode checks turned off, the asset manifest inlined, the runtime preloaded, and boot snapshots that make repeat visits start in about a tenth of the time, and `wyb run` for scripts.
 
 ## Try it in 30 seconds
 
@@ -60,7 +60,7 @@ render(Counter(), "#app")
     pip install wybthon
     ```
 
-2. Create a project and run the dev server with auto-reload:
+2. Create a project and run the dev server, which updates the page as you edit:
 
     ```bash
     wyb init my-app

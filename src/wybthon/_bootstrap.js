@@ -27,6 +27,90 @@ function stopCapturing() {
   if (globalThis.__wybQueue === captured) globalThis.__wybQueue = null;
 }
 
+// A memory snapshot of a Pyodide runtime that has already imported Wybthon
+// (RFC 0006). The first visit boots normally, then builds one in a worker
+// when the page is idle; later visits (and every `wyb dev` reload) restore
+// it instead of booting Python and importing the framework again.
+const snapshotCache = "wybthon-snapshot";
+
+function snapshotRequest(key) {
+  return new URL(`/__wyb_snapshot/${key}`, location.href).href;
+}
+
+async function readSnapshot(key) {
+  if (!key || typeof caches === "undefined") return null;
+  try {
+    const cache = await caches.open(snapshotCache);
+    const response = await cache.match(snapshotRequest(key));
+    return response ? new Uint8Array(await response.arrayBuffer()) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function forgetSnapshot(key) {
+  try {
+    const cache = await caches.open(snapshotCache);
+    await cache.delete(snapshotRequest(key));
+  } catch (_) {}
+}
+
+// The worker that builds a snapshot: a fresh runtime that imports the
+// framework and nothing else (application modules may touch the page when
+// they're imported, which a snapshot can't hold).
+const snapshotWorker = `
+self.onmessage = async (event) => {
+  const { indexURL, runtimeURL, request, cacheName } = event.data;
+  try {
+    const started = performance.now();
+    const { loadPyodide } = await import(indexURL + "pyodide.mjs");
+    const pyodide = await loadPyodide({ indexURL, _makeSnapshot: true });
+    const response = await fetch(runtimeURL);
+    if (!response.ok) throw new Error("runtime archive: " + response.status);
+    pyodide.unpackArchive(new Uint8Array(await response.arrayBuffer()), "zip", { extractDir: "/wybthon-app" });
+    pyodide.runPython("import sys\\nif '/wybthon-app' not in sys.path: sys.path.insert(0, '/wybthon-app')\\nimport wybthon._snapshot\\nwybthon._snapshot.preload()");
+    const snapshot = pyodide.makeMemorySnapshot();
+    const cache = await caches.open(cacheName);
+    for (const old of await cache.keys()) await cache.delete(old);
+    await cache.put(request, new Response(snapshot, { headers: { "content-type": "application/octet-stream" } }));
+    self.postMessage({ ok: true, bytes: snapshot.byteLength, ms: performance.now() - started });
+  } catch (error) {
+    self.postMessage({ ok: false, error: String(error && error.stack || error) });
+  }
+};
+`;
+
+function buildSnapshot(config, runtimeURL) {
+  if (typeof Worker === "undefined" || typeof caches === "undefined") return;
+  const start = () => {
+    let worker;
+    const url = URL.createObjectURL(new Blob([snapshotWorker], { type: "text/javascript" }));
+    try {
+      worker = new Worker(url, { type: "module" });
+    } catch (_) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const finish = (result) => {
+      state.snapshot = result;
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      globalThis.dispatchEvent(new CustomEvent("wybthon:snapshot", { detail: result }));
+    };
+    worker.onerror = (event) => finish({ error: String(event.message || "the snapshot worker failed to start") });
+    worker.onmessage = (event) =>
+      finish(event.data.ok ? { built: true, bytes: event.data.bytes, ms: event.data.ms } : { error: event.data.error });
+    worker.postMessage({
+      indexURL: runtimeURL,
+      runtimeURL: new URL(config.runtime, manifestURL).href,
+      request: snapshotRequest(config.snapshot),
+      cacheName: snapshotCache,
+    });
+  };
+  if (typeof requestIdleCallback === "function") requestIdleCallback(start, { timeout: 5000 });
+  else setTimeout(start, 1000);
+}
+
 async function fetchBytes(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
@@ -52,9 +136,22 @@ state.ready = (async () => {
     state.hydrated = hydrating;
     const runtimeURL = new URL(config.pyodide_url, manifestURL).href;
     const runtimeStart = performance.now();
-    const runtime = import(runtimeURL + "pyodide.mjs").then(({ loadPyodide }) =>
-      loadPyodide({ indexURL: runtimeURL, packages: config.packages })
-    ).then(value => {
+    const snapshot = readSnapshot(config.snapshot);
+    const runtime = Promise.all([import(runtimeURL + "pyodide.mjs"), snapshot]).then(async ([{ loadPyodide }, saved]) => {
+      if (saved !== null) {
+        try {
+          const restored = await loadPyodide({ indexURL: runtimeURL, _loadSnapshot: saved });
+          state.timings.snapshot = true;
+          return restored;
+        } catch (error) {
+          // A snapshot this runtime can't restore: drop it and boot normally.
+          console.warn("Wybthon: discarding a snapshot that couldn't be restored", error);
+          await forgetSnapshot(config.snapshot);
+        }
+      }
+      state.timings.snapshot = false;
+      return loadPyodide({ indexURL: runtimeURL, packages: config.packages });
+    }).then(value => {
       state.timings.pyodide_ms = performance.now() - runtimeStart;
       return value;
     });
@@ -80,7 +177,7 @@ state.ready = (async () => {
       await chunks.get(name);
     };
     const appStart = performance.now();
-    await pyodide.runPythonAsync("import sys; sys.path.insert(0, '/wybthon-app')");
+    await pyodide.runPythonAsync("import sys\nif '/wybthon-app' not in sys.path: sys.path.insert(0, '/wybthon-app')");
     if (config.wheels.length) {
       await pyodide.loadPackage("micropip");
       pyodide.globals.set("_wyb_requirements", JSON.stringify(config.wheels));
@@ -88,6 +185,9 @@ state.ready = (async () => {
     }
     // Production bundles turn dev mode off before the application imports.
     await pyodide.runPythonAsync(`import wybthon; wybthon.set_dev_mode(${config.dev ? "True" : "False"})`);
+    // `wyb dev` replaces changed modules in place; it records mounted
+    // components from the start so it can remount them (RFC 0006).
+    if (globalThis.__wybHot) await pyodide.runPythonAsync("import wybthon._hmr; wybthon._hmr.enable()");
     pyodide.globals.set("_wyb_entry", config.entry);
     pyodide.globals.set("_wyb_mount", config.mount || "#app");
     pyodide.globals.set("_wyb_hydrate", hydrating);
@@ -112,6 +212,7 @@ del _wyb_entry, _wyb_mount, _wyb_hydrate, _wyb_module, _wyb_export, _wyb_view
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     state.timings.ready_frame_ms = performance.now() - started;
     globalThis.dispatchEvent(new CustomEvent("wybthon:ready", { detail: state.timings }));
+    if (config.snapshot && !state.timings.snapshot) buildSnapshot(config, runtimeURL);
     return state;
   } catch (error) {
     stopCapturing();

@@ -2,13 +2,13 @@
 
 Wybthon is SolidJS for Python, and it tracks **SolidJS 2.0** semantics: async-first reactivity, automatic batching, actions and optimistic state, draft-first stores, and the `For` plus `Repeat` flow components. Nearly every primitive has a direct equivalent, and the mental model is identical: components run once, signals drive fine-grained updates, the ownership tree manages cleanup, and a compiler turns the dynamic expressions in your markup into getters.
 
-Solid 2.0 hasn't had a stable release yet. Release candidate 17 (RC.17) is the latest, and it's the version Wybthon targets.
+Solid 2.0 hasn't had a stable release yet. Release candidate 21 (RC.21) is the latest, and it's the version Wybthon targets.
 
 The differences are mostly surface: Python instead of JavaScript, t-string templates instead of JSX, a `Props` class instead of a props interface, snake_case names, and a small number of deliberate semantic choices listed at the end.
 
 ## API mapping
 
-The table follows **Solid 2.0 RC.17**.
+The table follows **Solid 2.0 RC.21**.
 
 | SolidJS 2.0 | Wybthon |
 | --- | --- |
@@ -23,10 +23,11 @@ The table follows **Solid 2.0 RC.17**.
 | `createRenderEffect(compute, apply)` | [`create_render_effect(compute, apply)`][wybthon.create_render_effect] |
 | `createReaction(effect)` | [`create_reaction(effect)`][wybthon.create_reaction] returns `track(fn)` |
 | `onMount(fn)` | [`on_settled(fn)`][wybthon.on_settled] |
+| `onFlush(fn)` | [`on_flush(fn)`][wybthon.on_flush] |
 | `onCleanup(fn)` | [`on_cleanup(fn)`][wybthon.on_cleanup] |
 | `createRoot(dispose => ...)` | [`create_root(lambda dispose: ...)`][wybthon.create_root] |
 | `getOwner()` / `runWithOwner(owner, fn)` | [`get_owner()`][wybthon.get_owner] / [`run_with_owner(owner, fn)`][wybthon.run_with_owner] |
-| `createOwner()` / `isDisposed(owner)` | [`create_owner()`][wybthon.create_owner] / [`is_disposed(owner)`][wybthon.is_disposed] |
+| `isDisposed(owner)` | [`is_disposed(owner)`][wybthon.is_disposed] (Solid 2.0 RC.21 removed `createOwner`; use `create_root` and `run_with_owner`) |
 | `getObserver()` | [`get_observer()`][wybthon.get_observer] |
 | `untrack(fn)` | [`untrack(fn)`][wybthon.untrack], or `accessor.peek()` for a single read |
 | `batch(fn)` | Nothing to call; every write batches until the next flush. [`flush()`][wybthon.flush] settles synchronously. |
@@ -35,6 +36,7 @@ The table follows **Solid 2.0 RC.17**.
 | `isPending(fn)` | [`is_pending(fn)`][wybthon.is_pending] |
 | `latest(fn)` | [`latest(fn)`][wybthon.latest] |
 | `resolve(fn)` | [`await resolve(fn)`][wybthon.resolve] |
+| `from(source)` | [`from_source(source)`][wybthon.from_source] (`from` is a Python keyword) |
 | `refresh(memo)` | [`await refresh(memo)`][wybthon.refresh] |
 | `action(fn)` | [`action(fn)`][wybthon.action], usable as `@action` |
 | `createOptimistic(source)` | [`create_optimistic(source)`][wybthon.create_optimistic] |

@@ -39,12 +39,13 @@ Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser
 - **Actions and optimistic state.** `action` makes a mutation a transaction; `create_optimistic` and `create_optimistic_store` show temporary values that revert when the action settles.
 - **Draft-first stores.** `create_store` setters take a function that mutates a draft with plain Python; reads are tracked per path. `reconcile`, `snapshot`, `deep`, and projections are included.
 - **Flow control and boundaries.** `Show`, `For`, `Repeat`, `Switch`/`Match`, and `dynamic` update only the affected subtree; `Loading`, `Reveal`, and `Errored` swap in fallbacks without tearing down sibling trees.
-- **Server rendering and hydration.** Render the same components to HTML in CPython at build time or per request, stream `Loading` boundaries as they resolve, set the response status and headers from components, and `hydrate` the result in the browser.
+- **Fast repeat visits.** After a page's first boot, the bootstrap snapshots a Pyodide runtime with Wybthon imported, in a background worker. Later visits restore it and are ready in about a tenth of the time.
+- **Server rendering and hydration.** Render the same components to HTML in CPython at build time or per request (the server writes HTML directly, a few milliseconds for a 1,000-row table), stream `Loading` boundaries as they resolve, set the response status and headers from components, and `hydrate` the result in the browser.
 - **One bridge crossing per update.** A small virtual DOM batches every mutation in a flush into one call to a JavaScript kernel, which matters when every DOM call would otherwise cross from Python to JavaScript.
 - **Memory comes back at unmount.** Removing rows or components frees them at once by reference counting, with nothing left for Python's cycle collector, and the collector's own work waits until the browser is idle.
 - **Router, forms, context, portals, and lazy loading.** `wybthon.router`, `wybthon.forms` with validators and ARIA helpers, callable `Context` objects, `Portal`, and `lazy` and `lazy_module` with explicit build chunks.
 - **Testing in plain CPython.** `wybthon.testing` renders components into an in-memory DOM and queries them by text, role, label, and test id. Templates in test modules are compiled by Wybthon's pytest plugin.
-- **Tooling.** `wyb init` scaffolds a project, `wyb dev` rebuilds and reloads on change, `wyb build` writes a production bundle with the manifest inlined and the runtime preloaded, and `wyb run` runs a script with its templates compiled.
+- **Tooling.** `wyb init` scaffolds a project, `wyb dev` rebuilds on change and replaces edited modules in the open page without reloading it, `wyb build` writes a production bundle with the manifest inlined and the runtime preloaded, and `wyb run` runs a script with its templates compiled.
 
 ## Quick start
 

@@ -46,8 +46,10 @@ Components declare the response status and headers with
 [`http_header`][wybthon.http_header], and read the request with
 [`get_request_event`][wybthon.get_request_event].
 
-Rendering runs the ordinary renderer against an in-memory DOM, so
-server output always matches what the browser's hydration expects.
+Rendering walks the same tree the browser mounts and writes its HTML
+directly (RFC 0006): components run once, each expression is evaluated
+once, and nothing subscribes, so the output is exactly what the
+browser's hydration expects at a fraction of a mounted render's cost.
 Renders may run concurrently on one event loop; don't render from
 several threads at once.
 
@@ -63,15 +65,12 @@ import threading
 from collections.abc import AsyncIterator, Generator
 from typing import Any
 
-from . import kernel
-from ._server_dom import ServerBackend, ServerElement, html_between, inner_html
+from . import _ssr, kernel, reconciler
 from ._warnings import warn_once
-from .kernel import OP_CREATE_ELEMENT
 from .reactivity import _core
-from .reactivity._core import Memo, _function_name
+from .reactivity._core import Memo, Owner, _function_name
 from .reactivity._primitives import resolve
 from .reactivity._session import ServerError, Session, encode_state
-from .reconciler import Root, _server_render
 from .request import RequestEvent
 from .vnode import VNode, copy_vnode
 
@@ -93,14 +92,6 @@ _SWAP_SCRIPT = (
 _thread_lock = threading.Lock()
 
 
-def _backend() -> ServerBackend:
-    backend = kernel._backend
-    if not isinstance(backend, ServerBackend):
-        backend = ServerBackend()
-        kernel.set_backend(backend)
-    return backend
-
-
 def _fresh(view: Any) -> Any:
     """A mountable copy of `view` for one pass: call a factory, or copy a VNode tree."""
     if callable(view) and not isinstance(view, VNode):
@@ -111,11 +102,10 @@ def _fresh(view: Any) -> Any:
 class _Pass:
     """One synchronous render of the whole tree with the data resolved so far."""
 
-    __slots__ = ("session", "root", "container")
+    __slots__ = ("session", "root", "reached", "_html")
 
     def __init__(self, view: Any, event: RequestEvent, data: _Data, *, resolve_async: bool) -> None:
-        backend = _backend()
-        self.session = Session(
+        session = self.session = Session(
             "server",
             url=event.url,
             resolve_async=resolve_async,
@@ -123,18 +113,31 @@ class _Pass:
             errors=dict(data.errors),
             event=event,
         )
-        self.session.inflight = data.inflight
+        session.inflight = data.inflight
+        self.root: Owner | None = Owner()
         with _thread_lock:
-            container_id = kernel.alloc_id()
-            kernel.emit((OP_CREATE_ELEMENT, container_id, "div"))
-            self.root: Root | None = _server_render(_fresh(view), container_id, self.session)
-            kernel.commit()
-        container = backend.get_node(container_id)
-        assert isinstance(container, ServerElement)
-        self.container = container
+            node = reconciler._coerce_result(_fresh(view))
+            # Nothing a server render does reaches a DOM; drop any command a
+            # component emits anyway, so it can't leak into a browser commit.
+            emitted = len(kernel._ops)
+            _core._gc_pause()
+            previous = _core._session
+            _core._session = session
+            session.keying = True
+            try:
+                parts = _core.run_with_owner(self.root, lambda: _ssr.render(node))
+            finally:
+                session.keying = False
+                _core._session = previous
+                _core._gc_resume()
+                del kernel._ops[emitted:]
+        # The boundaries the page contains: one inside content its boundary
+        # didn't show, or that an error replaced, isn't in the output.
+        self.reached: set[_ssr.Boundary] = set()
+        self._html = _ssr.join(parts, self.reached)
 
     def html(self) -> str:
-        return inner_html(self.container)
+        return self._html
 
     def pending(self) -> list[Memo[Any]]:
         """Keyed async memos whose work is still in flight."""
@@ -482,54 +485,26 @@ class _Stream:
         self.defined = False
 
     def advance(self, current: _Pass) -> str:
-        backend = _backend()
-        boundaries = []
-        for key, fragment, mode in current.session.boundaries:
-            start = backend.get_node(fragment.el) if fragment.el is not None else None
-            end = backend.get_node(fragment._frag_end) if fragment._frag_end is not None else None
-            if start is not None and end is not None and _inside(start, current.container):
-                boundaries.append((key, start, end, mode._value))
+        boundaries = [(key, boundary) for key, boundary in current.session.boundaries if boundary in current.reached]
         if not self.started:
             self.started = True
-            for key, _start, _end, value in boundaries:
-                self.shown[key] = value
+            for key, boundary in boundaries:
+                self.shown[key] = boundary.mode
             return current.html()
         parts: list[str] = []
-        for key, start, end, value in boundaries:
-            if self.shown.get(key, "content") == "content" or value != "content":
+        for key, boundary in boundaries:
+            if self.shown.get(key, "content") == "content" or boundary.mode != "content":
                 continue
-            parts.append(f'<template id="wyb-t{key}">{html_between(start, end)}</template>')
+            nested: set[_ssr.Boundary] = set()
+            parts.append(f'<template id="wyb-t{key}">{boundary.inner_html(nested)}</template>')
             parts.append(f'<script>__wybSwap("{key}")</script>')
             self.shown[key] = "content"
-            for nested_key, nested_start, _nested_end, nested_value in boundaries:
-                if nested_key not in self.shown and _between(nested_start, start, end):
-                    self.shown[nested_key] = nested_value
+            for nested_key, nested_boundary in boundaries:
+                if nested_key not in self.shown and nested_boundary in nested:
+                    self.shown[nested_key] = nested_boundary.mode
         if not parts:
             return ""
         if not self.defined:
             self.defined = True
             parts.insert(0, _SWAP_SCRIPT)
         return "".join(parts)
-
-
-def _inside(node: Any, container: Any) -> bool:
-    while node is not None:
-        if node is container:
-            return True
-        node = node.parentNode
-    return False
-
-
-def _between(node: Any, start: Any, end: Any) -> bool:
-    """Whether `node` lies strictly between two sibling markers (at any depth)."""
-    parent = start.parentNode
-    while node is not None and node.parentNode is not parent:
-        node = node.parentNode
-    if node is None:
-        return False
-    sibling = start.nextSibling
-    while sibling is not None and sibling is not end:
-        if sibling is node:
-            return True
-        sibling = sibling.nextSibling
-    return False

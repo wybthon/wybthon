@@ -2,7 +2,9 @@
 
 Build the same starter app from two source checkouts. Alternate navigation
 order, starting a fresh Pyodide runtime on every navigation. Warmup boots
-populate the shared HTTP cache and are excluded from the measurements.
+populate the shared HTTP cache and are excluded from the measurements. A
+checkout whose builds use boot snapshots (RFC 0006) builds one during its
+warmup, so its measured boots are repeat visits that restore it.
 """
 
 from __future__ import annotations
@@ -84,11 +86,15 @@ def compare(baseline, iterations, warmup):
                 assert page.locator("button").inner_text() == "Count: 0"
                 page.click("button")
                 assert page.locator("button").inner_text() == "Count: 1"
+                if iteration < warmup and page.evaluate("() => window.__WYB.timings.snapshot === false"):
+                    # A build with boot snapshots (RFC 0006) makes one after its
+                    # first boot; measured boots restore it, as repeat visits do.
+                    page.wait_for_function("() => window.__WYB.snapshot !== undefined", timeout=BOOT_TIMEOUT_MS)
                 if iteration >= warmup:
                     samples[side].append(result)
             print(f"Startup pair {iteration + 1}/{warmup + iterations} complete", file=sys.stderr, flush=True)
         summaries = {
-            side: {key: statistics.median(sample[key] for sample in values) for key in values[0]}
+            side: {key: statistics.median(float(sample[key]) for sample in values) for key in values[0]}
             for side, values in samples.items()
         }
         return {

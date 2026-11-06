@@ -13,7 +13,7 @@ cd my-app
 wyb dev --open
 ```
 
-The generated project has `app/main.py`, `index.html`, `pyproject.toml`, and `wybthon.toml`. The development server builds the app in dev mode and reloads the browser after source, configuration, or public asset changes. Pyodide requires a network connection on the first load unless you host the runtime locally.
+The generated project has `app/main.py`, `index.html`, `pyproject.toml`, and `wybthon.toml`. The development server builds the app in dev mode, replaces an edited module in place in the open page (keeping the rest of the page's state), and reloads the browser after other source, configuration, or public asset changes. Pyodide requires a network connection on the first load unless you host the runtime locally.
 
 ## Write a component
 

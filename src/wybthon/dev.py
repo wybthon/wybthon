@@ -2,9 +2,10 @@
 
 A project is a directory with a `wybthon.toml` (create one with
 `wyb init`). `wyb dev` builds it in development mode, serves the build,
-rebuilds when a source changes, and reloads connected pages over
-Server-Sent Events. `wyb build` writes a production build and
-`wyb preview` serves one.
+and rebuilds when a source changes. Over Server-Sent Events, it replaces
+an edited application module in place in connected pages (see
+`wybthon._hmr`) and reloads them for any other change. `wyb build`
+writes a production build and `wyb preview` serves one.
 
 Use the [`main`][wybthon.dev.main] function for CLI entry, or call
 [`serve`][wybthon.dev.serve] directly to embed the server.
@@ -15,6 +16,7 @@ from __future__ import annotations
 import argparse
 import http.server
 import importlib.metadata
+import json
 import os
 import socketserver
 import threading
@@ -26,7 +28,37 @@ from urllib.parse import urlsplit
 
 __all__ = ["serve", "main"]
 
-_RELOAD_SCRIPT = "<script>new EventSource('/__sse').addEventListener('reload', () => location.reload());</script>"
+# Injected into development pages: reloads on `reload`, and on `hmr` writes
+# the changed sources into the runtime's file system and replaces their
+# modules in place, reloading when that can't be done (RFC 0006).
+_RELOAD_SCRIPT = """<script>(() => {
+  globalThis.__wybHot = true;
+  const events = new EventSource("/__sse");
+  events.addEventListener("reload", () => location.reload());
+  events.addEventListener("hmr", (event) => {
+    const wyb = globalThis.__WYB;
+    if (!wyb || wyb.status !== "ready" || !wyb.pyodide) { location.reload(); return; }
+    try {
+      const update = JSON.parse(event.data);
+      const fs = wyb.pyodide.FS;
+      for (const file of update.files) {
+        const path = "/wybthon-app/" + file.path;
+        fs.mkdirTree(path.slice(0, path.lastIndexOf("/")));
+        fs.writeFile(path, file.source);
+      }
+      wyb.pyodide.globals.set("_wyb_hot", JSON.stringify(update.modules));
+      const applied = wyb.pyodide.runPython("import json, wybthon._hmr\\nwybthon._hmr.apply(json.loads(_wyb_hot))");
+      wyb.pyodide.globals.delete("_wyb_hot");
+      if (!applied) { location.reload(); return; }
+      wyb.hot = (wyb.hot || 0) + 1;
+      console.info("[wybthon] hot update: " + update.modules.join(", "));
+      globalThis.dispatchEvent(new CustomEvent("wybthon:hot", { detail: update.modules }));
+    } catch (error) {
+      console.error(error);
+      location.reload();
+    }
+  });
+})();</script>"""
 
 
 class SSEHandler(http.server.SimpleHTTPRequestHandler):
@@ -91,15 +123,53 @@ class SSEHandler(http.server.SimpleHTTPRequestHandler):
     @classmethod
     def notify_reload(cls) -> None:
         """Send a `reload` SSE event to every connected client."""
+        cls._send(b"event: reload\ndata: {}\n\n")
+
+    @classmethod
+    def notify_hot(cls, files: list[dict[str, str]], modules: list[str]) -> None:
+        """Send an `hmr` SSE event: the changed sources and the modules to replace in place."""
+        data = json.dumps({"files": files, "modules": modules}, separators=(",", ":"))
+        cls._send(b"event: hmr\ndata: " + data.encode() + b"\n\n")
+
+    @classmethod
+    def _send(cls, message: bytes) -> None:
         for w in list(cls.watchers):
             try:
-                w.write(b"event: reload\ndata: {}\n\n")
+                w.write(message)
                 w.flush()
             except Exception:
                 try:
                     cls.watchers.remove(w)
                 except ValueError:
                     pass
+
+
+def _hot_update(
+    project: Path, app_dir: Path, previous: dict[Path, int], current: dict[Path, int]
+) -> tuple[list[dict[str, str]], list[str]] | None:
+    """The sources and modules a change can replace in place, or `None` when pages must reload.
+
+    Only edits of existing Python modules in the application directory are
+    replaced in place; a new, removed, or non-Python file (markup, assets,
+    configuration) reloads the page.
+    """
+    changed = [path for path, mtime in current.items() if previous.get(path) != mtime]
+    if not changed or previous.keys() - current.keys():
+        return None
+    files: list[dict[str, str]] = []
+    modules: list[str] = []
+    for path in changed:
+        if path not in previous or path.suffix != ".py" or not path.resolve().is_relative_to(app_dir):
+            return None
+        relative = path.resolve().relative_to(project)
+        parts = list(relative.with_suffix("").parts)
+        if parts[-1] == "__init__":
+            parts.pop()
+        if not all(part.isidentifier() for part in parts):
+            return None
+        files.append({"path": relative.as_posix(), "source": path.read_text(encoding="utf-8")})
+        modules.append(".".join(parts))
+    return files, modules
 
 
 def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
@@ -152,7 +222,13 @@ def serve(
 
     rebuild()
     SSEHandler.root = project / "dist"
+    app_dir = (project / config.get("app-dir", "app")).resolve()
     watch = [project / name for name in (config.get("app-dir", "app"), "public", "index.html", "wybthon.toml")]
+
+    def hot_update(
+        previous: dict[Path, int], current: dict[Path, int]
+    ) -> tuple[list[dict[str, str]], list[str]] | None:
+        return _hot_update(project, app_dir, previous, current)
 
     class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """Threaded TCP server so long-lived SSE clients don't block requests."""
@@ -176,13 +252,17 @@ def serve(
             time.sleep(0.5)
             current = scan()
             if current != mtimes:
-                mtimes = current
+                previous, mtimes = mtimes, current
                 try:
                     rebuild()
                 except Exception as exc:
                     print(f"Build failed: {exc}", flush=True)
                     continue
-                SSEHandler.notify_reload()
+                update = hot_update(previous, current)
+                if update is None:
+                    SSEHandler.notify_reload()
+                else:
+                    SSEHandler.notify_hot(*update)
 
     threading.Thread(target=watcher, daemon=True).start()
 
@@ -260,7 +340,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Show version and exit",
     )
     sub = parser.add_subparsers(dest="cmd")
-    pdev = sub.add_parser("dev", help="Build in development mode, serve, and reload on change")
+    pdev = sub.add_parser("dev", help="Build in development mode, serve, and update pages on change")
     pdev.add_argument("--dir", default=".", help="Project directory (containing wybthon.toml)")
     pdev.add_argument("--host", default="127.0.0.1", help="Bind address")
     pdev.add_argument("--port", type=int, default=8000, help="Port to bind")

@@ -1,6 +1,6 @@
 # Server rendering
 
-A Wybthon page can't do anything until Pyodide has downloaded and started, which takes a second or more even with a warm cache. Server rendering removes that wait from what users see. The same components render to HTML in CPython, the HTML ships with the page, and the browser shows it immediately. When Python is ready, [`hydrate`][wybthon.hydrate] adopts the existing DOM and makes it interactive instead of building it again.
+A Wybthon page can't do anything until Pyodide has downloaded and started. On a first visit that takes about a second even with a warm cache; later visits restore a [boot snapshot](../guides/deployment.md#boot-snapshots) in about a tenth of that. Server rendering removes the wait from what users see. The same components render to HTML in CPython, the HTML ships with the page, and the browser shows it immediately. When Python is ready, [`hydrate`][wybthon.hydrate] adopts the existing DOM and makes it interactive instead of building it again.
 
 Server rendering also makes pages indexable by search engines and usable before Python loads: links work, and input made before hydration is replayed afterward.
 
@@ -287,7 +287,8 @@ On the server, `NoHydration(*children)` renders its children normally, between t
 
 ## What changes on the server
 
-- `create_effect`, `create_tracked_effect`, and `on_settled` don't run. Holes and prop bindings evaluate once as the tree mounts.
+- The server writes HTML directly instead of mounting a DOM (see [RFC 0006](../rfcs/0006-engine-v6.md)). Components run once, under the same owners as in the browser, so context, `Errored`, and `Loading` work as usual, and each expression in the markup is evaluated once. Nothing subscribes, so a write made while the page renders doesn't change markup already written.
+- `create_effect`, `create_tracked_effect`, `on_settled`, and `on_flush` don't run, and refs and event handlers aren't attached; the browser attaches them while hydrating.
 - [`Portal`](../api/portal.md) renders nothing. Its children mount in the browser after hydration.
 - The router reads the `url` passed to the render function, and `navigate` does nothing.
 - `lazy` components import their modules directly; chunks are only fetched in the browser.
@@ -300,6 +301,5 @@ The production bootstrap records clicks, input, changes, key presses, and form s
 
 - Derived and projected stores with async bodies (`create_store(fn)` and `create_projection`) aren't serialized yet; they load in the browser after hydration.
 - `lazy` components that load a chunk render their `Loading` fallback while hydrating unless the chunk was preloaded.
-- Server rendering runs the ordinary renderer against an in-memory DOM. It's fast enough for prerendering and moderate request rates, but it costs more per request than concatenating strings would.
 
-See [RFC 0001](../rfcs/0001-server-rendering-and-hydration.md) for the design and its tradeoffs.
+See [RFC 0001](../rfcs/0001-server-rendering-and-hydration.md) for the design and its tradeoffs, and [RFC 0006](../rfcs/0006-engine-v6.md) for the string renderer.

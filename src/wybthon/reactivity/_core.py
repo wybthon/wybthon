@@ -158,6 +158,10 @@ _effect_queue: list[Computation] = []
 # mounted them has fully settled and committed.
 _settled_queue: list[Callable[[], Any]] = []
 
+# Callbacks registered with ``on_flush``: they run once, after the flush in
+# progress (or the next one) has committed, outside it.
+_flush_callbacks: list[Callable[[], Any]] = []
+
 # Sources that lost their last observer; checked after the flush so a
 # recompute that drops and re-adds an edge doesn't fire ``unobserved``.
 _unobserved_check: set[Any] = set()
@@ -1068,6 +1072,31 @@ def _flush() -> None:
         _probed_tentative.clear()
         _flushing = False
         _gc_resume()
+    if _flush_callbacks:
+        _run_flush_callbacks()
+
+
+def _run_flush_callbacks() -> None:
+    """Run the ``on_flush`` callbacks of the flush that just committed.
+
+    They run after it, untracked and unowned, so a write one makes is an
+    update of its own: it schedules the next flush rather than joining
+    (or being held by) this one.
+    """
+    global _current_owner, _current_observer
+    callbacks = list(_flush_callbacks)
+    _flush_callbacks.clear()
+    prev_owner, prev_obs = _current_owner, _current_observer
+    _current_owner = None
+    _current_observer = None
+    try:
+        for cb in callbacks:
+            try:
+                cb()
+            except Exception as exc:
+                log_error(f"on_flush callback raised: {exc}", exc)
+    finally:
+        _current_owner, _current_observer = prev_owner, prev_obs
 
 
 def _reset_scheduler_for_tests() -> None:
@@ -1089,6 +1118,7 @@ def _reset_scheduler_for_tests() -> None:
     _render_queue.clear()
     _effect_queue.clear()
     _settled_queue.clear()
+    _flush_callbacks.clear()
     _unobserved_check.clear()
     _deferred.clear()
     _newly_pending.clear()

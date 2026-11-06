@@ -56,6 +56,16 @@ The client-only shell is also written to `200.html`. Serve it for routes that we
 
 When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. Application bytecode is the compiler's output, and the import hook that `import wybthon` installs uses it as is. The manifest's `bytecode` field records whether it was included. Set `bytecode = false` to ship source only; the import hook then compiles each application module's templates in the browser as it's imported.
 
+## Boot snapshots
+
+Most of a page's startup is Pyodide's: starting Python and importing the framework takes most of a second before the application runs at all. Builds avoid that work on every visit after the first. Once the first boot has finished and the page is idle, the bootstrap starts a Web Worker that boots a second runtime, imports Wybthon and the standard library modules applications commonly use, and takes a memory snapshot of it, which it stores in the browser's Cache Storage. Later visits restore that snapshot instead of starting Python, then unpack the archives and import the application as usual. In Chromium on a recent laptop, a repeat visit to the starter app is ready in about 100 ms instead of about 800 ms.
+
+- **What's in it.** The runtime with the framework imported, not the application: application modules may read `window` when they're imported, which a snapshot can't hold. The snapshot is keyed by the Wybthon version, the runtime archive, and the Pyodide release, so it stays valid across application changes and every `wyb dev` reload restores it.
+- **What it costs.** The first visit downloads nothing extra. Building the snapshot takes about a second of a background thread and stores about 30 MB in Cache Storage, replacing any older snapshot. A snapshot that can't be restored is discarded, and that boot falls back to starting Python normally.
+- **When it's off.** Builds with Pyodide `packages` or `wheels` boot normally, since those live in the virtual file system rather than in memory. So does a page where Cache Storage or module workers aren't available (Cache Storage needs a secure context: HTTPS or `localhost`). Set `snapshot = false` in `wybthon.toml` to turn it off; the manifest's `snapshot` field is the key, or `null`.
+
+`window.__WYB.timings.snapshot` says whether a boot restored a snapshot, and `window.__WYB.snapshot` reports one the page built (`built`, `bytes`, and `ms`, or an `error`). The page dispatches `wybthon:snapshot` on `window` when it's done.
+
 ## Runtime and dependencies
 
 The bootstrap loads Pyodide and the runtime/application archives concurrently (the preload hints have usually started all three already), then unpacks and imports Python. It doesn't fetch every Python module separately. `packages` names packages in the pinned Pyodide distribution. `wheels` accepts exact `name==version` requirements or explicit wheel URLs compatible with the selected runtime. Set `pyodide-url` to host that runtime yourself.
