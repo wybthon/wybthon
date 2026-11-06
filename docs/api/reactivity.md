@@ -52,9 +52,10 @@ holds on the old state until the new value lands, and an
 | [`create_render_effect`][wybthon.create_render_effect] | `create_render_effect(compute, apply)`: effect in the render phase, before the DOM commit; first run is immediate. `apply` is required. |
 | [`create_reaction`][wybthon.create_reaction] | `create_reaction(effect, *, error=None)` returns `track(fn)`: the first change to what `fn` read runs `effect` once. |
 | [`on_settled`][wybthon.on_settled] | Run once after the flush that mounted the component; may return a cleanup. |
+| [`on_flush`][wybthon.on_flush] | Run once right after the pending flush commits, before paint, without waiting for async work; a write it makes is an update of its own. |
 | [`on_cleanup`][wybthon.on_cleanup] | Register a cleanup on the active scope. |
 | [`create_root`][wybthon.create_root] | Owned root; `fn(dispose)`, with explicit `detached=True` for independence. |
-| [`create_owner`][wybthon.create_owner], [`is_disposed`][wybthon.is_disposed] | Create a child ownership scope to run code under with `run_with_owner`; check whether one has been disposed. |
+| [`is_disposed`][wybthon.is_disposed] | Whether an owner has been disposed. For a scope to run code under, use `create_root` with `get_owner` and `run_with_owner`. |
 | [`flush`][wybthon.flush] | Apply staged writes, run dirty effects, commit the DOM now. |
 | [`untrack`][wybthon.untrack] | Run a function without tracking its reads. |
 | [`get_owner`][wybthon.get_owner], [`run_with_owner`][wybthon.run_with_owner] | Capture the owner before an `await` and restore it after. |
@@ -63,6 +64,7 @@ holds on the old state until the new value lands, and an
 | [`latest`][wybthon.latest] | Evaluate against the newest state: held values return the value being computed; not-ready reads return the stale value or `None`. |
 | [`refresh`][wybthon.refresh] | Quietly recompute a memo or derived store; returns an awaitable. Inside an action, lands with the action. |
 | [`resolve`][wybthon.resolve] | Awaitable for the next settled value of an expression. |
+| [`from_source`][wybthon.from_source] | Adapt a push source (a `subscribe(next, error, complete)` function, an observable, or an async iterable) into the stream an async memo consumes: `create_memo(lambda: from_source(src))` holds its latest value. |
 | [`action`][wybthon.action] | Wrap a mutation in a transaction: its writes reveal together when it settles. |
 | [`create_optimistic`][wybthon.create_optimistic] | Value override that reveals now and reverts when the action settles. |
 | [`affects`][wybthon.affects] | Inside an action, mark values as pending before they're written. |

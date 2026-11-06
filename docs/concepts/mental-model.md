@@ -104,7 +104,7 @@ If you're coming from React, read [Migrating from React](../guides/migrating-fro
 
 ## Where it matches Solid
 
-Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no `batch()`; async as part of the graph; `Loading`, `Reveal`, and `Errored` boundaries; draft-first stores; actions and optimistic state. Wybthon tracks Solid 2.0 RC.17, which isn't a stable release yet. The differences are the language, the markup (t-string templates in place of JSX, compiled on Python's syntax tree), typed `Props` classes in place of TypeScript prop interfaces, and a handful of names. See [Migrating from Solid](../guides/migrating-from-solid.md).
+Wybthon follows SolidJS 2.0 closely: signals, memos, and effects with the same semantics; staged writes with no `batch()`; async as part of the graph; `Loading`, `Reveal`, and `Errored` boundaries; draft-first stores; actions and optimistic state. Wybthon tracks Solid 2.0 RC.21, which isn't a stable release yet. The differences are the language, the markup (t-string templates in place of JSX, compiled on Python's syntax tree), typed `Props` classes in place of TypeScript prop interfaces, and a handful of names. See [Migrating from Solid](../guides/migrating-from-solid.md).
 
 ## Next steps
 

@@ -2,7 +2,7 @@
 
 Wybthon uses run-once component setup, explicit accessors, templates compiled ahead of time, and a batched Virtual DOM. The VDOM collects mutations for the Python-to-JavaScript bridge. It doesn't choose reactive dependencies or require components to rerun.
 
-The async API reference for this design is [Solid 2.0 RC.17's async data contract](https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.17/documentation/solid-2.0/05-async-data.md). Solid 2.0 isn't stable yet, and Wybthon tracks RC.17. This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary `async def` actions, and real asyncio tasks.
+The async API reference for this design is [Solid 2.0 RC.21's async data contract](https://github.com/solidjs/solid/blob/solid-js%402.0.0-rc.21/documentation/solid-2.0/05-async-data.md). Solid 2.0 isn't stable yet, and Wybthon tracks RC.21. This is a pinned prerelease reference, not a claim of complete Solid conformance. Wybthon retains Python equality, explicit accessor calls, ordinary `async def` actions, and real asyncio tasks.
 
 ## Read views
 

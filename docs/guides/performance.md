@@ -4,9 +4,10 @@ Wybthon keeps fine-grained dependency tracking and a Virtual DOM that batches na
 
 ## Start with startup
 
-Loading and initializing Pyodide takes over a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page.
+On a first visit, loading and initializing Pyodide takes most of a second even with a warm cache, before any Wybthon code runs. For most applications that wait matters more than anything else on this page.
 
-- **Prerender the pages users land on.** [Server rendering](../concepts/server-rendering.md) puts their content on screen at first paint, and the page hydrates once Python is ready.
+- **Repeat visits restore a snapshot.** After the first boot, the bootstrap builds a memory snapshot of a runtime with Wybthon imported and later visits restore it, so they're ready in about a tenth of the time (see [Boot snapshots](deployment.md#boot-snapshots)). It's on by default; builds with Pyodide `packages` or `wheels` don't use it.
+- **Prerender the pages users land on.** [Server rendering](../concepts/server-rendering.md) puts their content on screen at first paint, and the page hydrates once Python is ready. The server writes HTML directly rather than mounting a DOM, so rendering on request is cheap too: a 1,000-row table renders in about 6 ms in CPython.
 - **Ship bytecode.** Build with the same Python version as the Pyodide runtime so the archives include precompiled bytecode and the browser doesn't compile Wybthon or your application at startup (see [Deployment](deployment.md#bytecode)).
 - **Let the build start downloads early.** `wyb build` inlines the manifest into the page and emits preload hints for Pyodide's module and both archives, so the browser starts fetching them while the page parses instead of after the bootstrap runs.
 - **Keep the first import small.** Load routes and heavy components with [`lazy`][wybthon.lazy], and move rarely used code into [explicit chunks](deployment.md#explicit-lazy-chunks).

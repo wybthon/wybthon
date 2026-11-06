@@ -138,7 +138,7 @@ Link("About", href="/about", on_mouseenter=lambda: About.preload())
 
 ## Dev mode
 
-Pyodide takes over a second to load and initialize. [Server rendering](../concepts/server-rendering.md) shows prerendered HTML during that time, and the page hydrates once Python is ready.
+On a first visit, Pyodide takes most of a second to load and initialize; later visits restore a [boot snapshot](deployment.md#boot-snapshots) and start in about a tenth of that. [Server rendering](../concepts/server-rendering.md) shows prerendered HTML during that time, and the page hydrates once Python is ready.
 
 Wybthon's dev-mode diagnostics (prop validation, write-in-scope errors, and warnings) are on by default, and `wyb dev` keeps them on. Production builds from `wyb build` call [`set_dev_mode(False)`][wybthon.set_dev_mode] before the application imports, so you don't need to. Outside a project build, call it yourself at startup. [`is_dev_mode()`][wybthon.is_dev_mode] reads the current mode.
 

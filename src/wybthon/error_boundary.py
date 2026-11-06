@@ -199,6 +199,9 @@ def _Errored(props: _ErroredProps) -> Any:
             return _render_fallback(fallback, error_accessor, reset)
         return _render_content(children)
 
+    # A server render evaluates the boundary once; this tells it to render
+    # the fallback instead when the content raised (see `wybthon._ssr`).
+    render._wyb_error = error  # type: ignore[attr-defined]
     return render
 
 

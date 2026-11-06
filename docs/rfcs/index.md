@@ -44,3 +44,4 @@ While Wybthon is pre-1.0, an RFC may choose breaking changes without a compatibi
 | [0003](0003-engine-v3.md) | Engine v3: compiled t-string templates and zero-cost components | Implemented |
 | [0004](0004-engine-v4.md) | Engine v4: the Wybthon compiler, Solid-style props, and leaner bindings | Implemented |
 | [0005](0005-engine-v5.md) | Engine v5: a lean runtime | Implemented |
+| [0006](0006-engine-v6.md) | Engine v6: fast pages | Implemented |

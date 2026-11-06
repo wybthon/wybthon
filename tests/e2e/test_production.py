@@ -255,3 +255,159 @@ def test_generated_app_builds_boots_and_loads_chunk(browser, tmp_path, mode):
                 )
     finally:
         page.close()
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("mode", ["preview", "dev"])
+def test_later_boots_restore_a_snapshot_of_the_framework(browser, tmp_path, mode):
+    project = tmp_path / "project"
+    init_app(project)
+    (project / "app" / "chart.py").write_text(CHART)
+    config = project / "wybthon.toml"
+    config.write_text(config.read_text().replace('# charts = ["app/charts/**"]', 'chart = ["app/chart.py"]'))
+    (project / "app" / "main.py").write_text(CHUNK_APP)
+    build_app(project)
+    context = browser.new_context()
+    try:
+        with _serve(project, mode) as base:
+            first = context.new_page()
+            first.goto(base)
+            _wait_ready(first)
+            assert first.evaluate("() => window.__WYB.timings.snapshot") is False
+            # The first boot builds a snapshot in a worker once the page is idle.
+            first.wait_for_function("() => window.__WYB.snapshot !== undefined", timeout=BOOT_TIMEOUT_MS)
+            assert first.evaluate("() => window.__WYB.snapshot.built") is True, first.evaluate(
+                "() => window.__WYB.snapshot"
+            )
+            first.close()
+            page = context.new_page()
+            page.goto(base)
+            _wait_ready(page)
+            assert page.evaluate("() => window.__WYB.timings.snapshot") is True
+            assert page.evaluate("() => window.__WYB.pyodide.runPython('import wybthon; wybthon.is_dev_mode()')") is (
+                mode == "dev"
+            )
+            # The restored runtime runs the application, and its file system
+            # still serves imports and lazy chunks.
+            page.click("#count")
+            assert page.locator("#count").inner_text() == "Count: 1"
+            page.click("#load")
+            page.wait_for_selector("#chart")
+            # A restored page doesn't build another snapshot.
+            page.wait_for_timeout(500)
+            assert page.evaluate("() => window.__WYB.snapshot") is None
+    finally:
+        context.close()
+
+
+HOT_STATE = """from wybthon import create_signal
+
+clicks, set_clicks = create_signal(0)
+"""
+
+HOT_APP = """from wybthon import component, html
+
+from app.state import clicks, set_clicks
+
+
+@component
+def App():
+    def bump():
+        set_clicks(lambda n: n + 1)
+
+    return html(t'<div><button id="bump" onclick={bump}>Clicks: {clicks()}</button></div>')
+
+
+def app():
+    return App()
+"""
+
+
+@pytest.mark.e2e
+def test_dev_replaces_an_edited_module_without_reloading(browser, tmp_path):
+    project = tmp_path / "project"
+    init_app(project)
+    (project / "app" / "state.py").write_text(HOT_STATE)
+    main = project / "app" / "main.py"
+    main.write_text(HOT_APP)
+    page = browser.new_page()
+    try:
+        with _serve(project, "dev") as base:
+            page.goto(base)
+            _wait_ready(page)
+            page.click("#bump")
+            page.click("#bump")
+            assert page.locator("#bump").inner_text() == "Clicks: 2"
+            # A marker a reload would erase.
+            page.evaluate("() => { window.__kept = true; }")
+            main.write_text(main.read_text().replace("Clicks:", "Presses:"))
+            page.wait_for_function("() => document.querySelector('#bump')?.textContent === 'Presses: 2'", timeout=30000)
+            assert page.evaluate("() => window.__kept === true && window.__WYB.hot === 1")
+            page.click("#bump")
+            assert page.locator("#bump").inner_text() == "Presses: 3"
+            # Markup outside the application's modules still reloads the page.
+            index = project / "index.html"
+            index.write_text(index.read_text().replace("<title>Wybthon app</title>", "<title>Changed</title>"))
+            page.wait_for_function("() => document.title === 'Changed'", timeout=30000)
+            _wait_ready(page)
+            assert page.evaluate("() => window.__kept") is None
+    finally:
+        page.close()
+
+
+ROUTED_APP = """from wybthon import component, html
+from wybthon.router import Link, Route, Router
+
+
+@component
+def Home():
+    return html(t'<p id="page">home</p>')
+
+
+@component
+def User():
+    return html(t'<p id="page">user</p>')
+
+
+@component
+def App():
+    nav = html(t'<nav>{Link("/", children="Home", id="home")}{Link("/users/7", children="User", id="user")}</nav>')
+    routes = [Route(path="/", component=Home), Route(path="/users/:id", component=User)]
+    return html(t"<div>{nav}{Router(routes)}</div>")
+
+
+def app():
+    return App()
+"""
+
+
+@pytest.mark.e2e
+def test_a_restored_snapshot_routes_by_the_pages_own_url(browser, tmp_path):
+    project = tmp_path / "project"
+    init_app(project)
+    (project / "app" / "main.py").write_text(ROUTED_APP)
+    config = project / "wybthon.toml"
+    config.write_text(config.read_text().replace('prerender = ["/"]', "prerender = []"))
+    build_app(project)
+    context = browser.new_context()
+    try:
+        with _serve(project, "preview") as base:
+            first = context.new_page()
+            first.goto(base)
+            _wait_ready(first)
+            first.wait_for_function("() => window.__WYB.snapshot !== undefined", timeout=BOOT_TIMEOUT_MS)
+            assert first.evaluate("() => window.__WYB.snapshot.built") is True
+            first.close()
+            page = context.new_page()
+            page.goto(base + "users/7")
+            _wait_ready(page)
+            assert page.evaluate("() => window.__WYB.timings.snapshot") is True
+            # The router read this page's URL, not the worker's.
+            assert page.locator("#page").inner_text() == "user"
+            page.click("#home")
+            page.wait_for_function("() => document.querySelector('#page')?.textContent === 'home'")
+            # Back navigation reaches the router's popstate listener.
+            page.go_back()
+            page.wait_for_function("() => document.querySelector('#page')?.textContent === 'user'", timeout=10000)
+    finally:
+        context.close()

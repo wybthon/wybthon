@@ -98,7 +98,7 @@ To compare the generated starter application's startup:
 uv run python benchmarks/compare_startup.py --baseline /tmp/wybthon-before > startup-comparison.json
 ```
 
-This builds both applications in temporary directories and alternates fresh page boots in the same browser context. A warmup for each checkout populates the shared HTTP cache. Every navigation creates a new Pyodide runtime; these are startup measurements with warmed transfers, not cold-network download measurements. Each sample also verifies that the counter responds to an event. The report includes every phase, individual samples, and both build manifests.
+This builds both applications in temporary directories and alternates fresh page boots in the same browser context. A warmup for each checkout populates the shared HTTP cache, and a checkout whose builds use boot snapshots (RFC 0006) builds one during its warmup, so its measured boots are repeat visits that restore it; `timings.snapshot` in each sample says whether it did. Every navigation creates a new Pyodide runtime; these are startup measurements with warmed transfers, not cold-network download measurements. Each sample also verifies that the counter responds to an event. The report includes every phase, individual samples, and both build manifests.
 
 ## Recorded results
 
@@ -107,6 +107,8 @@ Each page in `results/` is a summary of one evaluation: its tables are the recor
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v6 evaluation](results/engine-v6.md) records boot snapshots, the string server renderer, and the client rendering check against v0.40.0.
 
 The [engine v5 evaluation](results/engine-v5.md) records one-step bindings, text slots without hole nodes, cycle-free disposal, idle-time collection, and the leaner kernel against v0.39.0.
 
@@ -117,6 +119,15 @@ The [engine v3 evaluation](results/engine-v3.md) records compiled t-string templ
 The [engine v2 evaluation](results/engine-v2.md) records compiled mounting, native disposal, and released row nodes against v0.36.0.
 
 The [collection and memory evaluation](results/collection-performance.md) records the compact store, persistent-vector, reactive mapping, and cleanup improvements against v0.33.0, including browser startup and bundle-size measurements.
+
+## Server rendering
+
+`ssr_bench.py` times `render_to_string` in plain CPython against any checkout's sources: the js-framework-benchmark table at 1,000 and 10,000 rows, 1,000 components, and a page of boundaries with pending async data. `--save` writes each page's HTML, and `--expect` checks another checkout's output against it, so a comparison also verifies that the markup didn't change:
+
+```bash
+uv run python benchmarks/ssr_bench.py /tmp/wybthon-before/src --save ssr-before.json
+uv run python benchmarks/ssr_bench.py src --expect ssr-before.json
+```
 
 ## Async publication
 

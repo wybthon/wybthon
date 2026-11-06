@@ -55,7 +55,7 @@ class Session:
         keying: True while memos, boundaries, and ids receive keys: the
             whole server pass, and the synchronous mount of hydration.
         memos: Server passes: `(key, memo)` for every keyed memo.
-        boundaries: Server passes: `(key, fragment VNode, shown signal)`
+        boundaries: Server passes: `(key, wybthon._ssr.Boundary)`
             for every `Loading` boundary.
         error_boundaries: Server passes: `(key, error signal)` for every
             `Errored` boundary.
@@ -105,7 +105,7 @@ class Session:
         self.errors: dict[str, tuple[str, str]] = errors if errors is not None else {}
         self.keying = False
         self.memos: list[tuple[str, Any]] = []
-        self.boundaries: list[tuple[str, Any, Any]] = []
+        self.boundaries: list[tuple[str, Any]] = []
         self.error_boundaries: list[tuple[str, Any]] = []
         self.failed: dict[str, tuple[str, str]] = failed if failed is not None else {}
         self.inflight: dict[str, Any] = {}

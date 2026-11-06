@@ -111,6 +111,10 @@ def _bind_regions() -> None:
     _regions = regions
 
 
+# Records every mounted component instance while `wyb dev` replaces modules
+# in place (see `wybthon._hmr`); `None` otherwise, so mounting pays nothing.
+_hot_track: Any = None
+
 # Whether a component mounted right now can later receive new props. Only
 # a tree returned by a reactive hole (or passed to `render`) is ever
 # patched; a component's own output, list rows, and branch content are
@@ -216,6 +220,10 @@ def render(vnode: Any, container: Element | str | int) -> Root:
         root = render(html(t"<h1>Hello, world!</h1>"), "#app")
         ```
     """
+    if _hot_track is not None:
+        from . import _hmr
+
+        _hmr._check_render()
     container_el = _container(container)
     container_id = container_el.node_id
     node = _coerce_result(vnode)
@@ -271,6 +279,10 @@ def hydrate(vnode: Any, container: Element | str | int) -> Root:
         hydrate(App(), "#app")
         ```
     """
+    if _hot_track is not None:
+        from . import _hmr
+
+        _hmr._check_render()
     from .reactivity._session import Session, decode_state
 
     container_el = _container(container)
@@ -324,31 +336,6 @@ def _new_root(container_el: Element, node: VNode, *, release: bool) -> Root:
     _roots[container_id] = root
     _emit((OP_ROOT, container_id))
     return root
-
-
-def _server_render(vnode: Any, container_id: int, session: Any) -> Root:
-    """Mount `vnode` into a server container for one server render pass.
-
-    The session keys memos for the whole pass (mount and flush) and
-    carries the request URL. See `wybthon.server`.
-    """
-    node = _coerce_result(vnode)
-    _core._gc_pause()
-    previous = _core._session
-    _core._session = session
-    session.keying = True
-    try:
-        root = Root(Element(node_id=container_id), node, Owner())
-        root._release_container = True
-        _roots[container_id] = root
-        node.pk = "r"
-        _core.run_with_owner(root._owner, lambda: mount(node, container_id))
-        flush()
-        return root
-    finally:
-        session.keying = False
-        _core._session = previous
-        _core._gc_resume()
 
 
 # ---------------------------------------------------------------------------
@@ -987,6 +974,8 @@ def _mount_component(vnode: VNode, parent_id: int, anchor_id: int | None, ns: st
     parent_owner = _core._current_owner
     if parent_owner is not None:
         parent_owner._add_child(ctx)
+    if _hot_track is not None:
+        _hot_track(vnode, ctx, parent_id, ns)
 
     session = _core._session
     keyed = session is not None and session.keying
@@ -1167,6 +1156,40 @@ def _dispose_tree(vnode: VNode) -> None:
 # ---------------------------------------------------------------------------
 # Patch
 # ---------------------------------------------------------------------------
+
+
+def _hot_remount(vnode: VNode, parent_id: int, ns: str | None) -> bool:
+    """Run a mounted component's body again in place, with the same props (hot module replacement).
+
+    The component's VNode is kept, so whatever holds it (a parent's
+    subtree, a list row, a hole) keeps working. Returns False when the
+    instance can't be located in the DOM (it rendered nothing).
+    """
+    global _patchable
+    ctx = vnode.component_ctx
+    old = vnode.subtree
+    if ctx is None or ctx._disposed or old is None:
+        return False
+    anchor = _first_dom_id(old)
+    if anchor is None:
+        return False
+    owner = ctx._parent
+    marker = _alloc_id()
+    _emit((OP_CREATE_COMMENT, marker))
+    _emit((OP_INSERT, parent_id, marker, anchor))
+    _unmount(old)
+    ctx.dispose()
+    prev_owner = _core._current_owner
+    prev_patchable = _patchable
+    _core._current_owner = owner
+    _patchable = True
+    try:
+        _mount_component(vnode, parent_id, marker, ns)
+    finally:
+        _core._current_owner = prev_owner
+        _patchable = prev_patchable
+    _emit((OP_DISPOSE, marker))
+    return True
 
 
 def _replace(old: VNode, new: VNode, parent_id: int, ns: str | None) -> None:

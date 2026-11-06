@@ -23,7 +23,7 @@ pip install wybthon
 wyb dev --open
 ```
 
-`wyb dev` builds the project, serves it, and reloads the page when a source file changes; see the [dev server guide](dev-server.md). A demo that ships its own `index.html` and `bootstrap.js` without a `wybthon.toml` is a plain static site, so serve it with any static file server (`python -m http.server`) and follow its README.
+`wyb dev` builds the project, serves it, and updates the page when a source file changes (in place for an edited module, by reloading otherwise); see the [dev server guide](dev-server.md). A demo that ships its own `index.html` and `bootstrap.js` without a `wybthon.toml` is a plain static site, so serve it with any static file server (`python -m http.server`) and follow its README.
 
 ## How a project boots
 

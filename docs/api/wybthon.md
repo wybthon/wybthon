@@ -12,8 +12,8 @@ pages linked in the left column carry the details.
 | [Templates](templates.md) | `html`, `TemplateError` |
 | [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `prop`, `merge`, `omit`, `is_static`, `children`, `flatten`, `ChildrenAccessor` |
 | [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `is_accessor` |
-| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `create_owner`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
-| [Async](reactivity.md) | `NotReadyError`, `ServerError`, `is_pending`, `latest`, `refresh`, `resolve`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
+| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_flush`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
+| [Async](reactivity.md) | `NotReadyError`, `ServerError`, `is_pending`, `latest`, `refresh`, `resolve`, `from_source`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Stores](store.md) | `Store`, `StoreList`, `StoreSetter`, `Draft`, `DraftList`, `DraftExpiredError`, `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
 | [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only` |
 | Boundaries | [`Loading`, `Reveal`](loading.md), [`Errored`](error_boundary.md), [`Portal`](portal.md), [`lazy`, `lazy_module`, `LazyModule`](lazy.md) |

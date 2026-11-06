@@ -284,15 +284,64 @@ def _Loading(props: _LoadingProps) -> Any:
 
     boundary = Fragment(content, fallback_hole)
     if collector.key is not None:
-        # Keyed markers let a server stream swap this boundary's content in
-        # and let hydration resynchronize at its end.
+        # Keyed markers let hydration resynchronize at the boundary's end
+        # (the server writes the same markers; see `_server_loading`).
         boundary.props["marker"] = f"wyb:b{collector.key}"
-        if session is not None and session.mode == "server":
-            session.boundaries.append((collector.key, boundary, shown))
     return boundary
 
 
 _Loading.__name__ = "Loading"
+
+
+def _server_loading(props: _LoadingProps) -> VNode:
+    """`Loading` in a server render: a boundary `wybthon._ssr` resolves once the tree has rendered.
+
+    It registers exactly as the browser's boundary does (the same
+    hydration key, collector, and `Reveal` slot), so the browser claims
+    what the server decided.
+    """
+    collector = _LoadingCollector()
+    owner = _core._current_owner
+    session = _core._session
+    if session is not None and session.keying:
+        collector.key = _core._next_key()
+    reveal: _RevealState | None = None
+    reveal_index = -1
+    if owner is not None:
+        owner._set_context(LOADING_CONTEXT_KEY, collector)
+        reveal = owner._lookup_context(REVEAL_CONTEXT_KEY, None)
+        if reveal is not None:
+            reveal_index = reveal.register(collector.is_loading)
+            owner._set_context(REVEAL_CONTEXT_KEY, None)
+    children = props.children
+    fallback = props.fallback
+    on = props.on
+    if on is not None:
+        # Reading the boundary's inputs registers the ones that aren't ready.
+        for acc in list(on) if isinstance(on, (list, tuple)) else [on]:
+            try:
+                acc()
+            except NotReadyError:
+                pass
+
+    def mode() -> str:
+        if reveal is not None:
+            return reveal.display_mode(reveal_index)
+        return "fallback" if collector.is_loading() else "content"
+
+    def fallback_for(shown: str) -> Callable[[], Any]:
+        return lambda: _render_fallback(fallback) if shown == "fallback" else None
+
+    return VNode(
+        "_ssr_boundary",
+        {
+            "key": collector.key,
+            "content": lambda: _render_content(children),
+            "fallback": fallback_for,
+            "mode": mode,
+        },
+        [],
+    )
 
 
 # ---------------------------------------------------------------------------

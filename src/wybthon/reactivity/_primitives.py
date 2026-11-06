@@ -33,7 +33,6 @@ from ._session import SsrSource
 
 __all__ = [
     "Setter",
-    "create_owner",
     "is_disposed",
     "is_server",
     "create_signal",
@@ -44,8 +43,10 @@ __all__ = [
     "create_tracked_effect",
     "create_render_effect",
     "on_settled",
+    "on_flush",
     "on_cleanup",
     "create_root",
+    "from_source",
     "refresh",
     "resolve",
     "is_pending",
@@ -599,6 +600,152 @@ def on_settled(fn: Callable[[], Any]) -> None:
     _schedule_flush()
 
 
+def on_flush(fn: Callable[[], Any]) -> None:
+    """Run `fn` once, right after the pending flush has committed to the DOM.
+
+    Solid 2.0's `onFlush`. `fn` runs after the next (or the running)
+    flush, before the browser paints, and never waits for async work: a
+    flush held by a transition still runs it. A write it makes is an
+    update of its own, so another update's transition doesn't hold it.
+    Use it for imperative work that needs the committed DOM right away
+    (measuring, focusing); for work that should wait until async data
+    under a component has settled, use [`on_settled`][wybthon.on_settled].
+
+    Register it from an event handler or other code outside the reactive
+    graph. In a component body or a computation it would run once, after
+    whichever flush comes next, rather than per run; dev mode warns.
+    Doesn't run during a server render.
+
+    Args:
+        fn: Zero-arg callback.
+    """
+    if _core._server_depth:
+        return
+    if _core._setup_depth or _core._current_observer is not None:
+        from .._warnings import is_dev_mode, warn_once
+
+        if is_dev_mode():
+            warn_once(
+                "on_flush_owned",
+                getattr(fn, "__qualname__", repr(fn)),
+                "on_flush() was called in a component body or computation; it runs once after the next flush, "
+                "not per run. Call it from an event handler, or use on_settled() for work tied to a component.",
+            )
+    _core._flush_callbacks.append(fn)
+    _schedule_flush()
+
+
+def from_source[T](source: Any) -> AsyncIterator[T]:
+    """Adapt a push-based source into the stream an async memo consumes.
+
+    Solid 2.0's `from`. Return it from a memo's body, and the memo
+    holds the source's latest value:
+
+    ```python
+    position = create_memo(lambda: from_source(watch_position))
+    ```
+
+    `source` is one of:
+
+    - a subscribe function, `subscribe(next, error, complete)`, that
+      returns an unsubscribe callable (or `None`);
+    - an observable: an object with a `subscribe(next, error, complete)`
+      method returning an unsubscribe callable or an object with
+      `unsubscribe()` or `dispose()` (RxPY's shape);
+    - an async iterable.
+
+    Only the latest value is kept: values pushed faster than the memo
+    reads them are dropped, never queued. The source is closed when the
+    memo re-runs or its owner is disposed. During a server render the
+    memo serializes the first value, and the browser subscribes again
+    after hydration.
+
+    Args:
+        source: The push-based source.
+
+    Returns:
+        An async iterator of the source's values.
+    """
+    if hasattr(source, "__aiter__"):
+        return _iterate(source)
+    subscribe = source if callable(source) and not hasattr(source, "subscribe") else source.subscribe
+    return _subscribe(subscribe)
+
+
+async def _iterate[T](source: Any) -> AsyncIterator[T]:
+    iterator = source.__aiter__()
+    try:
+        async for value in iterator:
+            yield value
+    finally:
+        close = getattr(iterator, "aclose", None)
+        if close is not None:
+            await close()
+
+
+class _Latest:
+    """The latest value a subscription pushed, and a waiter for the next one."""
+
+    __slots__ = ("value", "fresh", "error", "done", "waiter")
+
+    def __init__(self) -> None:
+        self.value: Any = None
+        self.fresh = False
+        self.error: BaseException | None = None
+        self.done = False
+        self.waiter: asyncio.Future[None] | None = None
+
+    def wake(self) -> None:
+        waiter, self.waiter = self.waiter, None
+        if waiter is not None and not waiter.done():
+            waiter.set_result(None)
+
+    def next(self, value: Any = None) -> None:
+        self.value = value
+        self.fresh = True
+        self.wake()
+
+    def fail(self, error: Any = None) -> None:
+        self.error = error if isinstance(error, BaseException) else RuntimeError(str(error))
+        self.wake()
+
+    def complete(self) -> None:
+        self.done = True
+        self.wake()
+
+
+def _unsubscribe(handle: Any) -> None:
+    if handle is None:
+        return
+    if callable(handle):
+        handle()
+        return
+    for name in ("unsubscribe", "dispose"):
+        method = getattr(handle, name, None)
+        if callable(method):
+            method()
+            return
+
+
+async def _subscribe[T](subscribe: Callable[..., Any]) -> AsyncIterator[T]:
+    state = _Latest()
+    handle = subscribe(state.next, state.fail, state.complete)
+    try:
+        while True:
+            if state.fresh:
+                state.fresh = False
+                yield state.value
+                continue
+            if state.error is not None:
+                raise state.error
+            if state.done:
+                return
+            state.waiter = asyncio.get_running_loop().create_future()
+            await state.waiter
+    finally:
+        _unsubscribe(handle)
+
+
 def on_cleanup(fn: Callable[[], Any]) -> None:
     """Register `fn` to run when the active scope is disposed or re-runs.
 
@@ -637,20 +784,6 @@ def create_root[T](fn: Callable[[Callable[[], None]], T], *, detached: bool = Fa
         root.dispose()
 
     return _core.run_with_owner(root, lambda: fn(dispose))
-
-
-def create_owner() -> Owner:
-    """Create an ownership scope owned by the current one.
-
-    The scope is disposed with its parent. Run code under it with
-    [`run_with_owner`][wybthon.run_with_owner], and dispose it early
-    with `owner.dispose()`. Pass it to `run_with_owner(None, ...)` first
-    for a scope with an independent lifetime.
-    """
-    owner = Owner()
-    if _core._current_owner is not None:
-        _core._current_owner._add_child(owner)
-    return owner
 
 
 def is_disposed(owner: Owner) -> bool:
