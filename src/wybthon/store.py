@@ -19,6 +19,7 @@ from bisect import bisect_left, insort
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, MutableSequence, Sequence
 from dataclasses import dataclass, fields
+from functools import cached_property
 from typing import Any, overload
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
@@ -193,6 +194,9 @@ class _PropertySignal(Signal[Any]):
         """
         if self._staged:
             self._pending = value
+            self._write_tx = _core._join(self._write_tx, tx)
+            if origin > self._origin:
+                self._origin = origin
             return
         old = self._value
         if old is value:
@@ -410,6 +414,22 @@ class _Node(Signal[Any]):
             if held is not _ABSENT and len(held) != sig._value:
                 _core._hold(sig, len(held), _core._node_tx[self])
         return ext.length
+
+    def member(self, key: Any) -> Signal[bool]:
+        ext = self._x()
+        membership = ext.membership
+        if membership is None:
+            membership = ext.membership = {}
+        sig = membership.get(key)
+        if sig is None:
+            sig = membership[key] = Signal(key in self.committed())
+            sig._version_source = self
+            if self._staged:
+                sig._set(key in self._pending)
+            held = self.held()
+            if held is not _ABSENT and (key in held) != sig._value:
+                _core._hold(sig, key in held, _core._node_tx[self])
+        return sig
 
     @property
     def keys(self) -> Signal[int]:
@@ -712,14 +732,15 @@ def _kind(value: Any) -> tuple[int, type | None] | None:
     t = type(value)
     if t is dict:
         return _DICT, None
-    if t is list or t is tuple:
+    if t is list:
         return _LIST, None
     if hasattr(t, "__dataclass_fields__") and not isinstance(value, type):
         return _OBJECT, t
     if isinstance(value, Mapping):
         return _DICT, None
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list):
         return _LIST, None
+    # Tuples (and named tuples) are immutable values, stored as they are.
     return None
 
 
@@ -1016,16 +1037,7 @@ class Store(_Proxy, Mapping[Any, Any]):
         node.root.ready()
         if _core._probe_depth:
             node._probe_pending()
-        ext = node._x()
-        if ext.membership is None:
-            ext.membership = {}
-        sig = ext.membership.get(key)
-        if sig is None:
-            sig = ext.membership[key] = Signal(key in node.committed())
-            sig._version_source = node
-            if node._staged:
-                sig._set(key in node._pending)
-        sig()
+        node.member(key)()
         return key in node.visible()
 
     def __repr__(self) -> str:
@@ -1129,6 +1141,10 @@ class StoreObject(_Proxy):
         attr = _class_attribute(cls, name)
         if attr is _ABSENT:
             raise AttributeError(f"{cls.__name__!r} store has no attribute {name!r}")
+        if isinstance(attr, cached_property):
+            # The view has no instance dict to cache in, and a cached value
+            # would go stale: compute it on each read, tracking what it reads.
+            return attr.func(self)
         get = getattr(type(attr), "__get__", None)
         return get(attr, self, cls) if get is not None else attr
 
@@ -1299,7 +1315,7 @@ def _replacement_fields(node: _Node, data: Any) -> Mapping[Any, Any] | None:
     if node.kind == _OBJECT:
         if isinstance(data, Mapping):
             return data
-        if _is_dataclass_instance(data):
+        if type(data) is node.cls:
             return {name: getattr(data, name) for name in _fields(type(data)) if hasattr(data, name)}
     return None
 
@@ -1347,6 +1363,10 @@ def _merge(session: _Session, node: _Node, data: Any, key: str | Callable[[Any],
                 result.append(_stored(item, node.root))
         if len(current) != len(result) or any(not _same(a, b) for a, b in zip(current, result, strict=False)):
             session.replace_list(node, result)
+    elif node.kind == _OBJECT and _is_dataclass_instance(data):
+        raise TypeError(
+            f"A {node.cls.__name__} store can't be replaced with a {type(data).__name__}; replace it from its parent"
+        )
     else:
         raise TypeError("A store container's type can't change; replace it from its parent")
 
@@ -1355,7 +1375,10 @@ def _compatible(node: _Node, data: Any) -> bool:
     if node.kind == _LIST:
         return isinstance(data, (list, tuple, StoreList))
     if node.kind == _OBJECT:
-        return type(data) is node.cls or (isinstance(data, StoreObject) and data._node.cls is node.cls)
+        # Plain mappings (decoded JSON, say) merge into a dataclass's fields.
+        if isinstance(data, StoreObject):
+            return data._node.cls is node.cls
+        return type(data) is node.cls or isinstance(data, Mapping)
     return isinstance(data, Mapping)
 
 

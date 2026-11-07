@@ -56,9 +56,13 @@ class Todo:
         return f"{self.title} (done)" if self.done else self.title
 ```
 
-In a setter, the draft is an instance of the same class: assign fields, call mutating methods, or set properties that have setters. Assigning a name that isn't a field (or a property with a setter) raises `AttributeError`. `isinstance(state, State)` is true, and `snapshot(state)` and `deep(state)` return real `State` instances.
+A `functools.cached_property` is computed on each read instead of cached, so it stays reactive too.
 
-Nested dataclasses, dicts, and lists are stores of their own kind. Other values (strings, numbers, and anything else) are stored as they are.
+In a setter, the draft is an instance of the same class: assign fields, call mutating methods, or set properties that have setters. Assigning a name that isn't a field (or a property with a setter) raises `AttributeError`. `isinstance(state, State)` is true, and `snapshot(state)` and `deep(state)` return real `State` instances. The `dataclasses` helpers (`asdict`, `replace`, and `fields`) need a real instance, so call them on `snapshot(state)`.
+
+Replacement data for a dataclass container can be an instance of the same class or a plain mapping, such as decoded JSON: `set_state(reconcile({"filter": "done", "todos": [...]}))` merges into the existing `State` and its nested dataclasses. An instance of a different dataclass raises `TypeError`; to change a nested value's class, assign it from its parent.
+
+Nested dataclasses, dicts, and lists are stores of their own kind. Other values (strings, numbers, tuples, and anything else) are stored as they are. Tuples are immutable values: replace one to change it, as in `draft.tags = (*draft.tags, "new")`.
 
 ## Dict and list stores
 

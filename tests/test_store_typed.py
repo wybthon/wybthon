@@ -2,6 +2,7 @@
 
 import asyncio
 from dataclasses import dataclass, field
+from functools import cached_property
 
 import pytest
 
@@ -281,3 +282,81 @@ def test_shallow_derived_store(wyb):
     set_rows(lambda d: d.__setitem__(0, {"id": 9}))
     flush()
     assert ids() == [9]
+
+
+@dataclass
+class Profile:
+    name: str
+    tags: tuple[str, ...] = ()
+
+
+@dataclass
+class Account:
+    id: int
+    profile: Profile
+
+    @cached_property
+    def greeting(self) -> str:
+        return f"Hi, {self.profile.name}"
+
+
+def test_dict_data_merges_into_nested_dataclasses(wyb):
+    account, set_account = create_store(Account(1, Profile("Ada")))
+    profile = account.profile
+    set_account(reconcile({"id": 1, "profile": {"name": "Grace"}}))
+    flush()
+    assert account.profile is profile
+    assert isinstance(account.profile, Profile) and account.profile.name == "Grace"
+
+
+def test_replacing_a_dataclass_store_with_another_class_raises(wyb):
+    _, set_state = create_store(State())
+    with pytest.raises(TypeError, match="State store can't be replaced with a Profile"):
+        set_state(Profile("Ada"))
+
+
+def test_tuples_are_stored_as_values(wyb):
+    account, set_account = create_store(Account(1, Profile("Ada", ("admin",))))
+    assert account.profile.tags == ("admin",)
+    assert type(account.profile.tags) is tuple
+    assert type(snapshot(account).profile.tags) is tuple
+    seen = []
+    create_effect(lambda: account.profile.tags, seen.append)
+    flush()
+    set_account(lambda d: setattr(d.profile, "tags", (*d.profile.tags, "owner")))
+    flush()
+    assert seen == [("admin",), ("admin", "owner")]
+
+
+def test_cached_property_is_computed_reactively(wyb):
+    account, set_account = create_store(Account(1, Profile("Ada")))
+    seen = []
+    create_effect(lambda: account.greeting, seen.append)
+    flush()
+    set_account(lambda d: setattr(d.profile, "name", "Grace"))
+    flush()
+    assert seen == ["Hi, Ada", "Hi, Grace"]
+
+
+def test_first_membership_subscriber_during_a_transition_sees_the_reveal(wyb):
+    async def main():
+        store, write = create_store({"rows": [1]})
+        gate = asyncio.Event()
+
+        @action
+        async def edit():
+            write(lambda d: d.__setitem__("added", True))
+            await gate.wait()
+
+        future = edit()
+        flush()
+        seen = []
+        create_effect(lambda: "added" in store, seen.append)
+        flush()
+        assert seen == [False] and is_pending(lambda: "added" in store)
+        gate.set()
+        await future
+        flush()
+        assert seen == [False, True]
+
+    asyncio.run(main())

@@ -136,6 +136,7 @@ The targets set when this work was proposed were a field write within 1.3 times 
 - Dict stores and their drafts no longer support attribute access: `state.user.name` is `state["user"]["name"]`, and `draft.count = 1` is `draft["count"] = 1`.
 - `Draft` and `DraftList` are no longer exported. A setter's draft is typed as the store's own type.
 - `create_store`, `create_projection`, `snapshot`, and `deep` return the type of the data they're given instead of `Store[S]`, `StoreList[T]`, or `Any`.
+- Tuples are stored as immutable values instead of becoming list stores, and a tuple can't be a store's root.
 - `wybthon._vector` is removed.
 - A list store's internal state (`_wyb_list_state()`) returns the items, which carry their revision, instead of a `(data, revision)` record.
 - Cyclic initial data isn't detected when a store is created; it's still unsupported.
