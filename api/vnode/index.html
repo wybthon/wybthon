@@ -3641,7 +3641,7 @@ position, and explicitly with <code>hole()</code> when you want a <code>key</cod
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;copy_vnode&lt;/span&gt; (&lt;code&gt;wybthon.vnode.copy_vnode&lt;/code&gt;)" href="#wybthon.vnode.copy_vnode">copy_vnode</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a structural copy of an unmounted VNode tree (other values unchanged).</p>
+                  <p>Return a structural copy of an unmounted VNode tree, including child sequences.</p>
                 </div>
               </td>
             </tr>
@@ -4189,10 +4189,11 @@ empty comment markers, so they never pollute selectors like
 
     <div class="doc doc-contents ">
 
-        <p>Return a structural copy of an unmounted VNode tree (other values unchanged).</p>
+        <p>Return a structural copy of an unmounted VNode tree, including child sequences.</p>
 <p>Mounting records DOM ids and normalized children on the VNodes it
 mounts, so a tree mounts once. Server rendering copies the root
-view for each render pass.</p>
+view for each render pass. Sequences without VNodes and other values
+are returned unchanged.</p>
 
 
     </div>
