@@ -30,11 +30,13 @@ def Shell(props: ParentProps):
     """)
 
 
-router = create_router([
-    Route("/", Home),
-    Route("/users/:id", User),
-    Route("*404", NotFound),
-])
+router = create_router(
+    [
+        Route("/", Home),
+        Route("/users/:id", User),
+        Route("*404", NotFound),
+    ]
+)
 
 
 def app():
@@ -121,19 +123,25 @@ A route with `children` is a layout. Child paths continue the parent's path, eve
 def UserLayout(props: RouteProps):
     return html(t"""
       <section>
-        <h1>User {props.params['id']}</h1>
-        <nav><a href="/users/{props.params['id']}">Overview</a> <a href="/users/{props.params['id']}/settings">Settings</a></nav>
+        <h1>User {props.params["id"]}</h1>
+        <nav><a href="/users/{props.params["id"]}">Overview</a> <a href="/users/{props.params["id"]}/settings">Settings</a></nav>
         {props.children}
       </section>
     """)
 
 
-router = create_router([
-    Route("/users/:id", UserLayout, children=[
-        Route("/", UserOverview),
-        Route("/settings", UserSettings),
-    ]),
-])
+router = create_router(
+    [
+        Route(
+            "/users/:id",
+            UserLayout,
+            children=[
+                Route("/", UserOverview),
+                Route("/settings", UserSettings),
+            ],
+        ),
+    ]
+)
 ```
 
 A layout doesn't match on its own: `/users/1` matches here because of the `Route("/")` child. A route with no component groups its children under a path without rendering anything of its own: `Route("/admin", children=[...])`.
@@ -214,7 +222,7 @@ from wybthon.router import RouteSpec, resolve
 
 routes = [RouteSpec("/"), RouteSpec("/users", children=[RouteSpec("/:id")]), RouteSpec("/docs/*")]
 resolve(routes, "/users/42")  # (RouteSpec(path='/:id'), {"params": {"id": "42"}, "matches": [...]})
-resolve(routes, "/missing")   # None
+resolve(routes, "/missing")  # None
 ```
 
 ## On the server

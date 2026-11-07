@@ -435,10 +435,12 @@ from wybthon.router import Route, create_router
 
 Settings = lazy(lambda: ("app.settings", "Page"))
 
-router = create_router([
-    Route("/", Home),
-    Route("/settings", Settings),
-])
+router = create_router(
+    [
+        Route("/", Home),
+        Route("/settings", Settings),
+    ]
+)
 ```
 
 A plain `<a href="/settings">` is enough: with `preload_links=True` (the

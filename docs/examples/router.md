@@ -48,7 +48,7 @@ class NavLinkProps(ParentProps):
 @component
 def NavLink(props: NavLinkProps):
     state = use_link_state(lambda: props.href, end=props.end)
-    return html(t'<a href={props.href} class={"active" if state.active() else ""}>{props.children}</a>')
+    return html(t"<a href={props.href} class={'active' if state.active() else ''}>{props.children}</a>")
 
 
 def page_failed(err, reset):
@@ -70,12 +70,14 @@ def Shell(props: ParentProps):
     """)
 
 
-router = create_router([
-    Route("/", Home),
-    Route("/about", About, children=[Route("/"), Route("/team", Team)]),
-    Route("/users/:user_id", User),
-    Route("*404", NotFound),
-])
+router = create_router(
+    [
+        Route("/", Home),
+        Route("/about", About, children=[Route("/"), Route("/team", Team)]),
+        Route("/users/:user_id", User),
+        Route("*404", NotFound),
+    ]
+)
 
 
 def app():
