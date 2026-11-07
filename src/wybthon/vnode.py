@@ -302,21 +302,44 @@ def Fragment(*args: Any) -> VNode:
 
 
 def copy_vnode(value: Any) -> Any:
-    """Return a structural copy of an unmounted VNode tree (other values unchanged).
+    """Return a structural copy of an unmounted VNode tree, including child sequences.
 
     Mounting records DOM ids and normalized children on the VNodes it
     mounts, so a tree mounts once. Server rendering copies the root
-    view for each render pass.
+    view for each render pass. Sequences without VNodes and other values
+    are returned unchanged.
     """
-    if not isinstance(value, VNode):
+    return _copy_vnode(value, set(), set())
+
+
+def _copy_vnode(value: Any, active: set[int], unchanged: set[int]) -> Any:
+    sequence = type(value) is list or type(value) is tuple
+    if not sequence and not isinstance(value, VNode):
         return value
-    if value.tag == "_tpl":
-        return VNode("_tpl", value.props, tuple(copy_vnode(v) for v in value.children))  # type: ignore[arg-type]
-    props = dict(value.props)
-    nested = props.get("children")
-    if isinstance(nested, list):
-        props["children"] = [copy_vnode(child) for child in nested]
-    return VNode(value.tag, props, [copy_vnode(child) for child in value.children], value.key)
+    identity = id(value)
+    if identity in active or identity in unchanged:
+        return value
+    active.add(identity)
+    try:
+        if sequence:
+            copied = [_copy_vnode(child, active, unchanged) for child in value]
+            if all(child is original for child, original in zip(copied, value)):
+                unchanged.add(identity)
+                return value
+            return tuple(copied) if type(value) is tuple else copied
+        if value.tag == "_tpl":
+            values = tuple(_copy_vnode(child, active, unchanged) for child in value.children)
+            return VNode("_tpl", value.props, values, value.key)  # type: ignore[arg-type]
+        # Native regions copy their selected slots later; their sources
+        # include row data whose identity must stay intact.
+        props = (
+            dict(value.props)
+            if value.tag in ("_branch", "_list")
+            else {name: _copy_vnode(prop, active, unchanged) for name, prop in value.props.items()}
+        )
+        return VNode(value.tag, props, [_copy_vnode(child, active, unchanged) for child in value.children], value.key)
+    finally:
+        active.remove(identity)
 
 
 # Called in a compiled template, `Fragment` builds markup and takes getters
