@@ -2788,6 +2788,8 @@
       
         
       
+        
+      
     
     
     
@@ -3027,6 +3029,34 @@
     
   
     0006: Engine v6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0007-engine-v7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Engine v7
   
 
     
@@ -3614,7 +3644,7 @@
 </tr>
 <tr>
 <td><code>createStore(initial)</code> (draft setter)</td>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_store"><code>create_store(initial)</code></a></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_store"><code>create_store(initial)</code></a>, where <code>initial</code> is a dataclass instance, a dict, or a list</td>
 </tr>
 <tr>
 <td><code>reconcile(value, key)</code></td>
@@ -3984,12 +4014,12 @@
 </span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"""</span>
 </span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="s2">  &lt;main&gt;</span>
 </span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="s2">    </span><span class="si">{</span><span class="n">Show</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="n">greeting</span><span class="p">,</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Sign in&lt;/p&gt;"</span><span class="p">))</span><span class="si">}</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span><span class="w"> </span><span class="n">todo_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="s2">    &lt;ul&gt;</span><span class="si">{</span><span class="n">For</span><span class="p">(</span><span class="n">store</span><span class="p">[</span><span class="s2">"todos"</span><span class="p">],</span><span class="w"> </span><span class="n">todo_row</span><span class="p">,</span><span class="w"> </span><span class="n">keyed</span><span class="o">=</span><span class="k">lambda</span><span class="w"> </span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">t</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
 </span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="s2">    </span><span class="si">{</span><span class="n">Switch</span><span class="p">(</span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"loading"</span><span class="p">,</span><span class="w"> </span><span class="n">loading</span><span class="p">),</span><span class="w"> </span><span class="n">Match</span><span class="p">(</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ready"</span><span class="p">,</span><span class="w"> </span><span class="n">ready</span><span class="p">),</span><span class="w"> </span><span class="n">fallback</span><span class="o">=</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span>
 </span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="s2">  &lt;/main&gt;</span>
 </span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
-<p>These are calls in a child position, so the compiler builds them like JSX components: <code>status() == "loading"</code> and <code>store.todos</code> arrive as getters, and <code>Match</code> inside <code>Switch</code> is prepared the same way. <code>Show</code> passes the truthy value to a one-argument callback as an accessor, like Solid's <code>&lt;Show&gt;</code> with a function child; with <code>keyed=True</code> it passes the value itself. <code>For</code> mirrors Solid's unified <code>For</code>: with <code>keyed=True</code> (the default) rows match by identity and the callback receives <code>(item, index_accessor)</code>; with <code>keyed=False</code> it receives <code>(item_accessor, index)</code>; with a key function it receives <code>(item_accessor, index_accessor)</code>. Type checkers infer these from the call (see <a href="../typing/#control-flow">Typing</a>). In a template, <code>{For(todos(), row)}</code> passes a getter; in Python code, pass the accessor (<code>For(todos, row)</code>) or a store list, because a plain list renders once. <code>Repeat(count, lambda i: ...)</code> matches Solid 2.0's <code>Repeat</code>.</p>
+<p>These are calls in a child position, so the compiler builds them like JSX components: <code>status() == "loading"</code> and <code>store["todos"]</code> arrive as getters, and <code>Match</code> inside <code>Switch</code> is prepared the same way. <code>Show</code> passes the truthy value to a one-argument callback as an accessor, like Solid's <code>&lt;Show&gt;</code> with a function child; with <code>keyed=True</code> it passes the value itself. <code>For</code> mirrors Solid's unified <code>For</code>: with <code>keyed=True</code> (the default) rows match by identity and the callback receives <code>(item, index_accessor)</code>; with <code>keyed=False</code> it receives <code>(item_accessor, index)</code>; with a key function it receives <code>(item_accessor, index_accessor)</code>. Type checkers infer these from the call (see <a href="../typing/#control-flow">Typing</a>). In a template, <code>{For(todos(), row)}</code> passes a getter; in Python code, pass the accessor (<code>For(todos, row)</code>) or a store list, because a plain list renders once. <code>Repeat(count, lambda i: ...)</code> matches Solid 2.0's <code>Repeat</code>.</p>
 <p>These are native regions, not wrapper components: <code>Show</code> and <code>Switch</code> are one branch computation each, and when a hole re-renders a tree containing one, the new condition or source is pushed into the mounted region instead of remounting it.</p>
 <h2 id="boundaries">Boundaries<a class="headerlink" href="#boundaries" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Errored</span><span class="p">,</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">html</span>
@@ -4008,21 +4038,40 @@
 </span></code></pre></div>
 <p><code>Loading</code> and <code>Errored</code> match their Solid 2.0 namesakes. The error fallback receives <code>(err, reset)</code>, where <code>err</code> is an accessor for the caught error, as in Solid 2.0; <code>reset_on</code> re-mounts when the given accessor changes. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Reveal&lt;/span&gt;" href="../../api/wybthon/#wybthon.Reveal"><code>Reveal</code></a> coordinates multiple boundaries like <code>SuspenseList</code>.</p>
 <h2 id="stores">Stores<a class="headerlink" href="#stores" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">,</span> <span class="n">snapshot</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">state</span><span class="p">,</span> <span class="n">set_state</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">({</span><span class="s2">"count"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">[]})</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_store</span><span class="p">,</span> <span class="n">reconcile</span><span class="p">,</span> <span class="n">snapshot</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">s</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">s</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"new"</span><span class="p">})</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nd">@dataclass</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">Item</span><span class="p">:</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">set_state</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">set_state</span><span class="p">(</span><span class="n">reconcile</span><span class="p">({</span><span class="s2">"count"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="n">fetched_items</span><span class="p">},</span> <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">))</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">snapshot</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"items"</span><span class="p">])</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nd">@dataclass</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">State</span><span class="p">:</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Item</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="n">state</span><span class="p">,</span> <span class="n">set_state</span> <span class="o">=</span> <span class="n">create_store</span><span class="p">(</span><span class="n">State</span><span class="p">())</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">draft</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>    <span class="n">draft</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Item</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">"new"</span><span class="p">))</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="n">set_state</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="n">set_state</span><span class="p">(</span><span class="k">lambda</span> <span class="n">draft</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">clear</span><span class="p">())</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="n">set_state</span><span class="p">(</span><span class="n">reconcile</span><span class="p">(</span><span class="n">State</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">items</span><span class="o">=</span><span class="n">fetched_items</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="s2">"id"</span><span class="p">))</span>
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">snapshot</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Setters are draft-first, as in Solid 2.0. Reads are tracked at the leaf, only leaves that changed notify, and <code>reconcile</code> preserves identity by key so <code>For</code> rows keep their DOM. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> match their Solid 2.0 namesakes.</p>
+<p>Solid's <code>createStore(obj)</code> becomes <code>create_store(State(...))</code> with a dataclass instance. Its fields read as tracked attributes, like a Solid store proxy: <code>state.items[0].title</code> subscribes to that one field, and the dataclass's methods and properties work through the store. A dict store is read with subscripts instead (<code>state["items"]</code>) and has no attribute access, which suits JSON-like data and maps keyed by id.</p>
+<p>Setters are draft-first, as in Solid 2.0: <code>setStore(draft =&gt; ...)</code> becomes <code>set_state(lambda draft: ...)</code> for a single expression, or a <code>def</code> like <code>update</code> above, since a Python lambda can't assign. A dataclass draft is edited like the dataclass (<code>draft.items[0].title = "renamed"</code>); a dict draft takes subscripts (<code>draft["count"] += 1</code>). Reads are tracked per field, only fields that changed notify, and <code>reconcile</code> preserves identity by key so <code>For</code> rows keep their DOM. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_projection&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_projection"><code>create_projection</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_optimistic_store&lt;/span&gt;" href="../../api/wybthon/#wybthon.create_optimistic_store"><code>create_optimistic_store</code></a> match their Solid 2.0 namesakes.</p>
+<p>In Solid, a store created from an object of type <code>T</code> is typed as <code>T</code>. Wybthon does the same: <code>state</code> is typed as <code>State</code>, and the setter accepts a <code>Callable[[State], object]</code>, so pyright and mypy check store reads and draft edits with no plugin (see <a href="../typing/#stores">Typing</a>).</p>
+<p>Where you'd use a shallow store in Solid 2.0, pass <code>shallow=True</code>: <code>create_store(initial, shallow=True)</code> makes only the top level reactive. Nested values are stored and returned as plain data, so you change one by replacing it. See <a href="../../concepts/stores/#shallow-stores">Stores</a>.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_context</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">use_context</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>

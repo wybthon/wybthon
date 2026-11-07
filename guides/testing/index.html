@@ -2811,6 +2811,8 @@
       
         
       
+        
+      
     
     
     
@@ -3050,6 +3052,34 @@
     
   
     0006: Engine v6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0007-engine-v7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Engine v7
   
 
     
@@ -3812,7 +3842,7 @@
 </span></code></pre></div>
 <h3 id="stores-router-and-forms">Stores, router, and forms<a class="headerlink" href="#stores-router-and-forms" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with <code>def</code>, pass them to the setter, and flush before asserting on reads.</li>
+<li>Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with <code>def</code> (or call a mutating method, as in <code>lambda draft: draft.update(count=1)</code>), pass them to the setter, and flush before asserting on reads.</li>
 <li>Outside a browser, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;navigate&lt;/span&gt;" href="../../api/router/#wybthon.router.navigate"><code>navigate</code></a> only updates the <code>current_path</code> signal. Flush afterward. Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/router/#wybthon.router.resolve"><code>resolve</code></a> in <code>wybthon.router</code>) is pure and needs no rendering.</li>
 <li>Drive form bindings with <code>fire.input</code>, <code>fire.change</code>, and <code>fire.submit</code> against the rendered controls.</li>
 </ul>

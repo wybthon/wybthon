@@ -3432,6 +3432,8 @@
       
         
       
+        
+      
     
     
     
@@ -3671,6 +3673,34 @@
     
   
     0006: Engine v6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0007-engine-v7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Engine v7
   
 
     
@@ -8411,7 +8441,7 @@ is waiting on a transition:</p>
 updates as the state changes, but they don't make the hole wait for
 the transition: an indicator has to show <em>during</em> the hold.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;span&gt;</span><span class="si">{</span><span class="s1">'Refreshing...'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_pending</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">&lt;/span&gt;"</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button disabled=</span><span class="si">{</span><span class="n">is_pending</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">store</span><span class="o">.</span><span class="n">items</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;Save&lt;/button&gt;"</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;button disabled=</span><span class="si">{</span><span class="n">is_pending</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">todos</span><span class="p">)</span><span class="si">}</span><span class="s2">&gt;Save&lt;/button&gt;"</span><span class="p">)</span>
 </span></code></pre></div>
 
 

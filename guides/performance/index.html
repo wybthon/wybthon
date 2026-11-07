@@ -2722,6 +2722,8 @@
       
         
       
+        
+      
     
     
     
@@ -2961,6 +2963,34 @@
     
   
     0006: Engine v6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0007-engine-v7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Engine v7
   
 
     
@@ -3359,6 +3389,7 @@
 <li><strong>Bulk replacement.</strong> When a keyed list reuses none of its rows, the old rows go in one <code>DISPOSE_RANGE</code> command and the new rows mount as one splice, instead of reconciling every unrelated pair.</li>
 <li><strong>Text placeholders.</strong> A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain <code>nodeValue</code> write rather than a node replacement.</li>
 <li><strong>Lighter computations.</strong> Async state lives outside each computation until a computation actually runs async work, so an ordinary render binding doesn't allocate it.</li>
+<li><strong>Stores wrap lazily.</strong> Creating a store takes constant time, whatever its size: a nested dict, list, or dataclass gets its reactive bookkeeping the first time something reads it, and a field gets a subscription only when it's read in a tracking scope. A setter copies each container it edits once and publishes the changed fields with that container's commit. Natively, a store field write costs about 2.8 times a signal write; most of that is the draft views and the copy of the edited container. In the browser benchmark, store mode creates, updates, and appends rows 17% to 32% faster than Engine v6 did (see <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v7.md"><code>engine-v7.md</code></a>).</li>
 </ul>
 <h2 id="templates-and-h">Templates and <code>h()</code><a class="headerlink" href="#templates-and-h" title="Permanent link">&para;</a></h2>
 <p>Templates and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h</code></a> share one set of prop appliers, so they behave the same; they differ in what happens before mounting.</p>
@@ -3371,7 +3402,8 @@
 <ul>
 <li><strong>Bind values where they're shown.</strong> Write the read where it's used (<code>&lt;b title={role()}&gt;{name()}&lt;/b&gt;</code>), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (<code>{user_card(user())}</code>) is such a hole, so make it a component instead: <code>{UserCard(name=user().name)}</code> mounts once and receives a getter, so a change updates only the text that reads <code>props.name</code>.</li>
 <li><strong>Keep holes small.</strong> A hole around a single text node patches one node.</li>
-<li><strong>Pass a store list directly through a <code>For</code> accessor.</strong> Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.</li>
+<li><strong>Pass a store list directly to <code>For</code>.</strong> Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.</li>
+<li><strong>Use a shallow store for data you replace wholesale.</strong> <code>create_store(initial, shallow=True)</code> makes only the top level reactive, so a large value under it, such as an API response, is stored as plain data and never wrapped. Replace it to change it.</li>
 <li>
 <p><strong>Select rows with a projection.</strong> Each row reads its own key, so a selection change notifies only the old and new rows, not every row:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">For</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">create_projection</span><span class="p">,</span> <span class="n">create_signal</span><span class="p">,</span> <span class="n">html</span>
@@ -3438,8 +3470,8 @@
 <p>Run comparisons serially on the same browser, runtime, hardware, and cache conditions. Use repeated samples and operation counts; don't turn a single local timing into a universal threshold. CI gates deterministic work contracts and saves browser measurements as artifacts. Production startup is measured separately by the generated loader.</p>
 <p><code>benchmarks/compare_browser.py --baseline /path/to/baseline</code> alternates identical operations between isolated checkouts, building each one, with five measured samples by default. It measures direct Python operations separately from delegated event dispatch. Use <code>--mode store</code> for store comparisons and <code>--profile</code> for additional, untimed CPU profiles.</p>
 <p><code>benchmarks/row_bench.py</code> times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. With the compiler, its rows are compiled the way an application's modules are, with no hand-written lambdas.</p>
-<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md"><code>engine-v4.md</code></a> and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> cover the engines before it. <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md"><code>engine-v5.md</code></a> measures Engine v5, which made creating rows about twice as fast natively as Engine v4.</p>
-<p>A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.</p>
+<p>Recorded measurements, with the hardware and versions they were taken on, live in <a href="https://github.com/wybthon/wybthon/tree/main/benchmarks/results"><code>benchmarks/results/</code></a>; <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md"><code>engine-v4.md</code></a> and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md"><code>engine-v3.md</code></a> cover the engines before it. <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md"><code>engine-v5.md</code></a> measures Engine v5, which made creating rows about twice as fast natively as Engine v4, and <a href="https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v7.md"><code>engine-v7.md</code></a> measures Engine v7's lazily wrapped stores.</p>
+<p>A setter that edits a store list copies that list once, so a swap or splice in a long list costs a copy of the list. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.</p>
 <h2 id="diagnose-pending-publication">Diagnose pending publication<a class="headerlink" href="#diagnose-pending-publication" title="Permanent link">&para;</a></h2>
 <p>Use <code>diagnostics.inspect_transitions()</code> to see which computations and actions hold each dependency group. <code>diagnostics.inspect_graph(owner)</code> includes read modes, group IDs, and provisional owners. An ordinary consumer of two pending results joins their groups; a separate <code>latest()</code> or <code>is_pending()</code> binding can publish during the hold. See <a href="../../concepts/runtime-contracts/">Runtime contracts</a> for the read and ownership rules.</p>
 <p>A transition that remains open retains the values and resources still used by the visible UI. Dispose unused scopes and ensure application actions can finish or be canceled. The native async benchmark reports independent publication at increasing widths; its times exclude browser and network costs.</p>

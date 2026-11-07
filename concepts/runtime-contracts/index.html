@@ -2722,6 +2722,8 @@
       
         
       
+        
+      
     
     
     
@@ -2961,6 +2963,34 @@
     
   
     0006: Engine v6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0007-engine-v7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Engine v7
   
 
     
@@ -3403,7 +3433,7 @@
 <p>Each optimistic edit belongs to the action that submitted it. Independent actions settle independently. Finishing, failing, or canceling one removes its edits and preserves other outstanding edits. Actions joined through shared dependencies remove their edits when the joined group publishes.</p>
 <p>Scalar updater functions and store draft callbacks replay in submission order over the newest authoritative source. Replacement scalar writes replace the preceding value at their position in that order. For conflicting store edits, ordinary draft mutation order determines the result. This supports additive updates and disjoint edits without introducing a second conflict language.</p>
 <p>Callbacks must be deterministic and free of external side effects because rebasing can run them again. Authoritative updates should arrive before the corresponding action completes. Failed optimistic edits disappear, but ordinary authoritative writes already made by an action aren't rolled back. Multiple draft edits from one action share a single removal and rebase.</p>
-<p><code>affects(signal_or_memo)</code> marks that value pending without starting a new fetch. <code>affects(store.child)</code> marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.</p>
+<p><code>affects(signal_or_memo)</code> marks that value pending without starting a new fetch. <code>affects(state.user)</code> marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.</p>
 <p>An optimistic edit made outside an action remains until the next transition adopts it. Prefer actions when an edit needs a clear lifetime.</p>
 <h2 id="python-authoring">Python authoring<a class="headerlink" href="#python-authoring" title="Permanent link">&para;</a></h2>
 <p>A component declares its inputs on a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Props&lt;/span&gt;" href="../../api/wybthon/#wybthon.Props"><code>Props</code></a> subclass and takes one parameter annotated with that class, or no parameters when it has no inputs. Fields are plain annotations. Reading <code>props.label</code> returns the parent's current value and tracks it, whether the parent passed a value, a compiler getter, or an accessor (a signal, a memo, or a zero-argument function). A field annotated as callable (<code>Callable[...]</code> or <code>Accessor[...]</code>, alone or in a union) returns exactly what the parent passed instead, so callbacks are never called by the read. Ordinary defaults work as in a dataclass; use <code>prop(default_factory=...)</code> for mutable ones, and <code>untrack(lambda: props.label)</code> for an intentional one-time read. In dev mode (the default outside production builds), an unknown prop or a missing required one raises <code>TypeError</code> at the call site, including a template's <code>&lt;{Component}&gt;</code> tag. A component that can't receive new props (anything not mounted directly in a re-rendering hole's result or a render root) reads constant props without subscribing to anything; one that can is patched in place and its reads track one version signal per props instance. Both behave the same.</p>
@@ -3429,7 +3459,7 @@
 <p>At run time, DOM positions keep one rule, in templates and <code>h()</code> trees alike: in children, attribute values, and bindings, a getter, an accessor, or a function or bound method callable without required arguments is a reactive expression, and anything else is applied once. Each reactive interpolation is its own binding, and an attribute built from several parts (<code>class="btn btn-{kind()}"</code>) is one binding. A binding whose expression makes no calls is first run under a probe and allocates no computation when it reads nothing reactive; any other binding whose first run reads nothing reactive is dropped, keeping the DOM it produced. Event handlers and refs are never reactive, and a handler may take the event or no arguments. Python forbids a bare <code>lambda</code> inside a template interpolation, so wrap an inline handler in parentheses or give it a name. Component props don't use the arity rule; the declared field type decides. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;merge&lt;/span&gt;" href="../../api/wybthon/#wybthon.merge"><code>merge</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;omit&lt;/span&gt;" href="../../api/wybthon/#wybthon.omit"><code>omit</code></a> return views whose attributes read like props (<code>view.label</code> is the tracked value) and whose items are accessors, so spreading a view onto an element binds each key; a key they don't supply reads as <code>None</code>. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_static&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_static"><code>is_static</code></a> reports whether the parent passed a key as a plain value.</p>
 <h2 id="diagnostics-and-limits">Diagnostics and limits<a class="headerlink" href="#diagnostics-and-limits" title="Permanent link">&para;</a></h2>
 <p><code>diagnostics.inspect_transitions()</code> reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. <code>inspect_graph(owner)</code> includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. <code>runtime_stats()</code> includes transition and held-node counts.</p>
-<p>The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.</p>
+<p>The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, lazily wrapped store containers, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.</p>
 <p>Disposing an owner, a row, a region, or a mounted node breaks the references the engine keeps between them, so what's removed is freed by reference counting and never waits for Python's cycle collector. Cycles your own code creates (a nested function that calls itself, an object that stores its own bound method) still need the collector. The collector is paused while a flush or mount runs; in the browser, the collection it owes runs when the page is idle, after the committed DOM has painted, and large removals are freed then too.</p>
 <p>The native concurrency benchmark, <code>python benchmarks/async_bench.py</code>, checks independent publication at increasing widths. Browser collection benchmarks separately guard synchronous work counts and bridge costs. Neither is a claim of parity with a JavaScript framework's benchmark scores.</p>
 
