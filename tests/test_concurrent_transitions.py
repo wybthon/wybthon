@@ -283,18 +283,18 @@ def test_optimistic_store_edits_rebase_independently(wyb):
 
         a, b = add(1, first), add(10, second)
         await tick()
-        assert shown.count == 11
+        assert shown["count"] == 11
         write_base(lambda draft: draft.update(count=100))
         await tick()
-        assert shown.count == 111
+        assert shown["count"] == 111
         second.set()
         await b
         await tick()
-        assert shown.count == 101
+        assert shown["count"] == 101
         first.set()
         await a
         await tick()
-        assert shown.count == 100
+        assert shown["count"] == 100
 
     asyncio.run(main())
 
@@ -306,17 +306,17 @@ def test_affects_store_subtree_is_precise(wyb):
 
         @action
         async def edit():
-            affects(store.left)
+            affects(store["left"])
             await gate.wait()
 
         future = edit()
         await tick()
-        assert is_pending(lambda: store.left.name)
-        assert not is_pending(lambda: store.right.name)
+        assert is_pending(lambda: store["left"]["name"])
+        assert not is_pending(lambda: store["right"]["name"])
         gate.set()
         await future
         await tick()
-        assert not is_pending(lambda: store.left.name)
+        assert not is_pending(lambda: store["left"]["name"])
 
     asyncio.run(main())
 
@@ -413,7 +413,7 @@ def test_async_projection_holds_with_its_visible_fields(wyb, root_element):
             return {"name": str(value)}
 
         projection = create_projection(load, {})
-        wyb["reconciler"].render(html(t"<div><span>{query}</span><p>{projection.name}</p></div>"), root_element)
+        wyb["reconciler"].render(html(t"<div><span>{query}</span><p>{projection['name']}</p></div>"), root_element)
         await tick()
         write(1)
         await tick()
@@ -429,8 +429,8 @@ def test_async_projection_holds_with_its_visible_fields(wyb, root_element):
 def test_affects_updates_an_already_mounted_indicator(wyb, root_element, store_target):
     async def main():
         target, _ = create_store({"child": {"name": "a"}}) if store_target else create_signal("a")
-        read = (lambda: target.child.name) if store_target else target
-        affected = target.child if store_target else target
+        read = (lambda: target["child"]["name"]) if store_target else target
+        affected = target["child"] if store_target else target
         gate = asyncio.Event()
 
         @action
@@ -549,7 +549,7 @@ def test_canceling_one_action_preserves_other_optimistic_edits(wyb, cancel_first
 
         @action
         async def change(value, gate):
-            edit(lambda draft: draft.update(n=draft.n + value))
+            edit(lambda draft: draft.update(n=draft["n"] + value))
             await gate.wait()
 
         first, second = change(1, gates[0]), change(10, gates[1])
@@ -559,11 +559,11 @@ def test_canceling_one_action_preserves_other_optimistic_edits(wyb, cancel_first
         with pytest.raises(asyncio.CancelledError):
             await canceled
         await tick()
-        assert shown.n == (10 if cancel_first else 1)
+        assert shown["n"] == (10 if cancel_first else 1)
         gates[1 if cancel_first else 0].set()
         await retained
         await tick()
-        assert shown.n == 0
+        assert shown["n"] == 0
         assert not _core._transitions
 
     asyncio.run(main())
@@ -613,10 +613,10 @@ def test_acknowledgement_never_publishes_authoritative_value_plus_its_own_overla
             shown, edit = create_optimistic_store(lambda: deep(base), {})
 
             def read():
-                return shown.n
+                return shown["n"]
 
             def optimistic():
-                edit(lambda draft: draft.update(n=draft.n + 1))
+                edit(lambda draft: draft.update(n=draft["n"] + 1))
 
             def acknowledge():
                 write(lambda draft: draft.update(n=1))
@@ -663,7 +663,7 @@ def test_optimistic_noop_still_updates_pending_indicator(wyb, root_element):
             edit(lambda draft: draft.update(n=0))
             await gate.wait()
 
-        wyb["reconciler"].render(html(t"<span>{str(is_pending(lambda: shown.n))}</span>"), root_element)
+        wyb["reconciler"].render(html(t"<span>{str(is_pending(lambda: shown['n']))}</span>"), root_element)
         await tick()
         future = save()
         await tick()
@@ -778,7 +778,7 @@ def test_projection_refresh_lands_with_its_action(wyb, root_element):
             return {"n": server[0]}
 
         view = create_projection(load, {})
-        wyb["reconciler"].render(html(t"<span>{view.n}</span>"), root_element)
+        wyb["reconciler"].render(html(t"<span>{view['n']}</span>"), root_element)
         await tick()
 
         @action
@@ -790,7 +790,7 @@ def test_projection_refresh_lands_with_its_action(wyb, root_element):
         future = save()
         await tick()
         assert texts(root_element) == ["0"]
-        assert latest(lambda: view.n) == 1
+        assert latest(lambda: view["n"]) == 1
         gate.set()
         await future
         await tick()

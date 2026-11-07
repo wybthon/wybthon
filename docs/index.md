@@ -15,7 +15,7 @@ The framework ships with everything you need to build a real app:
 - Reactive primitives: [`create_signal`][wybthon.create_signal], [`create_memo`][wybthon.create_memo], and [`create_effect`][wybthon.create_effect], with automatic batching and typed accessors.
 - Async-first data: an `async def` passed to `create_memo` is the fetching primitive, and [`create_deferred`][wybthon.create_deferred] is the async memo that never holds the rest of the UI; [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] boundaries handle the pending and failure states.
 - [`action`][wybthon.action] with [`create_optimistic`][wybthon.create_optimistic] and [`create_optimistic_store`][wybthon.create_optimistic_store] for mutations.
-- Draft-first stores ([`create_store`][wybthon.create_store], [`reconcile`][wybthon.reconcile], [`create_projection`][wybthon.create_projection]).
+- Draft-first stores over dataclasses, dicts, and lists, typed as your own data ([`create_store`][wybthon.create_store], [`reconcile`][wybthon.reconcile], [`create_projection`][wybthon.create_projection]).
 - Flow control ([`Show`][wybthon.Show], [`For`][wybthon.For], [`Repeat`][wybthon.Repeat], [`Switch`][wybthon.Switch], [`dynamic`][wybthon.dynamic]), callable [`Context`][wybthon.Context] objects, [`Portal`][wybthon.Portal], [`lazy`][wybthon.lazy], and [`lazy_module`][wybthon.lazy_module].
 - Typed components: inputs declared as plain annotations on a [`Props`][wybthon.Props] class that pyright and mypy check without a plugin.
 - A client-side router in `wybthon.router` with [`Router`][wybthon.router.Router], [`Route`][wybthon.router.Route], and [`Link`][wybthon.router.Link].

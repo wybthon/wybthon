@@ -1,25 +1,23 @@
 """Store consistency, persistent sequence, and derived readiness contracts."""
 
 import asyncio
-import random
 from collections.abc import Mapping, Sequence
 
 import pytest
 
 from wybthon import action, create_effect, create_signal, flush, is_pending, refresh
-from wybthon._vector import Vector
 from wybthon.store import DraftExpiredError, create_projection, create_store, deep, snapshot
 
 
 def test_reads_dont_depend_on_observation_history(wyb):
     store, write = create_store({"a": 0, "b": 0, "rows": [1]})
-    assert store.a == 0
-    write(lambda d: (d.update(a=1, b=1), d.rows.append(2)) and None)
-    assert (store.a, store.b, len(store.rows), list(store.rows)) == (0, 0, 1, [1])
+    assert store["a"] == 0
+    write(lambda d: (d.update(a=1, b=1), d["rows"].append(2)) and None)
+    assert (store["a"], store["b"], len(store["rows"]), list(store["rows"])) == (0, 0, 1, [1])
     values = []
-    create_effect(lambda: store.b, values.append)
+    create_effect(lambda: store["b"], values.append)
     flush()
-    assert (store.a, store.b, list(store.rows)) == (1, 1, [1, 2])
+    assert (store["a"], store["b"], list(store["rows"])) == (1, 1, [1, 2])
     assert values == [1]
 
 
@@ -27,15 +25,15 @@ def test_entity_moves_preserve_identity_and_field_tracking(wyb):
     store, write = create_store([{"id": "a", "n": 1}, {"id": "b", "n": 2}])
     a, b = store
     values = []
-    create_effect(lambda: a.n, values.append)
+    create_effect(lambda: a["n"], values.append)
     flush()
     write(lambda d: d.reverse())
     flush()
     assert store[0] is b and store[1] is a
     assert values == [1]
-    write(lambda d: setattr(d[1], "n", 3))
+    write(lambda d: d[1].update(n=3))
     flush()
-    assert a.n == 3
+    assert a["n"] == 3
     assert values == [1, 3]
 
 
@@ -44,9 +42,9 @@ def test_drafts_expire_and_failed_edits_are_atomic(wyb):
     escaped = []
 
     def edit(d):
-        escaped.extend([d, d.nested])
-        d.n = 3
-        d.nested.v = 5
+        escaped.extend([d, d["nested"]])
+        d["n"] = 3
+        d["nested"]["v"] = 5
         raise ValueError("abort")
 
     with pytest.raises(ValueError, match="abort"):
@@ -72,15 +70,15 @@ def test_successful_draft_expires(wyb):
 def test_subtree_tracking_and_detached_snapshots(wyb):
     store, write = create_store({"left": {"n": 0}, "right": {"n": 0}})
     values = []
-    create_effect(lambda: deep(store.left), values.append)
+    create_effect(lambda: deep(store["left"]), values.append)
     flush()
-    write(lambda d: setattr(d.right, "n", 1))
+    write(lambda d: d["right"].update(n=1))
     flush()
     assert values == [{"n": 0}]
     copied = snapshot(store)
     copied["left"]["n"] = 42
-    assert store.left.n == 0
-    write(lambda d: setattr(d.left, "n", 2))
+    assert store["left"]["n"] == 0
+    write(lambda d: d["left"].update(n=2))
     flush()
     assert values == [{"n": 0}, {"n": 2}]
 
@@ -111,39 +109,8 @@ def test_list_journals_describe_only_new_edits(wyb):
     changes = rows._wyb_changes_since(state.revision)
     assert len(changes) == 1
     assert (changes[0].kind, changes[0].index, changes[0].added) == ("splice", 3, (4,))
-    assert list(state.data) == [1, 2, 3]
+    assert list(state) == [1, 2, 3]
     assert list(rows) == [1, 2, 3, 4]
-
-
-def test_persistent_vector_random_operations():
-    rng = random.Random(9071)
-    expected = list(range(2100))
-    vector = Vector(expected)
-    original = vector
-    for _ in range(1500):
-        op = rng.randrange(4)
-        if op == 0 or not expected:
-            value = rng.randrange(10000)
-            expected.append(value)
-            vector = vector.append(value)
-        elif op == 1:
-            expected.pop()
-            vector = vector.pop()
-        elif op == 2:
-            index, value = rng.randrange(len(expected)), rng.randrange(10000)
-            expected[index] = value
-            vector = vector.set(index, value)
-        else:
-            start = rng.randrange(len(expected))
-            delete = min(rng.randrange(5), len(expected) - start)
-            values = [rng.randrange(10000) for _ in range(rng.randrange(4))]
-            expected[start : start + delete] = values
-            vector = vector.splice(start, delete, values)
-        assert list(vector) == expected
-        assert vector[-1] == expected[-1]
-    assert list(original) == list(range(2100))
-    appended = original.append(2100)
-    assert appended._tree[0] is original._tree[0]
 
 
 def test_async_projection_readiness_refresh_and_cancel(wyb):
@@ -157,15 +124,15 @@ def test_async_projection_readiness_refresh_and_cancel(wyb):
             return {"n": len(runs)}
 
         projection = create_projection(load, {"n": 0})
-        assert is_pending(lambda: projection.n)
+        assert is_pending(lambda: projection["n"])
         gate.set()
         await asyncio.sleep(0)
         flush()
-        assert projection.n == 1
+        assert projection["n"] == 1
         gate.clear()
         refreshed = refresh(projection)
-        assert not is_pending(lambda: projection.n)
-        assert projection.n == 1
+        assert not is_pending(lambda: projection["n"])
+        assert projection["n"] == 1
 
         async def wait():
             return await refreshed
@@ -176,7 +143,7 @@ def test_async_projection_readiness_refresh_and_cancel(wyb):
         gate.set()
         assert await task is projection
         flush()
-        assert projection.n == 2
+        assert projection["n"] == 2
 
     asyncio.run(main())
 
@@ -189,16 +156,16 @@ def test_unobserved_properties_keep_revealed_transition_view(wyb):
         @action
         async def change():
             write(lambda d: d.update(a=1, b=1))
-            assert store.a == 1  # An action sees its own staged writes.
+            assert store["a"] == 1  # An action sees its own staged writes.
             await gate.wait()
 
         future = change()
         flush()
-        assert store.a == store.b == 0
+        assert store["a"] == store["b"] == 0
         gate.set()
         await future
         flush()
-        assert store.a == store.b == 1
+        assert store["a"] == store["b"] == 1
 
     asyncio.run(main())
 
@@ -218,12 +185,12 @@ def test_projection_stream_errors_and_cancellation(wyb):
 
         projection = create_projection(stream, {"n": 0})
         flush()
-        assert projection.n == 1
+        assert projection["n"] == 1
         gate.set()
         for _ in range(4):
             await asyncio.sleep(0)
             flush()
-        assert projection.n == 2
+        assert projection["n"] == 2
         assert closed == [True]
 
         async def broken():
@@ -235,7 +202,7 @@ def test_projection_stream_errors_and_cancellation(wyb):
             await asyncio.sleep(0)
             flush()
         with pytest.raises(ValueError, match="projection failed"):
-            _ = failed.n
+            _ = failed["n"]
 
     asyncio.run(main())
 
@@ -251,18 +218,18 @@ def test_optimistic_store_until_reads_authoritative_state_and_rebases(wyb):
 
         @action
         async def update():
-            optimistic(lambda d: setattr(d, "n", d.n + 1))
-            await until(lambda: store.n >= 2)
-            observed.append(store.n)
+            optimistic(lambda d: d.update(n=d["n"] + 1))
+            await until(lambda: store["n"] >= 2)
+            observed.append(store["n"])
             await gate.wait()
 
         future = update()
         flush()
-        assert store.n == 1
+        assert store["n"] == 1
         set_base({"n": 1, "other": 1})
         flush()
         await asyncio.sleep(0)
-        assert store.n == 2 and store.other == 1
+        assert store["n"] == 2 and store["other"] == 1
         assert observed == []
         set_base({"n": 2, "other": 2})
         flush()
@@ -283,14 +250,18 @@ def test_first_structural_subscribers_see_already_staged_edits(wyb):
     store, write = create_store({"rows": [{"value": 1}], "before": True})
 
     def edit(draft):
-        draft.rows[0].value = 2
-        draft.rows.append({"value": 3})
+        draft["rows"][0]["value"] = 2
+        draft["rows"].append({"value": 3})
         del draft["before"]
         draft["after"] = True
 
     write(edit)
     snapshots, lengths, keys = [], [], []
-    memos = [create_memo(lambda: deep(store)), create_memo(lambda: len(store.rows)), create_memo(lambda: list(store))]
+    memos = [
+        create_memo(lambda: deep(store)),
+        create_memo(lambda: len(store["rows"])),
+        create_memo(lambda: list(store)),
+    ]
     assert memos[0]() == {"rows": [{"value": 1}], "before": True}
     assert memos[1]() == 1
     assert memos[2]() == ["rows", "before"]
@@ -303,7 +274,7 @@ def test_first_structural_subscribers_see_already_staged_edits(wyb):
     assert snapshots[-1] == {"rows": [{"value": 2}, {"value": 3}], "after": True}
     assert lengths[-1] == 2
     assert keys[-1] == ["rows", "after"]
-    write(lambda draft: setattr(draft.rows[0], "value", 4))
+    write(lambda draft: draft["rows"][0].update(value=4))
     flush()
     assert snapshots[-1]["rows"][0]["value"] == 4
     for effect in effects:
@@ -316,7 +287,7 @@ def test_first_deep_subscriber_observes_staged_descendant(wyb):
     from wybthon import create_memo
 
     store, write = create_store({"nested": {"value": 0}})
-    write(lambda draft: setattr(draft.nested, "value", 1))
+    write(lambda draft: draft["nested"].update(value=1))
     seen = []
     memo = create_memo(lambda: deep(store))
     assert memo() == {"nested": {"value": 0}}
@@ -335,8 +306,8 @@ def test_first_structural_subscribers_inherit_held_state(wyb):
         @action
         async def edit():
             def change(draft):
-                draft.rows.append(2)
-                draft.nested.value = 1
+                draft["rows"].append(2)
+                draft["nested"]["value"] = 1
                 draft["added"] = True
 
             write(change)
@@ -344,7 +315,7 @@ def test_first_structural_subscribers_inherit_held_state(wyb):
 
         future = edit()
         flush()
-        readers = [lambda: len(store.rows), lambda: list(store), lambda: deep(store.nested)]
+        readers = [lambda: len(store["rows"]), lambda: list(store), lambda: deep(store["nested"])]
         assert all(is_pending(read) for read in readers)
         gate.set()
         await future

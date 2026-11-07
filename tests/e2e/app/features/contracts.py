@@ -36,13 +36,13 @@ def Page():
             await asyncio.sleep(0.15)
         if state == "error":
             raise ValueError("Filter failed")
-        return [row for row in rows if value.lower() in row.name.lower()]
+        return [row for row in rows if value.lower() in row["name"].lower()]
 
     visible = create_memo(filtered)
 
     @action
     async def save():
-        set_optimistic(lambda draft: setattr(draft, "saved", draft.saved + 1))
+        set_optimistic(lambda draft: draft.update(saved=draft["saved"] + 1))
         await asyncio.sleep(0.15)
         set_base({"saved": base()["saved"] + 1})
 
@@ -62,14 +62,14 @@ def Page():
             removed += 1
 
         on_cleanup(dispose)
-        return html(t"<div data-row={item.id}>{index()}:{item.name}</div>")
+        return html(t"<div data-row={item['id']}>{index()}:{item['name']}</div>")
 
     def failure(err):
         return html(t'<p data-testid="contract-failure">{str(err())}</p>')
 
     return html(t"""
       <div data-testid="page-contracts">
-        <button data-testid="contract-edit" onclick={(lambda e: edit(lambda d: setattr(d[0], "name", "Augusta")))}>
+        <button data-testid="contract-edit" onclick={(lambda e: edit(lambda d: d[0].update(name="Augusta")))}>
           Edit
         </button>
         <button data-testid="contract-reverse" onclick={(lambda e: edit(lambda d: d.reverse()))}>Reverse</button>
@@ -79,7 +79,7 @@ def Page():
         <button data-testid="contract-save" onclick={(lambda e: save())}>Save</button>
         <button data-testid="contract-wait" onclick={waiting}>Wait</button>
         <p data-testid="contract-pending">{str(is_pending(visible))}</p>
-        <p data-testid="contract-saved">{str(optimistic.saved)}</p>
+        <p data-testid="contract-saved">{str(optimistic["saved"])}</p>
         <p data-testid="contract-saving">{str(save.pending())}</p>
         {Errored(Loading(For(visible(), row), fallback="Waiting"), fallback=failure)}
       </div>

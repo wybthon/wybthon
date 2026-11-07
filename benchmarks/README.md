@@ -79,7 +79,7 @@ Use `--warmup`, `--iterations`, and `--bench` to focus a run. `--cpu --save repo
 
 `uv run python benchmarks/store_memory.py --repo /path/to/checkout` measures native Python allocations retained by a 10,000-entity store before any fields are observed. Inputs and imports are excluded. Compare fresh processes using the same interpreter; this is a tracemalloc measurement, not browser memory or process RSS.
 
-`core_bench.py` adds persistent-vector construction and edits, store creation, draft clearing, observed field updates, and `map_array` creation, append, unchanged-input, and reverse workloads:
+`core_bench.py` adds store creation, draft clearing, creating 10,000 rows with one observed field each (as a store and as per-row signals), observed field updates compared with signal writes, and `map_array` creation, append, unchanged-input, and reverse workloads:
 
 ```bash
 uv run python benchmarks/core_bench.py --repo /tmp/wybthon-before > core-before.json
@@ -107,6 +107,8 @@ Each page in `results/` is a summary of one evaluation: its tables are the recor
 The [runtime overhaul evaluation](results/runtime-overhaul.md) records local baseline comparisons, current store paths, and remaining mount costs.
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
+
+The [engine v7 evaluation](results/engine-v7.md) records lazily wrapped, copy-on-write stores and dataclass stores against v0.41.0.
 
 The [engine v6 evaluation](results/engine-v6.md) records boot snapshots, the string server renderer, and the client rendering check against v0.40.0.
 

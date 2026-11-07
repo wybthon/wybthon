@@ -37,7 +37,7 @@ Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser
 - **Signals with automatic batching.** `create_signal`, `create_memo`, and `create_effect`. Writes are staged and applied once per microtask (and at the end of every event handler), so there's no `batch()` to remember.
 - **Async-first data.** An `async def` passed to `create_memo` is the data-fetching primitive. `Loading` shows a fallback until it resolves; later refetches run as **transitions** that hold the dependent UI on the old state until the new value lands, so the screen never tears. `create_deferred` is the async memo that never holds the rest of the UI, and `is_pending`, `latest`, `resolve`, and `refresh` observe or drive async state.
 - **Actions and optimistic state.** `action` makes a mutation a transaction; `create_optimistic` and `create_optimistic_store` show temporary values that revert when the action settles.
-- **Draft-first stores.** `create_store` setters take a function that mutates a draft with plain Python; reads are tracked per path. `reconcile`, `snapshot`, `deep`, and projections are included.
+- **Draft-first stores.** `create_store` wraps a dataclass, a dict, or a list, and the store is typed as that same type, so `state.todos[0].title` type-checks with no plugin. Setters take a function that mutates a draft with plain Python; reads are tracked per field. `reconcile`, `snapshot`, `deep`, and projections are included.
 - **Flow control and boundaries.** `Show`, `For`, `Repeat`, `Switch`/`Match`, and `dynamic` update only the affected subtree; `Loading`, `Reveal`, and `Errored` swap in fallbacks without tearing down sibling trees.
 - **Fast repeat visits.** After a page's first boot, the bootstrap snapshots a Pyodide runtime with Wybthon imported, in a background worker. Later visits restore it and are ready in about a tenth of the time.
 - **Server rendering and hydration.** Render the same components to HTML in CPython at build time or per request (the server writes HTML directly, a few milliseconds for a 1,000-row table), stream `Loading` boundaries as they resolve, set the response status and headers from components, and `hydrate` the result in the browser.
@@ -64,6 +64,7 @@ wyb dev --open
 
 ```python
 from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from wybthon import (
     Errored,
@@ -114,14 +115,25 @@ def Panel(props: PanelProps):
     return html(t'<section class="panel"><h2>{props.title}</h2>{props.children}</section>')
 
 
+@dataclass
+class Todo:
+    id: int
+    title: str
+
+
+@dataclass
+class TodoList:
+    todos: list[Todo] = field(default_factory=list)
+
+
 @component
 def Todos():
-    store, set_store = create_store({"todos": []})
+    state, set_state = create_store(TodoList())
     draft, set_draft = create_signal("")
 
     @action
     async def add(title: str):
-        set_store(lambda s: s.todos.append({"id": len(s.todos) + 1, "title": title}))
+        set_state(lambda s: s.todos.append(Todo(len(s.todos) + 1, title)))
         set_draft("")
 
     def edit(event):
@@ -130,14 +142,14 @@ def Todos():
     def submit():
         add(draft())
 
-    def todo_row(item, index):
-        return html(t"<li>{item().title}</li>")
+    def todo_row(todo, index):
+        return html(t"<li>{todo.title}</li>")
 
     return html(t"""
       <div>
         <input value={draft()} oninput={edit}>
         <button onclick={submit} disabled={add.pending()}>Add</button>
-        <ul>{For(store.todos, todo_row, keyed=lambda t: t["id"])}</ul>
+        <ul>{For(state.todos, todo_row)}</ul>
       </div>
     """)
 

@@ -145,9 +145,9 @@ document.body.appendChild(host)
 virtual_data, virtual_write = create_store([{"id": i} for i in range(10000)])
 virtual_created, virtual_removed = [], []
 def virtual_row(item, index):
-    virtual_created.append(item.id)
-    on_cleanup(lambda: virtual_removed.append(item.id))
-    return h("p", {"data_virtual": item.id}, lambda: str(index()))
+    virtual_created.append(item["id"])
+    on_cleanup(lambda: virtual_removed.append(item["id"]))
+    return h("p", {"data_virtual": item["id"]}, lambda: str(index()))
 virtual_root = render(
     VirtualFor(lambda: virtual_data, virtual_row, height=200, row_height=20, overscan=2, id="virtual-scroll"),
     "#virtual-host",

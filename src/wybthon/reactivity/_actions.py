@@ -364,12 +364,13 @@ def affects(*targets: Any) -> None:
     for target in targets:
         node = _affect_node(target)
         tx.root().affected.add(node)
-        if isinstance(node, (Signal, Computation)):
+        notify = getattr(node, "_notify_affected", None)
+        if notify is not None:
+            notify()
+        elif isinstance(node, (Signal, Computation)):
             for observer in _core._edges(node._observers):
                 if _core._mode(observer._sources, node) & _core._R_PROBE:
                     observer._stale(_core._DIRTY)
-        else:
-            node._notify()
     _core._update_slow_reads()
 
 

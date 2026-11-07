@@ -123,7 +123,7 @@ def ConcurrentPanel():
 
     @action
     async def add(amount, gate):
-        edit(lambda draft: draft.update(count=draft.count + amount))
+        edit(lambda draft: draft.update(count=draft["count"] + amount))
         await gate.wait()
 
     return html(t"""

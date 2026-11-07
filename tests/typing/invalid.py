@@ -1,5 +1,6 @@
 """Deliberately invalid code: each line marked `# error: <kind>` must be reported by mypy and pyright."""
 
+from dataclasses import dataclass
 from typing import TypedDict
 
 from wybthon import Accessor, For, Props, Show, VNode, action, component, create_signal, create_store, html
@@ -43,6 +44,16 @@ save("wrong")  # error: action-arg
 
 people, edit_people = create_store(list[Person]())
 edit_people(lambda draft: draft.append({"age": "wrong"}))  # error: store-append
+
+
+@dataclass
+class Task:
+    title: str
+    done: bool = False
+
+
+board, edit_board = create_store(Task("a"))
+_done: str = board.done  # error: store-field
 
 
 class Todo(TypedDict):
