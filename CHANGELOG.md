@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.43.0 (2026-11-07)
+
+### Features
+
+- **server,router**: Add full-stack apps ([#50](https://github.com/wybthon/wybthon/pull/50),
+  [`87bc417`](https://github.com/wybthon/wybthon/commit/87bc417c2df00c579b2d9e1884cc9db93d4f2864))
+
+
 ## v0.42.1 (2026-11-07)
 
 ### Bug Fixes
