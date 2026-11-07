@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.42.1 (2026-11-07)
+
+### Bug Fixes
+
+- **flow**: Preserve node slots across branch remounts
+  ([#47](https://github.com/wybthon/wybthon/pull/47),
+  [`c1e4f72`](https://github.com/wybthon/wybthon/commit/c1e4f72cfa9b941f0793d6fe78379d86719fc7b4))
+
+
 ## v0.42.0 (2026-11-07)
 
 ### Features
