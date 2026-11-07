@@ -20,9 +20,11 @@ def Greeting(props: GreetingProps):
   compiler turns `{props.name}` into a getter, so the text updates when
   the parent's value changes.
 - The parent may pass a value, a getter (what the compiler makes of
-  `<{Greeting} name={user().name}>`), or an accessor. Getters are always
-  unwrapped; accessors are unwrapped unless the field's annotation is
-  callable, so a callback is returned exactly as the parent passed it.
+  `<{Greeting} name={user().name}>`), or an accessor (a signal or memo).
+  Getters are always read; accessors are read unless the field's
+  annotation is callable. Any other function is a value like any other,
+  returned exactly as the parent passed it, so a callback is never called
+  by reading it, whatever its field is annotated.
 - `Props` is a PEP 681 `dataclass_transform` base, so pyright and mypy
   check component calls without a plugin.
 """
@@ -35,9 +37,9 @@ import re
 import types
 import typing
 from collections.abc import Callable, Iterator, Mapping
-from typing import Any, ClassVar, Self, dataclass_transform, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Self, dataclass_transform, overload
 
-from ._core import _MISSING, Accessor, _Getter, _PropField, is_accessor, untrack
+from ._core import _MISSING, Accessor, _Getter, _PropField, untrack
 
 __all__ = ["Props", "ParentProps", "prop", "merge", "omit", "is_static"]
 
@@ -118,8 +120,16 @@ def _is_classvar(annotation: Any) -> bool:
     return annotation is ClassVar or typing.get_origin(annotation) is ClassVar
 
 
+if TYPE_CHECKING:
+    # To type checkers a props instance is a node: a component call is typed
+    # as its props class, and it renders.
+    from ..vnode import Node as _NodeBase
+else:
+    _NodeBase = object
+
+
 @dataclass_transform(kw_only_default=True, frozen_default=True, field_specifiers=(prop,))
-class _PropsBase:
+class _PropsBase(_NodeBase):
     """Gives `Props` subclasses their checked keyword constructor (PEP 681)."""
 
     __slots__ = ()
@@ -241,7 +251,7 @@ class Props(_PropsBase):
         self._raw = values
         sig = self._sig
         if sig is not None:
-            sig._set(values)
+            sig._write(values)
 
     def _wyb_raw(self, name: str, default: Any = None) -> Any:
         """The parent's current value for `name` as passed, declared or not, without tracking."""
@@ -267,14 +277,14 @@ class ParentProps(Props):
 
 def _passes_through(key: str) -> bool:
     """Whether a key's value is used as is: an event handler or a ref."""
-    return key == "ref" or key.startswith("on_") or (len(key) > 2 and key.startswith("on") and key[2].isupper())
+    return key == "ref" or key.startswith("on_")
 
 
 def _value(key: str, value: Any) -> Any:
     """Read one raw value: getters and accessors are called, except for handlers and refs."""
     if type(value) is _Getter:
         return value.fn()
-    if not _passes_through(key) and is_accessor(value):
+    if not _passes_through(key) and isinstance(value, Accessor):
         return value()
     return value
 
@@ -540,4 +550,4 @@ def is_static(source: Any, key: str) -> bool:
         field = type(source)._wyb_fields.get(key)
         if field is not None and not field.unwrap:
             return True
-    return not is_accessor(value)
+    return not isinstance(value, Accessor)

@@ -27,7 +27,7 @@ measuring, third-party widgets) or when you receive a node back from a
 
 A [`Ref`][wybthon.Ref] is a small mutable container that the renderer
 fills with the mounted `Element`. Pass it as the `ref` attribute of any
-host element (a `ref` prop in [`h`][wybthon.h]) and read `ref.current`
+host element (a `ref` prop in [`h`][wybthon.vnode.h]) and read `ref.current`
 after mount:
 
 ```python
@@ -149,7 +149,7 @@ The wrapper mirrors familiar DOM names:
 ## Styles, classes, and dataset through bindings
 
 You usually don't need `Element` for styling. Templates and
-[`h`][wybthon.h] share one set of prop appliers, so these work the same
+[`h`][wybthon.vnode.h] share one set of prop appliers, so these work the same
 in both:
 
 - `style` takes a dict with camelCase or snake_case keys (`background_color`, `fontSize`); the renderer converts to kebab-case and emits a single style op. Keys missing on update are removed, and passing `None` clears earlier styles. Values may be accessors, and a raw style string is accepted too.

@@ -133,7 +133,7 @@
     const type = key.endsWith(":capture") ? key.slice(0, -8) : key;
     const node = nodes.get(id);
     if (node === undefined) return;
-    if (options.capture || options.passive || nonBubbling.has(type)) {
+    if (options.direct || options.capture || options.passive || nonBubbling.has(type)) {
       let entries = directListeners.get(id);
       if (!entries) { entries = new Map(); directListeners.set(id, entries); }
       if (entries.has(key)) return;
@@ -255,10 +255,12 @@
 
   // -- templates ----------------------------------------------------------
 
-  function registerTpl(tplId, html, count, texts, listens, addressed) {
+  function registerTpl(tplId, html, count, texts, listens, addressed, wrap) {
     const tpl = doc.createElement("template");
-    tpl.innerHTML = html;
-    const proto = tpl.content.firstChild;
+    // A template mounted under an SVG or MathML parent is parsed inside a
+    // wrapper of that namespace, so its elements are created in it.
+    tpl.innerHTML = wrap ? `<${wrap}>${html}</${wrap}>` : html;
+    const proto = wrap ? tpl.content.firstChild.firstChild : tpl.content.firstChild;
     proto.remove();
     templates.set(tplId, {proto, count, texts: texts || [], listens: listens || [], addressed: addressed || null});
   }
@@ -603,11 +605,6 @@
         case 5: // INSERT
           insert(op[1], nodes.get(op[2]), op[3]);
           break;
-        case 6: { // REMOVE
-          const n = nodes.get(op[1]);
-          if (n !== undefined && n.parentNode !== null) n.parentNode.removeChild(n);
-          break;
-        }
         case 7: // SET_TEXT
           nodes.get(op[1]).nodeValue = op[2];
           break;
@@ -649,7 +646,7 @@
           break;
         }
         case 14: // REGISTER_TPL
-          registerTpl(op[1], op[2], op[3], op[4], op[5], op[6]);
+          registerTpl(op[1], op[2], op[3], op[4], op[5], op[6], op[7]);
           break;
         case 15: // CREATE_ELEMENT_NS
           reg(op[1], doc.createElementNS(op[2], op[3]));

@@ -5,7 +5,7 @@ This guide shows how to author components in Wybthon's run-once model, with reci
 !!! tip "Mental model in one line"
     Components run **once**. Inputs are declared on a [`Props`][wybthon.Props] class with plain annotations, and reading `props.title` returns the value, tracked. Anything that should update over time is an expression in the markup, a memo, or an effect: the [compiler](../concepts/compiler.md) turns each dynamic expression in a template (`{count() * 2}`, `{props.title}`) into a getter, so only the text node or attribute that reads it updates.
 
-The examples write markup with [`html`][wybthon.html] templates; see [Templates](../concepts/templates.md) for the syntax. Where markup is built by code, [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, the counterpart of Solid's `h`.
+The examples write markup with [`html`][wybthon.html] templates; see [Templates](../concepts/templates.md) for the syntax. Where markup is built by code, [`h(tag, props, *children)`][wybthon.vnode.h] is the programmatic layer, the counterpart of Solid's `h`.
 
 ## Run-once bodies
 
@@ -120,7 +120,7 @@ def Greeting():
 
 A function call in a child position is dispatched when the template is created: a component or built-in (`{Card(title=user().name)}`, `{Show(...)}`, `{For(...)}`) is built with a getter for each dynamic argument, and any other call (`{badge(user())}`, `{str(n())}`) becomes one reactive hole. See [The compiler](../concepts/compiler.md) for the full rule.
 
-Keep holes small. A hole that produces a subtree runs again on every change: if it returns a template from the same literal, Wybthon patches the mounted instance slot by slot, but anything else is rebuilt. A hole around a single text node patches one node. Use [`hole`][wybthon.hole] when you need an explicit `key` for a hole inside a fragment.
+Keep holes small. A hole that produces a subtree runs again on every change: if it returns a template from the same literal, Wybthon patches the mounted instance slot by slot, but anything else is rebuilt. A hole around a single text node patches one node. Use [`hole`][wybthon.vnode.hole] when you need an explicit `key` for a hole inside a fragment.
 
 Attributes work the same way. A dynamic expression as an attribute value creates a per-attribute binding, and an attribute that mixes text with interpolations becomes one binding:
 
@@ -228,11 +228,11 @@ Card(title="Composition", children=html(t"<p>Body text</p>"))  # keyword
 
 The tag form reads like the rest of the markup, but type checkers can't see its props; dev mode checks them at run time. The call forms are fully type-checked, and the keyword form works inside a template too: `{Card(title=user().name, children=html(t"<p>Body</p>"))}`. Positional children (`Card(html(t"<p>Body</p>"), title="Composition")`) still work at run time, but type checkers don't validate them, so prefer the keyword or item syntax.
 
-When a component needs to inspect or reorder its children, resolve them with the [`children`][wybthon.children] helper. It takes a getter, flattens nested lists, calls nested accessors, and drops `None` and booleans. Calling the result returns the single child or a list; `.to_array()` always returns a list:
+When a component needs to inspect or reorder its children, resolve them with the [`resolve_children`][wybthon.resolve_children] helper. It takes a getter, flattens nested lists, calls nested accessors, and drops `None` and booleans. Calling the result returns the single child or a list; `.to_array()` always returns a list:
 
 ```python
 from wybthon import ParentProps, component, html
-from wybthon import children as resolve_children
+from wybthon import resolve_children
 
 
 @component

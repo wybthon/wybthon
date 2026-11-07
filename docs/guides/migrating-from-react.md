@@ -63,7 +63,7 @@ Markup is an HTML template written as a Python 3.14 [template string](https://pe
 - Use a component with a tag, `<{Card} title={user().name}>...</{Card}>`, or call it in an interpolation, `{Card(title=user().name)}`. Either way the component receives a getter for each dynamic prop. The call form is fully type-checked; the tag form's props are checked at run time in dev mode.
 - Markup the browser would silently fix is an error instead: put `<tr>` inside a `<tbody>`, and don't nest a `<div>` in a `<p>`.
 
-If you need to build markup in code, [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, like `React.createElement`.
+If you need to build markup in code, [`h(tag, props, *children)`][wybthon.vnode.h] is the programmatic layer, like `React.createElement`.
 
 ### Implications
 
@@ -164,7 +164,7 @@ Card(title="Hello")[html(t"<p>Body text</p>")]
 Card(title="Hello", children=html(t"<p>Body text</p>"))
 ```
 
-To inspect or reorder children, resolve them with [`children`][wybthon.children]: `kids = children(lambda: props.children)`, then `kids.to_array()`.
+To inspect or reorder children, resolve them with [`resolve_children`][wybthon.resolve_children]: `kids = resolve_children(lambda: props.children)`, then `kids.to_array()`.
 
 ## Context
 
@@ -346,7 +346,7 @@ from wybthon import (
     Show,
     Switch,
     action,
-    children,
+    resolve_children,
     component,
     create_context,
     create_effect,

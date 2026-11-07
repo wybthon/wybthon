@@ -36,7 +36,7 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
 ??? question "What happened to the element helpers (`div(...)`, `p(...)`)?"
 
-    [RFC 0004](../rfcs/0004-engine-v4.md) removed them, along with `wybthon.elements` and `wybthon.svg`. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. [`html`][wybthon.html] templates are the way to write markup (including `<svg>`), and [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, like `h` in Solid: use it for markup that code builds, such as generated forms, recursive trees, or a computed tag. `h()` props take Python names (`class_`, `html_for`, `on_click`) as well as HTML names.
+    [RFC 0004](../rfcs/0004-engine-v4.md) removed them, along with `wybthon.elements` and `wybthon.svg`. A helper evaluates its arguments before Wybthon sees them, so it can't benefit from the compiler. [`html`][wybthon.html] templates are the way to write markup (including `<svg>`), and [`h(tag, props, *children)`][wybthon.vnode.h] is the programmatic layer, like `h` in Solid: use it for markup that code builds, such as generated forms, recursive trees, or a computed tag. `h()` props take Python names (`class_`, `html_for`, `on_click`) as well as HTML names.
 
 ## Pyodide and runtime
 
@@ -129,13 +129,13 @@ Quick answers to the questions we get most often. If yours isn't here, check the
 
     No. `Props` uses PEP 681 `dataclass_transform`, so pyright, Pylance, and mypy check component calls out of the box. See the [typing guide](../guides/typing.md).
 
-??? question "Where did `Router`, `Link`, and `form_state` go?"
+??? question "Where are the router and forms?"
 
-    The core lives in `wybthon`; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`:
+    The core lives in `wybthon`; the router, forms, virtual lists, and scheduling helpers live in their own modules. Import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`. Links are plain `<a href>` elements, as in Solid Router 2.0:
 
     ```python
     from wybthon.forms import bind_text, form_state
-    from wybthon.router import Link, Route, Router, navigate
+    from wybthon.router import Route, create_router, navigate, use_link_state
     ```
 
 ## Reactivity

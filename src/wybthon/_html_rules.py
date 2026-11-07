@@ -27,9 +27,77 @@ RAW_TEXT_ELEMENTS = frozenset({"script", "style", "xmp", "iframe", "noembed", "n
 # The parser drops one newline that immediately follows these start tags.
 LEADING_NEWLINE_ELEMENTS = frozenset({"pre", "textarea", "listing"})
 
-# Namespace roots. SVG and MathML mount with per-node namespaced commands:
-# the HTML parser only preserves the case of attribute names it knows.
+# Namespace roots. A template's SVG and MathML clone like any other markup:
+# the HTML parser puts what's under `<svg>` and `<math>` in their namespaces
+# and restores the case of the tag and attribute names below. A name with
+# other capitals would come out lowercased, so such a template mounts with
+# per-node commands instead.
 FOREIGN_ELEMENTS = frozenset({"svg", "math"})
+
+# The HTML parser's case adjustments for foreign content (lowercase -> as written).
+SVG_TAG_CASE = {
+    name.lower(): name
+    for name in (
+        "altGlyph altGlyphDef altGlyphItem animateColor animateMotion animateTransform clipPath feBlend "
+        "feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap "
+        "feDistantLight feDropShadow feFlood feFuncA feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge "
+        "feMergeNode feMorphology feOffset fePointLight feSpecularLighting feSpotLight feTile feTurbulence "
+        "foreignObject glyphRef linearGradient radialGradient textPath"
+    ).split()
+}
+SVG_ATTR_CASE = {
+    name.lower(): name
+    for name in (
+        "attributeName attributeType baseFrequency baseProfile calcMode clipPathUnits diffuseConstant edgeMode "
+        "filterUnits glyphRef gradientTransform gradientUnits kernelMatrix kernelUnitLength keyPoints keySplines "
+        "keyTimes lengthAdjust limitingConeAngle markerHeight markerUnits markerWidth maskContentUnits maskUnits "
+        "numOctaves pathLength patternContentUnits patternTransform patternUnits pointsAtX pointsAtY pointsAtZ "
+        "preserveAlpha preserveAspectRatio primitiveUnits refX refY repeatCount repeatDur requiredExtensions "
+        "requiredFeatures specularConstant specularExponent spreadMethod startOffset stdDeviation stitchTiles "
+        "surfaceScale systemLanguage tableValues targetX targetY textLength viewBox viewTarget xChannelSelector "
+        "yChannelSelector zoomAndPan"
+    ).split()
+}
+MATHML_ATTR_CASE = {"definitionurl": "definitionURL"}
+
+NS_SVG = "http://www.w3.org/2000/svg"
+NS_MATHML = "http://www.w3.org/1998/Math/MathML"
+
+
+def element_ns(tag: str, ns: str | None) -> str | None:
+    """The namespace an element `tag` is created in when its parent's namespace is `ns`."""
+    if ns is None:
+        if tag == "svg":
+            return NS_SVG
+        if tag == "math":
+            return NS_MATHML
+        return None
+    return ns
+
+
+def child_ns(tag: str, ns: str | None) -> str | None:
+    """The namespace of the children of element `tag` created in namespace `ns`."""
+    if ns is None:
+        if tag == "svg":
+            return NS_SVG
+        if tag == "math":
+            return NS_MATHML
+        return None
+    if ns == NS_SVG and tag == "foreignObject":
+        return None
+    return ns
+
+
+def parser_keeps_case(name: str, ns: str | None, tag: bool) -> bool:
+    """Whether the HTML parser, parsing `name` in namespace `ns`, gives it back as written."""
+    if name.islower() or not any(c.isupper() for c in name):
+        return True
+    if ns == NS_SVG:
+        return (SVG_TAG_CASE if tag else SVG_ATTR_CASE).get(name.lower()) == name
+    if ns == NS_MATHML and not tag:
+        return MATHML_ATTR_CASE.get(name.lower()) == name
+    return False
+
 
 # Elements whose content model forbids text (the parser would move it out).
 NO_TEXT_CONTENT = frozenset({"table", "thead", "tbody", "tfoot", "tr", "colgroup", "select", "optgroup", "html"})

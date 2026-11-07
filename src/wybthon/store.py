@@ -18,9 +18,11 @@ import inspect
 from bisect import bisect_left, insort
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, MutableSequence, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, fields
 from functools import cached_property
-from typing import Any, overload
+from types import FunctionType, MethodType
+from typing import Any, Final, overload
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
 from . import _warnings
@@ -409,7 +411,7 @@ class _Node(Signal[Any]):
             sig = ext.length = Signal(len(self.committed()))
             sig._version_source = self
             if self._staged:
-                sig._set(len(self._pending))
+                sig._write(len(self._pending))
             held = self.held()
             if held is not _ABSENT and len(held) != sig._value:
                 _core._hold(sig, len(held), _core._node_tx[self])
@@ -425,7 +427,7 @@ class _Node(Signal[Any]):
             sig = membership[key] = Signal(key in self.committed())
             sig._version_source = self
             if self._staged:
-                sig._set(key in self._pending)
+                sig._write(key in self._pending)
             held = self.held()
             if held is not _ABSENT and (key in held) != sig._value:
                 _core._hold(sig, key in held, _core._node_tx[self])
@@ -439,7 +441,7 @@ class _Node(Signal[Any]):
             sig._version_source = self
             current = self.committed()
             if self._staged and _structure_changed(current, self._pending):
-                sig._set(1)
+                sig._write(1)
             held = self.held()
             if held is not _ABSENT and _structure_changed(held, current):
                 _core._hold(sig, -1, _core._node_tx[self])
@@ -456,7 +458,7 @@ class _Node(Signal[Any]):
             # flush. It reads committed data and must see those staged edits
             # when they land, including edits made below this container.
             if _core._staged and self._has_unrevealed(set(), held=False):
-                sig._set(1)
+                sig._write(1)
             if _core._held and self._has_unrevealed(set(), held=True):
                 tx = self._held_transition(set())
                 if tx is not None:
@@ -571,6 +573,30 @@ class _Node(Signal[Any]):
 
     def read(self, key: Any, default: Any = _RAISE) -> Any:
         observer = _core._current_observer
+        if (
+            self._value is not None
+            and self.root.derivation is None
+            and not _core._slow_reads
+            and not _core._authoritative_depth
+            and _core._in_action is None
+        ):
+            # A plain store, already read, outside every transition, action,
+            # probe, and authoritative scope: the field's own signal (or, read
+            # untracked, the committed container) is the answer.
+            if observer is None:
+                value = _lookup(self._value, key)
+            elif observer is _core._PROBE_OBSERVER:
+                raise _core._Escape
+            else:
+                properties = self.properties
+                sig = properties.get(key) if properties is not None else None
+                if sig is None:
+                    sig = self._property(key)
+                observer._add_source(sig)
+                value = sig._value
+            if value is _ABSENT:
+                return self._missing(key, default)
+            return value if type(value) is not _Node else _wrap(value)
         if observer is _core._PROBE_OBSERVER:
             # A store field is reactive: a binding's static probe ends here,
             # before doing the read it would repeat.
@@ -642,7 +668,7 @@ class _Node(Signal[Any]):
                     self._link(after, 1)
             if not changed:
                 return False
-            self._set(data)
+            self._write(data)
         else:
             if not changes:
                 return False
@@ -675,7 +701,7 @@ class _Node(Signal[Any]):
                 if self.properties:
                     changed_set.update(self.properties)
             revision = data.revision = old_data.revision + 1
-            self._set(data)
+            self._write(data)
             ext = self._x()
             if ext.history is None:
                 ext.history = deque(maxlen=64)
@@ -683,9 +709,9 @@ class _Node(Signal[Any]):
             changed = changed_set  # type: ignore[assignment]
         if ext is not None:
             if structural and ext.keys is not None:
-                ext.keys._set(ext.keys._latest() + 1)
+                ext.keys._write(ext.keys._latest() + 1)
             if ext.length is not None:
-                ext.length._set(len(data))
+                ext.length._write(len(data))
         properties = self.properties
         if properties:
             if self._staged:
@@ -695,13 +721,13 @@ class _Node(Signal[Any]):
                 for key in changed:
                     sig = properties.get(key)
                     if sig is not None:
-                        sig._set(_lookup(data, key))
+                        sig._write(_lookup(data, key))
         membership = ext.membership if ext is not None else None
         if membership:
             for key in changed:
                 member = membership.get(key)
                 if member is not None:
-                    member._set(key in data)
+                    member._write(key in data)
         return True
 
     def bump(self, seen: set[_Node]) -> None:
@@ -711,7 +737,7 @@ class _Node(Signal[Any]):
         ext = self.ext
         if ext is not None:
             if ext.version is not None:
-                ext.version._set(ext.version._latest() + 1)
+                ext.version._write(ext.version._latest() + 1)
             if ext.parents is not None:
                 for parent in tuple(ext.parents):
                     parent.bump(seen)
@@ -1383,20 +1409,31 @@ def _compatible(node: _Node, data: Any) -> bool:
 
 
 def _modify(session: _Session, node: _Node, modifier: Any) -> None:
-    if isinstance(modifier, _Reconcile):
+    if type(modifier) in _CALLBACK_TYPES:
+        # The common case, a draft callback, before the ABC checks below.
+        _edit(session, node, modifier)
+    elif isinstance(modifier, _Reconcile):
         _merge(session, node, modifier.data, modifier.key)
     elif isinstance(modifier, (Mapping, list, tuple, _Proxy)) or _is_dataclass_instance(modifier):
         _merge(session, node, modifier, None)
     elif callable(modifier):
-        result = modifier(_wrap_draft(node, session))
-        if inspect.isawaitable(result):
-            if inspect.iscoroutine(result):
-                result.close()
-            raise TypeError("Store setters are synchronous; await work in an action before opening a draft")
-        if result is not None:
-            _merge(session, node, result, None)
+        _edit(session, node, modifier)
     else:
         raise TypeError("A store setter expects a draft callback, reconcile result, or replacement data")
+
+
+_CALLBACK_TYPES: Final = frozenset({FunctionType, MethodType})
+
+
+def _edit(session: _Session, node: _Node, modifier: Callable[[Any], Any]) -> None:
+    result = modifier(_wrap_draft(node, session))
+    if result is None:
+        return
+    if inspect.isawaitable(result):
+        if inspect.iscoroutine(result):
+            result.close()
+        raise TypeError("Store setters are synchronous; await work in an action before opening a draft")
+    _merge(session, node, result, None)
 
 
 class StoreSetter[T]:
@@ -1420,6 +1457,32 @@ class StoreSetter[T]:
         _core._gc_pause()
         try:
             _modify(session, self._node, modifier)
+            session.commit()
+        finally:
+            session.close()
+            _core._gc_resume()
+
+    @contextmanager
+    def edit(self) -> Iterator[T]:
+        """Edit the store in a `with` block: the draft's changes stage together when it ends.
+
+        The block is the setter's callback written inline, so it's atomic
+        in the same way: an exception discards every change it made.
+
+        ```python
+        with set_state.edit() as draft:
+            draft.todos[0].title = title
+            draft.todos[0].done = False
+        ```
+        """
+        if _core._current_observer is not None and _warnings.DEV_MODE:
+            raise WriteInScopeError(
+                "Cannot write a store inside a tracking scope; use an effect's apply stage or an action"
+            )
+        session = _Session()
+        _core._gc_pause()
+        try:
+            yield _wrap_draft(self._node, session)
             session.commit()
         finally:
             session.close()
@@ -1590,7 +1653,7 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
             queue.extend(value for value in (data.values() if current.kind != _LIST else data) if type(value) is _Node)
         node.root.authoritative = captured
         version = node.root.authoritative_version
-        version._set(version._latest() + 1, _core._O_REVEAL)
+        version._reveal(version._latest() + 1)
 
     def rebuild() -> None:
         session = _Session()
@@ -1642,7 +1705,7 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
             token = groups.setdefault(group, object())
             overlays.append((token, modifier))
             node.root.optimistic = True
-            node.root.optimistic_signal._set(True, _core._O_REVEAL)
+            node.root.optimistic_signal._reveal(True)
         finally:
             _core._optimistic_depth -= 1
 
@@ -1653,7 +1716,7 @@ def create_optimistic_store(source: Any, initial: Any = None) -> tuple[Any, Call
             groups.pop(group, None)
             overlays[:] = [edit for edit in overlays if edit[0] is not token]
             node.root.optimistic = bool(overlays)
-            node.root.optimistic_signal._set(bool(overlays), _core._O_REVEAL)
+            node.root.optimistic_signal._reveal(bool(overlays))
             _core._optimistic_depth += 1
             try:
                 untrack(rebuild)

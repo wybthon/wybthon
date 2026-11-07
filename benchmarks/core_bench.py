@@ -24,8 +24,9 @@ from pathlib import Path
 def run(repo, iterations, warmup):
     sys.path.insert(0, str(repo / "src"))
     import wybthon
-    from wybthon import create_effect, create_root, create_signal, create_store, flush, map_array
+    from wybthon import create_effect, create_root, create_signal, create_store, flush
     from wybthon.build import _archive
+    from wybthon.reactivity import map_array
 
     if not Path(wybthon.__file__).resolve().is_relative_to(repo / "src"):
         raise RuntimeError("Imported Wybthon doesn't belong to the selected checkout")

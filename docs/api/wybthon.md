@@ -9,10 +9,9 @@ pages linked in the left column carry the details.
 
 | Area | Names |
 | --- | --- |
-| [Templates](templates.md) | `html`, `TemplateError` |
-| [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `prop`, `merge`, `omit`, `is_static`, `children`, `flatten`, `ChildrenAccessor` |
-| [VDOM](vnode.md) | `VNode`, `h`, `hole`, `Fragment`, `is_accessor` |
-| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `Owner`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_reaction`, `create_root`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_flush`, `on_cleanup`, `untrack`, `get_owner`, `get_observer`, `run_with_owner`, `map_array`, `repeat`, `WriteInScopeError` |
+| [Templates](templates.md) | `html`, `TemplateError`, `Node` |
+| [Components](component.md) | `component`, `Component`, `Props`, `ParentProps`, `prop`, `merge`, `omit`, `is_static`, `resolve_children`, `flatten`, `ChildrenAccessor` |
+| [Reactivity](reactivity.md) | `Accessor`, `Setter`, `Signal`, `Memo`, `create_signal`, `create_memo`, `create_deferred`, `create_effect`, `create_tracked_effect`, `create_render_effect`, `create_root`, `is_disposed`, `is_equal`, `create_unique_id`, `flush`, `on_settled`, `on_flush`, `on_cleanup`, `untrack`, `get_owner`, `run_with_owner`, `WriteInScopeError` |
 | [Async](reactivity.md) | `NotReadyError`, `ServerError`, `is_pending`, `latest`, `refresh`, `resolve`, `from_source`, `action`, `Action`, `affects`, `until`, `create_optimistic` |
 | [Stores](store.md) | `Store`, `StoreList`, `StoreObject`, `StoreSetter`, `DraftExpiredError`, `create_store`, `create_projection`, `create_optimistic_store`, `reconcile`, `snapshot`, `deep` |
 | [Flow control](flow.md) | `Show`, `For`, `Repeat`, `Switch`, `Match`, `dynamic`, `client_only` |
@@ -22,20 +21,21 @@ pages linked in the left column carry the details.
 | Rendering | [`render`, `hydrate`, `Root`](reconciler.md), `is_server`, [`is_hydrating`, `on_hydration_end`, `NoHydration`, `Hydration`](flow.md) |
 | [Server requests](request.md) | `RequestEvent`, `ResponseHead`, `get_request_event`, `http_status`, `http_header`, `set_cookie` |
 | [Server functions](../concepts/full-stack.md) | `server_function`, `ServerFunction`, `redirect`, `reload`, `respond`, `FormData`, `UploadedFile` |
-| Dev mode | `is_dev_mode`, `set_dev_mode` |
+| Dev mode | `is_dev_mode`, `set_dev_mode`, `WybthonWarning` |
 
 Other modules are imported by name and aren't re-exported:
 
 | Module | Contents |
 | --- | --- |
-| [`wybthon.router`](router.md) | `create_router`, `Router`, `Route`, `RouteProps`, `PreloadArgs`, `Outlet`, `navigate`, `url`, `use_location`, `Location`, `use_params`, `use_search_params`, `SearchParams`, `use_route_matches`, `use_link_state`, `LinkState`, `preload_route`, `file_routes`, `resolve`, `RouteSpec`; the data layer: `query`, `revalidate`, `form_action`, `use_submissions` |
+| [`wybthon.router`](router.md) | `create_router`, `Router`, `Route`, `RouteProps`, `PreloadArgs`, `Outlet`, `navigate`, `url`, `use_location`, `Location`, `use_params`, `Params`, `use_search_params`, `SearchParamsView`, `SearchParams`, `use_route_matches`, `use_link_state`, `LinkState`, `preload_route`, `file_routes`, `match_route`, `RouteSpec`; the data layer: `query`, `revalidate`, `form_action`, `use_submissions` |
 | [`wybthon.asgi`](../concepts/full-stack.md) | `create_app`, which serves pages, server functions, and form actions per request |
 | [`wybthon.forms`](forms.md) | `form_state`, `FormState`, `Field`, the `bind_*` helpers, validators, and ARIA helpers |
 | [`wybthon.server`](server.md) | `render_to_string`, `render_to_stream`, `RenderStream` |
-| [`wybthon.testing`](testing.md) | `render`, `Screen`, `fire`, `cleanup`, and the in-memory DOM |
+| [`wybthon.testing`](testing.md) | `render`, `Screen`, `fire`, `cleanup`, `raise_unhandled`, and the in-memory DOM |
 | [`wybthon.compiler`](compiler.md) | The template compiler: `install`, `uninstall`, `compile_source`, `transform` |
 | [`wybthon.virtual`, `wybthon.scheduling`](app-tools.md) | Virtual lists and cooperative scheduling |
-| [`wybthon.reactivity`](reactivity.md) | The reactive core, async, and props names above, plus `Computation` and `Transition` |
+| [`wybthon.vnode`](vnode.md) | The node layer for markup built by code: `h`, `hole`, `VNode`, `Fragment` |
+| [`wybthon.reactivity`](reactivity.md) | The reactive core, async, and props names above, plus `Owner`, `get_observer`, `create_reaction`, `map_array`, `repeat`, `is_accessor`, `Computation`, and `Transition` |
 
 ```python
 from wybthon import Props, component, create_signal, html, render, untrack

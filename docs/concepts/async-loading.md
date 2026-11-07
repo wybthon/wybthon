@@ -134,7 +134,7 @@ one is open joins it.
 Three helpers work with in-flight state without making you catch
 `NotReadyError`:
 
-- **`is_pending(fn)`** is a tracked probe. It's `True` while any value `fn` reads is held by a transition, while an async recompute of something it reads is in flight, while an in-flight action declared it with `affects`, while an optimistic override is active on it, or when it raises `NotReadyError`. The probe's reads don't wait for the transition: an indicator has to show *during* the hold.
+- **`is_pending(fn)`** is a tracked probe. It's `True` while any value `fn` reads is held by a transition, while an async recompute of something it reads is in flight, while an in-flight action declared it with `affects`, or while an optimistic override is active on it. A first load isn't a change in flight: while a value has never resolved, `is_pending` is `False` and the nearest `Loading` boundary shows its fallback, as in Solid 2.0. The probe's reads don't wait for the transition: an indicator has to show *during* the hold.
 - **`latest(fn)`** evaluates `fn` against the newest state: held values return the value being computed, and not-ready async reads return their most recent value (or `None`). Use it for the one piece of UI that should move ahead of the rest.
 - **`await resolve(fn)`** returns the next settled value of `fn()` (or raises the exception it raised). It's for imperative code.
 

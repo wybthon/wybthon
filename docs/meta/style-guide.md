@@ -119,7 +119,7 @@ and (when illustrative) a small example:
 ```python
 """Reactive list mapping helpers.
 
-[`map_array`][wybthon.map_array] is the engine behind
+[`map_array`][wybthon.reactivity.map_array] is the engine behind
 [`For`][wybthon.For] and [`Repeat`][wybthon.Repeat]: it turns a
 reactive list into a memoized list of mapped rows, reusing each row's
 owner scope across updates so per-row state survives reorders.
@@ -206,7 +206,7 @@ typically enough; autorefs picks them up via signature annotations
 - Prefer **runnable** snippets that include the imports needed to
   copy-paste them.
 - Write markup as [`html`][wybthon.html] templates. Use
-  [`h(tag, props, *children)`][wybthon.h] only where the page is about
+  [`h(tag, props, *children)`][wybthon.vnode.h] only where the page is about
   it or the markup is built by code. The element helpers (`div(...)`,
   `p(...)`, `wybthon.elements`, `wybthon.svg`) no longer exist.
 - Write reactive expressions directly; the compiler makes each one a

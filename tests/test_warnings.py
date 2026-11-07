@@ -1,11 +1,12 @@
 """Tests for the _warnings module."""
 
+import pytest
+
 from wybthon._warnings import (
     component_name,
     is_dev_mode,
     log_error,
     set_dev_mode,
-    warn,
 )
 
 
@@ -24,21 +25,29 @@ def test_set_dev_mode():
         set_dev_mode(original)
 
 
-def test_warn_outputs_to_stderr(capsys):
-    warn("test warning")
-    captured = capsys.readouterr()
-    assert "[wybthon] Warning: test warning" in captured.err
+def test_warn_issues_a_wybthon_warning():
+    import wybthon._warnings as module
 
-
-def test_warn_silent_when_dev_mode_off(capsys):
-    original = is_dev_mode()
+    # Looked up now: other tests reload Wybthon's modules, which makes a new class.
+    original = module.is_dev_mode()
     try:
-        set_dev_mode(False)
-        warn("should not appear")
-        captured = capsys.readouterr()
-        assert captured.err == ""
+        module.set_dev_mode(True)
+        with pytest.warns(module.WybthonWarning, match="test warning"):
+            module.warn("test warning")
     finally:
-        set_dev_mode(original)
+        module.set_dev_mode(original)
+
+
+def test_warn_silent_when_dev_mode_off(recwarn):
+    import wybthon._warnings as module
+
+    original = module.is_dev_mode()
+    try:
+        module.set_dev_mode(False)
+        module.warn("should not appear")
+        assert not [w for w in recwarn if w.category.__name__ == "WybthonWarning"]
+    finally:
+        module.set_dev_mode(original)
 
 
 def test_log_error_outputs_to_stderr(capsys):

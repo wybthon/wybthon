@@ -125,7 +125,7 @@ def attr_name(name: str) -> str:
 
 
 def is_event_prop(name: str) -> bool:
-    """Return True for `on_click`-style (or `onClick`-style) handler props."""
+    """Return True for `on_click`-style handler props (what `h()` and component props call them)."""
     return prop_kind(name) == KIND_EVENT
 
 
@@ -149,7 +149,7 @@ def prop_kind(name: str) -> int:
             kind = KIND_SKIP
         elif name == "ref":
             kind = KIND_REF
-        elif name.startswith("on_") or (len(name) > 2 and name.startswith("on") and name[2].isupper()):
+        elif name.startswith("on_"):
             kind = KIND_EVENT
         elif name in _DOM_PROPS:
             kind = KIND_DOM_PROP
@@ -161,12 +161,8 @@ def prop_kind(name: str) -> int:
 
 
 def event_name_from_prop(name: str) -> str:
-    """Convert an `on_click` / `onClick` prop name to its DOM event name."""
-    if name.startswith("on_"):
-        return name[3:]
-    if name.startswith("on"):
-        return name[2:].lower()
-    return name
+    """Convert an `on_click` prop name to its DOM event name."""
+    return name[3:] if name.startswith("on_") else name
 
 
 # ---------------------------------------------------------------------------

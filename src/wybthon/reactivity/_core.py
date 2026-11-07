@@ -49,7 +49,7 @@ import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType, MethodType, coroutine
-from typing import Any, Final
+from typing import Any, Final, overload
 
 from .. import _warnings, diagnostics
 from .._warnings import log_error, warn_once
@@ -375,8 +375,34 @@ def _run_callback_body[T](owner: Owner | None, scope: _CallbackScope, fn: Callab
         _setup_depth -= 1
 
 
+# Arity facts per code object, for plain functions without defaults: a lambda
+# or nested function written once in source is the same code object every
+# time it's created, so its arity is computed once.
+_ARITY: dict[Any, tuple[bool, int]] = {}
+
+
+def _arity(fn: Any) -> tuple[bool, int]:
+    """`(accepts a required positional, positional count)` for `fn`, cached for plain functions."""
+    if type(fn) is FunctionType and fn.__defaults__ is None:
+        code = fn.__code__
+        known = _ARITY.get(code)
+        if known is None:
+            known = _ARITY[code] = (_requires_positional(fn), _count_positional(fn))
+        return known
+    return _requires_positional(fn), _count_positional(fn)
+
+
 def _accepts_positional(fn: Any) -> bool:
     """Return True when `fn` declares at least one required positional parameter."""
+    return _arity(fn)[0]
+
+
+def _positional_count(fn: Any) -> int:
+    """Return how many positional parameters `fn` accepts (``-1`` for unbounded)."""
+    return _arity(fn)[1]
+
+
+def _requires_positional(fn: Any) -> bool:
     code = getattr(fn, "__code__", None)
     if code is not None:
         defaults = getattr(fn, "__defaults__", None)
@@ -395,8 +421,7 @@ def _accepts_positional(fn: Any) -> bool:
     )
 
 
-def _positional_count(fn: Any) -> int:
-    """Return how many positional parameters `fn` accepts (``-1`` for unbounded)."""
+def _count_positional(fn: Any) -> int:
     code = getattr(fn, "__code__", None)
     if code is not None:
         if code.co_flags & inspect.CO_VARARGS:
@@ -696,11 +721,13 @@ def _schedule_microtask(fn: Callable[[], None]) -> bool:
             return True
         except Exception:
             pass
-    try:
-        asyncio.get_running_loop().call_soon(fn)
-        return True
-    except Exception:
+    # `_get_running_loop` returns None instead of raising: without a loop
+    # (a script, a test without asyncio) every write asks again.
+    loop = asyncio._get_running_loop()
+    if loop is None or loop.is_closed():
         return False
+    loop.call_soon(fn)
+    return True
 
 
 def _schedule_flush() -> None:
@@ -815,9 +842,14 @@ def _gc_resume() -> None:
     committed DOM has painted, instead of inside the event handler that
     caused it.
     """
-    global _gc_pause_depth
+    global _gc_pause_depth, _gc_held
     _gc_pause_depth -= 1
     if _gc_pause_depth or not _gc_held:
+        return
+    if _js_idle is False and not _graveyard:
+        # Outside a browser: nothing waits for idle time.
+        _gc_held = False
+        gc.enable()
         return
     if not _schedule_idle():
         _idle_work()
@@ -996,6 +1028,28 @@ def _flush() -> None:
     """Settle the graph: commit writes, run effects by phase, commit DOM, repeat."""
     global _flushing, _track, _round, _reveal_effects
     if _flushing:
+        return
+    if not (
+        _staged
+        or _render_queue
+        or _effect_queue
+        or _settled_queue
+        or _transitions
+        or _deferred
+        or _reveal_effects
+        or _unobserved_check
+        or _tentative
+        or _probed_tentative
+        or _newly_pending
+    ):
+        # Nothing to settle. A DOM command a mount buffered outside any
+        # flush still goes out, as it would at the end of a full one, and
+        # the round state reads outside a flush consult is brought current.
+        _round += 1
+        _track = _async_live > 0
+        _commit_dom()
+        if _flush_callbacks:
+            _run_flush_callbacks()
         return
     _flushing = True
     rounds = 0
@@ -1274,6 +1328,17 @@ class Owner:
                 return cm[key]
             owner = owner._parent
         return default
+
+    def _reset(self) -> None:
+        """Release everything this owner holds (tasks, children, cleanups), keeping it alive for reuse."""
+        if self._tasks:
+            for task in tuple(self._tasks):
+                task.cancel()
+            self._tasks.clear()
+        if self._children:
+            self._dispose_children()
+        if self._cleanups:
+            self._run_cleanups()
 
     def dispose(self) -> None:
         """Tear down this owner and every descendant.
@@ -1687,6 +1752,27 @@ class Signal[T](Accessor[T]):
             else:
                 obs2._stale(_DIRTY)
 
+    # -- the framework's write protocol ---------------------------------------
+    #
+    # Framework modules write signals through these four names; the write
+    # origins they map to are the core's own business.
+
+    # Stage a write without the dev-mode scope check; the scope decides whether
+    # a transition holds it.
+    _write = _set
+
+    def _reveal(self, value: Any) -> None:
+        """Stage a write no transition ever holds (UI state such as a boundary's status)."""
+        self._set(value, _O_REVEAL)
+
+    def _commit_derived(self, value: Any) -> None:
+        """Commit a value derived from what the running computation read (a row's index), now."""
+        self._commit_now(value)
+
+    def _commit_revealed(self, value: Any) -> None:
+        """Commit framework state now, outside every transition."""
+        self._commit_now(value, _O_REVEAL)
+
     def __repr__(self) -> str:
         return f"Signal({self._value!r})"
 
@@ -1792,9 +1878,10 @@ class _PropField:
 
     - a compiler getter is always called, so `<{Card} title={user().name}>`
       reads `user().name` in whatever scope reads the prop;
-    - an accessor or zero-argument function is called too, unless the
-      field's annotation is callable (`unwrap` is false): a callback is
-      returned as the parent passed it.
+    - an accessor (a signal, a memo) is read too, unless the field's
+      annotation is callable (`unwrap` is false);
+    - anything else, including a plain function, is returned as the
+      parent passed it: reading a prop never calls a callback.
 
     A constant is tracked only when the component can receive new props:
     when it was mounted directly in a reactive hole's result (or a root),
@@ -1857,10 +1944,10 @@ class _PropField:
                 value = value.fn()
             # `title={state.title}` hands over the signal itself; a value
             # field reads it, as a binding of the same expression would.
-            if self.unwrap and is_accessor(value):
+            if self.unwrap and isinstance(value, Accessor):
                 return value()
             return value
-        if self.unwrap and is_accessor(value):
+        if self.unwrap and isinstance(value, Accessor):
             if obs is None and _setup_depth and not _untrack_depth:
                 _warn_top_level_read(self)
                 return untrack(value)
@@ -2510,8 +2597,15 @@ class Computation(Owner):
             return
         # The first run of a fresh effect and eager effects apply at once.
         # Re-runs inside a flush are collected and applied when the round
-        # decides whether they reveal or wait for the transition.
-        if first or self._eager or not _flushing:
+        # decides whether they reveal or wait for the transition. A round
+        # that tracks nothing (no transition open, no async work live) can
+        # hold nothing, so its re-runs apply at once too.
+        if (
+            first
+            or self._eager
+            or not _flushing
+            or (not _track and (x is None or x.publication_tx is None) and not _probed_tentative)
+        ):
             self._run_apply(value, prev)
         else:
             _deferred.append((self, value, prev))
@@ -2538,21 +2632,25 @@ class Computation(Owner):
                 log_error(f"Reactive apply failed: {value.error}", value.error)
             return
         x = self._ext
+        apply_owner: Owner | None = None
         if x is not None:
             if x.prepared is not None or x.committed is not None:
                 self._publish_preparation()
             if x.apply_cleanup is not None:
                 self._run_apply_cleanup()
-            if x.apply_owner is not None:
-                x.apply_owner.dispose()
-        if self._uses_apply_scope:
+            apply_owner = x.apply_owner
+            if apply_owner is not None:
+                # One scope for the effect's lifetime: what the previous
+                # apply created is released, and the scope is reused.
+                apply_owner._reset()
+        if not self._uses_apply_scope:
+            apply_owner = self
+        elif apply_owner is None:
             apply_owner = Owner()
             self._x().apply_owner = apply_owner
             apply_owner._parent = self
             if self._provisional is not None:
                 apply_owner._provisional = self._provisional
-        else:
-            apply_owner = self
         global _current_owner, _current_observer, _applying
         prev_owner = _current_owner
         prev_obs = _current_observer
@@ -2828,16 +2926,32 @@ class Computation(Owner):
 
     def _read(self) -> Any:
         """Read a memo: bring it current, subscribe the reader, surface async state."""
-        self._update_if_necessary()
+        if self._state:
+            self._update_if_necessary()
         obs = _current_observer
         if obs is not None:
             if obs is not self and not self._disposed:
                 obs._add_source(self)
         elif _setup_depth and not _untrack_depth:
             _warn_top_level_read(self)
+        if (
+            self._async is None
+            and self._error is None
+            and not _slow_reads
+            and _in_action is None
+            and not _readiness_depth
+        ):
+            # A settled synchronous memo outside every transition, action,
+            # probe, and readiness scope: its value is the answer.
+            return self._value
+        return self._read_slow()
+
+    def _read_slow(self) -> Any:
+        """The rest of a memo read: async state, actions, held values, errors, readiness."""
         a = self._async
         if a is not None:
-            if _probe_depth and a.pending:
+            if _probe_depth and a.pending and a.has_value:
+                # A first load isn't a change in flight: `Loading` shows it.
                 _probe_mark()
             if a.pending and not a.has_value and self._error is None:
                 if _latest_depth == 0:
@@ -2855,29 +2969,36 @@ class Computation(Owner):
             raise err
         if _readiness_depth and _is_unsettled(self, set()):
             raise NotReadyError(f"Expression is still settling: {self._label()}")
-        if _slow_reads:
-            if _probe_depth and _probe_touch(self):
-                _probe_mark()
-            if not _layer_working and not _latest_depth and self in _held:
-                return _held[self]
+        if _probe_depth and _probe_touch(self):
+            _probe_mark()
         return self._value
 
     def dispose(self) -> None:
         """Permanently dispose a computation and its committed resources."""
         if self._disposed:
             return
+        x = self._ext
+        scope = x.apply_owner if x is not None else None
         if (
-            self._ext is None
+            (x is None or x.apply_cleanup is None)
+            and (scope is None or not (scope._children or scope._cleanups or scope._tasks))
             and self._async is None
             and self._children is None
             and self._cleanups is None
             and self._observers is None
             and self._tasks is None
             and self._prev_sources is None
-            and not _transitions
         ):
-            # A plain binding: it owns nothing and nothing reads it.
+            # A plain binding or effect: it owns nothing and nothing reads it.
             self._disposed = True
+            if scope is not None:
+                # The apply stage's scope holds nothing either.
+                scope._disposed = True
+                scope._parent = None
+                x.apply_owner = None
+            if _transitions:
+                # A held group may have been waiting on this reader.
+                _schedule_flush()
             # Drop what it writes to and runs: a hole's binding and the hole
             # refer to each other, and garbage that forms no cycle is freed
             # at once by reference counting, with no work for the collector.
@@ -3518,8 +3639,29 @@ def _bind(
 _new_computation = object.__new__
 
 
-def untrack[T](fn: Callable[[], T]) -> T:
-    """Run `fn` without tracking any reactive reads.
+class _Untracked:
+    """The context manager `untrack()` returns: reads inside the block aren't tracked."""
+
+    __slots__ = ("_prev",)
+
+    def __enter__(self) -> None:
+        global _current_observer, _untrack_depth
+        self._prev = _current_observer
+        _current_observer = None
+        _untrack_depth += 1
+
+    def __exit__(self, *_exc: Any) -> None:
+        global _current_observer, _untrack_depth
+        _untrack_depth -= 1
+        _current_observer = self._prev
+
+
+@overload
+def untrack[T](fn: Callable[[], T]) -> T: ...
+@overload
+def untrack() -> _Untracked: ...
+def untrack(fn: Callable[[], Any] | None = None) -> Any:
+    """Read reactive values without tracking them, in `fn` or in a `with` block.
 
     Use it to read a signal inside an effect without depending on it,
     or to seed local state from a prop during component setup without
@@ -3527,12 +3669,22 @@ def untrack[T](fn: Callable[[], T]) -> T:
     `untrack`; [`Accessor.peek`][wybthon.Accessor.peek] is the shorter
     form for a single read).
 
+    ```python
+    count, set_count = create_signal(untrack(lambda: props.initial))
+
+    with untrack():
+        start, step = props.start, props.step
+    ```
+
     Args:
-        fn: Zero-arg callable to invoke with tracking suppressed.
+        fn: Zero-arg callable to invoke with tracking suppressed. Without
+            it, `untrack()` returns a context manager.
 
     Returns:
         Whatever `fn` returns.
     """
+    if fn is None:
+        return _Untracked()
     global _current_observer, _untrack_depth
     prev = _current_observer
     _current_observer = None

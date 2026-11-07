@@ -108,6 +108,8 @@ The [runtime overhaul evaluation](results/runtime-overhaul.md) records local bas
 
 The [performance follow-up](results/runtime-performance.md) records the subsequent optimizations, interleaved comparisons against both baselines, selection samples, and native store memory measurements.
 
+The [engine v8 evaluation](results/engine-v8.md) records the leaner reactive core, SVG templates on the clone path, and lighter hydration against v0.43.0.
+
 The [engine v7 evaluation](results/engine-v7.md) records lazily wrapped, copy-on-write stores and dataclass stores against v0.41.0.
 
 The [engine v6 evaluation](results/engine-v6.md) records boot snapshots, the string server renderer, and the client rendering check against v0.40.0.

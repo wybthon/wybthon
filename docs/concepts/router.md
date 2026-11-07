@@ -96,8 +96,8 @@ Any component under the router can read the same state with these functions:
 
 | Function | Returns |
 | --- | --- |
-| [`use_params()`][wybthon.router.use_params] | A tracked accessor for the path parameters (`{}` outside a router). |
-| [`use_search_params()`][wybthon.router.use_search_params] | `(search, set_search)`: an accessor for the `SearchParams`, and a setter. |
+| [`use_params()`][wybthon.router.use_params] | The path parameters, a mapping whose reads are tracked: `use_params()["id"]` (empty outside a router). |
+| [`use_search_params()`][wybthon.router.use_search_params] | `(search, set_search)`: the query's parameters, a mapping whose reads are tracked, and a setter. |
 | [`use_location()`][wybthon.router.use_location] | The URL; read `.path`, `.search`, `.hash` (decoded), `.query`, or `.href`, each tracked. |
 | [`use_route_matches()`][wybthon.router.use_route_matches] | A tracked accessor for the routes the URL shows, root to leaf. |
 
@@ -109,7 +109,7 @@ def Pager():
     search, set_search = use_search_params()
 
     def next_page():
-        set_search(page=int(search().get("page", "1")) + 1)
+        set_search(page=int(search.get("page", "1")) + 1)
 
     return html(t"<button onclick={next_page}>Next</button>")
 ```
@@ -215,14 +215,14 @@ router = create_router(file_routes("app.routes"))
 
 ## Matching without a browser
 
-[`resolve(routes, pathname, base_path="")`][wybthon.router.resolve] returns `(route, {"params": ..., "matches": [...]})`, or `None`, and needs no browser, so it runs in tests and tools. Any object with a `path` and `children` works as a route, including [`RouteSpec`][wybthon.router.RouteSpec]. [`router.match(href)`][wybthon.router.Router.match] returns the routes a URL shows, root to leaf.
+[`match_route(routes, pathname, base_path="")`][wybthon.router.match_route] returns `(route, {"params": ..., "matches": [...]})`, or `None`, and needs no browser, so it runs in tests and tools. Any object with a `path` and `children` works as a route, including [`RouteSpec`][wybthon.router.RouteSpec]. [`router.match(href)`][wybthon.router.Router.match] returns the routes a URL shows, root to leaf.
 
 ```python
-from wybthon.router import RouteSpec, resolve
+from wybthon.router import RouteSpec, match_route
 
 routes = [RouteSpec("/"), RouteSpec("/users", children=[RouteSpec("/:id")]), RouteSpec("/docs/*")]
-resolve(routes, "/users/42")  # (RouteSpec(path='/:id'), {"params": {"id": "42"}, "matches": [...]})
-resolve(routes, "/missing")  # None
+match_route(routes, "/users/42")  # (RouteSpec(path='/:id'), {"params": {"id": "42"}, "matches": [...]})
+match_route(routes, "/missing")  # None
 ```
 
 ## On the server

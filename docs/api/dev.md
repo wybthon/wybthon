@@ -24,7 +24,7 @@ application archives, so they download in parallel with Pyodide.
 
 | Name | Description |
 | --- | --- |
-| [`main`][wybthon.dev.main] | CLI entry point (`wyb init`, `wyb dev`, `wyb build`, `wyb preview`, `wyb run`). |
+| [`main`][wybthon.dev.main] | CLI entry point (`wyb init`, `wyb dev`, `wyb build`, `wyb preview`, `wyb run`, `wyb check`). |
 | [`serve`][wybthon.dev.serve] | `serve(directory=".", host="127.0.0.1", port=8000, open_browser=False, open_path=None)`: the `wyb dev` server, callable from Python. |
 | [`run_script`][wybthon.dev.run_script] | `run_script(path, argv)`: what `wyb run` does, callable from Python. |
 
@@ -34,6 +34,7 @@ wyb dev --dir my-app --port 8000 --open
 wyb build --dir my-app --base /app/
 wyb preview --dir my-app/dist
 wyb run scripts/seed.py --verbose
+wyb check app --checker pyright
 ```
 
 | Command | Flag | Default | Description |
@@ -48,6 +49,8 @@ wyb run scripts/seed.py --verbose
 | `wyb build` | `--base` | from `wybthon.toml` | Base URL path the app is served from. |
 | `wyb preview` | `--dir`, `--host`, `--port` | `dist`, `127.0.0.1`, `8000` | Serve a production build. |
 | `wyb run` | `script [args ...]` | none | Run a Python script as `__main__` with its templates compiled; the arguments after it are passed to the script. |
+| `wyb check` | `paths ...` | `.` | Files and directories to type-check, including component tag props (see [Typing](../guides/typing.md#checking-tag-props-with-wyb-check)). |
+| `wyb check` | `--checker` | `mypy` | `mypy` or `pyright`. |
 
 Live reload: `wyb dev` watches the app directory, `public/`,
 `index.html`, and `wybthon.toml`, rebuilds on any change, and

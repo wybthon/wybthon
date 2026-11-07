@@ -54,10 +54,10 @@ def Demo():
 ```
 
 Event handlers and refs are never reactive, so `onclick={increment}`
-binds the function itself. In an [`h()`][wybthon.h] tree, which the
+binds the function itself. In an [`h()`][wybthon.vnode.h] tree, which the
 compiler doesn't rewrite, pass an accessor or a zero-argument function
 as a child or prop value (`h("p", None, count)`), and use
-[`hole`][wybthon.hole] to make a hole explicitly when it needs a `key`.
+[`hole`][wybthon.vnode.hole] to make a hole explicitly when it needs a `key`.
 
 A hole's expression may return a string or number (a text node), a
 template or other `VNode`, a list of either (mounted as a fragment),
@@ -218,14 +218,14 @@ function, use [`create_tracked_effect`][wybthon.create_tracked_effect].
 
 ## `create_reaction`
 
-[`create_reaction`][wybthon.create_reaction] separates tracking from
+[`create_reaction`][wybthon.reactivity.create_reaction] separates tracking from
 re-execution. It returns `track(fn)`: calling `track` runs `fn` and
 subscribes to what it reads, and the first time any of those sources
 changes, the effect runs once (untracked, after the DOM commit) and the
 subscription ends. Call `track` again to re-arm it.
 
 ```python
-from wybthon import create_reaction
+from wybthon.reactivity import create_reaction
 
 track = create_reaction(lambda: print("count changed"))
 track(count)  # arms the reaction
@@ -338,7 +338,7 @@ a type checker checks a component call's arguments against it. See the
 - [`omit(source, *keys)`][wybthon.omit] returns a reactive view without the given keys, or without every key a predicate accepts (the replacement for `split_props`).
 - A view reads like props: `view.title` is the tracked value, and item access (`view["title"]`) returns an accessor. Spreading a view onto an element (`<button {attrs}>`) binds each key reactively.
 - [`is_static(props, key)`][wybthon.is_static] reports whether the parent passed a plain value rather than an expression, without reading or tracking anything, as Solid 2.0's `isStatic` does.
-- [`children(fn)`][wybthon.children] resolves a getter for a children prop (`lambda: props.children`) into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list. [`flatten(children)`][wybthon.flatten] is the unmemoized form, matching Solid 2.0's `flatten`.
+- [`children(fn)`][wybthon.resolve_children] resolves a getter for a children prop (`lambda: props.children`) into a [`ChildrenAccessor`][wybthon.ChildrenAccessor]: nested accessors are resolved, lists are flattened, and `None` and booleans are dropped. Calling it returns the single child or a list; `.to_array()` always returns a list. [`flatten(children)`][wybthon.flatten] is the unmemoized form, matching Solid 2.0's `flatten`.
 
 ```python
 from wybthon import merge, omit
@@ -349,7 +349,7 @@ handlers = omit(props, lambda key: not key.startswith("on_"))
 
 ## `map_array`
 
-[`map_array`][wybthon.map_array] maps a reactive list to values with a stable
+[`map_array`][wybthon.reactivity.map_array] maps a reactive list to values with a stable
 owner scope per row. `keyed` selects how rows are matched, and with it
 the callback shape. `For` is a native list region with the same matching
 modes, and it can consume store edit records directly:
@@ -360,8 +360,13 @@ modes, and it can consume store edit records directly:
 | `False` | position | `Accessor[T]`, `int` |
 | `key(item)` callable | key | `Accessor[T]`, `Accessor[int]` |
 
+The index is optional: a callback that takes one parameter, such as
+`For(todos, lambda todo: html(t"<li>{todo.title}</li>"))`, gets the item
+alone.
+
 ```python
-from wybthon import create_signal, map_array
+from wybthon import create_signal
+from wybthon.reactivity import map_array
 
 items, set_items = create_signal(["A", "B", "C"])
 
@@ -376,14 +381,15 @@ inside a row must read an accessor within a hole, memo, or effect.
 
 ## `repeat`
 
-[`repeat`][wybthon.repeat] maps an integer range to rows, each with its
+[`repeat`][wybthon.reactivity.repeat] maps an integer range to rows, each with its
 own owner scope. `fn(i)` runs once per slot for `i` in
 `range(start, start + count)`; growing the count maps only the new
 slots, and shrinking it disposes the removed ones. The `Repeat`
 region uses the same model.
 
 ```python
-from wybthon import create_signal, repeat
+from wybthon import create_signal
+from wybthon.reactivity import repeat
 
 rating, set_rating = create_signal(3)
 stars = repeat(rating, lambda i: f"star {i}", start=1)
@@ -417,7 +423,7 @@ key is absent. See [Stores](stores.md) for projections in general.
 ## Miscellany
 
 - [`create_unique_id`][wybthon.create_unique_id] returns a process-unique string for `id`/`for` pairs.
-- [`is_accessor`][wybthon.is_accessor] reports whether a value is a reactive expression (an `Accessor` or a zero-arg function); it's the rule the renderer uses at run time to decide what becomes a hole. The compiler makes its own decision earlier, from the expression's syntax; see [The compiler](compiler.md#the-rule-dynamic-or-static).
+- [`is_accessor`][wybthon.reactivity.is_accessor] reports whether a value is a reactive expression (an `Accessor` or a zero-arg function); it's the rule the renderer uses at run time to decide what becomes a hole. The compiler makes its own decision earlier, from the expression's syntax; see [The compiler](compiler.md#the-rule-dynamic-or-static).
 - [`is_equal(a, b)`][wybthon.is_equal] is the default equality of signals, memos, and stores: identity, then `==`.
 - [`flush`][wybthon.flush] settles the graph now. Automatic in the browser; call it in tests.
 

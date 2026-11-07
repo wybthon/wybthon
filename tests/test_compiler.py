@@ -498,7 +498,7 @@ def test_component_tag_getters_mark_probes():
 
     def Card(**props):
         seen.append(props)
-        from wybthon import h
+        from wybthon.vnode import h
 
         return h("i", None)
 

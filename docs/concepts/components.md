@@ -158,7 +158,7 @@ def AlsoFine(props: NameProps):
 There are two ways to use a component in a template.
 
 **The call form.** Calling a `Component` returns a
-[`VNode`][wybthon.VNode]. Keyword arguments become props, and every
+[`VNode`][wybthon.vnode.VNode]. Keyword arguments become props, and every
 component also accepts `key=`. Call it inside an interpolation and the
 type checker sees every prop, while the compiler still passes each
 dynamic argument as a getter:
@@ -203,7 +203,7 @@ or without a required one raises `TypeError` at the call:
 Statically, a type checker sees the call as constructing the props
 class, so the same mistakes show up in your editor.
 
-The low-level [`h`][wybthon.h] form still works (`h(Counter, {"initial": 5})`).
+The low-level [`h`][wybthon.vnode.h] form still works (`h(Counter, {"initial": 5})`).
 
 ### Plain functions as tags
 
@@ -254,11 +254,15 @@ def Picker(props: PickerProps):
 Picker(on_pick=print, on_close=lambda: print("closed"))
 ```
 
-The declared type, not the callback's argument count, decides what's
-unwrapped, so a zero-argument callback such as `on_close` is passed
-through untouched. Every other field unwraps an accessor or getter on
-read. Annotate a field as `Accessor[T]` when the child wants the
-accessor itself rather than its value.
+Reading a prop never calls a function the parent passed: a callback
+such as `on_close` comes back exactly as it was passed, whatever its
+field is annotated. What a read does unwrap is an expression: a getter
+the compiler made from markup (`title={user().name}`), or an accessor
+the parent passed (a signal or memo). A field annotated as callable, or
+as `Accessor[T]`, gets the accessor itself rather than its value.
+
+Outside markup, pass an accessor to make a prop reactive:
+`Card(title=create_memo(lambda: user().name))`. A lambda is a value.
 
 ## What props cost
 
@@ -348,7 +352,7 @@ Card(title="Hi", children=[html(t"<p>a</p>")])  # children as a keyword
 ```
 
 When you need to inspect or iterate children, resolve them with
-[`children`][wybthon.children]. It takes a getter for the children and
+[`resolve_children`][wybthon.resolve_children]. It takes a getter for the children and
 returns a [`ChildrenAccessor`][wybthon.ChildrenAccessor] that resolves
 nested accessors, flattens lists, and drops `None` and booleans.
 Calling it returns the single child or a list; `to_array()` always
@@ -356,7 +360,7 @@ returns a list. [`flatten`][wybthon.flatten] is the unmemoized form,
 for a one-off resolution:
 
 ```python
-from wybthon import ParentProps, children as resolve_children, component, html
+from wybthon import ParentProps, resolve_children, component, html
 
 
 @component
@@ -459,7 +463,7 @@ def PageContent():
 ```
 
 When you build the children in code, group them with
-[`Fragment`][wybthon.Fragment]: `Fragment(*sections)`.
+[`Fragment`][wybthon.vnode.Fragment]: `Fragment(*sections)`.
 
 ## Portal
 

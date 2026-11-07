@@ -4,7 +4,7 @@
 
 #### What's in this module
 
-`vnode` defines the [`VNode`][wybthon.VNode] data structure and the pure
+`vnode` defines the [`VNode`][wybthon.vnode.VNode] data structure and the pure
 helpers that build trees of them. It has no browser dependency, so
 trees can be constructed and inspected anywhere CPython runs. A
 **reactive hole** is a `_hole` VNode wrapping an accessor or zero-arg
@@ -13,10 +13,10 @@ only that region when its reads change.
 
 | Name | Description |
 | --- | --- |
-| [`VNode`][wybthon.VNode] | Element, text, component, fragment, hole, template, or region node; `tag`, `props`, `children`, `key`. |
-| [`h`][wybthon.h] | Hyperscript constructor: `h(tag, props, *children)`; components get children as the `children` prop. |
-| [`Fragment`][wybthon.Fragment] | Group children with no wrapper element. |
-| [`hole`][wybthon.hole] | Explicit reactive hole, optionally with a `key`. |
+| [`VNode`][wybthon.vnode.VNode] | Element, text, component, fragment, hole, template, or region node; `tag`, `props`, `children`, `key`. |
+| [`h`][wybthon.vnode.h] | Hyperscript constructor: `h(tag, props, *children)`; components get children as the `children` prop. |
+| [`Fragment`][wybthon.vnode.Fragment] | Group children with no wrapper element. |
+| [`hole`][wybthon.vnode.hole] | Explicit reactive hole, optionally with a `key`. |
 
 Most nodes are built for you:
 
@@ -46,7 +46,8 @@ forms, recursive trees, or a tag computed at run time. Templates and
 `h()` trees mix freely in either direction.
 
 ```python
-from wybthon import Fragment, create_signal, h, hole, html
+from wybthon import create_signal, html
+from wybthon.vnode import Fragment, h, hole
 
 name, set_name = create_signal("Ada")
 active, set_active = create_signal(False)
@@ -118,7 +119,7 @@ The reconciler infers the SVG namespace from an `svg` root, so
 
 - [Templates](../concepts/templates.md): the `html` template function, the primary way to write markup
 - [Compiler](compiler.md): how templates get their getters
-- [`is_accessor`][wybthon.is_accessor]: the rule that decides what becomes a hole
+- [`is_accessor`][wybthon.reactivity.is_accessor]: the rule that decides what becomes a hole
 - [Reconciler](reconciler.md): how VNodes mount and patch
 - [Events](events.md) and [DOM](dom.md): handler props, `Element`, and `Ref`
 - [Concepts: Virtual DOM](../concepts/vdom.md)

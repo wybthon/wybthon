@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 # Matches `wybthon._hook.COMPILER_TAG` (a test checks they agree).
-COMPILER_TAG = "wyb2"
+COMPILER_TAG = "wyb3"
 
 # Installed from a wheel, pytest marks every package in the plugin's
 # distribution for assertion rewriting, Wybthon's own included. Its modules
@@ -57,3 +57,16 @@ def _install() -> None:
 
 
 _install()
+
+
+def pytest_runtest_teardown(item: Any) -> None:
+    """Unmount views a test rendered with `wybthon.testing.render` and left mounted.
+
+    Only when the test imported `wybthon.testing`, so a test run that never
+    renders never imports Wybthon here.
+    """
+    import sys
+
+    testing = sys.modules.get("wybthon.testing")
+    if testing is not None:
+        testing.cleanup()

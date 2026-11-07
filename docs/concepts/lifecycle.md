@@ -10,7 +10,7 @@ and settled callbacks run, and the order in which things are torn down.
 ## The ownership tree
 
 When a component mounts, the reconciler creates a fresh
-[`Owner`][wybthon.Owner] for it and runs the body under that owner.
+[`Owner`][wybthon.reactivity.Owner] for it and runs the body under that owner.
 Anything created during the body (effects, memos, child components,
 holes and bindings in the returned template) attaches to it. When the component unmounts, the owner is
 disposed and the whole subtree goes with it.

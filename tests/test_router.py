@@ -12,9 +12,9 @@ from wybthon.router import (
     RouteProps,
     RouteSpec,
     create_router,
+    match_route,
     navigate,
     preload_route,
-    resolve,
     url,
     use_link_state,
     use_location,
@@ -266,7 +266,7 @@ def test_url_hooks_read_params_search_location_and_matches():
         matches = use_route_matches()
         seen["set"] = set_search
         return html(
-            t"<p>{params()['slug']}|{str(search().get_all('t'))}|{location.path}|{location.hash}|{len(matches())}</p>"
+            t"<p>{params['slug']}|{str(search.get_all('t'))}|{location.path}|{location.hash}|{len(matches())}</p>"
         )
 
     router = create_router([Route("/posts", children=[Route("/:slug", Page)])])
@@ -283,7 +283,7 @@ def test_url_hooks_outside_a_router():
 
     @component
     def Lonely():
-        seen["params"] = use_params()()
+        seen["params"] = dict(use_params())
         seen["matches"] = use_route_matches()()
         return html(t"<p>x</p>")
 
@@ -414,48 +414,48 @@ def test_a_signal_change_still_updates_a_routed_component():
 
 
 def test_resolve_matches_literals_and_parameters():
-    route, info = resolve([RouteSpec("/"), RouteSpec("/about")], "/about")
+    route, info = match_route([RouteSpec("/"), RouteSpec("/about")], "/about")
     assert route.path == "/about" and info["params"] == {}
-    route, info = resolve([RouteSpec("/users/:id")], "/users/42/")
+    route, info = match_route([RouteSpec("/users/:id")], "/users/42/")
     assert info["params"] == {"id": "42"}
 
 
 def test_resolve_child_paths_continue_their_parent():
     routes = [RouteSpec("/about", children=[RouteSpec("/"), RouteSpec("/team")])]
-    route, info = resolve(routes, "/about/team")
+    route, info = match_route(routes, "/about/team")
     assert route.path == "/team"
     assert [r.path for r in info["matches"]] == ["/about", "/team"]
-    route, _ = resolve(routes, "/about")
+    route, _ = match_route(routes, "/about")
     assert route.path == "/"
     # A layout matches only through a child.
-    assert resolve([RouteSpec("/about", children=[RouteSpec("/team")])], "/about") is None
+    assert match_route([RouteSpec("/about", children=[RouteSpec("/team")])], "/about") is None
 
 
 def test_resolve_catch_alls_and_optional_parameters():
     routes = [RouteSpec("/docs/*rest"), RouteSpec("/u/:id?"), RouteSpec("*")]
-    route, info = resolve(routes, "/docs/guide/intro")
+    route, info = match_route(routes, "/docs/guide/intro")
     assert route.path == "/docs/*rest" and info["params"] == {"rest": "guide/intro"}
-    route, info = resolve(routes, "/docs")
+    route, info = match_route(routes, "/docs")
     assert route.path == "/docs/*rest" and info["params"] == {"rest": ""}
-    assert resolve(routes, "/u")[1]["params"] == {"id": ""}
-    assert resolve(routes, "/u/5")[1]["params"] == {"id": "5"}
-    assert resolve(routes, "/anything/else")[1]["params"] == {"wildcard": "anything/else"}
+    assert match_route(routes, "/u")[1]["params"] == {"id": ""}
+    assert match_route(routes, "/u/5")[1]["params"] == {"id": "5"}
+    assert match_route(routes, "/anything/else")[1]["params"] == {"wildcard": "anything/else"}
     with pytest.raises(ValueError, match="last segment"):
-        resolve([RouteSpec("/*a/b")], "/x/b")
+        match_route([RouteSpec("/*a/b")], "/x/b")
 
 
 def test_resolve_prefers_literals_then_parameters_then_catch_alls():
     routes = [RouteSpec("*404"), RouteSpec("/users/:id"), RouteSpec("/users/new")]
-    assert resolve(routes, "/users/new")[0].path == "/users/new"
-    assert resolve(routes, "/users/7")[0].path == "/users/:id"
-    assert resolve(routes, "/nope")[0].path == "*404"
+    assert match_route(routes, "/users/new")[0].path == "/users/new"
+    assert match_route(routes, "/users/7")[0].path == "/users/:id"
+    assert match_route(routes, "/nope")[0].path == "*404"
 
 
 def test_resolve_strips_the_base_path():
     routes = [RouteSpec("/docs/*")]
-    route, info = resolve(routes, "/app/docs/guide", base_path="/app")
+    route, info = match_route(routes, "/app/docs/guide", base_path="/app")
     assert info["params"] == {"wildcard": "guide"}
-    assert resolve(routes, "/x/docs/guide", base_path="/app") is None
+    assert match_route(routes, "/x/docs/guide", base_path="/app") is None
 
 
 def test_route_props_fields():

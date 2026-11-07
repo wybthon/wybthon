@@ -34,14 +34,15 @@ engine and [RFC 0003](../rfcs/0003-engine-v3.md) for compiled templates.
 
 [Templates](templates.md) are the primary path:
 `html(t"<div class={cls()}>{count()}</div>")` is compiled ahead of time
-and mounts with one clone command. [`h(tag, props, *children)`][wybthon.h]
+and mounts with one clone command. [`h(tag, props, *children)`][wybthon.vnode.h]
 is the programmatic path, the counterpart of Solid's `h`, for markup
 built by code: generated forms, recursive trees, or components that
 compute their tag. The two mix freely, and they share one set of prop
 appliers, so a prop means the same thing in both.
 
 ```python
-from wybthon import Fragment, h, html
+from wybthon import html
+from wybthon.vnode import Fragment, h
 
 view = html(t'<div class="app"><h1>Hello</h1><p>Welcome</p></div>')
 built = h("div", {"class": "app"}, h("h1", {}, "Hello"), h("p", {}, "Welcome"))
@@ -161,7 +162,7 @@ it becomes a binding. In a template, the compiler makes every dynamic
 expression a getter, so `{count() * 2}` and `class={status()}` are a
 hole and a binding. Each binding updates on its own, so unrelated
 attributes on the same element update independently. Use
-[`hole`][wybthon.hole] to create a hole explicitly in an `h()` tree
+[`hole`][wybthon.vnode.hole] to create a hole explicitly in an `h()` tree
 when you need a `key`.
 
 ```python

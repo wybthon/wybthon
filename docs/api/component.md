@@ -140,4 +140,4 @@ changed props. Use `@component` when you want typed, reactive props.
 - [Concepts: Compiler](../concepts/compiler.md)
 - [Guides: Authoring patterns](../guides/authoring-patterns.md)
 - [Guides: Typing](../guides/typing.md)
-- [`Props`][wybthon.Props], [`ParentProps`][wybthon.ParentProps], [`prop`][wybthon.prop], [`merge`][wybthon.merge], [`omit`][wybthon.omit], [`is_static`][wybthon.is_static], [`children`][wybthon.children]
+- [`Props`][wybthon.Props], [`ParentProps`][wybthon.ParentProps], [`prop`][wybthon.prop], [`merge`][wybthon.merge], [`omit`][wybthon.omit], [`is_static`][wybthon.is_static], [`resolve_children`][wybthon.resolve_children]

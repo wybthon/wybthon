@@ -15,12 +15,11 @@ from wybthon import (
     create_effect,
     create_signal,
     flush,
-    h,
-    hole,
     html,
     on_cleanup,
 )
 from wybthon.testing import cleanup, fire, render
+from wybthon.vnode import h, hole
 
 
 @pytest.fixture(autouse=True)

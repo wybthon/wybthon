@@ -549,7 +549,7 @@ class _Renderer:
         if error._staged:
             if error._pending is None:
                 return False
-            error._commit_now(error._pending, _core._O_REVEAL)
+            error._commit_revealed(error._pending)
         elif error._value is None:
             return False
         part.failed = True

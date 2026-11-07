@@ -61,6 +61,7 @@ def test_browser_events_refs_selection_and_registry_lifetimes(goto_feature):
 import json, asyncio
 from js import document
 from wybthon import *
+from wybthon.vnode import h, hole
 from wybthon import kernel
 from wybthon.events import set_handler
 import asyncio
@@ -141,7 +142,8 @@ def test_virtual_rows_scroll_and_dispose(goto_feature):
         page,
         """
 from js import document
-from wybthon import create_store, h, on_cleanup, render
+from wybthon import create_store, on_cleanup, render
+from wybthon.vnode import h
 from wybthon.virtual import VirtualFor
 host = document.createElement("section")
 host.id = "virtual-host"
@@ -181,7 +183,8 @@ def test_native_options_composed_events_and_composition(goto_feature):
         """
 import json
 from js import document
-from wybthon import event, h, render
+from wybthon import event, render
+from wybthon.vnode import h
 from wybthon.forms import bind_text, form_state
 host = document.createElement("section")
 host.id = "event-extra"
@@ -228,7 +231,8 @@ def test_templates_match_expanded_generic_mounts(goto_feature):
         page,
         """
 from js import document
-from wybthon import h, html, Fragment, create_signal, flush
+from wybthon import html, create_signal, flush
+from wybthon.vnode import h, Fragment
 from wybthon import reconciler, kernel
 from wybthon.dom import Element
 host = document.createElement("section")
@@ -291,7 +295,8 @@ def test_kernel_protocol_fused_clone_declared_listeners_and_native_disposal(goto
         """
 import json
 from js import document
-from wybthon import For, create_signal, flush, h, html, render
+from wybthon import For, create_signal, flush, html, render
+from wybthon.vnode import h
 from wybthon import kernel
 host = document.createElement("section")
 host.id = "protocol-host"
@@ -365,7 +370,8 @@ def test_clearing_a_list_keeps_focus_on_its_element_siblings(goto_feature):
         page,
         """
 from js import document
-from wybthon import For, create_signal, flush, h, render
+from wybthon import For, create_signal, flush, render
+from wybthon.vnode import h
 from wybthon.dom import Element
 
 focus_host = document.createElement("div")
@@ -406,7 +412,8 @@ def test_clearing_a_list_keeps_a_selection_in_its_text_sibling(goto_feature):
         page,
         """
 from js import document
-from wybthon import For, create_signal, flush, h, render
+from wybthon import For, create_signal, flush, render
+from wybthon.vnode import h
 from wybthon.dom import Element
 
 select_host = document.createElement("div")
@@ -458,7 +465,8 @@ def test_a_list_that_fills_its_parent_clears_with_the_shortcut_and_refills(goto_
         page,
         f"""
 from js import document
-from wybthon import For, create_signal, flush, h, html, render
+from wybthon import For, create_signal, flush, html, render
+from wybthon.vnode import h
 from wybthon.dom import Element
 
 fill_host = document.createElement("div")

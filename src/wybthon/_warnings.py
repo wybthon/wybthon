@@ -2,7 +2,9 @@
 
 A process-wide `DEV_MODE` flag and helpers that surface clear,
 actionable messages during development while keeping production builds
-quiet. All output goes to `sys.stderr`.
+quiet. Warnings are issued through Python's `warnings` module as
+[`WybthonWarning`][wybthon.WybthonWarning], so `pytest.warns`, `-W error`,
+and warning filters work on them. Errors go to `sys.stderr`.
 
 Dev-mode diagnostics raised elsewhere in the framework:
 
@@ -19,9 +21,12 @@ from __future__ import annotations
 
 import sys
 import traceback
+import warnings
+from collections.abc import Callable
 from typing import Any
 
 __all__ = [
+    "WybthonWarning",
     "set_dev_mode",
     "is_dev_mode",
     "warn",
@@ -56,7 +61,23 @@ def is_dev_mode() -> bool:
     return DEV_MODE
 
 
+class WybthonWarning(UserWarning):
+    """A development-mode diagnostic: a frozen reactive read, a static list, and the like.
+
+    Turn them into errors in tests with `-W error::wybthon.WybthonWarning`,
+    or assert on one with `pytest.warns(WybthonWarning)`.
+    """
+
+
 _seen_warnings: set[tuple[str, Any]] = set()
+
+# Called with every error `log_error` reports; `wybthon.testing` installs one
+# so a test fails on an error no boundary handled.
+error_hook: Callable[[BaseException | None, str], None] | None = None
+
+# Called with every warning's message, besides issuing it (a development
+# overlay or a test suite can show them as they happen).
+warning_hook: Callable[[str], None] | None = None
 
 
 def _reset_warning_dedupe() -> None:
@@ -65,9 +86,11 @@ def _reset_warning_dedupe() -> None:
 
 
 def warn(message: str) -> None:
-    """Print a development-mode warning to `stderr` (no-op when dev mode is off)."""
+    """Issue a development-mode [`WybthonWarning`][wybthon.WybthonWarning] (no-op when dev mode is off)."""
     if DEV_MODE:
-        print(f"[wybthon] Warning: {message}", file=sys.stderr)
+        if warning_hook is not None:
+            warning_hook(message)
+        warnings.warn(message, WybthonWarning, stacklevel=3)
 
 
 def warn_once(category: str, key: Any, message: str) -> None:
@@ -88,6 +111,8 @@ def log_error(message: str, error: BaseException | None = None) -> None:
     problems.
     """
     print(f"[wybthon] Error: {message}", file=sys.stderr)
+    if error_hook is not None:
+        error_hook(error, message)
     if error is not None and DEV_MODE:
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 

@@ -52,7 +52,7 @@ def Profile(props: RouteProps):
 router = create_router([Route("/", Home), Route("/users/:id", Profile), Route("*404", NotFound)])
 ```
 
-Path matching ([`resolve`][wybthon.router.resolve]) needs no browser, so
+Path matching ([`match_route`][wybthon.router.match_route]) needs no browser, so
 it also runs in tests, tools, and on the server.
 """
 
@@ -60,14 +60,16 @@ from ._data import Query, query, revalidate
 from ._files import ApiRoute, api_routes, file_routes
 from ._forms import FormAction, Submission, form_action, use_submissions
 from ._location import Location, SearchParams, navigate, url, use_location
-from ._match import RouteSpec, resolve
+from ._match import RouteSpec, match_route
 from ._router import (
     LinkState,
     Outlet,
+    Params,
     PreloadArgs,
     Route,
     RouteProps,
     Router,
+    SearchParamsView,
     create_router,
     preload_route,
     use_link_state,
@@ -89,6 +91,8 @@ __all__ = [
     "RouteSpec",
     "Router",
     "SearchParams",
+    "SearchParamsView",
+    "Params",
     "Submission",
     "api_routes",
     "create_router",
@@ -97,7 +101,7 @@ __all__ = [
     "navigate",
     "preload_route",
     "query",
-    "resolve",
+    "match_route",
     "revalidate",
     "url",
     "use_link_state",

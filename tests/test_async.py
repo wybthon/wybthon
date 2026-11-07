@@ -55,7 +55,8 @@ def test_async_memo_raises_not_ready_then_resolves(wyb):
         with pytest.raises(NotReadyError):
             _ = user()
         assert latest(user) is None
-        assert is_pending(user)
+        # A first load isn't a change in flight (Solid 2.0): `Loading` shows it.
+        assert not is_pending(user)
         gate.set()
         await _tick()
         assert user() == "data"

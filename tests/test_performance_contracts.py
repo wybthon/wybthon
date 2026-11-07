@@ -18,11 +18,11 @@ from wybthon import (
     deep,
     flush,
     html,
-    map_array,
     on_cleanup,
 )
 from wybthon.diagnostics import profile
 from wybthon.kernel import OP_CLONE
+from wybthon.reactivity import map_array
 from wybthon.store import DraftExpiredError
 
 

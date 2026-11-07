@@ -74,17 +74,20 @@ from ._dom_props import (
 )
 from ._html_rules import (
     ALLOWED_CHILDREN,
-    FOREIGN_ELEMENTS,
     HEADINGS,
     LEADING_NEWLINE_ELEMENTS,
     NO_NESTED_CHILD,
     NO_NESTED_DESCENDANT,
     NO_TEXT_CONTENT,
+    NS_SVG,
     RAW_CONTENT_ELEMENTS,
     ROOT_SCOPE,
     VOID_ELEMENTS,
     Scope,
+    child_ns,
+    element_ns,
     enter_scope,
+    parser_keeps_case,
     scope_conflict,
 )
 from .reactivity import _core
@@ -451,17 +454,29 @@ def _normalize(
 
 
 def _event_prop(name: str) -> str | None:
-    """Map `onclick`, `onClick`, `on:click`, or `on_click` to the helper prop name (`on_click`)."""
-    if len(name) <= 2 or name[:2].lower() != "on":
+    """Map an element's `onclick` or `on:click` attribute to its handler prop name (`on_click`).
+
+    Markup uses HTML's attribute names: `onclick` is a delegated handler,
+    and `on:click` a native listener on the element, as in Solid.
+    """
+    if len(name) <= 2 or name[:2] != "on":
         return None
-    rest = name[2:].lstrip(":_")
+    rest = name[3:] if name[2] == ":" else name[2:]
     if not rest:
         return None
-    capture = ""
-    if len(rest) > 7 and rest[-7:].lower() == "capture":
-        rest = rest[:-7].rstrip("_:")
-        capture = "_capture"
-    return "on_" + rest.lower() + capture
+    return "on_" + rest
+
+
+def _check_event_name(name: str, parser: _Parser) -> None:
+    """Reject `onClick` and `on_click` on elements, naming the spelling markup uses."""
+    if len(name) > 2 and name[:2].lower() == "on" and name[2] != ":":
+        rest = name[2:]
+        if name[:2] != "on" or rest != rest.lower() or rest.startswith("_"):
+            event = rest.lstrip("_").lower()
+            raise parser.error(
+                f"Write the event handler {name!r} as onclick-style HTML: on{event} (a delegated handler), "
+                f"or on:{event} for a native listener on the element"
+            )
 
 
 def _component_prop(name: str, parser: _Parser) -> str:
@@ -481,8 +496,20 @@ _S_PARTS = 1  # (kind, offset, parts, name)
 _S_EVENT = 2  # (kind, offset, index, name, key, delegated)
 _S_REF = 3  # (kind, offset, index)
 _S_SPREAD = 4  # (kind, offset, index)
-_S_CHILD = 5  # (kind, offset, index, parent offset, text slot or -1)
-_S_COMPONENT = 6  # (kind, offset, component node, parent offset)
+_S_CHILD = 5  # (kind, offset, index, parent offset, text slot or -1, namespace)
+_S_COMPONENT = 6  # (kind, offset, component node, parent offset, namespace)
+
+# A slot's namespace when nothing in the template fixes it: the namespace of
+# the parent the template is mounted under.
+_INHERIT = "inherit"
+
+# Start tags that end foreign content: under `<svg>`, the HTML parser closes
+# the SVG subtree at one of these, so a template using them can't be parsed
+# inside an SVG wrapper.
+_BREAKOUT = frozenset(
+    "b big blockquote body br center code dd div dl dt em embed h1 h2 h3 h4 h5 h6 head hr i img li listing "
+    "menu meta nobr ol p pre ruby s small span strong strike sub sup table tt u ul var".split()
+)
 
 
 class _Compiled:
@@ -505,6 +532,8 @@ class _Compiled:
         "refs",
         "spreads",
         "foreign",
+        "ns_clone",
+        "ns_shapes",
         "strings",
         "probes",
         "deferred",
@@ -526,7 +555,13 @@ class _Compiled:
         self.handlers: tuple[int, ...] = ()
         self.refs: tuple[int, ...] = ()
         self.spreads: tuple[int, ...] = ()
+        # True when the template can't be cloned: an SVG or MathML name the
+        # HTML parser would give back in a different case.
         self.foreign = False
+        # Whether the template can also be cloned under an SVG or MathML
+        # parent (parsed inside a wrapper), and the shapes registered so.
+        self.ns_clone = True
+        self.ns_shapes: dict[str, _NsShape] | None = None
         # Indices of values the compiler deferred without a call, whose
         # bindings run a static probe before becoming computations.
         self.probes: frozenset[int] = frozenset()
@@ -543,7 +578,38 @@ class _Compiled:
         # only these when it clones the template.
         self.addressed: list[int] = []
         # Generated on first mount (see ``_generate``).
-        self.mount: Callable[[VNode, int, int | None], None] = _generate_and_mount
+        self.mount: Callable[[VNode, int, int | None, str | None], None] = _generate_and_mount
+
+
+class _NsShape:
+    """A template registered to be parsed under an SVG or MathML parent.
+
+    The kernel parses its markup inside a wrapper element of that
+    namespace and clones what's inside, so the same mount function serves
+    a template mounted under HTML, SVG, or MathML.
+    """
+
+    __slots__ = ("html", "count", "texts", "listens", "addressed", "tpl", "wrap")
+
+    def __init__(self, compiled: _Compiled, ns: str) -> None:
+        self.html = compiled.html
+        self.count = compiled.count
+        self.texts = compiled.texts
+        self.listens = compiled.listens
+        self.addressed = compiled.addressed
+        self.tpl = 0
+        self.wrap = "svg" if ns == NS_SVG else "math"
+
+
+def _ns_template(compiled: _Compiled, ns: str) -> int:
+    """The kernel template id for `compiled` parsed under a parent in namespace `ns`."""
+    shapes = compiled.ns_shapes
+    if shapes is None:
+        shapes = compiled.ns_shapes = {}
+    shape = shapes.get(ns)
+    if shape is None:
+        shape = shapes[ns] = _NsShape(compiled, ns)
+    return shape.tpl or kernel.register_template(shape)
 
 
 class _Builder:
@@ -557,19 +623,36 @@ class _Builder:
         self.refs: list[int] = []
         self.spreads: list[int] = []
 
-    def element(self, node: _Element) -> None:
+    def element(self, node: _Element, ns: str | None = _INHERIT) -> None:
         offset = self.count
         self.count += 1
         tag = node.tag
         lower = tag.lower()
-        if lower in FOREIGN_ELEMENTS:
-            self.c.foreign = True
+        c = self.c
+        if ns == _INHERIT:
+            el_ns = _INHERIT if lower not in ("svg", "math") else element_ns(lower, None)
+            # Under an SVG parent a `foreignObject`'s children are HTML, and
+            # under an HTML parent they're HTML anyway.
+            inner_ns = None if lower == "foreignobject" else _INHERIT if el_ns == _INHERIT else child_ns(lower, None)
+            # Mounted under an SVG parent, this element would be parsed as SVG.
+            if lower in _BREAKOUT or not parser_keeps_case(tag, NS_SVG, True):
+                c.ns_clone = False
+        else:
+            el_ns = element_ns(tag, ns)
+            inner_ns = child_ns(tag, ns)
+            if not parser_keeps_case(tag, el_ns, True):
+                c.foreign = True
         out = self.out
         out.append("<" + tag)
         for attr in node.attrs:
             kind = attr[0]
             if kind == _A_STATIC:
                 _, name, value = attr
+                if el_ns == _INHERIT:
+                    if not parser_keeps_case(name, NS_SVG, False):
+                        c.ns_clone = False
+                elif not parser_keeps_case(name, el_ns, False):
+                    c.foreign = True
                 if value is True:
                     out.append(" " + name)
                 else:
@@ -579,15 +662,17 @@ class _Builder:
                 self.spreads.append(offset)
             else:
                 _, name, value = attr
+                _check_event_name(name, self.parser)
                 event = _event_prop(name)
                 if event is not None:
                     if kind == _A_PARTS:
                         raise self.parser.error(f"Event handler {name!r} must be a single interpolation")
                     key = _events._event_key(event)
-                    delegated = not key.endswith(":capture") and key not in _events.NON_BUBBLING
+                    native = name[2] == ":"
+                    delegated = not native and key not in _events.NON_BUBBLING
                     if delegated:
                         self.c.listens.append([offset, key])
-                    self.plan.append((_S_EVENT, offset, value, event, key, delegated))
+                    self.plan.append((_S_EVENT, offset, value, event, key, delegated, native))
                     self.handlers.append(offset)
                 elif name == "ref":
                     if kind == _A_PARTS:
@@ -618,10 +703,10 @@ class _Builder:
                 self.count += 1
                 prev_text = True
             elif isinstance(child, _Element):
-                self.element(child)
+                self.element(child, inner_ns)
                 prev_text = False
             elif isinstance(child, _Component):
-                self.plan.append((_S_COMPONENT, self.count, child, offset))
+                self.plan.append((_S_COMPONENT, self.count, child, offset, inner_ns))
                 self.count += 1
                 out.append("<!---->")
                 prev_text = False
@@ -635,7 +720,7 @@ class _Builder:
                     out.append(" ")
                 else:
                     out.append("<!---->")
-                self.plan.append((_S_CHILD, self.count, child.index, offset, slot))
+                self.plan.append((_S_CHILD, self.count, child.index, offset, slot, inner_ns))
                 self.count += 1
                 prev_text = text_anchor
         out.append(f"</{tag}>")
@@ -1216,6 +1301,8 @@ def _component(node: _Component, values: tuple[Any, ...]) -> VNode:
 
 def _expand_props(attrs: list[tuple[Any, ...]], values: tuple[Any, ...]) -> dict[str, Any]:
     props: dict[str, Any] = {}
+    # While hydrating, the server already wrote every static attribute.
+    claiming = kernel.claiming
     for attr in attrs:
         kind = attr[0]
         if kind == _A_SPREAD:
@@ -1225,7 +1312,8 @@ def _expand_props(attrs: list[tuple[Any, ...]], values: tuple[Any, ...]) -> dict
             continue
         name = attr[1]
         if kind == _A_STATIC:
-            props[name] = attr[2]
+            if not claiming:
+                props[name] = attr[2]
             continue
         event = _event_prop(name)
         if event is not None:
@@ -1301,7 +1389,7 @@ def _text_hole(nid: int, text: str) -> VNode:
     return hole
 
 
-def mount(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
+def mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
     """Mount a template instance with one clone command, then fill its slots.
 
     Each compiled template has a generated mount function (see
@@ -1312,13 +1400,19 @@ def mount(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
     """
     if diagnostics._active is not None:
         diagnostics._active.counts["template_clones"] += 1
-    vnode.props.mount(vnode, parent_id, anchor_id)  # type: ignore[attr-defined]
+    vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
 
 
-def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None) -> None:
+def clonable(vnode: VNode, ns: str | None) -> bool:
+    """Whether a template instance mounts by cloning under a parent in namespace `ns`."""
+    compiled: _Compiled = vnode.props  # type: ignore[assignment]
+    return not compiled.foreign and (ns is None or compiled.ns_clone)
+
+
+def _generate_and_mount(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | None = None) -> None:
     compiled: _Compiled = vnode.props  # type: ignore[assignment]
     compiled.mount = _generate(compiled)
-    compiled.mount(vnode, parent_id, anchor_id)
+    compiled.mount(vnode, parent_id, anchor_id, ns)
 
 
 # Child slots
@@ -1351,6 +1445,15 @@ def _text_of(value: Any) -> str:
     return ""
 
 
+def _apply_text_ns(data: tuple[int, str], value: Any, previous: Any) -> None:
+    """`_apply_text` for a text slot under an SVG or MathML parent: an upgrade keeps the namespace."""
+    t = type(value)
+    if t is str or t is int or t is float or value is None or value is True or value is False or value is _KEEP:
+        _apply_text(data[0], value, previous)
+    else:
+        _upgrade_text(data[0], value, previous, data[1])
+
+
 def _apply_text(nid: int, value: Any, previous: Any) -> None:
     """A text binding's apply stage: write text into the placeholder, or upgrade to a hole."""
     t = type(value)
@@ -1373,12 +1476,13 @@ def _apply_text(nid: int, value: Any, previous: Any) -> None:
         kernel.push((kernel.OP_SET_TEXT, nid, text))
 
 
-def _upgrade_text(nid: int, value: Any, previous: Any) -> None:
+def _upgrade_text(nid: int, value: Any, previous: Any, ns: str | None = None) -> None:
     """Turn the text binding being applied into a hole region, then apply `value` through it."""
     if _apply_hole is None:
         _bind_reconciler()
     binding = _core._applying
     hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+    hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
     hole._hole_text = _text_of(previous)
@@ -1397,7 +1501,9 @@ def _slot_hole(item: Any) -> Any:
     return item if type(item) is VNode else None
 
 
-def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool = False) -> Any:
+def _child_slot(
+    value: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool = False, ns: str | None = None
+) -> Any:
     """Mount a child slot's value that isn't plain text; returns the slot's state for `dyn`.
 
     `op` and `slot` name the clone command and its text slot when the
@@ -1415,13 +1521,14 @@ def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot
         if fn is _STATIC:
             value = _core._probed_value
         else:
-            return _bind_child(fn, parent_id, nid, op, slot)
+            return _bind_child(fn, parent_id, nid, op, slot, ns)
     t = type(value)
     if op is not None and (t is str or t is int or t is float or value is None or value is True or value is False):
         text = _text_of(value)
         op[slot] = text
         return text
     hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+    hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
     if op is not None:
@@ -1430,7 +1537,9 @@ def _child_slot(value: Any, parent_id: int, nid: int, op: list[Any] | None, slot
     return hole
 
 
-def _child_fn(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool) -> Any:
+def _child_fn(
+    fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, probe: bool, ns: str | None = None
+) -> Any:
     """Mount a child slot whose value is a getter the compiler made (no need to classify it)."""
     if probe:
         fn = _probe_target(fn)
@@ -1441,16 +1550,17 @@ def _child_fn(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int
                 text = value if t is str else str(value)
                 op[slot] = text
                 return text
-            return _child_slot(value, parent_id, nid, op, slot)
-    return _bind_child(fn, parent_id, nid, op, slot)
+            return _child_slot(value, parent_id, nid, op, slot, False, ns)
+    return _bind_child(fn, parent_id, nid, op, slot, ns)
 
 
-def _bind_child(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int) -> Any:
+def _bind_child(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: int, ns: str | None = None) -> Any:
     """Bind a child slot to an expression: a text binding in a text placeholder, else a hole."""
     if _region_set is None:
         _bind_reconciler()
     if op is None:
         hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+        hole.ns = ns
         hole.el = nid
         hole._frag_end = nid
         hole.render_effect = _hole_updater(hole, parent_id, nid, fn, None, False)
@@ -1459,7 +1569,10 @@ def _bind_child(fn: Any, parent_id: int, nid: int, op: list[Any] | None, slot: i
     previous = _fill
     _fill = (op, slot, nid, kernel.generation)
     try:
-        comp = _bind(fn, _apply_text, nid, "")
+        if ns is None:
+            comp = _bind(fn, _apply_text, nid, "")
+        else:
+            comp = _bind(fn, _apply_text_ns, (nid, ns), "")
     finally:
         _fill = previous
     if not comp._disposed:
@@ -1483,10 +1596,13 @@ def _prop_fn(nid: int, name: str, fn: Any, probe: bool) -> Any:
     return None if comp._disposed else comp
 
 
-def _component_slot(node: _Component, values: tuple[Any, ...], parent_id: int, nid: int) -> VNode:
+def _component_slot(
+    node: _Component, values: tuple[Any, ...], parent_id: int, nid: int, ns: str | None = None
+) -> VNode:
     if _region_set is None:
         _bind_reconciler()
     hole = VNode("_hole", _SLOT_PROPS, ())  # type: ignore[arg-type]
+    hole.ns = ns
     hole.el = nid
     hole._frag_end = nid
     _region_set(hole, parent_id, nid, _component(node, values))
@@ -1542,6 +1658,7 @@ _CELLS = (
     "component_slot",
     "prop_fn",
     "child_fn",
+    "ns_template",
 )
 
 # Set to a list to collect generated sources (tests and debugging).
@@ -1559,10 +1676,11 @@ def mount_source(compiled: _Compiled, name: str) -> str:
     texts = len(compiled.texts)
     lines = [
         f"def {name}(" + ", ".join(_CELLS) + "):",
-        "    def mount(vnode, parent, anchor):",
+        "    def mount(vnode, parent, anchor, ns=None):",
         "        values = vnode.children",
         "        first = alloc(" + str(compiled.count) + ")",
-        "        op = [OP_CLONE, first, C.tpl or register(C), parent, anchor" + ', ""' * texts + "]",
+        "        tpl = (C.tpl or register(C)) if ns is None else ns_template(C, ns)",
+        "        op = [OP_CLONE, first, tpl, parent, anchor" + ', ""' * texts + "]",
         "        emit(op)",
         "        vnode.el = first",
         "        vnode.tpl = C",
@@ -1601,9 +1719,12 @@ def mount_source(compiled: _Compiled, name: str) -> str:
             parent = f"first + {slot[3]}" if slot[3] else "first"
             text_slot = slot[4]
             probe = slot[2] in compiled.probes
+            sns = "ns" if slot[5] == _INHERIT else repr(slot[5])
             if slot[2] in compiled.deferred:
                 op, index = ("op", 5 + text_slot) if text_slot >= 0 else ("None", -1)
-                lines.append(f"        {d} = child_fn(values[{slot[2]}], {parent}, {nid}, {op}, {index}, {probe})")
+                lines.append(
+                    f"        {d} = child_fn(values[{slot[2]}], {parent}, {nid}, {op}, {index}, {probe}, {sns})"
+                )
                 continue
             lines.append(f"        v = values[{slot[2]}]")
             if text_slot >= 0:
@@ -1614,12 +1735,13 @@ def mount_source(compiled: _Compiled, name: str) -> str:
                 lines.append("        elif tv is int or tv is float:")
                 lines.append(f"            op[{index}] = {d} = str(v)")
                 lines.append("        else:")
-                lines.append(f"            {d} = child_slot(v, {parent}, {nid}, op, {index}, {probe})")
+                lines.append(f"            {d} = child_slot(v, {parent}, {nid}, op, {index}, {probe}, {sns})")
             else:
-                lines.append(f"        {d} = child_slot(v, {parent}, {nid}, None, -1, {probe})")
+                lines.append(f"        {d} = child_slot(v, {parent}, {nid}, None, -1, {probe}, {sns})")
         else:  # _S_COMPONENT
             parent = f"first + {slot[3]}" if slot[3] else "first"
-            lines.append(f"        {d} = component_slot(PLAN[{k}][2], values, {parent}, {nid})")
+            sns = "ns" if slot[4] == _INHERIT else repr(slot[4])
+            lines.append(f"        {d} = component_slot(PLAN[{k}][2], values, {parent}, {nid}, {sns})")
     lines.append("        vnode.dyn = (" + "".join(f"{d}, " for d in out) + ")")
     lines.append("    return mount")
     return "\n".join(lines) + "\n"
@@ -1644,17 +1766,18 @@ def _cells(compiled: _Compiled) -> tuple[Any, ...]:
         _component_slot,
         _prop_fn,
         _child_fn,
+        _ns_template,
     )
 
 
-def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None], None]:
+def _generate(compiled: _Compiled) -> Callable[[VNode, int, int | None, str | None], None]:
     """Generate the mount function for a template compiled at run time."""
     source = mount_source(compiled, "factory")
     if _debug_sources is not None:
         _debug_sources.append(source)
     namespace: dict[str, Any] = {}
     exec(compile(source, f"<wybthon html {compiled.root.tag}>", "exec"), namespace)
-    mount_fn: Callable[[VNode, int, int | None], None] = namespace["factory"](*_cells(compiled))
+    mount_fn: Callable[[VNode, int, int | None, str | None], None] = namespace["factory"](*_cells(compiled))
     return mount_fn
 
 
@@ -1674,6 +1797,9 @@ def _bind_event(nid: int, slot: tuple[Any, ...], handler: Any) -> None:
             _events.set_handler(nid, name, handler)
         else:
             _events.bind_delegated(nid, slot[4], name, handler)
+    elif slot[6] and type(handler) is not _events.EventHandler:
+        # `on:click`: a native listener on the element itself.
+        _events.set_handler(nid, name, _events.event(handler))
     else:
         _events.set_handler(nid, name, handler)
 

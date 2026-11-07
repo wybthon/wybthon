@@ -9,7 +9,7 @@ Components declare their inputs on a [`Props`][wybthon.Props] subclass with plai
 ```python
 from collections.abc import Callable
 
-from wybthon import Props, VNode, component, create_signal, html, prop
+from wybthon import Node, Props, component, create_signal, html, prop
 
 
 class GreetingProps(Props):
@@ -20,7 +20,7 @@ class GreetingProps(Props):
 
 
 @component
-def Greeting(props: GreetingProps) -> VNode:
+def Greeting(props: GreetingProps) -> Node:
     def wave() -> None:
         if props.on_wave is not None:
             props.on_wave()
@@ -53,19 +53,19 @@ A field annotated as callable, with `Callable[...]` or [`Accessor[T]`][wybthon.A
 Annotate a field `Accessor[T]` when the component needs the accessor itself, for example to hand it to `For`:
 
 ```python
-from wybthon import Accessor, For, Props, VNode, component, html
+from wybthon import Accessor, For, Node, Props, component, html
 
 
 class TagListProps(Props):
     items: Accessor[list[str]]
 
 
-def tag(item: str, index: Accessor[int]) -> VNode:
+def tag(item: str, index: Accessor[int]) -> Node:
     return html(t"<li>{item}</li>")
 
 
 @component
-def TagList(props: TagListProps) -> VNode:
+def TagList(props: TagListProps) -> Node:
     items = props.items  # the accessor itself
     return html(t"<ul>{For(items, tag)}</ul>")
 ```
@@ -81,7 +81,7 @@ Defaults work as in a dataclass (`copies: int = 1`, `on_wave: ... = None`). Use 
 [`ParentProps`][wybthon.ParentProps] declares `children: Any`. Both the `children` keyword and item syntax are checked:
 
 ```python
-from wybthon import ParentProps, VNode, component, html
+from wybthon import Node, ParentProps, component, html
 
 
 class CardProps(ParentProps):
@@ -89,7 +89,7 @@ class CardProps(ParentProps):
 
 
 @component
-def Card(props: CardProps) -> VNode:
+def Card(props: CardProps) -> Node:
     return html(t"<div><h2>{props.title}</h2>{props.children}</div>")
 
 
@@ -101,9 +101,9 @@ Positional children (`Card(html(t"<p>a</p>"), title="Hi")`) work at run time, bu
 
 ### What a component call returns
 
-`@component` is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. At run time the call returns a [`VNode`][wybthon.VNode]. Every child position, in a template interpolation or in [`h`][wybthon.h], accepts the props type, so this mismatch only shows if you inspect the result yourself: an `isinstance` check sees a `VNode`. A component with no parameters is typed as a function returning `VNode`.
+`@component` is typed so that calling a component looks like constructing its props class; that's how the checker validates the keywords. To a type checker every props class is a [`Node`][wybthon.Node], the type of anything that renders, so a component call can be returned from a function annotated `-> Node`, kept in a `list[Node]`, or passed as children. At run time the call returns a [`VNode`][wybthon.vnode.VNode], which is a `Node` too. A component with no parameters is typed as a callable that takes only `key` and returns a `Node`.
 
-Under `mypy --strict`, annotate component functions with `-> VNode`, as above; [`html`][wybthon.html] and `h` return `VNode`.
+Under `mypy --strict`, annotate component functions with `-> Node`; [`html`][wybthon.html] returns a `Node` as well.
 
 ## Templates
 
@@ -113,10 +113,10 @@ A template's interpolations are ordinary Python expressions, so the checker sees
 | --- | --- |
 | `{expression}` in any position | Statically, as ordinary code: an undefined name, a wrong attribute, or a bad call is reported. |
 | `{Card(title=user().name)}` | Statically, with full prop checking, like any component call. The checker sees `user().name` as a `str`; the compiler passes a getter. |
-| `<{Card} title={user().name}>...</{Card}>` | The expression `user().name` is checked as code, but not against `Card`'s props. An unknown or missing prop raises `TypeError` at run time, in dev mode, when the template renders. |
+| `<{Card} title={user().name}>...</{Card}>` | The expression `user().name` is checked as code. A plain checker run doesn't check it against `Card`'s props, but [`wyb check`](#checking-tag-props-with-wyb-check) does. Without it, an unknown or missing prop raises `TypeError` at run time, in dev mode, when the template renders. |
 | The HTML markup itself | When the module is compiled: markup the parser would rewrite is a `SyntaxError` with the file and line (or a [`TemplateError`][wybthon.TemplateError] for a template compiled at run time). |
 
-Type checkers can't see inside the template's static text, so a component tag's attributes aren't checked against its props class. Use the call form inside an interpolation when you want the checker's help with a component's props, and the tag form when passing nested markup as children reads better.
+Type checkers can't see inside the template's static text, so on their own they don't check a component tag's attributes against its props class. Run them through `wyb check` (below) to check tags too, or use the call form inside an interpolation; use the tag form when passing nested markup as children reads better.
 
 `html()` is annotated to take a `string.templatelib.Template`, so passing a plain string is a type error, and it raises `TypeError` at run time:
 
@@ -125,6 +125,26 @@ from wybthon import html
 
 html("<p>Hello</p>")  # error: expected "Template", got "str"
 ```
+
+### Checking tag props with `wyb check`
+
+`wyb check` runs mypy or pyright on your project and checks every component tag's props as if the tag were a call:
+
+```bash
+wyb check                      # mypy on the current directory
+wyb check app tests --checker pyright
+```
+
+For each `html(t"...")` call, it checks a call such as `Card(title=user().name, children=...)` per component tag, with each attribute as a keyword: a static value as its string, a bare attribute as `True`, an `{expression}` as itself, an attribute that mixes text and interpolations as a `str`, and a spread as `**expression`. Content between the tags is passed as `children`, so a component whose props have no `children` field is reported. Each error in a tag is reported at the tag's line, among the checker's other errors:
+
+```text
+app/pages.py:12: error: in <{Card}>: Unexpected keyword argument "bogus" for "CardProps"  [call-arg]
+app/pages.py:14: error: in <{Card}>: Missing named argument "title" for "CardProps"  [call-arg]
+```
+
+The command exits with status 1 when there are errors and 2 when the checker isn't installed. It reads your project's checker configuration (`mypy.ini`, `setup.cfg`, `pyproject.toml`, or `pyrightconfig.json` in the current directory), and it skips `.venv`, `dist`, `build`, and hidden directories. Under mypy's defaults, the body of an unannotated function isn't checked, so neither are the tags in it.
+
+A few tags aren't checked as calls: built-ins imported from Wybthon (`Show`, `For`, `Loading`, `Portal`, `Link`, and the rest), contexts made with `create_context`, and a plain function in the same module that takes the props dictionary instead of keywords.
 
 ## Control flow
 
@@ -139,7 +159,7 @@ html("<p>Hello</p>")  # error: expected "Template", got "str"
 ```python
 from typing import TypedDict
 
-from wybthon import Accessor, For, VNode, create_signal, html
+from wybthon import Accessor, For, Node, create_signal, html
 
 
 class Todo(TypedDict):
@@ -150,11 +170,11 @@ class Todo(TypedDict):
 todos, set_todos = create_signal([Todo(id=1, title="Write docs")])
 
 
-def row(todo: Todo, index: Accessor[int]) -> VNode:
+def row(todo: Todo, index: Accessor[int]) -> Node:
     return html(t"<li>{todo['title']}</li>")
 
 
-def slot(todo: Accessor[Todo], index: int) -> VNode:
+def slot(todo: Accessor[Todo], index: int) -> Node:
     return html(t"<li>{index}: {todo()['title']}</li>")
 
 

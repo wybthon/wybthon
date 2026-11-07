@@ -30,7 +30,7 @@ entry points used by the renderer and the kernel.
 - In a template, an attribute named `on<type>` is a handler:
   `onclick={save}`, `oninput={edit}`. `onClick` and `on:click` work
   too. The DOM event type is the rest of the name, lower-cased.
-- In a spread (`<input {bind_text(field)}>`) or an [`h()`][wybthon.h]
+- In a spread (`<input {bind_text(field)}>`) or an [`h()`][wybthon.vnode.h]
   props dict, a key named `on_<type>` (or `on<Type>`) is a handler:
   `on_click`, `on_input`, `on_keydown`, `onChange`.
 - A capture suffix listens in the capture phase: `onClickCapture` in a

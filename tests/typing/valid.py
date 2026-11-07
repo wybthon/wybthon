@@ -7,17 +7,16 @@ from typing import TYPE_CHECKING, TypedDict, assert_type
 from wybthon import (
     Accessor,
     For,
+    Node,
     ParentProps,
     Props,
     Show,
-    VNode,
     action,
     component,
     create_memo,
     create_signal,
     create_store,
     deep,
-    h,
     html,
     is_static,
     prop,
@@ -26,6 +25,7 @@ from wybthon import (
     untrack,
 )
 from wybthon.router import RouteProps, SearchParams
+from wybthon.vnode import VNode, h
 
 
 class GreetingProps(Props):
@@ -55,6 +55,24 @@ Greeting(name="Ada", key=3)
 # Inside a template, reactive values are checked against the field types;
 # the compiler passes getters.
 reactive_greeting: VNode = html(t"<div>{Greeting(name=name(), count=count())}</div>")
+
+
+# A component call is a node: return it, and keep it in node lists.
+def greeting_for(person: str) -> Node:
+    return Greeting(name=person)
+
+
+nodes: list[Node] = [Greeting(name="Ada"), html(t"<hr>")]
+
+
+@component
+def Divider() -> Node:
+    return html(t"<hr>")
+
+
+# Every component takes `key`, props or not.
+Divider()
+Divider(key="divider")
 
 
 class SourceProps(Props):
@@ -199,3 +217,7 @@ Show(current, lambda todo: html(t"<p>{todo['title']}</p>"), keyed=True)
 Show(current, lambda: html(t"<p>shown</p>"), fallback=html(t"<p>hidden</p>"))
 Show(True, html(t"<p>always</p>"))
 template_node: VNode = html(t"<p class={current}>{todos}</p>")
+
+
+# A row callback may take the item alone.
+For(todos, lambda todo: html(t"<li>{todo['title']}</li>"))

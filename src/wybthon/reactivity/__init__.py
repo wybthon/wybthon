@@ -27,7 +27,6 @@ from ._list import map_array, repeat
 from ._primitives import (
     ChildrenAccessor,
     Setter,
-    children,
     create_deferred,
     create_effect,
     create_memo,
@@ -49,6 +48,7 @@ from ._primitives import (
     on_settled,
     refresh,
     resolve,
+    resolve_children,
 )
 from ._props import ParentProps, Props, is_static, merge, omit, prop
 from ._session import ServerError
@@ -102,7 +102,7 @@ __all__ = [
     "merge",
     "omit",
     "is_static",
-    "children",
+    "resolve_children",
     "flatten",
     "ChildrenAccessor",
     "create_reaction",

@@ -2,17 +2,7 @@
 
 from typing import Any
 
-from wybthon import (
-    ParentProps,
-    Props,
-    Ref,
-    Show,
-    component,
-    create_signal,
-    html,
-    on_cleanup,
-    on_settled,
-)
+from wybthon import ParentProps, Props, Ref, Show, component, create_signal, html, on_cleanup, on_settled
 
 
 class DisplayProps(Props):

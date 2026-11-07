@@ -21,7 +21,7 @@ from wybthon.flow import (
     is_hydrating,
     on_hydration_end,
 )
-from wybthon.reactivity import Props, create_signal, flush, on_cleanup, untrack
+from wybthon.reactivity import Props, create_root, create_signal, flush, on_cleanup, untrack
 
 
 def texts(node: StubNode) -> list[str]:
@@ -749,3 +749,21 @@ def test_on_hydration_end_outside_hydration_runs_on_the_next_tick():
 
     asyncio.run(main())
     assert log == ["end"]
+
+
+def test_for_rows_may_take_the_item_alone(wyb, root_element):
+    from wybthon import For, html
+    from wybthon.reactivity import map_array
+
+    items, set_items = create_signal(["a", "b"])
+
+    def row(item):
+        return html(t"<li>{item}</li>")
+
+    wyb["reconciler"].render(html(t"<ul>{For(items, row)}</ul>"), root_element)
+    assert texts(root_element.element) == ["a", "b"]
+    set_items(["a", "b", "c"])
+    flush()
+    assert texts(root_element.element) == ["a", "b", "c"]
+    mapped = create_root(lambda dispose: map_array(items, lambda item: item.upper()))
+    assert mapped() == ["A", "B", "C"]

@@ -76,18 +76,29 @@ def test_component_tag_prop_is_a_compiled_getter(goto_feature):
 
 def test_event_spellings(goto_feature):
     page = goto_feature("templates")
-    for name in ("lower", "camel", "colon"):
+    for name in ("lower", "colon"):
         page.get_by_test_id(f"tpl-{name}").click()
-    expect(page.get_by_test_id("tpl-heard")).to_have_text("abc")
+    expect(page.get_by_test_id("tpl-heard")).to_have_text("ac")
 
 
-def test_svg_expands_into_namespaced_nodes(goto_feature):
+def test_svg_clones_into_namespaced_nodes(goto_feature):
     page = goto_feature("templates")
     svg = page.get_by_test_id("tpl-svg")
     assert svg.evaluate("node => node.namespaceURI") == "http://www.w3.org/2000/svg"
     assert svg.evaluate("node => node.getAttribute('viewBox')") == "0 0 10 10"
     page.get_by_test_id("tpl-inc").click()
     assert svg.evaluate("node => node.firstElementChild.getAttribute('r')") == "1"
+
+
+def test_templates_under_an_svg_parent_clone_into_svg(goto_feature):
+    page = goto_feature("templates")
+    svg_ns = "http://www.w3.org/2000/svg"
+    assert page.get_by_test_id("tpl-dot").evaluate("node => node.namespaceURI") == svg_ns
+    rows = page.get_by_test_id("tpl-svg-row")
+    assert rows.count() == 3
+    page.get_by_test_id("tpl-add").click()
+    assert rows.count() == 4
+    assert all(ns == svg_ns for ns in rows.evaluate_all("nodes => nodes.map(n => n.namespaceURI)"))
 
 
 REARRANGED = [
@@ -138,7 +149,8 @@ def test_h_markup_the_parser_would_rearrange_mounts_in_the_real_kernel(goto_feat
         "code => window.__WYB.pyodide.runPython(code)",
         """
 from js import document
-from wybthon import h, render
+from wybthon import render
+from wybthon.vnode import h
 from wybthon.dom import Element
 
 host = document.createElement("div")
@@ -161,7 +173,8 @@ def test_a_restored_event_handler_fires_in_the_real_kernel(goto_feature):
         run,
         """
 from js import document
-from wybthon import create_signal, event, flush, h, html, render
+from wybthon import create_signal, event, flush, html, render
+from wybthon.vnode import h
 from wybthon.dom import Element
 
 _hits = []

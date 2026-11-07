@@ -54,6 +54,7 @@ from ._dom_props import (
     detach_ref,
     remove_bindings_for,
 )
+from ._html_rules import child_ns, element_ns
 from ._warnings import component_name, log_error
 from .component import Component
 from .dom import Element
@@ -93,7 +94,7 @@ from .reactivity._core import (
     flush,
     is_accessor,
 )
-from .vnode import NS_MATHML, NS_SVG, Fragment, VNode, hole, normalize_children, to_text_vnode
+from .vnode import Fragment, VNode, hole, normalize_children, to_text_vnode
 
 __all__ = ["render", "hydrate", "Root", "mount", "unmount", "patch"]
 
@@ -436,28 +437,8 @@ def _unpark(vnode: VNode, anchor_id: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _child_ns(tag: str, ns: str | None) -> str | None:
-    """Namespace for the children of element `tag` mounted in namespace `ns`."""
-    if ns is None:
-        if tag == "svg":
-            return NS_SVG
-        if tag == "math":
-            return NS_MATHML
-        return None
-    if ns == NS_SVG and tag == "foreignObject":
-        return None
-    return ns
-
-
-def _element_ns(tag: str, ns: str | None) -> str | None:
-    """Namespace to create element `tag` in when its parent namespace is `ns`."""
-    if ns is None:
-        if tag == "svg":
-            return NS_SVG
-        if tag == "math":
-            return NS_MATHML
-        return None
-    return ns
+_child_ns = child_ns
+_element_ns = element_ns
 
 
 def mount(
@@ -501,16 +482,17 @@ def _mount_owned(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str | 
     _core._current_owner = vnode.owner_scope
     _core._current_observer = None
     try:
+        compiled = vnode.props
         if (
             vnode.tag == "_tpl"
-            and ns is None
             and not kernel.claiming
             and kernel.html_templates
-            and not vnode.props.foreign  # type: ignore[attr-defined]
+            and not compiled.foreign  # type: ignore[attr-defined]
+            and (ns is None or compiled.ns_clone)  # type: ignore[attr-defined]
         ):
             if diagnostics._active is not None:
                 diagnostics._active.counts["template_clones"] += 1
-            vnode.props.mount(vnode, parent_id, anchor_id)  # type: ignore[attr-defined]
+            vnode.props.mount(vnode, parent_id, anchor_id, ns)  # type: ignore[attr-defined]
             vnode.children = ()  # type: ignore[assignment]
         else:
             _mount_dispatch(vnode, parent_id, anchor_id, ns, True)
@@ -536,19 +518,19 @@ def _mount_dispatch(vnode: VNode, parent_id: int, anchor_id: int | None, ns: str
 
     if tag == "_tpl":
         if (
-            ns is None
-            and not kernel.claiming
+            not kernel.claiming
             and (kernel.html_templates or (kernel.html_templates is None and kernel.supports_html()))
-            and not vnode.props.foreign  # type: ignore[attr-defined]
+            and templates.clonable(vnode, ns)
         ):
-            templates.mount(vnode, parent_id, anchor_id)
+            templates.mount(vnode, parent_id, anchor_id, ns)
             if final:
                 # Never patched (a row, a component's output): the values
                 # were only kept to diff against a re-rendered instance.
                 vnode.children = ()  # type: ignore[assignment]
             return
-        # Server rendering, hydration, SVG, and backends without native
-        # templates mount the ordinary tree the template stands for.
+        # Hydration, backends without native templates, and SVG or MathML
+        # names the HTML parser would change mount the tree the template
+        # stands for.
         sub_tree = templates.expand(vnode)
         pk = getattr(vnode, "pk", None)
         if pk is not None:

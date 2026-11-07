@@ -43,7 +43,7 @@ def test_counter_increments():
         assert screen.get_by_text("Clicks: 1")
 ```
 
-`render` accepts any node: a component call, an [`html`][wybthon.html] template, or a tree built with [`h`][wybthon.h]. The compiler checks each template's markup when it compiles the module, so a template the browser would rewrite fails the test module with a `SyntaxError` that names its file and line.
+`render` accepts any node: a component call, an [`html`][wybthon.html] template, or a tree built with [`h`][wybthon.vnode.h]. The compiler checks each template's markup when it compiles the module, so a template the browser would rewrite fails the test module with a `SyntaxError` that names its file and line.
 
 Use `render` as a context manager to unmount when the block ends, or call `screen.unmount()` yourself. `screen.html()` returns the container's inner HTML without Wybthon's comment markers, and `screen.text()` returns its text with whitespace collapsed:
 
@@ -249,13 +249,17 @@ def test_memo_and_effect():
 ### Stores, router, and forms
 
 - Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with `def` (or call a mutating method, as in `lambda draft: draft.update(count=1)`), pass them to the setter, and flush before asserting on reads.
-- Outside a browser, [`navigate`][wybthon.router.navigate] only updates the location that [`url`][wybthon.router.url] and [`use_location()`][wybthon.router.use_location] read. Flush afterward. Path matching ([`resolve`][wybthon.router.resolve] in `wybthon.router`, or `router.match(href)` on a router from `create_router`) is pure and needs no rendering.
+- Outside a browser, [`navigate`][wybthon.router.navigate] only updates the location that [`url`][wybthon.router.url] and [`use_location()`][wybthon.router.use_location] read. Flush afterward. Path matching ([`match_route`][wybthon.router.match_route], or `router.match(href)` on a router from `create_router`) is pure and needs no rendering.
 - To test server functions, wrap the render in `connect_server()` from `wybthon.testing`, so each call is encoded and validated as it would be over HTTP; `Client(create_app(...))` sends whole requests to a `wybthon.asgi` app. See [Full-stack apps](../concepts/full-stack.md).
 - Drive form bindings with `fire.input`, `fire.change`, and `fire.submit` against the rendered controls.
 
 ### Dev-mode diagnostics
 
-Dev-mode warnings print to `stderr`; capture them with pytest's `capsys`. Warnings are deduplicated per process, so call `wybthon._warnings._reset_warning_dedupe()` at the start of a test that asserts on one. A write inside a memo raises `WriteInScopeError` when the memo is read (`pytest.raises(WriteInScopeError)` around the read); a write inside a single-function effect surfaces through the effect's `error=` handler on the next flush. Calling a component with an unknown or missing prop raises `TypeError` at the call.
+Dev-mode warnings are Python warnings of the category [`WybthonWarning`][wybthon.WybthonWarning]: assert on one with `pytest.warns(WybthonWarning)`, or make them errors with `-W error::wybthon.WybthonWarning` (or a `filterwarnings` entry). Each one is issued once per process.
+
+An error a component, binding, or effect raises that no [`Errored`][wybthon.Errored] boundary handles fails the test: [`render`][wybthon.testing.render] raises it, as does the [`fire`][wybthon.testing.fire] call that caused it or the end of the `with` block, so a test never passes against a view that broke. Pass `render(view, strict=False)` for a test about what a view does after such an error. A failed query (`get_by_text`, `get_by_role`, ...) prints the rendered markup, and `screen.debug()` prints it on demand. The pytest plugin unmounts views a test leaves mounted.
+
+A write inside a memo raises `WriteInScopeError` when the memo is read (`pytest.raises(WriteInScopeError)` around the read); a write inside a single-function effect surfaces through the effect's `error=` handler on the next flush. Calling a component with an unknown or missing prop raises `TypeError` at the call.
 
 ## Compiling templates in tests
 

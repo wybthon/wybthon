@@ -47,3 +47,4 @@ While Wybthon is pre-1.0, an RFC may choose breaking changes without a compatibi
 | [0006](0006-engine-v6.md) | Engine v6: fast pages | Implemented |
 | [0007](0007-engine-v7.md) | Engine v7: stores typed by your own data | Implemented |
 | [0008](0008-full-stack.md) | Full-stack apps: server functions, the router's data layer, and a smaller first visit | Implemented |
+| [0009](0009-engine-v8.md) | Engine v8: a leaner core, one clone path, and a Pythonic surface | Implemented |

@@ -75,7 +75,7 @@ class _LoadingCollector:
         self._on_round: int = -1
 
     def _bump(self) -> None:
-        self._version._commit_now(self._version._value + 1, _core._O_REVEAL)
+        self._version._commit_revealed(self._version._value + 1)
 
     def register(self, comp: Computation) -> None:
         """Called by the reactive core when a read raises `NotReadyError`."""
@@ -275,7 +275,7 @@ def _Loading(props: _LoadingProps) -> Any:
                 reconciler._unpark(content, anchor)
             parked = False
         # Framework UI state: reveals even while a transition holds data.
-        shown._set(current, _core._O_REVEAL)
+        shown._reveal(current)
 
     # An effect: its first run happens after the initial mount has
     # committed, when the content's DOM nodes exist to be parked. It's
@@ -370,7 +370,7 @@ class _RevealState:
     def register(self, loading_getter: Callable[[], bool]) -> int:
         """Add a slot's tracked loading getter; returns its position."""
         self._getters.append(loading_getter)
-        self._version._commit_now(self._version._value + 1, _core._O_REVEAL)
+        self._version._commit_revealed(self._version._value + 1)
         return len(self._getters) - 1
 
     def is_loading(self) -> bool:

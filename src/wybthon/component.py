@@ -45,11 +45,11 @@ from __future__ import annotations
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any, overload
+from typing import Any, Protocol, overload
 
 from . import _warnings
 from .reactivity._props import Props
-from .vnode import VNode, flatten_children
+from .vnode import Node, VNode, flatten_children
 
 __all__ = ["component", "Component", "builtin"]
 
@@ -143,10 +143,16 @@ def builtin[F](fn: F) -> F:
     return fn
 
 
+class PlainComponent(Protocol):
+    """The static type of a component without props: called with nothing but an optional `key`."""
+
+    def __call__(self, *, key: str | int | None = None) -> Node: ...
+
+
 @overload
 def component[P: Props](fn: Callable[[P], Any]) -> type[P]: ...
 @overload
-def component(fn: Callable[[], Any]) -> Callable[[], VNode]: ...
+def component(fn: Callable[[], Any]) -> PlainComponent: ...
 def component(fn: Callable[..., Any]) -> Any:
     """Declare a function as a run-once Wybthon component.
 
@@ -155,9 +161,11 @@ def component(fn: Callable[..., Any]) -> Any:
     for the tree.
 
     Static typing: the decorated object is typed as the props class (or
-    as a no-argument callable), so a type checker validates each call's
-    keywords against the declared fields. At run time it's a
-    [`Component`][wybthon.Component] that returns a `VNode`.
+    as a callable taking only `key`), so a type checker validates each
+    call's keywords against the declared fields, and every props class is
+    a [`Node`][wybthon.Node], so the call can be returned from a function
+    annotated `-> Node`. At run time it's a
+    [`Component`][wybthon.Component] that returns a node.
 
     Example:
         ```python

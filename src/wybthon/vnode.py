@@ -16,7 +16,7 @@ Example:
     Building a small subtree without a browser:
 
     ```python
-    from wybthon import h, Fragment
+    from wybthon.vnode import h, Fragment
 
     view = h("section", {"class": "card"},
              h("h1", {}, "Hello"),
@@ -40,11 +40,23 @@ __all__ = ["VNode", "h", "Fragment", "hole", "copy_vnode"]
 PropsDict = dict[str, Any]
 
 # XML namespaces for non-HTML elements. ``None`` means HTML.
-NS_SVG = "http://www.w3.org/2000/svg"
-NS_MATHML = "http://www.w3.org/1998/Math/MathML"
+from ._html_rules import NS_MATHML as NS_MATHML  # noqa: E402
+from ._html_rules import NS_SVG as NS_SVG  # noqa: E402
 
 
-class VNode:
+class Node:
+    """Anything that renders: what `html()`, `h()`, and a component call give you.
+
+    Annotate component functions and node-holding variables with `Node`.
+    A component call is typed as its props class (so a type checker checks
+    its keywords), and every `Props` class is a `Node` to type checkers,
+    so `-> Node`, `list[Node]`, and `children: Node` accept it.
+    """
+
+    __slots__ = ()
+
+
+class VNode(Node):
     """Virtual node representing an element, text, component, fragment, or hole.
 
     Uses `__slots__` for a compact layout. The renderer populates the
@@ -256,7 +268,7 @@ def h(tag: str | Callable[..., Any] | None, props: PropsDict | None = None, *chi
 
     Example:
         ```python
-        from wybthon import h
+        from wybthon.vnode import h
 
         view = h("button", {"on_click": handle_click}, "Click me")
         ```

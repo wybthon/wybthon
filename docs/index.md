@@ -10,7 +10,7 @@ You write function components in Python and return HTML written as Python 3.14 t
 
 The framework ships with everything you need to build a real app:
 
-- [Templates](concepts/templates.md): [`html`][wybthon.html] takes a t-string of ordinary HTML, with interpolations for text, attributes, events, refs, spreads, and component tags. [`h`][wybthon.h] is the programmatic layer.
+- [Templates](concepts/templates.md): [`html`][wybthon.html] takes a t-string of ordinary HTML, with interpolations for text, attributes, events, refs, spreads, and component tags. [`h`][wybthon.vnode.h] is the programmatic layer.
 - [The compiler](concepts/compiler.md): `{count() * 2}` and `{props.title}` stay reactive without being wrapped, and production builds never parse a template at run time.
 - Reactive primitives: [`create_signal`][wybthon.create_signal], [`create_memo`][wybthon.create_memo], and [`create_effect`][wybthon.create_effect], with automatic batching and typed accessors.
 - Async-first data: an `async def` passed to `create_memo` is the fetching primitive, and [`create_deferred`][wybthon.create_deferred] is the async memo that never holds the rest of the UI; [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] boundaries handle the pending and failure states.

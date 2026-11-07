@@ -83,9 +83,9 @@ def test_deferred_suspends_to_loading_before_its_first_value(wyb, root_element):
         query, set_query, rows, gates = _source(create_deferred)
         wyb["reconciler"].render(_view(query, rows), root_element)
         flush()
-        # A read that isn't ready counts as pending.
-        assert texts(root_element.element) == ["1", "wait", "refreshing"]
-        assert is_pending(rows)
+        # A first load isn't pending: the boundary's fallback shows it.
+        assert texts(root_element.element) == ["1", "wait", "idle"]
+        assert not is_pending(rows)
         gates[1].set()
         await _tick()
         assert texts(root_element.element) == ["1", "rows1", "idle"]
@@ -314,10 +314,13 @@ def test_is_static_compiler_getters_and_accessors_are_expressions():
     assert report["tone"] is False  # a compiler getter that reads a signal
 
 
-def test_is_static_lambdas_and_python_calls():
+def test_is_static_accessors_functions_and_python_calls():
     count, _ = create_signal(1)
-    report = _report_for(html(t"<{Probe} count={(lambda: count() + 1)} />"))
+    report = _report_for(html(t"<{Probe} count={count} />"))
     assert report["count"] is False
+    # A plain function is a value, never read as an expression.
+    report = _report_for(html(t"<{Probe} count={(lambda: count() + 1)} />"))
+    assert report["count"] is True
     report = _report_for(Probe(label="x", count=2))
     assert report["label"] is True and report["count"] is True
 

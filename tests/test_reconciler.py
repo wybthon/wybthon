@@ -805,7 +805,7 @@ def test_handler_removed_with_none_or_missing_prop(wyb, root_element):
     backend.dispatch("click", btn)
     assert len(seen) == 1
 
-    render(view({"onClick": seen.append}), root_element)
+    render(view({"on_click": seen.append}), root_element)
     backend.dispatch("click", btn)
     assert len(seen) == 2
 

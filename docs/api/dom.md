@@ -45,7 +45,7 @@ def FancyInput(props: FancyInputProps):
 Refs are assigned during mount, so read them in
 [`on_settled`][wybthon.on_settled], an effect, or an event handler, not
 at the top of the component body. The `ref` attribute (or the `ref` prop
-of [`h()`][wybthon.h]) also accepts a callback that receives the `Element`, which
+of [`h()`][wybthon.vnode.h]) also accepts a callback that receives the `Element`, which
 is closer to Solid 2.0's function refs:
 
 ```python

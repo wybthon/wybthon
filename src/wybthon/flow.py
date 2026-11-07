@@ -202,6 +202,14 @@ def For[T](
 @overload
 def For[T](
     each: _Each[T],
+    children: Callable[[T], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[True] = True,
+) -> VNode: ...
+@overload
+def For[T](
+    each: _Each[T],
     children: Callable[[Accessor[T], int], object],
     fallback: Any = None,
     *,
@@ -210,7 +218,23 @@ def For[T](
 @overload
 def For[T](
     each: _Each[T],
+    children: Callable[[Accessor[T]], object],
+    fallback: Any = None,
+    *,
+    keyed: Literal[False],
+) -> VNode: ...
+@overload
+def For[T](
+    each: _Each[T],
     children: Callable[[Accessor[T], Accessor[int]], object],
+    fallback: Any = None,
+    *,
+    keyed: Callable[[T], object],
+) -> VNode: ...
+@overload
+def For[T](
+    each: _Each[T],
+    children: Callable[[Accessor[T]], object],
     fallback: Any = None,
     *,
     keyed: Callable[[T], object],
@@ -228,7 +252,8 @@ def For(each: Any, children: Any, fallback: Any = None, *, keyed: Any = True) ->
 
     - `True` (default): match by identity (scalars by value).
       `children(item, index)` receives the raw item and an
-      `Accessor[int]` index.
+      `Accessor[int]` index; a callback that takes one parameter gets
+      the item alone.
     - `False`: match by position. `children(item, index)` receives an
       `Accessor` for the item at that position and an `int` index.
     - a callable `key(item)`: match by key, updating the row in place
@@ -448,7 +473,7 @@ def _ClientOnly(props: _ClientOnlyProps) -> Any:
     hydrating = session is not None and session.mode == "hydrate"
     ready: Signal[bool] = Signal(not (_core._server_depth or hydrating))
     if hydrating:
-        session.after_hydration.append(lambda: ready._set(True, _core._O_REVEAL))
+        session.after_hydration.append(lambda: ready._reveal(True))
 
     def select(_: Any, __: Any) -> tuple[Any, Any, tuple[Any, ...]]:
         return ((True,), children, ()) if ready() else ((False,), fallback, ())

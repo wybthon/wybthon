@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -22,7 +22,7 @@ from ..request import http_status
 from ..vnode import VNode, h
 from ._data import _apply_revalidation
 from ._location import SearchParams, navigate, split_url, url, use_location
-from ._match import resolve, strip_base
+from ._match import match_route, strip_base
 
 __all__ = [
     "Route",
@@ -144,7 +144,7 @@ class Router:
 
     def match(self, href: str) -> list[Route]:
         """The routes `href` shows, root to leaf (`[]` when nothing matches); no rendering involved."""
-        result = resolve(self.routes, href, self.base)
+        result = match_route(self.routes, href, self.base)
         return list(result[1]["matches"]) if result is not None else []
 
     def __call__(self, root: Any = None) -> VNode:
@@ -257,7 +257,7 @@ def _RouterView(props: _RouterViewProps) -> Any:
     search = create_memo(lambda: SearchParams(location()[1]))
 
     def resolved() -> Any:
-        result = resolve(router.routes, pathname(), router.base)
+        result = match_route(router.routes, pathname(), router.base)
         return result[1] if result is not None else {"params": {}, "matches": []}
 
     match = create_memo(resolved)
@@ -270,7 +270,7 @@ def _RouterView(props: _RouterViewProps) -> Any:
     first = [True]
 
     def preload_path(path: str, intent: str = "preload") -> Any:
-        result = resolve(router.routes, path, router.base)
+        result = match_route(router.routes, path, router.base)
         if result is None:
             return None
         _, info = result
@@ -403,7 +403,7 @@ def _Outlet() -> Any:
     return use_context(_OutletContext)
 
 
-_Outlet.__name__ = "Outlet"
+_Outlet.__name__ = "Outlet"  # type: ignore[attr-defined]
 
 
 def Outlet() -> VNode:
@@ -415,23 +415,83 @@ def _state() -> _RouterState | None:
     return use_context(_RouteContext)
 
 
-def use_params() -> Accessor[dict[str, str]]:
-    """Tracked accessor for the matched route's path parameters (`{}` outside a router)."""
+class Params(Mapping[str, str]):
+    """The matched route's path parameters, read with `params["id"]`; every read is tracked.
+
+    What [`use_params`][wybthon.router.use_params] returns, as Solid's
+    `useParams()` returns a reactive object: a read inside markup, a memo,
+    or an effect updates when the URL's parameters change.
+    """
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: Accessor[dict[str, str]]) -> None:
+        self._source = source
+
+    def __getitem__(self, key: str) -> str:
+        return self._source()[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._source())
+
+    def __len__(self) -> int:
+        return len(self._source())
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._source()
+
+    def __repr__(self) -> str:
+        return f"Params({self._source.peek()!r})"
+
+
+class SearchParamsView(Mapping[str, str]):
+    """The query string's parameters, read with `search["page"]`; every read is tracked.
+
+    The first half of what [`use_search_params`][wybthon.router.use_search_params]
+    returns. `get_all(name)` reads every value of a repeated parameter.
+    """
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: Accessor[SearchParams]) -> None:
+        self._source = source
+
+    def __getitem__(self, key: str) -> str:
+        return self._source()[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._source())
+
+    def __len__(self) -> int:
+        return len(self._source())
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._source()
+
+    def get_all(self, key: str) -> list[str]:
+        """Every value of `key`, in URL order (tracked)."""
+        return self._source().get_all(key)
+
+    def __repr__(self) -> str:
+        return f"SearchParamsView({dict(self._source.peek())!r})"
+
+
+def use_params() -> Params:
+    """The matched route's path parameters: `use_params()["id"]`, tracked (empty outside a router)."""
     state = _state()
-    if state is None:
-        return Memo(lambda: {})
-    return state.params
+    return Params(Memo(lambda: {}) if state is None else state.params)
 
 
-def use_search_params() -> tuple[Accessor[SearchParams], Callable[..., None]]:
-    """The parsed query string, and a function that updates it.
+def use_search_params() -> tuple[SearchParamsView, Callable[..., None]]:
+    """The query string's parameters, and a function that updates them.
 
-    The setter merges its changes into the current query (`None` or `""`
-    removes a key) and navigates without scrolling:
+    Reads of the first half are tracked. The setter merges its changes
+    into the current query (`None` or `""` removes a key) and navigates
+    without scrolling:
 
     ```python
     search, set_search = use_search_params()
-    set_search(page=int(search().get("page", "1")) + 1)
+    set_search(page=int(search.get("page", "1")) + 1)
     ```
     """
     state = _state()
@@ -447,7 +507,7 @@ def use_search_params() -> tuple[Accessor[SearchParams], Callable[..., None]]:
             scroll=False,
         )
 
-    return accessor, set_search
+    return SearchParamsView(accessor), set_search
 
 
 def use_route_matches() -> Accessor[list[Route]]:
