@@ -58,32 +58,29 @@ def _sample():
 # ---------------------------------------------------------------------------
 
 
-def test_attribute_and_bracket_reads(wyb):
+def test_subscript_reads(wyb):
     store, _ = _sample()
-    assert store.count == 0
     assert store["count"] == 0
-    assert store.user.name == "Ada"
+    assert store["user"]["name"] == "Ada"
     assert store["user"]["age"] == 36
-    assert store["items"][0].text == "a"
+    assert store["items"][0]["text"] == "a"
     assert store["items"][1]["done"] is True
-    assert store.nums[2] == 3
+    assert store["nums"][2] == 3
 
 
 def test_missing_keys_and_indices_raise_python_errors(wyb):
     store, _ = _sample()
-    with pytest.raises(AttributeError):
-        _ = store.missing
     with pytest.raises(KeyError):
         _ = store["missing"]
     with pytest.raises(IndexError):
-        _ = store.nums[10]
+        _ = store["nums"][10]
 
 
 def test_negative_index_and_slice_reads(wyb):
     store, _ = _sample()
-    assert store.nums[-1] == 3
-    assert store.nums[0:2] == [1, 2]
-    assert store["items"][-1].id == 2
+    assert store["nums"][-1] == 3
+    assert store["nums"][0:2] == [1, 2]
+    assert store["items"][-1]["id"] == 2
 
 
 def test_len_iteration_and_contains(wyb):
@@ -92,11 +89,11 @@ def test_len_iteration_and_contains(wyb):
     assert set(store) == {"count", "user", "items", "nums"}
     assert "user" in store
     assert "nope" not in store
-    assert len(store.nums) == 3
-    assert list(store.nums) == [1, 2, 3]
-    assert 2 in store.nums
-    assert 9 not in store.nums
-    assert [t.text for t in store["items"]] == ["a", "b"]
+    assert len(store["nums"]) == 3
+    assert list(store["nums"]) == [1, 2, 3]
+    assert 2 in store["nums"]
+    assert 9 not in store["nums"]
+    assert [t["text"] for t in store["items"]] == ["a", "b"]
 
 
 def test_bool_of_store(wyb):
@@ -110,26 +107,36 @@ def test_bool_of_store(wyb):
 
 def test_equality_against_plain_data(wyb):
     store, _ = _sample()
-    assert store.user == {"name": "Ada", "age": 36}
-    assert store.nums == [1, 2, 3]
-    assert store.user != {"name": "Bob"}
-    assert store.nums != [1]
-    assert store.user == store["user"]
-    assert not (store.user == 5)
+    assert store["user"] == {"name": "Ada", "age": 36}
+    assert store["nums"] == [1, 2, 3]
+    assert store["user"] != {"name": "Bob"}
+    assert store["nums"] != [1]
+    assert store["user"] == store["user"]
+    assert not (store["user"] == 5)
 
 
 def test_repr_does_not_raise(wyb):
     store, _ = _sample()
     assert "Ada" in repr(store)
-    assert repr(store.nums) == "StoreList([1, 2, 3])"
-    assert repr(store.user) == "Store({'name': 'Ada', 'age': 36})"
+    assert repr(store["nums"]) == "StoreList([1, 2, 3])"
+    assert repr(store["user"]) == "Store({'name': 'Ada', 'age': 36})"
 
 
 def test_nested_proxy_identity_is_stable(wyb):
     store, _ = _sample()
-    assert store.user is store.user
+    assert store["user"] is store["user"]
     assert store["items"][0] is store["items"][0]
     assert store["items"] is store["items"]
+
+
+def test_dict_stores_have_no_attribute_access(wyb):
+    store, set_store = _sample()
+    with pytest.raises(AttributeError, match=r"store\['count'\]"):
+        _ = store.count
+    with pytest.raises(AttributeError):
+        set_store(lambda d: setattr(d, "count", 1))
+    flush()
+    assert store["count"] == 0
 
 
 def test_read_proxy_is_read_only(wyb):
@@ -139,7 +146,7 @@ def test_read_proxy_is_read_only(wyb):
     with pytest.raises(TypeError):
         store["count"] = 5
     with pytest.raises(TypeError):
-        store.nums[0] = 5
+        store["nums"][0] = 5
 
 
 def test_mapping_methods_take_precedence_over_data_keys(wyb):
@@ -171,37 +178,37 @@ def test_scalar_initial_requires_signal(wyb):
 
 def test_write_is_staged_until_flush(wyb):
     store, set_store = _sample()
-    assert store.count == 0
-    set_store(lambda s: setattr(s, "count", 1))
-    assert store.count == 0
+    assert store["count"] == 0
+    set_store(lambda s: s.update(count=1))
+    assert store["count"] == 0
     flush()
-    assert store.count == 1
+    assert store["count"] == 1
 
 
 def test_write_nested_keys_and_list_items(wyb):
     store, set_store = _sample()
 
     def edit(s):
-        s.user.name = "Grace"
+        s["user"]["name"] = "Grace"
         s["user"]["age"] = 40
-        s["items"][0].done = True
-        s.nums[1] = 20
-        s.nums[-1] = 30
+        s["items"][0]["done"] = True
+        s["nums"][1] = 20
+        s["nums"][-1] = 30
 
     set_store(edit)
     flush()
-    assert store.user.name == "Grace"
-    assert store.user.age == 40
-    assert store["items"][0].done is True
-    assert snapshot(store.nums) == [1, 20, 30]
+    assert store["user"]["name"] == "Grace"
+    assert store["user"]["age"] == 40
+    assert store["items"][0]["done"] is True
+    assert snapshot(store["nums"]) == [1, 20, 30]
 
 
 def test_add_new_key_and_delete_key(wyb):
     store, set_store = _sample()
     assert store.get("extra") is None
-    set_store(lambda s: setattr(s, "extra", "yes"))
+    set_store(lambda s: s.update(extra="yes"))
     flush()
-    assert store.extra == "yes"
+    assert store["extra"] == "yes"
     assert "extra" in store
 
     set_store(lambda s: s.__delitem__("extra"))
@@ -209,7 +216,7 @@ def test_add_new_key_and_delete_key(wyb):
     assert "extra" not in store
     assert store.get("extra") is None
 
-    set_store(lambda s: delattr(s, "count"))
+    set_store(lambda s: s.__delitem__("count"))
     flush()
     assert "count" not in store
     assert store.get("count") is None
@@ -217,18 +224,18 @@ def test_add_new_key_and_delete_key(wyb):
 
 def test_replace_nested_dict_wholesale(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store.user.name)
+    memo, runs = _counting_memo(lambda: store["user"]["name"])
     assert memo() == "Ada"
 
-    set_store(lambda s: setattr(s, "user", {"name": "Bob", "age": 1}))
+    set_store(lambda s: s.update(user={"name": "Bob", "age": 1}))
     flush()
     assert memo() == "Bob"
     assert len(runs) == 2
-    assert store.user.age == 1
+    assert store["user"]["age"] == 1
 
-    set_store(lambda s: setattr(s, "user", None))
+    set_store(lambda s: s.update(user=None))
     flush()
-    assert store.user is None
+    assert store["user"] is None
 
 
 def test_draft_reads_see_prior_writes_in_same_setter(wyb):
@@ -236,56 +243,56 @@ def test_draft_reads_see_prior_writes_in_same_setter(wyb):
     seen = []
 
     def edit(s):
-        s.count = 5
-        seen.append(s.count)
-        s.count = s.count + 1
-        s.nums.append(4)
-        seen.append(len(s.nums))
-        seen.append(4 in s.nums)
-        seen.append(list(s.nums))
+        s["count"] = 5
+        seen.append(s["count"])
+        s["count"] = s["count"] + 1
+        s["nums"].append(4)
+        seen.append(len(s["nums"]))
+        seen.append(4 in s["nums"])
+        seen.append(list(s["nums"]))
 
     set_store(edit)
     assert seen == [5, 4, True, [1, 2, 3, 4]]
     flush()
-    assert store.count == 6
+    assert store["count"] == 6
 
 
 def test_successive_setters_before_flush_compose(wyb):
     store, set_store = _sample()
-    assert store.count == 0
-    set_store(lambda s: setattr(s, "count", s.count + 1))
-    set_store(lambda s: setattr(s, "count", s.count + 1))
-    assert store.count == 0
+    assert store["count"] == 0
+    set_store(lambda s: s.update(count=s["count"] + 1))
+    set_store(lambda s: s.update(count=s["count"] + 1))
+    assert store["count"] == 0
     flush()
-    assert store.count == 2
+    assert store["count"] == 2
 
 
 def test_list_append_extend_insert(wyb):
     store, set_store = _sample()
 
     def edit(s):
-        s.nums.append(4)
-        s.nums.extend([5, 6])
-        s.nums.insert(0, 0)
+        s["nums"].append(4)
+        s["nums"].extend([5, 6])
+        s["nums"].insert(0, 0)
 
     set_store(edit)
     flush()
-    assert snapshot(store.nums) == [0, 1, 2, 3, 4, 5, 6]
-    assert len(store.nums) == 7
+    assert snapshot(store["nums"]) == [0, 1, 2, 3, 4, 5, 6]
+    assert len(store["nums"]) == 7
 
 
 def test_list_pop_remove_clear(wyb):
     store, set_store = _sample()
     popped = []
-    set_store(lambda s: popped.append(s.nums.pop()))
-    set_store(lambda s: popped.append(s.nums.pop(0)))
+    set_store(lambda s: popped.append(s["nums"].pop()))
+    set_store(lambda s: popped.append(s["nums"].pop(0)))
     flush()
     assert popped == [3, 1]
-    assert snapshot(store.nums) == [2]
+    assert snapshot(store["nums"]) == [2]
 
-    set_store(lambda s: s.nums.remove(2))
+    set_store(lambda s: s["nums"].remove(2))
     flush()
-    assert snapshot(store.nums) == []
+    assert snapshot(store["nums"]) == []
 
     set_store(lambda s: s["items"].clear())
     flush()
@@ -295,28 +302,28 @@ def test_list_pop_remove_clear(wyb):
 
 def test_list_del_and_slice_assignment(wyb):
     store, set_store = _sample()
-    set_store(lambda s: s.nums.__delitem__(0))
+    set_store(lambda s: s["nums"].__delitem__(0))
     flush()
-    assert snapshot(store.nums) == [2, 3]
+    assert snapshot(store["nums"]) == [2, 3]
 
-    set_store(lambda s: s.nums.__setitem__(slice(0, 1), [7, 8, 9]))
+    set_store(lambda s: s["nums"].__setitem__(slice(0, 1), [7, 8, 9]))
     flush()
-    assert snapshot(store.nums) == [7, 8, 9, 3]
+    assert snapshot(store["nums"]) == [7, 8, 9, 3]
 
 
 def test_list_sort_and_reverse(wyb):
     store, set_store = create_store({"nums": [3, 1, 2]})
-    set_store(lambda s: s.nums.sort())
+    set_store(lambda s: s["nums"].sort())
     flush()
-    assert snapshot(store.nums) == [1, 2, 3]
+    assert snapshot(store["nums"]) == [1, 2, 3]
 
-    set_store(lambda s: s.nums.reverse())
+    set_store(lambda s: s["nums"].reverse())
     flush()
-    assert snapshot(store.nums) == [3, 2, 1]
+    assert snapshot(store["nums"]) == [3, 2, 1]
 
-    set_store(lambda s: s.nums.sort(key=lambda n: -n, reverse=True))
+    set_store(lambda s: s["nums"].sort(key=lambda n: -n, reverse=True))
     flush()
-    assert snapshot(store.nums) == [1, 2, 3]
+    assert snapshot(store["nums"]) == [1, 2, 3]
 
 
 def test_list_of_dicts_append_then_read_new_item(wyb):
@@ -324,7 +331,7 @@ def test_list_of_dicts_append_then_read_new_item(wyb):
     set_store(lambda s: s["items"].append({"id": 3, "text": "c", "done": False}))
     flush()
     assert len(store["items"]) == 3
-    assert store["items"][2].text == "c"
+    assert store["items"][2]["text"] == "c"
     assert store["items"][-1]["id"] == 3
 
 
@@ -332,9 +339,9 @@ def test_draft_update_merges_keys(wyb):
     store, set_store = _sample()
     set_store(lambda s: s.update({"count": 9, "flag": True}))
     flush()
-    assert store.count == 9
-    assert store.flag is True
-    assert store.user.name == "Ada"
+    assert store["count"] == 9
+    assert store["flag"] is True
+    assert store["user"]["name"] == "Ada"
 
 
 def test_setter_returning_dict_replaces_state(wyb):
@@ -342,7 +349,7 @@ def test_setter_returning_dict_replaces_state(wyb):
     set_store(lambda s: {"a": 10, "b": 20})
     flush()
     assert snapshot(store) == {"a": 10, "b": 20}
-    assert store.a == 10
+    assert store["a"] == 10
 
 
 def test_setter_returning_list_replaces_state(wyb):
@@ -360,7 +367,7 @@ def test_setter_accepts_plain_replacement_data(wyb):
     store, set_store = create_store({"a": 1})
     set_store({"a": 2})
     flush()
-    assert store.a == 2
+    assert store["a"] == 2
 
 
 def test_writing_a_proxy_stores_plain_data(wyb):
@@ -370,7 +377,7 @@ def test_writing_a_proxy_stores_plain_data(wyb):
     first = snapshot(store)["first"]
     assert isinstance(first, dict)
     assert first == {"id": 1, "text": "a", "done": False}
-    assert store.first.text == "a"
+    assert store["first"]["text"] == "a"
 
 
 # ---------------------------------------------------------------------------
@@ -380,7 +387,7 @@ def test_writing_a_proxy_stores_plain_data(wyb):
 
 def test_reconcile_keeps_identity_of_unchanged_items(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store["items"][0].text)
+    memo, runs = _counting_memo(lambda: store["items"][0]["text"])
     assert memo() == "a"
     first = store["items"][0]
 
@@ -396,7 +403,7 @@ def test_reconcile_keeps_identity_of_unchanged_items(wyb):
     )
     flush()
     assert store["items"][0] is first
-    assert store["items"][1].text == "B"
+    assert store["items"][1]["text"] == "B"
     assert memo() == "a"
     assert len(runs) == 1
 
@@ -415,7 +422,7 @@ def test_reconcile_adds_removes_and_reorders_items(wyb):
     raw = snapshot(store)["items"]
     assert [i["id"] for i in raw] == [2, 3]
     assert store["items"][0] is second
-    assert store["items"][1].v == 3
+    assert store["items"][1]["v"] == 3
     assert len(store["items"]) == 2
 
 
@@ -442,7 +449,7 @@ def test_reconcile_custom_key(wyb):
     set_store(reconcile([{"slug": "y", "n": 20}, {"slug": "x", "n": 1}], key="slug"))
     flush()
     assert store[1] is x
-    assert store[0].n == 20
+    assert store[0]["n"] == 20
 
 
 # ---------------------------------------------------------------------------
@@ -452,17 +459,17 @@ def test_reconcile_custom_key(wyb):
 
 def test_memo_tracks_only_its_path(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store.user.name)
+    memo, runs = _counting_memo(lambda: store["user"]["name"])
     assert memo() == "Ada"
     assert len(runs) == 1
 
-    set_store(lambda s: setattr(s.user, "age", 37))
-    set_store(lambda s: setattr(s, "count", 1))
+    set_store(lambda s: s["user"].update(age=37))
+    set_store(lambda s: s.update(count=1))
     flush()
     assert memo() == "Ada"
     assert len(runs) == 1
 
-    set_store(lambda s: setattr(s.user, "name", "Grace"))
+    set_store(lambda s: s["user"].update(name="Grace"))
     flush()
     assert memo() == "Grace"
     assert len(runs) == 2
@@ -470,9 +477,9 @@ def test_memo_tracks_only_its_path(wyb):
 
 def test_memo_not_rerun_when_same_value_written(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store.count)
+    memo, runs = _counting_memo(lambda: store["count"])
     assert memo() == 0
-    set_store(lambda s: setattr(s, "count", 0))
+    set_store(lambda s: s.update(count=0))
     flush()
     assert memo() == 0
     assert len(runs) == 1
@@ -483,7 +490,7 @@ def test_memo_tracks_list_length(wyb):
     memo, runs = _counting_memo(lambda: len(store["items"]))
     assert memo() == 2
 
-    set_store(lambda s: setattr(s["items"][0], "done", True))
+    set_store(lambda s: s["items"][0].update(done=True))
     flush()
     assert memo() == 2
     assert len(runs) == 1
@@ -506,35 +513,35 @@ def test_memo_tracks_list_length(wyb):
 
 def test_memo_tracks_iteration(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: list(store.nums))
+    memo, runs = _counting_memo(lambda: list(store["nums"]))
     assert memo() == [1, 2, 3]
 
-    set_store(lambda s: s.nums.__setitem__(1, 20))
+    set_store(lambda s: s["nums"].__setitem__(1, 20))
     flush()
     assert memo() == [1, 20, 3]
     assert len(runs) == 2
 
-    set_store(lambda s: s.nums.append(4))
+    set_store(lambda s: s["nums"].append(4))
     flush()
     assert memo() == [1, 20, 3, 4]
     assert len(runs) == 3
 
-    set_store(lambda s: setattr(s, "count", 5))
+    set_store(lambda s: s.update(count=5))
     flush()
     assert len(runs) == 3
 
 
 def test_memo_tracks_one_list_item_field(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: store["items"][0].done)
+    memo, runs = _counting_memo(lambda: store["items"][0]["done"])
     assert memo() is False
 
-    set_store(lambda s: setattr(s["items"][1], "done", False))
+    set_store(lambda s: s["items"][1].update(done=False))
     flush()
     assert memo() is False
     assert len(runs) == 1
 
-    set_store(lambda s: setattr(s["items"][0], "done", True))
+    set_store(lambda s: s["items"][0].update(done=True))
     flush()
     assert memo() is True
     assert len(runs) == 2
@@ -544,7 +551,7 @@ def test_memo_tracks_membership_and_dict_len(wyb):
     store, set_store = create_store({"a": 1})
     memo, runs = _counting_memo(lambda: ("b" in store, len(store)))
     assert memo() == (False, 1)
-    set_store(lambda s: setattr(s, "b", 2))
+    set_store(lambda s: s.update(b=2))
     flush()
     assert memo() == (True, 2)
     assert len(runs) == 2
@@ -553,17 +560,17 @@ def test_memo_tracks_membership_and_dict_len(wyb):
 def test_effect_first_run_deferred_and_reruns_on_change(wyb):
     store, set_store = _sample()
     log = []
-    create_effect(lambda: store.count, lambda v: log.append(v))
+    create_effect(lambda: store["count"], lambda v: log.append(v))
     assert log == []
     flush()
     assert log == [0]
 
-    set_store(lambda s: setattr(s, "count", 1))
+    set_store(lambda s: s.update(count=1))
     assert log == [0]
     flush()
     assert log == [0, 1]
 
-    set_store(lambda s: setattr(s.user, "name", "Grace"))
+    set_store(lambda s: s["user"].update(name="Grace"))
     flush()
     assert log == [0, 1]
 
@@ -571,11 +578,11 @@ def test_effect_first_run_deferred_and_reruns_on_change(wyb):
 def test_single_form_effect_tracks_nested_paths(wyb):
     store, set_store = _sample()
     log = []
-    create_tracked_effect(lambda: log.append((store.user.name, len(store.nums))))
+    create_tracked_effect(lambda: log.append((store["user"]["name"], len(store["nums"]))))
     flush()
     assert log == [("Ada", 3)]
 
-    set_store(lambda s: s.nums.append(4))
+    set_store(lambda s: s["nums"].append(4))
     flush()
     assert log == [("Ada", 3), ("Ada", 4)]
 
@@ -585,23 +592,23 @@ def test_effect_disposed_with_root_stops_tracking(wyb):
     log = []
 
     def setup(dispose):
-        create_effect(lambda: store.count, lambda v: log.append(v))
+        create_effect(lambda: store["count"], lambda v: log.append(v))
         return dispose
 
     dispose = create_root(setup)
     flush()
     assert log == [0]
     dispose()
-    set_store(lambda s: setattr(s, "count", 1))
+    set_store(lambda s: s.update(count=1))
     flush()
     assert log == [0]
 
 
 def test_untracked_reads_do_not_subscribe(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: untrack(lambda: store.count))
+    memo, runs = _counting_memo(lambda: untrack(lambda: store["count"]))
     assert memo() == 0
-    set_store(lambda s: setattr(s, "count", 3))
+    set_store(lambda s: s.update(count=3))
     flush()
     assert memo() == 0
     assert len(runs) == 1
@@ -620,9 +627,9 @@ def test_snapshot_returns_plain_data(wyb):
     assert raw is not initial
     assert type(raw) is dict
     assert type(raw["user"]) is dict
-    assert type(snapshot(store.nums)) is list
-    assert snapshot(store.user) == initial["user"]
-    assert snapshot(store.user) is not initial["user"]
+    assert type(snapshot(store["nums"])) is list
+    assert snapshot(store["user"]) == initial["user"]
+    assert snapshot(store["user"]) is not initial["user"]
     assert snapshot(42) == 42
 
 
@@ -630,7 +637,7 @@ def test_snapshot_is_untracked(wyb):
     store, set_store = _sample()
     memo, runs = _counting_memo(lambda: snapshot(store)["count"])
     assert memo() == 0
-    set_store(lambda s: setattr(s, "count", 7))
+    set_store(lambda s: s.update(count=7))
     flush()
     assert memo() == 0
     assert len(runs) == 1
@@ -645,7 +652,7 @@ def test_deep_returns_plain_copy(wyb):
     assert copy_["user"] is not snapshot(store)["user"]
     assert type(copy_["items"]) is list
     copy_["user"]["name"] = "Mutated"
-    assert store.user.name == "Ada"
+    assert store["user"]["name"] == "Ada"
     assert deep(5) == 5
 
 
@@ -654,12 +661,12 @@ def test_deep_tracks_nested_changes(wyb):
     memo, runs = _counting_memo(lambda: deep(store)["items"][1]["text"])
     assert memo() == "b"
 
-    set_store(lambda s: setattr(s["items"][0], "done", True))
+    set_store(lambda s: s["items"][0].update(done=True))
     flush()
     assert memo() == "b"
     assert len(runs) == 2
 
-    set_store(lambda s: setattr(s["items"][1], "text", "B"))
+    set_store(lambda s: s["items"][1].update(text="B"))
     flush()
     assert memo() == "B"
     assert len(runs) == 3
@@ -667,19 +674,19 @@ def test_deep_tracks_nested_changes(wyb):
 
 def test_deep_on_nested_proxy(wyb):
     store, set_store = _sample()
-    memo, runs = _counting_memo(lambda: deep(store.user))
+    memo, runs = _counting_memo(lambda: deep(store["user"]))
     assert memo() == {"name": "Ada", "age": 36}
     assert type(memo()) is dict
 
-    set_store(lambda s: setattr(s.user, "age", 37))
+    set_store(lambda s: s["user"].update(age=37))
     flush()
     assert memo() == {"name": "Ada", "age": 37}
     assert len(runs) == 2
 
     log = []
-    create_effect(lambda: deep(store.nums), lambda d: log.append(d))
+    create_effect(lambda: deep(store["nums"]), lambda d: log.append(d))
     flush()
-    set_store(lambda s: s.nums.append(4))
+    set_store(lambda s: s["nums"].append(4))
     flush()
     assert log == [[1, 2, 3], [1, 2, 3, 4]]
 
@@ -693,10 +700,10 @@ def test_derived_store_draft_form_recomputes(wyb):
     n, set_n = create_signal(2)
     stats, _ = create_store(lambda d: d.update({"double": n() * 2}), {"double": 0})
     flush()
-    assert stats.double == 4
+    assert stats["double"] == 4
     set_n(5)
     flush()
-    assert stats.double == 10
+    assert stats["double"] == 10
 
 
 def test_derived_store_zero_arg_form_reconciles(wyb):
@@ -710,7 +717,7 @@ def test_derived_store_zero_arg_form_reconciles(wyb):
     flush()
     assert snapshot(mirror) == [{"id": 1, "v": 1}, {"id": 2, "v": 3}]
     assert mirror[0] is first
-    assert mirror[1].v == 3
+    assert mirror[1]["v"] == 3
 
 
 def test_derived_store_is_fine_grained(wyb):
@@ -718,12 +725,12 @@ def test_derived_store_is_fine_grained(wyb):
     b, set_b = create_signal(1)
     derived, _ = create_store(lambda d: d.update({"a": a(), "b": b()}), {"a": 0, "b": 0})
     flush()
-    memo, runs = _counting_memo(lambda: derived.a)
+    memo, runs = _counting_memo(lambda: derived["a"])
     assert memo() == 1
 
     set_b(2)
     flush()
-    assert derived.b == 2
+    assert derived["b"] == 2
     assert memo() == 1
     assert len(runs) == 1
 
@@ -737,20 +744,20 @@ def test_create_projection_tracks_sources(wyb):
     sel, set_sel = create_signal(1)
     proj = create_projection(lambda d: d.update({"selected": sel()}), {"selected": None})
     flush()
-    assert proj.selected == 1
+    assert proj["selected"] == 1
     set_sel(7)
     flush()
-    assert proj.selected == 7
+    assert proj["selected"] == 7
 
 
 def test_create_projection_zero_arg_and_read_only(wyb):
     sel, set_sel = create_signal("x")
     proj = create_projection(lambda: {"selected": sel()}, {"selected": None})
     flush()
-    assert proj.selected == "x"
+    assert proj["selected"] == "x"
     set_sel("y")
     flush()
-    assert proj.selected == "y"
+    assert proj["selected"] == "y"
     with pytest.raises(AttributeError):
         proj.selected = "z"
     with pytest.raises(TypeError):
@@ -759,12 +766,12 @@ def test_create_projection_zero_arg_and_read_only(wyb):
 
 def test_projection_from_store_source(wyb):
     store, set_store = _sample()
-    proj = create_projection(lambda d: d.update({"open": sum(1 for t in store["items"] if not t.done)}), {"open": 0})
+    proj = create_projection(lambda d: d.update({"open": sum(1 for t in store["items"] if not t["done"])}), {"open": 0})
     flush()
-    assert proj.open == 1
-    set_store(lambda s: setattr(s["items"][1], "done", False))
+    assert proj["open"] == 1
+    set_store(lambda s: s["items"][1].update(done=False))
     flush()
-    assert proj.open == 2
+    assert proj["open"] == 2
 
 
 def test_projection_selector_notifies_only_changed_keys(wyb):
@@ -795,7 +802,7 @@ def test_store_get_is_tracked_for_absent_keys(wyb):
     store, set_store = create_store({})
     memo, runs = _counting_memo(lambda: store.get("extra", "none"))
     assert memo() == "none"
-    set_store(lambda s: setattr(s, "extra", "yes"))
+    set_store(lambda s: s.update(extra="yes"))
     flush()
     assert memo() == "yes"
     assert len(runs) == 2
@@ -841,15 +848,15 @@ def test_unobserved_store_field_subscriptions_are_released(wyb):
 
 def test_optimistic_store_value_form_applies_writes(wyb):
     shown, set_shown = create_optimistic_store({"n": 0, "items": []})
-    assert shown.n == 0
+    assert shown["n"] == 0
 
     def edit(s):
-        s.n = 1
+        s["n"] = 1
         s["items"].append("x")
 
     set_shown(edit)
     flush()
-    assert shown.n == 1
+    assert shown["n"] == 1
     assert list(shown["items"]) == ["x"]
     assert snapshot(shown) == {"n": 1, "items": ["x"]}
 
@@ -861,17 +868,17 @@ def test_optimistic_store_value_form_reverts_when_action_settles(wyb):
 
         @action
         async def bump():
-            set_shown(lambda s: setattr(s, "n", 1))
+            set_shown(lambda s: s.update(n=1))
             await gate.wait()
 
         bump()
         flush()
-        assert shown.n == 1
+        assert shown["n"] == 1
         assert bump.pending() is True
         gate.set()
         await asyncio.sleep(0.01)
         flush()
-        assert shown.n == 0
+        assert shown["n"] == 0
         assert bump.pending() is False
 
     asyncio.run(main())
@@ -894,7 +901,7 @@ def test_optimistic_store_derived_form_reverts_to_source(wyb):
         add("x")
         flush()
         assert len(shown) == 1
-        assert shown[0].saving is True
+        assert shown[0]["saving"] is True
         gate.set()
         await asyncio.sleep(0.01)
         flush()
@@ -907,10 +914,10 @@ def test_optimistic_store_derived_form_follows_source_changes(wyb):
     base, set_base = create_signal({"n": 1})
     shown, _ = create_optimistic_store(lambda: base(), {"n": 0})
     flush()
-    assert shown.n == 1
+    assert shown["n"] == 1
     set_base({"n": 2})
     flush()
-    assert shown.n == 2
+    assert shown["n"] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -923,8 +930,8 @@ def test_write_inside_memo_raises_write_in_scope_error(wyb, monkeypatch):
     store, set_store = _sample()
 
     def compute():
-        store.count
-        set_store(lambda s: setattr(s, "count", 1))
+        store["count"]
+        set_store(lambda s: s.update(count=1))
 
     memo = create_memo(compute)
     with pytest.raises(WriteInScopeError):
@@ -935,7 +942,7 @@ def test_write_inside_effect_compute_routes_to_error_handler(wyb, monkeypatch):
     monkeypatch.setattr(_warnings, "DEV_MODE", True)
     store, set_store = _sample()
     errs = []
-    create_tracked_effect(lambda: (store.count, set_store(lambda s: None)), error=lambda e: errs.append(e))
+    create_tracked_effect(lambda: (store["count"], set_store(lambda s: None)), error=lambda e: errs.append(e))
     flush()
     assert len(errs) == 1
     assert isinstance(errs[0], WriteInScopeError)
@@ -944,9 +951,9 @@ def test_write_inside_effect_compute_routes_to_error_handler(wyb, monkeypatch):
 def test_write_from_effect_apply_stage_is_allowed(wyb, monkeypatch):
     monkeypatch.setattr(_warnings, "DEV_MODE", True)
     store, set_store = _sample()
-    create_effect(lambda: store.count, lambda v: set_store(lambda s: setattr(s, "doubled", v * 2)))
+    create_effect(lambda: store["count"], lambda v: set_store(lambda s: s.update(doubled=v * 2)))
     flush()
-    assert store.doubled == 0
-    set_store(lambda s: setattr(s, "count", 4))
+    assert store["doubled"] == 0
+    set_store(lambda s: s.update(count=4))
     flush()
-    assert store.doubled == 8
+    assert store["doubled"] == 8

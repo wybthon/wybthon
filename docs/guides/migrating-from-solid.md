@@ -46,7 +46,7 @@ The table follows **Solid 2.0 RC.21**.
 | `TimeoutError` | `until(..., timeout=...)` raises the built-in `TimeoutError` |
 | `createMemo(fn, { loadingValue })` | `create_memo(fn, loading_value=...)` |
 | `NotReadyError` | [`NotReadyError`][wybthon.NotReadyError] |
-| `createStore(initial)` (draft setter) | [`create_store(initial)`][wybthon.create_store] |
+| `createStore(initial)` (draft setter) | [`create_store(initial)`][wybthon.create_store], where `initial` is a dataclass instance, a dict, or a list |
 | `reconcile(value, key)` | [`reconcile(value, key="id")`][wybthon.reconcile]; `key` may be a string, a function, or `None` |
 | `createProjection(fn, initial)` | [`create_projection(fn, initial)`][wybthon.create_projection] |
 | `createSelector(source)` (removed in 2.0) | A projection: `create_projection(lambda: {} if sel() is None else {sel(): True})`, then `is_selected.get(key)` |
@@ -266,13 +266,13 @@ unknown = html(t"<p>Unknown</p>")
 html(t"""
   <main>
     {Show(user, greeting, fallback=html(t"<p>Sign in</p>"))}
-    <ul>{For(store.todos, todo_row, keyed=lambda t: t["id"])}</ul>
+    <ul>{For(store["todos"], todo_row, keyed=lambda t: t["id"])}</ul>
     {Switch(Match(status() == "loading", loading), Match(status() == "ready", ready), fallback=unknown)}
   </main>
 """)
 ```
 
-These are calls in a child position, so the compiler builds them like JSX components: `status() == "loading"` and `store.todos` arrive as getters, and `Match` inside `Switch` is prepared the same way. `Show` passes the truthy value to a one-argument callback as an accessor, like Solid's `<Show>` with a function child; with `keyed=True` it passes the value itself. `For` mirrors Solid's unified `For`: with `keyed=True` (the default) rows match by identity and the callback receives `(item, index_accessor)`; with `keyed=False` it receives `(item_accessor, index)`; with a key function it receives `(item_accessor, index_accessor)`. Type checkers infer these from the call (see [Typing](typing.md#control-flow)). In a template, `{For(todos(), row)}` passes a getter; in Python code, pass the accessor (`For(todos, row)`) or a store list, because a plain list renders once. `Repeat(count, lambda i: ...)` matches Solid 2.0's `Repeat`.
+These are calls in a child position, so the compiler builds them like JSX components: `status() == "loading"` and `store["todos"]` arrive as getters, and `Match` inside `Switch` is prepared the same way. `Show` passes the truthy value to a one-argument callback as an accessor, like Solid's `<Show>` with a function child; with `keyed=True` it passes the value itself. `For` mirrors Solid's unified `For`: with `keyed=True` (the default) rows match by identity and the callback receives `(item, index_accessor)`; with `keyed=False` it receives `(item_accessor, index)`; with a key function it receives `(item_accessor, index_accessor)`. Type checkers infer these from the call (see [Typing](typing.md#control-flow)). In a template, `{For(todos(), row)}` passes a getter; in Python code, pass the accessor (`For(todos, row)`) or a store list, because a plain list renders once. `Repeat(count, lambda i: ...)` matches Solid 2.0's `Repeat`.
 
 These are native regions, not wrapper components: `Show` and `Switch` are one branch computation each, and when a hole re-renders a tree containing one, the new condition or source is pushed into the mounted region instead of remounting it.
 
@@ -299,22 +299,44 @@ Errored(
 ## Stores
 
 ```python
+from dataclasses import dataclass, field
+
 from wybthon import create_store, reconcile, snapshot
 
-state, set_state = create_store({"count": 0, "items": []})
+
+@dataclass
+class Item:
+    id: int
+    title: str
 
 
-def update(s):
-    s.count += 1
-    s["items"].append({"id": 3, "title": "new"})
+@dataclass
+class State:
+    count: int = 0
+    items: list[Item] = field(default_factory=list)
+
+
+state, set_state = create_store(State())
+
+
+def update(draft: State) -> None:
+    draft.count += 1
+    draft.items.append(Item(3, "new"))
 
 
 set_state(update)
-set_state(reconcile({"count": 5, "items": fetched_items}, key="id"))
-raw = snapshot(state["items"])
+set_state(lambda draft: draft.items.clear())
+set_state(reconcile(State(count=5, items=fetched_items), key="id"))
+raw = snapshot(state.items)
 ```
 
-Setters are draft-first, as in Solid 2.0. Reads are tracked at the leaf, only leaves that changed notify, and `reconcile` preserves identity by key so `For` rows keep their DOM. [`create_projection`][wybthon.create_projection] and [`create_optimistic_store`][wybthon.create_optimistic_store] match their Solid 2.0 namesakes.
+Solid's `createStore(obj)` becomes `create_store(State(...))` with a dataclass instance. Its fields read as tracked attributes, like a Solid store proxy: `state.items[0].title` subscribes to that one field, and the dataclass's methods and properties work through the store. A dict store is read with subscripts instead (`state["items"]`) and has no attribute access, which suits JSON-like data and maps keyed by id.
+
+Setters are draft-first, as in Solid 2.0: `setStore(draft => ...)` becomes `set_state(lambda draft: ...)` for a single expression, or a `def` like `update` above, since a Python lambda can't assign. A dataclass draft is edited like the dataclass (`draft.items[0].title = "renamed"`); a dict draft takes subscripts (`draft["count"] += 1`). Reads are tracked per field, only fields that changed notify, and `reconcile` preserves identity by key so `For` rows keep their DOM. [`create_projection`][wybthon.create_projection] and [`create_optimistic_store`][wybthon.create_optimistic_store] match their Solid 2.0 namesakes.
+
+In Solid, a store created from an object of type `T` is typed as `T`. Wybthon does the same: `state` is typed as `State`, and the setter accepts a `Callable[[State], object]`, so pyright and mypy check store reads and draft edits with no plugin (see [Typing](typing.md#stores)).
+
+Where you'd use a shallow store in Solid 2.0, pass `shallow=True`: `create_store(initial, shallow=True)` makes only the top level reactive. Nested values are stored and returned as plain data, so you change one by replacing it. See [Stores](../concepts/stores.md#shallow-stores).
 
 ## Context
 

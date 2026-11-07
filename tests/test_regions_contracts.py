@@ -32,8 +32,8 @@ def test_store_append_and_swap_skip_full_list_work(wyb, root_element):
     created = []
 
     def row(item, index):
-        created.append(item.id)
-        return html(t"<span>{item.id}</span><span>{index()}</span>")
+        created.append(item["id"])
+        return html(t"<span>{item['id']}</span><span>{index()}</span>")
 
     root = wyb["reconciler"].render(html(t"<div>{For(rows, row)}</div>"), root_element)
     with profile() as append:
@@ -61,8 +61,8 @@ def test_fragment_rows_keep_scope_through_reorders(wyb, root_element):
     disposed = []
 
     def row(item, index):
-        on_cleanup(lambda: disposed.append(item.id))
-        return html(t"<span>{item.id}</span><span>{count}</span>")
+        on_cleanup(lambda: disposed.append(item["id"]))
+        return html(t"<span>{item['id']}</span><span>{count}</span>")
 
     root = wyb["reconciler"].render(html(t"<div>{For(rows, row)}</div>"), root_element)
     write(lambda d: d.reverse())
@@ -178,8 +178,8 @@ def test_unused_indices_can_become_reactive_after_edits(wyb, root_element):
     indices = {}
 
     def row(item, index):
-        indices[item.id] = index
-        return html(t"<span>{item.id}</span>")
+        indices[item["id"]] = index
+        return html(t"<span>{item['id']}</span>")
 
     root = wyb["reconciler"].render(html(t"{For(store, row)}"), root_element)
 
@@ -271,9 +271,9 @@ def test_random_store_edits_match_plain_list_and_keep_live_rows(wyb, root_elemen
     created, disposed = [], []
 
     def row(item, index):
-        created.append(item.id)
-        on_cleanup(lambda: disposed.append(item.id))
-        return html(t"<span>{item.id}</span><span>{index()}</span>")
+        created.append(item["id"])
+        on_cleanup(lambda: disposed.append(item["id"]))
+        return html(t"<span>{item['id']}</span><span>{index()}</span>")
 
     root = wyb["reconciler"].render(html(t"{For(store, row)}"), root_element)
     next_id = 12
@@ -309,7 +309,7 @@ def test_random_store_edits_match_plain_list_and_keep_live_rows(wyb, root_elemen
             write(swap)
         else:
             expected.sort()
-            write(lambda d: d.sort(key=lambda item: item.id))
+            write(lambda d: d.sort(key=lambda item: item["id"]))
         flush()
         assert texts(root_element.element) == [
             text for i, value in enumerate(expected) for text in (str(value), str(i))

@@ -1854,7 +1854,7 @@ class _PropField:
                 value = untrack(value.fn)
             else:
                 value = value.fn()
-            # `title={store.title}` hands over the signal itself; a value
+            # `title={state.title}` hands over the signal itself; a value
             # field reads it, as a binding of the same expression would.
             if self.unwrap and is_accessor(value):
                 return value()

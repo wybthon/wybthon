@@ -834,7 +834,7 @@ def is_pending(fn: Callable[[], Any]) -> bool:
 
     ```python
     html(t"<span>{'Refreshing...' if is_pending(user) else ''}</span>")
-    html(t"<button disabled={is_pending(lambda: store.items)}>Save</button>")
+    html(t"<button disabled={is_pending(lambda: state.todos)}>Save</button>")
     ```
     """
     saved = _core._probe_hit

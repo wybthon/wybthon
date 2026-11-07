@@ -51,21 +51,21 @@ def NamesList():
     store, set_store = create_store({"names": []})
     draft, set_draft = create_signal("")
 
-    total = create_memo(lambda: len(store.names))
-    starts_with_a = create_memo(lambda: sum(1 for n in store.names if n["text"].lower().startswith("a")))
+    total = create_memo(lambda: len(store["names"]))
+    starts_with_a = create_memo(lambda: sum(1 for n in store["names"] if n["text"].lower().startswith("a")))
 
     @action
     async def add(text: str):
         # Simulate a slow save; the button is disabled while ``add.pending()``.
         await asyncio.sleep(0.3)
-        set_store(lambda s: s.names.append({"id": len(s.names) + 1, "text": text}))
+        set_store(lambda s: s["names"].append({"id": len(s["names"]) + 1, "text": text}))
         set_draft("")
 
     def save():
         add(draft())
 
     def clear():
-        set_store(lambda s: s.names.clear())
+        set_store(lambda s: s["names"].clear())
 
     def edit(e):
         set_draft(e.target.value)
@@ -83,7 +83,7 @@ def NamesList():
         </div>
         {Show(add.pending(), html(t"<p>Saving...</p>"))}
         <ul>
-          {For(store.names, row, fallback=html(t"<li>No names yet.</li>"), keyed=lambda n: n["id"])}
+          {For(store["names"], row, fallback=html(t"<li>No names yet.</li>"), keyed=lambda n: n["id"])}
         </ul>
       </div>
     """)
@@ -139,8 +139,8 @@ render(Page(), "#app")
 
 - `Card` subclasses `ParentProps`, so it accepts children, and declares the props it handles as plain annotations with defaults. `{props.title}` is a tracked read the compiler turns into a getter. It forwards `id` by spreading `omit(props, "title", "children")` onto the `<section>` (`<section {...}>` is a spread), so the parent's `id="names"` lands there, and each forwarded key stays reactive. A `None` value removes the attribute.
 - `Page` uses the component tag form: `<{Card} title="...">...</{Card}>` passes the attributes as props and the nested markup as `children`, and `<{NamesList} />` takes none. The call form, `{Card(title="Cleanup", children=[...])}` or `Card(title=...)[...]`, does the same and is fully type-checked; dev mode checks the tag form's props at run time.
-- `NamesList` keeps its list in a store. `set_store(lambda s: s.names.append(...))` mutates a draft; only the leaf signals that changed notify, and `For` matches rows by `id` so existing `<li>` elements are kept.
-- The store list goes to `For` as is: `For(store.names, ...)` tracks it without a wrapping lambda.
+- `NamesList` keeps its list in a store. `set_store(lambda s: s["names"].append(...))` mutates a draft; only the fields that changed notify, and `For` matches rows by `id` so existing `<li>` elements are kept.
+- The store list goes to `For` as is: `For(store["names"], ...)` tracks it without a wrapping lambda. A dict store is read with subscripts; use a dataclass when you'd rather write `store.names`.
 - With a key function, `For` hands the row callback accessors for both the item and the index, so `row` reads `item()` and `index()` right in its template; the expression is one hole.
 - The summary line reads two memos, `total()` and `starts_with_a()`; each is its own text binding.
 - `add` is an [`action`][wybthon.action]. While it's in flight, `add.pending()` is `True`, which disables the button (`disabled={add.pending()}`) and shows the "Saving..." line.

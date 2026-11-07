@@ -58,7 +58,7 @@ Unsolicited pull requests for issues that are already assigned or already have a
   - `flow.py`: `Show`, `For`, `Repeat`, `Switch`/`Match`, `dynamic`, `client_only`, `NoHydration`, `Hydration`, and `on_hydration_end`
   - `loading.py`: `Loading` and `Reveal` boundaries
   - `error_boundary.py`: `Errored`
-  - `store.py` / `_vector.py`: draft-first stores, projections, optimistic stores, `reconcile`, `snapshot`, `deep`, and the persistent vector behind staged store lists
+  - `store.py`: draft-first stores over dataclasses, dicts, and lists, projections, optimistic stores, `reconcile`, `snapshot`, and `deep`
   - `context.py`: `create_context` / `use_context` (the `Context` is its own provider)
   - `portal.py`, `lazy.py`: out-of-tree rendering, lazy-loaded components, and `lazy_module`
   - `router.py`: client-side router, `RouteProps`, and the browser-agnostic matcher (`RouteSpec`, `resolve`)

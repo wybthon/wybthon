@@ -137,6 +137,7 @@ nav:
     - "0004: Engine v4": rfcs/0004-engine-v4.md
     - "0005: Engine v5": rfcs/0005-engine-v5.md
     - "0006: Engine v6": rfcs/0006-engine-v6.md
+    - "0007: Engine v7": rfcs/0007-engine-v7.md
   - Meta:
     - Style Guide: meta/style-guide.md
     - Contributing: meta/contributing.md

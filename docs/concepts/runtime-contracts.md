@@ -62,7 +62,7 @@ Scalar updater functions and store draft callbacks replay in submission order ov
 
 Callbacks must be deterministic and free of external side effects because rebasing can run them again. Authoritative updates should arrive before the corresponding action completes. Failed optimistic edits disappear, but ordinary authoritative writes already made by an action aren't rolled back. Multiple draft edits from one action share a single removal and rebase.
 
-`affects(signal_or_memo)` marks that value pending without starting a new fetch. `affects(store.child)` marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.
+`affects(signal_or_memo)` marks that value pending without starting a new fetch. `affects(state.user)` marks the selected subtree; sibling reads remain independent. Existing pending indicators update when the mark is added and removed. A whole-store mark applies to every descendant.
 
 An optimistic edit made outside an action remains until the next transition adopts it. Prefer actions when an edit needs a clear lifetime.
 
@@ -98,7 +98,7 @@ At run time, DOM positions keep one rule, in templates and `h()` trees alike: in
 
 `diagnostics.inspect_transitions()` reports group IDs, pending computation IDs, action counts, held sources, queued applications, and affected targets. `inspect_graph(owner)` includes matching IDs, read modes, blockers, and prepared and published owners. These functions inspect metadata without evaluating values or joining groups. `runtime_stats()` includes transition and held-node counts.
 
-The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, persistent store sequences, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
+The synchronous path creates no transition when there are no actions or async computations. Transition bookkeeping runs in Python; compiled template mounting, native teardown, delegated events, lazily wrapped store containers, list edit journals, and batched kernel operations remain in use. General sequence splices and arbitrary replacements can still require linear work. Holding a group retains its published values and resources until completion or removal of demand.
 
 Disposing an owner, a row, a region, or a mounted node breaks the references the engine keeps between them, so what's removed is freed by reference counting and never waits for Python's cycle collector. Cycles your own code creates (a nested function that calls itself, an object that stores its own bound method) still need the collector. The collector is paused while a flush or mount runs; in the browser, the collection it owes runs when the page is idle, after the committed DOM has painted, and large removals are freed then too.
 

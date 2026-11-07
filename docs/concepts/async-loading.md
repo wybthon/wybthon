@@ -340,21 +340,21 @@ that must show during an action (a "saving" flag).
 `create_optimistic_store(source, initial=None)` is the store version,
 for nested optimistic state. `source` may be a tracked function
 returning the base state (derived form, reconciled when its dependencies
-change) or a plain dict or list. The setter applies draft mutations like
-a [store setter](stores.md#collection-protocols):
+change) or plain data (a dict, a list, or a dataclass instance). The
+setter applies draft mutations like a [store setter](stores.md#drafts):
 
 ```python
 from wybthon import action, create_optimistic_store, create_store, deep
 
 state, set_state = create_store({"todos": []})
-shown, set_shown = create_optimistic_store(lambda: deep(state.todos), [])
+shown, set_shown = create_optimistic_store(lambda: deep(state["todos"]), [])
 
 
 @action
 async def add(title):
     set_shown(lambda s: s.append({"title": title, "saving": True}))
     saved = await api_create(title)
-    set_state(lambda s: s.todos.append(saved))
+    set_state(lambda s: s["todos"].append(saved))
 ```
 
 ### `affects` and `until`

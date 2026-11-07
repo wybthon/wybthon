@@ -224,10 +224,52 @@ length: int = save("Ada")
 
 ## Stores
 
-`create_store` returns a [`Store[S]`][wybthon.Store] (a read-only mapping) or a [`StoreList[T]`][wybthon.StoreList] (a read-only sequence), and setters receive the matching draft type. A store keeps its schema as a type parameter, but reads of individual keys (`store.name`, `store["name"]`) are typed `Any`, because a mapping proxy can't express per-key types without a checker plugin. Annotate where you read when the type matters:
+A store is typed as its own data. `create_store(initial)` returns `tuple[T, StoreSetter[T]]`, where `T` is the type of `initial`: a dataclass, a `TypedDict`, `list[Row]`, or any other type you give it. Reads check against your own annotations, with no checker plugin:
 
 ```python
-from typing import TypedDict
+from dataclasses import dataclass, field
+from typing import assert_type
+
+from wybthon import create_store, deep, reconcile, snapshot
+
+
+@dataclass
+class Task:
+    title: str
+    done: bool = False
+
+    def toggle(self) -> None:
+        self.done = not self.done
+
+
+@dataclass
+class Board:
+    tasks: list[Task] = field(default_factory=list)
+
+
+board, edit = create_store(Board([Task("Write docs")]))
+assert_type(board, Board)
+assert_type(board.tasks[0].done, bool)
+
+
+def finish(draft: Board) -> None:
+    draft.tasks[0].toggle()
+    draft.tasks.append(Task("Ship it"))
+
+
+edit(finish)
+edit(Board())
+edit(reconcile(Board([Task("Review")]), key="title"))
+assert_type(snapshot(board), Board)
+assert_type(deep(board.tasks), list[Task])
+```
+
+The setter accepts a `Callable[[T], object]` (a draft callback), replacement data of type `T`, or a [`reconcile`][wybthon.reconcile] result, so a draft callback is checked like any function taking a `Board`. [`snapshot`][wybthon.snapshot] and [`deep`][wybthon.deep] return the type they're given, and [`create_projection(fn, initial)`][wybthon.create_projection] is typed as `initial`'s type.
+
+For a dict store, give the initial data a `TypedDict` type. Read and write it with subscripts, since dict stores have no attribute access:
+
+```python
+from typing import TypedDict, assert_type
 
 from wybthon import create_store
 
@@ -237,13 +279,14 @@ class Person(TypedDict):
     age: int
 
 
-person, write = create_store(Person(name="Ada", age=36))
-name: str = person.name
-age: int = person["age"]
-write(lambda draft: setattr(draft, "name", "Grace"))
+initial: Person = {"name": "Ada", "age": 36}
+person, write = create_store(initial)
+assert_type(person, Person)
+assert_type(person["age"], int)
+write(lambda draft: draft.update({"name": "Grace"}))
 ```
 
-Mapping method names stay methods, so read a data key that collides with one (`items`, `keys`, `get`) with `[]`. A TypedDict annotation isn't runtime validation.
+An empty list store takes its item type from the constructor: `create_store(list[Person]())`. The static type is your data's type, but the runtime view is a store: a dict store is a [`Store`][wybthon.Store] (a `Mapping`, not a `dict`), a list store is a [`StoreList`][wybthon.StoreList] (a `Sequence`), and a dataclass store is a [`StoreObject`][wybthon.StoreObject] that `isinstance` reports as your dataclass. A `TypedDict` annotation isn't runtime validation.
 
 ## Running the checkers
 

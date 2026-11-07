@@ -21,39 +21,17 @@ from wybthon import (
     map_array,
     on_cleanup,
 )
-from wybthon._vector import Vector
 from wybthon.diagnostics import profile
 from wybthon.kernel import OP_CLONE
 from wybthon.store import DraftExpiredError
-
-
-@pytest.mark.parametrize("size", [0, 1, 31, 32, 33, 1023, 1024, 1025, 32768, 32769])
-def test_bulk_vectors_preserve_values_across_tree_boundaries(size):
-    values = list(range(size))
-    vector = Vector(iter(values))
-    assert list(vector) == values
-    assert list(vector.append("tail")) == [*values, "tail"]
-    assert vector[::-17] == values[::-17]
-    if size:
-        assert list(vector.pop()) == values[:-1]
-        assert list(vector.set(-1, "last")) == [*values[:-1], "last"]
-    for start in sorted({0, min(1, size), min(32, size), min(1024, size), size}):
-        trimmed = vector.splice(start, size - start, ())
-        assert list(trimmed) == values[:start]
-        assert list(trimmed.append("next")) == [*values[:start], "next"]
-        assert list(vector) == values
-    middle = size // 2
-    assert list(vector.splice(middle, min(3, size - middle), iter(["a", "b"]))) == (
-        values[:middle] + ["a", "b"] + values[middle + min(3, size - middle) :]
-    )
 
 
 def test_shared_store_entities_notify_each_remaining_parent(wyb):
     store, write = create_store({"entity": {"n": 0}, "left": [], "right": []})
 
     def share(d):
-        d.left.extend([d.entity, d.entity])
-        d.right.append(d.entity)
+        d["left"].extend([d["entity"], d["entity"]])
+        d["right"].append(d["entity"])
 
     write(share)
     flush()
@@ -67,22 +45,22 @@ def test_shared_store_entities_notify_each_remaining_parent(wyb):
     right = create_memo(lambda: read("right"))
     assert left() == [{"n": 0}, {"n": 0}]
     assert right() == [{"n": 0}]
-    write(lambda d: (d.left.pop(), None)[1])
+    write(lambda d: (d["left"].pop(), None)[1])
     flush()
     assert left() == [{"n": 0}]
-    write(lambda d: setattr(d.entity, "n", 1))
+    write(lambda d: d["entity"].update(n=1))
     flush()
     assert left() == right() == [{"n": 1}]
-    write(lambda d: d.left.clear())
+    write(lambda d: d["left"].clear())
     flush()
     assert left() == []
     before = calls.copy()
-    write(lambda d: setattr(d.entity, "n", 2))
+    write(lambda d: d["entity"].update(n=2))
     flush()
     assert left() == []
     assert right() == [{"n": 2}]
     assert calls == {"left": before["left"], "right": before["right"] + 1}
-    assert store.right[0] is store.entity
+    assert store["right"][0] is store["entity"]
 
 
 def test_repeated_links_to_one_parent_keep_deep_subscription(wyb):
@@ -94,7 +72,7 @@ def test_repeated_links_to_one_parent_keep_deep_subscription(wyb):
     write(lambda d: (d.pop(), None)[1])
     flush()
     assert memo() == [{"n": 0}]
-    write(lambda d: setattr(d[0], "n", 1))
+    write(lambda d: d[0].update(n=1))
     flush()
     assert memo() == [{"n": 1}]
 
@@ -102,16 +80,16 @@ def test_repeated_links_to_one_parent_keep_deep_subscription(wyb):
 @pytest.mark.parametrize("shared", [False, True])
 def test_retained_entity_doesnt_retain_its_parents(wyb, shared):
     store, write = create_store({"entity": {"n": 0}, "other": []})
-    entity = store.entity
+    entity = store["entity"]
     if shared:
-        write(lambda d: d.other.append(d.entity))
+        write(lambda d: d["other"].append(d["entity"]))
         flush()
     parent = weakref.ref(store._node)
-    other = weakref.ref(store.other._node)
+    other = weakref.ref(store["other"]._node)
     del store, write
     gc.collect()
     assert parent() is None and other() is None
-    assert entity.n == 0
+    assert entity["n"] == 0
 
 
 def test_map_array_prefix_keys_run_once_and_replacements_stay_reactive(wyb):

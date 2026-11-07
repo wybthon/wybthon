@@ -1,7 +1,8 @@
 """Public typing contracts that mypy and pyright must accept with no plugin."""
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypedDict, assert_type
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict, assert_type
 
 from wybthon import (
     Accessor,
@@ -15,10 +16,13 @@ from wybthon import (
     create_memo,
     create_signal,
     create_store,
+    deep,
     h,
     html,
     is_static,
     prop,
+    reconcile,
+    snapshot,
     untrack,
 )
 from wybthon.router import QueryParams, RouteProps
@@ -113,9 +117,44 @@ class Person(TypedDict):
 
 initial: Person = {"name": "Ada", "age": 36, "items": []}
 store, write = create_store(initial)
-store.items()  # Mapping method, even when data contains an "items" key.
-store_name: Any = store.name
-write(lambda draft: setattr(draft, "name", "Grace"))
+# A store is typed as its own data: here, a `Person` TypedDict.
+assert_type(store, Person)
+assert_type(store["age"], int)
+assert_type(store["items"], list[str])
+write(lambda draft: draft.update({"name": "Grace"}))
+write({"name": "Lin", "age": 30, "items": []})
+
+
+@dataclass
+class Task:
+    title: str
+    done: bool = False
+
+    def toggle(self) -> None:
+        self.done = not self.done
+
+
+@dataclass
+class Board:
+    tasks: list[Task] = field(default_factory=list)
+
+
+board, edit_board = create_store(Board([Task("a")]))
+assert_type(board, Board)
+assert_type(board.tasks[0].done, bool)
+
+
+def finish(draft: Board) -> None:
+    draft.tasks[0].done = True
+    draft.tasks.append(Task("b"))
+    draft.tasks[1].toggle()
+
+
+edit_board(finish)
+edit_board(Board())
+edit_board(reconcile(Board([Task("c")]), key="title"))
+assert_type(snapshot(board), Board)
+assert_type(deep(board.tasks), list[Task])
 
 
 @action
