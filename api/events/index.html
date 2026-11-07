@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1816,6 +1846,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2326,7 +2360,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" dispatch_event">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.intercept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;intercept
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" intercept">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2679,6 +2724,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../request/" class="md-nav__link">
         
   
@@ -2830,6 +2931,8 @@
       
         
           
+        
+      
         
       
         
@@ -3115,6 +3218,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3520,7 +3651,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" dispatch_event">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.events.intercept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;intercept
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" intercept">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4434,6 +4576,33 @@ once for the matching bubbling route, or once for a direct native listener.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.events.intercept" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">intercept</span>
+
+
+<a href="#wybthon.events.intercept" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">intercept</span><span class="p">(</span><span class="n">event_type</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt; (&lt;code&gt;wybthon.events.DomEvent&lt;/code&gt;)" href="#wybthon.events.DomEvent">DomEvent</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Callable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Run <code>handler(event, info)</code> after the delegated handlers of every <code>event_type</code> event.</p>
+<p>The kernel reports these events even when no element handles them,
+with <code>info</code> describing what they're about: the link (<code>href</code>, <code>url</code>,
+<code>target</code>, <code>download</code>, <code>rel</code>, <code>preload</code>, <code>sameOrigin</code>) for <code>click</code>,
+<code>pointerover</code>, and <code>focusin</code>, or the form (<code>action</code>, <code>method</code>,
+<code>formId</code>) for <code>submit</code>. A handler skips events a handler already
+prevented, and may call <code>event.prevent_default()</code> itself. Returns a
+function that removes it.</p>
 
 
     </div>

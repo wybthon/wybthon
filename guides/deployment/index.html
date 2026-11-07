@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1112,6 +1114,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1377,6 +1407,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#serving-a-full-stack-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving a full-stack app
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-the-page-loads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1436,6 +1477,17 @@
     <span class="md-ellipsis">
       
         Bytecode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-trimmed-standard-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A trimmed standard library
       
     </span>
   </a>
@@ -1923,6 +1975,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -2588,6 +2644,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2739,6 +2851,8 @@
       
         
           
+        
+      
         
       
         
@@ -3037,6 +3151,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3284,6 +3426,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#serving-a-full-stack-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving a full-stack app
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-the-page-loads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3343,6 +3496,17 @@
     <span class="md-ellipsis">
       
         Bytecode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-trimmed-standard-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A trimmed standard library
       
     </span>
   </a>
@@ -3427,7 +3591,7 @@
 
 
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
-<p><code>wyb build</code> creates a static application bundle from a project containing <code>wybthon.toml</code>. <code>wyb preview</code> serves the result with client-route fallback and the configured base path.</p>
+<p><code>wyb build</code> creates an application bundle from a project containing <code>wybthon.toml</code>. A static project's bundle goes on any static host, and <code>wyb preview</code> serves it with client-route fallback and the configured base path. A project with <code>server = true</code> is served by Python, which renders pages per request and runs server functions (see <a href="#serving-a-full-stack-app">Serving a full-stack app</a>).</p>
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"app.main:app"</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">mount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#app"</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">app-dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"app"</span>
@@ -3446,10 +3610,20 @@
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>wyb<span class="w"> </span>preview<span class="w"> </span>--dir<span class="w"> </span>dist<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </span></code></pre></div>
 <p>Deploy the contents of <code>dist/</code>, configure missing extensionless routes to serve <code>200.html</code>, and serve the app beneath <code>/dashboard/</code> in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and <code>manifest.json</code>. The preview server demonstrates that policy; use your static host for production serving.</p>
+<h2 id="serving-a-full-stack-app">Serving a full-stack app<a class="headerlink" href="#serving-a-full-stack-app" title="Permanent link">&para;</a></h2>
+<p>With <code>server = true</code>, the build also records <code>"server": true</code> in its manifest, and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;asgi&lt;/span&gt;" href="../../api/asgi/#wybthon.asgi"><code>wybthon.asgi</code></a> serves it:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>wyb<span class="w"> </span>build
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>wyb<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</span></code></pre></div>
+<p><code>wyb serve</code> uses Wybthon's small built-in HTTP server, which is fine behind a reverse proxy. For production traffic, run the same ASGI app under an ASGI server such as uvicorn or hypercorn, from the project directory (or with <code>WYBTHON_PROJECT</code> pointing at it):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">WYBTHON_PROJECT</span><span class="o">=</span>/srv/my-app<span class="w"> </span>uvicorn<span class="w"> </span>--factory<span class="w"> </span>wybthon.asgi:create_app<span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+</span></code></pre></div>
+<p>The app serves the build's assets itself, with a year of immutable caching for content-hashed files, so a CDN in front of it can cache them. It imports the application in-process (with <code>is_server()</code> true while it does), so the server needs the app's server-side dependencies installed: everything <code>server-only</code> modules and server functions import. Routes listed under <code>prerender</code> are served from their prerendered HTML; every other page is rendered per request. See <a href="../../concepts/full-stack/#serving">Full-stack apps</a> for middleware and HTTP handlers.</p>
+<p>Server functions are public endpoints: authorize every call that needs it, and keep secrets in the server's environment, never in a module the browser gets. The build strips server function bodies, HTTP handlers, the imports only they use, and <code>server-only</code> modules from the browser's archive; everything else in the app directory is public.</p>
 <h2 id="what-the-page-loads">What the page loads<a class="headerlink" href="#what-the-page-loads" title="Permanent link">&para;</a></h2>
 <p>The build replaces the <code>&lt;!-- wyb:bootstrap --&gt;</code> marker with the tags that start the application, so every page it writes (<code>index.html</code>, <code>200.html</code>, and each prerendered route) carries them:</p>
 <ul>
-<li>A <code>&lt;link rel="modulepreload"&gt;</code> for Pyodide's <code>pyodide.mjs</code>, and a <code>&lt;link rel="preload" as="fetch" crossorigin&gt;</code> for the runtime archive and the application archive. The browser starts downloading all three while the page parses, instead of after the bootstrap has run.</li>
+<li>A <code>&lt;link rel="modulepreload"&gt;</code> for Pyodide's <code>pyodide.mjs</code>, and a <code>&lt;link rel="preload" as="fetch" crossorigin&gt;</code> for the runtime archive, the application archive, and the trimmed standard library. The browser starts downloading them while the page parses, instead of after the bootstrap has run.</li>
 <li>The manifest, inlined as <code>&lt;script type="application/json" id="wyb-manifest"&gt;</code>, so the bootstrap doesn't spend a round trip fetching it. <code>manifest.json</code> is still written at the root of the output, and the bootstrap falls back to fetching it when a page doesn't carry the inline copy.</li>
 <li>The bootstrap module itself.</li>
 </ul>
@@ -3464,6 +3638,10 @@
 <p><code>wyb build</code> runs every application module through Wybthon's <a href="../../concepts/compiler/">compiler</a> before packaging it. A malformed template fails the build with its file and line. Each <code>html(t"...")</code> call gets its dynamic expressions wrapped in getters and its parse tree and mount function emitted as ordinary module code, so a production page never parses a template or generates code at run time.</p>
 <h2 id="bytecode">Bytecode<a class="headerlink" href="#bytecode" title="Permanent link">&para;</a></h2>
 <p>When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. Application bytecode is the compiler's output, and the import hook that <code>import wybthon</code> installs uses it as is. The manifest's <code>bytecode</code> field records whether it was included. Set <code>bytecode = false</code> to ship source only; the import hook then compiles each application module's templates in the browser as it's imported.</p>
+<h2 id="a-trimmed-standard-library">A trimmed standard library<a class="headerlink" href="#a-trimmed-standard-library" title="Permanent link">&para;</a></h2>
+<p>Pyodide's standard library archive is 2.5 MB, and a first visit downloads all of it, though an app imports a fraction. <code>wyb build</code> trims it: it ships the modules Pyodide imports to boot, the modules Wybthon and the application import when they're imported, and everything those import in turn, which for the server starter is under 1 MB. The page loads that instead of Pyodide's (<code>loadPyodide({stdLibURL})</code>).</p>
+<p>The rest of the library is written beside it, with an index in the manifest. If the app imports a standard library module the build left out (inside a function that runs later, or by name at run time), the import fetches the rest, synchronously and once, and continues. Trimming never breaks an app; it can only make that one import slower. The console notes when it happens: move that import to module level, and the next build keeps the module.</p>
+<p>The build downloads Pyodide's library once (from <code>pyodide-url</code>) and caches it. Without network access, or with <code>stdlib = "full"</code> in <code>wybthon.toml</code>, it ships Pyodide's library as is, as it does for builds with <code>packages</code> or <code>wheels</code>, whose imports it can't see. The manifest's <code>stdlib</code> field names the trimmed library, or is <code>null</code>.</p>
 <h2 id="boot-snapshots">Boot snapshots<a class="headerlink" href="#boot-snapshots" title="Permanent link">&para;</a></h2>
 <p>Most of a page's startup is Pyodide's: starting Python and importing the framework takes most of a second before the application runs at all. Builds avoid that work on every visit after the first. Once the first boot has finished and the page is idle, the bootstrap starts a Web Worker that boots a second runtime, imports Wybthon and the standard library modules applications commonly use, and takes a memory snapshot of it, which it stores in the browser's Cache Storage. Later visits restore that snapshot instead of starting Python, then unpack the archives and import the application as usual. In Chromium on a recent laptop, a repeat visit to the starter app is ready in about 100 ms instead of about 800 ms.</p>
 <ul>
@@ -3476,11 +3654,11 @@
 <p>The bootstrap loads Pyodide and the runtime/application archives concurrently (the preload hints have usually started all three already), then unpacks and imports Python. It doesn't fetch every Python module separately. <code>packages</code> names packages in the pinned Pyodide distribution. <code>wheels</code> accepts exact <code>name==version</code> requirements or explicit wheel URLs compatible with the selected runtime. Set <code>pyodide-url</code> to host that runtime yourself.</p>
 <p>Pin dependencies and keep the runtime version deliberate. Browser Python code is public, including bundled configuration. Keep application secrets on a server.</p>
 <h2 id="explicit-lazy-chunks">Explicit lazy chunks<a class="headerlink" href="#explicit-lazy-chunks" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.charts.main"</span><span class="p">,</span> <span class="s2">"Chart"</span><span class="p">),</span> <span class="n">chunk</span><span class="o">=</span><span class="s2">"charts"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.charts.main"</span><span class="p">,</span> <span class="s2">"Chart"</span><span class="p">),</span> <span class="n">chunk</span><span class="o">=</span><span class="s2">"charts"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The matching files are excluded from the main archive. Rendering <code>Chart</code> inside <code>Loading</code> fetches its archive once before importing the module. Hover preloading through a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Link&lt;/span&gt;" href="../../api/router/#wybthon.router.Link"><code>Link</code></a> from <code>wybthon.router</code> can warm a lazy route, and <code>Chart.preload()</code> warms it on any user intent. <code>load_chunk("charts")</code> from <code>wybthon.assets</code> is available for explicit preloading.</p>
+<p>The matching files are excluded from the main archive. Rendering <code>Chart</code> inside <code>Loading</code> fetches its archive once before importing the module. The router preloads a lazy route's component when the pointer rests on a link to it, and <code>Chart.preload()</code> warms it on any user intent. <code>load_chunk("charts")</code> from <code>wybthon.assets</code> is available for explicit preloading.</p>
 <p>Chunk groups mustn't overlap, and the entry module must stay in the main bundle. This is explicit packaging, not automatic dependency analysis: keep shared imports in the main application, and don't eagerly import a chunk module. Concurrent chunk requests share one fetch; a failed fetch is evicted so a later attempt can retry. Call <code>Chart.retry()</code> to restart a failed lazy load and let its error boundary recover.</p>
 <h2 id="startup-measurements">Startup measurements<a class="headerlink" href="#startup-measurements" title="Permanent link">&para;</a></h2>
 <p><code>window.__WYB</code> exposes startup status, errors, the runtime, and timings for runtime loading, archive loading, unpacking, application startup, readiness, and the next frame opportunity. Concurrent phases overlap; don't add them as if they were sequential. These values include network/cache conditions and differ from warmed update benchmarks.</p>

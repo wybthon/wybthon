@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1816,6 +1846,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2431,6 +2465,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../request/" class="md-nav__link">
         
   
@@ -2804,6 +2894,8 @@
       
         
       
+        
+      
     
     
     
@@ -3071,6 +3163,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3541,11 +3661,13 @@
 
         <p>The <code>wyb</code> command: develop, build, and preview Wybthon projects.</p>
 <p>A project is a directory with a <code>wybthon.toml</code> (create one with
-<code>wyb init</code>). <code>wyb dev</code> builds it in development mode, serves the build,
-and rebuilds when a source changes. Over Server-Sent Events, it replaces
+<code>wyb init</code>). <code>wyb dev</code> builds it in development mode, serves the build
+(rendering pages per request and serving server functions when the
+project sets <code>server = true</code>), and rebuilds when a source changes. Over Server-Sent Events, it replaces
 an edited application module in place in connected pages (see
 <code>wybthon._hmr</code>) and reloads them for any other change. <code>wyb build</code>
-writes a production build and <code>wyb preview</code> serves one.</p>
+writes a production build; <code>wyb preview</code> serves a static one and
+<code>wyb serve</code> a server one.</p>
 <p>Use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;main&lt;/span&gt;" href="#wybthon.dev.main"><code>main</code></a> function for CLI entry, or call
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;serve&lt;/span&gt;" href="#wybthon.dev.serve"><code>serve</code></a> directly to embed the server.</p>
 

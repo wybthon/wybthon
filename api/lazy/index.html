@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1765,6 +1795,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -2630,6 +2664,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../request/" class="md-nav__link">
         
   
@@ -2781,6 +2871,8 @@
       
         
           
+        
+      
         
       
         
@@ -3066,6 +3158,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -4001,8 +4121,8 @@ callable, a module, a module-path string, or a
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Team</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.team.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"/about/team"</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Team</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Team"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about/team"</span><span class="p">,</span> <span class="n">on_mouseenter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">Team</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># The router preloads it when the pointer rests on a link to the route.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">Route</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"/about/team"</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">Team</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -4133,7 +4253,7 @@ Python's import system.</p>
 </tbody>
 </table>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loading</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">lazy</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>  <span class="c1"># importlib, attribute "Page"</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
@@ -4149,16 +4269,15 @@ Python's import system.</p>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load_chart</span><span class="p">)</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="nd">@component</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="n">Router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">About</span><span class="p">),</span> <span class="n">Route</span><span class="p">(</span><span class="s2">"/chart"</span><span class="p">,</span> <span class="n">Chart</span><span class="p">)]),</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">),</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="p">)</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">nav_link</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s2">"Chart"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/chart"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="n">Chart</span><span class="o">.</span><span class="n">preload</span><span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">About</span><span class="p">),</span> <span class="n">Route</span><span class="p">(</span><span class="s2">"/chart"</span><span class="p">,</span> <span class="n">Chart</span><span class="p">)])</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="nd">@component</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">App</span><span class="p">():</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">return</span> <span class="n">Loading</span><span class="p">(</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s1">'&lt;nav&gt;&lt;a href="/chart"&gt;Chart&lt;/a&gt;&lt;/nav&gt;</span><span class="si">{</span><span class="n">router</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">),</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">fallback</span><span class="o">=</span><span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Loading...&lt;/p&gt;"</span><span class="p">),</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li>When the loader returns a module, the export is picked by convention:
@@ -4167,6 +4286,10 @@ Python's import system.</p>
   unmounts.</li>
 <li>Props and children passed to the lazy component are forwarded to the
   loaded component unchanged.</li>
+<li>A lazy route component is preloaded when the pointer rests on (or
+  focus reaches) a link to its route, so <code>&lt;a href="/chart"&gt;</code> above
+  starts the import before the click. Call <code>.preload()</code> yourself for
+  any other intent.</li>
 </ul>
 <p><code>lazy_module</code> loads code that isn't a component: a route table, a
 parser, a charting library's helpers. The loader runs once, on the first
@@ -4186,7 +4309,7 @@ call or <code>.preload()</code>, and every caller awaits the same import.</p>
 <h4 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h4>
 <ul>
 <li><a href="../loading/">Loading</a> and <a href="../error_boundary/">Error boundary</a></li>
-<li><a href="../router/">Router</a>: pair with <code>Route</code> for code-split pages</li>
+<li><a href="../router/">Router</a>: pair with <code>Route</code> for code-split pages, which <code>preload_route</code> and link hovers load early</li>
 <li><a href="../../concepts/async-loading/">Concepts: Async and loading</a></li>
 <li><a href="../../guides/performance/">Guides: Performance</a></li>
 </ul>

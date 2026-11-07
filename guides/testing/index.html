@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -2030,6 +2060,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2644,6 +2678,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2795,6 +2885,8 @@
       
         
           
+        
+      
         
       
         
@@ -3080,6 +3172,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3843,7 +3963,13 @@
 <h3 id="stores-router-and-forms">Stores, router, and forms<a class="headerlink" href="#stores-router-and-forms" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with <code>def</code> (or call a mutating method, as in <code>lambda draft: draft.update(count=1)</code>), pass them to the setter, and flush before asserting on reads.</li>
-<li>Outside a browser, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;navigate&lt;/span&gt;" href="../../api/router/#wybthon.router.navigate"><code>navigate</code></a> only updates the <code>current_path</code> signal. Flush afterward. Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/router/#wybthon.router.resolve"><code>resolve</code></a> in <code>wybthon.router</code>) is pure and needs no rendering.</li>
+<li>Outside a browser, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;navigate&lt;/span&gt;" href="../../api/router/#wybthon.router.navigate"><code>navigate</code></a> only updates the location that <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;url&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../api/router/#wybthon.router.url"><code>url</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_location&lt;/span&gt;" href="../../api/router/#wybthon.router.use_location"><code>use_location()</code></a> read. Flush afterward. Path matching (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;" href="../../api/router/#wybthon.router.resolve"><code>resolve</code></a> in <code>wybthon.router</code>, or <code>router.match(href)</code> on a router from <code>create_router</code>) is pure and needs no rendering.</li>
+<li>To test server functions, wrap the render in <code>connect_server()</code> from <code>wybthon.testing</code>, so each call is encoded and validated as it would be over HTTP; <code>Client(create_app(...))</code> sends whole requests to a <code>wybthon.asgi</code> app. See <a href="../../concepts/full-stack/">Full-stack apps</a>.</li>
 <li>Drive form bindings with <code>fire.input</code>, <code>fire.change</code>, and <code>fire.submit</code> against the rendered controls.</li>
 </ul>
 <h3 id="dev-mode-diagnostics">Dev-mode diagnostics<a class="headerlink" href="#dev-mode-diagnostics" title="Permanent link">&para;</a></h3>

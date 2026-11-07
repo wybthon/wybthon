@@ -17,6 +17,10 @@
          <lastmod>2026-11-07</lastmod>
     </url>
     <url>
+         <loc>https://wybthon.com/api/asgi/</loc>
+         <lastmod>2026-11-07</lastmod>
+    </url>
+    <url>
          <loc>https://wybthon.com/api/compiler/</loc>
          <lastmod>2026-11-07</lastmod>
     </url>
@@ -89,6 +93,10 @@
          <lastmod>2026-11-07</lastmod>
     </url>
     <url>
+         <loc>https://wybthon.com/api/server_functions/</loc>
+         <lastmod>2026-11-07</lastmod>
+    </url>
+    <url>
          <loc>https://wybthon.com/api/store/</loc>
          <lastmod>2026-11-07</lastmod>
     </url>
@@ -142,6 +150,10 @@
     </url>
     <url>
          <loc>https://wybthon.com/concepts/forms/</loc>
+         <lastmod>2026-11-07</lastmod>
+    </url>
+    <url>
+         <loc>https://wybthon.com/concepts/full-stack/</loc>
          <lastmod>2026-11-07</lastmod>
     </url>
     <url>
@@ -302,6 +314,10 @@
     </url>
     <url>
          <loc>https://wybthon.com/rfcs/0007-engine-v7/</loc>
+         <lastmod>2026-11-07</lastmod>
+    </url>
+    <url>
+         <loc>https://wybthon.com/rfcs/0008-full-stack/</loc>
          <lastmod>2026-11-07</lastmod>
     </url>
 </urlset>

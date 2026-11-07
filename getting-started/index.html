@@ -610,6 +610,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#go-full-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go full stack
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -626,6 +637,8 @@
   
     
     
+      
+        
       
         
       
@@ -1201,6 +1214,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1916,6 +1957,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2530,6 +2575,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/request/" class="md-nav__link">
         
   
@@ -2681,6 +2782,8 @@
       
         
           
+        
+      
         
       
         
@@ -2966,6 +3069,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3280,6 +3411,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#go-full-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go full stack
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3407,6 +3549,13 @@
 </span></code></pre></div>
 <p>The output in <code>dist/</code> contains prerendered pages, hashed source archives with every template compiled ahead of time, and a browser bootstrap. Each page carries the asset manifest inline and preloads Pyodide and the archives, so the browser starts fetching them while it parses the HTML. Production builds turn dev mode off before your application imports, so dev-only checks and warnings don't ship. Deploy those files to a static host. See <a href="../guides/deployment/">Deployment</a> for base paths, pinned dependencies, lazy chunks, and route fallback configuration.</p>
 <p>Continue with the <a href="../concepts/mental-model/">mental model</a>, <a href="../concepts/templates/">templates</a>, <a href="../concepts/compiler/">the compiler</a>, <a href="../concepts/stores/">stores</a>, and <a href="../concepts/runtime-contracts/">runtime contracts</a>.</p>
+<h2 id="go-full-stack">Go full stack<a class="headerlink" href="#go-full-stack" title="Permanent link">&para;</a></h2>
+<p>To render pages on the server per request and call Python on the server from the browser, start from the full-stack starter instead:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>wyb<span class="w"> </span>init<span class="w"> </span>my-app<span class="w"> </span>--server
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nb">cd</span><span class="w"> </span>my-app
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>wyb<span class="w"> </span>dev<span class="w"> </span>--open
+</span></code></pre></div>
+<p>It has <a href="../concepts/full-stack/#file-routes">file routes</a> under <code>app/routes/</code>, a <a href="../concepts/full-stack/#queries">query</a> that reads a todo list through a <a href="../concepts/full-stack/#server-functions">server function</a>, and a <a href="../concepts/full-stack/#form-actions">form action</a> that adds to it, whose form works even before Pyodide has booted. <code>wyb build</code>, then <code>wyb serve</code>, runs it in production. See <a href="../concepts/full-stack/">Full-stack apps</a>.</p>
 
 
 

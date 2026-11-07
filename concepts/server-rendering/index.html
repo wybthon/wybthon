@@ -18,7 +18,7 @@
         <link rel="prev" href="../async-loading/">
       
       
-        <link rel="next" href="../../guides/dev-server/">
+        <link rel="next" href="../full-stack/">
       
       
         
@@ -526,6 +526,8 @@
   
     
     
+      
+        
       
         
       
@@ -1278,6 +1280,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1980,6 +2010,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2594,6 +2628,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2745,6 +2835,8 @@
       
         
           
+        
+      
         
       
         
@@ -3030,6 +3122,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3450,7 +3570,7 @@
 </span></code></pre></div>
 <p><code>entry</code> names a function that returns the root view; the bootstrap renders it into <code>mount</code>, or hydrates it when the page was prerendered. With <code>crawl = true</code>, the build also renders every in-app link it finds in the rendered pages. Each route is written to <code>&lt;route&gt;/index.html</code>, and the client-only shell is written to <code>200.html</code> for routes that weren't prerendered. Point your static host's fallback at <code>200.html</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">component</span><span class="p">,</span> <span class="n">html</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">Router</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@component</span>
@@ -3458,8 +3578,11 @@
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="sa">t</span><span class="s2">"&lt;p&gt;Welcome&lt;/p&gt;"</span><span class="p">)</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">app</span><span class="p">():</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="n">Router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">)])</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">)])</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">app</span><span class="p">():</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="k">return</span> <span class="n">router</span><span class="p">()</span>
 </span></code></pre></div>
 <p><code>index.html</code> marks the region the rendered markup replaces, and where
 the build inserts the tags that start the app:</p>
@@ -3475,7 +3598,8 @@ start while the browser parses the page, instead of after the
 bootstrap runs.</p>
 <p>Prerendering imports your application in a fresh CPython 3.14 process, so module-level code must run outside the browser. Import <code>js</code> and <code>pyodide</code> inside the functions that need them, and use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_server&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_server"><code>is_server</code></a> to choose server-safe behavior.</p>
 <h2 id="rendering-on-request">Rendering on request<a class="headerlink" href="#rendering-on-request" title="Permanent link">&para;</a></h2>
-<p>Render per request from any Python web framework with <a href="../../api/server/"><code>wybthon.server</code></a>:</p>
+<p>A project built with <code>server = true</code> can be served as is: <a href="../full-stack/"><code>wybthon.asgi</code></a>'s <code>create_app</code> renders each page per request, streams its <code>Loading</code> boundaries, and also answers server functions and form posts. See <a href="../full-stack/">Full-stack apps</a>.</p>
+<p>To render from another Python web framework instead, use <a href="../../api/server/"><code>wybthon.server</code></a>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_to_stream</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -3584,6 +3708,7 @@ bootstrap runs.</p>
 </span></code></pre></div>
 <p><code>http_status</code> and <code>http_header</code> only act on the server; in the browser they do nothing, so the same component works on both sides. Declarations belong to the reactive scope that made them, as in Solid 2.0. When that scope is disposed before the response is committed (an <a href="../error-boundaries/"><code>Errored</code></a> boundary showing its fallback, a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;Show&lt;/span&gt;" href="../../api/wybthon/#wybthon.Show"><code>Show</code></a> branch switching), the previous status or header is restored. If a component declares a cache header and then raises, the boundary's fallback replaces it and the header is withdrawn; the fallback can declare its own, such as <code>http_status(500)</code>.</p>
 <p>The head is committed when <code>render_to_string</code> returns, when an awaited <code>render_to_stream</code> finishes, or when a stream yields its first chunk. <code>event.response.committed</code> is then <code>True</code>, and later declarations are ignored. A streamed response's status and headers must therefore be declared by the shell, outside any <code>Loading</code> boundary that's still pending when the first chunk is ready. When streaming, take the first chunk from the stream, then read <code>event.response</code> to send the status line and headers before writing the chunk.</p>
+<p>The shell waits for async reads that no <code>Loading</code> boundary covers before it's sent, so data the shell reads directly can still shape the head. A <a href="../full-stack/">query</a> that raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;redirect&lt;/span&gt;" href="../../api/wybthon/#wybthon.redirect"><code>redirect(...)</code></a> there, such as a guard that sends signed-out users to <code>/login</code>, becomes the HTTP redirect, with its status and <code>location</code> header. A redirect raised later, inside a boundary that streams after the head was sent, is followed by a small script at the end of the stream instead.</p>
 <p>See the <a href="../../api/request/"><code>request</code></a> API reference.</p>
 <h2 id="async-data">Async data<a class="headerlink" href="#async-data" title="Permanent link">&para;</a></h2>
 <p><code>render_to_stream</code> runs the tree in passes, whether you await it or iterate it. Each pass renders with the data resolved so far and waits for the async memos it started. A pass can start memos that only render once earlier data has arrived, so a chain of dependent requests resolves in as many passes as it has levels. The final pass renders with everything available, exactly as the browser will while hydrating.</p>
@@ -3630,7 +3755,7 @@ bootstrap runs.</p>
 </table>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">recommendations</span> <span class="o">=</span> <span class="n">create_memo</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">fetch_recommendations</span><span class="p">(),</span> <span class="n">ssr_source</span><span class="o">=</span><span class="s2">"client"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Serialized values must be JSON-compatible: dictionaries, lists, strings, numbers, booleans, and <code>None</code>. Tuples arrive as lists. A value that can't be serialized is skipped with a dev-mode warning, and the browser loads it itself.</p>
+<p>Serialized values use Wybthon's wire format, the same one server functions use: JSON plus tags for what JSON can't represent. Dataclasses, enums, dates and times, <code>Decimal</code>, <code>UUID</code>, <code>bytes</code>, tuples, sets, and dictionaries with non-string keys arrive as themselves rather than being dropped or flattened. A value the format can't encode (an open file, say) is skipped with a dev-mode warning, and the browser loads it itself.</p>
 <p>When an async memo fails on the server, the failure is serialized too. The browser raises it as a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ServerError&lt;/span&gt;" href="../../api/wybthon/#wybthon.ServerError"><code>ServerError</code></a> carrying the original type name and message, so an <a href="../error-boundaries/"><code>Errored</code></a> boundary shows the same fallback on both sides. Resetting the boundary runs the work again in the browser.</p>
 <p><code>render_to_stream</code>'s <code>timeout</code> (30 seconds by default) bounds the total wait. Whatever hasn't resolved by then renders its fallback and loads in the browser.</p>
 <p>A memo that uses browser APIs can't run on the server. Use <code>ssr_source="client"</code>, or branch on <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;is_server&lt;/span&gt;" href="../../api/wybthon/#wybthon.is_server"><code>is_server</code></a>:</p>
@@ -3710,7 +3835,7 @@ the compiled path. See <a href="../templates/">Templates</a>.</p>
 <li>The server writes HTML directly instead of mounting a DOM (see <a href="../../rfcs/0006-engine-v6/">RFC 0006</a>). Components run once, under the same owners as in the browser, so context, <code>Errored</code>, and <code>Loading</code> work as usual, and each expression in the markup is evaluated once. Nothing subscribes, so a write made while the page renders doesn't change markup already written.</li>
 <li><code>create_effect</code>, <code>create_tracked_effect</code>, <code>on_settled</code>, and <code>on_flush</code> don't run, and refs and event handlers aren't attached; the browser attaches them while hydrating.</li>
 <li><a href="../../api/portal/"><code>Portal</code></a> renders nothing. Its children mount in the browser after hydration.</li>
-<li>The router reads the <code>url</code> passed to the render function, and <code>navigate</code> does nothing.</li>
+<li>The router reads the <code>url</code> passed to the render function, and <code>navigate</code> does nothing. A URL no route matches renders nothing and sets status 404; add a <code>Route("*404", NotFound)</code> catch-all to render a page instead.</li>
 <li><code>lazy</code> components import their modules directly; chunks are only fetched in the browser.</li>
 </ul>
 <h2 id="input-before-hydration">Input before hydration<a class="headerlink" href="#input-before-hydration" title="Permanent link">&para;</a></h2>

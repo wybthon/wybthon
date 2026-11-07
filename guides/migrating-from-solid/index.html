@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1112,6 +1114,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1627,6 +1657,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#server-functions-and-the-routers-data-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server functions and the router's data layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#whats-intentionally-different" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1956,6 +1997,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -2621,6 +2666,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2772,6 +2873,8 @@
       
         
           
+        
+      
         
       
         
@@ -3057,6 +3160,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3420,6 +3551,17 @@
     <span class="md-ellipsis">
       
         Server rendering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-functions-and-the-routers-data-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server functions and the router's data layer
       
     </span>
   </a>
@@ -3866,6 +4008,102 @@
 <td><code>h(tag, props, ...children)</code></td>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a></td>
 </tr>
+<tr>
+<td><code>"use server"</code> (<code>@solidjs/web/server-functions</code>)</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;server_function&lt;/span&gt;" href="../../api/wybthon/#wybthon.server_function"><code>@server_function</code></a> on a module-level <code>async def</code></td>
+</tr>
+<tr>
+<td><code>GET(fn)</code></td>
+<td><code>@server_function(method="GET")</code></td>
+</tr>
+<tr>
+<td><code>redirect</code>, <code>reload</code>, <code>respond</code> (<code>@solidjs/web</code>)</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;redirect&lt;/span&gt;" href="../../api/wybthon/#wybthon.redirect"><code>redirect</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;reload&lt;/span&gt;" href="../../api/wybthon/#wybthon.reload"><code>reload</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;respond&lt;/span&gt;" href="../../api/wybthon/#wybthon.respond"><code>respond</code></a>: raise or return them</td>
+</tr>
+<tr>
+<td><code>getRequestEvent()</code> in a server function</td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_request_event&lt;/span&gt;" href="../../api/wybthon/#wybthon.get_request_event"><code>get_request_event()</code></a>; set cookies with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_cookie&lt;/span&gt;" href="../../api/wybthon/#wybthon.set_cookie"><code>set_cookie</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Solid Router 2.0 (<code>@solidjs/router</code> 2.0, the <code>next</code> line) maps to <code>wybthon.router</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Solid Router 2.0</th>
+<th>Wybthon</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>const Router = createRouter({ routes, base, preloadLinks })</code></td>
+<td><code>router = create_router(routes, base=..., preload_links=True)</code> (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;create_router&lt;/span&gt;" href="../../api/router/#wybthon.router.create_router"><code>create_router</code></a>)</td>
+</tr>
+<tr>
+<td><code>&lt;Router&gt;{props =&gt; &lt;Layout&gt;{props.children}&lt;/Layout&gt;}&lt;/Router&gt;</code></td>
+<td><code>router(root=Layout)</code></td>
+</tr>
+<tr>
+<td><code>{ path, component, children, preload }</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Route&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../api/router/#wybthon.router.Route"><code>Route(path, component, children=[...], preload=...)</code></a></td>
+</tr>
+<tr>
+<td><code>fileRoutes(...)</code> from <code>@solidjs/router/fs</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;file_routes&lt;/span&gt;" href="../../api/router/#wybthon.router.file_routes"><code>file_routes("app.routes")</code></a></td>
+</tr>
+<tr>
+<td><code>&lt;a href&gt;</code> (router-handled)</td>
+<td><code>&lt;a href&gt;</code>, unchanged</td>
+</tr>
+<tr>
+<td><code>useLinkState(href)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_link_state&lt;/span&gt;" href="../../api/router/#wybthon.router.use_link_state"><code>use_link_state(href)</code></a></td>
+</tr>
+<tr>
+<td><code>useParams()</code>, <code>useSearchParams()</code>, <code>useLocation()</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_params&lt;/span&gt;" href="../../api/router/#wybthon.router.use_params"><code>use_params()</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_search_params&lt;/span&gt;" href="../../api/router/#wybthon.router.use_search_params"><code>use_search_params()</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_location&lt;/span&gt;" href="../../api/router/#wybthon.router.use_location"><code>use_location()</code></a></td>
+</tr>
+<tr>
+<td><code>useRouteMatches()</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_route_matches&lt;/span&gt;" href="../../api/router/#wybthon.router.use_route_matches"><code>use_route_matches()</code></a></td>
+</tr>
+<tr>
+<td><code>usePreloadRoute()</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_route&lt;/span&gt;" href="../../api/router/#wybthon.router.preload_route"><code>preload_route(href)</code></a></td>
+</tr>
+<tr>
+<td><code>useNavigate()</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;navigate&lt;/span&gt;" href="../../api/router/#wybthon.router.navigate"><code>navigate(path)</code></a></td>
+</tr>
+<tr>
+<td><code>query(fn, "key")</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;query&lt;/span&gt;" href="../../api/router/#wybthon.router.query"><code>query(fn, "key")</code></a>, or <code>@query</code> / <code>@query("key")</code></td>
+</tr>
+<tr>
+<td><code>revalidate(key)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;revalidate&lt;/span&gt;" href="../../api/router/#wybthon.router.revalidate"><code>revalidate(key)</code></a>; a <code>Query</code> works as its key</td>
+</tr>
+<tr>
+<td><code>formAction(fn)</code>, <code>.with(...)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;form_action&lt;/span&gt;" href="../../api/router/#wybthon.router.form_action"><code>form_action(fn)</code></a>, <code>.bind(...)</code> (<code>with</code> is a Python keyword)</td>
+</tr>
+<tr>
+<td><code>.onSubmit(fn)</code>, <code>.onSettled(fn)</code></td>
+<td><code>.on_submit(fn)</code>, <code>.on_settled(fn)</code></td>
+</tr>
+<tr>
+<td><code>useSubmissions(action)</code></td>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;use_submissions&lt;/span&gt;" href="../../api/router/#wybthon.router.use_submissions"><code>use_submissions(action)</code></a></td>
+</tr>
+<tr>
+<td>Start mode (<code>solid({ start: true })</code>)</td>
+<td><code>server = true</code> in <code>wybthon.toml</code>; <code>wyb dev</code>, <code>wyb serve</code>, or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;asgi&lt;/span&gt;" href="../../api/asgi/#wybthon.asgi"><code>wybthon.asgi</code></a></td>
+</tr>
 </tbody>
 </table>
 <p>Solid 1.x primitives that 2.0 removed (<code>createResource</code>, <code>on</code>, <code>createComputed</code>, <code>createSelector</code>, <code>produce</code>, <code>createMutable</code>, <code>splitProps</code>, <code>mergeProps</code>, <code>Index</code>, path-based store writes, <code>useTransition</code>, <code>renderToStringAsync</code>) don't exist here either. The table above covers their 2.0 replacements. Solid 2.0's <code>createDeferred</code> isn't 1.x's idle-time deferral: it's the async memo in the table, and that's what <code>create_deferred</code> mirrors.</p>
@@ -3895,7 +4133,7 @@
 <li>Attributes are HTML names (<code>class</code>, <code>for</code>, <code>aria-label</code>) and take interpolations the same way: <code>class={row_class(id)}</code>, <code>href="/users/{user_id()}"</code> (one binding for the whole value), <code>disabled={add.pending()}</code>.</li>
 <li>Event handlers are <code>onclick={handler}</code>; <code>onClick</code> and <code>on:click</code> work too. A handler may take no arguments or receive a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DomEvent&lt;/span&gt;" href="../../api/wybthon/#wybthon.DomEvent"><code>DomEvent</code></a> with <code>e.target</code>, <code>e.key</code>, <code>e.prevent_default()</code>, and friends.</li>
 <li>A component tag is written <code>&lt;{Card} title={user().name}&gt;...&lt;/{Card}&gt;</code> (like <code>&lt;${Card}&gt;</code> in Solid's <code>html</code>), or self-closed as <code>&lt;{Card} /&gt;</code>. Attributes become keyword props and the content becomes <code>children</code>. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (<code>{Card(title=user().name)}</code>) is checked statically, and the compiler still passes getters.</li>
-<li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, <code>Link</code>, and context providers work as calls in an interpolation (<code>{Show(ready(), panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready()}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
+<li><code>Show</code>, <code>Loading</code>, <code>Errored</code>, and context providers work as calls in an interpolation (<code>{Show(ready(), panel)}</code>) or with the tag form (<code>&lt;{Show} when={ready()}&gt;...&lt;/{Show}&gt;</code>), which calls each the way its signature takes children.</li>
 <li>Markup the browser's parser would rewrite is an error instead of a silent change: put <code>&lt;tr&gt;</code> in a <code>&lt;tbody&gt;</code>, and don't nest a <code>&lt;div&gt;</code> in a <code>&lt;p&gt;</code>. The compiler reports it as a <code>SyntaxError</code> with the file and line.</li>
 <li>A template that reaches <code>html()</code> without being compiled (a REPL, <code>exec</code>) has already evaluated its dynamic expressions once, so dev mode raises <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TemplateError&lt;/span&gt;" href="../../api/wybthon/#wybthon.TemplateError"><code>TemplateError</code></a> instead of rendering markup that would never update.</li>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;h&lt;/span&gt;" href="../../api/wybthon/#wybthon.h"><code>h(tag, props, *children)</code></a> is the programmatic layer, the counterpart of Solid's <code>h</code>, for markup built by code. Its props take Python names (<code>class_</code>, <code>html_for</code>, <code>on_click</code>) or HTML names. SVG works in a template.</li>
@@ -4157,6 +4395,14 @@
 </span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </span></code></pre></div>
 <p>As in Solid 2.0, awaiting <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;render_to_stream&lt;/span&gt;" href="../../api/server/#wybthon.server.render_to_stream"><code>render_to_stream</code></a> replaces <code>renderToStringAsync</code>: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each <code>Loading</code> boundary as its data arrives. A stream is single use: iterate it or await it, once. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_status&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_status"><code>http_status</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;http_header&lt;/span&gt;" href="../../api/wybthon/#wybthon.http_header"><code>http_header</code></a> are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;NoHydration&lt;/span&gt;" href="../../api/wybthon/#wybthon.NoHydration"><code>NoHydration</code></a> keeps a region as static server HTML that the browser adopts without mounting.</p>
+<h2 id="server-functions-and-the-routers-data-layer">Server functions and the router's data layer<a class="headerlink" href="#server-functions-and-the-routers-data-layer" title="Permanent link">&para;</a></h2>
+<p>Solid 2.0 made <code>"use server"</code> part of core, and Router 2.0 builds <code>query</code> and <code>formAction</code> on it. Wybthon does the same with Python on both ends: see <a href="../../concepts/full-stack/">Full-stack apps</a>. The differences:</p>
+<ul>
+<li><strong>Arguments are validated.</strong> The server rebuilds each argument from the function's annotations and rejects anything else, so annotate every parameter. Dataclasses, enums, dates, <code>Decimal</code>, and the rest cross as themselves.</li>
+<li><strong>No typed paths.</strong> Router 2.0's <code>paths</code> proxy is a TypeScript feature; write hrefs as strings. Without it, a full path never gets the router's <code>base</code> added, as in Router 2.0.</li>
+<li><strong>No single-flight mutations or live queries yet.</strong> A mutation's response carries its revalidation keys, and the browser refetches the queries they name; it doesn't carry the refreshed data in the same round trip. <code>liveQuery</code> and server components aren't implemented.</li>
+<li><strong>Errors are hidden in production.</strong> An unexpected exception's message is sent only in development; raise <code>ServerError(message, type_name)</code> for messages meant for the page.</li>
+</ul>
 <h2 id="whats-intentionally-different">What's intentionally different<a class="headerlink" href="#whats-intentionally-different" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Naming.</strong> snake_case across the API; component names stay PascalCase.</li>

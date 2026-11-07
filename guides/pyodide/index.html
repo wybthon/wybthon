@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1930,6 +1960,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2544,6 +2578,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2695,6 +2785,8 @@
       
         
           
+        
+      
         
       
         
@@ -2980,6 +3072,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3437,11 +3557,11 @@
 <ul>
 <li>In a <code>wyb build</code> project, the application archive is unpacked before your entry runs, so imports like <code>"app.about.page"</code> resolve. Modules in an explicit <code>[chunks]</code> group are fetched the first time a lazy component in that chunk renders; see <a href="../deployment/#explicit-lazy-chunks">Deployment</a>.</li>
 <li>For third-party packages, use an async loader that <code>await</code>s <code>micropip.install(...)</code> before importing.</li>
-<li>Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's <code>.preload()</code> method on user intent (link hover) to warm the import.</li>
+<li>Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's <code>.preload()</code> method on user intent to warm the import. The router does this for a lazy route component when a link to its route is hovered or focused.</li>
 <li>Attribute resolution defaults to <code>Page</code>, then <code>default</code>, then the first callable export; otherwise pass the export name explicitly.</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">About</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.about.page"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
@@ -3457,7 +3577,8 @@
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">Chart</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="n">load_charts</span><span class="p">)</span>
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"About"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">on_mouseenter</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">About</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># Hovering &lt;a href="/about"&gt; preloads About; call Chart.preload() for other intents.</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">([</span><span class="n">Route</span><span class="p">(</span><span class="s2">"/about"</span><span class="p">,</span> <span class="n">About</span><span class="p">),</span> <span class="n">Route</span><span class="p">(</span><span class="s2">"/chart"</span><span class="p">,</span> <span class="n">Chart</span><span class="p">)])</span>
 </span></code></pre></div>
 <h2 id="dev-mode">Dev mode<a class="headerlink" href="#dev-mode" title="Permanent link">&para;</a></h2>
 <p>On a first visit, Pyodide takes most of a second to load and initialize; later visits restore a <a href="../deployment/#boot-snapshots">boot snapshot</a> and start in about a tenth of that. <a href="../../concepts/server-rendering/">Server rendering</a> shows prerendered HTML during that time, and the page hydrates once Python is ready.</p>

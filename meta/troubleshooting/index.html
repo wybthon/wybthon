@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1814,6 +1844,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2428,6 +2462,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2579,6 +2669,8 @@
       
         
           
+        
+      
         
       
         
@@ -2864,6 +2956,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3392,10 +3512,16 @@
 <p><strong>Fix:</strong> upgrade the interpreter (<code>uv python install 3.14</code> works well) and re-create your virtual environment. Set <code>pyodide-version</code> in <code>wybthon.toml</code> to a 314 release.</p>
 </details>
 <details class="bug">
-<summary><code>ImportError: cannot import name 'Router' from 'wybthon'</code></summary>
-<p><strong>Symptoms:</strong> importing <code>Router</code>, <code>Route</code>, <code>Link</code>, <code>navigate</code>, <code>form_state</code>, <code>bind_text</code>, <code>VirtualFor</code>, or <code>map_cooperative</code> from <code>wybthon</code> fails.</p>
+<summary><code>ImportError: cannot import name 'create_router' from 'wybthon'</code></summary>
+<p><strong>Symptoms:</strong> importing <code>create_router</code>, <code>Route</code>, <code>navigate</code>, <code>form_state</code>, <code>bind_text</code>, <code>VirtualFor</code>, or <code>map_cooperative</code> from <code>wybthon</code> fails.</p>
 <p><strong>Likely cause:</strong> the top-level package exports the core only. The router, forms, virtual lists, and scheduling helpers live in their own modules.</p>
-<p><strong>Fix:</strong> import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>, for example <code>from wybthon.router import Link, Router</code>.</p>
+<p><strong>Fix:</strong> import them from <code>wybthon.router</code>, <code>wybthon.forms</code>, <code>wybthon.virtual</code>, and <code>wybthon.scheduling</code>, for example <code>from wybthon.router import Route, create_router</code>.</p>
+</details>
+<details class="bug">
+<summary><code>ImportError: cannot import name 'Link' from 'wybthon.router'</code></summary>
+<p><strong>Symptoms:</strong> importing <code>Link</code>, <code>current_path</code>, <code>use_query</code>, <code>use_hash</code>, <code>use_base_path</code>, <code>preload</code>, or <code>QueryParams</code> from <code>wybthon.router</code> fails, or <code>Router(routes, not_found=...)</code> raises a <code>TypeError</code>.</p>
+<p><strong>Likely cause:</strong> the router now follows Solid Router 2.0, and the older names were removed without a compatibility layer.</p>
+<p><strong>Fix:</strong> create the router once with <code>router = create_router(routes)</code> and render <code>router()</code> (or <code>router(root=Shell)</code>); add <code>Route("*404", NotFound)</code> in place of <code>not_found</code>. Write links as plain <code>&lt;a href="/path"&gt;</code> and style the active one with <code>use_link_state</code>. Read the URL with <code>use_location()</code> or the <code>url</code> accessor, the query string with <code>use_search_params()</code> (which returns <code>SearchParams</code>), and warm a route with <code>preload_route</code>. See <a href="../../concepts/router/">Routing</a>.</p>
 </details>
 <details class="bug">
 <summary><code>ImportError: cannot import name 'div' from 'wybthon'</code></summary>
@@ -3479,8 +3605,8 @@
 <details class="bug">
 <summary>A component tag receives a dict, or its props aren't checked by my type checker</summary>
 <p><strong>Symptoms:</strong> a plain function used as <code>&lt;{fn} ...&gt;</code> gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in <code>&lt;{Card} titel="Hi" /&gt;</code>.</p>
-<p><strong>Likely cause:</strong> the tag form calls a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>@component</code></a> with keyword props. Any other callable is called the way its signature takes children: with a <code>children</code> keyword (<code>Show</code>, <code>Loading</code>), with positional children (<code>Link</code>, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.</p>
-<p><strong>Fix:</strong> decorate the function with <code>@component</code> and give it a <code>Props</code> class, or call it inside an interpolation (<code>{Link("Home", href="/")}</code>), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so <code>{Card(title=user().name)}</code> stays reactive.</p>
+<p><strong>Likely cause:</strong> the tag form calls a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-module&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-module-name&quot;&gt;component&lt;/span&gt;" href="../../api/component/#wybthon.component"><code>@component</code></a> with keyword props. Any other callable is called the way its signature takes children: with a <code>children</code> keyword (<code>Show</code>, <code>Loading</code>), with positional children (<code>Errored</code>, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.</p>
+<p><strong>Fix:</strong> decorate the function with <code>@component</code> and give it a <code>Props</code> class, or call it inside an interpolation (<code>{Errored(Feed(), fallback=oops)}</code>), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so <code>{Card(title=user().name)}</code> stays reactive.</p>
 </details>
 <h2 id="components-and-props">Components and props<a class="headerlink" href="#components-and-props" title="Permanent link">&para;</a></h2>
 <details class="bug">

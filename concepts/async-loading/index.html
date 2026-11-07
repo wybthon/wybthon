@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1390,6 +1392,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2092,6 +2122,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2706,6 +2740,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/request/" class="md-nav__link">
         
   
@@ -2857,6 +2947,8 @@
       
         
           
+        
+      
         
       
         
@@ -3142,6 +3234,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -4052,7 +4172,7 @@ for every later mount.</p>
 <li>The loader may return a component, an imported module (<code>Page</code>, then <code>default</code>, then the first callable export is used), a module-path string, or a <code>(module_path, attr)</code> tuple.</li>
 <li>Async loaders can <code>await</code> work first, for example <code>micropip.install(...)</code> in Pyodide.</li>
 <li>A loader failure raises into the nearest <code>Errored</code> boundary.</li>
-<li>Call <code>.preload()</code> (for example on hover) to warm the cache before navigation.</li>
+<li>Call <code>.preload()</code> to warm the cache before it mounts. A lazy route component is preloaded for you when a link to its route is hovered or focused.</li>
 </ul>
 <p>For a module that isn't a component (a parser, a chart library, a set of
 routes), <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;lazy_module&lt;/span&gt;" href="../../api/wybthon/#wybthon.lazy_module"><code>lazy_module</code></a> is the counterpart of
@@ -4077,17 +4197,23 @@ Solid 2.0's <code>lazyModule</code>: a cached import that starts on demand.</p>
   &lt;/span&gt;" href="../../api/router/#wybthon.router.Route"><code>Route</code></a> accepts lazy components directly, which
 is the canonical way to code-split:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon</span><span class="w"> </span><span class="kn">import</span> <span class="n">lazy</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Link</span><span class="p">,</span> <span class="n">Route</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">wybthon.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span><span class="p">,</span> <span class="n">create_router</span>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">Settings</span> <span class="o">=</span> <span class="n">lazy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="s2">"app.settings"</span><span class="p">,</span> <span class="s2">"Page"</span><span class="p">))</span>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">),</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="n">Route</span><span class="p">(</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">Settings</span><span class="p">),</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="p">]</span>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="n">Link</span><span class="p">(</span><span class="s2">"Settings"</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">on_mouseover</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Settings</span><span class="o">.</span><span class="n">preload</span><span class="p">())</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">router</span> <span class="o">=</span> <span class="n">create_router</span><span class="p">(</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="p">[</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="n">Route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">Home</span><span class="p">),</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>        <span class="n">Route</span><span class="p">(</span><span class="s2">"/settings"</span><span class="p">,</span> <span class="n">Settings</span><span class="p">),</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="p">]</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">)</span>
 </span></code></pre></div>
+<p>A plain <code>&lt;a href="/settings"&gt;</code> is enough: with <code>preload_links=True</code> (the
+default), resting the pointer on the link or focusing it starts the
+import and runs the route's <code>preload</code>. Call
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;preload_route&lt;/span&gt;" href="../../api/router/#wybthon.router.preload_route"><code>preload_route("/settings")</code></a> from inside
+the router to warm it on some other intent. See
+<a href="../router/">Routing</a>.</p>
 <h2 id="patterns-and-pitfalls">Patterns and pitfalls<a class="headerlink" href="#patterns-and-pitfalls" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Don't <code>await</code> async memos in render code.</strong> Read them like any accessor; the graph handles the not-ready state. Awaiting the fetch yourself bypasses <code>Loading</code>, <code>is_pending</code>, transitions, and stale-while-revalidate. <code>resolve</code> is for imperative code such as actions and tests.</li>

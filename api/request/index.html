@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://wybthon.com/api/request/">
       
       
-        <link rel="prev" href="../server/">
+        <link rel="prev" href="../asgi/">
       
       
         <link rel="next" href="../testing/">
@@ -524,6 +524,8 @@
   
     
     
+      
+        
       
         
       
@@ -1099,6 +1101,34 @@
     
   
     Server Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-stack Apps
   
 
     
@@ -1816,6 +1846,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2428,6 +2462,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../server_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asgi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ASGI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -2546,6 +2636,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" RequestEvent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.request.RequestEvent.cookies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;cookies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2579,7 +2686,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" http_header">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.request.set_cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;set_cookie
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" set_cookie">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2753,6 +2871,8 @@
       
         
           
+        
+      
         
       
         
@@ -3038,6 +3158,34 @@
     
   
     0007: Engine v7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0008-full-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: Full-stack apps
   
 
     
@@ -3355,6 +3503,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" RequestEvent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.request.RequestEvent.cookies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;cookies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3388,7 +3553,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" http_header">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wybthon.request.set_cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;set_cookie
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" set_cookie">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3572,7 +3748,7 @@ ignored.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_request_event&lt;/span&gt; (&lt;code&gt;wybthon.request.get_request_event&lt;/code&gt;)" href="#wybthon.request.get_request_event">get_request_event</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return the request being server-rendered, or <code>None</code> in the browser.</p>
+                  <p>Return the request being handled on the server, or <code>None</code> in the browser.</p>
                 </div>
               </td>
             </tr>
@@ -3589,6 +3765,14 @@ ignored.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Declare a response header while the calling scope is alive (server only).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;set_cookie&lt;/span&gt; (&lt;code&gt;wybthon.request.set_cookie&lt;/code&gt;)" href="#wybthon.request.set_cookie">set_cookie</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Set a cookie on the response being handled (server only).</p>
                 </div>
               </td>
             </tr>
@@ -3788,7 +3972,7 @@ finished, or a stream sent its shell).</p>
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;wybthon.request.ResponseHead&lt;/code&gt;)" href="#wybthon.request.ResponseHead">ResponseHead</a></span><span class="p">())</span>
+  &lt;/span&gt; (&lt;code&gt;wybthon.request.ResponseHead&lt;/code&gt;)" href="#wybthon.request.ResponseHead">ResponseHead</a></span><span class="p">(),</span> <span class="n">method</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'GET'</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">())</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3858,6 +4042,28 @@ user, a database session, and so on).</p>
               </div>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.request.RequestEvent.method">method</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The HTTP method.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="wybthon.request.RequestEvent.headers">headers</span></code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Request headers by lowercase name.</p>
+              </div>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3883,6 +4089,30 @@ user, a database session, and so on).</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="wybthon.request.RequestEvent.cookies" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">cookies</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#wybthon.request.RequestEvent.cookies" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">cookies</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The request's cookies by name.</p>
+
+    </div>
+
+</div>
 
 
 
@@ -3914,7 +4144,9 @@ user, a database session, and so on).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return the request being server-rendered, or <code>None</code> in the browser.</p>
+        <p>Return the request being handled on the server, or <code>None</code> in the browser.</p>
+<p>That's the request a server render is for, or the one a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;server_function&lt;/span&gt;" href="../wybthon/#wybthon.server_function">server function</a> call came in with.</p>
 
 
     </div>
@@ -4069,6 +4301,29 @@ and the status falls back to the latest one still alive.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="wybthon.request.set_cookie" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">set_cookie</span>
+
+
+<a href="#wybthon.request.set_cookie" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_cookie</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_age</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">secure</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">http_only</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">same_site</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="s1">'lax'</span><span class="p">,</span> <span class="s1">'strict'</span><span class="p">,</span> <span class="s1">'none'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'lax'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set a cookie on the response being handled (server only).</p>
+<p>Call it from a server function, or while a page renders on the
+server. Pass <code>max_age=0</code> to delete a cookie. In the browser it does
+nothing.</p>
 
 
     </div>
