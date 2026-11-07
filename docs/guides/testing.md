@@ -248,7 +248,7 @@ def test_memo_and_effect():
 
 ### Stores, router, and forms
 
-- Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with `def`, pass them to the setter, and flush before asserting on reads.
+- Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with `def` (or call a mutating method, as in `lambda draft: draft.update(count=1)`), pass them to the setter, and flush before asserting on reads.
 - Outside a browser, [`navigate`][wybthon.router.navigate] only updates the `current_path` signal. Flush afterward. Path matching ([`resolve`][wybthon.router.resolve] in `wybthon.router`) is pure and needs no rendering.
 - Drive form bindings with `fire.input`, `fire.change`, and `fire.submit` against the rendered controls.
 

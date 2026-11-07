@@ -43,6 +43,10 @@ EXPECTED = {
     },
     "action-arg": {"mypy": 'incompatible type "str"; expected "int"', "pyright": "Literal['wrong']"},
     "store-append": {"mypy": 'TypedDict item "age" has type "int"', "pyright": '"Person"'},
+    "store-field": {
+        "mypy": 'expression has type "bool", variable has type "str"',
+        "pyright": '"bool" is not assignable to "str"',
+    },
     "for-row": {"mypy": 'TypedDict "Todo" has no key "titel"', "pyright": '"titel"'},
     "show-branch": {
         "mypy": 'Value of type "Accessor[Todo]" is not indexable',

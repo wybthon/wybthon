@@ -32,6 +32,7 @@ Rendering cost in Wybthon is mostly Python bookkeeping, not browser DOM work, so
 - **Bulk replacement.** When a keyed list reuses none of its rows, the old rows go in one `DISPOSE_RANGE` command and the new rows mount as one splice, instead of reconciling every unrelated pair.
 - **Text placeholders.** A hole whose neighbors aren't text uses a text-node placeholder, so a text result is a plain `nodeValue` write rather than a node replacement.
 - **Lighter computations.** Async state lives outside each computation until a computation actually runs async work, so an ordinary render binding doesn't allocate it.
+- **Stores wrap lazily.** Creating a store takes constant time, whatever its size: a nested dict, list, or dataclass gets its reactive bookkeeping the first time something reads it, and a field gets a subscription only when it's read in a tracking scope. A setter copies each container it edits once and publishes the changed fields with that container's commit. Natively, a store field write costs about 2.8 times a signal write; most of that is the draft views and the copy of the edited container. In the browser benchmark, store mode creates, updates, and appends rows 17% to 32% faster than Engine v6 did (see [`engine-v7.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v7.md)).
 
 ## Templates and `h()`
 
@@ -46,7 +47,8 @@ Use templates for markup you write by hand, and especially for list rows. Use `h
 
 - **Bind values where they're shown.** Write the read where it's used (`<b title={role()}>{name()}</b>`), and only that attribute or text node updates. A hole that returns a subtree re-runs as a whole: a template from the same literal is patched slot by slot, but anything else is rebuilt. A plain function called in markup (`{user_card(user())}`) is such a hole, so make it a component instead: `{UserCard(name=user().name)}` mounts once and receives a getter, so a change updates only the text that reads `props.name`.
 - **Keep holes small.** A hole around a single text node patches one node.
-- **Pass a store list directly through a `For` accessor.** Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.
+- **Pass a store list directly to `For`.** Local draft edits can use its change records. A list comprehension creates a replacement list that needs generic matching.
+- **Use a shallow store for data you replace wholesale.** `create_store(initial, shallow=True)` makes only the top level reactive, so a large value under it, such as an API response, is stored as plain data and never wrapped. Replace it to change it.
 - **Select rows with a projection.** Each row reads its own key, so a selection change notifies only the old and new rows, not every row:
 
     ```python
@@ -128,9 +130,9 @@ Run comparisons serially on the same browser, runtime, hardware, and cache condi
 
 `benchmarks/row_bench.py` times the same table operations in plain CPython against any checkout's sources, reporting Python's share of the work and the commands each operation sends. With the compiler, its rows are compiled the way an application's modules are, with no hand-written lambdas.
 
-Recorded measurements, with the hardware and versions they were taken on, live in [`benchmarks/results/`](https://github.com/wybthon/wybthon/tree/main/benchmarks/results); [`engine-v4.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md) and [`engine-v3.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md) cover the engines before it. [`engine-v5.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md) measures Engine v5, which made creating rows about twice as fast natively as Engine v4.
+Recorded measurements, with the hardware and versions they were taken on, live in [`benchmarks/results/`](https://github.com/wybthon/wybthon/tree/main/benchmarks/results); [`engine-v4.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v4.md) and [`engine-v3.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v3.md) cover the engines before it. [`engine-v5.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v5.md) measures Engine v5, which made creating rows about twice as fast natively as Engine v4, and [`engine-v7.md`](https://github.com/wybthon/wybthon/blob/main/benchmarks/results/engine-v7.md) measures Engine v7's lazily wrapped stores.
 
-A general store splice can rebuild a persistent sequence. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.
+A setter that edits a store list copies that list once, so a swap or splice in a long list costs a copy of the list. Arbitrary replacement lists still require linear matching. Removing a row shifts following indices. Virtualization is the appropriate tool when mounting the entire collection is the dominant cost.
 
 ## Diagnose pending publication
 

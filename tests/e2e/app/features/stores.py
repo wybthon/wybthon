@@ -1,35 +1,53 @@
 """Reactive stores: per-path tracking and draft-first mutations."""
 
+from dataclasses import dataclass, field
+
 from wybthon import component, create_store, html
+
+
+@dataclass
+class User:
+    name: str
+    age: int
+
+
+@dataclass
+class Todo:
+    text: str
+    done: bool = False
+
+
+@dataclass
+class State:
+    count: int = 0
+    user: User = field(default_factory=lambda: User("Ada", 30))
+    todos: list[Todo] = field(default_factory=lambda: [Todo("first")])
 
 
 @component
 def Page():
-    store, set_store = create_store(
-        {
-            "count": 0,
-            "user": {"name": "Ada", "age": 30},
-            "todos": [{"text": "first", "done": False}],
-        }
-    )
+    # A dataclass store reads and edits like the dataclass itself.
+    store, set_store = create_store(State())
+    # A dict store reads with subscripts.
+    labels, set_labels = create_store({"title": "Stores"})
 
-    def inc(s):
+    def inc(s: State):
         s.count += 1
 
-    def rename(s):
+    def rename(s: State):
         s.user.name = "Grace"
 
-    def toggle(s):
+    def toggle(s: State):
         s.todos[0].done = True
 
-    def add_todo(s):
-        s.todos.append({"text": "next", "done": False})
+    def add_todo(s: State):
+        s.todos.append(Todo("next"))
 
     # Store reads in a template are attribute and item accesses, so each
     # one compiles into a getter that tracks exactly that path.
     return html(t"""
       <div data-testid="page-stores">
-        <h2>Stores</h2>
+        <h2>{labels["title"]}</h2>
         <p>count: <span data-testid="store-count">{store.count}</span></p>
         <p>name: <span data-testid="store-name">{store.user.name}</span></p>
         <p>todo0 done: <span data-testid="store-todo">{str(store.todos[0].done)}</span></p>

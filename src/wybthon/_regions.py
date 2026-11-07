@@ -210,8 +210,8 @@ class _ListRegion:
             return _Input(source, range(first, first + n))
         value = _read(source)
         if isinstance(value, StoreList):
-            state = value._wyb_list_state()
-            return _Input(value, state.data, state.revision)
+            items = value._wyb_list_state()
+            return _Input(value, items, items.revision)
         return _Input(value, () if value is None else value)
 
     def key(self, item: Any) -> Any:

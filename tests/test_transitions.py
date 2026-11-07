@@ -670,16 +670,18 @@ def test_projection_is_held_with_its_inputs(wyb, root_element):
             return f"user{i}"
 
         user = create_root(lambda d: create_memo(load))
-        view = create_root(lambda d: create_projection(lambda draft: draft.update({"label": f"#{uid()}"}), {}))
-        wyb["reconciler"].render(html(t"<div><span>{view.label}</span><p>{user}</p></div>"), root_element)
+        view = create_root(
+            lambda d: create_projection(lambda draft: draft.update({"label": f"#{uid()}"}), dict[str, str]())
+        )
+        wyb["reconciler"].render(html(t"<div><span>{view['label']}</span><p>{user}</p></div>"), root_element)
         gates[1].set()
         await _tick()
         assert texts(root_element.element) == ["#1", "user1"]
         set_uid(2)
         await _tick()
         assert texts(root_element.element) == ["#1", "user1"]
-        assert view.label == "#1"
-        assert latest(lambda: view.label) == "#2"
+        assert view["label"] == "#1"
+        assert latest(lambda: view["label"]) == "#2"
         gates[2].set()
         await _tick()
         assert texts(root_element.element) == ["#2", "user2"]
@@ -734,15 +736,15 @@ def test_affects_store_marks_reads_pending(wyb):
             await gate.wait()
             set_users(lambda s: s["items"][0].update({"name": "b"}))
 
-        assert not is_pending(lambda: users["items"][0].name)
+        assert not is_pending(lambda: users["items"][0]["name"])
         fut = rename()
         flush()
-        assert is_pending(lambda: users["items"][0].name)
+        assert is_pending(lambda: users["items"][0]["name"])
         gate.set()
         await fut
         await _tick()
-        assert not is_pending(lambda: users["items"][0].name)
-        assert users["items"][0].name == "b"
+        assert not is_pending(lambda: users["items"][0]["name"])
+        assert users["items"][0]["name"] == "b"
 
     asyncio.run(main())
 

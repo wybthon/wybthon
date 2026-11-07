@@ -43,7 +43,8 @@ Highlights of the reactive model:
   [`affects`][wybthon.affects] and [`until`][wybthon.until] describe
   what the action changes and wait for it to land.
 - **Draft-first stores.** [`create_store`][wybthon.create_store]
-  setters take a function that mutates a draft with plain Python.
+  wraps a dataclass, a dict, or a list and is typed as that same type;
+  its setter takes a function that mutates a draft with plain Python.
 - **Server rendering.** [`wybthon.server`][wybthon.server] renders
   the same components to HTML in CPython, including async data and
   out-of-order streaming; [`hydrate`][wybthon.hydrate] adopts that HTML
@@ -170,11 +171,10 @@ from .vnode import Fragment, VNode, h, hole
 
 if TYPE_CHECKING:
     from .store import (
-        Draft,
         DraftExpiredError,
-        DraftList,
         Store,
         StoreList,
+        StoreObject,
         StoreSetter,
         create_optimistic_store,
         create_projection,
@@ -192,11 +192,10 @@ _hook.install()
 _LAZY = {
     name: ".store"
     for name in (
-        "Draft",
         "DraftExpiredError",
-        "DraftList",
         "Store",
         "StoreList",
+        "StoreObject",
         "StoreSetter",
         "create_optimistic_store",
         "create_projection",
@@ -287,8 +286,7 @@ __all__ = [
     "Store",
     "StoreList",
     "StoreSetter",
-    "Draft",
-    "DraftList",
+    "StoreObject",
     "DraftExpiredError",
     "create_store",
     "create_optimistic_store",
