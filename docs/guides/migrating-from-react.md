@@ -300,14 +300,14 @@ See [Async and Loading](../concepts/async-loading.md).
 
 ```python
 from wybthon import Errored, html
-from wybthon.router import current_path
+from wybthon.router import url
 
 
 def failed(err, reset):
     return html(t"<div><p>{str(err())}</p><button onclick={reset}>Retry</button></div>")
 
 
-Errored(Dashboard(), fallback=failed, reset_on=current_path)
+Errored(Dashboard(), fallback=failed, reset_on=url)
 ```
 
 The fallback receives `err`, an accessor for the caught error, and `reset`, which re-renders the children. `reset_on` clears the error when the given accessor changes, here on every navigation.
@@ -364,7 +364,7 @@ from wybthon import (
     untrack,
     use_context,
 )
-from wybthon.router import Link, Route, Router, navigate
+from wybthon.router import Route, create_router, navigate, use_location
 from wybthon.testing import fire, render
 ```
 

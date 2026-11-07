@@ -36,7 +36,7 @@ from wybthon import (
     untrack,
 )
 from wybthon.dom import Element
-from wybthon.router import Route, RouteProps, Router
+from wybthon.router import Route, RouteProps, create_router
 from wybthon.server import RenderStream, render_to_stream, render_to_string
 
 
@@ -433,8 +433,10 @@ def test_router_renders_the_request_url(wyb):
     def User(props: RouteProps):
         return html(t"<p>user {props.params['id']}</p>")
 
+    router = create_router([Route("/", Home), Route("/users/:id", User)])
+
     def view():
-        return Router([Route("/", Home), Route("/users/:id", User)])
+        return router()
 
     assert "user 7" in render_to_string(view, url="/users/7")
     assert "home" in render_to_string(view, url="/")
@@ -660,7 +662,7 @@ def test_async_def_memos_rerun_quietly_after_hydration(wyb):
     asyncio.run(main())
 
 
-def test_non_json_values_are_skipped_with_a_warning(wyb, capsys):
+def test_values_the_wire_format_cant_send_are_skipped_with_a_warning(wyb, capsys):
     class Opaque:
         def __str__(self) -> str:
             return "opaque"
@@ -676,7 +678,7 @@ def test_non_json_values_are_skipped_with_a_warning(wyb, capsys):
     out = render_async(Loading(Data(), fallback="wait"))
     assert "opaque" in out
     assert state_of(out) == {"v": {}}
-    assert "isn't JSON-compatible" in capsys.readouterr().err
+    assert "can't be sent to the browser" in capsys.readouterr().err
 
 
 def test_sync_render_with_async_data_heals_during_hydration(wyb):
@@ -895,7 +897,8 @@ def test_render_to_string_accepts_factories(wyb, route):
     def About():
         return html(t"<p>about</p>")
 
-    out = render_to_string(lambda: Router([Route("/", Home), Route("/about", About)]), url=route)
+    router = create_router([Route("/", Home), Route("/about", About)])
+    out = render_to_string(lambda: router(), url=route)
     assert ("about" if route == "/about" else "home") in out
 
 

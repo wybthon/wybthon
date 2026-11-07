@@ -153,12 +153,12 @@ def _write_app(project, body: str) -> None:
 
 ROUTED_APP = """
 from wybthon import component, html
-from wybthon.router import Link, Route, RouteProps, Router
+from wybthon.router import Route, RouteProps, create_router
 
 
 @component
 def Home():
-    return html(t'<div><p>home page</p>{Link("About", href="/about")}{Link("Docs", href="/docs/intro")}</div>')
+    return html(t'<div><p>home page</p><a href="/about">About</a><a href="/docs/intro">Docs</a></div>')
 
 
 @component
@@ -171,8 +171,11 @@ def Docs(props: RouteProps):
     return html(t"<p>docs {props.params['page']}</p>")
 
 
+router = create_router([Route("/", Home), Route("/about", About), Route("/docs/:page", Docs)])
+
+
 def app():
-    return Router([Route("/", Home), Route("/about", About), Route("/docs/:page", Docs)])
+    return router()
 """
 
 
@@ -234,7 +237,8 @@ def test_build_ships_bytecode_when_the_runtime_matches(tmp_path, monkeypatch):
     with zipfile.ZipFile(project / "dist" / manifest["runtime"]) as archive:
         names = archive.namelist()
         assert f"wybthon/__pycache__/reconciler.{tag}.pyc" in names
-        assert not any(name.startswith("wybthon/server") for name in names)
+        assert "wybthon/server.py" not in names and "wybthon/asgi.py" not in names
+        assert "wybthon/server_functions.py" in names
     with zipfile.ZipFile(project / "dist" / manifest["application"]) as archive:
         assert f"app/__pycache__/main.{tag}.pyc" in archive.namelist()
         archive.extractall(tmp_path / "unpacked")

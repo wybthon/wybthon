@@ -1,6 +1,6 @@
 # Deployment
 
-`wyb build` creates a static application bundle from a project containing `wybthon.toml`. `wyb preview` serves the result with client-route fallback and the configured base path.
+`wyb build` creates an application bundle from a project containing `wybthon.toml`. A static project's bundle goes on any static host, and `wyb preview` serves it with client-route fallback and the configured base path. A project with `server = true` is served by Python, which renders pages per request and runs server functions (see [Serving a full-stack app](#serving-a-full-stack-app)).
 
 ```toml
 entry = "app.main:app"
@@ -26,11 +26,30 @@ wyb preview --dir dist --port 8000
 
 Deploy the contents of `dist/`, configure missing extensionless routes to serve `200.html`, and serve the app beneath `/dashboard/` in this example. Use long-lived immutable caching for hashed assets and revalidate the HTML files and `manifest.json`. The preview server demonstrates that policy; use your static host for production serving.
 
+## Serving a full-stack app
+
+With `server = true`, the build also records `"server": true` in its manifest, and [`wybthon.asgi`][wybthon.asgi] serves it:
+
+```bash
+wyb build
+wyb serve --port 8000
+```
+
+`wyb serve` uses Wybthon's small built-in HTTP server, which is fine behind a reverse proxy. For production traffic, run the same ASGI app under an ASGI server such as uvicorn or hypercorn, from the project directory (or with `WYBTHON_PROJECT` pointing at it):
+
+```bash
+WYBTHON_PROJECT=/srv/my-app uvicorn --factory wybthon.asgi:create_app --workers 4
+```
+
+The app serves the build's assets itself, with a year of immutable caching for content-hashed files, so a CDN in front of it can cache them. It imports the application in-process (with `is_server()` true while it does), so the server needs the app's server-side dependencies installed: everything `server-only` modules and server functions import. Routes listed under `prerender` are served from their prerendered HTML; every other page is rendered per request. See [Full-stack apps](../concepts/full-stack.md#serving) for middleware and HTTP handlers.
+
+Server functions are public endpoints: authorize every call that needs it, and keep secrets in the server's environment, never in a module the browser gets. The build strips server function bodies, HTTP handlers, the imports only they use, and `server-only` modules from the browser's archive; everything else in the app directory is public.
+
 ## What the page loads
 
 The build replaces the `<!-- wyb:bootstrap -->` marker with the tags that start the application, so every page it writes (`index.html`, `200.html`, and each prerendered route) carries them:
 
-- A `<link rel="modulepreload">` for Pyodide's `pyodide.mjs`, and a `<link rel="preload" as="fetch" crossorigin>` for the runtime archive and the application archive. The browser starts downloading all three while the page parses, instead of after the bootstrap has run.
+- A `<link rel="modulepreload">` for Pyodide's `pyodide.mjs`, and a `<link rel="preload" as="fetch" crossorigin>` for the runtime archive, the application archive, and the trimmed standard library. The browser starts downloading them while the page parses, instead of after the bootstrap has run.
 - The manifest, inlined as `<script type="application/json" id="wyb-manifest">`, so the bootstrap doesn't spend a round trip fetching it. `manifest.json` is still written at the root of the output, and the bootstrap falls back to fetching it when a page doesn't carry the inline copy.
 - The bootstrap module itself.
 
@@ -56,6 +75,14 @@ The client-only shell is also written to `200.html`. Serve it for routes that we
 
 When the interpreter running the build has the same Python version as the pinned Pyodide runtime (Python 3.14 for Pyodide 314), the archives include precompiled bytecode, so the browser doesn't compile Wybthon or the application at startup. Application bytecode is the compiler's output, and the import hook that `import wybthon` installs uses it as is. The manifest's `bytecode` field records whether it was included. Set `bytecode = false` to ship source only; the import hook then compiles each application module's templates in the browser as it's imported.
 
+## A trimmed standard library
+
+Pyodide's standard library archive is 2.5 MB, and a first visit downloads all of it, though an app imports a fraction. `wyb build` trims it: it ships the modules Pyodide imports to boot, the modules Wybthon and the application import when they're imported, and everything those import in turn, which for the server starter is under 1 MB. The page loads that instead of Pyodide's (`loadPyodide({stdLibURL})`).
+
+The rest of the library is written beside it, with an index in the manifest. If the app imports a standard library module the build left out (inside a function that runs later, or by name at run time), the import fetches the rest, synchronously and once, and continues. Trimming never breaks an app; it can only make that one import slower. The console notes when it happens: move that import to module level, and the next build keeps the module.
+
+The build downloads Pyodide's library once (from `pyodide-url`) and caches it. Without network access, or with `stdlib = "full"` in `wybthon.toml`, it ships Pyodide's library as is, as it does for builds with `packages` or `wheels`, whose imports it can't see. The manifest's `stdlib` field names the trimmed library, or is `null`.
+
 ## Boot snapshots
 
 Most of a page's startup is Pyodide's: starting Python and importing the framework takes most of a second before the application runs at all. Builds avoid that work on every visit after the first. Once the first boot has finished and the page is idle, the bootstrap starts a Web Worker that boots a second runtime, imports Wybthon and the standard library modules applications commonly use, and takes a memory snapshot of it, which it stores in the browser's Cache Storage. Later visits restore that snapshot instead of starting Python, then unpack the archives and import the application as usual. In Chromium on a recent laptop, a repeat visit to the starter app is ready in about 100 ms instead of about 800 ms.
@@ -80,7 +107,7 @@ from wybthon import lazy
 Chart = lazy(lambda: ("app.charts.main", "Chart"), chunk="charts")
 ```
 
-The matching files are excluded from the main archive. Rendering `Chart` inside `Loading` fetches its archive once before importing the module. Hover preloading through a [`Link`][wybthon.router.Link] from `wybthon.router` can warm a lazy route, and `Chart.preload()` warms it on any user intent. `load_chunk("charts")` from `wybthon.assets` is available for explicit preloading.
+The matching files are excluded from the main archive. Rendering `Chart` inside `Loading` fetches its archive once before importing the module. The router preloads a lazy route's component when the pointer rests on a link to it, and `Chart.preload()` warms it on any user intent. `load_chunk("charts")` from `wybthon.assets` is available for explicit preloading.
 
 Chunk groups mustn't overlap, and the entry module must stay in the main bundle. This is explicit packaging, not automatic dependency analysis: keep shared imports in the main application, and don't eagerly import a chunk module. Concurrent chunk requests share one fetch; a failed fetch is evicted so a later attempt can retry. Call `Chart.retry()` to restart a failed lazy load and let its error boundary recover.
 

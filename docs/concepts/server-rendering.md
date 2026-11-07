@@ -19,7 +19,7 @@ crawl = true
 
 ```python
 from wybthon import component, html
-from wybthon.router import Route, Router
+from wybthon.router import Route, create_router
 
 
 @component
@@ -27,8 +27,11 @@ def Home():
     return html(t"<p>Welcome</p>")
 
 
+router = create_router([Route("/", Home)])
+
+
 def app():
-    return Router([Route("/", Home)])
+    return router()
 ```
 
 `index.html` marks the region the rendered markup replaces, and where
@@ -51,7 +54,9 @@ Prerendering imports your application in a fresh CPython 3.14 process, so module
 
 ## Rendering on request
 
-Render per request from any Python web framework with [`wybthon.server`](../api/server.md):
+A project built with `server = true` can be served as is: [`wybthon.asgi`](full-stack.md)'s `create_app` renders each page per request, streams its `Loading` boundaries, and also answers server functions and form posts. See [Full-stack apps](full-stack.md).
+
+To render from another Python web framework instead, use [`wybthon.server`](../api/server.md):
 
 ```python
 from wybthon.server import render_to_stream
@@ -146,6 +151,8 @@ def Account():
 
 The head is committed when `render_to_string` returns, when an awaited `render_to_stream` finishes, or when a stream yields its first chunk. `event.response.committed` is then `True`, and later declarations are ignored. A streamed response's status and headers must therefore be declared by the shell, outside any `Loading` boundary that's still pending when the first chunk is ready. When streaming, take the first chunk from the stream, then read `event.response` to send the status line and headers before writing the chunk.
 
+The shell waits for async reads that no `Loading` boundary covers before it's sent, so data the shell reads directly can still shape the head. A [query](full-stack.md) that raises [`redirect(...)`][wybthon.redirect] there, such as a guard that sends signed-out users to `/login`, becomes the HTTP redirect, with its status and `location` header. A redirect raised later, inside a boundary that streams after the head was sent, is followed by a small script at the end of the stream instead.
+
 See the [`request`](../api/request.md) API reference.
 
 ## Async data
@@ -181,7 +188,7 @@ Choose per memo where the data resolves with `ssr_source`:
 recommendations = create_memo(lambda: fetch_recommendations(), ssr_source="client")
 ```
 
-Serialized values must be JSON-compatible: dictionaries, lists, strings, numbers, booleans, and `None`. Tuples arrive as lists. A value that can't be serialized is skipped with a dev-mode warning, and the browser loads it itself.
+Serialized values use Wybthon's wire format, the same one server functions use: JSON plus tags for what JSON can't represent. Dataclasses, enums, dates and times, `Decimal`, `UUID`, `bytes`, tuples, sets, and dictionaries with non-string keys arrive as themselves rather than being dropped or flattened. A value the format can't encode (an open file, say) is skipped with a dev-mode warning, and the browser loads it itself.
 
 When an async memo fails on the server, the failure is serialized too. The browser raises it as a [`ServerError`][wybthon.ServerError] carrying the original type name and message, so an [`Errored`](error-boundaries.md) boundary shows the same fallback on both sides. Resetting the boundary runs the work again in the browser.
 
@@ -290,7 +297,7 @@ On the server, `NoHydration(*children)` renders its children normally, between t
 - The server writes HTML directly instead of mounting a DOM (see [RFC 0006](../rfcs/0006-engine-v6.md)). Components run once, under the same owners as in the browser, so context, `Errored`, and `Loading` work as usual, and each expression in the markup is evaluated once. Nothing subscribes, so a write made while the page renders doesn't change markup already written.
 - `create_effect`, `create_tracked_effect`, `on_settled`, and `on_flush` don't run, and refs and event handlers aren't attached; the browser attaches them while hydrating.
 - [`Portal`](../api/portal.md) renders nothing. Its children mount in the browser after hydration.
-- The router reads the `url` passed to the render function, and `navigate` does nothing.
+- The router reads the `url` passed to the render function, and `navigate` does nothing. A URL no route matches renders nothing and sets status 404; add a `Route("*404", NotFound)` catch-all to render a page instead.
 - `lazy` components import their modules directly; chunks are only fetched in the browser.
 
 ## Input before hydration

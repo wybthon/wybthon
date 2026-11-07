@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
+from ._split import Split, split
 from .compiler import compile_source
 
 PYODIDE_VERSION = "314.0.6"
@@ -36,13 +37,19 @@ _INDEX = """<!doctype html>
 <!-- wyb:bootstrap -->
 </body></html>
 """
-# Build-time files that never ship to the browser.
+# Framework modules that never ship to the browser: build and server tools,
+# and the CPython test renderer.
 _SERVER_ONLY = {
+    "testing.py",
     "build.py",
     "dev.py",
     "server.py",
     "_ssr.py",
     "_prerender.py",
+    "_split.py",
+    "_stdlib.py",
+    "_http.py",
+    "asgi.py",
 }
 _STARTER = '''"""A run-once component with a reactive counter."""
 
@@ -71,21 +78,158 @@ def app():
 '''
 
 
-def init_app(directory: Path) -> None:
-    """Create a reviewable starter project without overwriting existing files."""
+_SERVER_FILES: dict[str, str] = {
+    "app/__init__.py": '"""Application package."""\n',
+    "app/main.py": """\"\"\"The app's router and its root layout.\"\"\"
+
+from wybthon import ParentProps, component, html
+from wybthon.router import create_router, file_routes
+
+router = create_router(file_routes("app.routes"))
+
+
+@component
+def Shell(props: ParentProps):
+    return html(t\"\"\"
+      <header><nav><a href="/">Todos</a> <a href="/about">About</a></nav></header>
+      <main>{props.children}</main>
+    \"\"\")
+
+
+def app():
+    \"\"\"Return the root view; the server renders it per request and the browser hydrates it.\"\"\"
+    return router(root=Shell)
+""",
+    "app/todos.py": """\"\"\"The todo list's data: a query to read it and a form action to change it.\"\"\"
+
+from dataclasses import dataclass
+
+from wybthon import FormData, server_function
+from wybthon.router import form_action, query
+
+
+@dataclass
+class Todo:
+    id: int
+    title: str
+
+
+@query
+@server_function
+async def list_todos() -> list[Todo]:
+    from app.server import store
+
+    return [Todo(id, title) for id, title in store.todos()]
+
+
+@form_action
+@server_function
+async def add_todo(form: FormData) -> None:
+    from app.server import store
+
+    title = str(form.get("title", "")).strip()
+    if title:
+        store.add(title)
+""",
+    "app/server/__init__.py": '"""Server-only modules: they never reach the browser."""\n',
+    "app/server/store.py": """\"\"\"A stand-in for a database: todos kept in the server's memory.\"\"\"
+
+_todos: list[tuple[int, str]] = [(1, "Read the Wybthon docs")]
+
+
+def todos() -> list[tuple[int, str]]:
+    return list(_todos)
+
+
+def add(title: str) -> None:
+    _todos.append((len(_todos) + 1, title))
+""",
+    "app/routes/index.py": """\"\"\"/: the todo list, read with a query and added to with a form action.\"\"\"
+
+from wybthon import For, Loading, component, create_memo, html
+
+from app.todos import add_todo, list_todos
+
+
+@component
+def Page():
+    todos = create_memo(lambda: list_todos())
+
+    def row(todo, _index):
+        return html(t"<li>{todo.title}</li>")
+
+    return html(t\"\"\"
+      <section>
+        <h1>Todos</h1>
+        {Loading(html(t"<ul>{For(todos(), row)}</ul>"), fallback=html(t"<p>Loading...</p>"))}
+        <form action={add_todo} method="post">
+          <input name="title" placeholder="Something to do" required>
+          <button disabled={add_todo.pending()}>Add</button>
+        </form>
+      </section>
+    \"\"\")
+""",
+    "app/routes/about.py": """\"\"\"/about: a page with no data.\"\"\"
+
+from wybthon import component, html
+
+
+@component
+def Page():
+    return html(t"<h1>About</h1><p>Rendered on the server, then hydrated in the browser.</p>")
+""",
+    "app/routes/[...404].py": """\"\"\"Any other URL: a 404 page.\"\"\"
+
+from wybthon import component, html, http_status
+
+
+@component
+def Page():
+    http_status(404)
+    return html(t"<h1>Not found</h1>")
+""",
+}
+
+
+def init_app(directory: Path, *, server: bool = False) -> None:
+    """Create a reviewable starter project without overwriting existing files.
+
+    With `server`, the starter is a full-stack app: file routes, a query
+    and a form action backed by server functions, and `server = true`.
+    """
     directory = directory.resolve()
     if directory.exists() and any(directory.iterdir()):
         raise FileExistsError(f"Destination isn't empty: {directory}")
     (directory / "app").mkdir(parents=True, exist_ok=True)
-    (directory / "app" / "__init__.py").write_text('"""Application package."""\n', encoding="utf-8")
-    (directory / "app" / "main.py").write_text(_STARTER, encoding="utf-8")
+    if server:
+        for name, text in _SERVER_FILES.items():
+            target = directory / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+    else:
+        (directory / "app" / "__init__.py").write_text('"""Application package."""\n', encoding="utf-8")
+        (directory / "app" / "main.py").write_text(_STARTER, encoding="utf-8")
     (directory / "index.html").write_text(_INDEX, encoding="utf-8")
-    (directory / "wybthon.toml").write_text(
+    common = (
         f'entry = "app.main:app"\nmount = "#app"\napp-dir = "app"\nbase = "/"\n'
         f'pyodide-version = "{PYODIDE_VERSION}"\npackages = []\nwheels = []\n'
-        "# Routes rendered to static HTML at build time; the browser hydrates them.\n"
-        'prerender = ["/"]\ncrawl = true\n'
-        '\n[chunks]\n# charts = ["app/charts/**"]\n',
+    )
+    if server:
+        config = (
+            common
+            + "# Render pages per request and serve server functions (`wyb dev`, `wyb serve`).\n"
+            + "server = true\n"
+            + "# Modules that never reach the browser.\n"
+            + 'server-only = ["app/server/**"]\n'
+        )
+    else:
+        config = (
+            common
+            + "# Routes rendered to static HTML at build time; the browser hydrates them.\n"
+            + 'prerender = ["/"]\ncrawl = true\n'
+        )
+    (directory / "wybthon.toml").write_text(
+        config + '\n[chunks]\n# charts = ["app/charts/**"]\n',
         encoding="utf-8",
     )
     (directory / "pyproject.toml").write_text(
@@ -93,10 +237,15 @@ def init_app(directory: Path) -> None:
         encoding="utf-8",
     )
     (directory / ".gitignore").write_text("dist/\n.venv/\n__pycache__/\n.mypy_cache/\n", encoding="utf-8")
+    deploy = (
+        "Run `wyb build`, then `wyb serve` to run the production server, or serve it with any ASGI server:\n"
+        "`WYBTHON_PROJECT=. uvicorn --factory wybthon.asgi:create_app`.\n"
+        if server
+        else "Run `wyb build`, then `wyb preview` to check the production output.\n\n"
+        "Deploy the contents of `dist/` to a static host with an HTML fallback for client routes.\n"
+    )
     (directory / "README.md").write_text(
-        "# My Wybthon app\n\nRun `wyb dev --open` while developing.\n"
-        "Run `wyb build`, then `wyb preview` to check the production output.\n\n"
-        "Deploy the contents of `dist/` to a static host with an HTML fallback for client routes.\n",
+        "# My Wybthon app\n\nRun `wyb dev --open` while developing.\n" + deploy,
         encoding="utf-8",
     )
 
@@ -170,6 +319,13 @@ def build_app(
     wheels = config.get("wheels", [])
     if any("==" not in requirement and not requirement.split("#")[0].endswith(".whl") for requirement in wheels):
         raise ValueError("Wheel requirements must use exact versions or explicit wheel URLs")
+    server = config.get("server", False)
+    if not isinstance(server, bool):
+        raise ValueError("server must be true or false")
+    server_only = config.get("server-only", [])
+    if not isinstance(server_only, list) or any(not isinstance(pattern, str) for pattern in server_only):
+        raise ValueError("server-only must be a list of glob patterns")
+    routes_dir = _routes_dir(directory, app, config)
     groups: dict[str, dict[str, bytes]] = {"application": {}}
     chunk_patterns = config.get("chunks", {})
     for name in chunk_patterns:
@@ -194,7 +350,18 @@ def build_app(
             compile_source(data, str(path))
         except SyntaxError as exc:
             raise ValueError(f"Invalid Python source at {name}:{exc.lineno}: {exc.msg}") from exc
-        groups[matched[0] if matched else "application"][name] = data
+        if any(fnmatch.fnmatchcase(name, pattern) for pattern in server_only):
+            # Server-only modules never reach the browser.
+            if not server:
+                raise ValueError(f"{name} is server-only, which needs server = true in wybthon.toml")
+            continue
+        browser = browser_source(data, is_route=routes_dir is not None and path.resolve().is_relative_to(routes_dir))
+        if browser.functions and not server:
+            raise ValueError(
+                f"{name} defines server functions ({', '.join(browser.functions)}), "
+                "which need a server: set server = true in wybthon.toml"
+            )
+        groups[matched[0] if matched else "application"][name] = browser.source.encode("utf-8")
     entry_path = entry.split(":")[0].replace(".", "/") + ".py"
     if entry_path not in groups["application"]:
         raise ValueError("The entry module must exist in the main application bundle")
@@ -236,6 +403,14 @@ def build_app(
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(source, target)
         archive_names = {name: _asset(staging, name, _archive(files), "zip") for name, files in groups.items()}
+        pyodide_url = (
+            config.get(
+                "pyodide-url",
+                f"https://cdn.jsdelivr.net/pyodide/v{config.get('pyodide-version', PYODIDE_VERSION)}/full/",
+            ).rstrip("/")
+            + "/"
+        )
+        stdlib_assets = _trimmed_stdlib(staging, config, pyodide_url, directory, runtime, groups)
         manifest = {
             "format": 1,
             "entry": entry,
@@ -243,12 +418,12 @@ def build_app(
             "dev": dev,
             "base": base_path,
             "bytecode": bool(bytecode),
+            "server": server,
             "prerendered": sorted(pages),
-            "pyodide_url": config.get(
-                "pyodide-url",
-                f"https://cdn.jsdelivr.net/pyodide/v{config.get('pyodide-version', PYODIDE_VERSION)}/full/",
-            ).rstrip("/")
-            + "/",
+            "pyodide_url": pyodide_url,
+            "stdlib": stdlib_assets[0],
+            "stdlib_rest": stdlib_assets[1],
+            "stdlib_rest_modules": stdlib_assets[2],
             "packages": config.get("packages", []),
             "wheels": wheels,
             "runtime": _asset(staging, "runtime", _archive(runtime), "zip"),
@@ -284,6 +459,53 @@ def build_app(
     return manifest
 
 
+def _trimmed_stdlib(
+    staging: Path,
+    config: dict[str, Any],
+    pyodide_url: str,
+    directory: Path,
+    runtime: dict[str, bytes],
+    groups: dict[str, dict[str, bytes]],
+) -> tuple[str | None, str | None, str | None]:
+    """Write the trimmed standard library and the rest, and index the rest; `None`s ship Pyodide's own."""
+    mode = config.get("stdlib", "trim")
+    if mode not in ("trim", "full"):
+        raise ValueError('stdlib must be "trim" or "full"')
+    if mode == "full" or config.get("packages") or config.get("wheels"):
+        # Packages and wheels import standard library modules the build can't see.
+        return None, None, None
+    from . import _snapshot
+    from ._stdlib import fetch_stdlib, trim
+
+    url = pyodide_url if urlsplit(pyodide_url).scheme else str((directory / "public" / pyodide_url).resolve()) + "/"
+    stdlib = fetch_stdlib(url)
+    if stdlib is None:
+        print("wyb build: couldn't fetch Pyodide's standard library to trim it; shipping it whole", file=sys.stderr)
+        return None, None, None
+    sources = [data for name, data in runtime.items() if name.endswith(".py")]
+    sources += [data for files in groups.values() for name, data in files.items() if name.endswith(".py")]
+    trimmed, rest, index = trim(stdlib, sources, extra=_snapshot._STDLIB)
+    return _asset(staging, "stdlib", trimmed, "zip"), _asset(staging, "stdlib-rest", rest, "zip"), " ".join(index)
+
+
+def _routes_dir(directory: Path, app: Path, config: dict[str, Any]) -> Path | None:
+    """The file routes directory, when the project has one."""
+    configured = config.get("routes")
+    if configured is not None and not isinstance(configured, str):
+        raise ValueError("routes must name a directory inside the application directory")
+    path = (directory / configured).resolve() if configured else app / "routes"
+    if configured and (not path.is_relative_to(app) or not path.is_dir()):
+        raise ValueError("routes must name a directory inside the application directory")
+    return path if path.is_dir() else None
+
+
+def browser_source(data: bytes, *, is_route: bool = False) -> Split:
+    """A module's source as the browser gets it, with its server-only code removed."""
+    from importlib.util import decode_source
+
+    return split(decode_source(data), handlers=is_route)
+
+
 def _snapshot_key(manifest: dict[str, Any], config: dict[str, Any]) -> str | None:
     """The key a boot snapshot is cached under, or `None` when the build doesn't use one.
 
@@ -298,7 +520,9 @@ def _snapshot_key(manifest: dict[str, Any], config: dict[str, Any]) -> str | Non
         return None
     from . import __version__
 
-    material = json.dumps([1, __version__, manifest["pyodide_url"], manifest["runtime"]], separators=(",", ":"))
+    material = json.dumps(
+        [1, __version__, manifest["pyodide_url"], manifest["runtime"], manifest.get("stdlib")], separators=(",", ":")
+    )
     return hashlib.sha256(material.encode()).hexdigest()[:20]
 
 
@@ -313,7 +537,9 @@ def _boot_tags(manifest: dict[str, Any], base_path: str, bootstrap: str) -> str:
     if not urlsplit(pyodide_url).scheme:
         pyodide_url = base_path + pyodide_url.removeprefix("./")
     hints = [f'<link rel="modulepreload" href="{html.escape(pyodide_url + "pyodide.mjs", quote=True)}" crossorigin>']
-    for archive in (manifest["runtime"], manifest["application"]):
+    for archive in (manifest["runtime"], manifest["application"], manifest.get("stdlib")):
+        if archive is None:
+            continue
         href = html.escape(base_path + archive, quote=True)
         hints.append(f'<link rel="preload" href="{href}" as="fetch" crossorigin>')
     inline = json.dumps(manifest, separators=(",", ":")).replace("</", "<\\/")

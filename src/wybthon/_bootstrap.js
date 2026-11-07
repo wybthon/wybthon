@@ -8,10 +8,19 @@ const chunks = new Map();
 // the kernel replays the queue through delegated handlers afterwards.
 const captured = globalThis.__wybQueue = [];
 const captureTypes = ["click", "input", "change", "submit", "keydown"];
+// A form posting to a server function works without Python: let the browser
+// post it, and the server answers with a redirect back (RFC 0008).
+function postsToServer(event) {
+  if (event.type !== "submit" || !(event.target instanceof HTMLFormElement)) return false;
+  const submitter = event.submitter || null;
+  const action = (submitter && submitter.getAttribute("formaction")) || event.target.getAttribute("action") || "";
+  return action.includes("/_wyb/fn/");
+}
 function capture(event) {
   if (globalThis.__wybQueue !== captured) return;
   const target = event.target;
   if (!(target instanceof Node)) return;
+  if (postsToServer(event)) return;
   captured.push({
     event,
     value: "value" in target ? target.value : undefined,
@@ -88,15 +97,18 @@ function recordSnapshotFailure(config) {
 // they're imported, which a snapshot can't hold).
 const snapshotWorker = `
 self.onmessage = async (event) => {
-  const { indexURL, runtimeURL, request, cacheName } = event.data;
+  const { indexURL, runtimeURL, stdLibURL, request, cacheName, fetchSync, rest } = event.data;
   try {
     const started = performance.now();
+    self.__wybFetchSync = (0, eval)(fetchSync);
     const { loadPyodide } = await import(indexURL + "pyodide.mjs");
-    const pyodide = await loadPyodide({ indexURL, _makeSnapshot: true });
+    const pyodide = await loadPyodide({ indexURL, _makeSnapshot: true, ...(stdLibURL ? { stdLibURL } : {}) });
     const response = await fetch(runtimeURL);
     if (!response.ok) throw new Error("runtime archive: " + response.status);
     pyodide.unpackArchive(new Uint8Array(await response.arrayBuffer()), "zip", { extractDir: "/wybthon-app" });
-    pyodide.runPython("import sys\\nif '/wybthon-app' not in sys.path: sys.path.insert(0, '/wybthon-app')\\nimport wybthon._snapshot\\nwybthon._snapshot.preload()");
+    pyodide.runPython("import sys\\nif '/wybthon-app' not in sys.path: sys.path.insert(0, '/wybthon-app')");
+    if (rest) pyodide.runPython(rest);
+    pyodide.runPython("import wybthon._snapshot\\nwybthon._snapshot.preload()");
     const snapshot = pyodide.makeMemorySnapshot();
     const cache = await caches.open(cacheName);
     for (const old of await cache.keys()) await cache.delete(old);
@@ -132,12 +144,38 @@ function buildSnapshot(config, runtimeURL) {
     worker.postMessage({
       indexURL: runtimeURL,
       runtimeURL: new URL(config.runtime, manifestURL).href,
+      stdLibURL: config.stdlib ? new URL(config.stdlib, manifestURL).href : null,
+      fetchSync: fetchSyncSource,
+      rest: restInstall(config),
       request: snapshotRequest(config),
       cacheName: snapshotCache(config),
     });
   };
   if (typeof requestIdleCallback === "function") requestIdleCallback(start, { timeout: 5000 });
   else setTimeout(start, 1000);
+}
+
+// Fetches the rest of a trimmed standard library synchronously, for an import
+// the build didn't see (see wybthon/_stdlib_rest.py). A document can't ask a
+// synchronous request for an ArrayBuffer, so the bytes come back as text.
+const fetchSyncSource = `(url) => {
+  const request = new XMLHttpRequest();
+  request.open("GET", url, false);
+  request.overrideMimeType("text/plain; charset=x-user-defined");
+  request.send(null);
+  if (request.status !== 200) throw new Error("Failed to fetch " + url + ": " + request.status);
+  const text = request.responseText;
+  const bytes = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i) & 0xff;
+  return bytes;
+}`;
+globalThis.__wybFetchSync = (0, eval)(fetchSyncSource);
+
+function restInstall(config) {
+  if (!config.stdlib_rest) return "";
+  const url = JSON.stringify(new URL(config.stdlib_rest, manifestURL).href);
+  const index = JSON.stringify(config.stdlib_rest_modules || "");
+  return `import wybthon._stdlib_rest; wybthon._stdlib_rest.install(${url}, ${index})`;
 }
 
 async function fetchBytes(url) {
@@ -166,10 +204,12 @@ state.ready = (async () => {
     const runtimeURL = new URL(config.pyodide_url, manifestURL).href;
     const runtimeStart = performance.now();
     const snapshot = readSnapshot(config);
+    // A build trims the standard library to what the app imports (RFC 0008).
+    const stdlib = config.stdlib ? { stdLibURL: new URL(config.stdlib, manifestURL).href } : {};
     const runtime = Promise.all([import(runtimeURL + "pyodide.mjs"), snapshot]).then(async ([{ loadPyodide }, saved]) => {
       if (saved !== null) {
         try {
-          const restored = await loadPyodide({ indexURL: runtimeURL, _loadSnapshot: saved });
+          const restored = await loadPyodide({ indexURL: runtimeURL, _loadSnapshot: saved, ...stdlib });
           state.timings.snapshot = true;
           return restored;
         } catch (error) {
@@ -179,7 +219,7 @@ state.ready = (async () => {
         }
       }
       state.timings.snapshot = false;
-      return loadPyodide({ indexURL: runtimeURL, packages: config.packages });
+      return loadPyodide({ indexURL: runtimeURL, packages: config.packages, ...stdlib });
     }).then(value => {
       state.timings.pyodide_ms = performance.now() - runtimeStart;
       return value;
@@ -207,6 +247,7 @@ state.ready = (async () => {
     };
     const appStart = performance.now();
     await pyodide.runPythonAsync("import sys\nif '/wybthon-app' not in sys.path: sys.path.insert(0, '/wybthon-app')");
+    if (config.stdlib_rest) await pyodide.runPythonAsync(restInstall(config));
     if (config.wheels.length) {
       await pyodide.loadPackage("micropip");
       pyodide.globals.set("_wyb_requirements", JSON.stringify(config.wheels));

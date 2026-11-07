@@ -1,4 +1,4 @@
-"""Solid 2.0 RC.17 alignment (RFC 0004): `create_deferred`, `is_equal`, `is_static`, `flatten`, `on_hydration_end`."""
+"""`create_deferred`, `is_equal`, `is_static`, `flatten`, and `on_hydration_end`."""
 
 import asyncio
 from collections.abc import Callable

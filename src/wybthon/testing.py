@@ -31,6 +31,16 @@ resulting updates, so assertions see the settled DOM.
 Use `render` as a context manager to unmount automatically, or call
 [`cleanup`][wybthon.testing.cleanup] at the end of each test (an
 autouse pytest fixture is a convenient place).
+
+Full-stack code tests the same way:
+
+- [`connect_server`][wybthon.testing.connect_server] makes the
+  components a test renders call their server functions the way the
+  browser does, through the wire protocol and the server's argument
+  validation, in-process.
+- [`Client`][wybthon.testing.Client] sends HTTP requests to an ASGI
+  app ([`wybthon.asgi.create_app`][wybthon.asgi.create_app]) without a
+  network, for pages, form posts, and HTTP handlers.
 """
 
 from __future__ import annotations
@@ -56,6 +66,9 @@ __all__ = [
     "reactive_scope",
     "tick",
     "wait_for",
+    "Client",
+    "ClientResponse",
+    "connect_server",
 ]
 
 
@@ -702,3 +715,190 @@ async def wait_for(predicate: Callable[[], bool], *, timeout: float = 1, interva
         while not predicate():
             await asyncio.sleep(interval)
             _core.flush()
+
+
+# ---------------------------------------------------------------------------
+# Server functions and ASGI apps
+# ---------------------------------------------------------------------------
+
+
+class ClientResponse:
+    """A response a [`Client`][wybthon.testing.Client] received.
+
+    Attributes:
+        status: The status code.
+        headers: Header values by lowercase name (repeated headers joined
+            with `, `, except `set-cookie`, which is in `cookies`).
+        cookies: Every `set-cookie` value.
+        body: The body.
+    """
+
+    __slots__ = ("status", "headers", "cookies", "body")
+
+    def __init__(self, status: int, headers: dict[str, str], cookies: list[str], body: bytes) -> None:
+        self.status = status
+        self.headers = headers
+        self.cookies = cookies
+        self.body = body
+
+    @property
+    def text(self) -> str:
+        """The body as text."""
+        return self.body.decode("utf-8", "replace")
+
+    def json(self) -> Any:
+        """The body parsed as JSON."""
+        import json
+
+        return json.loads(self.body)
+
+    def __repr__(self) -> str:
+        return f"ClientResponse({self.status})"
+
+
+class Client:
+    """Send requests to an ASGI app in-process; cookies persist between requests.
+
+    ```python
+    from wybthon.asgi import create_app
+    from wybthon.testing import Client
+
+    def test_home_page():
+        client = Client(create_app("tests/fixture_app"))
+        page = client.get("/")
+        assert page.status == 200 and "Todos" in page.text
+    ```
+    """
+
+    def __init__(self, app: Any, *, host: str = "testserver") -> None:
+        self.app = app
+        self.host = host
+        self.cookies: dict[str, str] = {}
+
+    async def request_async(
+        self, method: str, path: str, *, body: bytes = b"", headers: dict[str, str] | None = None
+    ) -> ClientResponse:
+        """Send a request from a running event loop."""
+        target, _, query = path.partition("?")
+        merged = {"host": self.host, **{key.lower(): value for key, value in (headers or {}).items()}}
+        if self.cookies and "cookie" not in merged:
+            merged["cookie"] = "; ".join(f"{name}={value}" for name, value in self.cookies.items())
+        if body and "content-length" not in merged:
+            merged["content-length"] = str(len(body))
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": method.upper(),
+            "scheme": "http",
+            "path": target,
+            "raw_path": target.encode(),
+            "query_string": query.encode(),
+            "headers": [(name.encode("latin-1"), value.encode("latin-1")) for name, value in merged.items()],
+        }
+        delivered = False
+
+        async def receive() -> dict[str, Any]:
+            nonlocal delivered
+            if not delivered:
+                delivered = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return {"type": "http.disconnect"}
+
+        status = 0
+        response_headers: dict[str, str] = {}
+        cookies: list[str] = []
+        chunks: list[bytes] = []
+
+        async def send(message: dict[str, Any]) -> None:
+            nonlocal status
+            if message["type"] == "http.response.start":
+                status = message["status"]
+                for raw_name, raw_value in message.get("headers", []):
+                    name, value = raw_name.decode("latin-1").lower(), raw_value.decode("latin-1")
+                    if name == "set-cookie":
+                        cookies.append(value)
+                    else:
+                        response_headers[name] = (
+                            f"{response_headers[name]}, {value}" if name in response_headers else value
+                        )
+            elif message["type"] == "http.response.body":
+                chunks.append(message.get("body", b""))
+
+        await self.app(scope, receive, send)
+        for cookie in cookies:
+            pair = cookie.split(";", 1)[0]
+            name, _, value = pair.partition("=")
+            if "max-age=0" in cookie.lower().replace(" ", ""):
+                self.cookies.pop(name.strip(), None)
+            else:
+                self.cookies[name.strip()] = value.strip()
+        return ClientResponse(status, response_headers, cookies, b"".join(chunks))
+
+    def request(
+        self, method: str, path: str, *, body: bytes = b"", headers: dict[str, str] | None = None
+    ) -> ClientResponse:
+        """Send a request and wait for the whole response."""
+        return asyncio.run(self.request_async(method, path, body=body, headers=headers))
+
+    def get(self, path: str, *, headers: dict[str, str] | None = None) -> ClientResponse:
+        """`GET path`, as a browser loading a page would (it accepts HTML)."""
+        return self.request("GET", path, headers={"accept": "text/html", **(headers or {})})
+
+    def post_form(
+        self, path: str, fields: dict[str, str] | list[tuple[str, str]], *, referer: str = "/"
+    ) -> ClientResponse:
+        """Post a form the way a browser without JavaScript does."""
+        from urllib.parse import urlencode
+
+        return self.request(
+            "POST",
+            path,
+            body=urlencode(fields).encode(),
+            headers={
+                "content-type": "application/x-www-form-urlencoded",
+                "origin": f"http://{self.host}",
+                "referer": f"http://{self.host}{referer}",
+            },
+        )
+
+
+@contextmanager
+def connect_server(app: Any = None, *, base: str = "/") -> Iterator[None]:
+    """Make server function calls inside the block cross the wire, as they would in the browser.
+
+    With no `app`, each call is handled in-process by the server-side
+    handler: arguments are encoded, validated against the function's
+    annotations, and the result decoded, exactly as over HTTP. With an
+    ASGI `app` (such as `wybthon.asgi.create_app(...)`), each call is a
+    request to it.
+
+    ```python
+    def test_add_todo():
+        with connect_server(), render(TodoPage()) as screen:
+            fire.input(screen.get_by_role("textbox"), "Write tests")
+            fire.submit(screen.get_by_role("form"))
+            ...
+    ```
+    """
+    from . import server_functions
+    from .request import RequestEvent
+
+    client = Client(app) if app is not None else None
+
+    async def transport(method: str, url: str, headers: dict[str, str], body: Any) -> tuple[int, dict[str, str], bytes]:
+        # A request never completes synchronously in the browser.
+        await asyncio.sleep(0)
+        if client is not None:
+            response = await client.request_async(method, url, body=body or b"", headers=headers)
+            return response.status, response.headers, response.body
+        path, _, query = url.partition("?")
+        fn_id = path.split(server_functions.FN_PATH, 1)[1]
+        event = RequestEvent(url=url, method=method, headers=headers)
+        status, response_headers, data, _fn, _outcome = await server_functions.handle(
+            event, fn_id, method, query, headers, body or b""
+        )
+        return status, response_headers, data
+
+    with server_functions._remote_calls(transport, base=base):
+        yield

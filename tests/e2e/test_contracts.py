@@ -63,7 +63,11 @@ from js import document
 from wybthon import *
 from wybthon import kernel
 from wybthon.events import set_handler
-from wybthon.testing import tick
+import asyncio
+async def tick(rounds=2):
+    for _ in range(rounds):
+        await asyncio.sleep(0)
+        flush()
 host = document.createElement("section")
 host.id = "contract-host"
 document.body.appendChild(host)

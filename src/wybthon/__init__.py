@@ -49,6 +49,11 @@ Highlights of the reactive model:
   the same components to HTML in CPython, including async data and
   out-of-order streaming; [`hydrate`][wybthon.hydrate] adopts that HTML
   in the browser instead of rebuilding it.
+- **Server functions.** [`server_function`][wybthon.server_function]
+  makes an `async def` run on the server wherever it's called, as Solid
+  2.0's `"use server"` does; [`wybthon.router`][wybthon.router]'s
+  `query` and `form_action` build the data layer on it, and
+  [`wybthon.asgi`][wybthon.asgi] serves the whole app.
 - **Dev diagnostics.** Writes inside a tracking scope raise
   [`WriteInScopeError`][wybthon.WriteInScopeError]; reading a reactive
   value at the top level of a component body warns.
@@ -165,11 +170,13 @@ from .reactivity import (
     untrack,
 )
 from .reconciler import Root, hydrate, render
-from .request import RequestEvent, ResponseHead, get_request_event, http_header, http_status
+from .request import RequestEvent, ResponseHead, get_request_event, http_header, http_status, set_cookie
 from .templates import TemplateError, html
 from .vnode import Fragment, VNode, h, hole
 
 if TYPE_CHECKING:
+    from ._formdata import FormData, UploadedFile
+    from .server_functions import ServerFunction, redirect, reload, respond, server_function
     from .store import (
         DraftExpiredError,
         Store,
@@ -190,6 +197,10 @@ _hook.install()
 # Stores load on first use: they're a sizable part of startup and many
 # pages never use them.
 _LAZY = {
+    **{name: ".server_functions" for name in ("ServerFunction", "redirect", "reload", "respond", "server_function")},
+    **{name: "._formdata" for name in ("FormData", "UploadedFile")},
+}
+_LAZY |= {
     name: ".store"
     for name in (
         "DraftExpiredError",
@@ -336,6 +347,15 @@ __all__ = [
     "get_request_event",
     "http_status",
     "http_header",
+    "set_cookie",
+    # Server functions
+    "server_function",
+    "ServerFunction",
+    "redirect",
+    "reload",
+    "respond",
+    "FormData",
+    "UploadedFile",
     # Dev mode
     "is_dev_mode",
     "set_dev_mode",

@@ -52,9 +52,12 @@ MODULES = (
     "wybthon.portal",
     "wybthon.reconciler",
     "wybthon.router",
+    "wybthon.server_functions",
     "wybthon.store",
     "wybthon.templates",
+    "wybthon._formdata",
     "wybthon._regions",
+    "wybthon._wire",
 )
 
 

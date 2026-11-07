@@ -79,9 +79,10 @@ def create_routes():
         Route(path="/router/user/:id", component=router_feat.User),
         Route(path="/router/search", component=router_feat.Search),
         Route(path="/router/docs/*", component=router_feat.Docs),
+        Route(path="*404", component=NotFound),
         Route(
             path="/router/parent",
             component=router_feat.Parent,
-            children=[Route(path="child", component=router_feat.Child)],
+            children=[Route(path=""), Route(path="child", component=router_feat.Child)],
         ),
     ]

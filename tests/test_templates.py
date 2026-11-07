@@ -779,7 +779,6 @@ def test_svg_templates_expand_into_namespaced_nodes():
 
 def test_built_in_factories_work_as_component_tags():
     from wybthon import create_context, use_context
-    from wybthon.router import Link
 
     on, set_on = create_signal(True)
     Theme = create_context("light")
@@ -797,7 +796,7 @@ def test_built_in_factories_work_as_component_tags():
                   <{Show} when={on} fallback={html(t"<b>off</b>")}><b>on</b></{Show}>
                   <{Theme} value="dark"><{Themed} /></{Theme}>
                   <{Errored} fallback="failed"><p>{broken}</p></{Errored}>
-                  <{Link} href="/docs" class="nav">Docs</{Link}>
+                  <a href="/docs" class="nav">Docs</a>
                 </div>"""
         )
     )

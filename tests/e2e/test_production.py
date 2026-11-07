@@ -356,7 +356,7 @@ def test_dev_replaces_an_edited_module_without_reloading(browser, tmp_path):
 
 
 ROUTED_APP = """from wybthon import component, html
-from wybthon.router import Link, Route, Router
+from wybthon.router import Route, create_router
 
 
 @component
@@ -369,11 +369,13 @@ def User():
     return html(t'<p id="page">user</p>')
 
 
+router = create_router([Route(path="/", component=Home), Route(path="/users/:id", component=User)])
+
+
 @component
 def App():
-    nav = html(t'<nav>{Link("/", children="Home", id="home")}{Link("/users/7", children="User", id="user")}</nav>')
-    routes = [Route(path="/", component=Home), Route(path="/users/:id", component=User)]
-    return html(t"<div>{nav}{Router(routes)}</div>")
+    nav = html(t'<nav><a href="/" id="home">Home</a><a href="/users/7" id="user">User</a></nav>')
+    return html(t"<div>{nav}{router()}</div>")
 
 
 def app():

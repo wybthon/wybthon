@@ -15,7 +15,7 @@ APP = '''
 import asyncio
 
 from wybthon import Loading, NoHydration, component, create_memo, create_signal, html, is_server
-from wybthon.router import Link, Route, Router
+from wybthon.router import Route, create_router
 
 
 async def fetch_greeting(name):
@@ -52,7 +52,7 @@ def Home():
         <input id="name" value={text()} oninput={(lambda e: set_text(e.target.value))}>
         <p id="typed">Typed: {text()}</p>
         {Loading(Greeting(), fallback=html(t"<p>Loading greeting</p>"))}
-        <{Link} href="/about" id="about-link">About</{Link}>
+        <a href="/about" id="about-link">About</a>
         {NoHydration(footer)}
       </div>
     """)
@@ -63,8 +63,11 @@ def About():
     return html(t'<p id="about">About page</p>')
 
 
+router = create_router([Route("/", Home), Route("/about", About)])
+
+
 def app():
-    return Router([Route("/", Home), Route("/about", About)])
+    return router()
 '''
 
 

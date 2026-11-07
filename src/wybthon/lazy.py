@@ -216,8 +216,8 @@ def lazy(loader: Callable[[], Any], *, chunk: str | None = None) -> LazyComponen
         ```python
         Team = lazy(lambda: ("app.about.team.page", "Page"))
 
+        # The router preloads it when the pointer rests on a link to the route.
         Route(path="/about/team", component=Team)
-        Link("Team", href="/about/team", on_mouseenter=lambda e: Team.preload())
         ```
     """
     if chunk is not None:

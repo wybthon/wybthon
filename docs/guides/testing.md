@@ -249,7 +249,8 @@ def test_memo_and_effect():
 ### Stores, router, and forms
 
 - Store writes are staged like signal writes. Python doesn't allow assignment inside a lambda, so write draft functions with `def` (or call a mutating method, as in `lambda draft: draft.update(count=1)`), pass them to the setter, and flush before asserting on reads.
-- Outside a browser, [`navigate`][wybthon.router.navigate] only updates the `current_path` signal. Flush afterward. Path matching ([`resolve`][wybthon.router.resolve] in `wybthon.router`) is pure and needs no rendering.
+- Outside a browser, [`navigate`][wybthon.router.navigate] only updates the location that [`url`][wybthon.router.url] and [`use_location()`][wybthon.router.use_location] read. Flush afterward. Path matching ([`resolve`][wybthon.router.resolve] in `wybthon.router`, or `router.match(href)` on a router from `create_router`) is pure and needs no rendering.
+- To test server functions, wrap the render in `connect_server()` from `wybthon.testing`, so each call is encoded and validated as it would be over HTTP; `Client(create_app(...))` sends whole requests to a `wybthon.asgi` app. See [Full-stack apps](../concepts/full-stack.md).
 - Drive form bindings with `fire.input`, `fire.change`, and `fire.submit` against the rendered controls.
 
 ### Dev-mode diagnostics

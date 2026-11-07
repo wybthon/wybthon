@@ -39,12 +39,19 @@ ignored.
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any
+from http.cookies import CookieError, SimpleCookie
+from typing import Any, Literal
 
 from .reactivity import _core
 
-__all__ = ["RequestEvent", "ResponseHead", "get_request_event", "http_status", "http_header"]
+__all__ = ["RequestEvent", "ResponseHead", "get_request_event", "http_status", "http_header", "set_cookie"]
+
+# The request a server function call (or an ASGI page render) is handling.
+# Tasks copy it when they're created, so async work started while handling
+# a request sees that request.
+_current: ContextVar[RequestEvent | None] = ContextVar("wybthon_request", default=None)
 
 
 @dataclass
@@ -99,16 +106,44 @@ class RequestEvent:
         locals: Per-request values for the application (the signed-in
             user, a database session, and so on).
         response: The response head the render declares.
+        method: The HTTP method.
+        headers: Request headers by lowercase name.
     """
 
     url: str = "/"
     request: Any = None
     locals: dict[str, Any] = field(default_factory=dict)
     response: ResponseHead = field(default_factory=ResponseHead)
+    method: str = "GET"
+    headers: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def cookies(self) -> dict[str, str]:
+        """The request's cookies by name."""
+        cached = self.locals.get("__wyb_cookies")
+        if cached is None:
+            cached = {}
+            raw = self.headers.get("cookie", "")
+            if raw:
+                jar = SimpleCookie()
+                try:
+                    jar.load(raw)
+                except CookieError:
+                    pass
+                cached = {name: morsel.value for name, morsel in jar.items()}
+            self.locals["__wyb_cookies"] = cached
+        return cached
 
 
 def get_request_event() -> RequestEvent | None:
-    """Return the request being server-rendered, or `None` in the browser."""
+    """Return the request being handled on the server, or `None` in the browser.
+
+    That's the request a server render is for, or the one a
+    [server function][wybthon.server_function] call came in with.
+    """
+    current = _current.get()
+    if current is not None:
+        return current
     session = _core._session
     if session is None or session.mode != "server":
         return None
@@ -170,3 +205,36 @@ def http_header(name: str, value: str, *, append: bool = False) -> None:
     head._headers.append(entry)
     head._recompute()
     _retract(event, head._headers, entry)
+
+
+def set_cookie(
+    name: str,
+    value: str,
+    *,
+    max_age: int | None = None,
+    path: str = "/",
+    domain: str | None = None,
+    secure: bool = True,
+    http_only: bool = True,
+    same_site: Literal["lax", "strict", "none"] = "lax",
+) -> None:
+    """Set a cookie on the response being handled (server only).
+
+    Call it from a server function, or while a page renders on the
+    server. Pass `max_age=0` to delete a cookie. In the browser it does
+    nothing.
+    """
+    jar: SimpleCookie = SimpleCookie()
+    jar[name] = value
+    morsel = jar[name]
+    morsel["path"] = path
+    if max_age is not None:
+        morsel["max-age"] = str(max_age)
+    if domain is not None:
+        morsel["domain"] = domain
+    if secure:
+        morsel["secure"] = True
+    if http_only:
+        morsel["httponly"] = True
+    morsel["samesite"] = same_site.capitalize()
+    http_header("set-cookie", morsel.OutputString(), append=True)

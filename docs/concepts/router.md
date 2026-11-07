@@ -1,12 +1,10 @@
 # Router
 
-Client-side routing with path params, query parsing, nested routes, and
-active links. Import the router from `wybthon.router`; its names aren't
-exported from the top-level `wybthon` package.
+Routing with path params, search params, nested layouts, plain-anchor navigation, and preloading, as in Solid Router 2.0. Import it from `wybthon.router`; its names aren't exported from the top-level `wybthon` package.
 
 ```python
-from wybthon import component, html
-from wybthon.router import Link, Route, RouteProps, Router
+from wybthon import ParentProps, component, html
+from wybthon.router import Route, RouteProps, create_router
 
 
 @component
@@ -20,245 +18,211 @@ def User(props: RouteProps):
 
 
 @component
-def App():
+def NotFound():
+    return html(t"<h1>Not found</h1>")
+
+
+@component
+def Shell(props: ParentProps):
     return html(t"""
-      <div>
-        <nav>{Link("Home", href="/")} {Link("Ada", href="/users/1")}</nav>
-        {Router([Route("/", Home), Route("/users/:id", User)])}
-      </div>
+      <nav><a href="/">Home</a> <a href="/users/1">Ada</a></nav>
+      <main>{props.children}</main>
     """)
+
+
+router = create_router([
+    Route("/", Home),
+    Route("/users/:id", User),
+    Route("*404", NotFound),
+])
+
+
+def app():
+    return router(root=Shell)
 ```
 
-- [`Router(routes, *, base_path="", not_found=None)`][wybthon.router.Router] renders the component of the route matching [`current_path`][wybthon.router.current_path].
+- [`create_router(routes, *, base="", preload_links=True)`][wybthon.router.create_router] makes the router from its route tree. Call it once, at module level, and call the result to render it.
+- `router(root=Shell)` renders the matched route inside `Shell`, a root layout that stays mounted on every page and receives the route as `props.children`. `router()` renders the route alone.
 - [`Route(path, component, children=[], preload=None)`][wybthon.router.Route] maps a pattern to a component.
-- [`Link`][wybthon.router.Link] renders an anchor that navigates with the History API and marks itself active.
-- [`navigate(path, *, replace=False, scroll=True)`][wybthon.router.navigate] changes the URL programmatically.
+- Links are plain `<a href>` elements (see [Links](#links)).
+- [`navigate(path, *, replace=False, scroll=True)`][wybthon.router.navigate] changes the URL from code.
 
-## Params and query
+## Patterns
 
-A routed component declares its inputs with
-[`RouteProps`][wybthon.router.RouteProps], which has two fields:
-`params: dict[str, str]` and `query: QueryParams`. They're plain props:
-`props.params["id"]` is a tracked read of the current value. Both
-update in place: navigating from `/users/1` to `/users/2` pushes a new
-`params` value into the mounted component instead of remounting it, so
-local state survives. A route component that doesn't need them can take
-no parameters, like `Home` above.
+| Pattern | Matches | Params |
+| --- | --- | --- |
+| `/users` | `/users`, `/users/` | `{}` |
+| `/users/:id` | `/users/42` | `{"id": "42"}` |
+| `/posts/:page?` | `/posts`, `/posts/2` | `{"page": ""}`, `{"page": "2"}` |
+| `/docs/*rest` | `/docs`, `/docs/a/b` | `{"rest": ""}`, `{"rest": "a/b"}` |
+| `*404` | anything | `{"404": "the/path"}` |
+
+A bare `*` captures into `params["wildcard"]`. A catch-all must be a pattern's last segment. When several routes match, literals win over parameters, which win over catch-alls, so a `*404` route can sit anywhere in the list. Parameter values are URL-decoded.
+
+When no route matches, the router renders nothing, and a server render answers with status 404. A catch-all route is the not-found page; call [`http_status`][wybthon.http_status] in it to say so explicitly.
+
+## Params and search params
+
+A routed component declares its inputs with [`RouteProps`][wybthon.router.RouteProps], which has four fields:
+
+| Field | Value |
+| --- | --- |
+| `params` | The matched path parameters, a `dict[str, str]`. |
+| `search` | The parsed query string, a [`SearchParams`][wybthon.router.SearchParams]. |
+| `data` | What the route's `preload` returned, once it resolved. |
+| `children` | The matched child route, for a layout. |
+
+They're plain props: `props.params["id"]` is a tracked read of the current value. `params` and `search` update in place: navigating from `/users/1` to `/users/2` pushes a new `params` value into the mounted component instead of remounting it, so its local state survives. A route component that doesn't need them can take no parameters, like `Home` above.
 
 ```python
 Route("/users/:id", User)
-# /users/42?tab=activity -> props.params["id"] == "42", props.query["tab"] == "activity"
+# /users/42?tab=activity -> props.params["id"] == "42", props.search["tab"] == "activity"
 ```
 
-Read them where they can update: in the template (`{props.params['id']}`
-is dynamic, so the compiler makes it a getter), or inside a memo, an
-effect, or an async memo's body. Reading one at the top level of the
-component body reads it once, and dev mode warns.
+Read them where they can update: in the template (`{props.params['id']}` is dynamic, so the compiler makes it a getter), or in a memo, an effect, or an async memo's body. Reading one at the top level of the component body reads it once, and dev mode warns.
 
-Subclass `RouteProps` to add fields of your own, with defaults, since
-the router passes only `params` and `query`:
+Subclass `RouteProps` to add fields of your own, with defaults:
 
 ```python
-from wybthon.router import RouteProps
-
-
 class UserProps(RouteProps):
     show_avatar: bool = True
 ```
 
-Query values are URL-decoded strings in a
-[`QueryParams`][wybthon.router.QueryParams] dict.
-`props.query.get_all("tag")` preserves repeated parameters; ordinary lookup
-returns the last value. [`use_hash()`][wybthon.router.use_hash] returns
-a reactive decoded fragment. Any component under the router (not only
-the matched one) can read the same accessors with
-[`use_params`][wybthon.router.use_params] and
-[`use_query`][wybthon.router.use_query], and the router's base path with
-[`use_base_path`][wybthon.router.use_base_path]. These return accessors,
-so call them where you read:
+`SearchParams` is a `dict` of each name's last value; `search.get_all("tag")` keeps repeated parameters in URL order.
+
+Any component under the router can read the same state with these functions:
+
+| Function | Returns |
+| --- | --- |
+| [`use_params()`][wybthon.router.use_params] | A tracked accessor for the path parameters (`{}` outside a router). |
+| [`use_search_params()`][wybthon.router.use_search_params] | `(search, set_search)`: an accessor for the `SearchParams`, and a setter. |
+| [`use_location()`][wybthon.router.use_location] | The URL; read `.path`, `.search`, `.hash` (decoded), `.query`, or `.href`, each tracked. |
+| [`use_route_matches()`][wybthon.router.use_route_matches] | A tracked accessor for the routes the URL shows, root to leaf. |
+
+`set_search` merges its changes into the query string and navigates without scrolling; `None` or `""` removes a key:
 
 ```python
-from wybthon import component, html
-from wybthon.router import use_params, use_query
-
-
 @component
-def Breadcrumb():
-    params = use_params()
-    query = use_query()
-    return html(t"<p>{params().get('slug', '')} | {query().get('page', '1')}</p>")
+def Pager():
+    search, set_search = use_search_params()
+
+    def next_page():
+        set_search(page=int(search().get("page", "1")) + 1)
+
+    return html(t"<button onclick={next_page}>Next</button>")
 ```
 
-Outside a router, `use_params()` and `use_query()` return accessors
-yielding empty mappings, and `use_base_path()` returns `""`.
+## Nested routes and layouts
 
-## Nested routes
-
-Child routes join their paths to the parent's. Params from every level
-are merged into `params`. A parent component renders
-[`Outlet()`][wybthon.router.Outlet] where its matched child belongs.
-Parent layouts stay mounted while child routes change:
+A route with `children` is a layout. Child paths continue the parent's path, even when they start with `/`, as in Solid. The layout renders when one of its children matches, with that child as its `children` prop; [`Outlet()`][wybthon.router.Outlet] renders the same thing anywhere in the layout. Only a change in *which* route matches remounts it, so a layout stays mounted while its children change.
 
 ```python
-from wybthon import component, html
-from wybthon.router import Outlet
-
-
 @component
-def About():
-    return html(t"<div><h1>About</h1>{Outlet()}</div>")
+def UserLayout(props: RouteProps):
+    return html(t"""
+      <section>
+        <h1>User {props.params['id']}</h1>
+        <nav><a href="/users/{props.params['id']}">Overview</a> <a href="/users/{props.params['id']}/settings">Settings</a></nav>
+        {props.children}
+      </section>
+    """)
+
+
+router = create_router([
+    Route("/users/:id", UserLayout, children=[
+        Route("/", UserOverview),
+        Route("/settings", UserSettings),
+    ]),
+])
 ```
 
-```python
-routes = [
-    Route(
-        "/about",
-        About,
-        children=[
-            Route("team/:name", Team),  # matches /about/team/ada
-        ],
-    ),
-]
-```
-
-## Wildcards and not found
-
-A trailing `*` matches the rest of the path (and the parent path itself)
-into `params["wildcard"]`:
-
-```python
-Route("/docs/*", Docs)  # /docs and /docs/guide/intro both match
-```
-
-When nothing matches, the router renders `not_found` (a component that
-also receives `params` and `query`) or, if none is given, a literal
-"Not Found" `<div>`. During a server render, the not-found component can
-set the response status with [`http_status`][wybthon.http_status]:
-
-```python
-from wybthon import component, html, http_status
-
-
-@component
-def NotFound():
-    http_status(404)  # ignored in the browser
-    return html(t"<h1>Not found</h1>")
-
-
-Router(routes, not_found=NotFound)
-```
-
-## Base path
-
-Pass `base_path` when the app is served under a prefix. It's stripped
-before matching, and every `Link` beneath the router prepends it:
-
-```python
-Router(routes, base_path="/app")
-Link("About", href="/about")  # renders href="/app/about"
-```
-
-Hrefs starting with `http://`, `https://`, or `#` are left alone.
+A layout doesn't match on its own: `/users/1` matches here because of the `Route("/")` child. A route with no component groups its children under a path without rendering anything of its own: `Route("/admin", children=[...])`.
 
 ## Links
 
-`Link` is a built-in component called as a function, so as a call it
-takes Python keyword names (`class_`, `aria_label`). Place it in a
-template with an interpolation, `<nav>{Link("Users", href="/users")}</nav>`,
-or with the tag form, `<nav><{Link} href="/users" class="nav">Users</{Link}></nav>`,
-where `class` maps to `class_`. Either way, a dynamic argument stays
-reactive: `{Link("Profile", href=f"/users/{user_id()}")}` follows the
-signal, because the compiler passes the link a getter for `href`.
+Write links as plain anchors. When the user clicks a same-origin link under the router's base path, the router navigates with the History API instead of loading a page. It leaves the click to the browser when:
+
+- a modifier key is held, or the button isn't the primary one;
+- the link has a `target` (other than `_self`), `download`, or `rel="external"`;
+- the link goes to another origin, outside the base path, or only to a `#fragment`;
+- a handler called `event.prevent_default()`.
+
+Hrefs are ordinary URLs: a path starting with `/` is a full path, and the router's `base` isn't added to it.
+
+[`use_link_state(href, *, end=False)`][wybthon.router.use_link_state] says whether a link is active, for styling navigation. `active()` is true on the link's path and below it (only on the path itself with `end=True`); the base path only matches exactly. `current()` is true when the path and the query both match, which is what `aria-current="page"` means:
 
 ```python
-Link("Users", href="/users", class_="nav-link")
-Link("Users", href="/users", end=True)  # active only on an exact match
-Link("Settings", href="/settings", replace=True)  # replace the history entry
-Link("Home", href="/", active_class="is-current")  # custom active class
-Link("Home", href="/", active_class=None)  # no active class
+class NavLinkProps(ParentProps):
+    href: str
+
+
+@component
+def NavLink(props: NavLinkProps):
+    state = use_link_state(lambda: props.href)
+    return html(t"""
+      <a href={props.href} class={"active" if state.active() else ""} aria-current={"page" if state.current() else None}>
+        {props.children}
+      </a>
+    """)
 ```
 
-- The link is active when the current path equals its target, or starts with it as a path prefix unless `end=True`. The active class (default `"active"`) is merged with any `class_` you pass.
-- Clicks with a modifier key (Cmd, Ctrl, Shift) or a non-primary button are passed through to the browser so users can open links in new tabs.
-- Outside a template, pass an accessor as `href` for a link whose target changes.
-- Other keyword arguments (`aria_label`, `on_click`, `data_*`) are forwarded to the `<a>` element. A user `on_click` runs before the router's navigation and may take the event or no arguments, like any handler.
+## Preloading
 
-## Programmatic navigation
+A route's `preload` runs when the route is about to show, and when the pointer rests on (or focus moves to) a link to it, so its data is already loading by the time the user clicks. It receives [`PreloadArgs`][wybthon.router.PreloadArgs] with the matched `params`, the `location`, and the `intent`: `"initial"`, `"navigate"`, or `"preload"`. Warm the route's [queries](full-stack.md#queries) there:
 
 ```python
-from wybthon.router import current_path, navigate
+from wybthon.router import PreloadArgs, query
 
-navigate("/about")  # pushState
-navigate("/about", replace=True)  # replaceState
-current_path()  # "/about" (an accessor: pathname, query string, and hash)
+
+@query
+async def get_user(user_id: int) -> User:
+    return await fetch_user(user_id)
+
+
+def preload_user(args: PreloadArgs):
+    return get_user(int(args.params["id"]))
+
+
+router = create_router([Route("/users/:id", User, preload=preload_user)])
 ```
 
-`current_path` also updates on the browser's back and forward buttons.
-Outside a browser (in tests), `navigate` only updates the signal; call
-[`flush`][wybthon.flush] afterwards.
+Whatever `preload` returns becomes the component's `data` prop; when it's awaitable, the router holds the navigation until it resolves, and `data` is its result. A lazily loaded component (see [`lazy`][wybthon.lazy]) starts loading at the same moments. [`preload_route(href)`][wybthon.router.preload_route] preloads a route from code. Pass `preload_links=False` to `create_router` to preload only on navigation.
 
-## Reactive route tables
+## Async routes
 
-`routes` may be an accessor returning a list of `Route`s, so a route
-table can depend on the signed-in user or on feature flags. Only a
-change in *which* route matches re-mounts the outlet.
-
-## Lazy routes and preloading
-
-Code-split heavy pages with [`lazy`][wybthon.lazy]. The loader returns a
-module-path string, a `(module_path, attr)` tuple, a module, or a
-component, and it may be async. While the module loads, the nearest
-[`Loading`][wybthon.Loading] boundary shows its fallback.
+Navigating to a route whose data or code is still loading is a transition: the old page stays on screen, consistent, until the new one is ready. Put a [`Loading`][wybthon.Loading] boundary around the router (or inside a layout) for the first load, which has nothing to hold:
 
 ```python
-from wybthon import Loading, html, lazy
-from wybthon.router import Link, Route, Router
-
-Docs = lazy(lambda: ("app.docs.page", "Page"))
-About = lazy(lambda: ("app.about.page", "Page"))
-
-routes = [
-    Route("/docs/*", Docs),
-    Route("/about", About),
-]
-
-Loading(Router(routes), fallback=html(t"<p>Loading page...</p>"))
-Link("About", href="/about")  # warms About's code on hover or focus
+def app():
+    return Loading(router(root=Shell), fallback=html(t"<p>Loading...</p>"))
 ```
 
-Notes for Pyodide:
+## File routes
 
-- The module must be present in the Pyodide filesystem or installed with `micropip` before the loader imports it; an async loader can `await micropip.install(...)` first.
-- Links call the matching route's `.preload()` on hover and focus to hide the load time before navigation. Call `About.preload()`, or [`preload("/about")`][wybthon.router.preload] under a router, to warm a page from anywhere else.
-
-## Recovering from page errors
-
-Pair the router with [`Errored`][wybthon.Errored] and reset the boundary
-when the route changes, so a broken page recovers as soon as the user
-navigates away. The fallback's `err` is an accessor for the exception:
+[`file_routes(package)`][wybthon.router.file_routes] builds the route tree from a package of modules, one per page. See [File routes](full-stack.md#file-routes).
 
 ```python
-from wybthon import Errored, html
-from wybthon.router import Router, current_path
-
-
-def page_failed(err, reset):
-    return html(t"<p>This page failed: {err()}</p>")
-
-
-Errored(Router(routes), fallback=page_failed, reset_on=current_path)
+router = create_router(file_routes("app.routes"))
 ```
 
-## Navigation intent and scroll
+## Matching without a browser
 
-A `Route(..., preload=callback)` can warm data using its decoded parameter dict. The callback can be async. Links preload matching route code and data on hover or focus; navigation waits on the same cached work. Preload entries are bounded and canceled when the router is disposed. Failed entries are evicted for retry.
+[`resolve(routes, pathname, base_path="")`][wybthon.router.resolve] returns `(route, {"params": ..., "matches": [...]})`, or `None`, and needs no browser, so it runs in tests and tools. Any object with a `path` and `children` works as a route, including [`RouteSpec`][wybthon.router.RouteSpec]. [`router.match(href)`][wybthon.router.Router.match] returns the routes a URL shows, root to leaf.
 
-Static path segments take precedence over parameters, which take precedence over wildcards. Base paths match segment boundaries, so `/app` doesn't match `/application`. Parameters are percent-decoded, and trailing slashes normalize. [`resolve`][wybthon.router.resolve] runs the same matcher without a browser, on [`RouteSpec`][wybthon.router.RouteSpec] trees or `Route` lists, for tests, tools, and the server.
+```python
+from wybthon.router import RouteSpec, resolve
 
-Modified clicks, download links, explicit targets, already-prevented events, and external URLs keep normal browser behavior. `navigate(..., scroll=False)` opts out of scroll handling. Normal navigation scrolls to a hash target or the top after commit; back/forward restores the recorded position for that URL. Multiple history entries for the same URL share that recorded position.
+routes = [RouteSpec("/"), RouteSpec("/users", children=[RouteSpec("/:id")]), RouteSpec("/docs/*")]
+resolve(routes, "/users/42")  # (RouteSpec(path='/:id'), {"params": {"id": "42"}, "matches": [...]})
+resolve(routes, "/missing")   # None
+```
 
-## Next steps
+## On the server
 
-- Walk through the [Router example](../examples/router.md).
-- See [Async and loading](async-loading.md) for code-splitting.
-- Browse the [`router`](../api/router.md) API reference.
+A server render routes by the request's URL ([`render_to_stream(view, url=...)`][wybthon.server.render_to_stream], or the request [`wybthon.asgi`][wybthon.asgi] is answering). `navigate` does nothing there. Outside a browser (in tests), `navigate` updates the URL signal without touching history; call [`flush`][wybthon.flush] afterward.
+
+## See also
+
+- [Full-stack apps](full-stack.md): queries, form actions, server functions, and file routes
+- [Async and loading](async-loading.md): `Loading` boundaries and transitions
+- [API: `wybthon.router`](../api/router.md)

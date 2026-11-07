@@ -60,18 +60,19 @@ See Also:
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import threading
 from collections.abc import AsyncIterator, Generator
 from typing import Any
 
-from . import _ssr, kernel, reconciler
+from . import _ssr, _wire, kernel, reconciler
 from ._warnings import warn_once
 from .reactivity import _core
 from .reactivity._core import Memo, Owner, _function_name
 from .reactivity._primitives import resolve
 from .reactivity._session import ServerError, Session, encode_state
-from .request import RequestEvent
+from .request import RequestEvent, _current
 from .vnode import VNode, copy_vnode
 
 __all__ = ["render_to_string", "render_to_stream", "RenderStream"]
@@ -254,16 +255,16 @@ class _Data:
             if key in self.values:
                 value, name = self.values[key]
                 try:
-                    json.dumps(value)
-                except TypeError, ValueError:
+                    encoded = _wire.encode(value)
+                except _wire.WireError as exc:
                     warn_once(
                         "ssr_state",
                         name,
-                        f"The server value of {name} isn't JSON-compatible, so it wasn't sent to the browser; "
+                        f"The server value of {name} can't be sent to the browser ({exc}); "
                         "the browser will load it again after hydration.",
                     )
                     continue
-                values[key] = (value, name)
+                values[key] = (encoded, name)
             elif key in self.errors:
                 errors[key] = self.errors[key]
         failed = {
@@ -299,6 +300,21 @@ async def _settle(memos: list[Memo[Any]], timeout: float, *, first: bool) -> boo
     return bool(done)
 
 
+def _context(event: RequestEvent) -> contextvars.Context:
+    """A context in which `get_request_event()` is `event`, for the render and the work it starts."""
+    context = contextvars.copy_context()
+    context.run(_current.set, event)
+    return context
+
+
+def _late_redirect(event: RequestEvent) -> str:
+    """A script that follows a redirect raised after the response head was sent."""
+    target = event.locals.get("__wyb_late_redirect")
+    if not target:
+        return ""
+    return "<script>location.replace(" + json.dumps(str(target)).replace("<", "\\u003c") + ")</script>"
+
+
 def _event(url: str | None, event: RequestEvent | None) -> RequestEvent:
     if event is None:
         return RequestEvent(url=url or "/")
@@ -330,6 +346,10 @@ def render_to_string(view: Any, *, url: str | None = None, event: RequestEvent |
         serialized state script.
     """
     event = _event(url, event)
+    return _context(event).run(_render_string, view, event)
+
+
+def _render_string(view: Any, event: RequestEvent) -> str:
     _core._server_depth += 1
     try:
         data = _Data()
@@ -426,7 +446,10 @@ class RenderStream:
 
     def __await__(self) -> Generator[Any, None, str]:
         self._claim()
-        return _render_complete(self._view, self._event, self._timeout).__await__()
+        task = asyncio.get_running_loop().create_task(
+            _render_complete(self._view, self._event, self._timeout), context=_context(self._event)
+        )
+        return task.__await__()
 
     async def _chunks(self) -> AsyncIterator[str]:
         event = self._event
@@ -444,14 +467,16 @@ class RenderStream:
                     event.response.committed = True
                     queue.put_nowait(chunk)
 
-            task = asyncio.ensure_future(_resolve(self._view, event, self._timeout, on_pass, stream=True))
+            task = asyncio.get_running_loop().create_task(
+                _resolve(self._view, event, self._timeout, on_pass, stream=True), context=_context(event)
+            )
             task.add_done_callback(lambda _task: queue.put_nowait(None))
             try:
                 while (chunk := await queue.get()) is not None:
                     yield chunk
                 final, data = task.result()
                 try:
-                    yield data.state(final)
+                    yield data.state(final) + _late_redirect(event)
                 finally:
                     final.dispose()
             finally:
@@ -500,6 +525,14 @@ def render_to_stream(
     return RenderStream(view, _event(url, event), timeout)
 
 
+def _unbounded(current: _Pass) -> bool:
+    """Whether async work no `Loading` boundary covers is still in flight."""
+    for memo in current.pending():
+        if memo._lookup_context(_core.LOADING_CONTEXT_KEY, None) is None:
+            return True
+    return False
+
+
 class _Stream:
     """What the browser has received so far: the shell, then boundary swaps."""
 
@@ -514,6 +547,11 @@ class _Stream:
     def advance(self, current: _Pass) -> str:
         boundaries = [(key, boundary) for key, boundary in current.session.boundaries if boundary in current.reached]
         if not self.started:
+            # The shell is everything outside `Loading` boundaries, so it waits
+            # for async reads no boundary covers (a guard that redirects, say).
+            # The last pass, which doesn't resolve async data, sends it anyway.
+            if current.session.resolve_async and _unbounded(current):
+                return ""
             self.started = True
             for key, boundary in boundaries:
                 self.shown[key] = boundary.mode

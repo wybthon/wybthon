@@ -102,6 +102,31 @@ The table follows **Solid 2.0 RC.21**.
 | `<Card title={user().name}>...</Card>` | `<{Card} title={user().name}>...</{Card}>`, or `{Card(title=user().name, children=...)}` |
 | `<div {...attrs}>` | `<div {attrs}>` |
 | `h(tag, props, ...children)` | [`h(tag, props, *children)`][wybthon.h] |
+| `"use server"` (`@solidjs/web/server-functions`) | [`@server_function`][wybthon.server_function] on a module-level `async def` |
+| `GET(fn)` | `@server_function(method="GET")` |
+| `redirect`, `reload`, `respond` (`@solidjs/web`) | [`redirect`][wybthon.redirect], [`reload`][wybthon.reload], [`respond`][wybthon.respond]: raise or return them |
+| `getRequestEvent()` in a server function | [`get_request_event()`][wybthon.get_request_event]; set cookies with [`set_cookie`][wybthon.set_cookie] |
+
+Solid Router 2.0 (`@solidjs/router` 2.0, the `next` line) maps to `wybthon.router`:
+
+| Solid Router 2.0 | Wybthon |
+| --- | --- |
+| `const Router = createRouter({ routes, base, preloadLinks })` | `router = create_router(routes, base=..., preload_links=True)` ([`create_router`][wybthon.router.create_router]) |
+| `<Router>{props => <Layout>{props.children}</Layout>}</Router>` | `router(root=Layout)` |
+| `{ path, component, children, preload }` | [`Route(path, component, children=[...], preload=...)`][wybthon.router.Route] |
+| `fileRoutes(...)` from `@solidjs/router/fs` | [`file_routes("app.routes")`][wybthon.router.file_routes] |
+| `<a href>` (router-handled) | `<a href>`, unchanged |
+| `useLinkState(href)` | [`use_link_state(href)`][wybthon.router.use_link_state] |
+| `useParams()`, `useSearchParams()`, `useLocation()` | [`use_params()`][wybthon.router.use_params], [`use_search_params()`][wybthon.router.use_search_params], [`use_location()`][wybthon.router.use_location] |
+| `useRouteMatches()` | [`use_route_matches()`][wybthon.router.use_route_matches] |
+| `usePreloadRoute()` | [`preload_route(href)`][wybthon.router.preload_route] |
+| `useNavigate()` | [`navigate(path)`][wybthon.router.navigate] |
+| `query(fn, "key")` | [`query(fn, "key")`][wybthon.router.query], or `@query` / `@query("key")` |
+| `revalidate(key)` | [`revalidate(key)`][wybthon.router.revalidate]; a `Query` works as its key |
+| `formAction(fn)`, `.with(...)` | [`form_action(fn)`][wybthon.router.form_action], `.bind(...)` (`with` is a Python keyword) |
+| `.onSubmit(fn)`, `.onSettled(fn)` | `.on_submit(fn)`, `.on_settled(fn)` |
+| `useSubmissions(action)` | [`use_submissions(action)`][wybthon.router.use_submissions] |
+| Start mode (`solid({ start: true })`) | `server = true` in `wybthon.toml`; `wyb dev`, `wyb serve`, or [`wybthon.asgi`][wybthon.asgi] |
 
 Solid 1.x primitives that 2.0 removed (`createResource`, `on`, `createComputed`, `createSelector`, `produce`, `createMutable`, `splitProps`, `mergeProps`, `Index`, path-based store writes, `useTransition`, `renderToStringAsync`) don't exist here either. The table above covers their 2.0 replacements. Solid 2.0's `createDeferred` isn't 1.x's idle-time deferral: it's the async memo in the table, and that's what `create_deferred` mirrors.
 
@@ -136,7 +161,7 @@ def Greeting(props: GreetingProps):
 - Attributes are HTML names (`class`, `for`, `aria-label`) and take interpolations the same way: `class={row_class(id)}`, `href="/users/{user_id()}"` (one binding for the whole value), `disabled={add.pending()}`.
 - Event handlers are `onclick={handler}`; `onClick` and `on:click` work too. A handler may take no arguments or receive a [`DomEvent`][wybthon.DomEvent] with `e.target`, `e.key`, `e.prevent_default()`, and friends.
 - A component tag is written `<{Card} title={user().name}>...</{Card}>` (like `<${Card}>` in Solid's `html`), or self-closed as `<{Card} />`. Attributes become keyword props and the content becomes `children`. Type checkers can't see a tag's attributes, so dev mode checks its props at run time; the call form (`{Card(title=user().name)}`) is checked statically, and the compiler still passes getters.
-- `Show`, `Loading`, `Errored`, `Link`, and context providers work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`), which calls each the way its signature takes children.
+- `Show`, `Loading`, `Errored`, and context providers work as calls in an interpolation (`{Show(ready(), panel)}`) or with the tag form (`<{Show} when={ready()}>...</{Show}>`), which calls each the way its signature takes children.
 - Markup the browser's parser would rewrite is an error instead of a silent change: put `<tr>` in a `<tbody>`, and don't nest a `<div>` in a `<p>`. The compiler reports it as a `SyntaxError` with the file and line.
 - A template that reaches `html()` without being compiled (a REPL, `exec`) has already evaluated its dynamic expressions once, so dev mode raises [`TemplateError`][wybthon.TemplateError] instead of rendering markup that would never update.
 - [`h(tag, props, *children)`][wybthon.h] is the programmatic layer, the counterpart of Solid's `h`, for markup built by code. Its props take Python names (`class_`, `html_for`, `on_click`) or HTML names. SVG works in a template.
@@ -435,6 +460,15 @@ asyncio.run(main())
 ```
 
 As in Solid 2.0, awaiting [`render_to_stream`][wybthon.server.render_to_stream] replaces `renderToStringAsync`: it waits for every async memo the page reads and returns the complete HTML. Iterating it streams the shell first, then each `Loading` boundary as its data arrives. A stream is single use: iterate it or await it, once. [`http_status`][wybthon.http_status] and [`http_header`][wybthon.http_header] are tied to the scope that declared them, so a branch that's disposed before the response head is committed (an error boundary recovering, say) retracts its status. [`NoHydration`][wybthon.NoHydration] keeps a region as static server HTML that the browser adopts without mounting.
+
+## Server functions and the router's data layer
+
+Solid 2.0 made `"use server"` part of core, and Router 2.0 builds `query` and `formAction` on it. Wybthon does the same with Python on both ends: see [Full-stack apps](../concepts/full-stack.md). The differences:
+
+- **Arguments are validated.** The server rebuilds each argument from the function's annotations and rejects anything else, so annotate every parameter. Dataclasses, enums, dates, `Decimal`, and the rest cross as themselves.
+- **No typed paths.** Router 2.0's `paths` proxy is a TypeScript feature; write hrefs as strings. Without it, a full path never gets the router's `base` added, as in Router 2.0.
+- **No single-flight mutations or live queries yet.** A mutation's response carries its revalidation keys, and the browser refetches the queries they name; it doesn't carry the refreshed data in the same round trip. `liveQuery` and server components aren't implemented.
+- **Errors are hidden in production.** An unexpected exception's message is sent only in development; raise `ServerError(message, type_name)` for messages meant for the page.
 
 ## What's intentionally different
 

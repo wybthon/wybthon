@@ -25,7 +25,7 @@ from wybthon import (
     snapshot,
     untrack,
 )
-from wybthon.router import QueryParams, RouteProps
+from wybthon.router import RouteProps, SearchParams
 
 
 class GreetingProps(Props):
@@ -101,7 +101,7 @@ h("div", {"class": "x"})[h("p", None, "item syntax on elements")]
 def User(props: RouteProps) -> VNode:
     if TYPE_CHECKING:
         assert_type(props.params, dict[str, str])
-        assert_type(props.query, QueryParams)
+        assert_type(props.search, SearchParams)
     return html(t"<p>{props.params['id']}</p>")
 
 

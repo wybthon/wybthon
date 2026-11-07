@@ -12,13 +12,21 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Fix:** upgrade the interpreter (`uv python install 3.14` works well) and re-create your virtual environment. Set `pyodide-version` in `wybthon.toml` to a 314 release.
 
-??? bug "`ImportError: cannot import name 'Router' from 'wybthon'`"
+??? bug "`ImportError: cannot import name 'create_router' from 'wybthon'`"
 
-    **Symptoms:** importing `Router`, `Route`, `Link`, `navigate`, `form_state`, `bind_text`, `VirtualFor`, or `map_cooperative` from `wybthon` fails.
+    **Symptoms:** importing `create_router`, `Route`, `navigate`, `form_state`, `bind_text`, `VirtualFor`, or `map_cooperative` from `wybthon` fails.
 
     **Likely cause:** the top-level package exports the core only. The router, forms, virtual lists, and scheduling helpers live in their own modules.
 
-    **Fix:** import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`, for example `from wybthon.router import Link, Router`.
+    **Fix:** import them from `wybthon.router`, `wybthon.forms`, `wybthon.virtual`, and `wybthon.scheduling`, for example `from wybthon.router import Route, create_router`.
+
+??? bug "`ImportError: cannot import name 'Link' from 'wybthon.router'`"
+
+    **Symptoms:** importing `Link`, `current_path`, `use_query`, `use_hash`, `use_base_path`, `preload`, or `QueryParams` from `wybthon.router` fails, or `Router(routes, not_found=...)` raises a `TypeError`.
+
+    **Likely cause:** the router now follows Solid Router 2.0, and the older names were removed without a compatibility layer.
+
+    **Fix:** create the router once with `router = create_router(routes)` and render `router()` (or `router(root=Shell)`); add `Route("*404", NotFound)` in place of `not_found`. Write links as plain `<a href="/path">` and style the active one with `use_link_state`. Read the URL with `use_location()` or the `url` accessor, the query string with `use_search_params()` (which returns `SearchParams`), and warm a route with `preload_route`. See [Routing](../concepts/router.md).
 
 ??? bug "`ImportError: cannot import name 'div' from 'wybthon'`"
 
@@ -122,9 +130,9 @@ If something isn't working as expected, scan this page for the symptom you're se
 
     **Symptoms:** a plain function used as `<{fn} ...>` gets one dictionary argument instead of keyword arguments, or pyright doesn't flag a misspelled prop in `<{Card} titel="Hi" />`.
 
-    **Likely cause:** the tag form calls a [`@component`][wybthon.component] with keyword props. Any other callable is called the way its signature takes children: with a `children` keyword (`Show`, `Loading`), with positional children (`Link`, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.
+    **Likely cause:** the tag form calls a [`@component`][wybthon.component] with keyword props. Any other callable is called the way its signature takes children: with a `children` keyword (`Show`, `Loading`), with positional children (`Errored`, context providers), or, for a function whose only parameter is the props, with the props dictionary. Type checkers can't see inside the template string, so tag props are only checked at run time, in dev mode.
 
-    **Fix:** decorate the function with `@component` and give it a `Props` class, or call it inside an interpolation (`{Link("Home", href="/")}`), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so `{Card(title=user().name)}` stays reactive.
+    **Fix:** decorate the function with `@component` and give it a `Props` class, or call it inside an interpolation (`{Errored(Feed(), fallback=oops)}`), which is type-checked like any other call. The compiler still passes getters for the call's dynamic arguments, so `{Card(title=user().name)}` stays reactive.
 
 ## Components and props
 

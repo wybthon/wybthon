@@ -112,12 +112,12 @@ def Clock():
 
 - In a `wyb build` project, the application archive is unpacked before your entry runs, so imports like `"app.about.page"` resolve. Modules in an explicit `[chunks]` group are fetched the first time a lazy component in that chunk renders; see [Deployment](deployment.md#explicit-lazy-chunks).
 - For third-party packages, use an async loader that `await`s `micropip.install(...)` before importing.
-- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's `.preload()` method on user intent (link hover) to warm the import.
+- Python imports are synchronous, but fetching files into the Pyodide filesystem is asynchronous on the JS side. Copy or preload modules before invoking lazy loaders, or call the lazy component's `.preload()` method on user intent to warm the import. The router does this for a lazy route component when a link to its route is hovered or focused.
 - Attribute resolution defaults to `Page`, then `default`, then the first callable export; otherwise pass the export name explicitly.
 
 ```python
 from wybthon import lazy
-from wybthon.router import Link
+from wybthon.router import Route, create_router
 
 About = lazy(lambda: ("app.about.page", "Page"))
 
@@ -133,7 +133,8 @@ async def load_charts():
 
 Chart = lazy(load_charts)
 
-Link("About", href="/about", on_mouseenter=lambda: About.preload())
+# Hovering <a href="/about"> preloads About; call Chart.preload() for other intents.
+router = create_router([Route("/about", About), Route("/chart", Chart)])
 ```
 
 ## Dev mode
