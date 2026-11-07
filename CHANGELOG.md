@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.42.0 (2026-11-07)
+
+### Features
+
+- **store**: Type stores as their data and wrap them lazily
+  ([#49](https://github.com/wybthon/wybthon/pull/49),
+  [`31c00d6`](https://github.com/wybthon/wybthon/commit/31c00d61a23369930f1f9be462e4c17b9ecaa2b8))
+
+
 ## v0.41.0 (2026-11-06)
 
 ### Features
