@@ -487,11 +487,50 @@ def dispatch_event(node_id: int, event_type: str, payload_json: str) -> int:
             log_error(f"Event handler for '{event_type}' raised: {exc}", exc)
         if evt._stopped:
             break
+    info = payload.get("intercept")
+    if info and not evt._default_prevented:
+        for interceptor in list(_intercepts.get(event_type, ())):
+            try:
+                interceptor(evt, info)
+            except Exception as exc:
+                log_error(f"Default handling of '{event_type}' raised: {exc}", exc)
+            if evt._default_prevented:
+                break
     # One native dispatch is one reactive batch, even when ancestors also write.
     _core.flush()
     return (kernel.FLAG_STOP_PROPAGATION if evt._stopped else 0) | (
         kernel.FLAG_PREVENT_DEFAULT if evt._default_prevented else 0
     )
+
+
+# Default handling the router adds for events no handler prevented: following
+# a link, submitting a form to its action, preloading a link's route.
+_intercepts: dict[str, list[Callable[[DomEvent, dict[str, Any]], None]]] = {}
+
+
+def intercept(event_type: str, handler: Callable[[DomEvent, dict[str, Any]], None]) -> Callable[[], None]:
+    """Run `handler(event, info)` after the delegated handlers of every `event_type` event.
+
+    The kernel reports these events even when no element handles them,
+    with `info` describing what they're about: the link (`href`, `url`,
+    `target`, `download`, `rel`, `preload`, `sameOrigin`) for `click`,
+    `pointerover`, and `focusin`, or the form (`action`, `method`,
+    `formId`) for `submit`. A handler skips events a handler already
+    prevented, and may call `event.prevent_default()` itself. Returns a
+    function that removes it.
+    """
+    handlers = _intercepts.setdefault(event_type, [])
+    if not handlers:
+        kernel.emit((kernel.OP_INTERCEPT, event_type, 1))
+    handlers.append(handler)
+
+    def remove() -> None:
+        if handler in handlers:
+            handlers.remove(handler)
+            if not handlers:
+                kernel.emit((kernel.OP_INTERCEPT, event_type, 0))
+
+    return remove
 
 
 def _handle_async_error(exc: BaseException) -> None:

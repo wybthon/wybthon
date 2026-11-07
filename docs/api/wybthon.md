@@ -20,14 +20,16 @@ pages linked in the left column carry the details.
 | [Context](context.md) | `Context`, `ContextNotFoundError`, `create_context`, `use_context` |
 | DOM and events | [`Element`, `Ref`](dom.md), [`DomEvent`, `EventHandler`, `event`](events.md) |
 | Rendering | [`render`, `hydrate`, `Root`](reconciler.md), `is_server`, [`is_hydrating`, `on_hydration_end`, `NoHydration`, `Hydration`](flow.md) |
-| [Server requests](request.md) | `RequestEvent`, `ResponseHead`, `get_request_event`, `http_status`, `http_header` |
+| [Server requests](request.md) | `RequestEvent`, `ResponseHead`, `get_request_event`, `http_status`, `http_header`, `set_cookie` |
+| [Server functions](../concepts/full-stack.md) | `server_function`, `ServerFunction`, `redirect`, `reload`, `respond`, `FormData`, `UploadedFile` |
 | Dev mode | `is_dev_mode`, `set_dev_mode` |
 
 Other modules are imported by name and aren't re-exported:
 
 | Module | Contents |
 | --- | --- |
-| [`wybthon.router`](router.md) | `Router`, `Route`, `RouteProps`, `Outlet`, `Link`, `navigate`, `current_path`, `use_params`, `use_query`, `use_hash`, `use_base_path`, `preload`, `QueryParams`, `resolve`, `RouteSpec` |
+| [`wybthon.router`](router.md) | `create_router`, `Router`, `Route`, `RouteProps`, `PreloadArgs`, `Outlet`, `navigate`, `url`, `use_location`, `Location`, `use_params`, `use_search_params`, `SearchParams`, `use_route_matches`, `use_link_state`, `LinkState`, `preload_route`, `file_routes`, `resolve`, `RouteSpec`; the data layer: `query`, `revalidate`, `form_action`, `use_submissions` |
+| [`wybthon.asgi`](../concepts/full-stack.md) | `create_app`, which serves pages, server functions, and form actions per request |
 | [`wybthon.forms`](forms.md) | `form_state`, `FormState`, `Field`, the `bind_*` helpers, validators, and ARIA helpers |
 | [`wybthon.server`](server.md) | `render_to_string`, `render_to_stream`, `RenderStream` |
 | [`wybthon.testing`](testing.md) | `render`, `Screen`, `fire`, `cleanup`, and the in-memory DOM |

@@ -1,4 +1,4 @@
-"""Solid 2.0 RC.21 alignment (RFC 0006): `on_flush`, `from_source`, and `create_owner`'s removal."""
+"""`on_flush`, `from_source`, and owners without `create_owner`."""
 
 import asyncio
 from collections.abc import Callable

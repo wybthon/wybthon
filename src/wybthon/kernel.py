@@ -87,6 +87,7 @@ OP_CLAIM_COMMENT = 25  # [op, id, parent_id, data]
 OP_HYDRATE_END = 26  # [op]  (remove unclaimed server nodes, stop claiming)
 OP_DISPOSE = 27  # [op, id]  (remove one node and release everything registered inside it)
 OP_CLAIM_STATIC = 28  # [op, parent_id, end_marker]  (keep server nodes before the marker as static DOM)
+OP_INTERCEPT = 29  # [op, event_type, on]  (dispatch the type even without handlers; see events.intercept)
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -480,6 +481,44 @@ class BrowserBackend:
         return int(self._kernel.replay())
 
 
+def _attribute(node: Any, name: str) -> Any:
+    get = getattr(node, "getAttribute", None)
+    if get is not None:
+        return get(name)
+    attributes = getattr(node, "attributes", None)
+    return attributes.get(name) if isinstance(attributes, dict) else None
+
+
+def _tag(node: Any) -> str:
+    return str(getattr(node, "tag", None) or getattr(node, "tagName", "") or "").lower()
+
+
+def _intercept_info(event_type: str, path: list[Any], raw_event: Any) -> Any:
+    """What the JS kernel's `interceptInfo` reports, read from stub nodes."""
+    if event_type == "submit":
+        form = path[0] if path else None
+        if form is None or _tag(form) != "form":
+            return None
+        submitter = getattr(raw_event, "submitter", None) if raw_event is not None else None
+        action = (_attribute(submitter, "formaction") if submitter is not None else None) or _attribute(form, "action")
+        method = (_attribute(submitter, "formmethod") if submitter is not None else None) or _attribute(form, "method")
+        return {"action": action, "method": (method or "get").lower(), "formId": getattr(form, "_wyb_id", None)}
+    for node in path:
+        if _tag(node) == "a" and _attribute(node, "href") is not None:
+            href = _attribute(node, "href")
+            external = "://" in href or href.startswith("//")
+            return {
+                "href": href,
+                "url": href,
+                "target": _attribute(node, "target"),
+                "download": _attribute(node, "download") is not None,
+                "rel": _attribute(node, "rel"),
+                "preload": _attribute(node, "preload"),
+                "sameOrigin": not external,
+            }
+    return None
+
+
 class PythonBackend:
     """Reference op interpreter over a DOM-like stub document.
 
@@ -501,6 +540,7 @@ class PythonBackend:
         self._roots: List[Any] = []
         self._root_counts: Dict[int, int] = {}
         self._dispatcher: Optional[Callable[[int, str, str], int]] = None
+        self._intercepts: Set[str] = set()
         self._current_event: Any = None
         self._tpl = self._probe_template(document)
         self._tpl_protos: Dict[int, Any] = {}
@@ -596,10 +636,13 @@ class PythonBackend:
             elif code == OP_SET_TEXT:
                 nodes[op[1]].nodeValue = op[2]
             elif code == OP_SET_ATTR:
-                if op[3] is None:
-                    nodes[op[1]].removeAttribute(op[2])
+                target = nodes.get(op[1])
+                if target is None:
+                    pass  # released meanwhile (see the JS kernel)
+                elif op[3] is None:
+                    target.removeAttribute(op[2])
                 else:
-                    nodes[op[1]].setAttribute(op[2], op[3])
+                    target.setAttribute(op[2], op[3])
             elif code == OP_SET_PROP:
                 node = nodes[op[1]]
                 if (getattr(node, "tag", "") or "").lower() == "select" and op[2] in ("value", "selectedValues"):
@@ -643,6 +686,11 @@ class PythonBackend:
             elif code == OP_HYDRATE_END:
                 if self._hydrating is not None:
                     self._end_hydration()
+            elif code == OP_INTERCEPT:
+                if op[2]:
+                    self._intercepts.add(op[1])
+                else:
+                    self._intercepts.discard(op[1])
             elif code == OP_ROOT:
                 self._add_root(nodes.get(op[1]))
             elif code == OP_UNROOT:
@@ -1097,6 +1145,8 @@ class PythonBackend:
             if nid is not None and event_type in self._listen.get(nid, ()):
                 route.append([nid, event_type])
         base["route"] = route
+        if event_type in self._intercepts:
+            base["intercept"] = _intercept_info(event_type, path, raw_event)
         previous_event = self._current_event
         self._current_event = raw_event
         try:

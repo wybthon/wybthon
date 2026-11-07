@@ -10,14 +10,16 @@ The shell renders a `data-testid="app-ready"` marker, the visible readiness
 signal.
 """
 
-from app.routes import NotFound, create_routes
+from app.routes import create_routes
 from app.shell import Shell
 from js import window
 from pyodide.ffi import create_proxy
 
-from wybthon.router import Router, navigate
+from wybthon.router import create_router, navigate
+
+router = create_router(create_routes())
 
 
 def app():
     window.__wyb_e2e_goto = create_proxy(lambda path: navigate(str(path)))
-    return Shell(children=Router(create_routes(), not_found=NotFound))
+    return router(root=Shell)

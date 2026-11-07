@@ -133,7 +133,8 @@ def encode_state(
 ) -> str:
     """Serialize resolved values, errors, and failed boundaries for a `data-wyb-state` script.
 
-    `<` is escaped so the payload can never close its `<script>`.
+    Values are already in the wire format (`wybthon._wire.encode`), so
+    dataclasses, dates, and the rest arrive as themselves. `<` is escaped so the payload can never close its `<script>`.
     """
     payload: dict[str, Any] = {"v": {key: [value, name] for key, (value, name) in values.items()}}
     if errors:
@@ -141,6 +142,25 @@ def encode_state(
     if failed:
         payload["x"] = {key: list(value) for key, value in failed.items()}
     return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c")
+
+
+class Encoded:
+    """A server value still in the wire format, decoded when a memo takes it.
+
+    Decoding waits until then because a dataclass in the value is rebuilt
+    only once its module is imported, and the module that reads it (a
+    lazily loaded route, say) may not be imported when hydration starts.
+    """
+
+    __slots__ = ("data",)
+
+    def __init__(self, data: Any) -> None:
+        self.data = data
+
+    def decode(self) -> Any:
+        from .._wire import decode
+
+        return decode(self.data)
 
 
 def decode_state(
@@ -153,7 +173,7 @@ def decode_state(
         payload = json.loads(text)
     except ValueError:
         return {}, {}, {}
-    values = {key: (value[0], str(value[1])) for key, value in (payload.get("v") or {}).items()}
+    values = {key: (Encoded(value[0]), str(value[1])) for key, value in (payload.get("v") or {}).items()}
     errors = {key: (str(value[0]), str(value[1])) for key, value in (payload.get("e") or {}).items()}
     failed = {key: (str(value[0]), str(value[1])) for key, value in (payload.get("x") or {}).items()}
     return values, errors, failed

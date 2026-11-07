@@ -97,9 +97,9 @@ pattern, so navigating away from a broken page recovers on its own:
 
 ```python
 from wybthon import Errored, html
-from wybthon.router import Outlet, current_path
+from wybthon.router import Outlet, url
 
-Errored(Outlet(), fallback=html(t"<p>This page failed</p>"), reset_on=current_path)
+Errored(Outlet(), fallback=html(t"<p>This page failed</p>"), reset_on=url)
 ```
 
 Resetting re-renders the children. If the cause hasn't been fixed, the

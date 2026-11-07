@@ -14,10 +14,21 @@ measuring. Installing Wybthon enables it; disable it with `-p no:wybthon`.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 # Matches `wybthon._hook.COMPILER_TAG` (a test checks they agree).
 COMPILER_TAG = "wyb2"
+
+# Installed from a wheel, pytest marks every package in the plugin's
+# distribution for assertion rewriting, Wybthon's own included. Its modules
+# never need the compiler, and compiling them while they import would be
+# circular.
+_PACKAGE = Path(__file__).resolve().parent / "wybthon"
+
+
+def _is_wybthon_module(module_path: Any) -> bool:
+    return module_path is not None and Path(str(module_path)).resolve().is_relative_to(_PACKAGE)
 
 
 def _is_candidate(source: bytes) -> bool:
@@ -34,7 +45,7 @@ def _install() -> None:
     original = rewrite.rewrite_asserts
 
     def rewrite_asserts(mod: Any, source: bytes, module_path: Any = None, config: Any = None) -> None:
-        if _is_candidate(source):
+        if _is_candidate(source) and not _is_wybthon_module(module_path):
             from wybthon.compiler import transform
 
             transform(mod, str(module_path or "<test>"), source.decode("utf-8", "replace"))

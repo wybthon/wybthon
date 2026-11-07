@@ -148,7 +148,7 @@ html(t"""
     <p>Welcome back.</p>
   </{Show}>
   <{Theme} value="dark"><{Toolbar} /></{Theme}>
-  <{Link} href="/settings" class="nav">Settings</{Link}>
+  <{Errored} fallback={oops}><{Feed} /></{Errored}>
 """)
 ```
 

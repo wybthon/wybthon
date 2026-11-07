@@ -1,4 +1,4 @@
-"""Engine v5 (RFC 0005): one-step bindings, lean computations, text slots, and cycle-free disposal."""
+"""One-step bindings, lean computations, text slots, and cycle-free disposal."""
 
 import ast
 import asyncio

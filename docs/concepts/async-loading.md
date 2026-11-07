@@ -404,7 +404,7 @@ def Dashboard():
 - The loader may return a component, an imported module (`Page`, then `default`, then the first callable export is used), a module-path string, or a `(module_path, attr)` tuple.
 - Async loaders can `await` work first, for example `micropip.install(...)` in Pyodide.
 - A loader failure raises into the nearest `Errored` boundary.
-- Call `.preload()` (for example on hover) to warm the cache before navigation.
+- Call `.preload()` to warm the cache before it mounts. A lazy route component is preloaded for you when a link to its route is hovered or focused.
 
 For a module that isn't a component (a parser, a chart library, a set of
 routes), [`lazy_module`][wybthon.lazy_module] is the counterpart of
@@ -431,17 +431,24 @@ is the canonical way to code-split:
 
 ```python
 from wybthon import lazy
-from wybthon.router import Link, Route
+from wybthon.router import Route, create_router
 
 Settings = lazy(lambda: ("app.settings", "Page"))
 
-routes = [
-    Route("/", Home),
-    Route("/settings", Settings),
-]
-
-Link("Settings", href="/settings", on_mouseover=lambda: Settings.preload())
+router = create_router(
+    [
+        Route("/", Home),
+        Route("/settings", Settings),
+    ]
+)
 ```
+
+A plain `<a href="/settings">` is enough: with `preload_links=True` (the
+default), resting the pointer on the link or focusing it starts the
+import and runs the route's `preload`. Call
+[`preload_route("/settings")`][wybthon.router.preload_route] from inside
+the router to warm it on some other intent. See
+[Routing](router.md).
 
 ## Patterns and pitfalls
 

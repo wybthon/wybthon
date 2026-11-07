@@ -115,13 +115,13 @@ def test_the_router_reads_the_page_on_first_use_not_at_import(monkeypatch: pytes
     monkeypatch.setitem(sys.modules, "js", js)
     monkeypatch.setitem(sys.modules, "pyodide", types.ModuleType("pyodide"))
     monkeypatch.setitem(sys.modules, "pyodide.ffi", ffi)
-    router = importlib.reload(importlib.import_module("wybthon.router"))
+    location = importlib.reload(importlib.import_module("wybthon.router._location"))
     try:
-        assert accessed == [] and router._located is False
-        assert router.current_path() == "/users/7?tab=a"
+        assert accessed == [] and location._located is False
+        assert location.url() == "/users/7?tab=a"
         assert accessed == ["popstate", "hashchange"]
-        router.current_path()
+        location.url()
         assert accessed == ["popstate", "hashchange"]
     finally:
         monkeypatch.undo()
-        importlib.reload(router)
+        importlib.reload(location)

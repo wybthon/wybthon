@@ -26,12 +26,12 @@ taking down the page.
   "Something went wrong."
 - `on_error`: called with the exception (send it to your monitoring).
 - `reset_on`: an accessor whose change clears the current error
-  automatically, for example
-  [`current_path`][wybthon.router.current_path].
+  automatically, for example the router's
+  [`url`][wybthon.router.url], which changes on every navigation.
 
 ```python
 from wybthon import Errored, component, html
-from wybthon.router import current_path
+from wybthon.router import url
 
 
 def fallback(err, reset):
@@ -49,7 +49,7 @@ def Page():
         Dashboard(),
         fallback=fallback,
         on_error=report,
-        reset_on=current_path,
+        reset_on=url,
     )
 ```
 

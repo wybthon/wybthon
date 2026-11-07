@@ -18,6 +18,11 @@
   const templates = new Map();
   const controlledSelects = new Map();
   let delegatedNodes = 0;           // nodes with at least one delegated listener
+  // Event types Python intercepts after its handlers (the router's links and
+  // forms): their root listener dispatches even with no handler on the route,
+  // and the payload describes the link or form involved.
+  const intercepts = new Set();
+  let lastIntent = null;            // the link a pointer last rested on
   let dispatcher = null;            // Python callback (id, type, payloadJson) -> flags
   let currentEvent = null;
   // Claim state while adopting server-rendered DOM (null otherwise).
@@ -471,14 +476,58 @@
 
   // -- dispatch -----------------------------------------------------------
 
-  function buildPayload(ev, route = undefined) {
+  // What an intercepted event is about: the link a click or pointer is on,
+  // or the form being submitted.
+  function interceptInfo(ev, path) {
+    const type = ev.type;
+    if (type === "submit") {
+      const form = ev.target;
+      if (!(form instanceof HTMLFormElement)) return null;
+      const submitter = ev.submitter || null;
+      const action = (submitter && submitter.getAttribute("formaction")) || form.getAttribute("action");
+      const method = (submitter && submitter.getAttribute("formmethod")) || form.getAttribute("method") || "get";
+      return { action, method: method.toLowerCase(), formId: form.__wybId !== undefined ? form.__wybId : null };
+    }
+    let anchor = null;
+    for (const node of path) {
+      if (node instanceof HTMLAnchorElement && node.hasAttribute("href")) { anchor = node; break; }
+    }
+    if (type === "pointerover" || type === "focusin") {
+      if (anchor === lastIntent) return false;
+      lastIntent = anchor;
+    }
+    if (anchor === null) return type === "click" ? null : false;
+    return {
+      href: anchor.getAttribute("href"),
+      url: anchor.href,
+      target: anchor.getAttribute("target"),
+      download: anchor.hasAttribute("download"),
+      rel: anchor.getAttribute("rel"),
+      preload: anchor.getAttribute("preload"),
+      sameOrigin: anchor.origin === location.origin,
+    };
+  }
+
+  function intercept(type, on) {
+    if (on) {
+      if (intercepts.has(type)) return;
+      intercepts.add(type);
+      const n = (typeCounts.get(type) || 0) + 1;
+      typeCounts.set(type, n);
+      if (n === 1) installRoot(type);
+    } else if (intercepts.delete(type)) {
+      dropTypeCount(type);
+    }
+  }
+
+  function buildPayload(ev, route = undefined, extra = undefined) {
     const path = ev.composedPath ? ev.composedPath() : [];
     const t = path.length ? path[0] : ev.target;
     let detail = ev.detail;
     try { detail = detail === undefined ? null : JSON.parse(JSON.stringify(detail)); }
     catch (_) { detail = null; }
     return JSON.stringify({
-      route, detail,
+      route, detail, intercept: extra,
       defaultPrevented: !!ev.defaultPrevented,
       isComposing: !!ev.isComposing,
       scrollTop: t && t.scrollTop !== undefined ? t.scrollTop : 0,
@@ -513,11 +562,17 @@
         const id = node.__wybId;
         if (id !== undefined && hasType(node, type)) route.push([id, type]);
       }
-      if (!route.length) return;
+      let extra;
+      if (intercepts.has(type)) {
+        extra = interceptInfo(ev, path);
+        if (extra === false && !route.length) return;
+        if (extra === false) extra = null;
+      }
+      if (!route.length && !extra) return;
       const saved = currentEvent;
       currentEvent = ev;
       try {
-        const flags = dispatcher(0, type, buildPayload(ev, route));
+        const flags = dispatcher(0, type, buildPayload(ev, route, extra));
         if (flags & 2) ev.preventDefault();
         if (flags & 1) ev.stopPropagation();
       } finally { currentEvent = saved; }
@@ -558,6 +613,9 @@
           break;
         case 8: { // SET_ATTR
           const n = nodes.get(op[1]);
+          // A form action clears `aria-busy` when it settles, by which time
+          // its form may be gone (a redirect, say).
+          if (n === undefined) break;
           if (op[3] === null) n.removeAttribute(op[2]);
           else n.setAttribute(op[2], op[3]);
           break;
@@ -665,6 +723,9 @@
         }
         case 28: // CLAIM_STATIC
           if (hydrating !== null) claimStatic(op[1], op[2]);
+          break;
+        case 29: // INTERCEPT
+          intercept(op[1], !!op[2]);
           break;
         default:
           throw new Error(`wybthon kernel: unknown op ${op[0]}`);

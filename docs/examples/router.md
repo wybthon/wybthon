@@ -1,10 +1,10 @@
 # Router
 
-Client-side routing with [`Router`][wybthon.router.Router], [`Route`][wybthon.router.Route], and [`Link`][wybthon.router.Link] from `wybthon.router`, including path parameters, query strings, nested routes, and lazy-loaded pages.
+Routing with [`create_router`][wybthon.router.create_router] and [`Route`][wybthon.router.Route] from `wybthon.router`, including path parameters, search params, a nested layout, a root layout, link styling, and a lazily loaded page.
 
 ```python
-from wybthon import Errored, Loading, component, html, lazy, render
-from wybthon.router import Link, Outlet, Route, RouteProps, Router, current_path
+from wybthon import Errored, Loading, ParentProps, component, html, lazy
+from wybthon.router import Route, RouteProps, create_router, use_link_state, use_location
 
 
 @component
@@ -13,36 +13,42 @@ def Home():
 
 
 @component
-def About():
-    # Child routes (here, /about/team) render at the Outlet.
-    return html(t"<div><h1>About</h1><p>A small routed app.</p>{Outlet()}</div>")
+def About(props: RouteProps):
+    # Child routes (here, /about/team) render as the layout's children.
+    return html(t"<div><h1>About</h1><p>A small routed app.</p>{props.children}</div>")
 
 
 @component
 def User(props: RouteProps):
-    # Navigating from /users/1 to /users/2 updates ``params`` in place;
+    # Navigating from /users/1 to /users/2 updates `params` in place;
     # the component isn't remounted, and only these two text nodes change.
     return html(t"""
       <div>
         <h1>User {props.params["user_id"]}</h1>
-        <p>Tab: {props.query.get("tab", "info")}</p>
+        <p>Tab: {props.search.get("tab", "info")}</p>
       </div>
     """)
 
 
 @component
 def NotFound():
-    return html(t"<div><h1>Not found</h1><p>No page at {current_path()}</p></div>")
+    location = use_location()
+    return html(t"<div><h1>Not found</h1><p>No page at {location.path}</p></div>")
 
 
-# Loaded on first visit; the import runs inside an async memo.
+# Loaded on first visit, or as soon as the pointer rests on a link to it.
 Team = lazy(lambda: ("app.about.team", "Page"))
 
-routes = [
-    Route("/", Home),
-    Route("/about", About, children=[Route("team", Team)]),
-    Route("/users/:user_id", User),
-]
+
+class NavLinkProps(ParentProps):
+    href: str
+    end: bool = False
+
+
+@component
+def NavLink(props: NavLinkProps):
+    state = use_link_state(lambda: props.href, end=props.end)
+    return html(t"<a href={props.href} class={'active' if state.active() else ''}>{props.children}</a>")
 
 
 def page_failed(err, reset):
@@ -50,94 +56,37 @@ def page_failed(err, reset):
 
 
 @component
-def App():
+def Shell(props: ParentProps):
     return html(t"""
       <div>
         <nav>
-          <ul>
-            <li>{Link("Home", href="/", end=True)}</li>
-            <li>{Link("About", href="/about")}</li>
-            <li>{Link("Team", href="/about/team", on_mouseenter=Team.preload)}</li>
-            <li>{Link("User 1", href="/users/1?tab=posts")}</li>
-          </ul>
+          <{NavLink} href="/" end={True}>Home</{NavLink}>
+          <{NavLink} href="/about">About</{NavLink}>
+          <{NavLink} href="/about/team">Team</{NavLink}>
+          <{NavLink} href="/users/1?tab=posts">Ada</{NavLink}>
         </nav>
-        <main>
-          <{Errored} fallback={page_failed} reset_on={current_path}>
-            <{Loading} fallback={html(t"<p>Loading page...</p>")}>
-              {Router(routes, not_found=NotFound)}
-            </{Loading}>
-          </{Errored}>
-        </main>
+        {Errored(Loading(props.children, fallback=html(t"<p>Loading...</p>")), fallback=page_failed)}
       </div>
     """)
 
 
-render(App(), "#app")
+router = create_router(
+    [
+        Route("/", Home),
+        Route("/about", About, children=[Route("/"), Route("/team", Team)]),
+        Route("/users/:user_id", User),
+        Route("*404", NotFound),
+    ]
+)
+
+
+def app():
+    return router(root=Shell)
 ```
 
-## How it works
+- The links are plain anchors: the router navigates without reloading the page, and leaves modifier-key clicks and links with a `target` to the browser.
+- `Route("/about", About, children=[...])` is a layout: `/about` matches through the empty `Route("/")` child, and `/about/team` through the `Team` child. Child paths continue the parent's.
+- `router(root=Shell)` keeps `Shell` mounted on every page. The `Loading` boundary covers the lazy page's first load; later navigations are transitions that keep the old page on screen until the new one is ready.
+- `*404` matches anything no other route does.
 
-- [`Router`][wybthon.router.Router] reads [`current_path`][wybthon.router.current_path] and renders the component of the first matching [`Route`][wybthon.router.Route]. Only a change in *which* route matches re-mounts the outlet; param and query changes flow into the mounted component as prop updates.
-- The matched component receives `params` and `query` as props. Declare them by annotating the component's parameter with [`RouteProps`][wybthon.router.RouteProps], or subclass it to add fields of your own. Both are plain props holding dicts: `props.params["user_id"]` is a tracked read, and in the template the compiler turns each expression into a getter, so each is its own hole. Outside the route component, [`use_params`][wybthon.router.use_params] and [`use_query`][wybthon.router.use_query] return accessors for the same values: `params = use_params()`, then `params()["user_id"]`.
-- [`Link`][wybthon.router.Link] renders an `<a>` that navigates with the History API. It adds `active_class` (default `"active"`) while its path matches; `end=True` requires an exact match, which keeps "Home" from being active everywhere. Modifier-key clicks and middle clicks pass through to the browser. `Link` works as a call in an interpolation or as a `<{Link} href="/">...</{Link}>` tag.
-- Nested `Route.children` paths are joined with the parent path, so `Route("team", Team)` under `/about` matches `/about/team`. The parent renders the matched child wherever it places [`Outlet()`][wybthon.router.Outlet].
-- Wrapping the router in [`Loading`][wybthon.Loading] and [`Errored`][wybthon.Errored] with `reset_on=current_path` gives every page a loading state and an error state that clears on navigation. The error fallback reads the error through the `err` accessor. An interpolation can span several lines, as the `Errored(...)` call does here.
-
-## Programmatic navigation
-
-```python
-from wybthon.router import navigate
-
-navigate("/about")
-navigate("/users/2?tab=info", replace=True)
-```
-
-Outside a browser (for example in unit tests), `navigate` only updates the `current_path` signal; call [`flush`][wybthon.flush] afterward to apply it.
-
-## Lazy routes
-
-[`lazy`][wybthon.lazy] takes a loader that returns a component, a module, a module path string, or a `(module_path, attr)` tuple. The loader may be `async def`, so it can `await micropip.install(...)` first. Call `.preload()` on user intent (hover, focus) to warm the import before the click:
-
-```python
-from wybthon import lazy
-
-
-async def load_docs():
-    import micropip
-
-    await micropip.install("my-docs-package")
-    from my_docs import DocsPage
-
-    return DocsPage
-
-
-Docs = lazy(load_docs)
-```
-
-## Base paths
-
-Serve the app under a prefix by passing `base_path`; `Link` prepends it and the router strips it before matching:
-
-```python
-from wybthon.router import Router
-
-Router(routes, base_path="/app")
-```
-
-Inside the tree, [`use_base_path`][wybthon.router.use_base_path] returns the active base path.
-
-## Wildcards
-
-A trailing `/*` matches any remainder:
-
-```python
-from wybthon.router import Route
-
-Route("/docs/*", Docs)
-```
-
-## Next steps
-
-- Read the [Router](../concepts/router.md) concept page.
-- See [Async and Loading](../concepts/async-loading.md) for code-splitting routes.
-- Browse the [`router`][wybthon.router] API, including [`resolve`][wybthon.router.resolve] for matching paths without a browser.
+To render this on the server and add data, see [Full-stack apps](../concepts/full-stack.md).

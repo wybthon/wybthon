@@ -196,3 +196,14 @@ def wyb(browser_stubs):
 def root_element(wyb):
     """Create a fresh :class:`StubNode` container wrapped in ``wybthon.dom.Element``."""
     return wyb["dom"].Element(node=StubNode(tag="div"))
+
+
+@pytest.fixture(autouse=True)
+def offline_stdlib(monkeypatch):
+    """Builds in unit tests ship Pyodide's standard library whole instead of downloading it to trim.
+
+    `tests/test_stdlib.py` trims a small stand-in library directly.
+    """
+    import wybthon._stdlib
+
+    monkeypatch.setattr(wybthon._stdlib, "fetch_stdlib", lambda url: None)

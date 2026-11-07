@@ -21,7 +21,7 @@ Python's import system.
 
 ```python
 from wybthon import Loading, component, html, lazy
-from wybthon.router import Link, Route, Router
+from wybthon.router import Route, create_router
 
 About = lazy(lambda: ("app.about.page", "Page"))  # importlib, attribute "Page"
 
@@ -37,16 +37,15 @@ async def load_chart():
 
 Chart = lazy(load_chart)
 
+router = create_router([Route("/about", About), Route("/chart", Chart)])
+
 
 @component
 def App():
     return Loading(
-        Router([Route("/about", About), Route("/chart", Chart)]),
+        html(t'<nav><a href="/chart">Chart</a></nav>{router()}'),
         fallback=html(t"<p>Loading...</p>"),
     )
-
-
-nav_link = Link("Chart", href="/chart", on_mouseover=Chart.preload)
 ```
 
 - When the loader returns a module, the export is picked by convention:
@@ -55,6 +54,10 @@ nav_link = Link("Chart", href="/chart", on_mouseover=Chart.preload)
   unmounts.
 - Props and children passed to the lazy component are forwarded to the
   loaded component unchanged.
+- A lazy route component is preloaded when the pointer rests on (or
+  focus reaches) a link to its route, so `<a href="/chart">` above
+  starts the import before the click. Call `.preload()` yourself for
+  any other intent.
 
 `lazy_module` loads code that isn't a component: a route table, a
 parser, a charting library's helpers. The loader runs once, on the first
@@ -77,6 +80,6 @@ admin.peek()  # the module, or None until it has loaded
 #### See also
 
 - [Loading](loading.md) and [Error boundary](error_boundary.md)
-- [Router](router.md): pair with `Route` for code-split pages
+- [Router](router.md): pair with `Route` for code-split pages, which `preload_route` and link hovers load early
 - [Concepts: Async and loading](../concepts/async-loading.md)
 - [Guides: Performance](../guides/performance.md)

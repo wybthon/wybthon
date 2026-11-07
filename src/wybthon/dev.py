@@ -1,11 +1,13 @@
 """The `wyb` command: develop, build, and preview Wybthon projects.
 
 A project is a directory with a `wybthon.toml` (create one with
-`wyb init`). `wyb dev` builds it in development mode, serves the build,
-and rebuilds when a source changes. Over Server-Sent Events, it replaces
+`wyb init`). `wyb dev` builds it in development mode, serves the build
+(rendering pages per request and serving server functions when the
+project sets `server = true`), and rebuilds when a source changes. Over Server-Sent Events, it replaces
 an edited application module in place in connected pages (see
 `wybthon._hmr`) and reloads them for any other change. `wyb build`
-writes a production build and `wyb preview` serves one.
+writes a production build; `wyb preview` serves a static one and
+`wyb serve` a server one.
 
 Use the [`main`][wybthon.dev.main] function for CLI entry, or call
 [`serve`][wybthon.dev.serve] directly to embed the server.
@@ -26,6 +28,7 @@ import tomllib
 import webbrowser
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlsplit
 
 __all__ = ["serve", "main"]
@@ -153,6 +156,8 @@ def _hot_update(
     previous: dict[Path, int],
     current: dict[Path, int],
     chunks: dict[str, list[str]] | None = None,
+    server_only: list[str] | None = None,
+    routes_dir: Path | None = None,
 ) -> tuple[list[dict[str, str]], list[str]] | None:
     """The sources and modules a change can replace in place, or `None` when pages must reload.
 
@@ -174,12 +179,19 @@ def _hot_update(
         name = relative.as_posix()
         if any(fnmatch.fnmatchcase(name, pattern) for patterns in (chunks or {}).values() for pattern in patterns):
             return None
+        if any(fnmatch.fnmatchcase(name, pattern) for pattern in server_only or []):
+            # The page renders differently now; there's no module of it in the browser to replace.
+            return None
         parts = list(relative.with_suffix("").parts)
         if parts[-1] == "__init__":
             parts.pop()
         if not all(part.isidentifier() for part in parts):
             return None
-        files.append({"path": relative.as_posix(), "source": path.read_text(encoding="utf-8")})
+        from .build import browser_source
+
+        is_route = routes_dir is not None and path.resolve().is_relative_to(routes_dir)
+        source = browser_source(path.read_bytes(), is_route=is_route).source
+        files.append({"path": relative.as_posix(), "source": source})
         modules.append(".".join(parts))
     return files, modules
 
@@ -193,6 +205,131 @@ def _walk_files(paths: Iterable[Path]) -> Iterable[Path]:
                     yield Path(root) / f
         elif p.exists():
             yield p
+
+
+def _scan(watch: list[Path]) -> dict[Path, int]:
+    """Modification times of every watched file."""
+    result = {}
+    for path in _walk_files(watch):
+        if "__pycache__" not in path.parts:
+            try:
+                result[path] = path.stat().st_mtime_ns
+            except OSError:
+                pass
+    return result
+
+
+def _serve_server(
+    project: Path,
+    *,
+    rebuild_server: Any,
+    watch: list[Path],
+    hot_update: Any,
+    host: str,
+    port: int,
+    open_browser: bool,
+    open_path: str | None,
+) -> None:
+    """`wyb dev` for a `server = true` project: pages rendered per request, server functions, updates."""
+    import asyncio
+
+    from ._http import start
+    from .asgi import App
+
+    manifest = rebuild_server()
+    app = App(project, project / "dist", dev=True)
+    app.page_hook = lambda html: html.replace("</body>", _RELOAD_SCRIPT + "</body>")
+    clients: set[asyncio.Queue[bytes]] = set()
+
+    async def events(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        queue: asyncio.Queue[bytes] = asyncio.Queue()
+        clients.add(queue)
+        try:
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [(b"content-type", b"text/event-stream"), (b"cache-control", b"no-cache")],
+                }
+            )
+            await send({"type": "http.response.body", "body": b": connected\n\n", "more_body": True})
+            while True:
+                message = await queue.get()
+                await send({"type": "http.response.body", "body": message, "more_body": True})
+        except Exception:
+            pass
+        finally:
+            clients.discard(queue)
+
+    app.extra_routes["/__sse"] = events
+
+    async def main() -> None:
+        loop = asyncio.get_running_loop()
+
+        def broadcast(message: bytes) -> None:
+            for queue in list(clients):
+                queue.put_nowait(message)
+
+        def changed(update: Any) -> None:
+            try:
+                app.load()
+            except Exception as exc:
+                print(f"Reloading the server's modules failed: {exc}", flush=True)
+                broadcast(b"event: reload\ndata: {}\n\n")
+                return
+            if update is None:
+                broadcast(b"event: reload\ndata: {}\n\n")
+            else:
+                files, modules = update
+                data = json.dumps({"files": files, "modules": modules}, separators=(",", ":"))
+                broadcast(b"event: hmr\ndata: " + data.encode() + b"\n\n")
+
+        def watcher() -> None:
+            mtimes = _scan(watch)
+            while True:
+                time.sleep(0.5)
+                current = _scan(watch)
+                if current == mtimes:
+                    continue
+                previous, mtimes = mtimes, current
+                try:
+                    rebuild_server()
+                except Exception as exc:
+                    print(f"Build failed: {exc}", flush=True)
+                    continue
+                update = hot_update(previous, current)
+                loop.call_soon_threadsafe(changed, update)
+
+        threading.Thread(target=watcher, daemon=True).start()
+        server = None
+        last: OSError | None = None
+        for candidate in [port, *range(port + 1, port + 21)] if port else [0]:
+            try:
+                server = await start(app, host, candidate)
+                break
+            except OSError as exc:
+                last = exc
+        if server is None:
+            raise last if last is not None else OSError("Failed to bind server")
+        bound = server.sockets[0].getsockname()[1]
+        url = f"http://{host}:{bound}"
+        print("\nWybthon Dev Server")
+        print("===================")
+        print(f"Project:  {project}")
+        print("Mode:     server (pages rendered per request, server functions)")
+        print(f"\nServing at: {url}{manifest['base']}", flush=True)
+        if open_browser:
+            try:
+                webbrowser.open(url + (open_path or manifest["base"]))
+            except Exception:
+                pass
+        async with server:
+            await server.serve_forever()
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
 
 
 def serve(
@@ -230,8 +367,6 @@ def serve(
         for page in (project / "dist").rglob("*.html"):
             page.write_text(page.read_text(encoding="utf-8").replace("</body>", _RELOAD_SCRIPT + "</body>"))
 
-    rebuild()
-    SSEHandler.root = project / "dist"
     app_dir = (project / config.get("app-dir", "app")).resolve()
     watch = [project / name for name in (config.get("app-dir", "app"), "public", "index.html", "wybthon.toml")]
 
@@ -240,8 +375,37 @@ def serve(
     ) -> tuple[list[dict[str, str]], list[str]] | None:
         # The chunk groups as the rebuild just read them; a `wybthon.toml`
         # change reloads anyway.
-        chunks = tomllib.loads(config_path.read_text(encoding="utf-8")).get("chunks", {})
-        return _hot_update(project, app_dir, previous, current, chunks)
+        latest = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        return _hot_update(
+            project,
+            app_dir,
+            previous,
+            current,
+            latest.get("chunks", {}),
+            latest.get("server-only", []),
+            _routes(latest),
+        )
+
+    def _routes(latest: dict[str, object]) -> Path | None:
+        configured = latest.get("routes")
+        path = (project / str(configured)).resolve() if configured else app_dir / "routes"
+        return path if path.is_dir() else None
+
+    if config.get("server"):
+        _serve_server(
+            project,
+            rebuild_server=lambda: build_app(project, dev=True),
+            watch=watch,
+            hot_update=hot_update,
+            host=host,
+            port=port,
+            open_browser=open_browser,
+            open_path=open_path,
+        )
+        return
+
+    rebuild()
+    SSEHandler.root = project / "dist"
 
     class ThreadingReuseTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """Threaded TCP server so long-lived SSE clients don't block requests."""
@@ -251,14 +415,7 @@ def serve(
 
     def watcher() -> None:
         def scan() -> dict[Path, int]:
-            result = {}
-            for path in _walk_files(watch):
-                if "__pycache__" not in path.parts:
-                    try:
-                        result[path] = path.stat().st_mtime_ns
-                    except OSError:
-                        pass
-            return result
+            return _scan(watch)
 
         mtimes = scan()
         while True:
@@ -362,6 +519,14 @@ def main(argv: list[str] | None = None) -> int:
 
     pinit = sub.add_parser("init", help="Create a starter project")
     pinit.add_argument("directory", nargs="?", default=".")
+    pinit.add_argument(
+        "--server", action="store_true", help="A full-stack starter: file routes, server functions, server = true"
+    )
+    pserve = sub.add_parser("serve", help="Serve a server build: pages rendered per request and server functions")
+    pserve.add_argument("--dir", default=".", help="Project directory")
+    pserve.add_argument("--host", default="127.0.0.1", help="Bind address")
+    pserve.add_argument("--port", type=int, default=8000, help="Port to bind")
+    pserve.add_argument("--build", action="store_true", help="Build first")
     pbuild = sub.add_parser("build", help="Write a production build")
     pbuild.add_argument("--dir", default=".", help="Project directory")
     pbuild.add_argument("--out", default=None, help="Output directory (default: <dir>/dist)")
@@ -384,8 +549,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.cmd == "init":
-            init_app(Path(args.directory))
+            init_app(Path(args.directory), server=args.server)
             print(f"Created {Path(args.directory).resolve()}")
+        elif args.cmd == "serve":
+            from .asgi import create_app, run
+
+            if args.build:
+                build_app(Path(args.dir))
+            run(create_app(args.dir), host=args.host, port=args.port)
         elif args.cmd == "build":
             build_app(Path(args.dir), output=Path(args.out) if args.out else None, base=args.base)
             print(f"Built {Path(args.out or Path(args.dir) / 'dist').resolve()}")

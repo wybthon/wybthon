@@ -53,6 +53,7 @@ from typing import Any, Final
 
 from .. import _warnings, diagnostics
 from .._warnings import log_error, warn_once
+from ._session import Encoded as _Encoded
 
 __all__ = [
     "Accessor",
@@ -2939,7 +2940,7 @@ def _event_loop() -> asyncio.AbstractEventLoop:
     except RuntimeError:
         pass
     try:
-        return asyncio.get_event_loop_policy().get_event_loop()
+        return asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -3124,6 +3125,8 @@ class Memo[T](Computation, Accessor[T]):
         seeded = session.values.get(key)
         if seeded is not None and seeded[1] == _function_name(self._fn):
             value = seeded[0]
+            if type(value) is _Encoded:
+                value = value.decode()
             if server:
                 # The server never re-runs a resolved memo: its value is final
                 # for this render and nothing observes later changes.

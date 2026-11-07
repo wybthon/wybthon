@@ -122,3 +122,15 @@ wyb preview
 The output in `dist/` contains prerendered pages, hashed source archives with every template compiled ahead of time, and a browser bootstrap. Each page carries the asset manifest inline and preloads Pyodide and the archives, so the browser starts fetching them while it parses the HTML. Production builds turn dev mode off before your application imports, so dev-only checks and warnings don't ship. Deploy those files to a static host. See [Deployment](guides/deployment.md) for base paths, pinned dependencies, lazy chunks, and route fallback configuration.
 
 Continue with the [mental model](concepts/mental-model.md), [templates](concepts/templates.md), [the compiler](concepts/compiler.md), [stores](concepts/stores.md), and [runtime contracts](concepts/runtime-contracts.md).
+
+## Go full stack
+
+To render pages on the server per request and call Python on the server from the browser, start from the full-stack starter instead:
+
+```bash
+wyb init my-app --server
+cd my-app
+wyb dev --open
+```
+
+It has [file routes](concepts/full-stack.md#file-routes) under `app/routes/`, a [query](concepts/full-stack.md#queries) that reads a todo list through a [server function](concepts/full-stack.md#server-functions), and a [form action](concepts/full-stack.md#form-actions) that adds to it, whose form works even before Pyodide has booted. `wyb build`, then `wyb serve`, runs it in production. See [Full-stack apps](concepts/full-stack.md).

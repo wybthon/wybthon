@@ -26,7 +26,7 @@
 
 ## Overview
 
-Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser through [Pyodide](https://pyodide.org/). You write run-once function components with typed props and return HTML written as Python 3.14 template strings: `html(t"<p>Count: {count()}</p>")`. Like Solid's, Wybthon's compiler turns every dynamic expression in that markup into a getter, so each one updates only the text node or attribute that reads it; components never re-render. Async data, loading and error boundaries, actions with optimistic state, draft-first stores, server rendering, a router, forms, and context are all built in.
+Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser through [Pyodide](https://pyodide.org/). You write run-once function components with typed props and return HTML written as Python 3.14 template strings: `html(t"<p>Count: {count()}</p>")`. Like Solid's, Wybthon's compiler turns every dynamic expression in that markup into a getter, so each one updates only the text node or attribute that reads it; components never re-render. Async data, loading and error boundaries, actions with optimistic state, draft-first stores, server rendering, a router, forms, and context are all built in, and so is the full stack: server functions, queries, and form actions, with one Python codebase for the browser and the server.
 
 ## Features
 
@@ -39,13 +39,16 @@ Wybthon brings SolidJS 2.0's reactive model to Python and runs it in the browser
 - **Actions and optimistic state.** `action` makes a mutation a transaction; `create_optimistic` and `create_optimistic_store` show temporary values that revert when the action settles.
 - **Draft-first stores.** `create_store` wraps a dataclass, a dict, or a list, and the store is typed as that same type, so `state.todos[0].title` type-checks with no plugin. Setters take a function that mutates a draft with plain Python; reads are tracked per field. `reconcile`, `snapshot`, `deep`, and projections are included.
 - **Flow control and boundaries.** `Show`, `For`, `Repeat`, `Switch`/`Match`, and `dynamic` update only the affected subtree; `Loading`, `Reveal`, and `Errored` swap in fallbacks without tearing down sibling trees.
+- **Server functions, as Solid 2.0's `"use server"`.** `@server_function` makes an `async def` run on the server wherever it's called; in the browser, the build removes its body and the imports only it used, and calls go over HTTP with every argument validated against the function's annotations. `query` deduplicates reads and refetches them on `revalidate` or after a mutation, and `form_action` makes an action a `<form>` posts to, which works before Pyodide has booted.
+- **A full-stack server.** With `server = true`, `wyb dev` and `wyb serve` render every page per request, streaming `Loading` boundaries, and serve server functions, form posts, and HTTP handlers; `wybthon.asgi` runs the same app under any ASGI server. File routes (`app/routes/users/[id].py`) are optional.
+- **A smaller first visit.** The build trims Pyodide's 2.5 MB standard library to what the app imports (under 1 MB for the starter), and fetches the rest only if an import needs it.
 - **Fast repeat visits.** After a page's first boot, the bootstrap snapshots a Pyodide runtime with Wybthon imported, in a background worker. Later visits restore it and are ready in about a tenth of the time.
 - **Server rendering and hydration.** Render the same components to HTML in CPython at build time or per request (the server writes HTML directly, a few milliseconds for a 1,000-row table), stream `Loading` boundaries as they resolve, set the response status and headers from components, and `hydrate` the result in the browser.
 - **One bridge crossing per update.** A small virtual DOM batches every mutation in a flush into one call to a JavaScript kernel, which matters when every DOM call would otherwise cross from Python to JavaScript.
 - **Memory comes back at unmount.** Removing rows or components frees them at once by reference counting, with nothing left for Python's cycle collector, and the collector's own work waits until the browser is idle.
-- **Router, forms, context, portals, and lazy loading.** `wybthon.router`, `wybthon.forms` with validators and ARIA helpers, callable `Context` objects, `Portal`, and `lazy` and `lazy_module` with explicit build chunks.
-- **Testing in plain CPython.** `wybthon.testing` renders components into an in-memory DOM and queries them by text, role, label, and test id. Templates in test modules are compiled by Wybthon's pytest plugin.
-- **Tooling.** `wyb init` scaffolds a project, `wyb dev` rebuilds on change and replaces edited modules in the open page without reloading it, `wyb build` writes a production bundle with the manifest inlined and the runtime preloaded, and `wyb run` runs a script with its templates compiled.
+- **Router, forms, context, portals, and lazy loading.** `wybthon.router` as in Solid Router 2.0 (`create_router`, plain `<a>` links, layouts, preloading on hover), `wybthon.forms` with validators and ARIA helpers, callable `Context` objects, `Portal`, and `lazy` and `lazy_module` with explicit build chunks.
+- **Testing in plain CPython.** `wybthon.testing` renders components into an in-memory DOM and queries them by text, role, label, and test id; `connect_server()` sends their server function calls through the real wire protocol, and `Client` drives an ASGI app in-process. Templates in test modules are compiled by Wybthon's pytest plugin.
+- **Tooling.** `wyb init` scaffolds a project (`wyb init --server` a full-stack one), `wyb dev` rebuilds on change and replaces edited modules in the open page without reloading it, `wyb build` writes a production bundle with the manifest inlined and the runtime preloaded, `wyb serve` serves a full-stack build, and `wyb run` runs a script with its templates compiled.
 
 ## Quick start
 
@@ -180,6 +183,56 @@ render(App(), "#app")
 Each expression that calls something or reads an attribute, such as `{count() * 2}`, `{props.title}`, or `disabled={add.pending()}`, is compiled into a getter, so it updates on its own when what it reads changes. A call in the markup such as `{Show(count() > 5, ...)}` builds the component with a getter for each dynamic argument, the way Solid passes JSX props. Event handlers are never wrapped, and named handlers read better than inline lambdas; Python needs parentheses around an inline one (`onclick={(lambda: set_open(False))}`). Use `h(tag, props, *children)` when markup is built by code; see [Templates](https://wybthon.com/concepts/templates/) and [The compiler](https://wybthon.com/concepts/compiler/).
 
 In a project created with `wyb init`, return the root view from the entry function in `app/main.py` instead of calling `render`; the generated bootstrap renders it, or hydrates it when the page was prerendered. List routes under `prerender` in `wybthon.toml` to render them to HTML at build time. See [Server rendering](https://wybthon.com/concepts/server-rendering/).
+
+### Full stack
+
+`wyb init my-app --server` creates an app that renders on the server per request and reads and writes data through server functions:
+
+```python
+from dataclasses import dataclass
+
+from wybthon import For, FormData, Loading, component, create_memo, html, server_function
+from wybthon.router import form_action, query
+
+
+@dataclass
+class Todo:
+    id: int
+    title: str
+
+
+@query
+@server_function
+async def list_todos() -> list[Todo]:
+    from app.server.db import todos  # stays on the server
+
+    return await todos.all()
+
+
+@form_action
+@server_function
+async def add_todo(form: FormData) -> None:
+    from app.server.db import todos
+
+    await todos.add(str(form["title"]))
+
+
+@component
+def Page():
+    todos = create_memo(lambda: list_todos())
+
+    def row(todo, _index):
+        return html(t"<li>{todo.title}</li>")
+
+    return html(t"""
+      {Loading(html(t"<ul>{For(todos(), row)}</ul>"), fallback="Loading...")}
+      <form action={add_todo} method="post">
+        <input name="title"><button disabled={add_todo.pending()}>Add</button>
+      </form>
+    """)
+```
+
+The page arrives rendered, with its data. Before Pyodide has booted, the form posts to the server like any HTML form; once it has, submitting runs the action in place and the list revalidates. See [Full-stack apps](https://wybthon.com/concepts/full-stack/).
 
 Components are testable in plain CPython, and Wybthon's pytest plugin compiles the templates in test modules:
 

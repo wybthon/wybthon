@@ -4,7 +4,7 @@ Catch errors raised while rendering with [`Errored`][wybthon.Errored], show a fa
 
 ```python
 from wybthon import Errored, Props, component, create_signal, html, render
-from wybthon.router import current_path
+from wybthon.router import url
 
 
 class RiskyPanelProps(Props):
@@ -45,7 +45,7 @@ def App():
     return html(t"""
       <div>
         <button onclick={toggle}>Toggle failure</button>
-        {Errored(RiskyPanel(should_fail=fail()), fallback=fallback, on_error=log_error, reset_on=current_path)}
+        {Errored(RiskyPanel(should_fail=fail()), fallback=fallback, on_error=log_error, reset_on=url)}
       </div>
     """)
 
@@ -60,7 +60,7 @@ render(App(), "#app")
 - `body()` is a plain function call in the template, so the whole call is one reactive hole: it reruns when `props.should_fail` changes, and when it raises, the error goes to the boundary.
 - `fallback` may be a node, a string, or a callable. A callable receives `(err, reset)` (or just `(err)`). `err` is an accessor for the caught exception, as in Solid 2.0, so `{err()}` in the fallback's template shows the message. Calling `reset()` clears the error and re-renders the children; it takes no arguments, so it works directly as a click handler.
 - `on_error` is a plain callback for logging or reporting. It receives the exception itself.
-- `reset_on` is an accessor whose change clears the error automatically. Passing [`current_path`][wybthon.router.current_path] from `wybthon.router` resets the boundary on every navigation, which is the usual behavior for a page-level boundary.
+- `reset_on` is an accessor whose change clears the error automatically. Passing the [`url`][wybthon.router.url] accessor from `wybthon.router` resets the boundary on every navigation, which is the usual behavior for a page-level boundary.
 - Boundaries also heal on their own: the boundary remembers which reactive inputs the failing computation read, so toggling the failure off re-renders `RiskyPanel` without a click on "Retry."
 
 ## Errors in async data
