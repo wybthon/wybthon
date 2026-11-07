@@ -207,7 +207,11 @@ class App:
         package = app_dir.replace("/", ".")
         for name in [name for name in sys.modules if name == package or name.startswith(package + ".")]:
             del sys.modules[name]
-        for key in [key for key, fn in server_functions._registry.items() if fn.__module__.startswith(package)]:
+        for key in [
+            key
+            for key, fn in server_functions._registry.items()
+            if fn.__module__ == package or fn.__module__.startswith(package + ".")
+        ]:
             del server_functions._registry[key]
 
     def _import_server_modules(self, app: Path) -> None:
@@ -648,4 +652,4 @@ def run(app: App, *, host: str = "127.0.0.1", port: int = 8000) -> None:
     """Serve `app` with Wybthon's small built-in HTTP server (`wyb serve`)."""
     from ._http import serve
 
-    asyncio.run(serve(app, host, port))
+    asyncio.run(serve(app, host, port, max_body=app.max_body))

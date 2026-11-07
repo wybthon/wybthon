@@ -280,3 +280,53 @@ def test_a_redirecting_action_navigates():
     asyncio.run(main())
     navigate("/")
     flush()
+
+
+@query("guard")
+async def plain_guard() -> str:
+    from wybthon import redirect
+
+    raise redirect("/sign-in")
+
+
+def test_a_plain_querys_redirect_becomes_the_pages_response_on_the_server():
+    from wybthon.server import render_to_stream
+
+    @component
+    def Guarded():
+        value = create_memo(lambda: plain_guard())
+        return html(t"<p>{value()}</p>")
+
+    async def main() -> None:
+        event = RequestEvent(url="/")
+        await render_to_stream(Guarded(), event=event)
+        assert event.locals.get("__wyb_redirect") == "/sign-in"
+        assert event.response.status == 302
+
+    asyncio.run(main())
+
+
+def test_a_plain_querys_redirect_navigates_in_the_browser():
+    reset()
+
+    @component
+    def Guarded():
+        value = create_memo(lambda: plain_guard())
+        return html(t"<p>{value()}</p>")
+
+    async def main() -> None:
+        with render(Loading(Guarded(), fallback="wait")) as screen:
+            await tick(4)
+            assert url.peek() == "/sign-in"
+            assert screen.text() == "wait"
+
+    asyncio.run(main())
+    navigate("/")
+    flush()
+
+
+def test_a_query_called_outside_a_tracking_scope_keeps_no_signal():
+    reset()
+    before = set(_data._versions)
+    assert asyncio.run(get_user(41)) == "user 41"
+    assert set(_data._versions) == before

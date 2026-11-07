@@ -285,9 +285,16 @@ def set_transport(transport: Transport | None, *, base: str | None = None) -> No
         _base = base.rstrip("/") + "/"
 
 
+# The page's base path, read once from its inline manifest.
+_page_base: str | None = None
+
+
 def _app_base() -> str:
+    global _page_base
     if _transport is not None:
         return _base
+    if _page_base is not None:
+        return _page_base
     try:
         from js import document
 
@@ -295,7 +302,8 @@ def _app_base() -> str:
         if element is not None:
             import json
 
-            return str(json.loads(element.textContent).get("base", "/")).rstrip("/") + "/"
+            _page_base = str(json.loads(element.textContent).get("base", "/")).rstrip("/") + "/"
+            return _page_base
     except Exception:
         pass
     return _base
@@ -428,7 +436,8 @@ _MISSING: Any = object()
 def _redirect_render(response: Redirect) -> None:
     """A redirect raised while a page renders on the server becomes the page's response."""
     event = get_request_event()
-    if event is None:
+    if event is None or not event.locals.get("__wyb_rendering"):
+        # Not a page render: a server function's caller handles its redirect.
         return
     head = event.response
     if not head.committed:

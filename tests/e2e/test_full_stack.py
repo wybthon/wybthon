@@ -123,11 +123,16 @@ def test_a_production_server_renders_hydrates_and_runs_forms(browser, project: P
             assert errors == []
             manifest = page.evaluate("() => JSON.parse(document.getElementById('wyb-manifest').textContent)")
             assert manifest["server"] is True and manifest["stdlib"], "the standard library is trimmed"
-            # With Python running, the same form runs as an action and revalidates the list.
+            # With Python running, the same form runs as an action, without loading
+            # a page, and revalidates the list.
+            loads = page.evaluate("() => performance.getEntriesByType('navigation').length")
+            page.evaluate("() => { window.__stillHere = true; }")
             page.fill("#new", "Added in the browser")
             page.click("#add-button")
             page.wait_for_function("() => document.querySelectorAll('#todos li').length === 3", timeout=30_000)
             assert page.url == base
+            assert page.evaluate("() => window.__stillHere === true")
+            assert page.evaluate("() => performance.getEntriesByType('navigation').length") == loads
             # Plain links navigate without loading a page.
             navigations = page.evaluate("() => performance.getEntriesByType('navigation').length")
             page.click("a[href='/about']")

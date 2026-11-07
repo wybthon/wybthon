@@ -12,7 +12,7 @@ from .. import _wire
 from ..reactivity import _core
 from ..reactivity._core import Signal
 from ..request import get_request_event
-from ..server_functions import ServerFunction, _remote
+from ..server_functions import Redirect, Reload, Respond, ServerFunction, _redirect_render, _remote
 
 __all__ = ["Query", "query", "revalidate"]
 
@@ -87,7 +87,10 @@ class Query[**P, R]:
             )
             return self._server(full, args, kwargs, cache)
         # Reading the version subscribes the caller, so `revalidate` re-runs it.
-        _version(full)()
+        # A call outside a tracking scope has nothing to re-run, and a signal
+        # nothing ever observes would never be released.
+        if _core._current_observer is not None:
+            _version(full)()
         return self._browser(full, args, kwargs)
 
     async def _invoke(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> R:
@@ -96,9 +99,19 @@ class Query[**P, R]:
             if _remote():
                 return await fn._call_remote(args, kwargs, "GET")
             return await fn._call_local(args, kwargs)
-        result = fn(*args, **kwargs)
-        if inspect.isawaitable(result):
-            return await result
+        result: Any
+        try:
+            result = fn(*args, **kwargs)
+            if inspect.isawaitable(result):
+                result = await result
+        except Redirect as response:
+            result = response
+        if isinstance(result, Redirect):
+            await _follow(result)
+        if isinstance(result, Respond):
+            return result.value
+        if isinstance(result, Reload):
+            return None
         return result
 
     async def _server(
@@ -136,6 +149,19 @@ class Query[**P, R]:
 
     def __repr__(self) -> str:
         return f"Query({self.key})"
+
+
+async def _follow(response: Redirect) -> None:
+    """What a redirect a query raised does: the page's response on the server, a navigation in the browser."""
+    if _core._server_depth or get_request_event() is not None:
+        _redirect_render(response)
+        raise response
+    from .. import server_functions
+
+    server_functions._revalidate_hook(response.revalidate)
+    server_functions._navigate_hook(response.url, True)
+    # The read stays pending: the page it belongs to is leaving.
+    await asyncio.get_running_loop().create_future()
 
 
 def _prune() -> None:

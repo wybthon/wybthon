@@ -462,3 +462,25 @@ def test_route_props_fields():
     fields = RouteProps._wyb_fields
     assert {"params", "search", "data", "children"} <= set(fields)
     assert not any(fields[name].required for name in fields)
+
+
+def test_a_hash_change_alone_doesnt_preload_again():
+    calls: list[str] = []
+
+    def preload(args: PreloadArgs) -> str:
+        calls.append(args.location)
+        return "data"
+
+    @component
+    def Page(props: RouteProps):
+        return html(t"<p>{props.data}</p>")
+
+    router = create_router([Route("/", Home), Route("/users/:id", Page, preload=preload)])
+    with render(router()) as screen:
+        go("/users/7")
+        go("/users/7#bio")
+        go("/users/7#photos")
+        assert calls == ["/users/7"]
+        assert screen.text() == "data"
+        go("/users/7?tab=b")
+        assert calls == ["/users/7", "/users/7?tab=b"]

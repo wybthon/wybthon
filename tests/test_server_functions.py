@@ -9,7 +9,7 @@ import enum
 import json
 import uuid
 from dataclasses import dataclass, field
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 import pytest
 
@@ -321,3 +321,105 @@ def test_cookies_parse_from_the_request():
 def test_redirect_needs_a_redirect_status():
     with pytest.raises(ValueError):
         redirect("/x", 200)
+
+
+# ---------------------------------------------------------------------------
+# Redirects while rendering
+# ---------------------------------------------------------------------------
+
+
+@server_function
+async def slow_guard() -> str:
+    await asyncio.sleep(0.02)
+    raise redirect("/login")
+
+
+@server_function
+async def inner_redirect() -> None:
+    raise redirect("/inner")
+
+
+@server_function
+async def outer_call() -> str:
+    try:
+        await inner_redirect()
+    except server_functions.Redirect:
+        pass
+    return "handled"
+
+
+def test_the_shell_waits_for_unbounded_reads_from_earlier_passes():
+    from wybthon import component, create_memo, html
+    from wybthon.server import render_to_stream
+
+    async def fast() -> str:
+        await asyncio.sleep(0)
+        return "fast"
+
+    @component
+    def Guarded():
+        quick = create_memo(lambda: fast())
+        guard = create_memo(lambda: slow_guard())
+        return html(t"<p>{quick()}{guard()}</p>")
+
+    async def main() -> None:
+        event = RequestEvent(url="/")
+        chunks: Any = render_to_stream(Guarded(), event=event).__aiter__()
+        await anext(chunks)
+        # The fast read settled first, but the shell still waited for the guard.
+        assert event.locals.get("__wyb_redirect") == "/login"
+        assert event.response.status == 302 and event.response.headers["location"] == ["/login"]
+        await chunks.aclose()
+
+    asyncio.run(main())
+
+
+def test_a_redirect_inside_a_server_function_call_doesnt_touch_its_response():
+    event = RequestEvent()
+    status, headers, body, _, _ = asyncio.run(handle(event, outer_call.id, "POST", "", {"x-wyb-fn": "1"}, b"{}"))
+    assert status == 200 and _wire.loads(body) == {"ok": "handled"}
+    assert event.response.status == 200 and "location" not in event.response.headers
+    assert "__wyb_redirect" not in event.locals
+
+
+def test_reloading_an_app_forgets_only_its_own_server_functions():
+    from types import SimpleNamespace
+
+    from wybthon.asgi import App
+
+    entries = {
+        "app.todos:a": SimpleNamespace(__module__="app.todos"),
+        "app:b": SimpleNamespace(__module__="app"),
+        "application.x:c": SimpleNamespace(__module__="application.x"),
+    }
+    server_functions._registry.update(entries)
+    try:
+        App._forget_modules(None, "app")
+        assert "application.x:c" in server_functions._registry
+        assert "app.todos:a" not in server_functions._registry and "app:b" not in server_functions._registry
+    finally:
+        for key in entries:
+            server_functions._registry.pop(key, None)
+
+
+def test_the_page_base_is_read_from_the_manifest_once(monkeypatch):
+    import sys
+    from types import ModuleType
+
+    reads: list[str] = []
+
+    class Element:
+        textContent = '{"base": "/app/"}'
+
+    class Document:
+        def getElementById(self, name: str) -> Element:
+            reads.append(name)
+            return Element()
+
+    js = ModuleType("js")
+    js.document = Document()
+    monkeypatch.setitem(sys.modules, "js", js)
+    monkeypatch.setattr(server_functions, "_page_base", None)
+    assert server_functions._app_base() == "/app/"
+    assert server_functions._app_base() == "/app/"
+    assert reads == ["wyb-manifest"]

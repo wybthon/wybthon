@@ -261,6 +261,8 @@ def _RouterView(props: _RouterViewProps) -> Any:
         return result[1] if result is not None else {"params": {}, "matches": []}
 
     match = create_memo(resolved)
+    # The page the URL names: a change of hash alone doesn't preload anything again.
+    page = create_memo(lambda: _without_hash(url()))
     matches = create_memo(lambda: match()["matches"])
     params = create_memo(lambda: match()["params"])
     state = _RouterState(router, params, search, matches)
@@ -279,7 +281,7 @@ def _RouterView(props: _RouterViewProps) -> Any:
                 loader()
             if route.preload is None:
                 continue
-            key = (id(route), path)
+            key = (id(route), _without_hash(path))
             if key not in warmed or intent != "preload" and _failed(warmed[key]):
                 value = route.preload(PreloadArgs(dict(info["params"]), path, intent))  # type: ignore[arg-type]
                 if inspect.isawaitable(value):
@@ -304,13 +306,13 @@ def _RouterView(props: _RouterViewProps) -> Any:
     state.preload = preload_path
 
     def data_for(route: Route) -> Any:
-        value = warmed.get((id(route), url()))
+        value = warmed.get((id(route), page()))
         if isinstance(value, asyncio.Future):
             return value.result() if value.done() and not value.cancelled() and value.exception() is None else None
         return value
 
     def ready() -> Any:
-        path = url()
+        path = page()
         intent = "initial" if first[0] else "navigate"
         first[0] = False
         value = preload_path(path, intent)
@@ -357,6 +359,10 @@ def _RouterView(props: _RouterViewProps) -> Any:
     if root is not None:
         return _RouteContext(state, h(root, {"children": lambda: content}))
     return _RouteContext(state, content)
+
+
+def _without_hash(href: str) -> str:
+    return href.partition("#")[0]
 
 
 def _failed(value: Any) -> bool:

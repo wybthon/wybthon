@@ -302,6 +302,7 @@ async def _settle(memos: list[Memo[Any]], timeout: float, *, first: bool) -> boo
 
 def _context(event: RequestEvent) -> contextvars.Context:
     """A context in which `get_request_event()` is `event`, for the render and the work it starts."""
+    event.locals["__wyb_rendering"] = True
     context = contextvars.copy_context()
     context.run(_current.set, event)
     return context
@@ -526,8 +527,18 @@ def render_to_stream(
 
 
 def _unbounded(current: _Pass) -> bool:
-    """Whether async work no `Loading` boundary covers is still in flight."""
-    for memo in current.pending():
+    """Whether async work no `Loading` boundary covers is still in flight.
+
+    That's work this pass started, and work an earlier pass started that's
+    still running: the memo standing for it in this pass waits on it
+    without launching anything itself.
+    """
+    session = current.session
+    inflight = session.inflight
+    for key, memo in session.memos:
+        state = memo._async
+        if memo._disposed or state is None or not (state.awaiting or key in inflight):
+            continue
         if memo._lookup_context(_core.LOADING_CONTEXT_KEY, None) is None:
             return True
     return False

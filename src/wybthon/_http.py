@@ -38,16 +38,24 @@ _REASONS = {
 }
 
 _MAX_HEAD = 64 * 1024
+MAX_BODY = 10 * 1024 * 1024
+"""The largest request body the server reads, in bytes (`wybthon.asgi.App` applies the same limit)."""
 
 
 class _Connection:
     def __init__(
-        self, app: ASGIApp, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, server: tuple[str, int]
+        self,
+        app: ASGIApp,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        server: tuple[str, int],
+        max_body: int = MAX_BODY,
     ) -> None:
         self.app = app
         self.reader = reader
         self.writer = writer
         self.server = server
+        self.max_body = max_body
 
     async def run(self) -> None:
         try:
@@ -88,7 +96,15 @@ class _Connection:
         if "chunked" in lookup.get("transfer-encoding", "").lower():
             await self.simple(411, b"Chunked request bodies aren't supported")
             return False
-        length = int(lookup.get("content-length", "0") or 0)
+        raw_length = lookup.get("content-length", "0") or "0"
+        if not raw_length.isdigit():
+            await self.simple(400, b"Bad content-length")
+            return False
+        length = int(raw_length)
+        if length > self.max_body:
+            # Answered before reading it: a body this size is never buffered.
+            await self.simple(413, b"Request body too large")
+            return False
         body = await self.reader.readexactly(length) if length else b""
         path, _, query = target.partition("?")
         keep_alive = lookup.get("connection", "").lower() != "close" and version == "HTTP/1.1"
@@ -172,21 +188,21 @@ class _Connection:
         await self.writer.drain()
 
 
-async def start(app: ASGIApp, host: str, port: int) -> asyncio.Server:
+async def start(app: ASGIApp, host: str, port: int, *, max_body: int = MAX_BODY) -> asyncio.Server:
     """Start serving `app`; returns the server (bound to `server.sockets[0]`)."""
     bound: tuple[str, int] = (host, port)
 
     async def connected(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        await _Connection(app, reader, writer, bound).run()
+        await _Connection(app, reader, writer, bound, max_body).run()
 
     server = await asyncio.start_server(connected, host, port, limit=_MAX_HEAD)
     bound = server.sockets[0].getsockname()[:2]
     return server
 
 
-async def serve(app: ASGIApp, host: str = "127.0.0.1", port: int = 8000) -> None:
+async def serve(app: ASGIApp, host: str = "127.0.0.1", port: int = 8000, *, max_body: int = MAX_BODY) -> None:
     """Serve `app` until cancelled."""
-    server = await start(app, host, port)
+    server = await start(app, host, port, max_body=max_body)
     address = server.sockets[0].getsockname()
     print(f"Serving at http://{address[0]}:{address[1]}/", flush=True)
     async with server:
